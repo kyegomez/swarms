@@ -98,3 +98,7 @@ Thank you for being a part of our project!
 * Integrate meta prompting into all worker agents
 
 * Create 1 main swarms class `swarms('Increase sales by 40$', workers=4)`
+
+* Integrate [Jarvis](https://github.com/microsoft/JARVIS) as worker nodes
+
+* Integrate guidance and token healing
