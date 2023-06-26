@@ -37,6 +37,18 @@ from langchain.tools.human.tool import HumanInputRun
 
 
 
+from swarms.agents.auto_agent import MultiModalVisualAgent
+
+class MultiModalVisualAgentTool(BaseTool):
+    name = "multi_visual_agent"
+    description = "Multi-Modal Visual agent tool"
+
+    def __init__(self, agent: MultiModalVisualAgent):
+        self.agent = agent
+    
+    def _run(self, text: str) -> str:
+        #run the multi-modal visual agent with the give task
+        return self.agent.run_text(text)
 
 
 
@@ -156,6 +168,10 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 # !pip install duckduckgo_search
 web_search = DuckDuckGoSearchRun()
 
+multimodal_agent = MultiModalVisualAgent()
+
+#
+multimodal_agent_tool = MultiModalVisualAgentTool(MultiModalVisualAgent)
 
 tools = [
     web_search,
