@@ -117,3 +117,10 @@ def evaluate_results(CompAs):
 ```
 
 Note: In the real world, the complexity of the architecture and requirements will significantly exceed what is presented here. These examples provide a basic starting point but should be expanded upon based on the specifics of the task or problem you're trying to solve.
+
+
+
+# Swarms
+
+BabyAGI -> Autogpt's -> tools -> other agents
+ 

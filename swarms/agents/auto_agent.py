@@ -188,7 +188,6 @@ agent = AutoGPT.from_llm_and_tools(
     tools=tools,
     llm=llm,
     memory=vectorstore.as_retriever(search_kwargs={"k": 8}),
-    # prompt=""
     human_in_the_loop=True, # Set to True if you want to add feedback at each step.
 )
 
