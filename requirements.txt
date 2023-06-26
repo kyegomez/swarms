@@ -5,17 +5,13 @@ openai
 langchain==0.0.101
 torch==1.13.1
 torchvision==0.14.1
-
-
 asyncio
 nest_asyncio
-
 # faiss
 bs4
 playwright
 duckduckgo_search
 faiss-cpu
-
 wget==3.2
 accelerate
 addict
