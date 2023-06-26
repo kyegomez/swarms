@@ -8,16 +8,6 @@ In the world of AI and machine learning, individual models have made significant
 Just as a swarm of bees works together, communicating and coordinating their actions for the betterment of the hive, swarming LLM agents can work together to create richer, more nuanced outputs. By harnessing the strengths of individual agents and combining them through a swarming architecture, we can unlock a new level of performance and responsiveness in AI systems. We envision swarms of LLM agents revolutionizing fields like customer support, content creation, research, and much more.
 
 
-## README.md Update
-
----
-
-# swarms
-
-`swarms` is an innovative package that offers solutions for swarming language models. With a focus on Language Learning Models (LLMs) like GPT-4, it provides functionalities to use swarming agents, opening doors to future AI possibilities.
-
-This repository is open to anyone who wishes to contribute, share, or learn about swarming agents. In this README, you will find an installation guide, a usage guide for `./swarms/agents/auto_agent.py`, and details on how you can share the project with your friends.
-
 ## Table of Contents
 1. [Installation](#installation)
 2. [Usage](#usage)
