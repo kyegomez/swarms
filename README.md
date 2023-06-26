@@ -97,3 +97,14 @@ We're always looking for contributors to help us improve and expand this project
 
 Thank you for being a part of our project!
 
+
+
+# To do:
+
+* Integrate [Multi Agent debate](https://github.com/Skytliang/Multi-Agents-Debate)
+
+* Integrate [Multi agent2 debate](https://github.com/composable-models/llm_multiagent_debate)
+
+* Integrate meta prompting into all worker agents
+
+* Create 1 main swarms class `swarms('Increase sales by 40$', workers=4)`
