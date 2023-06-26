@@ -221,8 +221,6 @@ Input: use 4 numbers and basic arithmetic operations (+-*/) to obtain 24 in 1 eq
 Possible next steps:
 
 
-
-
 """
 
 agent.run([f"{tree_of_thoughts_prompt} {input_problem}"])

@@ -7,6 +7,68 @@ In the world of AI and machine learning, individual models have made significant
 
 Just as a swarm of bees works together, communicating and coordinating their actions for the betterment of the hive, swarming LLM agents can work together to create richer, more nuanced outputs. By harnessing the strengths of individual agents and combining them through a swarming architecture, we can unlock a new level of performance and responsiveness in AI systems. We envision swarms of LLM agents revolutionizing fields like customer support, content creation, research, and much more.
 
+
+## README.md Update
+
+---
+
+# swarms
+
+`swarms` is an innovative package that offers solutions for swarming language models. With a focus on Language Learning Models (LLMs) like GPT-4, it provides functionalities to use swarming agents, opening doors to future AI possibilities.
+
+This repository is open to anyone who wishes to contribute, share, or learn about swarming agents. In this README, you will find an installation guide, a usage guide for `./swarms/agents/auto_agent.py`, and details on how you can share the project with your friends.
+
+## Table of Contents
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [Sharing](#sharing)
+
+## Installation
+```bash
+git clone https://github.com/kyegomez/swarms.git
+pip install -r requirements.txt
+cd swarms
+```
+
+## Usage
+
+The primary agent in this repository is the `AutoAgent` from `./swarms/agents/auto_agent.py`.
+
+This `AutoAgent` is used to create the `MultiModalVisualAgent`, an autonomous agent that can process tasks in a multi-modal environment, like dealing with both text and visual data.
+
+To use this agent, you need to import the agent and instantiate it. Here is a brief guide:
+
+```python
+from swarms.agents.auto_agent import MultiModalVisualAgent
+
+# Initialize the agent
+multimodal_agent = MultiModalVisualAgent()
+```
+
+### Working with MultiModalVisualAgentTool
+The `MultiModalVisualAgentTool` class is a tool wrapper around the `MultiModalVisualAgent`. It simplifies working with the agent by encapsulating agent-related logic within its methods. Here's a brief guide on how to use it:
+
+```python
+from swarms.agents.auto_agent import MultiModalVisualAgent, MultiModalVisualAgentTool
+
+# Initialize the agent
+multimodal_agent = MultiModalVisualAgent()
+
+# Initialize the tool with the agent
+multimodal_agent_tool = MultiModalVisualAgentTool(multimodal_agent)
+
+# Now, you can use the agent tool to perform tasks. The run method is one of them.
+result = multimodal_agent_tool.run('Your text here')
+```
+
+## Note
+- The `AutoAgent` makes use of several helper tools and context managers for tasks such as processing CSV files, browsing web pages, and querying web pages. For the best use of this agent, understanding these tools is crucial.
+
+- Additionally, the agent uses the ChatOpenAI, a language learning model (LLM), to perform its tasks. You need to provide an OpenAI API key to make use of it. 
+
+- Detailed knowledge of FAISS, a library for efficient similarity search and clustering of dense vectors, is also essential as it's used for memory storage and retrieval. 
+
+
 ## Swarming Architectures
 
 Here are three examples of swarming architectures that could be applied in this context.
@@ -16,6 +78,9 @@ Here are three examples of swarming architectures that could be applied in this 
 2. **Collaborative Swarms**: Here, each agent in the swarm works in parallel, potentially on different aspects of a task. They then collectively determine the best output, often through a voting or consensus mechanism.
 
 3. **Competitive Swarms**: In this setup, multiple agents work on the same task independently. The output from the agent which produces the highest confidence or quality result is then selected. This can often lead to more robust outputs, as the competition drives each agent to perform at its best.
+
+4. **Multi-Agent Debate**: Here, multiple agents debate a topic. The output from the agent which produces the highest confidence or quality result is then selected. This can lead to more robust outputs, as the competition drives each agent to perform it's best.
+
 
 ## Share with your Friends
 
