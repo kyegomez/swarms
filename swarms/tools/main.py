@@ -1320,3 +1320,57 @@ class VisualQuestionAnswering(BaseToolSet):
 #segment anything:
 
 ########################### MODELS
+
+
+#########==========================> 
+from selenium import webdriver
+from langchain.tools import BaseTool
+
+class BrowserActionTool(BaseTool):
+    name = "browser_action"
+    description = "Perform a browser action."
+
+    def _run(self, action_type: str, action_details: dict) -> str:
+        """Perform a browser action based on action_type and action_details."""
+
+        try:
+            driver = webdriver.Firefox()
+
+            if action_type == 'Open Browser':
+                pass  # Browser is already opened
+            elif action_type == 'Close Browser':
+                driver.quit()
+            elif action_type == 'Navigate To URL':
+                driver.get(action_details['url'])
+            elif action_type == 'Fill Form':
+                for field_name, field_value in action_details['fields'].items():
+                    element = driver.find_element_by_name(field_name)
+                    element.send_keys(field_value)
+            elif action_type == 'Submit Form':
+                element = driver.find_element_by_name(action_details['form_name'])
+                element.submit()
+            elif action_type == 'Click Button':
+                element = driver.find_element_by_name(action_details['button_name'])
+                element.click()
+            elif action_type == 'Scroll Down':
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            elif action_type == 'Scroll Up':
+                driver.execute_script("window.scrollTo(0, 0);")
+            elif action_type == 'Go Back':
+                driver.back()
+            elif action_type == 'Go Forward':
+                driver.forward()
+            elif action_type == 'Refresh':
+                driver.refresh()
+            elif action_type == 'Execute Javascript':
+                driver.execute_script(action_details['script'])
+            elif action_type == 'Switch Tab':
+                driver.switch_to.window(driver.window_handles[action_details['tab_index']])
+            elif action_type == 'Close Tab':
+                driver.close()
+            else:
+                return f"Error: Unknown action type {action_type}."
+
+            return f"Action {action_type} completed successfully."
+        except Exception as e:
+            return f"Error: {e}"
