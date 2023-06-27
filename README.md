@@ -5,6 +5,12 @@
 [Swarms is brought to you by Agora, the open source AI research organization. Join Agora and Help create swarms and or recieve support to advance Humanity. ](https://discord.gg/qUtxnK2NMf)
 
 # Swarming Language Models (Swarms)
+[![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
+
+[![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
+
+[![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
+
 
 Welcome to Swarms - the future of AI, where we leverage the power of autonomous agents to create 'swarms' of Language Models (LLM) that work together, creating a dynamic and interactive AI system.
 
@@ -82,16 +88,58 @@ Here are three examples of swarming architectures that could be applied in this 
 
 If you love what we're building here, please consider sharing our project with your friends and colleagues! You can use the following buttons to share on social media.
 
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
+[![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
-[![Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
+[![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
-[![LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
+[![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
 
 ## Contribute
 We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](./CONTRIBUTING.md).
 
 Thank you for being a part of our project!
+
+# Ideas
+
+A swarm, particularly in the context of distributed computing, refers to a large number of coordinated agents or nodes that work together to solve a problem. The specific requirements of a swarm might vary depending on the task at hand, but some of the general requirements include:
+
+1. **Distributed Nature**: The swarm should consist of multiple individual units or nodes, each capable of functioning independently.
+
+2. **Coordination**: The nodes in the swarm need to coordinate with each other to ensure they're working together effectively. This might involve communication between nodes, or it could be achieved through a central orchestrator.
+
+3. **Scalability**: A well-designed swarm system should be able to scale up or down as needed, adding or removing nodes based on the task load.
+
+4. **Resilience**: If a node in the swarm fails, it shouldn't bring down the entire system. Instead, other nodes should be able to pick up the slack.
+
+5. **Load Balancing**: Tasks should be distributed evenly across the nodes in the swarm to avoid overloading any single node.
+
+6. **Interoperability**: Each node should be able to interact with others, regardless of differences in underlying hardware or software.
+
+Integrating these requirements with Large Language Models (LLMs) can be done as follows:
+
+1. **Distributed Nature**: Each LLM agent can be considered as a node in the swarm. These agents can be distributed across multiple servers or even geographically dispersed data centers.
+
+2. **Coordination**: An orchestrator can manage the LLM agents, assigning tasks, coordinating responses, and ensuring effective collaboration between agents.
+
+3. **Scalability**: As the demand for processing power increases or decreases, the number of LLM agents can be adjusted accordingly. 
+
+4. **Resilience**: If an LLM agent goes offline or fails, the orchestrator can assign its tasks to other agents, ensuring the swarm continues functioning smoothly.
+
+5. **Load Balancing**: The orchestrator can also handle load balancing, ensuring tasks are evenly distributed amongst the LLM agents.
+
+6. **Interoperability**: By standardizing the input and output formats of the LLM agents, they can effectively communicate and collaborate, regardless of the specific model or configuration of each agent.
+
+In terms of architecture, the swarm might look something like this:
+
+```
+                                           (Orchestrator)
+                                             /        \
+           (LLM Agent)---(Communication Layer)       (Communication Layer)---(LLM Agent)
+              /                  |                                           |                 \
+(Task Assignment)      (Task Completion)                    (Task Assignment)       (Task Completion)
+```
+
+Each LLM agent communicates with the orchestrator through a dedicated communication layer. The orchestrator assigns tasks to each LLM agent, which the agents then complete and return. This setup allows for a high degree of flexibility, scalability, and robustness.
 
 
 

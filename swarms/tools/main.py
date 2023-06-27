@@ -1330,6 +1330,53 @@ class BrowserActionTool(BaseTool):
     name = "browser_action"
     description = "Perform a browser action."
 
+    prompt = """
+    
+    Sure, here are few-shot prompts for each of the browser tools:
+
+    1. **Go To URL Tool**
+    Prompt: "Navigate to the OpenAI homepage."
+    Command: `{ "action_type": "go_to", "url": "https://www.openai.com" }`
+
+    2. **Form Submission Tool**
+    Prompt: "On the page 'https://www.formexample.com', find the form with the id 'login', set the 'username' field to 'testuser', and the 'password' field to 'testpassword', then submit the form."
+    Command: `{ "action_type": "submit_form", "form_id": "login", "form_values": { "username": "testuser", "password": "testpassword" } }`
+
+    3. **Click Link Tool**
+    Prompt: "On the current page, find the link with the text 'About Us' and click it."
+    Command: `{ "action_type": "click_link", "link_text": "About Us" }`
+
+    4. **Enter Text Tool**
+    Prompt: "On the page 'https://www.textentryexample.com', find the text area with the id 'message' and enter the text 'Hello World'."
+    Command: `{ "action_type": "enter_text", "text_area_id": "message", "text": "Hello World" }`
+
+    5. **Button Click Tool**
+    Prompt: "On the current page, find the button with the id 'submit' and click it."
+    Command: `{ "action_type": "click_button", "button_id": "submit" }`
+
+    6. **Select Option Tool**
+    Prompt: "On the page 'https://www.selectoptionexample.com', find the select dropdown with the id 'country' and select the option 'United States'."
+    Command: `{ "action_type": "select_option", "select_id": "country", "option": "United States" }`
+
+    7. **Hover Tool**
+    Prompt: "On the current page, find the element with the id 'menu' and hover over it."
+    Command: `{ "action_type": "hover", "element_id": "menu" }`
+
+    8. **Scroll Tool**
+    Prompt: "On the current page, scroll down to the element with the id 'footer'."
+    Command: `{ "action_type": "scroll", "element_id": "footer" }`
+
+    9. **Screenshot Tool**
+    Prompt: "On the current page, take a screenshot."
+    Command: `{ "action_type": "screenshot" }`
+
+    10. **Back Navigation Tool**
+    Prompt: "Navigate back to the previous page."
+    Command: `{ "action_type": "back" }`
+
+    
+    """
+
     def _run(self, action_type: str, action_details: dict) -> str:
         """Perform a browser action based on action_type and action_details."""
 
