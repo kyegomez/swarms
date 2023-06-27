@@ -191,4 +191,4 @@ In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Data
 
 * Integrate guidance and token healing
 
-* Add text to speech and text to speech code models as tools 
+* Add text to speech [whisper x, youtube script](https://github.com/kyegomez/youtubeURL-to-text) and text to speech code models as tools 
