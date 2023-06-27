@@ -37,7 +37,7 @@ from langchain.tools.human.tool import HumanInputRun
 
 
 
-from swarms.agents.auto_agent import MultiModalVisualAgent
+from swarms.agents.workers.auto_agent import MultiModalVisualAgent
 
 class MultiModalVisualAgentTool(BaseTool):
     name = "multi_visual_agent"

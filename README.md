@@ -16,13 +16,13 @@ Just as a swarm of bees works together, communicating and coordinating their act
 ## Installation
 ```bash
 git clone https://github.com/kyegomez/swarms.git
-pip install -r requirements.txt
 cd swarms
+pip install -r requirements.txt
 ```
 
 ## Usage
 
-The primary agent in this repository is the `AutoAgent` from `./swarms/agents/auto_agent.py`.
+The primary agent in this repository is the `AutoAgent` from `./swarms/agents/workers/auto_agent.py`.
 
 This `AutoAgent` is used to create the `MultiModalVisualAgent`, an autonomous agent that can process tasks in a multi-modal environment, like dealing with both text and visual data.
 
