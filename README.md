@@ -190,3 +190,5 @@ In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Data
 * Integrate [Jarvis](https://github.com/microsoft/JARVIS) as worker nodes
 
 * Integrate guidance and token healing
+
+* Add text to speech and text to speech code models as tools 
