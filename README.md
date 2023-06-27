@@ -1,3 +1,9 @@
+# Agora
+
+![Agora banner](Agora-Banner-blend.png)
+
+[Swarms is brought to you by Agora, the open source AI research organization. Join Agora and Help create swarms and or recieve support to advance Humanity. ](https://discord.gg/qUtxnK2NMf)
+
 # Swarming Language Models (Swarms)
 
 Welcome to Swarms - the future of AI, where we leverage the power of autonomous agents to create 'swarms' of Language Models (LLM) that work together, creating a dynamic and interactive AI system.
