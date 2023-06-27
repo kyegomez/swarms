@@ -291,3 +291,183 @@ class StaticUploader(AbstractUploader):
         shutil.copy(filepath, file_path)
         endpoint_path = self.endpoint / relative_path
         return f"{self.server}/{endpoint_path}"
+    
+
+
+#========================> handlers/base
+import os
+import shutil
+import uuid
+from enum import Enum
+from pathlib import Path
+from typing import Dict
+
+import requests
+
+from env import settings
+
+
+class FileType(Enum):
+    IMAGE = "image"
+    AUDIO = "audio"
+    VIDEO = "video"
+    DATAFRAME = "dataframe"
+    UNKNOWN = "unknown"
+
+    @staticmethod
+    def from_filename(url: str) -> "FileType":
+        filename = url.split("?")[0]
+
+        if filename.endswith(".png") or filename.endswith(".jpg"):
+            return FileType.IMAGE
+        elif filename.endswith(".mp3") or filename.endswith(".wav"):
+            return FileType.AUDIO
+        elif filename.endswith(".mp4") or filename.endswith(".avi"):
+            return FileType.VIDEO
+        elif filename.endswith(".csv"):
+            return FileType.DATAFRAME
+        else:
+            return FileType.UNKNOWN
+
+    @staticmethod
+    def from_url(url: str) -> "FileType":
+        return FileType.from_filename(url.split("?")[0])
+
+    def to_extension(self) -> str:
+        if self == FileType.IMAGE:
+            return ".png"
+        elif self == FileType.AUDIO:
+            return ".mp3"
+        elif self == FileType.VIDEO:
+            return ".mp4"
+        elif self == FileType.DATAFRAME:
+            return ".csv"
+        else:
+            return ".unknown"
+
+
+class BaseHandler:
+    def handle(self, filename: str) -> str:
+        raise NotImplementedError
+
+
+class FileHandler:
+    def __init__(self, handlers: Dict[FileType, BaseHandler], path: Path):
+        self.handlers = handlers
+        self.path = path
+
+    def register(self, filetype: FileType, handler: BaseHandler) -> "FileHandler":
+        self.handlers[filetype] = handler
+        return self
+
+    def download(self, url: str) -> str:
+        filetype = FileType.from_url(url)
+        data = requests.get(url).content
+        local_filename = os.path.join(
+            "file", str(uuid.uuid4())[0:8] + filetype.to_extension()
+        )
+        os.makedirs(os.path.dirname(local_filename), exist_ok=True)
+        with open(local_filename, "wb") as f:
+            size = f.write(data)
+        print(f"Inputs: {url} ({size//1000}MB)  => {local_filename}")
+        return local_filename
+
+    def handle(self, url: str) -> str:
+        try:
+            if url.startswith(settings["SERVER"]):
+                local_filepath = url[len(settings["SERVER"]) + 1 :]
+                local_filename = Path("file") / local_filepath.split("/")[-1]
+                src = self.path / local_filepath
+                dst = self.path / settings["PLAYGROUND_DIR"] / local_filename
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy(src, dst)
+            else:
+                local_filename = self.download(url)
+
+            try:
+                handler = self.handlers[FileType.from_url(url)]
+            except KeyError:
+                if FileType.from_url(url) == FileType.IMAGE:
+                    raise Exception(
+                        f"No handler for {FileType.from_url(url)}. "
+                        f"Please set USE_GPU to True in env/settings.py"
+                    )
+                else:
+                    raise Exception(f"No handler for {FileType.from_url(url)}")
+            handler.handle(local_filename)
+        except Exception as e:
+            raise e
+        
+########################### =>  base end
+
+
+
+
+
+
+#############===========================>
+import pandas as pd
+
+from core.prompts.file import DATAFRAME_PROMPT
+
+
+class CsvToDataframe(BaseHandler):
+    def handle(self, filename: str):
+        df = pd.read_csv(filename)
+        description = (
+            f"Dataframe with {len(df)} rows and {len(df.columns)} columns. "
+            "Columns are: "
+            f"{', '.join(df.columns)}"
+        )
+
+        print(
+            f"\nProcessed CsvToDataframe, Input CSV: {filename}, Output Description: {description}"
+        )
+
+        return DATAFRAME_PROMPT.format(filename=filename, description=description)
+
+
+
+
+
+#========================> handlers/image
+import torch
+from PIL import Image
+from transformers import BlipForConditionalGeneration, BlipProcessor
+
+from core.prompts.file import IMAGE_PROMPT
+
+
+
+class ImageCaptioning(BaseHandler):
+    def __init__(self, device):
+        print("Initializing ImageCaptioning to %s" % device)
+        self.device = device
+        self.torch_dtype = torch.float16 if "cuda" in device else torch.float32
+        self.processor = BlipProcessor.from_pretrained(
+            "Salesforce/blip-image-captioning-base"
+        )
+        self.model = BlipForConditionalGeneration.from_pretrained(
+            "Salesforce/blip-image-captioning-base", torch_dtype=self.torch_dtype
+        ).to(self.device)
+
+    def handle(self, filename: str):
+        img = Image.open(filename)
+        width, height = img.size
+        ratio = min(512 / width, 512 / height)
+        width_new, height_new = (round(width * ratio), round(height * ratio))
+        img = img.resize((width_new, height_new))
+        img = img.convert("RGB")
+        img.save(filename, "PNG")
+        print(f"Resize image form {width}x{height} to {width_new}x{height_new}")
+
+        inputs = self.processor(Image.open(filename), return_tensors="pt").to(
+            self.device, self.torch_dtype
+        )
+        out = self.model.generate(**inputs)
+        description = self.processor.decode(out[0], skip_special_tokens=True)
+        print(
+            f"\nProcessed ImageCaptioning, Input Image: {filename}, Output Text: {description}"
+        )
+
+        return IMAGE_PROMPT.format(filename=filename, description=description)
