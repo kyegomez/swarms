@@ -37,3 +37,14 @@ timm
 torchmetrics
 webdataset
 yapf
+wolframalpha
+wikipedia
+httpx
+ggl
+gradio_tools
+arxiv
+pip install --upgrade google-api-python-client > /dev/null
+pip install --upgrade google-auth-oauthlib > /dev/null
+pip install --upgrade google-auth-httplib2 > /dev/null
+pip install beautifulsoup4 > /dev/null # This is optional but is useful for parsing HTML messages
+O365

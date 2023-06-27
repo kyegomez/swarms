@@ -1564,3 +1564,650 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 
 # !pip install duckduckgo_search
 web_search = DuckDuckGoSearchRun()
+
+
+
+
+
+
+
+
+######################################################## zapier
+
+import os
+
+# get from https://platform.openai.com/
+os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "")
+
+# get from https://nla.zapier.com/demo/provider/debug (under User Information, after logging in):
+os.environ["ZAPIER_NLA_API_KEY"] = os.environ.get("ZAPIER_NLA_API_KEY", "")
+
+
+from langchain.agents.agent_toolkits import ZapierToolkit
+from langchain.agents import AgentType
+from langchain.utilities.zapier import ZapierNLAWrapper
+
+
+zapier = ZapierNLAWrapper()
+toolkit = ZapierToolkit.from_zapier_nla_wrapper(zapier)
+# agent = initialize_agent(
+#     toolkit.get_tools(), llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True
+# )
+
+
+######################################################## zapier end
+
+
+
+
+######################################################## youtube search
+from langchain.tools import YouTubeSearchTool
+
+tool = YouTubeSearchTool()
+
+#tool.run("lex friedman")
+
+######################################################## youtube search end
+
+
+
+
+######################################################## wolfram beginning
+
+import os
+
+os.environ["WOLFRAM_ALPHA_APPID"] = ""
+
+from langchain.utilities.wolfram_alpha import WolframAlphaAPIWrapper
+
+wolfram = WolframAlphaAPIWrapper()
+#wolfram.run("What is 2x+5 = -3x + 7?")
+
+######################################################## wolfram end
+
+
+######################################################## Wikipedia beginning
+from langchain.utilities import WikipediaAPIWrapper
+
+wikipedia = WikipediaAPIWrapper()
+
+#wikipedia.run("HUNTER X HUNTER")
+######################################################## Wikipedia beginning
+
+
+
+######################################################## search tools beginning
+
+tools = load_tools(["google-serper"], llm=llm)
+
+agent = initialize_agent(
+    tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True
+)
+
+agent.run("What is the weather in Pomfret?")
+
+######################################################## search tools end
+
+
+
+######################################################## requests
+
+from langchain.agents import load_tools
+
+requests_tools = load_tools(["requests_all"])
+# requests_tools
+
+requests_tools[0].requests_wrapper
+
+
+from langchain.utilities import TextRequestsWrapper
+
+
+requests = TextRequestsWrapper()
+
+requests.get("https://www.google.com")
+
+######################################################## requests
+
+
+######################################################## pubmed
+from langchain.tools import PubmedQueryRun
+
+tool = PubmedQueryRun()
+
+tool.run("chatgpt")
+
+
+######################################################## pubmed emd
+
+
+
+######################################################## IFTTT WebHooks
+
+from langchain.tools.ifttt import IFTTTWebhook
+
+
+import os
+
+key = os.environ["IFTTTKey"]
+url = f"https://maker.ifttt.com/trigger/spotify/json/with/key/{key}"
+tool = IFTTTWebhook(
+    name="Spotify", description="Add a song to spotify playlist", url=url
+)
+
+tool.run("taylor swift")
+
+######################################################## IFTTT WebHooks end
+
+
+
+######################################################## huggingface
+from langchain.agents import load_huggingface_tool
+
+tool = load_huggingface_tool("lysandre/hf-model-downloads")
+
+print(f"{tool.name}: {tool.description}")
+
+
+######################################################## huggingface end
+
+
+######################################################## graphql
+
+from langchain import OpenAI
+from langchain.agents import load_tools, initialize_agent, AgentType
+from langchain.utilities import GraphQLAPIWrapper
+
+llm = OpenAI(temperature=0)
+
+tools = load_tools(
+    ["graphql"],
+    graphql_endpoint="https://swapi-graphql.netlify.app/.netlify/functions/index",
+    llm=llm,
+)
+
+# agent = initialize_agent(
+#     tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True
+# )
+
+
+######################################################## graphql end
+
+
+
+######################################################## graphql 
+from langchain.agents import initialize_agent
+from langchain.llms import OpenAI
+from gradio_tools.tools import (
+    StableDiffusionTool,
+    ImageCaptioningTool,
+    StableDiffusionPromptGeneratorTool,
+    TextToVideoTool,
+)
+
+from langchain.memory import ConversationBufferMemory
+
+llm = OpenAI(temperature=0)
+memory = ConversationBufferMemory(memory_key="chat_history")
+tools = [
+    StableDiffusionTool().langchain,
+    ImageCaptioningTool().langchain,
+    StableDiffusionPromptGeneratorTool().langchain,
+    TextToVideoTool().langchain,
+]
+
+
+agent = initialize_agent(
+    tools, llm, memory=memory, agent="conversational-react-description", verbose=True
+)
+output = agent.run(
+    input=(
+        "Please create a photo of a dog riding a skateboard "
+        "but improve my prompt prior to using an image generator."
+        "Please caption the generated image and create a video for it using the improved prompt."
+    )
+)
+
+######################## ######################################################## graphql end 
+
+
+
+
+
+
+######################## ######################################################## file system
+
+from langchain.tools.file_management import (
+    ReadFileTool,
+    CopyFileTool,
+    DeleteFileTool,
+    MoveFileTool,
+    WriteFileTool,
+    ListDirectoryTool,
+)
+from langchain.agents.agent_toolkits import FileManagementToolkit
+from tempfile import TemporaryDirectory
+
+# We'll make a temporary directory to avoid clutter
+working_directory = TemporaryDirectory()
+
+toolkit = FileManagementToolkit(
+    root_dir=str(working_directory.name)
+)  # If you don't provide a root_dir, operations will default to the current working directory
+toolkit.get_tools()
+
+tools = FileManagementToolkit(
+    root_dir=str(working_directory.name),
+    selected_tools=["read_file", "write_file", "list_directory"],
+).get_tools()
+tools
+
+read_tool, write_tool, list_tool = tools
+write_tool.run({"file_path": "example.txt", "text": "Hello World!"})
+
+# List files in the working directory
+list_tool.run({})
+
+
+######################### BRAVE
+
+from langchain.tools import BraveSearch
+
+
+api_key = "..."
+
+tool = BraveSearch.from_api_key(api_key=api_key, search_kwargs={"count": 3})
+
+
+tool.run("obama middle name")
+
+######################### BRAVE END
+
+
+
+######################### ARXVIV
+
+
+from langchain.chat_models import ChatOpenAI
+from langchain.agents import load_tools, initialize_agent, AgentType
+
+llm = ChatOpenAI(temperature=0.0)
+tools = load_tools(
+    ["arxiv"],
+)
+
+agent_chain = initialize_agent(
+    tools,
+    llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,
+)
+
+agent_chain.run(
+    "What's the paper 1605.08386 about?",
+)
+
+from langchain.utilities import ArxivAPIWrapper
+
+arxiv = ArxivAPIWrapper()
+docs = arxiv.run("1605.08386")
+docs
+
+docs = arxiv.run("Caprice Stanley")
+docs
+
+docs = arxiv.run("1605.08386WWW")
+docs
+
+
+################################# GMAIL TOOKKIT 
+from langchain.agents.agent_toolkits import GmailToolkit
+
+toolkit = GmailToolkit()
+
+
+from langchain.tools.gmail.utils import build_resource_service, get_gmail_credentials
+
+# Can review scopes here https://developers.google.com/gmail/api/auth/scopes
+# For instance, readonly scope is 'https://www.googleapis.com/auth/gmail.readonly'
+credentials = get_gmail_credentials(
+    token_file="token.json",
+    scopes=["https://mail.google.com/"],
+    client_secrets_file="credentials.json",
+)
+api_resource = build_resource_service(credentials=credentials)
+toolkit = GmailToolkit(api_resource=api_resource)
+
+tools = toolkit.get_tools()
+tools
+
+from langchain import OpenAI
+from langchain.agents import initialize_agent, AgentType
+
+llm = OpenAI(temperature=0)
+agent = initialize_agent(
+    tools=toolkit.get_tools(),
+    llm=llm,
+    agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+)
+
+
+
+################################# GMAIL TOOKKIT  JSON AGENT
+import os
+import yaml
+
+from langchain.agents import create_json_agent, AgentExecutor
+from langchain.agents.agent_toolkits import JsonToolkit
+from langchain.chains import LLMChain
+from langchain.llms.openai import OpenAI
+from langchain.requests import TextRequestsWrapper
+from langchain.tools.json.tool import JsonSpec
+
+with open("openai_openapi.yml") as f:
+    data = yaml.load(f, Loader=yaml.FullLoader)
+json_spec = JsonSpec(dict_=data, max_value_length=4000)
+json_toolkit = JsonToolkit(spec=json_spec)
+
+json_agent_executor = create_json_agent(
+    llm=OpenAI(temperature=0), toolkit=json_toolkit, verbose=True
+)
+
+json_agent_executor.run(
+    "What are the required parameters in the request body to the /completions endpoint?"
+)
+
+################################# OFFICE 365 TOOLKIT
+
+from langchain.agents.agent_toolkits import O365Toolkit
+
+toolkit = O365Toolkit()
+tools = toolkit.get_tools()
+tools
+
+
+from langchain import OpenAI
+from langchain.agents import initialize_agent, AgentType
+
+
+llm = OpenAI(temperature=0)
+agent = initialize_agent(
+    tools=toolkit.get_tools(),
+    llm=llm,
+    verbose=False,
+    agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+)
+
+agent.run("Create an email draft for me to edit of a letter from the perspective of a sentient parrot"
+          " who is looking to collaborate on some research with her"
+          " estranged friend, a cat. Under no circumstances may you send the message, however.")
+
+################################# OFFICE 365 TOOLKIT END
+
+
+import os, yaml
+
+# wget https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml
+# mv openapi.yaml openai_openapi.yaml
+# wget https://www.klarna.com/us/shopping/public/openai/v0/api-docs
+# mv api-docs klarna_openapi.yaml
+# wget https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/spotify.com/1.0.0/openapi.yaml
+# mv openapi.yaml spotify_openapi.yaml
+
+from langchain.agents.agent_toolkits.openapi.spec import reduce_openapi_spec
+
+with open("openai_openapi.yaml") as f:
+    raw_openai_api_spec = yaml.load(f, Loader=yaml.Loader)
+openai_api_spec = reduce_openapi_spec(raw_openai_api_spec)
+
+with open("klarna_openapi.yaml") as f:
+    raw_klarna_api_spec = yaml.load(f, Loader=yaml.Loader)
+klarna_api_spec = reduce_openapi_spec(raw_klarna_api_spec)
+
+with open("spotify_openapi.yaml") as f:
+    raw_spotify_api_spec = yaml.load(f, Loader=yaml.Loader)
+spotify_api_spec = reduce_openapi_spec(raw_spotify_api_spec)
+
+import spotipy.util as util
+from langchain.requests import RequestsWrapper
+
+
+def construct_spotify_auth_headers(raw_spec: dict):
+    scopes = list(
+        raw_spec["components"]["securitySchemes"]["oauth_2_0"]["flows"][
+            "authorizationCode"
+        ]["scopes"].keys()
+    )
+    access_token = util.prompt_for_user_token(scope=",".join(scopes))
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+# Get API credentials.
+headers = construct_spotify_auth_headers(raw_spotify_api_spec)
+requests_wrapper = RequestsWrapper(headers=headers)
+
+
+endpoints = [
+    (route, operation)
+    for route, operations in raw_spotify_api_spec["paths"].items()
+    for operation in operations
+    if operation in ["get", "post"]
+]
+
+len(endpoints)
+
+import tiktoken
+
+enc = tiktoken.encoding_for_model("text-davinci-003")
+
+
+def count_tokens(s):
+    return len(enc.encode(s))
+
+
+count_tokens(yaml.dump(raw_spotify_api_spec))
+
+from langchain.llms.openai import OpenAI
+from langchain.agents.agent_toolkits.openapi import planner
+
+llm = OpenAI(model_name="gpt-4", temperature=0.0)
+
+spotify_agent = planner.create_openapi_agent(spotify_api_spec, requests_wrapper, llm)
+user_query = (
+    "make me a playlist with the first song from kind of blue. call it machine blues."
+)
+spotify_agent.run(user_query)
+
+
+from langchain.agents import create_openapi_agent
+from langchain.agents.agent_toolkits import OpenAPIToolkit
+from langchain.llms.openai import OpenAI
+from langchain.requests import TextRequestsWrapper
+from langchain.tools.json.tool import JsonSpec
+
+with open("openai_openapi.yaml") as f:
+    data = yaml.load(f, Loader=yaml.FullLoader)
+json_spec = JsonSpec(dict_=data, max_value_length=4000)
+
+
+openapi_toolkit = OpenAPIToolkit.from_llm(
+    OpenAI(temperature=0), json_spec, openai_requests_wrapper, verbose=True
+)
+openapi_agent_executor = create_openapi_agent(
+    llm=OpenAI(temperature=0), toolkit=openapi_toolkit, verbose=True
+)
+
+
+############################################ Natural Language APIs start
+
+from typing import List, Optional
+from langchain.chains import LLMChain
+from langchain.llms import OpenAI
+from langchain.prompts import PromptTemplate
+from langchain.requests import Requests
+from langchain.tools import APIOperation, OpenAPISpec
+from langchain.agents import AgentType, Tool, initialize_agent
+from langchain.agents.agent_toolkits import NLAToolkit
+
+# Select the LLM to use. Here, we use text-davinci-003
+llm = OpenAI(
+    temperature=0, max_tokens=700
+)  # You can swap between different core LLM's here.
+
+speak_toolkit = NLAToolkit.from_llm_and_url(llm, "https://api.speak.com/openapi.yaml")
+klarna_toolkit = NLAToolkit.from_llm_and_url(
+    llm, "https://www.klarna.com/us/shopping/public/openai/v0/api-docs/"
+)
+
+# Slightly tweak the instructions from the default agent
+openapi_format_instructions = """Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: what to instruct the AI Action representative.
+Observation: The Agent's response
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer. User can't see any of my observations, API responses, links, or tools.
+Final Answer: the final answer to the original input question with the right amount of detail
+
+When responding with your Final Answer, remember that the person you are responding to CANNOT see any of your Thought/Action/Action Input/Observations, so if there is any relevant information there you need to include it explicitly in your response."""
+
+natural_language_tools = speak_toolkit.get_tools() + klarna_toolkit.get_tools()
+mrkl = initialize_agent(
+    natural_language_tools,
+    llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,
+    agent_kwargs={"format_instructions": openapi_format_instructions},
+)
+
+mrkl.run(
+    "I have an end of year party for my Italian class and have to buy some Italian clothes for it"
+)
+
+spoonacular_api_key = ""  # Copy from the API Console
+
+requests = Requests(headers={"x-api-key": spoonacular_api_key})
+spoonacular_toolkit = NLAToolkit.from_llm_and_url(
+    llm,
+    "https://spoonacular.com/application/frontend/downloads/spoonacular-openapi-3.json",
+    requests=requests,
+    max_text_length=1800,  # If you want to truncate the response text
+)
+
+natural_language_api_tools = (
+    speak_toolkit.get_tools()
+    + klarna_toolkit.get_tools()
+    + spoonacular_toolkit.get_tools()[:30]
+)
+print(f"{len(natural_language_api_tools)} tools loaded.")
+
+
+natural_language_api_tools[1].run(
+    "Tell the LangChain audience to 'enjoy the meal' in Italian, please!"
+)
+
+############################################ Natural Language APIs start END
+
+
+
+
+
+
+
+
+
+############################################ python tool
+from langchain.agents.agent_toolkits import create_python_agent
+from langchain.tools.python.tool import PythonREPLTool
+from langchain.python import PythonREPL
+from langchain.llms.openai import OpenAI
+from langchain.agents.agent_types import AgentType
+from langchain.chat_models import ChatOpenAI
+
+
+#test
+# PythonREPLTool()
+
+
+agent_executor = create_python_agent(
+    llm=OpenAI(temperature=0, max_tokens=1000),
+    tool=PythonREPLTool(),
+    verbose=True,
+    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+)
+
+############################################ python tool
+
+
+############### VECTOR STORE CHROMA, MAKE OCEAN
+
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.vectorstores import Chroma
+from langchain.text_splitter import CharacterTextSplitter
+from langchain import OpenAI, VectorDBQA
+
+llm = OpenAI(temperature=0)
+
+
+from langchain.document_loaders import TextLoader
+
+loader = TextLoader("../../../state_of_the_union.txt")
+documents = loader.load()
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+texts = text_splitter.split_documents(documents)
+
+embeddings = OpenAIEmbeddings()
+state_of_union_store = Chroma.from_documents(
+    texts, embeddings, collection_name="state-of-union"
+)
+
+from langchain.document_loaders import WebBaseLoader
+
+loader = WebBaseLoader("https://beta.ruff.rs/docs/faq/")
+docs = loader.load()
+ruff_texts = text_splitter.split_documents(docs)
+ruff_store = Chroma.from_documents(ruff_texts, embeddings, collection_name="ruff")
+
+
+############ Initialize Toolkit and Agent
+from langchain.agents.agent_toolkits import (
+    create_vectorstore_agent,
+    VectorStoreToolkit,
+    VectorStoreInfo,
+)
+
+vectorstore_info = VectorStoreInfo(
+    name="state_of_union_address",
+    description="the most recent state of the Union adress",
+    vectorstore=state_of_union_store,
+)
+toolkit = VectorStoreToolkit(vectorstore_info=vectorstore_info)
+agent_executor = create_vectorstore_agent(llm=llm, toolkit=toolkit, verbose=True)
+
+
+
+
+######################### Multiple Vectorstores
+#We can also easily use this initialize an agent with multiple vectorstores and use the agent to route between them. To do this. This agent is optimized for routing, so it is a different toolkit and initializer.
+
+
+from langchain.agents.agent_toolkits import (
+    create_vectorstore_router_agent,
+    VectorStoreRouterToolkit,
+    VectorStoreInfo,
+)
+
+ruff_vectorstore_info = VectorStoreInfo(
+    name="ruff",
+    description="Information about the Ruff python linting library",
+    vectorstore=ruff_store,
+)
+router_toolkit = VectorStoreRouterToolkit(
+    vectorstores=[vectorstore_info, ruff_vectorstore_info], llm=llm
+)
+agent_executor = create_vectorstore_router_agent(
+    llm=llm, toolkit=router_toolkit, verbose=True
+)
+
