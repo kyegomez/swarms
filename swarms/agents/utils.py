@@ -745,3 +745,15 @@ def multi_agent_emotion_analysis_v2(text: str, agents_memory: List[Dict[str, Any
         emotion_scores[emotion] /= len(agents_memory)
 
     return emotion_scores
+
+def swarm_intelligence(task_prompt, agents_memory):
+    subtasks = generate_tasks(task_prompt)
+    results = []
+    for subtask in subtasks:
+        agent_votes = []
+        for agent_memory in agents_memory:
+            agent_vote, _ = chat(agent_memory + [{"role": "user", "content": f"Propose a solution for: {subtask}"}])
+            agent_votes.append(agent_vote.strip())
+        most_common_solution = max(set(agent_votes), key=agent_votes.count)
+        results.append(most_common_solution)
+    return results

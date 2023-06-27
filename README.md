@@ -192,3 +192,7 @@ In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Data
 * Integrate guidance and token healing
 
 * Add text to speech [whisper x, youtube script](https://github.com/kyegomez/youtubeURL-to-text) and text to speech code models as tools 
+
+* Add task completion logic with meta prompting, task evaluation as a state from 0.0 to 1.0, and critiquing for meta prompting.
+
+* Integrate meta prompting for every agent boss and worker
