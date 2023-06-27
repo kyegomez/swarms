@@ -806,7 +806,6 @@ import os
 import re
 from typing import Tuple
 
-from .verify import verify
 
 
 class Position:

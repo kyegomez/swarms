@@ -22,7 +22,7 @@ from langchain.tools.file_management.write import WriteFileTool
 
 ROOT_DIR = "./data/"
 
-from langchain.tools import BaseTool, DuckDuckGoSearchRun
+from langchain.t1ools import BaseTool, DuckDuckGoSearchRun
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from pydantic import Field
@@ -38,6 +38,7 @@ from langchain.tools.human.tool import HumanInputRun
 
 
 from swarms.agents.workers.auto_agent import MultiModalVisualAgent
+from swarms.tools.main import Terminal, CodeWriter, CodeEditor
 
 class MultiModalVisualAgentTool(BaseTool):
     name = "multi_visual_agent"
@@ -179,6 +180,11 @@ tools = [
     ReadFileTool(root_dir="./data"),
     process_csv,
     query_website_tool,
+    Terminal,
+    CodeWriter,
+    CodeEditor
+    
+
     # HumanInputRun(), # Activate if you want the permit asking for help from the human
 ]
 
