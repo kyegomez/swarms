@@ -133,7 +133,7 @@ class WorkerNode:
             ReadFileTool(root_dir="./data"),
             
             process_csv,
-            multimodal_agent_tool
+            multimodal_agent_tool,
             query_website_tool,
 
             Terminal,
