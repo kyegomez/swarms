@@ -1,13 +1,11 @@
-from swarms.agents.workers.auto_agent import agent
-from swarms.agents.boss.babyagi_agent import baby_agi
+from swarms.utils.helpers import BossNode
 
-OBJECTIVE = "Write a weather report for SF today"
+# Initialize boss node with given parameters
+boss_node = BossNode
 
-baby_agi({"objective": OBJECTIVE})
-
-
-
-
+# Create and execute a task
+task = boss_node.create_task("Write a weather report for SF today")
+boss_node.execute_task(task)
 
 
 
@@ -27,6 +25,13 @@ baby_agi({"objective": OBJECTIVE})
 
 
 
+###################################====================>
+# from swarms.agents.workers.auto_agent import agent
+# from swarms.agents.boss.babyagi_agent import baby_agi
+
+# OBJECTIVE = "Write a weather report for SF today"
+
+# baby_agi({"objective": OBJECTIVE})
 
 
 
@@ -34,6 +39,8 @@ baby_agi({"objective": OBJECTIVE})
 
 
 
+
+###################################====================>
 
 ########### just autogpt agent, worker node
 # agent.chain.verbose = True
