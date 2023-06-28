@@ -41,3 +41,26 @@ class Swarms:
 
     def scale(self):
         #placeholder for self scaling logic
+        pass
+
+
+
+#special classes
+
+class HierarchicalSwarms(Swarms):
+    def execute(self, task):
+        pass
+
+
+class CollaborativeSwarms(Swarms):
+    def execute(self, task):
+        pass
+
+class CompetitiveSwarms(Swarms):
+    def execute(self, task):
+        pass
+
+class MultiAgentDebate(Swarms):
+    def execute(self, task):
+        pass
+
