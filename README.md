@@ -145,7 +145,7 @@ In terms of architecture, the swarm might look something like this:
 ```
                                            (Orchestrator)
                                              /        \
-           (LLM Agent)---(Communication Layer)       (Communication Layer)---(LLM Agent)
+           Tools + Vector DB -- (LLM Agent)---(Communication Layer)       (Communication Layer)---(LLM Agent)-- Tools + Vector DB 
               /                  |                                           |                 \
 (Task Assignment)      (Task Completion)                    (Task Assignment)       (Task Completion)
 ```
