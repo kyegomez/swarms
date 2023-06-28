@@ -204,3 +204,4 @@ In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Data
 
 * Get baby agi set up with the autogpt instance as a tool
 
+* Integrate [Ocean](https://github.com/kyegomez/Ocean) vector db as the main embedding database for all the agents boss and or worker
