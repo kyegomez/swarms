@@ -17,6 +17,8 @@ from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
 from langchain import OpenAI, SerpAPIWrapper, LLMChain
 
 
+from swarms.agents.workers.auto_agent import agent
+
 # Define your embedding model
 embeddings_model = OpenAIEmbeddings()
 # Initialize the vectorstore as empty
@@ -43,6 +45,11 @@ tools = [
         func=todo_chain.run,
         description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
     ),
+    Tool(
+        name="AUTONOMOUS AGENT",
+        func=agent.run,
+        description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks"
+    )
 ]
 
 

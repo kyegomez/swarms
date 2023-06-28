@@ -201,3 +201,6 @@ In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Data
 * Add task completion logic with meta prompting, task evaluation as a state from 0.0 to 1.0, and critiquing for meta prompting.
 
 * Integrate meta prompting for every agent boss and worker
+
+* Get baby agi set up with the autogpt instance as a tool
+
