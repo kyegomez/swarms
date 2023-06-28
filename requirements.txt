@@ -43,8 +43,8 @@ httpx
 ggl
 gradio_tools
 arxiv
-pip install --upgrade google-api-python-client > /dev/null
-pip install --upgrade google-auth-oauthlib > /dev/null
-pip install --upgrade google-auth-httplib2 > /dev/null
-pip install beautifulsoup4 > /dev/null # This is optional but is useful for parsing HTML messages
+oogle-api-python-client 
+google-auth-oauthli
+google-auth-httplib2
+beautifulsoup4
 O365
