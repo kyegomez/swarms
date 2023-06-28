@@ -1,14 +1,5 @@
 from swarms.agents.workers.auto_agent import agent
 
-agent = AutoGPT.from_llm_and_tools(
-    ai_name="Tree of Thoughts",
-    ai_role="Assistant",
-    tools=tools,
-    llm=llm,
-    memory=vectorstore.as_retriever(search_kwargs={"k": 8}),
-    human_in_the_loop=True, # Set to True if you want to add feedback at each step.
-)
-
 agent.chain.verbose = True
 
 
