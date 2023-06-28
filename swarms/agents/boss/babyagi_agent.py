@@ -87,7 +87,6 @@ agent_executor = AgentExecutor.from_agent_and_tools(
     agent=agent, tools=tools, verbose=True
 )
 
-OBJECTIVE = "Write a weather report for SF today"
 
 
 # Logging of LLMChains
@@ -101,6 +100,10 @@ baby_agi = BabyAGI.from_llm(
     verbose=verbose,
     max_iterations=max_iterations,
 )
+
+
+
+OBJECTIVE = "Write a weather report for SF today"
 
 baby_agi({"objective": OBJECTIVE})
 
