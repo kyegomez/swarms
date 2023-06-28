@@ -1,4 +1,4 @@
-from swarms.utils.helpers import BossNode
+from swarms.agents.swarms import BossNode
 
 # Initialize boss node with given parameters
 boss_node = BossNode
