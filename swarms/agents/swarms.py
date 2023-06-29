@@ -87,14 +87,6 @@ llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key="")
 
 
 
-
-
-
-
-
-
-
-
 ####################################################################### => Worker Node
 ####################################################################### => Worker Node
 ####################################################################### => Worker Node
@@ -146,7 +138,7 @@ class WorkerNode:
         self.agent = AutoGPT.from_llm_and_tools(
             ai_name=ai_name,
             ai_role=ai_role,
-            tools=self.tools,
+            tools=tools,
             llm=self.llm,
             memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
             human_in_the_loop=human_in_the_loop,
