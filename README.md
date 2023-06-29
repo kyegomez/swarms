@@ -129,3 +129,5 @@ Thank you for being a part of our project!
 * Create benchmrks
 
 * Create evaluations
+
+* Add new tool that uses WhiseperX to transcribe a youtube video
