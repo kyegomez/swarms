@@ -26,4 +26,4 @@ jobs:
 
     - name: Run tests
       run: |
-        python -m unittest unittesting/test_swarms.py
+        python -m unittest unittesting/agent/swarms.py
