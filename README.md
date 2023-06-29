@@ -33,7 +33,7 @@ pip install -r requirements.txt
 ```
 
 ## Usage
-There are 2 methods, one is very simple to test it out and then there is another to explore the agents and so on!
+There are 2 methods, one is very simple to test it out and then there is another to explore the agents and so on! Check out the [Documetation file ](/DOCUMENTATION.md) to understand the classes
 
 ### Method 1
 Simple example `python3 example.py`
