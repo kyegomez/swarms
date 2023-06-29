@@ -1638,13 +1638,7 @@ wikipedia = WikipediaAPIWrapper()
 
 ######################################################## search tools beginning
 
-tools = load_tools(["google-serper"], llm=llm)
-
-agent = initialize_agent(
-    tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True
-)
-
-agent.run("What is the weather in Pomfret?")
+google_serpe_tools = load_tools(["google-serper"])
 
 ######################################################## search tools end
 
@@ -1673,9 +1667,9 @@ requests.get("https://www.google.com")
 ######################################################## pubmed
 from langchain.tools import PubmedQueryRun
 
-tool = PubmedQueryRun()
+pubmed = PubmedQueryRun()
 
-tool.run("chatgpt")
+pubmed.run("chatgpt")
 
 
 ######################################################## pubmed emd
@@ -1691,11 +1685,11 @@ import os
 
 key = os.environ["IFTTTKey"]
 url = f"https://maker.ifttt.com/trigger/spotify/json/with/key/{key}"
-tool = IFTTTWebhook(
+IFFT = IFTTTWebhook(
     name="Spotify", description="Add a song to spotify playlist", url=url
 )
 
-tool.run("taylor swift")
+IFFT.run("taylor swift")
 
 ######################################################## IFTTT WebHooks end
 
@@ -1704,7 +1698,7 @@ tool.run("taylor swift")
 ######################################################## huggingface
 from langchain.agents import load_huggingface_tool
 
-tool = load_huggingface_tool("lysandre/hf-model-downloads")
+hf_tool = load_huggingface_tool("lysandre/hf-model-downloads")
 
 print(f"{tool.name}: {tool.description}")
 
@@ -1720,10 +1714,9 @@ from langchain.utilities import GraphQLAPIWrapper
 
 llm = OpenAI(temperature=0)
 
-tools = load_tools(
+graphql_tool = load_tools(
     ["graphql"],
-    graphql_endpoint="https://swapi-graphql.netlify.app/.netlify/functions/index",
-    llm=llm,
+    graphql_endpoint="https://swapi-graphql.netlify.app/.netlify/functions/index"
 )
 
 # agent = initialize_agent(
@@ -1749,7 +1742,7 @@ from langchain.memory import ConversationBufferMemory
 
 llm = OpenAI(temperature=0)
 memory = ConversationBufferMemory(memory_key="chat_history")
-tools = [
+hf_model_tools = [
     StableDiffusionTool().langchain,
     ImageCaptioningTool().langchain,
     StableDiffusionPromptGeneratorTool().langchain,
@@ -1796,13 +1789,12 @@ toolkit = FileManagementToolkit(
 )  # If you don't provide a root_dir, operations will default to the current working directory
 toolkit.get_tools()
 
-tools = FileManagementToolkit(
+file_management_tools = FileManagementToolkit(
     root_dir=str(working_directory.name),
     selected_tools=["read_file", "write_file", "list_directory"],
 ).get_tools()
-tools
 
-read_tool, write_tool, list_tool = tools
+read_tool, write_tool, list_tool = file_management_tools
 write_tool.run({"file_path": "example.txt", "text": "Hello World!"})
 
 # List files in the working directory
@@ -1816,7 +1808,7 @@ from langchain.tools import BraveSearch
 
 api_key = "..."
 
-tool = BraveSearch.from_api_key(api_key=api_key, search_kwargs={"count": 3})
+brave_tool = BraveSearch.from_api_key(api_key=api_key, search_kwargs={"count": 3})
 
 
 tool.run("obama middle name")
@@ -1831,21 +1823,12 @@ tool.run("obama middle name")
 from langchain.chat_models import ChatOpenAI
 from langchain.agents import load_tools, initialize_agent, AgentType
 
-llm = ChatOpenAI(temperature=0.0)
-tools = load_tools(
+
+arxviv_tool = load_tools(
     ["arxiv"],
 )
 
-agent_chain = initialize_agent(
-    tools,
-    llm,
-    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True,
-)
-
-agent_chain.run(
-    "What's the paper 1605.08386 about?",
-)
+############
 
 from langchain.utilities import ArxivAPIWrapper
 
@@ -1863,7 +1846,7 @@ docs
 ################################# GMAIL TOOKKIT 
 from langchain.agents.agent_toolkits import GmailToolkit
 
-toolkit = GmailToolkit()
+gmail_toolkit = GmailToolkit()
 
 
 from langchain.tools.gmail.utils import build_resource_service, get_gmail_credentials
@@ -1875,8 +1858,9 @@ credentials = get_gmail_credentials(
     scopes=["https://mail.google.com/"],
     client_secrets_file="credentials.json",
 )
+
 api_resource = build_resource_service(credentials=credentials)
-toolkit = GmailToolkit(api_resource=api_resource)
+gmail_toolkit_2 = GmailToolkit(api_resource=api_resource)
 
 tools = toolkit.get_tools()
 tools
@@ -2278,7 +2262,7 @@ def transcribe_youtube_video(video_url: str) -> str:
 
 
 
-###################################################
+################################################### BASE WHISPER TOOL
 from typing import Optional, Type
 from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
