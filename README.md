@@ -208,3 +208,8 @@ In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Data
 
 * Communication, a universal vector database that is only used when a task is completed in this format `[TASK][COMPLETED]`
 
+* Create unit tests
+
+* Create benchmrks
+
+* Create evaluations
