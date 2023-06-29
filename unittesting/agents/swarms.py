@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+from swarms.agents.swarms import WorkerNode, BossNode, llm, tools, vectorstore, task_execution_chain
 
 class TestSwarms(unittest.TestCase):
 
