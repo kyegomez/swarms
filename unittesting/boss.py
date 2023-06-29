@@ -1,72 +1,66 @@
-import pytest
+import unittest
+from unittest.mock import patch
 
-def test_WorkerNode_create_agent():
-    # assuming llm, tools, and vectorstore are initialized properly
-    worker_node = WorkerNode(llm, tools, vectorstore)
-    worker_node.create_agent('test_agent', 'test_role', False, {})
-    assert worker_node.agent is not None
-    assert worker_node.agent.chain.verbose
+class TestSwarms(unittest.TestCase):
 
-def test_WorkerNode_run_agent():
-    worker_node = WorkerNode(llm, tools, vectorstore)
-    worker_node.create_agent('test_agent', 'test_role', False, {})
-    worker_node.run_agent('test prompt')  # check it runs without error
+    def test_WorkerNode_create_agent(self):
+        worker_node = WorkerNode(llm, tools, vectorstore)
+        worker_node.create_agent('test_agent', 'test_role', False, {})
+        self.assertIsNotNone(worker_node.agent)
+        self.assertEqual(worker_node.agent.ai_name, 'test_agent')
+        self.assertEqual(worker_node.agent.ai_role, 'test_role')
+        self.assertEqual(worker_node.agent.human_in_the_loop, False)
+        self.assertTrue(worker_node.agent.chain.verbose)
 
-def test_BossNode_create_task():
-    # assuming llm, vectorstore, task_execution_chain are initialized properly
-    boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
-    task = boss_node.create_task('test task')
-    assert task == {'objective': 'test task'}
+    def test_WorkerNode_tools(self):
+        worker_node = WorkerNode(llm, tools, vectorstore)
+        worker_node.create_agent('test_agent', 'test_role', False, {})
+        for tool in worker_node.tools:
+            self.assertIsNotNone(tool)
 
-def test_BossNode_execute_task():
-    boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
-    task = boss_node.create_task('test task')
-    boss_node.execute_task(task)  # check it runs without error
+    @patch.object(WorkerNode, 'run_agent')
+    def test_WorkerNode_run_agent_called(self, mock_run_agent):
+        worker_node = WorkerNode(llm, tools, vectorstore)
+        worker_node.create_agent('test_agent', 'test_role', False, {})
+        worker_node.run_agent('test_prompt')
+        mock_run_agent.assert_called_once()
 
+    def test_BossNode_create_task(self):
+        boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
+        task = boss_node.create_task('objective')
+        self.assertEqual(task, {"objective": "objective"})
 
-def test_WorkerNode_tools():
-    worker_node = WorkerNode(llm, tools, vectorstore)
-    worker_node.create_agent('test_agent', 'test_role', False, {})
-    
-    # Check that all tools are instantiated
-    for tool in worker_node.tools:
-        assert tool is not None
+    def test_BossNode_AgentExecutor(self):
+        boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
+        self.assertIsNotNone(boss_node.baby_agi.task_execution_chain)
 
-def test_BossNode_AgentExecutor():
-    boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
-    
-    # Check that the AgentExecutor is correctly initialized
-    assert boss_node.baby_agi.task_execution_chain is not None
+    def test_BossNode_LLMChain(self):
+        boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
+        self.assertIsNotNone(boss_node.baby_agi.task_execution_chain.agent.llm_chain)
 
-def test_BossNode_LLMChain():
-    boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
-    
-    # Check that the LLMChain in ZeroShotAgent is working
-    assert boss_node.baby_agi.task_execution_chain.agent.llm_chain is not None
+    @patch.object(BossNode, 'execute_task')
+    def test_BossNode_execute_task_called_with_correct_arg(self, mock_execute_task):
+        boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
+        task = boss_node.create_task('objective')
+        boss_node.execute_task(task)
+        mock_execute_task.assert_called_once_with(task)
 
+    @patch.object(BossNode, 'execute_task')
+    def test_BossNode_execute_task_output(self, mock_execute_task):
+        mock_execute_task.return_value = "some_output"
+        boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
+        task = boss_node.create_task('objective')
+        output = boss_node.execute_task(task)
+        self.assertIsNotNone(output)
 
+    def test_BossNode_execute_task_error_handling(self):
+        boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
+        try:
+            boss_node.execute_task(None)
+            self.assertTrue(True)
+        except Exception:
+            self.fail("boss_node.execute_task raised Exception unexpectedly!")
 
-def test_WorkerNode_create_agent():
-    worker_node = WorkerNode(llm, tools, vectorstore)
-    worker_node.create_agent('test_agent', 'test_role', False, {})
-
-    assert worker_node.agent.ai_name == 'test_agent'
-    assert worker_node.agent.ai_role == 'test_role'
-    assert worker_node.agent.human_in_the_loop == False
-
-def test_BossNode_execute_task_output():
-    boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
-    task = boss_node.create_task('objective')
-
-    # The output of the execute_task method should not be None
-    assert boss_node.execute_task(task) is not None
-
-def test_BossNode_execute_task_error_handling():
-    boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
-
-    # Try executing an invalid task and make sure it doesn't crash
-    try:
-        boss_node.execute_task(None)
-        assert True
-    except Exception:
-        assert False
+# Run the tests
+if __name__ == '__main__':
+    unittest.main()
