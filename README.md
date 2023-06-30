@@ -43,7 +43,10 @@ from swarms import BossNode
 boss_node = BossNode()
 
 #create and execute a task
-task = boss_node.create_task("Write a weather report for SF Todsay")
+task = boss_node.create_task("Write a weather report for SF today")
+
+#or 
+# task = boss_node.create_task('Find a video of Elon Musk and make him look like a cat')
 
 boss_node.execute(task)
 ```
