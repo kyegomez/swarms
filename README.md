@@ -136,3 +136,5 @@ Thank you for being a part of our project!
 * Add new tool that uses WhiseperX to transcribe a youtube video
 
 * Integrate hf agents as tools
+
+* [Integrate tools from here](https://integrations.langchain.com/)
