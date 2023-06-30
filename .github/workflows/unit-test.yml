@@ -21,7 +21,7 @@ jobs:
         python-version: '3.10'
 
     - name: Run Python unit tests
-      run: python3 -u -m unittesting/agent/swarms.py
+      run: python3 -u -m unittesting/agent/swarms
 
     - name: Verify that the Docker image for the action builds
       run: docker build . --file Dockerfile
@@ -39,4 +39,4 @@ jobs:
         input-two: false
 
     - name: Verify integration test results
-      run: python3 -u -m unittesting/agent/swarms.py
+      run: python3 -u -m unittesting/agent/swarms
