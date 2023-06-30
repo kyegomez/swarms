@@ -91,7 +91,7 @@ tools = [
 ]
 
 agent = AutoGPT.from_llm_and_tools(
-    ai_name="Tree of Thoughts",
+    ai_name="WorkerX",
     ai_role="Assistant",
     tools=tools,
     llm=llm,
