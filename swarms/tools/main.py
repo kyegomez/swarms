@@ -1669,7 +1669,7 @@ from langchain.tools import PubmedQueryRun
 
 pubmed_tool = PubmedQueryRun()
 
-pubmed.run("chatgpt")
+pubmed_tool.run("chatgpt")
 
 
 ######################################################## pubmed emd
@@ -1689,7 +1689,6 @@ IFFT_tool = IFTTTWebhook(
     name="Spotify", description="Add a song to spotify playlist", url=url
 )
 
-IFFT.run("taylor swift")
 
 ######################################################## IFTTT WebHooks end
 
@@ -1885,21 +1884,11 @@ json_agent_executor.run(
 
 from langchain.agents.agent_toolkits import O365Toolkit
 
-toolkit = O365Toolkit()
-365_tools = toolkit.get_tools()
+threesixfive_toolkit = O365Toolkit()
+
+threesixfive_toolkit = toolkit.get_tools()
 
 
-from langchain import OpenAI
-from langchain.agents import initialize_agent, AgentType
-
-
-llm = OpenAI(temperature=0)
-agent = initialize_agent(
-    tools=toolkit.get_tools(),
-    llm=llm,
-    verbose=False,
-    agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-)
 ################################# OFFICE 365 TOOLKIT END
 
 
