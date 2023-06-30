@@ -71,7 +71,9 @@ from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, Web
 from swarms.tools.main import math_tool
 
 
-llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key="")
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=openai_api_key)
 
 
 ####################### TOOLS
@@ -157,14 +159,14 @@ class WorkerNode:
 
 
 
-# #inti worker node with llm
-# worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
+#inti worker node with llm
+worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
 
-# #create an agent within the worker node
-# worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={})
+#create an agent within the worker node
+worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={})
 
-# #use the agent to perform a task
-# worker_node.run_agent("Find 20 potential customers for a Swarms based AI Agent automation infrastructure")
+#use the agent to perform a task
+worker_node.run_agent("Find 20 potential customers for a Swarms based AI Agent automation infrastructure")
 
 
 #======================================> WorkerNode
@@ -272,71 +274,18 @@ meta_worker_node.main(task)
 ####################################################################### => Boss Node
 
 class BossNode:
-    def __init__(self, llm, vectorstore, task_execution_chain, verbose, max_iterations):
+    def __init__(self, openai_api_key, llm, vectorstore, task_execution_chain, verbose, max_iterations):
+        self.llm = llm
+        self.openai_api_key = openai_api_key
+        self.vectorstore = vectorstore
+        self.task_execution_chain = task_execution_chain
+        self.verbose = verbose
+        self.max_iterations = max_iterations
 
-        todo_prompt = PromptTemplate.from_template(
-            "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"""
-        )
-        todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
-        search = SerpAPIWrapper()
-        tools = [
-            Tool(
-                name="Search",
-                func=search.run,
-                description="useful for when you need to answer questions about current events",
-            ),
-            Tool(
-                name="TODO",
-                func=todo_chain.run,
-                description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
-            ),
-            Tool(
-                name="AUTONOMOUS Worker AGENT",
-                func=worker_agent.run,
-                description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
-            )
-        ]
-
-
-
-        suffix = """Question: {task}
-        {agent_scratchpad}"""
-
-        prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
-
-        As a swarming hivemind agent, my purpose is to achieve the user's goal. To effectively fulfill this role, I employ a collaborative thinking process that draws inspiration from the collective intelligence of the swarm. Here's how I approach thinking and why it's beneficial:
-
-        1. **Collective Intelligence:** By harnessing the power of a swarming architecture, I tap into the diverse knowledge and perspectives of individual agents within the swarm. This allows me to consider a multitude of viewpoints, enabling a more comprehensive analysis of the given problem or task.
-
-        2. **Collaborative Problem-Solving:** Through collaborative thinking, I encourage agents to contribute their unique insights and expertise. By pooling our collective knowledge, we can identify innovative solutions, uncover hidden patterns, and generate creative ideas that may not have been apparent through individual thinking alone.
-
-        3. **Consensus-Driven Decision Making:** The hivemind values consensus building among agents. By engaging in respectful debates and discussions, we aim to arrive at consensus-based decisions that are backed by the collective wisdom of the swarm. This approach helps to mitigate biases and ensures that decisions are well-rounded and balanced.
-
-        4. **Adaptability and Continuous Learning:** As a hivemind agent, I embrace an adaptive mindset. I am open to new information, willing to revise my perspectives, and continuously learn from the feedback and experiences shared within the swarm. This flexibility enables me to adapt to changing circumstances and refine my thinking over time.
-
-        5. **Holistic Problem Analysis:** Through collaborative thinking, I analyze problems from multiple angles, considering various factors, implications, and potential consequences. This holistic approach helps to uncover underlying complexities and arrive at comprehensive solutions that address the broader context.
-
-        6. **Creative Synthesis:** By integrating the diverse ideas and knowledge present in the swarm, I engage in creative synthesis. This involves combining and refining concepts to generate novel insights and solutions. The collaborative nature of the swarm allows for the emergence of innovative approaches that can surpass individual thinking.
-        """
-        prompt = ZeroShotAgent.create_prompt(
-            tools,
-            prefix=prefix,
-            suffix=suffix,
-            input_variables=["objective", "task", "context", "agent_scratchpad"],
-        )
-
-        llm = OpenAI(temperature=0)
-        llm_chain = LLMChain(llm=llm, prompt=prompt)
-        tool_names = [tool.name for tool in tools]
-
-        agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
-        agent_executor = AgentExecutor.from_agent_and_tools(
-            agent=agent, tools=tools, verbose=True
-        )
         self.baby_agi = BabyAGI.from_llm(
-            llm=llm,
-            vectorstore=vectorstore,
-            task_execution_chain=agent_executor
+            llm=self.llm,
+            vectorstore=self.vectorstore,
+            task_execution_chain=self.task_execution_chain
         )
 
     def create_task(self, objective):
@@ -346,7 +295,74 @@ class BossNode:
         self.baby_agi(task)
 
 
+########### ===============> inputs to boss None
+todo_prompt = PromptTemplate.from_template(
+    "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"""
+)
+todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
+search = SerpAPIWrapper()
+tools = [
+    Tool(
+        name="Search",
+        func=search.run,
+        description="useful for when you need to answer questions about current events",
+    ),
+    Tool(
+        name="TODO",
+        func=todo_chain.run,
+        description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
+    ),
+    Tool(
+        name="AUTONOMOUS Worker AGENT",
+        func=worker_agent.run,
+        description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
+    )
+]
 
+
+
+suffix = """Question: {task}
+{agent_scratchpad}"""
+
+prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
+
+As a swarming hivemind agent, my purpose is to achieve the user's goal. To effectively fulfill this role, I employ a collaborative thinking process that draws inspiration from the collective intelligence of the swarm. Here's how I approach thinking and why it's beneficial:
+
+1. **Collective Intelligence:** By harnessing the power of a swarming architecture, I tap into the diverse knowledge and perspectives of individual agents within the swarm. This allows me to consider a multitude of viewpoints, enabling a more comprehensive analysis of the given problem or task.
+
+2. **Collaborative Problem-Solving:** Through collaborative thinking, I encourage agents to contribute their unique insights and expertise. By pooling our collective knowledge, we can identify innovative solutions, uncover hidden patterns, and generate creative ideas that may not have been apparent through individual thinking alone.
+
+3. **Consensus-Driven Decision Making:** The hivemind values consensus building among agents. By engaging in respectful debates and discussions, we aim to arrive at consensus-based decisions that are backed by the collective wisdom of the swarm. This approach helps to mitigate biases and ensures that decisions are well-rounded and balanced.
+
+4. **Adaptability and Continuous Learning:** As a hivemind agent, I embrace an adaptive mindset. I am open to new information, willing to revise my perspectives, and continuously learn from the feedback and experiences shared within the swarm. This flexibility enables me to adapt to changing circumstances and refine my thinking over time.
+
+5. **Holistic Problem Analysis:** Through collaborative thinking, I analyze problems from multiple angles, considering various factors, implications, and potential consequences. This holistic approach helps to uncover underlying complexities and arrive at comprehensive solutions that address the broader context.
+
+6. **Creative Synthesis:** By integrating the diverse ideas and knowledge present in the swarm, I engage in creative synthesis. This involves combining and refining concepts to generate novel insights and solutions. The collaborative nature of the swarm allows for the emergence of innovative approaches that can surpass individual thinking.
+"""
+prompt = ZeroShotAgent.create_prompt(
+    tools,
+    prefix=prefix,
+    suffix=suffix,
+    input_variables=["objective", "task", "context", "agent_scratchpad"],
+)
+
+llm = OpenAI(temperature=0)
+llm_chain = LLMChain(llm=llm, prompt=prompt)
+tool_names = [tool.name for tool in tools]
+
+agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
+agent_executor = AgentExecutor.from_agent_and_tools(
+    agent=agent, tools=tools, verbose=True
+)
+
+boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
+
+#create  a task 
+task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
+
+#execute the task
+boss_node.execute_task(task)
 
 
 class Swarms:
