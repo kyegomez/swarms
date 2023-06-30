@@ -53,4 +53,4 @@ O365
 # whisperx
 pytube
 pydub
-git+https://github.com/m-bain/whisperx.git@v3
+git+https://github.com/m-bain/whisperx.git
