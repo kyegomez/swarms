@@ -43,7 +43,7 @@ httpx
 ggl
 gradio_tools
 arxiv
-oogle-api-python-client 
+google-api-python-client 
 google-auth-oauthli
 google-auth-httplib2
 beautifulsoup4
