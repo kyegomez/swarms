@@ -66,7 +66,7 @@ setup(
         "O365",
         "pytube",
         "pydub",
-        "whisperx @ git+https://github.com/m-bain/whisperx.git@v3",
+        "git+https://github.com/m-bain/whisperx.git@v3",
   ],
   classifiers=[
     'Development Status :: 4 - Beta',
