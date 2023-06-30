@@ -41,35 +41,9 @@ There are 2 methods, one is very simple to test it out and then there is another
 ### Method 1
 Simple example `python3 example.py`
 
-### Method 2
-The primary agent in this repository is the `AutoAgent` from `./swarms/agents/workers/auto_agent.py`.
 
-This `AutoAgent` is used to create the `MultiModalVisualAgent`, an autonomous agent that can process tasks in a multi-modal environment, like dealing with both text and visual data.
 
-To use this agent, you need to import the agent and instantiate it. Here is a brief guide:
 
-```python
-from swarms.agents.auto_agent import MultiModalVisualAgent
-
-# Initialize the agent
-multimodal_agent = MultiModalVisualAgent()
-```
-
-### Working with MultiModalVisualAgentTool
-The `MultiModalVisualAgentTool` class is a tool wrapper around the `MultiModalVisualAgent`. It simplifies working with the agent by encapsulating agent-related logic within its methods. Here's a brief guide on how to use it:
-
-```python
-from swarms.agents.auto_agent import MultiModalVisualAgent, MultiModalVisualAgentTool
-
-# Initialize the agent
-multimodal_agent = MultiModalVisualAgent()
-
-# Initialize the tool with the agent
-multimodal_agent_tool = MultiModalVisualAgentTool(multimodal_agent)
-
-# Now, you can use the agent tool to perform tasks. The run method is one of them.
-result = multimodal_agent_tool.run('Your text here')
-```
 
 ## Note
 - The `AutoAgent` makes use of several helper tools and context managers for tasks such as processing CSV files, browsing web pages, and querying web pages. For the best use of this agent, understanding these tools is crucial.
