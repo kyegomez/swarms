@@ -518,7 +518,6 @@ write protocol:
 <filepath>
 <content>
 """
-import os
 
 
 
@@ -568,10 +567,6 @@ read protocol:
 
 <filepath>|<start line>-<end line>
 """
-from typing import List, Optional
-
-
-
 class Line:
     def __init__(self, content: str, line_number: int, depth: int):
         self.__content: str = content
@@ -802,9 +797,7 @@ test.py|7,5|9,13|news_titles = []
 test.py|11,16|11,16|_titles
 """
 
-import os
 import re
-from typing import Tuple
 
 
 
@@ -1096,7 +1089,6 @@ class CodeEditor(BaseToolSet):
 
 
 ########################### MODELS
-import os
 import uuid
 
 import numpy as np
@@ -1440,7 +1432,6 @@ import asyncio
 import nest_asyncio
 
 # Tools
-import os
 from contextlib import contextmanager
 from typing import Optional
 from langchain.agents import tool
@@ -1574,7 +1565,6 @@ web_search = DuckDuckGoSearchRun()
 
 ######################################################## zapier
 
-import os
 
 # get from https://platform.openai.com/
 os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "")
