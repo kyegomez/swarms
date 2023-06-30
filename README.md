@@ -38,12 +38,10 @@ There are 2 methods, one is through `git clone` and the other is by `pip install
 
 ```python
 
-from swarms import BossNode
+from swarms import boss_node
 
-boss_node = BossNode()
-
-#create and execute a task
-task = boss_node.create_task("Write a weather report for SF today")
+#create a task
+task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
 
 #or 
 # task = boss_node.create_task('Find a video of Elon Musk and make him look like a cat')
