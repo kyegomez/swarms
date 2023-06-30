@@ -93,8 +93,21 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 # !pip install duckduckgo_search
 web_search = DuckDuckGoSearchRun()
 
-#
+#======>
 multimodal_agent_tool = MultiModalVisualAgentTool(MultiModalVisualAgent)
+
+
+#======> Calculator
+from langchain import LLMMathChain
+
+llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
+math_tool = Tool(
+        name="Calculator",
+        func=llm_math_chain.run,
+        description="useful for when you need to answer questions about math"
+    ),
+
+
 
 tools = [
     
@@ -108,7 +121,9 @@ tools = [
 
     Terminal,
     CodeWriter,
-    CodeEditor
+    CodeEditor,
+    
+    math_tool
     
     # HumanInputRun(), # Activate if you want the permit asking for help from the human
 ]
@@ -133,8 +148,6 @@ class WorkerNode:
 
 
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
-
-
         # Instantiate the agent
         self.agent = AutoGPT.from_llm_and_tools(
             ai_name=ai_name,
@@ -153,6 +166,19 @@ class WorkerNode:
         """
         self.agent.run([f"{tree_of_thoughts_prompt} {prompt}"])
 
+
+
+# #inti worker node with llm
+# worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
+
+# #create an agent within the worker node
+# worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={})
+
+# #use the agent to perform a task
+# worker_node.run_agent("Find 20 potential customers for a Swarms based AI Agent automation infrastructure")
+
+
+#======================================> WorkerNode
 
 
 class MetaWorkerNode:
