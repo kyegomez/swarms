@@ -29,6 +29,25 @@ Just as a swarm of bees works together, communicating and coordinating their act
 3. [Sharing](#sharing)
 
 ## Installation
+There are 2 methods, one is through `git clone` and the other is by `pip install swarms`
+
+# Method1
+* Pip install `python3 -m pip install swarms`
+
+* Create new python file and unleash superintelligence
+
+```python
+
+from swarms import BossNode
+
+boss_node = BossNode()
+
+#create and execute a task
+task = boss_node.create_task("Write a weather report for SF Todsay")
+
+boss_node.execute(task)
+```
+
 ```bash
 git clone https://github.com/kyegomez/swarms.git
 cd swarms
