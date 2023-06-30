@@ -1781,13 +1781,11 @@ list_tool.run({})
 
 from langchain.tools import BraveSearch
 
+brave_api_key = os.environ["BRAVE_API_KEY"]
 
-api_key = "..."
-
-brave_tool = BraveSearch.from_api_key(api_key=api_key, search_kwargs={"count": 3})
+brave_tool = BraveSearch.from_api_key(api_key=brave_api_key, search_kwargs={"count": 3})
 
 
-tool.run("obama middle name")
 
 ######################### BRAVE END
 
@@ -2023,7 +2021,8 @@ mrkl.run(
     "I have an end of year party for my Italian class and have to buy some Italian clothes for it"
 )
 
-spoonacular_api_key = ""  # Copy from the API Console
+spoonacular_api = os.environ["SPOONACULAR_KEY"]
+spoonacular_api_key = spoonacular_api
 
 requests = Requests(headers={"x-api-key": spoonacular_api_key})
 spoonacular_toolkit = NLAToolkit.from_llm_and_url(
@@ -2136,11 +2135,7 @@ ruff_vectorstore_info = VectorStoreInfo(
 router_toolkit = VectorStoreRouterToolkit(
     vectorstores=[vectorstore_info, ruff_vectorstore_info], llm=llm
 )
-agent_executor = create_vectorstore_router_agent(
-    llm=llm, toolkit=router_toolkit, verbose=True
-)
-
-
+#
 
 
 
@@ -2155,6 +2150,7 @@ import whisperx
 from langchain.tools import tool
 
 
+hf_api_key = os.environ["HF_API_KEY"]
 # define a custom input schema for the youtube url
 class YouTubeVideoInput(BaseModel):
     video_url: str = Field(description="YouTube Video URL to transcribe")
@@ -2195,7 +2191,8 @@ def transcribe_youtube_video(video_url: str) -> str:
     result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
 
     # 3. Assign speaker labels
-    diarize_model = whisperx.DiarizationPipeline(use_auth_token='hugging face stable api key', device=device)
+
+    diarize_model = whisperx.DiarizationPipeline(use_auth_token=hf_api_key, device=device)
     diarize_segments = diarize_model(audio_file)
     
     try:
@@ -2243,7 +2240,7 @@ class TranscribeAudioTool(BaseTool):
         model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device)
         result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
 
-        diarize_model = whisperx.DiarizationPipeline(use_auth_token='hugging face stable api key', device=device)
+        diarize_model = whisperx.DiarizationPipeline(use_auth_token=hf_api_key, device=device)
         diarize_segments = diarize_model(audio_file)
         
         try:
