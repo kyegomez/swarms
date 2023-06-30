@@ -186,3 +186,17 @@ Thank you for being a part of our project!
 * Create extensive and useful examples 
 
 * And, recreate exampels and usage in readme.
+
+* Create a worker Swarm class, where it's just workers who are equal and that can self scale. If they need help they'll just spawn an entirely new worker and they can spawn more workers
+
+
+
+
+
+# Optimization
+
+* Reliability => The swarm needs to be reliable. How do we quantify reliability -> Reliability is obtaining an desired output with a basic and un-detailed input. 
+
+* Speed => How long does it take the swarm to accomplish a task, such as `let's respond to all the emails`, we need to minimize this => we can do this by cultivating an efficient communication layer, critiquing, and self-alignment with meta prompting.
+
+* Scalability => Asynchrony, Concurrent, and self-healing.
