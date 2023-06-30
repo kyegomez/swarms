@@ -65,8 +65,7 @@ setup(
         "beautifulsoup4",
         "O365",
         "pytube",
-        "pydub",
-        "git+https://github.com/m-bain/whisperx.git@v3",
+        "pydub"
   ],
   classifiers=[
     'Development Status :: 4 - Beta',
