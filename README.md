@@ -138,3 +138,8 @@ Thank you for being a part of our project!
 * Integrate hf agents as tools
 
 * [Integrate tools from here](https://integrations.langchain.com/)
+
+
+* Create extensive and useful examples 
+
+* And, recreate exampels and usage in readme.
