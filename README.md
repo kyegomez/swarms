@@ -59,6 +59,7 @@ pip install -r requirements.txt
 # Method 3
 Simple example by `git cloning https://github.com/kyegomez/swarms.git` `python3 example.py`
 
+
 ## BossNode
 
 The `BossNode` class is a key component of Swarms. It represents a "boss" in the system that assigns tasks to other components.
@@ -113,59 +114,44 @@ We're always looking for contributors to help us improve and expand this project
 Thank you for being a part of our project!
 
 
-# To do:
+# Open Source Roadmap
 
-* Integrate [Multi Agent debate](https://github.com/Skytliang/Multi-Agents-Debate)
+Here is the detailed roadmap of our priorities and planned features for the near term:
 
-* Integrate [Multi agent2 debate](https://github.com/composable-models/llm_multiagent_debate)
+## TODO
 
-* Integrate meta prompting into all worker agents
+1. **Multi-Agent Debate Integration**: Integrate multi-agent debate frameworks ([Multi Agent debate](https://github.com/Skytliang/Multi-Agents-Debate) and [Multi agent2 debate](https://github.com/composable-models/llm_multiagent_debate)) to improve decision-making.
 
-* Create 1 main swarms class `swarms('Increase sales by 40$', workers=4)`
+2. **Meta Prompting Integration**: Include meta prompting across all worker agents to guide their actions.
 
-* Integrate [Jarvis](https://github.com/microsoft/JARVIS) as worker nodes
+3. **Swarms Class**: Create a main swarms class `swarms('Increase sales by 40$', workers=4)` for managing and coordinating multiple worker nodes.
 
-* Integrate guidance and token healing
+4. **Integration of Additional Tools**: Integrate [Jarvis](https://github.com/microsoft/JARVIS) as worker nodes, add text to speech and text to script tools ([whisper x](https://github.com/kyegomez/youtubeURL-to-text)), and integrate Hugging Face agents and other external tools.
 
-* Add text to speech [whisper x, youtube script](https://github.com/kyegomez/youtubeURL-to-text) and text to speech code models as tools 
+5. **Task Completion and Evaluation Logic**: Include task completion logic with meta prompting, and evaluate task completion on a scale from 0.0 to 1.0.
 
-* Add task completion logic with meta prompting, task evaluation as a state from 0.0 to 1.0, and critiquing for meta prompting.
+6. **Baby AGI Setup**: Set up Baby AGI with the AutoGPT instance as a tool for enhanced capabilities.
 
-* Integrate meta prompting for every agent boss and worker
+7. **Ocean Integration**: Use the [Ocean](https://github.com/kyegomez/Ocean) vector database as the main embedding database for all the agents, both boss and worker.
 
-* Get baby agi set up with the autogpt instance as a tool
+8. **Improved Communication**: Develop a universal vector database that is only used when a task is completed in this format `[TASK][COMPLETED]`.
 
-* Integrate [Ocean](https://github.com/kyegomez/Ocean) vector db as the main embedding database for all the agents boss and or worker
+9. **Testing and Evaluation**: Create unit tests, benchmarks, and evaluations for performance monitoring and continuous improvement.
 
-* Communication, a universal vector database that is only used when a task is completed in this format `[TASK][COMPLETED]`
+10. **Worker Swarm Class**: Create a class for self-scaling worker swarms. If they need help, they can spawn an entirely new worker and more workers if needed.
 
-* Create unit tests
+## Documentation
 
-* Create benchmrks
+1. **Examples**: Create extensive and useful examples for a variety of use cases.
 
-* Create evaluations
+2. **README**: Update the README to include the examples and usage instructions.
 
-* Add new tool that uses WhiseperX to transcribe a youtube video
+## Optimization Priorities
 
-* Integrate hf agents as tools
+1. **Reliability**: Increase the reliability of the swarm - obtaining the desired output with a basic and un-detailed input.
 
-* [Integrate tools from here](https://integrations.langchain.com/)
+2. **Speed**: Reduce the time it takes for the swarm to accomplish tasks by improving the communication layer, critiquing, and self-alignment with meta prompting.
 
+3. **Scalability**: Ensure that the system is asynchronous, concurrent, and self-healing to support scalability.
 
-* Create extensive and useful examples 
-
-* And, recreate exampels and usage in readme.
-
-* Create a worker Swarm class, where it's just workers who are equal and that can self scale. If they need help they'll just spawn an entirely new worker and they can spawn more workers
-
-
-
-
-
-# Optimization
-
-* Reliability => The swarm needs to be reliable. How do we quantify reliability -> Reliability is obtaining an desired output with a basic and un-detailed input. 
-
-* Speed => How long does it take the swarm to accomplish a task, such as `let's respond to all the emails`, we need to minimize this => we can do this by cultivating an efficient communication layer, critiquing, and self-alignment with meta prompting.
-
-* Scalability => Asynchrony, Concurrent, and self-healing.
+Our goal is to continuously improve Swarms by following this roadmap, while also being adaptable to new needs and opportunities as they arise.
