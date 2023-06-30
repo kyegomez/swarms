@@ -480,16 +480,16 @@ class Terminal(BaseToolSet):
         return output
 
 
-if __name__ == "__main__":
-    import time
+# if __name__ == "__main__":
+#     import time
 
-    o = Terminal().execute(
-        "sleep 1; echo 1; sleep 2; echo 2; sleep 3; echo 3; sleep 10;",
-        lambda: ("", None),
-    )
-    print(o)
+#     o = Terminal().execute(
+#         "sleep 1; echo 1; sleep 2; echo 2; sleep 3; echo 3; sleep 10;",
+#         lambda: ("", None),
+#     )
+#     print(o)
 
-    time.sleep(10)  # see if timer has reset
+#     time.sleep(10)  # see if timer has reset
 
 
 ###################=> EDITOR/VERIFY
@@ -734,9 +734,9 @@ class CodeReader:
         return SummaryCommand.from_str(command).execute()
 
 
-if __name__ == "__main__":
-    summary = CodeReader.summary("read.py|1|class ReadCommand:")
-    print(summary)
+# if __name__ == "__main__":
+#     summary = CodeReader.summary("read.py|1|class ReadCommand:")
+#     print(summary)
 
 #============================> EDITOR/READ.PY END
 
@@ -908,40 +908,40 @@ class CodePatcher:
         return written, deleted
 
 
-if __name__ == "__main__":
-    commands = """test.py|2,1|2,1|from bs4 import BeautifulSoup
+# if __name__ == "__main__":
+#     commands = """test.py|2,1|2,1|from bs4 import BeautifulSoup
 
----~~~+++===+++~~~---
-test.py|5,5|5,33|html = requests.get(url).text
-    soup = BeautifulSoup(html, "html.parser")
-    news_results = soup.find_all("div", class_="BNeawe vvjwJb AP7Wnd")
----~~~+++===+++~~~---
-test.py|7,5|9,13|news_titles = []
-    for result in news_results:
-        news_titles
----~~~+++===+++~~~---
-test.py|11,16|11,16|_titles
-"""
+# ---~~~+++===+++~~~---
+# test.py|5,5|5,33|html = requests.get(url).text
+#     soup = BeautifulSoup(html, "html.parser")
+#     news_results = soup.find_all("div", class_="BNeawe vvjwJb AP7Wnd")
+# ---~~~+++===+++~~~---
+# test.py|7,5|9,13|news_titles = []
+#     for result in news_results:
+#         news_titles
+# ---~~~+++===+++~~~---
+# test.py|11,16|11,16|_titles
+# """
 
-    example = """import requests
+#     example = """import requests
 
-def crawl_news(keyword):
-    url = f"https://www.google.com/search?q={keyword}+news"
-    response = requests.get(url)
+# def crawl_news(keyword):
+#     url = f"https://www.google.com/search?q={keyword}+news"
+#     response = requests.get(url)
 
-    news = []
-    for result in response:
-        news.append(result.text)
+#     news = []
+#     for result in response:
+#         news.append(result.text)
 
-    return news
-"""
-    testfile = "test.py"
-    with open(testfile, "w") as f:
-        f.write(example)
+#     return news
+# """
+#     testfile = "test.py"
+#     with open(testfile, "w") as f:
+#         f.write(example)
 
-    patcher = CodePatcher()
-    written, deleted = patcher.patch(commands)
-    print(f"written: {written}, deleted: {deleted}")
+#     patcher = CodePatcher()
+#     written, deleted = patcher.patch(commands)
+#     print(f"written: {written}, deleted: {deleted}")
 
 ####################### => EDITOR/PATCH.PY
 
