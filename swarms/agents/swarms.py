@@ -89,9 +89,6 @@ llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key="")
 
 
 ####################################################################### => Worker Node
-####################################################################### => Worker Node
-####################################################################### => Worker Node
-
 
 class WorkerNode:
     def __init__(self, llm, tools, vectorstore):
