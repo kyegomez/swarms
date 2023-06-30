@@ -25,11 +25,10 @@ Just as a swarm of bees works together, communicating and coordinating their act
 
 ## Table of Contents
 1. [Installation](#installation)
-2. [Usage](#usage)
-3. [Sharing](#sharing)
+2. [Sharing](#sharing)
 
 ## Installation
-There are 2 methods, one is through `git clone` and the other is by `pip install swarms`
+There are 2 methods, one is through `git clone` and the other is by `pip install swarms`. Check out the [document](/DOCUMENTATION.md) for more information on the classes.
 
 # Method1
 * Pip install `python3 -m pip install swarms`
@@ -49,40 +48,16 @@ task = boss_node.create_task(objective="Write a research paper on the impact of 
 boss_node.execute(task)
 ```
 
+# Method2
+Download via Github, and install requirements
 ```bash
 git clone https://github.com/kyegomez/swarms.git
 cd swarms
 pip install -r requirements.txt
 ```
 
-## Usage
-There are 2 methods, one is very simple to test it out and then there is another to explore the agents and so on! Check out the [Documetation file ](/DOCUMENTATION.md) to understand the classes
-
-### Method 1
-Simple example `python3 example.py`
-
-
-### Method2
-
-I see, my apologies for the confusion. Here is an updated usage example that just utilizes the `BossNode` class:
-
-One of the main components of swarms is the `BossNode` class. This class acts as a "boss" that assigns tasks to other components.
-
-Below is an example of how to use the `BossNode` class in Langchain:
-
-```python
-from swarms import BossNode
-#or swarms.agents.swarms import BossNode
-
-# Initialize BossNode
-boss_node = BossNode()
-
-# Create and execute a task
-task = boss_node.create_task("Write a summary of the latest news about artificial intelligence.")
-boss_node.execute_task(task)
-```
-
-This will create a task for the BossNode, which is to write a summary of the latest news about artificial intelligence. 
+### Method 3
+Simple example by `git cloning https://github.com/kyegomez/swarms.git` `python3 example.py`
 
 ## BossNode
 
@@ -105,19 +80,15 @@ class BossNode:
 With the `BossNode` class, you can create tasks for your tools to perform. For example, you can create a task to write a summary of a specific topic:
 
 ```python
-boss_node = BossNode()
-task = boss_node.create_task("Write a summary of the latest news about quantum computing.")
+from swarms import boss_node
+#create a task
+task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
+#execute the teask
 boss_node.execute_task(task)
+
 ```
 
 This will create and execute a task to write a summary about the latest news on quantum computing. The result will be the summary of the news.
-
-## Note
-- The `AutoAgent` makes use of several helper tools and context managers for tasks such as processing CSV files, browsing web pages, and querying web pages. For the best use of this agent, understanding these tools is crucial.
-
-- Additionally, the agent uses the ChatOpenAI, a language learning model (LLM), to perform its tasks. You need to provide an OpenAI API key to make use of it. 
-
-- Detailed knowledge of FAISS, a library for efficient similarity search and clustering of dense vectors, is also essential as it's used for memory storage and retrieval. 
 
 
 ## Share with your Friends
