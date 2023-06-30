@@ -404,11 +404,3 @@ class CompetitiveSwarms(Swarms):
 class MultiAgentDebate(Swarms):
     def execute(self, task):
         pass
-
-
-# Initialize boss node with given parameters
-boss_node = BossNode()
-
-# Create and execute a task
-task = boss_node.create_task("Write a weather report for SF today")
-boss_node.execute_task(task)
