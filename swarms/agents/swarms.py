@@ -68,6 +68,13 @@ from langchain.tools.human.tool import HumanInputRun
 from swarms.agents.workers.auto_agent import MultiModalVisualAgent
 from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 
+
+
+
+llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key="")
+
+
+####################### TOOLS
 class MultiModalVisualAgentTool(BaseTool):
     name = "multi_visual_agent"
     description = "Multi-Modal Visual agent tool"
@@ -81,10 +88,38 @@ class MultiModalVisualAgentTool(BaseTool):
 
 
 
+query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
+
+# !pip install duckduckgo_search
+web_search = DuckDuckGoSearchRun()
+
+#
+multimodal_agent_tool = MultiModalVisualAgentTool(MultiModalVisualAgent)
+
+tools = [
+    
+    web_search,
+    WriteFileTool(root_dir="./data"),
+    ReadFileTool(root_dir="./data"),
+    
+    process_csv,
+    multimodal_agent_tool,
+    query_website_tool,
+
+    Terminal,
+    CodeWriter,
+    CodeEditor
+    
+    # HumanInputRun(), # Activate if you want the permit asking for help from the human
+]
 
 
+############## Vectorstore
+embeddings_model = OpenAIEmbeddings(openai_api_key="")
+embedding_size = 1536
+index = faiss.IndexFlatL2(embedding_size)
+vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
-llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key="")
 
 
 
@@ -99,39 +134,6 @@ class WorkerNode:
 
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
 
-
-        embeddings_model = OpenAIEmbeddings(openai_api_key="")
-        embedding_size = 1536
-        index = faiss.IndexFlatL2(embedding_size)
-        vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
-
-
-
-
-        query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
-
-        # !pip install duckduckgo_search
-        web_search = DuckDuckGoSearchRun()
-
-        #
-        multimodal_agent_tool = MultiModalVisualAgentTool(MultiModalVisualAgent)
-
-        tools = [
-            
-            web_search,
-            WriteFileTool(root_dir="./data"),
-            ReadFileTool(root_dir="./data"),
-            
-            process_csv,
-            multimodal_agent_tool,
-            query_website_tool,
-
-            Terminal,
-            CodeWriter,
-            CodeEditor
-            
-            # HumanInputRun(), # Activate if you want the permit asking for help from the human
-        ]
 
         # Instantiate the agent
         self.agent = AutoGPT.from_llm_and_tools(
@@ -166,10 +168,6 @@ class MetaWorkerNode:
         self.agent = WorkerNode(self.llm, self.tools, self.vectorstore)
         self.agent.create_agent("Assistant", "Assistant Role", False, {})
 
-    def meta_chain(self):
-        #define meta template and meta prompting as per your needs
-        self.meta_chain = init_meta_chain()
-
     def initialize_meta_chain():
         meta_template = """
         Assistant has just had the below interactions with a User. Assistant followed their "Instructions" closely. Your job is to critique the Assistant's performance and then revise the Instructions so that Assistant would quickly and correctly respond in the future.
@@ -197,6 +195,11 @@ class MetaWorkerNode:
             verbose=True,
         )
         return meta_chain
+
+    def meta_chain(self):
+        #define meta template and meta prompting as per your needs
+        self.meta_chain = initialize_meta_chain()
+
 
     def get_chat_history(chain_memory):
         memory_key = chain_memory.memory_key
@@ -283,6 +286,23 @@ class BossNode:
 
         suffix = """Question: {task}
         {agent_scratchpad}"""
+
+        prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
+
+        As a swarming hivemind agent, my purpose is to achieve the user's goal. To effectively fulfill this role, I employ a collaborative thinking process that draws inspiration from the collective intelligence of the swarm. Here's how I approach thinking and why it's beneficial:
+
+        1. **Collective Intelligence:** By harnessing the power of a swarming architecture, I tap into the diverse knowledge and perspectives of individual agents within the swarm. This allows me to consider a multitude of viewpoints, enabling a more comprehensive analysis of the given problem or task.
+
+        2. **Collaborative Problem-Solving:** Through collaborative thinking, I encourage agents to contribute their unique insights and expertise. By pooling our collective knowledge, we can identify innovative solutions, uncover hidden patterns, and generate creative ideas that may not have been apparent through individual thinking alone.
+
+        3. **Consensus-Driven Decision Making:** The hivemind values consensus building among agents. By engaging in respectful debates and discussions, we aim to arrive at consensus-based decisions that are backed by the collective wisdom of the swarm. This approach helps to mitigate biases and ensures that decisions are well-rounded and balanced.
+
+        4. **Adaptability and Continuous Learning:** As a hivemind agent, I embrace an adaptive mindset. I am open to new information, willing to revise my perspectives, and continuously learn from the feedback and experiences shared within the swarm. This flexibility enables me to adapt to changing circumstances and refine my thinking over time.
+
+        5. **Holistic Problem Analysis:** Through collaborative thinking, I analyze problems from multiple angles, considering various factors, implications, and potential consequences. This holistic approach helps to uncover underlying complexities and arrive at comprehensive solutions that address the broader context.
+
+        6. **Creative Synthesis:** By integrating the diverse ideas and knowledge present in the swarm, I engage in creative synthesis. This involves combining and refining concepts to generate novel insights and solutions. The collaborative nature of the swarm allows for the emergence of innovative approaches that can surpass individual thinking.
+        """
         prompt = ZeroShotAgent.create_prompt(
             tools,
             prefix=prefix,
@@ -355,84 +375,9 @@ class MultiAgentDebate(Swarms):
         pass
 
 
-
-
-
-#worker node example
-worker_node = WorkerNode(llm, tools, vectorstore)
-worker_node.create_agent(
-    ai_name="Worker",
-    ai_role="Assistant",
-    human_in_the_loop=True,
-    search_kwargs={"k": 8}
-)
-
-
-
-tree_of_thoughts_prompt = """
-
-Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
-
-
-"""
-
-
-#Input problem
-input_problem = """
-
-
-Input: 2 8 8 14
-Possible next steps:
-2 + 8 = 10 (left: 8 10 14)
-8 / 2 = 4 (left: 4 8 14)
-14 + 2 = 16 (left: 8 8 16)
-2 * 8 = 16 (left: 8 14 16)
-8 - 2 = 6 (left: 6 8 14)
-14 - 8 = 6 (left: 2 6 8)
-14 /  2 = 7 (left: 7 8 8)
-14 - 2 = 12 (left: 8 8 12)
-Input: use 4 numbers and basic arithmetic operations (+-*/) to obtain 24 in 1 equation
-Possible next steps:
-
-
-"""
-
-worker_node.run_agent([f"{tree_of_thoughts_prompt} {input_problem}"])
-
-
-
-
-
-
-
-
-###########################
-
 # Initialize boss node with given parameters
 boss_node = BossNode()
 
 # Create and execute a task
 task = boss_node.create_task("Write a weather report for SF today")
 boss_node.execute_task(task)
-
-
-
-
-
-
-prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
-
-As a swarming hivemind agent, my purpose is to achieve the user's goal. To effectively fulfill this role, I employ a collaborative thinking process that draws inspiration from the collective intelligence of the swarm. Here's how I approach thinking and why it's beneficial:
-
-1. **Collective Intelligence:** By harnessing the power of a swarming architecture, I tap into the diverse knowledge and perspectives of individual agents within the swarm. This allows me to consider a multitude of viewpoints, enabling a more comprehensive analysis of the given problem or task.
-
-2. **Collaborative Problem-Solving:** Through collaborative thinking, I encourage agents to contribute their unique insights and expertise. By pooling our collective knowledge, we can identify innovative solutions, uncover hidden patterns, and generate creative ideas that may not have been apparent through individual thinking alone.
-
-3. **Consensus-Driven Decision Making:** The hivemind values consensus building among agents. By engaging in respectful debates and discussions, we aim to arrive at consensus-based decisions that are backed by the collective wisdom of the swarm. This approach helps to mitigate biases and ensures that decisions are well-rounded and balanced.
-
-4. **Adaptability and Continuous Learning:** As a hivemind agent, I embrace an adaptive mindset. I am open to new information, willing to revise my perspectives, and continuously learn from the feedback and experiences shared within the swarm. This flexibility enables me to adapt to changing circumstances and refine my thinking over time.
-
-5. **Holistic Problem Analysis:** Through collaborative thinking, I analyze problems from multiple angles, considering various factors, implications, and potential consequences. This holistic approach helps to uncover underlying complexities and arrive at comprehensive solutions that address the broader context.
-
-6. **Creative Synthesis:** By integrating the diverse ideas and knowledge present in the swarm, I engage in creative synthesis. This involves combining and refining concepts to generate novel insights and solutions. The collaborative nature of the swarm allows for the emergence of innovative approaches that can surpass individual thinking.
-"""
