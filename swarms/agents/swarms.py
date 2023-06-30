@@ -68,7 +68,7 @@ from langchain.tools.human.tool import HumanInputRun
 from swarms.agents.workers.auto_agent import MultiModalVisualAgent
 from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 
-
+from swarms.tools.main import math_tool
 
 
 llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key="")
@@ -95,17 +95,6 @@ web_search = DuckDuckGoSearchRun()
 
 #======>
 multimodal_agent_tool = MultiModalVisualAgentTool(MultiModalVisualAgent)
-
-
-#======> Calculator
-from langchain import LLMMathChain
-
-llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
-math_tool = Tool(
-        name="Calculator",
-        func=llm_math_chain.run,
-        description="useful for when you need to answer questions about math"
-    ),
 
 
 

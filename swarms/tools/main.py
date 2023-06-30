@@ -2260,3 +2260,19 @@ class TranscribeAudioTool(BaseTool):
     ) -> str:
         """Use the tool asynchronously."""
         raise NotImplementedError("transcribe_audio does not support async")
+
+
+
+###########=========================>
+
+#======> Calculator
+from langchain import LLMMathChain
+
+llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
+math_tool = Tool(
+        name="Calculator",
+        func=llm_math_chain.run,
+        description="useful for when you need to answer questions about math"
+    ),
+
+
