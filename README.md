@@ -42,8 +42,55 @@ There are 2 methods, one is very simple to test it out and then there is another
 Simple example `python3 example.py`
 
 
+### Method2
 
+I see, my apologies for the confusion. Here is an updated usage example that just utilizes the `BossNode` class:
 
+One of the main components of swarms is the `BossNode` class. This class acts as a "boss" that assigns tasks to other components.
+
+Below is an example of how to use the `BossNode` class in Langchain:
+
+```python
+from swarms import BossNode
+#or swarms.agents.swarms import BossNode
+
+# Initialize BossNode
+boss_node = BossNode()
+
+# Create and execute a task
+task = boss_node.create_task("Write a summary of the latest news about artificial intelligence.")
+boss_node.execute_task(task)
+```
+
+This will create a task for the BossNode, which is to write a summary of the latest news about artificial intelligence. 
+
+## BossNode
+
+The `BossNode` class is a key component of Swarms. It represents a "boss" in the system that assigns tasks to other components.
+
+Here is an example of how you can use it:
+
+```python
+class BossNode:
+    def __init__(self, tools):
+        # initialization code goes here
+
+    def create_task(self, objective):
+        return {"objective": objective}
+
+    def execute_task(self, task):
+        # task execution code goes here
+```
+
+With the `BossNode` class, you can create tasks for your tools to perform. For example, you can create a task to write a summary of a specific topic:
+
+```python
+boss_node = BossNode()
+task = boss_node.create_task("Write a summary of the latest news about quantum computing.")
+boss_node.execute_task(task)
+```
+
+This will create and execute a task to write a summary about the latest news on quantum computing. The result will be the summary of the news.
 
 ## Note
 - The `AutoAgent` makes use of several helper tools and context managers for tasks such as processing CSV files, browsing web pages, and querying web pages. For the best use of this agent, understanding these tools is crucial.
