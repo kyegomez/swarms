@@ -56,7 +56,7 @@ cd swarms
 pip install -r requirements.txt
 ```
 
-### Method 3
+# Method 3
 Simple example by `git cloning https://github.com/kyegomez/swarms.git` `python3 example.py`
 
 ## BossNode
