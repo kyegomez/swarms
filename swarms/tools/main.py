@@ -1589,7 +1589,7 @@ from langchain.utilities.zapier import ZapierNLAWrapper
 
 
 zapier = ZapierNLAWrapper()
-toolkit = ZapierToolkit.from_zapier_nla_wrapper(zapier)
+zapier_toolkit = ZapierToolkit.from_zapier_nla_wrapper(zapier)
 # agent = initialize_agent(
 #     toolkit.get_tools(), llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True
 # )
@@ -1603,7 +1603,7 @@ toolkit = ZapierToolkit.from_zapier_nla_wrapper(zapier)
 ######################################################## youtube search
 from langchain.tools import YouTubeSearchTool
 
-tool = YouTubeSearchTool()
+youtube_tool = YouTubeSearchTool()
 
 #tool.run("lex friedman")
 
@@ -1620,7 +1620,7 @@ os.environ["WOLFRAM_ALPHA_APPID"] = ""
 
 from langchain.utilities.wolfram_alpha import WolframAlphaAPIWrapper
 
-wolfram = WolframAlphaAPIWrapper()
+wolfram_tool = WolframAlphaAPIWrapper()
 #wolfram.run("What is 2x+5 = -3x + 7?")
 
 ######################################################## wolfram end
@@ -1629,7 +1629,7 @@ wolfram = WolframAlphaAPIWrapper()
 ######################################################## Wikipedia beginning
 from langchain.utilities import WikipediaAPIWrapper
 
-wikipedia = WikipediaAPIWrapper()
+wikipedia_tool = WikipediaAPIWrapper()
 
 #wikipedia.run("HUNTER X HUNTER")
 ######################################################## Wikipedia beginning
@@ -1667,7 +1667,7 @@ requests.get("https://www.google.com")
 ######################################################## pubmed
 from langchain.tools import PubmedQueryRun
 
-pubmed = PubmedQueryRun()
+pubmed_tool = PubmedQueryRun()
 
 pubmed.run("chatgpt")
 
@@ -1685,7 +1685,7 @@ import os
 
 key = os.environ["IFTTTKey"]
 url = f"https://maker.ifttt.com/trigger/spotify/json/with/key/{key}"
-IFFT = IFTTTWebhook(
+IFFT_tool = IFTTTWebhook(
     name="Spotify", description="Add a song to spotify playlist", url=url
 )
 
@@ -1740,8 +1740,6 @@ from gradio_tools.tools import (
 
 from langchain.memory import ConversationBufferMemory
 
-llm = OpenAI(temperature=0)
-memory = ConversationBufferMemory(memory_key="chat_history")
 hf_model_tools = [
     StableDiffusionTool().langchain,
     ImageCaptioningTool().langchain,
@@ -1749,17 +1747,6 @@ hf_model_tools = [
     TextToVideoTool().langchain,
 ]
 
-
-agent = initialize_agent(
-    tools, llm, memory=memory, agent="conversational-react-description", verbose=True
-)
-output = agent.run(
-    input=(
-        "Please create a photo of a dog riding a skateboard "
-        "but improve my prompt prior to using an image generator."
-        "Please caption the generated image and create a video for it using the improved prompt."
-    )
-)
 
 ######################## ######################################################## graphql end 
 
@@ -1832,15 +1819,8 @@ arxviv_tool = load_tools(
 
 from langchain.utilities import ArxivAPIWrapper
 
-arxiv = ArxivAPIWrapper()
-docs = arxiv.run("1605.08386")
-docs
+arxiv_tool = ArxivAPIWrapper()
 
-docs = arxiv.run("Caprice Stanley")
-docs
-
-docs = arxiv.run("1605.08386WWW")
-docs
 
 
 ################################# GMAIL TOOKKIT 
@@ -1862,18 +1842,18 @@ credentials = get_gmail_credentials(
 api_resource = build_resource_service(credentials=credentials)
 gmail_toolkit_2 = GmailToolkit(api_resource=api_resource)
 
-tools = toolkit.get_tools()
-tools
+gmail_tools = toolkit.get_tools()
 
 from langchain import OpenAI
 from langchain.agents import initialize_agent, AgentType
 
-llm = OpenAI(temperature=0)
+
 agent = initialize_agent(
     tools=toolkit.get_tools(),
     llm=llm,
     agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
 )
+
 
 
 
@@ -1906,8 +1886,7 @@ json_agent_executor.run(
 from langchain.agents.agent_toolkits import O365Toolkit
 
 toolkit = O365Toolkit()
-tools = toolkit.get_tools()
-tools
+365_tools = toolkit.get_tools()
 
 
 from langchain import OpenAI
@@ -1921,11 +1900,6 @@ agent = initialize_agent(
     verbose=False,
     agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
 )
-
-agent.run("Create an email draft for me to edit of a letter from the perspective of a sentient parrot"
-          " who is looking to collaborate on some research with her"
-          " estranged friend, a cat. Under no circumstances may you send the message, however.")
-
 ################################# OFFICE 365 TOOLKIT END
 
 
@@ -2113,15 +2087,7 @@ from langchain.chat_models import ChatOpenAI
 
 #test
 # PythonREPLTool()
-
-
-agent_executor = create_python_agent(
-    llm=OpenAI(temperature=0, max_tokens=1000),
-    tool=PythonREPLTool(),
-    verbose=True,
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-)
-
+python_repl_tool = PythonREPLTool()
 ############################################ python tool
 
 
@@ -2167,7 +2133,7 @@ vectorstore_info = VectorStoreInfo(
     description="the most recent state of the Union adress",
     vectorstore=state_of_union_store,
 )
-toolkit = VectorStoreToolkit(vectorstore_info=vectorstore_info)
+vectorstore_toolkit = VectorStoreToolkit(vectorstore_info=vectorstore_info)
 agent_executor = create_vectorstore_agent(llm=llm, toolkit=toolkit, verbose=True)
 
 
