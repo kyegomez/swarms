@@ -134,8 +134,6 @@ Here is the detailed roadmap of our priorities and planned features for the near
 
 5. **Task Completion and Evaluation Logic**: Include task completion logic with meta prompting, and evaluate task completion on a scale from 0.0 to 1.0.
 
-6. **Baby AGI Setup**: Set up Baby AGI with the AutoGPT instance as a tool for enhanced capabilities.
-
 7. **Ocean Integration**: Use the [Ocean](https://github.com/kyegomez/Ocean) vector database as the main embedding database for all the agents, both boss and worker.
 
 8. **Improved Communication**: Develop a universal vector database that is only used when a task is completed in this format `[TASK][COMPLETED]`.

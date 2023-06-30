@@ -84,3 +84,8 @@ In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Data
 
 
 
+
+# Repos
+[🐪CAMEL🐪](https://twitter.com/hwchase17/status/1645834030519296000)
+[MultiAgent](https://github.com/rumpfmax/Multi-GPT/blob/master/multigpt/multi_agent_manager.py)
+[AutoGPT](https://github.com/Significant-Gravitas/Auto-GPT)
