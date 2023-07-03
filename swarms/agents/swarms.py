@@ -55,9 +55,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain, BaseCombineDocumentsChain
 
 from langchain.tools.human.tool import HumanInputRun
-from swarms.agents.workers.auto_agent import MultiModalVisualAgent
-from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 
+# from swarms.agents.workers.auto_agent import MultiModalVisualAgent
+from swarms.agents.workers.auto_agent import multimodal_agent_tool
+from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 from swarms.tools.main import math_tool
 
 
@@ -66,28 +67,10 @@ openai_api_key = os.environ["OPENAI_API_KEY"]
 llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=openai_api_key)
 
 
-####################### TOOLS
-class MultiModalVisualAgentTool(BaseTool):
-    name = "multi_visual_agent"
-    description = "Multi-Modal Visual agent tool"
-
-    def __init__(self, agent: MultiModalVisualAgent):
-        self.agent = agent
-    
-    def _run(self, text: str) -> str:
-        #run the multi-modal visual agent with the give task
-        return self.agent.run_text(text)
-
-
-
 query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 
 # !pip install duckduckgo_search
 web_search = DuckDuckGoSearchRun()
-
-#======>
-multimodal_agent_tool = MultiModalVisualAgentTool(MultiModalVisualAgent)
-
 
 
 tools = [
