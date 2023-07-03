@@ -1,5 +1,3 @@
-
-from swarms.agents.workers.auto_agent import AutoGPT
 from collections import deque
 from typing import Dict, Any
 
@@ -35,7 +33,7 @@ embedding_size = 1536
 index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
-
+# from swarms.agents.workers.auto_agent import AutoGPT
 
 
 
