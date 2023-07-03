@@ -21,12 +21,8 @@ from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
 from langchain import OpenAI, SerpAPIWrapper, LLMChain
 
 
-# Define your embedding model
-# embeddings_model = OpenAIEmbeddings()
-# Initialize the vectorstore as empty
-import faiss
-# from swarms.agents.workers.auto_agent import AutoGPT
 
+import faiss
 
 
 
@@ -57,7 +53,7 @@ from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain,
 from langchain.tools.human.tool import HumanInputRun
 
 # from swarms.agents.workers.auto_agent import MultiModalVisualAgent
-from swarms.agents.workers.auto_agent import multimodal_agent_tool
+from swarms.agents.workers import multimodal_agent_tool
 from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 from swarms.tools.main import math_tool
 
@@ -147,11 +143,11 @@ class WorkerNode:
 #inti worker node with llm
 worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
 
-#create an agent within the worker node
-worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={})
+# #create an agent within the worker node
+# worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={})
 
-#use the agent to perform a task
-worker_node.run_agent("Find 20 potential customers for a Swarms based AI Agent automation infrastructure")
+# #use the agent to perform a task
+# worker_node.run_agent("Find 20 potential customers for a Swarms based AI Agent automation infrastructure")
 
 
 #======================================> WorkerNode
