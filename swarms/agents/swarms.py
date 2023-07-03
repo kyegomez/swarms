@@ -21,18 +21,10 @@ from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
 from langchain import OpenAI, SerpAPIWrapper, LLMChain
 
 
-from swarms.agents.workers.auto_agent import worker_agent
-worker_agent  = worker_agent
-
 # Define your embedding model
-embeddings_model = OpenAIEmbeddings()
+# embeddings_model = OpenAIEmbeddings()
 # Initialize the vectorstore as empty
 import faiss
-
-embedding_size = 1536
-index = faiss.IndexFlatL2(embedding_size)
-vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
-
 # from swarms.agents.workers.auto_agent import AutoGPT
 
 
@@ -123,11 +115,23 @@ embeddings_model = OpenAIEmbeddings(openai_api_key="")
 embedding_size = 1536
 index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
-
-
-
-
 ####################################################################### => Worker Node
+
+
+worker_agent = AutoGPT.from_llm_and_tools(
+    ai_name="WorkerX",
+    ai_role="Assistant",
+    tools=tools,
+    llm=llm,
+    memory=vectorstore.as_retriever(search_kwargs={"k": 8}),
+    human_in_the_loop=True, # Set to True if you want to add feedback at each step.
+)
+
+worker_agent.chain.verbose = True
+
+
+
+
 
 class WorkerNode:
     def __init__(self, llm, tools, vectorstore):
@@ -170,101 +174,101 @@ worker_node.run_agent("Find 20 potential customers for a Swarms based AI Agent a
 #======================================> WorkerNode
 
 
-class MetaWorkerNode:
-    def __init__(self, llm, tools, vectorstore):
-        self.llm = llm
-        self.tools = tools
-        self.vectorstore = vectorstore
+# class MetaWorkerNode:
+#     def __init__(self, llm, tools, vectorstore):
+#         self.llm = llm
+#         self.tools = tools
+#         self.vectorstore = vectorstore
         
-        self.agent = None
-        self.meta_chain = None
+#         self.agent = None
+#         self.meta_chain = None
 
-    def init_chain(self, instructions):
-        self.agent = WorkerNode(self.llm, self.tools, self.vectorstore)
-        self.agent.create_agent("Assistant", "Assistant Role", False, {})
+#     def init_chain(self, instructions):
+#         self.agent = WorkerNode(self.llm, self.tools, self.vectorstore)
+#         self.agent.create_agent("Assistant", "Assistant Role", False, {})
 
-    def initialize_meta_chain():
-        meta_template = """
-        Assistant has just had the below interactions with a User. Assistant followed their "Instructions" closely. Your job is to critique the Assistant's performance and then revise the Instructions so that Assistant would quickly and correctly respond in the future.
+#     def initialize_meta_chain():
+#         meta_template = """
+#         Assistant has just had the below interactions with a User. Assistant followed their "Instructions" closely. Your job is to critique the Assistant's performance and then revise the Instructions so that Assistant would quickly and correctly respond in the future.
 
-        ####
+#         ####
 
-        {chat_history}
+#         {chat_history}
 
-        ####
+#         ####
 
-        Please reflect on these interactions.
+#         Please reflect on these interactions.
 
-        You should first critique Assistant's performance. What could Assistant have done better? What should the Assistant remember about this user? Are there things this user always wants? Indicate this with "Critique: ...".
+#         You should first critique Assistant's performance. What could Assistant have done better? What should the Assistant remember about this user? Are there things this user always wants? Indicate this with "Critique: ...".
 
-        You should next revise the Instructions so that Assistant would quickly and correctly respond in the future. Assistant's goal is to satisfy the user in as few interactions as possible. Assistant will only see the new Instructions, not the interaction history, so anything important must be summarized in the Instructions. Don't forget any important details in the current Instructions! Indicate the new Instructions by "Instructions: ...".
-        """
+#         You should next revise the Instructions so that Assistant would quickly and correctly respond in the future. Assistant's goal is to satisfy the user in as few interactions as possible. Assistant will only see the new Instructions, not the interaction history, so anything important must be summarized in the Instructions. Don't forget any important details in the current Instructions! Indicate the new Instructions by "Instructions: ...".
+#         """
 
-        meta_prompt = PromptTemplate(
-            input_variables=["chat_history"], template=meta_template
-        )
+#         meta_prompt = PromptTemplate(
+#             input_variables=["chat_history"], template=meta_template
+#         )
 
-        meta_chain = LLMChain(
-            llm=OpenAI(temperature=0),
-            prompt=meta_prompt,
-            verbose=True,
-        )
-        return meta_chain
+#         meta_chain = LLMChain(
+#             llm=OpenAI(temperature=0),
+#             prompt=meta_prompt,
+#             verbose=True,
+#         )
+#         return meta_chain
 
-    def meta_chain(self):
-        #define meta template and meta prompting as per your needs
-        self.meta_chain = initialize_meta_chain()
-
-
-    def get_chat_history(chain_memory):
-        memory_key = chain_memory.memory_key
-        chat_history = chain_memory.load_memory_variables(memory_key)[memory_key]
-        return chat_history
+#     def meta_chain(self):
+#         #define meta template and meta prompting as per your needs
+#         self.meta_chain = initialize_meta_chain()
 
 
-    def get_new_instructions(meta_output):
-        delimiter = "Instructions: "
-        new_instructions = meta_output[meta_output.find(delimiter) + len(delimiter) :]
-        return new_instructions
+#     def get_chat_history(chain_memory):
+#         memory_key = chain_memory.memory_key
+#         chat_history = chain_memory.load_memory_variables(memory_key)[memory_key]
+#         return chat_history
 
 
-    def main(self, task, max_iters=3, max_meta_iters=5):
-        failed_phrase = "task failed"
-        success_phrase = "task succeeded"
-        key_phrases = [success_phrase, failed_phrase]
-
-        instructions = "None"
-        for i in range(max_meta_iters):
-            print(f"[Episode {i+1}/{max_meta_iters}]")
-            self.initialize_chain(instructions)
-            output = self.agent.perform('Assistant', {'request': task})
-            for j in range(max_iters):
-                print(f"(Step {j+1}/{max_iters})")
-                print(f"Assistant: {output}")
-                print(f"Human: ")
-                human_input = input()
-                if any(phrase in human_input.lower() for phrase in key_phrases):
-                    break
-                output = self.agent.perform('Assistant', {'request': human_input})
-            if success_phrase in human_input.lower():
-                print(f"You succeeded! Thanks for playing!")
-                return
-            self.initialize_meta_chain()
-            meta_output = self.meta_chain.predict(chat_history=self.get_chat_history())
-            print(f"Feedback: {meta_output}")
-            instructions = self.get_new_instructions(meta_output)
-            print(f"New Instructions: {instructions}")
-            print("\n" + "#" * 80 + "\n")
-        print(f"You failed! Thanks for playing!")
+#     def get_new_instructions(meta_output):
+#         delimiter = "Instructions: "
+#         new_instructions = meta_output[meta_output.find(delimiter) + len(delimiter) :]
+#         return new_instructions
 
 
-#init instance of MetaWorkerNode
-meta_worker_node = MetaWorkerNode(llm=OpenAI, tools=tools, vectorstore=vectorstore)
+#     def main(self, task, max_iters=3, max_meta_iters=5):
+#         failed_phrase = "task failed"
+#         success_phrase = "task succeeded"
+#         key_phrases = [success_phrase, failed_phrase]
+
+#         instructions = "None"
+#         for i in range(max_meta_iters):
+#             print(f"[Episode {i+1}/{max_meta_iters}]")
+#             self.initialize_chain(instructions)
+#             output = self.agent.perform('Assistant', {'request': task})
+#             for j in range(max_iters):
+#                 print(f"(Step {j+1}/{max_iters})")
+#                 print(f"Assistant: {output}")
+#                 print(f"Human: ")
+#                 human_input = input()
+#                 if any(phrase in human_input.lower() for phrase in key_phrases):
+#                     break
+#                 output = self.agent.perform('Assistant', {'request': human_input})
+#             if success_phrase in human_input.lower():
+#                 print(f"You succeeded! Thanks for playing!")
+#                 return
+#             self.initialize_meta_chain()
+#             meta_output = self.meta_chain.predict(chat_history=self.get_chat_history())
+#             print(f"Feedback: {meta_output}")
+#             instructions = self.get_new_instructions(meta_output)
+#             print(f"New Instructions: {instructions}")
+#             print("\n" + "#" * 80 + "\n")
+#         print(f"You failed! Thanks for playing!")
 
 
-#specify a task and interact with the agent
-task = "Provide a sysmatic argument for why we should always eat past with olives"
-meta_worker_node.main(task)
+# #init instance of MetaWorkerNode
+# meta_worker_node = MetaWorkerNode(llm=OpenAI, tools=tools, vectorstore=vectorstore)
+
+
+# #specify a task and interact with the agent
+# task = "Provide a sysmatic argument for why we should always eat past with olives"
+# meta_worker_node.main(task)
 
 
 ####################################################################### => Boss Node
@@ -356,11 +360,11 @@ agent_executor = AgentExecutor.from_agent_and_tools(
 
 boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
 
-#create  a task 
-task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
+# #create  a task 
+# task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
 
-#execute the task
-boss_node.execute_task(task)
+# #execute the task
+# boss_node.execute_task(task)
 
 
 class Swarms:

@@ -80,6 +80,8 @@ tools = [
     ReadFileTool(root_dir="./data"),
     process_csv,
 
+    # multimodal_agent_tool,
+
 
     query_website_tool,
     Terminal,
@@ -101,8 +103,7 @@ agent_worker = AutoGPT.from_llm_and_tools(
 
 agent_worker.chain.verbose = True
 
-worker_agent = agent_worker
-
+# worker_agent = agent_worker
 # tree_of_thoughts_prompt = """
 
 # Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
