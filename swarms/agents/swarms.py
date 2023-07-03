@@ -1,27 +1,21 @@
-from collections import deque
-from typing import Dict, Any
 
-
-import os
 from collections import deque
 from typing import Dict, List, Optional, Any
 
 from langchain import LLMChain, OpenAI, PromptTemplate
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.llms import BaseLLM
+
 from langchain.vectorstores.base import VectorStore
 from pydantic import BaseModel, Field
 from langchain.chains.base import Chain
-from langchain.experimental import BabyAGI
 
+from langchain.experimental import BabyAGI
 from langchain.vectorstores import FAISS
 from langchain.docstore import InMemoryDocstore
 
 from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
 from langchain import OpenAI, SerpAPIWrapper, LLMChain
-
-
-
 import faiss
 
 
@@ -34,7 +28,6 @@ from langchain.chat_models import ChatOpenAI
 from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
 from langchain.docstore.document import Document
 import asyncio
-
 import nest_asyncio
 
 # Tools
@@ -90,7 +83,7 @@ tools = [
 
 
 ############## Vectorstore
-embeddings_model = OpenAIEmbeddings(openai_api_key="")
+embeddings_model = OpenAIEmbeddings()
 embedding_size = 1536
 index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
@@ -107,7 +100,6 @@ worker_agent = AutoGPT.from_llm_and_tools(
 )
 
 worker_agent.chain.verbose = True
-
 
 
 
@@ -148,6 +140,172 @@ worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
 
 # #use the agent to perform a task
 # worker_node.run_agent("Find 20 potential customers for a Swarms based AI Agent automation infrastructure")
+
+class BossNode:
+    def __init__(self, openai_api_key, llm, vectorstore, task_execution_chain, verbose, max_iterations):
+        self.llm = llm
+        self.openai_api_key = openai_api_key
+        self.vectorstore = vectorstore
+        self.task_execution_chain = task_execution_chain
+        self.verbose = verbose
+        self.max_iterations = max_iterations
+
+        self.baby_agi = BabyAGI.from_llm(
+            llm=self.llm,
+            vectorstore=self.vectorstore,
+            task_execution_chain=self.task_execution_chain
+        )
+
+    def create_task(self, objective):
+        return {"objective": objective}
+
+    def execute_task(self, task):
+        self.baby_agi(task)
+
+
+########### ===============> inputs to boss None
+todo_prompt = PromptTemplate.from_template(
+    "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"""
+)
+todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
+search = SerpAPIWrapper()
+tools = [
+    Tool(
+        name="Search",
+        func=search.run,
+        description="useful for when you need to answer questions about current events",
+    ),
+    Tool(
+        name="TODO",
+        func=todo_chain.run,
+        description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
+    ),
+    Tool(
+        name="AUTONOMOUS Worker AGENT",
+        func=worker_agent.run,
+        description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
+    )
+]
+
+
+
+suffix = """Question: {task}
+{agent_scratchpad}"""
+
+prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
+
+"""
+prompt = ZeroShotAgent.create_prompt(
+    tools,
+    prefix=prefix,
+    suffix=suffix,
+    input_variables=["objective", "task", "context", "agent_scratchpad"],
+)
+
+llm = OpenAI(temperature=0)
+llm_chain = LLMChain(llm=llm, prompt=prompt)
+tool_names = [tool.name for tool in tools]
+
+agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
+agent_executor = AgentExecutor.from_agent_and_tools(
+    agent=agent, tools=tools, verbose=True
+)
+
+boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
+
+# #create  a task 
+# task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
+
+# #execute the task
+# boss_node.execute_task(task)
+
+
+
+
+
+class Swarms:
+    def __init__(self, openai_api_key):
+        self.openai_api_key = openai_api_key
+
+    def initialize_llm(self):
+        return ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=self.openai_api_key)
+
+    def initialize_tools(self, llm):
+        web_search = DuckDuckGoSearchRun()
+        tools = [web_search, WriteFileTool(root_dir="./data"), ReadFileTool(root_dir="./data"), process_csv,
+                 multimodal_agent_tool, WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+                 Terminal, CodeWriter, CodeEditor, math_tool]
+        return tools
+
+    def initialize_vectorstore(self):
+        embeddings_model = OpenAIEmbeddings()
+        embedding_size = 1536
+        index = faiss.IndexFlatL2(embedding_size)
+        return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+
+    def initialize_worker_node(self, llm, tools, vectorstore):
+        return WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
+
+    def initialize_boss_node(self, llm, vectorstore, task_execution_chain, verbose=True, max_iterations=5):
+        return BossNode(self.openai_api_key, llm, vectorstore, task_execution_chain, verbose, max_iterations)
+
+
+
+
+
+
+
+
+
+
+
+
+
+# class Swarms:
+#     def __init__(self, num_nodes: int, llm: BaseLLM, self_scaling: bool): 
+#         self.nodes = [WorkerNode(llm) for _ in range(num_nodes)]
+#         self.self_scaling = self_scaling
+    
+#     def add_worker(self, llm: BaseLLM):
+#         self.nodes.append(WorkerNode(llm))
+
+#     def remove_workers(self, index: int):
+#         self.nodes.pop(index)
+
+#     def execute(self, task):
+#         #placeholer for main execution logic
+#         pass
+
+#     def scale(self):
+#         #placeholder for self scaling logic
+#         pass
+
+
+
+#special classes
+
+class HierarchicalSwarms(Swarms):
+    def execute(self, task):
+        pass
+
+
+class CollaborativeSwarms(Swarms):
+    def execute(self, task):
+        pass
+
+class CompetitiveSwarms(Swarms):
+    def execute(self, task):
+        pass
+
+class MultiAgentDebate(Swarms):
+    def execute(self, task):
+        pass
+
+
+
+
+
+
 
 
 #======================================> WorkerNode
@@ -253,135 +411,3 @@ worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
 ####################################################################### => Boss Node
 ####################################################################### => Boss Node
 ####################################################################### => Boss Node
-
-class BossNode:
-    def __init__(self, openai_api_key, llm, vectorstore, task_execution_chain, verbose, max_iterations):
-        self.llm = llm
-        self.openai_api_key = openai_api_key
-        self.vectorstore = vectorstore
-        self.task_execution_chain = task_execution_chain
-        self.verbose = verbose
-        self.max_iterations = max_iterations
-
-        self.baby_agi = BabyAGI.from_llm(
-            llm=self.llm,
-            vectorstore=self.vectorstore,
-            task_execution_chain=self.task_execution_chain
-        )
-
-    def create_task(self, objective):
-        return {"objective": objective}
-
-    def execute_task(self, task):
-        self.baby_agi(task)
-
-
-########### ===============> inputs to boss None
-todo_prompt = PromptTemplate.from_template(
-    "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"""
-)
-todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
-search = SerpAPIWrapper()
-tools = [
-    Tool(
-        name="Search",
-        func=search.run,
-        description="useful for when you need to answer questions about current events",
-    ),
-    Tool(
-        name="TODO",
-        func=todo_chain.run,
-        description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
-    ),
-    Tool(
-        name="AUTONOMOUS Worker AGENT",
-        func=worker_agent.run,
-        description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
-    )
-]
-
-
-
-suffix = """Question: {task}
-{agent_scratchpad}"""
-
-prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
-
-As a swarming hivemind agent, my purpose is to achieve the user's goal. To effectively fulfill this role, I employ a collaborative thinking process that draws inspiration from the collective intelligence of the swarm. Here's how I approach thinking and why it's beneficial:
-
-1. **Collective Intelligence:** By harnessing the power of a swarming architecture, I tap into the diverse knowledge and perspectives of individual agents within the swarm. This allows me to consider a multitude of viewpoints, enabling a more comprehensive analysis of the given problem or task.
-
-2. **Collaborative Problem-Solving:** Through collaborative thinking, I encourage agents to contribute their unique insights and expertise. By pooling our collective knowledge, we can identify innovative solutions, uncover hidden patterns, and generate creative ideas that may not have been apparent through individual thinking alone.
-
-3. **Consensus-Driven Decision Making:** The hivemind values consensus building among agents. By engaging in respectful debates and discussions, we aim to arrive at consensus-based decisions that are backed by the collective wisdom of the swarm. This approach helps to mitigate biases and ensures that decisions are well-rounded and balanced.
-
-4. **Adaptability and Continuous Learning:** As a hivemind agent, I embrace an adaptive mindset. I am open to new information, willing to revise my perspectives, and continuously learn from the feedback and experiences shared within the swarm. This flexibility enables me to adapt to changing circumstances and refine my thinking over time.
-
-5. **Holistic Problem Analysis:** Through collaborative thinking, I analyze problems from multiple angles, considering various factors, implications, and potential consequences. This holistic approach helps to uncover underlying complexities and arrive at comprehensive solutions that address the broader context.
-
-6. **Creative Synthesis:** By integrating the diverse ideas and knowledge present in the swarm, I engage in creative synthesis. This involves combining and refining concepts to generate novel insights and solutions. The collaborative nature of the swarm allows for the emergence of innovative approaches that can surpass individual thinking.
-"""
-prompt = ZeroShotAgent.create_prompt(
-    tools,
-    prefix=prefix,
-    suffix=suffix,
-    input_variables=["objective", "task", "context", "agent_scratchpad"],
-)
-
-llm = OpenAI(temperature=0)
-llm_chain = LLMChain(llm=llm, prompt=prompt)
-tool_names = [tool.name for tool in tools]
-
-agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
-agent_executor = AgentExecutor.from_agent_and_tools(
-    agent=agent, tools=tools, verbose=True
-)
-
-boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
-
-# #create  a task 
-# task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
-
-# #execute the task
-# boss_node.execute_task(task)
-
-
-class Swarms:
-    def __init__(self, num_nodes: int, llm: BaseLLM, self_scaling: bool): 
-        self.nodes = [WorkerNode(llm) for _ in range(num_nodes)]
-        self.self_scaling = self_scaling
-    
-    def add_worker(self, llm: BaseLLM):
-        self.nodes.append(WorkerNode(llm))
-
-    def remove_workers(self, index: int):
-        self.nodes.pop(index)
-
-    def execute(self, task):
-        #placeholer for main execution logic
-        pass
-
-    def scale(self):
-        #placeholder for self scaling logic
-        pass
-
-
-
-#special classes
-
-class HierarchicalSwarms(Swarms):
-    def execute(self, task):
-        pass
-
-
-class CollaborativeSwarms(Swarms):
-    def execute(self, task):
-        pass
-
-class CompetitiveSwarms(Swarms):
-    def execute(self, task):
-        pass
-
-class MultiAgentDebate(Swarms):
-    def execute(self, task):
-        pass
