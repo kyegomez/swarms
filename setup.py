@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.0.7',
+  version = '0.0.8',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -19,7 +19,7 @@ setup(
   install_requires=[
         "transformers",
         "openai",
-        "langchain==0.0.101",
+        "langchain",
         "torch==1.13.1",
         "torchvision==0.14.1",
         "asyncio",
