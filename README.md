@@ -124,6 +124,8 @@ Here is the detailed roadmap of our priorities and planned features for the near
 
 ## TODO
 
+* Develop Conversational UI with Gradio
+
 1. **Multi-Agent Debate Integration**: Integrate multi-agent debate frameworks ([Multi Agent debate](https://github.com/Skytliang/Multi-Agents-Debate) and [Multi agent2 debate](https://github.com/composable-models/llm_multiagent_debate)) to improve decision-making.
 
 2. **Meta Prompting Integration**: Include meta prompting across all worker agents to guide their actions.
