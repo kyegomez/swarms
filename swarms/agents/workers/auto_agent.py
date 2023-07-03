@@ -90,7 +90,7 @@ tools = [
     # HumanInputRun(), # Activate if you want the permit asking for help from the human
 ]
 
-agent = AutoGPT.from_llm_and_tools(
+agent_worker = AutoGPT.from_llm_and_tools(
     ai_name="WorkerX",
     ai_role="Assistant",
     tools=tools,
@@ -99,7 +99,7 @@ agent = AutoGPT.from_llm_and_tools(
     human_in_the_loop=True, # Set to True if you want to add feedback at each step.
 )
 
-agent.chain.verbose = True
+agent_worker.chain.verbose = True
 
 
 
@@ -131,4 +131,4 @@ Possible next steps:
 
 """
 
-agent.run([f"{tree_of_thoughts_prompt} {input_problem}"])
+# agent.run([f"{tree_of_thoughts_prompt} {input_problem}"])
