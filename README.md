@@ -140,6 +140,14 @@ Here is the detailed roadmap of our priorities and planned features for the near
 
 * Integrate omni agent as a worker tool
 
+* Create a tool that creates other tools with access to write code, debug, and an architectural argent that creates the architecture and then another agent that creates the code
+
+* Create a screenshot tool that takes a screen shot and then passes it to a worker multi-modal agent for visual context.
+
+* Provide FASTAPI access in a file
+
+
+
 
 1. **Multi-Agent Debate Integration**: Integrate multi-agent debate frameworks ([Multi Agent debate](https://github.com/Skytliang/Multi-Agents-Debate) and [Multi agent2 debate](https://github.com/composable-models/llm_multiagent_debate)) to improve decision-making.
 
