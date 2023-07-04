@@ -23,7 +23,7 @@ from bs4 import BeautifulSoup
 
 # from logger import logger
 
-from swarms.utils import logger
+from swarms.utils.logger import logger
 
 class ToolScope(Enum):
     GLOBAL = "global"
@@ -435,7 +435,7 @@ import time
 from datetime import datetime
 from typing import Dict, List
 
-from swarms.utils import ANSI, Color, Style # test
+from swarms.utils.utils import ANSI, Color, Style # test
 
 class Terminal(BaseToolSet):
     def __init__(self):
