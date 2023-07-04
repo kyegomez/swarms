@@ -7,15 +7,11 @@ from typing import Dict, List
 from fastapi.templating import Jinja2Templates
 
 from swarms.agents.workers.agents import AgentManager
-from swarms.tools.main import BaseHandler, FileHandler, FileType
-from swarms.tools.main import CsvToDataframe
+from swarms.utils import BaseHandler, FileHandler, FileType, StaticUploader, CsvToDataframe
 
-from swarms.tools.main import BaseToolSet
-from swarms.tools.main import ExitConversation, RequestsGet
-from swarms.tools.main import CodeEditor
+from swarms.tools.main import BaseToolSet, ExitConversation, RequestsGet, CodeEditor, Terminal
 
-from swarms.tools.main import Terminal
-from swarms.tools.main import StaticUploader
+from env import settings
 
 
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
