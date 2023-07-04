@@ -1,5 +1,17 @@
 from setuptools import setup, find_packages
 
+from setuptools.command.install import install
+
+class PostInstallCommand(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        install.run(self)
+        # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
+        import subprocess
+        subprocess.check_call(["pip", "install", "git+https://github.com/IDEA-Research/GroundingDINO.git"])
+        subprocess.check_call(["pip", "install", "git+https://github.com/facebookresearch/segment-anything.git"])
+
+
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
@@ -26,8 +38,6 @@ setup(
         "nest_asyncio",
         "bs4",
         "playwright",
-        'GroundingDINO @ git+https://github.com/IDEA-Research/GroundingDINO.git',
-        'segment_anything @ git+https://github.com/facebookresearch/segment-anything.git',
         "duckduckgo_search",
         "faiss-cpu",
         "wget==3.2",
@@ -70,6 +80,9 @@ setup(
         "pytube",
         "pydub"
     ],
+    cmdclass={
+      'install': PostInstallCommand,
+    },
   classifiers=[
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
