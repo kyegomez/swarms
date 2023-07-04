@@ -26,7 +26,7 @@ setup(
         "nest_asyncio",
         "bs4",
         "playwright",
-        'https://github.com/facebookresearch/segment-anything.git',
+        'git+https://github.com/facebookresearch/segment-anything.git',
         "duckduckgo_search",
         "faiss-cpu",
         "wget==3.2",

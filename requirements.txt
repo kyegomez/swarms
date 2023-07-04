@@ -1,7 +1,5 @@
 transformers
 openai
-
-
 langchain
 torch
 torchvision
