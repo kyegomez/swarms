@@ -207,7 +207,7 @@ def dim_multiline(message: str) -> str:
 
 from abc import ABC, abstractmethod, abstractstaticmethod
 
-from env import DotEnv
+# from env import DotEnv
 
 STATIC_DIR = "static"
 
@@ -218,7 +218,7 @@ class AbstractUploader(ABC):
         pass
 
     @abstractstaticmethod
-    def from_settings(settings: DotEnv) -> "AbstractUploader":
+    def from_settings() -> "AbstractUploader":
         pass
 
 #================================> upload end
@@ -229,7 +229,7 @@ import os
 
 import boto3
 
-from env import DotEnv
+# from env import DotEnv
 
 
 class S3Uploader(AbstractUploader):
@@ -247,10 +247,10 @@ class S3Uploader(AbstractUploader):
     @staticmethod
     def from_settings(settings: DotEnv) -> "S3Uploader":
         return S3Uploader(
-            settings["AWS_ACCESS_KEY_ID"],
-            settings["AWS_SECRET_ACCESS_KEY"],
-            settings["AWS_REGION"],
-            settings["AWS_S3_BUCKET"],
+            os.environ["AWS_ACCESS_KEY_ID"],
+            os.environ["AWS_SECRET_ACCESS_KEY"],
+            os.environ["AWS_REGION"],
+            os.environ["AWS_S3_BUCKET"],
         )
 
     def get_url(self, object_name: str) -> str:
@@ -268,7 +268,7 @@ import os
 import shutil
 from pathlib import Path
 
-from env import DotEnv
+# from env import DotEnv
 
 
 class StaticUploader(AbstractUploader):
@@ -304,7 +304,7 @@ from typing import Dict
 
 import requests
 
-from env import settings
+# from env import settings
 
 
 class FileType(Enum):
