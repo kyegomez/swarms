@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.5.1',
+  version = '0.5.2',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -72,7 +72,7 @@ setup(
         'tenacity==8.2.2',
         'python-dotenv==1.0.0',
         'pillow==9.4.0',
-        'boto3==1.26.94',
+        'boto3',
         'uvicorn==0.21.1',
         'python-ptrace==0.9.8',
         'jinja2==3.1.2',
