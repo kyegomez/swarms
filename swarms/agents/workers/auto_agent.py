@@ -31,7 +31,8 @@ from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 
 from langchain.tools.human.tool import HumanInputRun
-from swarms.agents.workers.auto_agent import MultiModalVisualAgent
+# from swarms.agents.workers.auto_agent import 
+from swarms.agents.workers.multi_modal import MultiModalVisualAgent
 from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 
 class MultiModalVisualAgentTool(BaseTool):
