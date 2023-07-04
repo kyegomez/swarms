@@ -38,7 +38,7 @@ from langchain.llms.openai import OpenAI
 # from groundingdino.util.slconfig import SLConfig
 # from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 
-# segment anything
+# segment anything #
 from segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
 import cv2
 import numpy as np
