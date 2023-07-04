@@ -26,7 +26,8 @@ setup(
         "nest_asyncio",
         "bs4",
         "playwright",
-        'git+https://github.com/facebookresearch/segment-anything.git',
+        'GroundingDINO @ git+https://github.com/IDEA-Research/GroundingDINO.git',
+        'segment_anything @ git+https://github.com/facebookresearch/segment-anything.git',
         "duckduckgo_search",
         "faiss-cpu",
         "wget==3.2",
@@ -68,10 +69,6 @@ setup(
         "O365",
         "pytube",
         "pydub"
-  ],
-    dependency_links=[
-      'git+https://github.com/IDEA-Research/GroundingDINO.git#egg=GroundingDINO',
-      'git+https://github.com/facebookresearch/segment-anything.git#egg=segment_anything'
     ],
   classifiers=[
     'Development Status :: 4 - Beta',
