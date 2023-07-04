@@ -22,6 +22,7 @@ setup(
         'openai',
         'langchain',
         'torch',
+        'ansi',
         'torchvision',
         'asyncio',
         'nest_asyncio',
