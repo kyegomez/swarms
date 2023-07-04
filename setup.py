@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.1.8',
+  version = '0.1.9',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
