@@ -53,55 +53,65 @@ class MultiModalVisualAgentTool(BaseTool):
 
 
 
-embeddings_model = OpenAIEmbeddings(openai_api_key="")
-embedding_size = 1536
-index = faiss.IndexFlatL2(embedding_size)
-vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+
+class WorkerAgent:
+    def __init__(self, objective: str, api_key: str):
+        self.objective = objective
+        self.api_key = api_key
+        self.worker = self.create_agent_worker()
+
+    def create_agent_worker(self):
+        os.environ['OPENAI_API_KEY'] = self.api_key
+
+        llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
+        embeddings_model = OpenAIEmbeddings()
+        embedding_size = 1536
+        index = faiss.IndexFlatL2(embedding_size)
+        vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+
+        query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
+        web_search = DuckDuckGoSearchRun()
+
+        multimodal_agent = MultiModalVisualAgent()
+        multimodal_agent_tool = MultiModalVisualAgentTool(multimodal_agent)
+
+        tools = [
+            web_search,
+            WriteFileTool(root_dir="./data"),
+            ReadFileTool(root_dir="./data"),
+
+            multimodal_agent_tool,
+            process_csv,
+            query_website_tool,
+            Terminal,
 
 
+            CodeWriter,
+            CodeEditor
+        ]
 
+        agent_worker = AutoGPT.from_llm_and_tools(
+            ai_name="WorkerX",
+            ai_role="Assistant",
+            tools=tools,
+            llm=llm,
+            memory=vectorstore.as_retriever(search_kwargs={"k": 8}),
+            human_in_the_loop=True,
+        )
 
-query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
+        agent_worker.chain.verbose = True
 
-# !pip install duckduckgo_search
-web_search = DuckDuckGoSearchRun()
+        return agent_worker
 
+        # objective = "Your objective here"
+        # api_key = "Your OpenAI API key here"
 
-#MM CHILD AGENT
-multimodal_agent = MultiModalVisualAgent()
+        # worker_agent = WorkerAgent(objective, api_key)
 
-#
-multimodal_agent_tool = MultiModalVisualAgentTool(MultiModalVisualAgent)
-
-tools = [
     
-    web_search,
-    WriteFileTool(root_dir="./data"),
-    ReadFileTool(root_dir="./data"),
-    process_csv,
-
-    # multimodal_agent_tool,
 
 
-    query_website_tool,
-    Terminal,
-    CodeWriter,
-    CodeEditor
-    
 
-    # HumanInputRun(), # Activate if you want the permit asking for help from the human
-]
-
-agent_worker = AutoGPT.from_llm_and_tools(
-    ai_name="WorkerX",
-    ai_role="Assistant",
-    tools=tools,
-    llm=llm,
-    memory=vectorstore.as_retriever(search_kwargs={"k": 8}),
-    human_in_the_loop=True, # Set to True if you want to add feedback at each step.
-)
-
-agent_worker.chain.verbose = True
 
 # worker_agent = agent_worker
 # tree_of_thoughts_prompt = """
