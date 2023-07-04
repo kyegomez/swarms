@@ -25,6 +25,7 @@ imageio
 imageio-ffmpeg
 # GroundingDINO
 invisible-watermark
+git+https://github.com/facebookresearch/segment-anything.git
 kornia
 numpy
 omegaconf
