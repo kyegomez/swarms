@@ -41,15 +41,19 @@ There are 2 methods, one is through `git clone` and the other is by `pip install
 
 ```python
 
-from swarms import boss_node
+from swarms import Swarms
 
-#create a task
-task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
+# Retrieve your API key from the environment or replace with your actual key
+api_key = "api key"
 
-#or 
-# task = boss_node.create_task('Find a video of Elon Musk and make him look like a cat')
+# Initialize Swarms with your API key
+swarm = Swarms(openai_api_key=api_key)
 
-boss_node.execute(task)
+# Define an objective
+objective = "Find 20 potential customers for a Swarms based AI Agent automation infrastructure"
+
+# Run Swarms
+swarm.run_swarms(objective)
 ```
 
 # Method2
@@ -85,11 +89,19 @@ class BossNode:
 With the `BossNode` class, you can create tasks for your tools to perform. For example, you can create a task to write a summary of a specific topic:
 
 ```python
-from swarms import boss_node
-#create a task
-task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
-#execute the teask
-boss_node.execute_task(task)
+from swarms import Swarms
+
+# Retrieve your API key from the environment or replace with your actual key
+api_key = "api key"
+
+# Initialize Swarms with your API key
+swarm = Swarms(openai_api_key=api_key)
+
+# Define an objective
+objective = "Find 20 potential customers for a Swarms based AI Agent automation infrastructure"
+
+# Run Swarms
+swarm.run_swarms(objective)
 
 ```
 
