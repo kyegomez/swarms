@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.3.9',
+  version = '0.4.0',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -18,6 +18,7 @@ setup(
     "Prompt Engineering"
   ],
   install_requires=[
+       'llama-index',
         "transformers",
         "openai",
         "langchain",
@@ -37,7 +38,6 @@ setup(
         "controlnet-aux",
         "diffusers",
         "einops",
-        'llama-index',
         "gradio",
         "imageio",
         "imageio-ffmpeg",

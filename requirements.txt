@@ -49,7 +49,6 @@ google-auth-httplib2
 beautifulsoup4
 O365
 
-
 # whisperx
 pytube
 pydub
