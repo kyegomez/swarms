@@ -136,17 +136,17 @@ Here is the detailed roadmap of our priorities and planned features for the near
 
 ## TODO
 
-* Develop Conversational UI with Gradio
+* Fix all errors to working prototype
 
-* Integrate omni agent as a worker tool
-
-* Create a tool that creates other tools with access to write code, debug, and an architectural argent that creates the architecture and then another agent that creates the code
+* Create a tool that creates other tools with access to write code, debug, and an architectural argent that creates the architecture and then another agent that creates the code[Architecter(with code examples), code generator (with access to writing code and terminalrools)] -- The Compiler?
 
 * Create a screenshot tool that takes a screen shot and then passes it to a worker multi-modal agent for visual context.
 
-* Provide FASTAPI access in a file
+* API endroute in FASTAPI
 
+* Develop Conversational UI with Gradio
 
+* Integrate omni agent as a worker tool
 
 
 1. **Multi-Agent Debate Integration**: Integrate multi-agent debate frameworks ([Multi Agent debate](https://github.com/Skytliang/Multi-Agents-Debate) and [Multi agent2 debate](https://github.com/composable-models/llm_multiagent_debate)) to improve decision-making.
