@@ -15,12 +15,24 @@ from langchain.llms.base import BaseLLM
 
 import requests
 from bs4 import BeautifulSoup
-from llama_index import GPTVectorStoreIndex
-from llama_index.readers.database import DatabaseReader
 
-from env import settings
-from logger import logger
 
+# import llama_index
+# from llama_index import GPTVectorStoreIndex
+# from llama_index.readers.database import DatabaseReader
+
+# from logger import logger
+
+
+import logging
+
+logger = logging.getLogger()
+formatter = logging.Formatter("%(message)s")
+ch = logging.StreamHandler()
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
+logger.setLevel(logging.DEBUG)
 
 
 class ToolScope(Enum):
@@ -117,51 +129,51 @@ class RequestsGet(BaseToolSet):
         return content
 
 
-class WineDB(BaseToolSet):
-    def __init__(self):
-        db = DatabaseReader(
-            scheme="postgresql",  # Database Scheme
-            host=settings["WINEDB_HOST"],  # Database Host
-            port="5432",  # Database Port
-            user="alphadom",  # Database User
-            password=settings["WINEDB_PASSWORD"],  # Database Password
-            dbname="postgres",  # Database Name
-        )
-        self.columns = ["nameEn", "nameKo", "description"]
-        concat_columns = str(",'-',".join([f'"{i}"' for i in self.columns]))
-        query = f"""
-            SELECT
-                Concat({concat_columns})
-            FROM wine
-        """
-        documents = db.load_data(query=query)
-        self.index = GPTVectorStoreIndex(documents)
+# class WineDB(BaseToolSet):
+#     def __init__(self):
+#         db = DatabaseReader(
+#             scheme="postgresql",  # Database Scheme
+#             host=settings["WINEDB_HOST"],  # Database Host
+#             port="5432",  # Database Port
+#             user="alphadom",  # Database User
+#             password=settings["WINEDB_PASSWORD"],  # Database Password
+#             dbname="postgres",  # Database Name
+#         )
+#         self.columns = ["nameEn", "nameKo", "description"]
+#         concat_columns = str(",'-',".join([f'"{i}"' for i in self.columns]))
+#         query = f"""
+#             SELECT
+#                 Concat({concat_columns})
+#             FROM wine
+#         """
+#         documents = db.load_data(query=query)
+#         self.index = GPTVectorStoreIndex(documents)
 
-    @tool(
-        name="Wine Recommendation",
-        description="A tool to recommend wines based on a user's input. "
-        "Inputs are necessary factors for wine recommendations, such as the user's mood today, side dishes to eat with wine, people to drink wine with, what things you want to do, the scent and taste of their favorite wine."
-        "The output will be a list of recommended wines."
-        "The tool is based on a database of wine reviews, which is stored in a database.",
-    )
-    def recommend(self, query: str) -> str:
-        """Run the tool."""
-        results = self.index.query(query)
-        wine = "\n".join(
-            [
-                f"{i}:{j}"
-                for i, j in zip(
-                    self.columns, results.source_nodes[0].source_text.split("-")
-                )
-            ]
-        )
-        output = results.response + "\n\n" + wine
+#     @tool(
+#         name="Wine Recommendation",
+#         description="A tool to recommend wines based on a user's input. "
+#         "Inputs are necessary factors for wine recommendations, such as the user's mood today, side dishes to eat with wine, people to drink wine with, what things you want to do, the scent and taste of their favorite wine."
+#         "The output will be a list of recommended wines."
+#         "The tool is based on a database of wine reviews, which is stored in a database.",
+#     )
+#     def recommend(self, query: str) -> str:
+#         """Run the tool."""
+#         results = self.index.query(query)
+#         wine = "\n".join(
+#             [
+#                 f"{i}:{j}"
+#                 for i, j in zip(
+#                     self.columns, results.source_nodes[0].source_text.split("-")
+#                 )
+#             ]
+#         )
+#         output = results.response + "\n\n" + wine
 
-        logger.debug(
-            f"\nProcessed WineDB, Input Query: {query} " f"Output Wine: {wine}"
-        )
+#         logger.debug(
+#             f"\nProcessed WineDB, Input Query: {query} " f"Output Wine: {wine}"
+#         )
 
-        return output
+#         return output
 
 
 class ExitConversation(BaseToolSet):
@@ -434,8 +446,7 @@ from datetime import datetime
 from typing import Dict, List
 
 from ansi import ANSI, Color, Style
-from env import settings
-from logger import logger
+
 
 
 class Terminal(BaseToolSet):
@@ -1107,7 +1118,7 @@ from transformers import (
     CLIPSegProcessor,
 )
 
-from logger import logger
+
 from utils import get_new_image_name
 
 
