@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.2.4',
+  version = '0.2.5',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -26,7 +26,7 @@ setup(
         "nest_asyncio",
         "bs4",
         "playwright",
-        'git+https://github.com/facebookresearch/segment-anything.git',
+        'https://github.com/facebookresearch/segment-anything.git',
         "duckduckgo_search",
         "faiss-cpu",
         "wget==3.2",
