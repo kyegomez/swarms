@@ -53,6 +53,7 @@ setup(
         "torchmetrics",
         "webdataset",
         "yapf",
+        'groundingdino'
         "wolframalpha",
         "wikipedia",
         "httpx",
