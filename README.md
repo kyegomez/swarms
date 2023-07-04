@@ -44,13 +44,19 @@ There are 2 methods, one is through `git clone` and the other is by `pip install
 from swarms import Swarms
 
 # Retrieve your API key from the environment or replace with your actual key
-api_key = "api key"
+api_key = "sksdsds"
 
 # Initialize Swarms with your API key
 swarm = Swarms(openai_api_key=api_key)
 
 # Define an objective
-objective = "Find 20 potential customers for a Swarms based AI Agent automation infrastructure"
+objective = """
+Please develop and serve a simple community web service. 
+People can signup, login, post, comment. 
+Post and comment should be visible at once. 
+I want it to have neumorphism-style. 
+The ports you can use are 4500 and 6500.
+"""
 
 # Run Swarms
 swarm.run_swarms(objective)
@@ -92,17 +98,22 @@ With the `BossNode` class, you can create tasks for your tools to perform. For e
 from swarms import Swarms
 
 # Retrieve your API key from the environment or replace with your actual key
-api_key = "api key"
+api_key = "sksdsds"
 
 # Initialize Swarms with your API key
 swarm = Swarms(openai_api_key=api_key)
 
 # Define an objective
-objective = "Find 20 potential customers for a Swarms based AI Agent automation infrastructure"
+objective = """
+Please develop and serve a simple community web service. 
+People can signup, login, post, comment. 
+Post and comment should be visible at once. 
+I want it to have neumorphism-style. 
+The ports you can use are 4500 and 6500.
+"""
 
 # Run Swarms
 swarm.run_swarms(objective)
-
 ```
 
 This will create and execute a task to write a summary about the latest news on quantum computing. The result will be the summary of the news.
