@@ -15,7 +15,7 @@ class PostInstallCommand(install):
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.2.6',
+  version = '0.2.7',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
