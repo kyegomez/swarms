@@ -47,7 +47,7 @@ from langchain.tools.human.tool import HumanInputRun
 
 # from swarms.agents.workers.auto_agent import MultiModalVisualAgent
 # from swarms.agents.workers import multimodal_agent_tool
-from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
+from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 from swarms.tools.main import math_tool
 
 

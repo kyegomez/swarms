@@ -126,7 +126,8 @@ Here is the detailed roadmap of our priorities and planned features for the near
 
 * Develop Conversational UI with Gradio
 
-* Develop hosted paid API so anybody can use hostedly.
+* Integrate omni agent as a worker tool
+
 
 1. **Multi-Agent Debate Integration**: Integrate multi-agent debate frameworks ([Multi Agent debate](https://github.com/Skytliang/Multi-Agents-Debate) and [Multi agent2 debate](https://github.com/composable-models/llm_multiagent_debate)) to improve decision-making.
 

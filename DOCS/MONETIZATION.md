@@ -84,6 +84,10 @@ By offering a variety of services and payment models, Swarms.AI will be able to 
 
 * Partnerships with enterprises, massive contracts with performance based fee
 
+* Have discord bot and or slack bot with users personal data, charge subscription.
 
+* each user gets a dedicated ocean instance of all their data so the swarm can query it as needed.
+
+* 
 
 
