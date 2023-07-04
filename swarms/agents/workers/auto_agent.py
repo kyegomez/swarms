@@ -2,29 +2,25 @@
 import os
 import pandas as pd
 from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
-from langchain.chat_models import ChatOpenAI
 
+from langchain.chat_models import ChatOpenAI
 from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
 from langchain.docstore.document import Document
+
 import asyncio
 import nest_asyncio
-
-
-llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key="")
 
 # Tools
 import os
 from contextlib import contextmanager
 from typing import Optional
 from langchain.agents import tool
+
 from langchain.tools.file_management.read import ReadFileTool
 from langchain.tools.file_management.write import WriteFileTool
-
-ROOT_DIR = "./data/"
-
 from langchain.tools import BaseTool, DuckDuckGoSearchRun
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pydantic import Field
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain, BaseCombineDocumentsChain
 
@@ -33,10 +29,8 @@ import faiss
 from langchain.vectorstores import FAISS
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
+
 from langchain.tools.human.tool import HumanInputRun
-
-
-
 from swarms.agents.workers.auto_agent import MultiModalVisualAgent
 from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 
