@@ -46,7 +46,7 @@ from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain,
 from langchain.tools.human.tool import HumanInputRun
 
 # from swarms.agents.workers.auto_agent import MultiModalVisualAgent
-from swarms.agents.workers import multimodal_agent_tool
+# from swarms.agents.workers import multimodal_agent_tool
 from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 from swarms.tools.main import math_tool
 
@@ -233,7 +233,8 @@ class Swarms:
     def initialize_tools(self, llm):
         web_search = DuckDuckGoSearchRun()
         tools = [web_search, WriteFileTool(root_dir="./data"), ReadFileTool(root_dir="./data"), process_csv,
-                 multimodal_agent_tool, WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+                #  multimodal_agent_tool, 
+                WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
                  Terminal, CodeWriter, CodeEditor, math_tool]
         return tools
 

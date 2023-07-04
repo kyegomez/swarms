@@ -74,10 +74,16 @@ By offering a variety of services and payment models, Swarms.AI will be able to 
 
 # Roadmap
 
+* Create a landing page for swarms apac.ai/product/swarms
+
 * Create Hosted Swarms API for anybody to just use without need for mega gpu infra, charge usage based pricing. Prerequisites for success => Swarms has to be extremely reliable + we need world class documentation and many daily users => how do we get many daily users? We provide a seamless and fluid experience, how do we create a seamless and fluid experience? We write good code that is modular, provides feedback to the user in times of distress, and ultimately accomplishes the user's tasks.
 
 * Hosted consumer and enterprise subscription as a service on The Domain, where users can interact with 1000s of APIs and ingest 1000s of different data streams.
 
 * Hosted dedicated capacity deals with mega enterprises on automating many operations with Swarms
 
-* Consulting partnerships with enterprises, massive contracts with performance based fee
+* Partnerships with enterprises, massive contracts with performance based fee
+
+
+
+
