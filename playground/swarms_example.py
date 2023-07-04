@@ -2,7 +2,7 @@ from swarms import Swarms
 import os
 
 # Retrieve your API key from the environment or replace with your actual key
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = ""
 
 # Initialize Swarms with your API key
 swarm = Swarms(api_key)

@@ -1,12 +1,12 @@
 # Agora
 
-![Agora banner](Agora-Banner-blend.png)
+![Agora banner](images/Agora-Banner-blend.png)
 
 [Swarms is brought to you by Agora, the open source AI research organization. Join Agora and Help create swarms and or recieve support to advance Humanity. ](https://discord.gg/qUtxnK2NMf)
 
 # Swarming Language Models (Swarms)
 
-![Swarming banner](swarms.png)
+![Swarming banner](images/swarms.png)
 
 [![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
