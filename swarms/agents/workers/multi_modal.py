@@ -32,14 +32,14 @@ from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.llms.openai import OpenAI
 
 # Grounding DINO
-import groundingdino.datasets.transforms as T
-from groundingdino.models import build_model
-from groundingdino.util import box_ops
-from groundingdino.util.slconfig import SLConfig
-from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
+# import groundingdino.datasets.transforms as T
+import models.GroundingDINO.groundingdino.datasets.transforms as T
+from models.GroundingDINO.groundingdino.models import build_model
+from models.GroundingDINO.groundingdino.util import box_ops
+from models.GroundingDINO.groundingdino.util.slconfig import SLConfig
+from models.GroundingDINO.groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 
-# segment anything #
-from segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
+from models.segment_anything.segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt

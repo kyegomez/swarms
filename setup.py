@@ -1,21 +1,21 @@
 from setuptools import setup, find_packages
 
-from setuptools.command.install import install
+# from setuptools.command.install import install
 
-class PostInstallCommand(install):
-    """Post-installation for installation mode."""
-    def run(self):
-        install.run(self)
-        # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
-        import subprocess
-        subprocess.check_call(["pip", "install", "git+https://github.com/IDEA-Research/GroundingDINO.git"])
-        subprocess.check_call(["pip", "install", "git+https://github.com/facebookresearch/segment-anything.git"])
+# class PostInstallCommand(install):
+#     """Post-installation for installation mode."""
+#     def run(self):
+#         install.run(self)
+#         # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
+#         import subprocess
+#         subprocess.check_call(["pip", "install", "git+https://github.com/IDEA-Research/GroundingDINO.git"])
+#         subprocess.check_call(["pip", "install", "git+https://github.com/facebookresearch/segment-anything.git"])
 
 
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.2.7',
+  version = '0.2.8',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -80,9 +80,6 @@ setup(
         "pytube",
         "pydub"
     ],
-    cmdclass={
-      'install': PostInstallCommand,
-    },
   classifiers=[
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
