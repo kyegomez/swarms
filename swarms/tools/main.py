@@ -23,17 +23,7 @@ from bs4 import BeautifulSoup
 
 # from logger import logger
 
-
-import logging
-
-logger = logging.getLogger()
-formatter = logging.Formatter("%(message)s")
-ch = logging.StreamHandler()
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-
-logger.setLevel(logging.DEBUG)
-
+from swarms.utils import logger
 
 class ToolScope(Enum):
     GLOBAL = "global"

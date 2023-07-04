@@ -224,8 +224,7 @@ from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import AgentAction, AgentFinish, LLMResult
 from celery import Task
 
-from ansi import ANSI, Color, Style, dim_multiline
-from logger import logger
+from swarms.utils import ANSI, Color, Style, dim_multiline, logger
 
 
 class EVALCallbackHandler(BaseCallbackHandler):
