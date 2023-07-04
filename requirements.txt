@@ -23,7 +23,7 @@ einops
 gradio
 imageio
 imageio-ffmpeg
-GroundingDINO
+# GroundingDINO
 invisible-watermark
 kornia
 numpy
