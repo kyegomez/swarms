@@ -244,14 +244,38 @@ class Swarms:
         return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
     def initialize_worker_node(self, llm, tools, vectorstore):
-        return WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
+        worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
+        worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={})
+        return worker_node
 
-    def initialize_boss_node(self, llm, vectorstore, task_execution_chain, verbose=True, max_iterations=5):
-        return BossNode(self.openai_api_key, llm, vectorstore, task_execution_chain, verbose, max_iterations)
+    def initialize_boss_node(self, llm, vectorstore):
+        todo_prompt = PromptTemplate.from_template("You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}""")
+        todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
+        search = SerpAPIWrapper()
+        tools = [
+            Tool(name="Search", func=search.run, description="useful for when you need to answer questions about current events"),
+            Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!"),
+            Tool(name="AUTONOMOUS Worker AGENT", func=self.worker_node.agent.run, description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on")
+        ]
 
+        suffix = """Question: {task}\n{agent_scratchpad}"""
+        prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n"""
+        prompt = ZeroShotAgent.create_prompt(tools, prefix=prefix, suffix=suffix, input_variables=["objective", "task", "context", "agent_scratchpad"],)
 
+        llm_chain = LLMChain(llm=OpenAI(temperature=0), prompt=prompt)
+        agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
+        agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
+        return BossNode(self.openai_api_key, llm, vectorstore, agent_executor, verbose=True, max_iterations=5)
 
-
+    def run_swarms(self, objective):
+        llm = self.initialize_llm()
+        tools = self.initialize_tools(llm)
+        vectorstore = self.initialize_vectorstore()
+        worker_node = self.initialize_worker_node(llm, tools, vectorstore)
+        boss_node = self.initialize_boss_node(llm, vectorstore)
+        task = boss_node.create_task(objective)
+        boss_node.execute_task(task)
+        worker_node.run_agent(objective)
 
 
 
@@ -284,28 +308,22 @@ class Swarms:
 
 #special classes
 
-class HierarchicalSwarms(Swarms):
-    def execute(self, task):
-        pass
+# class HierarchicalSwarms(Swarms):
+#     def execute(self, task):
+#         pass
 
 
-class CollaborativeSwarms(Swarms):
-    def execute(self, task):
-        pass
+# class CollaborativeSwarms(Swarms):
+#     def execute(self, task):
+#         pass
 
-class CompetitiveSwarms(Swarms):
-    def execute(self, task):
-        pass
+# class CompetitiveSwarms(Swarms):
+#     def execute(self, task):
+#         pass
 
-class MultiAgentDebate(Swarms):
-    def execute(self, task):
-        pass
-
-
-
-
-
-
+# class MultiAgentDebate(Swarms):
+#     def execute(self, task):
+#         pass
 
 
 #======================================> WorkerNode
