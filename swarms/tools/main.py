@@ -2278,6 +2278,4 @@ math_tool = Tool(
 
 #####==========================================================================> TOOLS
 from langchain.tools.human.tool import HumanInputRun
-from langchain.tools.file_management.read import ReadFileTool
-from langchain.tools.file_management.write import WriteFileTool
 from langchain.tools import BaseTool, DuckDuckGoSearchRun
