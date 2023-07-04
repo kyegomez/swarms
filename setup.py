@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.2.5',
+  version = '0.2.6',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -69,6 +69,10 @@ setup(
         "pytube",
         "pydub"
   ],
+    dependency_links=[
+      'git+https://github.com/IDEA-Research/GroundingDINO.git#egg=GroundingDINO',
+      'git+https://github.com/facebookresearch/segment-anything.git#egg=segment_anything'
+    ],
   classifiers=[
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
