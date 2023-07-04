@@ -37,6 +37,7 @@ setup(
         "controlnet-aux",
         "diffusers",
         "einops",
+        'llama-index',
         "gradio",
         "imageio",
         "imageio-ffmpeg",

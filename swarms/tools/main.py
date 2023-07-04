@@ -15,7 +15,7 @@ from langchain.llms.base import BaseLLM
 
 import requests
 from bs4 import BeautifulSoup
-from llama_index import GPTSimpleVectorIndex
+from llama_index import GPTVectorStoreIndex
 from llama_index.readers.database import DatabaseReader
 
 from env import settings
@@ -135,7 +135,7 @@ class WineDB(BaseToolSet):
             FROM wine
         """
         documents = db.load_data(query=query)
-        self.index = GPTSimpleVectorIndex(documents)
+        self.index = GPTVectorStoreIndex(documents)
 
     @tool(
         name="Wine Recommendation",

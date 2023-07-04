@@ -54,3 +54,4 @@ O365
 pytube
 pydub
 git+https://github.com/m-bain/whisperx.git
+llama-index
