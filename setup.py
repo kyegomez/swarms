@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.4.3',
+  version = '0.4.4',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -21,7 +21,7 @@ setup(
         'transformers',
         'openai',
         'langchain',
-        'torch==2.0.0',
+        'torch',
         'torchvision',
         'asyncio',
         'nest_asyncio',

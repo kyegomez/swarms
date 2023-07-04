@@ -1,7 +1,7 @@
 transformers
 openai
 langchain
-torch==2.0.0
+torch
 torchvision
 asyncio
 nest_asyncio
