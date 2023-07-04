@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.2.0',
+  version = '0.2.2',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -53,7 +53,7 @@ setup(
         "torchmetrics",
         "webdataset",
         "yapf",
-        'groundingdino'
+        'GroundingDINO'
         "wolframalpha",
         "wikipedia",
         "httpx",
