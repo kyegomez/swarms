@@ -58,7 +58,16 @@ index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
 # ---------- Worker Node ----------
-@tool
+
+# Define the input schema for the WorkerNode
+class WorkerNodeInput(BaseModel):
+    ai_name: str = Field(description="Name of the AI")
+    ai_role: str = Field(description="Role of the AI")
+    human_in_the_loop: bool = Field(description="Whether there is a human in the loop")
+    search_kwargs: dict = Field(description="Search parameters")
+
+
+@tool("WorkerNode", args_schema=WorkerNodeInput)
 class WorkerNode:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on """
     def __init__(self, llm, tools, vectorstore):
@@ -157,7 +166,7 @@ class Swarms:
     def initialize_tools(self, llm):
         web_search = DuckDuckGoSearchRun()
         tools = [
-            DuckDuckGoSearchRun(),
+            web_search,
             WriteFileTool(root_dir=ROOT_DIR),
             ReadFileTool(root_dir=ROOT_DIR),
             process_csv,
