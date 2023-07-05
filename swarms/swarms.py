@@ -155,13 +155,13 @@ todo_prompt = PromptTemplate.from_template(
     "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"""
 )
 todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
-search = SerpAPIWrapper()
+# search = SerpAPIWrapper()
 tools = [
-    Tool(
-        name="Search",
-        func=search.run,
-        description="useful for when you need to answer questions about current events",
-    ),
+    # Tool(
+    #     name="Search",
+    #     func=search.run,
+    #     description="useful for when you need to answer questions about current events",
+    # ),
     Tool(
         name="TODO",
         func=todo_chain.run,
@@ -252,9 +252,9 @@ class Swarms:
     def initialize_boss_node(self, llm, vectorstore):
         todo_prompt = PromptTemplate.from_template("You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}""")
         todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
-        search = SerpAPIWrapper()
+        # search = SerpAPIWrapper()
         tools = [
-            Tool(name="Search", func=search.run, description="useful for when you need to answer questions about current events"),
+            # Tool(name="Search", func=search.run, description="useful for when you need to answer questions about current events"),
             Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!"),
             Tool(name="AUTONOMOUS Worker AGENT", func=self.worker_node.agent.run, description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on")
         ]
