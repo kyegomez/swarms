@@ -10,12 +10,12 @@ class WorkerNode(BaseTool):
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on """
     name = "WorkerNode"
     description = "A worker node that can perform complex tasks"
-    llm: Any = Field(description="Language model")
-    tools: List[Tool] = Field(description="List of tools")
-    vectorstore: VectorStore = Field(description="Vector store")
-
-    def __init__(self, **data):
-        super().__init__(**data)
+    
+    def __init__(self, llm, tools, vectorstore):
+        super().__init__()
+        self.llm = llm
+        self.tools = tools
+        self.vectorstore = vectorstore
 
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
         self.agent = AutoGPT.from_llm_and_tools(
