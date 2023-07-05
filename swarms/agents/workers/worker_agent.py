@@ -13,6 +13,7 @@ class WorkerNode(BaseTool):
     description = "A worker node that can perform complex tasks"
 
     def __init__(self, llm, tools, vectorstore):
+        super().__init__()
         self.llm = llm
         self.tools = tools
         self.vectorstore = vectorstore
