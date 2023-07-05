@@ -1107,7 +1107,7 @@ from transformers import (
 )
 
 
-from utils import get_new_image_name
+from swarms.utils.utils import get_new_image_name
 
 
 class MaskFormer(BaseToolSet):
