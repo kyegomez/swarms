@@ -9,7 +9,6 @@ from langchain.callbacks.manager import (
 
 
 class WorkerNode(BaseTool):
-    # """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on """
     name = "WorkerNode"
     description = "A worker node that can perform complex tasks"
     
@@ -18,6 +17,7 @@ class WorkerNode(BaseTool):
         self.llm = llm
         self.tools = tools
         self.vectorstore = vectorstore
+        self.agent = None
 
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
         self.agent = AutoGPT.from_llm_and_tools(
