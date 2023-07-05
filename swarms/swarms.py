@@ -164,7 +164,7 @@ tools = [
     ),
     Tool(
         name="AUTONOMOUS Worker AGENT",
-        func=worker_node.run,
+        func=worker_node.run_agent,
         description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
     )
 ]
