@@ -70,7 +70,7 @@ setup(
         'pydantic==1.10.6',
         'tenacity==8.2.2',
         'python-dotenv==1.0.0',
-        'pillow==9.4.0',
+        'Pillow==9.0.0',
         'boto3',
         'uvicorn==0.21.1',
         'python-ptrace==0.9.8',
