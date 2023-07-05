@@ -58,24 +58,19 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 web_search = DuckDuckGoSearchRun()
 
 
-tools = [
-    
-    web_search,
-    WriteFileTool(root_dir="./data"),
-    ReadFileTool(root_dir="./data"),
-    
-    process_csv,
-    # multimodal_agent_tool,
-    query_website_tool,
-
-    Terminal,
-    CodeWriter,
-    CodeEditor,
-    
-    # math_tool
-    
+tools = {
+    'web_search': web_search,
+    'write_file_tool': WriteFileTool(root_dir="./data"),
+    'read_file_tool': ReadFileTool(root_dir="./data"),
+    'process_csv': process_csv,
+    # 'multimodal_agent_tool': multimodal_agent_tool,
+    'query_website_tool': query_website_tool,
+    'terminal': Terminal,
+    'code_writer': CodeWriter,
+    'code_editor': CodeEditor,
+    # 'math_tool': math_tool
     # HumanInputRun(), # Activate if you want the permit asking for help from the human
-]
+}
 
 
 ############## Vectorstore
@@ -228,14 +223,20 @@ class Swarms:
 
     def initialize_tools(self, llm):
         web_search = DuckDuckGoSearchRun()
-        tools = [web_search, WriteFileTool(root_dir="./data"), ReadFileTool(root_dir="./data"), process_csv,
-                #  multimodal_agent_tool, 
-                WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-                 Terminal, CodeWriter, CodeEditor, 
-                #  math_tool
-                 ]
+        tools = {
+            'web_search': web_search,
+            'write_file_tool': WriteFileTool(root_dir="./data"),
+            'read_file_tool': ReadFileTool(root_dir="./data"),
+            'process_csv': process_csv,
+            #  'multimodal_agent_tool': multimodal_agent_tool,
+            'query_website_tool': WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+            'terminal': Terminal,
+            'code_writer': CodeWriter,
+            'code_editor': CodeEditor,
+            #  'math_tool': math_tool
+        }
         return tools
-
+    
     def initialize_vectorstore(self):
         embeddings_model = OpenAIEmbeddings()
         embedding_size = 1536
