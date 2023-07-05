@@ -404,7 +404,7 @@ class FileHandler:
 #############===========================>
 import pandas as pd
 
-from swarms.prompts.prompts import DATAFRAME_PROMPT
+from prompts.prompts import DATAFRAME_PROMPT
 
 
 class CsvToDataframe(BaseHandler):
@@ -432,7 +432,7 @@ from PIL import Image
 from transformers import BlipForConditionalGeneration, BlipProcessor
 
 # from core.prompts.file import IMAGE_PROMPT
-from swarms.prompts.prompts import IMAGE_PROMPT
+from prompts.prompts import IMAGE_PROMPT
 
 
 

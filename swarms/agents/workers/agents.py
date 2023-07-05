@@ -137,7 +137,7 @@ class ToolsFactory:
 
 ################
 # from core.prompts.input import EVAL_PREFIX, EVAL_SUFFIX
-from swarms.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
+from prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
 ############
 
 
@@ -444,9 +444,9 @@ from langchain.schema import (
 from langchain.tools.base import BaseTool
 
 # from core.prompts.input import EVAL_TOOL_RESPONSE
-from swarms.prompts.prompts import EVAL_TOOL_RESPONSE
+from prompts.prompts import EVAL_TOOL_RESPONSE
 
-from swarms.prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
+from prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
 
 
 class ConversationalChatAgent(Agent):
@@ -1013,7 +1013,7 @@ from langchain.schema import BaseOutputParser
 
 # from core.prompts.input import EVAL_FORMAT_INSTRUCTIONS
 
-from swarms.prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
+from prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
 
 
 class EvalOutputParser(BaseOutputParser):
