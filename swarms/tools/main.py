@@ -10,6 +10,8 @@ from langchain.agents import load_tools
 from langchain.agents.tools import BaseTool
 from langchain.llms.base import BaseLLM
 
+from langchain.chat_models import ChatOpenAI
+
 
 import requests
 from bs4 import BeautifulSoup
