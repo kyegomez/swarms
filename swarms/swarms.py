@@ -24,7 +24,7 @@ from langchain.tools.file_management.read import ReadFileTool
 
 from langchain.tools.file_management.write import WriteFileTool
 from langchain.tools.human.tool import HumanInputRun
-from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool, BaseToolSet, tool, ToolsFactory
+from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool, BaseToolSet, tool, ToolsFactory
 
 from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
 from langchain.chat_models import ChatOpenAI
