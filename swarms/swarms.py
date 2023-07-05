@@ -2,7 +2,7 @@
 import os
 import asyncio
 import faiss
-from typing import Optional
+from typing import Any, Optional, List
 from contextlib import contextmanager
 
 from pydantic import BaseModel, Field
@@ -60,11 +60,11 @@ vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {
 # ---------- Worker Node ----------
 
 # Define the input schema for the WorkerNode
+# Define the input schema for the WorkerNode
 class WorkerNodeInput(BaseModel):
-    ai_name: str = Field(description="Name of the AI")
-    ai_role: str = Field(description="Role of the AI")
-    human_in_the_loop: bool = Field(description="Whether there is a human in the loop")
-    search_kwargs: dict = Field(description="Search parameters")
+    llm: Any = Field(description="Language model")
+    tools: List[Tool] = Field(description="List of tools")
+    vectorstore: VectorStore = Field(description="Vector store")
 
 
 @tool("WorkerNode", args_schema=WorkerNodeInput)
