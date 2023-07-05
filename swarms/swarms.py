@@ -58,7 +58,7 @@ index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
 # ---------- Worker Node ----------
-@tool("workerAgent", return_direct=True)
+@tool("WorkerAgent", return_direct=True)
 class WorkerNode:
     def __init__(self, llm, tools, vectorstore):
         self.llm = llm
@@ -81,6 +81,7 @@ class WorkerNode:
         Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
         """
         self.agent.run([f"{tree_of_thoughts_prompt} {prompt}"])
+
 
 worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
 
@@ -143,11 +144,7 @@ tool_names = [tool.name for tool in tools]
 agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
 agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
 
-# boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
-
-
-
-
+boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
 
 
 class Swarms:
