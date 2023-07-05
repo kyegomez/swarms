@@ -1,1 +1,1 @@
-from swarms.agents.swarms import Swarms
+from swarms.swarms import Swarms
