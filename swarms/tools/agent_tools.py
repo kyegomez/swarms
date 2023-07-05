@@ -39,7 +39,7 @@ ROOT_DIR = "./data/"
 openai_api_key = os.environ["OPENAI_API_KEY"]
 llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=openai_api_key)
 
-tools = [
+worker_tools = [
     DuckDuckGoSearchRun(),
     WriteFileTool(root_dir=ROOT_DIR),
     ReadFileTool(root_dir=ROOT_DIR),
