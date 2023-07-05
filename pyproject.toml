@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "swarms"
-version = "0.5.9"
+version = "0.6.1"
 description = "Swarms - Pytorch"
 authors = ["Kye Gomez <kye@apac.ai>"]
 license = "MIT"

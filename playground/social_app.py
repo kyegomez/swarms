@@ -1,4 +1,4 @@
-from swarms import Swarms
+from ..swarms import Swarms
 
 # Retrieve your API key from the environment or replace with your actual key
 api_key = "sksdsds"

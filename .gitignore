@@ -9,3 +9,4 @@ video/
 dataframe/
 
 static/generated
+swarms/__pycache__
