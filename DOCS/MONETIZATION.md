@@ -80,14 +80,12 @@ By offering a variety of services and payment models, Swarms.AI will be able to 
 
 * Hosted consumer and enterprise subscription as a service on The Domain, where users can interact with 1000s of APIs and ingest 1000s of different data streams.
 
-* Hosted dedicated capacity deals with mega enterprises on automating many operations with Swarms
+* Hosted dedicated capacity deals with mega enterprises on automating many operations with Swarms for monthly subscription 300,000+$ 
 
 * Partnerships with enterprises, massive contracts with performance based fee
 
-* Have discord bot and or slack bot with users personal data, charge subscription.
+* Have discord bot and or slack bot with users personal data, charge subscription + browser extension
 
 * each user gets a dedicated ocean instance of all their data so the swarm can query it as needed.
 
 * 
-
-
