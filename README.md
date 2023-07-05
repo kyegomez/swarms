@@ -71,31 +71,20 @@ pip install -r requirements.txt
 ```
 
 # Method 3
-Simple example by `git cloning https://github.com/kyegomez/swarms.git` `python3 example.py`
+Simple example by:
 
+* `git cloning https://github.com/kyegomez/swarms.git`
 
-## BossNode
+* `cd swarms`
 
-The `BossNode` class is a key component of Swarms. It represents a "boss" in the system that assigns tasks to other components.
+* `python3 -m pip install -r requirements.txt`
 
-Here is an example of how you can use it:
+* `python3 example.py`
 
-```python
-class BossNode:
-    def __init__(self, tools):
-        # initialization code goes here
-
-    def create_task(self, objective):
-        return {"objective": objective}
-
-    def execute_task(self, task):
-        # task execution code goes here
-```
-
-With the `BossNode` class, you can create tasks for your tools to perform. For example, you can create a task to write a summary of a specific topic:
+* or create a new file:
 
 ```python
-from swarms import Swarms
+from swarms.swarms import Swarms
 
 # Retrieve your API key from the environment or replace with your actual key
 api_key = "sksdsds"
