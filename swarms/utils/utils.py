@@ -229,8 +229,6 @@ import os
 
 import boto3
 
-# from env import DotEnv
-
 
 class S3Uploader(AbstractUploader):
     def __init__(self, accessKey: str, secretKey: str, region: str, bucket: str):
@@ -245,7 +243,7 @@ class S3Uploader(AbstractUploader):
         )
 
     @staticmethod
-    def from_settings(settings: DotEnv) -> "S3Uploader":
+    def from_settings() -> "S3Uploader":
         return S3Uploader(
             os.environ["AWS_ACCESS_KEY_ID"],
             os.environ["AWS_SECRET_ACCESS_KEY"],
@@ -267,8 +265,6 @@ class S3Uploader(AbstractUploader):
 import os
 import shutil
 from pathlib import Path
-
-# from env import DotEnv
 
 
 class StaticUploader(AbstractUploader):
