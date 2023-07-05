@@ -28,6 +28,8 @@ from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQ
 
 from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
 from langchain.chat_models import ChatOpenAI
+from langchain.tools import tool
+
 
 # ---------- Constants ----------
 ROOT_DIR = "./data/"
@@ -56,6 +58,7 @@ index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
 # ---------- Worker Node ----------
+@tool("search", return_direct=True)
 class WorkerNode:
     def __init__(self, llm, tools, vectorstore):
         self.llm = llm
