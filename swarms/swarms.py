@@ -45,7 +45,7 @@ tools = [
     Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
     
     Tool(name='query_website_tool', func=WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)), description='Queries a website'),
-    
+
     # Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
     # Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
     # Tool(name='code_editor', func=CodeEditor(), description='Edits code'),
@@ -58,8 +58,9 @@ index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
 # ---------- Worker Node ----------
-@tool("WorkerAgent", return_direct=True)
+@tool
 class WorkerNode:
+    """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on """
     def __init__(self, llm, tools, vectorstore):
         self.llm = llm
         self.tools = tools
@@ -143,9 +144,7 @@ tool_names = [tool.name for tool in tools]
 
 agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
 agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
-
 boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
-
 
 class Swarms:
     def __init__(self, openai_api_key):
@@ -162,6 +161,7 @@ class Swarms:
             Tool(name='read_file_tool', func=ReadFileTool(root_dir=ROOT_DIR), description='Reads a file'),
             Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
             Tool(name='query_website_tool', func=WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)), description='Queries a website'),
+
             # Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
             # Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
             # Tool(name='code_editor', func=CodeEditor(), description='Edits code'),
@@ -207,10 +207,6 @@ class Swarms:
         task = boss_node.create_task(objective)
         boss_node.execute_task(task)
         worker_node.run_agent(objective)
-
-
-
-
 
 
 
