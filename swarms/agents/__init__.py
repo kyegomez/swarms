@@ -1,1 +1,1 @@
-from ..swarms import Swarms
+"""Agents, workers and bosses"""
