@@ -72,7 +72,7 @@ tools = [
     CodeWriter,
     CodeEditor,
     
-    math_tool
+    # math_tool
     
     # HumanInputRun(), # Activate if you want the permit asking for help from the human
 ]
@@ -231,7 +231,9 @@ class Swarms:
         tools = [web_search, WriteFileTool(root_dir="./data"), ReadFileTool(root_dir="./data"), process_csv,
                 #  multimodal_agent_tool, 
                 WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-                 Terminal, CodeWriter, CodeEditor, math_tool]
+                 Terminal, CodeWriter, CodeEditor, 
+                #  math_tool
+                 ]
         return tools
 
     def initialize_vectorstore(self):
