@@ -137,7 +137,7 @@ class ToolsFactory:
 
 ################
 # from core.prompts.input import EVAL_PREFIX, EVAL_SUFFIX
-from prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
+from ...prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
 ############
 
 
@@ -1013,7 +1013,8 @@ from langchain.schema import BaseOutputParser
 
 # from core.prompts.input import EVAL_FORMAT_INSTRUCTIONS
 
-from prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
+# from prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
+from ...prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
 
 
 class EvalOutputParser(BaseOutputParser):

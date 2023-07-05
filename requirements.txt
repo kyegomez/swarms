@@ -59,7 +59,7 @@ fastapi==0.94.1
 pydantic==1.10.6
 
 tenacity==8.2.2
-python-dotenv==1.0.0
+python-dotenv
 
 boto3
 uvicorn==0.21.1
