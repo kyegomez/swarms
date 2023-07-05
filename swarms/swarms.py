@@ -98,7 +98,7 @@ worker_agent.chain.verbose = True
 class WorkerNode:
     def __init__(self, llm, tools, vectorstore):
         self.llm = llm
-        self.tools = tools
+        self.tools = tools  # Add this line here
         self.vectorstore = vectorstore
 
 
@@ -107,7 +107,7 @@ class WorkerNode:
         self.agent = AutoGPT.from_llm_and_tools(
             ai_name=ai_name,
             ai_role=ai_role,
-            tools=tools,
+            tools=self.tools,  # Change this line to use self.tools
             llm=self.llm,
             memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
             human_in_the_loop=human_in_the_loop,
@@ -120,7 +120,6 @@ class WorkerNode:
         Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
         """
         self.agent.run([f"{tree_of_thoughts_prompt} {prompt}"])
-
 
 
 #inti worker node with llm
