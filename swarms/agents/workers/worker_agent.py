@@ -26,10 +26,9 @@ class WorkerNode(BaseTool):
         )
         self.agent.chain.verbose = True
 
-    @tool(
-        name="Worker AutoBot Agent",
-        description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on",
-    )
+    @tool
+        # name="Worker AutoBot Agent",
+        # description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on",
     def _run(
         self, prompt: str, run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> str:
