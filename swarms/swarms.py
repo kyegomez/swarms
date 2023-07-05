@@ -59,9 +59,10 @@ class Swarms:
         llm = self.initialize_llm()
         tools = self.initialize_tools(llm)
         vectorstore = self.initialize_vectorstore()
-        worker_node = self.initialize_worker
-
-
+        worker_node = self.initialize_worker_node(llm, tools, vectorstore)  # Corrected here
+        boss_node = self.initialize_boss_node(llm, vectorstore)
+        task = boss_node.create_task(objective)
+        boss_node.execute_task(task)
 # class Swarms:
 #     def __init__(self, num_nodes: int, llm: BaseLLM, self_scaling: bool): 
 #         self.nodes = [WorkerNode(llm) for _ in range(num_nodes)]
