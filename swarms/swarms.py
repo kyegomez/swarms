@@ -32,7 +32,13 @@ class Swarms:
         return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
     def initialize_worker_node(self, llm, tools, vectorstore):
-        worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
+        worker_node = WorkerNode(
+            llm=llm, 
+            tools=tools, 
+            vectorstore=vectorstore, 
+            name="WorkerNode", 
+            description="A worker node that can perform complex tasks"
+        )
         worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={})
         return worker_node
 
