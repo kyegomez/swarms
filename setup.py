@@ -24,6 +24,7 @@ setup(
         'torch',
         'torchvision',
         'asyncio',
+        'selenium',
         'nest_asyncio',
         'bs4',
         'playwright',
