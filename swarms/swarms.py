@@ -70,12 +70,12 @@ tools = [
 # Add any additional tools here...
 ]
 
-# ############## Vectorstore
-# embeddings_model = OpenAIEmbeddings()
-# embedding_size = 1536
-# index = faiss.IndexFlatL2(embedding_size)
-# vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
-# ####################################################################### => Worker Node
+############## Vectorstore
+embeddings_model = OpenAIEmbeddings()
+embedding_size = 1536
+index = faiss.IndexFlatL2(embedding_size)
+vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+####################################################################### => Worker Node
 
 
 # worker_agent = AutoGPT.from_llm_and_tools(
