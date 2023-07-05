@@ -29,9 +29,9 @@ class Swarms:
         index = faiss.IndexFlatL2(embedding_size)
         return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
-    def initialize_worker_node(self, llm, tools, vectorstore):
+    def initialize_worker_node(self, llm, worker_tools, vectorstore):
         # Initialize worker node
-        worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
+        worker_node = WorkerNode(llm=llm, tools=worker_tools, vectorstore=vectorstore)
         worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={})
         return worker_node
 
@@ -54,14 +54,13 @@ class Swarms:
     def run_swarms(self, objective):
         # Run the swarm with the given objective
         llm = self.initialize_llm()
-        tools = self.initialize_tools(llm)
+        worker_tools = self.initialize_tools(llm)
         vectorstore = self.initialize_vectorstore()
-        worker_node = self.initialize_worker_node(llm, tools, vectorstore)
+        worker_node = self.initialize_worker_node(llm, worker_tools, vectorstore)
         boss_node = self.initialize_boss_node(llm, vectorstore, worker_node)
         task = boss_node.create_task(objective)
         boss_node.execute_task(task)
         worker_node.run_agent(objective)
-
 
 # class Swarms:
 #     def __init__(self, num_nodes: int, llm: BaseLLM, self_scaling: bool): 
