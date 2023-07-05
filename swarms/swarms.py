@@ -58,7 +58,7 @@ index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
 # ---------- Worker Node ----------
-@tool
+@tool("workerAgent", return_direct=True)
 class WorkerNode:
     def __init__(self, llm, tools, vectorstore):
         self.llm = llm
