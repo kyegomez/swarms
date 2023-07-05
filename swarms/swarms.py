@@ -284,13 +284,15 @@ class Swarms:
         read_file_tool = ReadFileTool()
         process_csv_tool = ProcessCSVTool()
         query_website_tool = QueryWebsiteTool()
-        terminal_tool = TerminalTool()
-        code_writer_tool = CodeWriterTool()
-        code_editor_tool = CodeEditorTool()
+        # terminal_tool = TerminalTool()
+        # code_writer_tool = CodeWriterTool()
+        # code_editor_tool = CodeEditorTool()
 
         # Create tools from the toolsets
         tools = ToolsFactory.create_global_tools(
-            toolsets=[web_search, write_file_tool, read_file_tool, process_csv_tool, query_website_tool, terminal_tool, code_writer_tool, code_editor_tool],
+            toolsets=[web_search, write_file_tool, read_file_tool, process_csv_tool, query_website_tool, 
+                    #   terminal_tool, code_writer_tool, code_editor_tool
+                      ],
         )
         return tools
 
