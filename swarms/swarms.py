@@ -165,7 +165,7 @@ class Swarms:
 
             # Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
             # Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
-            # Tool(name='code_editor', func=CodeEditor(), description='Edits code'),
+            # Tool(name='code_editor', func=CodeEditor(), description='Edits code'),#
         ]
         return tools
 
