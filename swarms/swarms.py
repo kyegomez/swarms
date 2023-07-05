@@ -41,7 +41,9 @@ tools = [
     Tool(name='write_file_tool', func=WriteFileTool(root_dir=ROOT_DIR), description='Writes a file'),
     Tool(name='read_file_tool', func=ReadFileTool(root_dir=ROOT_DIR), description='Reads a file'),
     Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
+    
     Tool(name='query_website_tool', func=WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)), description='Queries a website'),
+    
     Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
     Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
     Tool(name='code_editor', func=CodeEditor(), description='Edits code'),
