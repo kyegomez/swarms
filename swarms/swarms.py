@@ -227,14 +227,14 @@ class Swarms:
         #         #  math_tool
         #          ]
         tools = [
-            Tool(name='web_search', func=web_search.run, description='Runs a web search'),
-            Tool(name='write_file_tool', func=WriteFileTool(root_dir="./data").run, description='Writes a file'),
-            Tool(name='read_file_tool', func=ReadFileTool(root_dir="./data").run, description='Reads a file'),
-            Tool(name='process_csv', func=process_csv.run, description='Processes a CSV file'),
-            Tool(name='query_website_tool', func=query_website_tool.run, description='Queries a website'),
-            Tool(name='terminal', func=Terminal.run, description='Operates a terminal'),
-            Tool(name='code_writer', func=CodeWriter.run, description='Writes code'),
-            Tool(name='code_editor', func=CodeEditor.run, description='Edits code'),
+            Tool(name='web_search', func=web_search, description='Runs a web search'),
+            Tool(name='write_file_tool', func=WriteFileTool(root_dir="./data"), description='Writes a file'),
+            Tool(name='read_file_tool', func=ReadFileTool(root_dir="./data"), description='Reads a file'),
+            Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
+            Tool(name='query_website_tool', func=query_website_tool, description='Queries a website'),
+            Tool(name='terminal', func=Terminal, description='Operates a terminal'),
+            Tool(name='code_writer', func=CodeWriter, description='Writes code'),
+            Tool(name='code_editor', func=CodeEditor, description='Edits code'),
         # Add any additional tools here...
         ]
         return tools
