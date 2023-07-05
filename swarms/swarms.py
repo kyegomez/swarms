@@ -24,7 +24,7 @@ from langchain.tools.file_management.read import ReadFileTool
 
 from langchain.tools.file_management.write import WriteFileTool
 from langchain.tools.human.tool import HumanInputRun
-from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
+from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool, BaseToolSet, tool, ToolsFactory
 
 from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
 from langchain.chat_models import ChatOpenAI
@@ -146,6 +146,129 @@ agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, ve
 
 
 
+class WebSearchTool(BaseToolSet):
+    @tool(
+        name="Web Search",
+        description="Runs a web search",
+    )
+    def run(self, query: str) -> str:
+        """Run the tool."""
+        return DuckDuckGoSearchRun().run(query)
+
+class WriteFileTool(BaseToolSet):
+    @tool(
+        name="Write File",
+        description="Writes a file",
+    )
+    def run(self, filename: str, content: str) -> str:
+        """Run the tool."""
+        return WriteFileTool(root_dir=ROOT_DIR).run(filename, content)
+
+class ReadFileTool(BaseToolSet):
+    @tool(
+        name="Read File",
+        description="Reads a file",
+    )
+    def run(self, filename: str) -> str:
+        """Run the tool."""
+        return ReadFileTool(root_dir=ROOT_DIR).run(filename)
+
+class ProcessCSVTool(BaseToolSet):
+    @tool(
+        name="Process CSV",
+        description="Processes a CSV file",
+    )
+    def run(self, filename: str) -> str:
+        """Run the tool."""
+        return process_csv(filename)
+
+class QueryWebsiteTool(BaseToolSet):
+    @tool(
+        name="Query Website",
+        description="Queries a website",
+    )
+    def run(self, url: str, query: str) -> str:
+        """Run the tool."""
+        return WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)).run(url, query)
+
+class TerminalTool(BaseToolSet):
+    @tool(
+        name="Terminal",
+        description="Operates a terminal",
+    )
+    def run(self, command: str) -> str:
+        """Run the tool."""
+        return Terminal.execute(command)
+
+class CodeWriterTool(BaseToolSet):
+    @tool(
+        name="Code Writer",
+        description="Writes code",
+    )
+    def run(self, code: str) -> str:
+        """Run the tool."""
+        return CodeWriter().write(code)
+
+class CodeEditorTool(BaseToolSet):
+    @tool(
+        name="Code Editor",
+        description="Edits code",
+    )
+    def run(self, code: str, changes: str) -> str:
+        """Run the tool."""
+        return CodeEditor().edit(code, changes)
+
+
+
+
+
+class Todo(BaseToolSet):
+    @tool(
+        name="Todo List",
+        description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
+    )
+
+    def run(self, task: str):
+    #run the task
+        return todo_chain.run
+
+
+class AutoWorkerAgent(BaseToolSet):
+    @tool(
+        name="AUTONOMOUS Worker AGENT",
+        description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on",
+    )
+
+    def run(self, task: str):
+        return worker_node.run_agent
+
+
+
+# tools += [
+#     Tool(
+#         name="TODO",
+#         func=todo_chain.run,
+#         description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
+#     ),
+#     Tool(
+#         name="AUTONOMOUS Worker AGENT",
+#         func=worker_node.run_agent,
+#         description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
+#     )
+# ]
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Swarms:
     def __init__(self, openai_api_key):
@@ -155,18 +278,22 @@ class Swarms:
         return ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=self.openai_api_key)
 
     def initialize_tools(self, llm):
-        web_search = DuckDuckGoSearchRun()
-        tools = [
-            Tool(name='web_search', func=DuckDuckGoSearchRun(), description='Runs a web search'),
-            Tool(name='write_file_tool', func=WriteFileTool(root_dir=ROOT_DIR), description='Writes a file'),
-            Tool(name='read_file_tool', func=ReadFileTool(root_dir=ROOT_DIR), description='Reads a file'),
-            Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
-            Tool(name='query_website_tool', func=WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)), description='Queries a website'),
-            Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
-            Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
-            Tool(name='code_editor', func=CodeEditor(), description='Edits code'),
-        ]
+        # Create instances of the toolset classes
+        web_search = WebSearchTool()
+        write_file_tool = WriteFileTool()
+        read_file_tool = ReadFileTool()
+        process_csv_tool = ProcessCSVTool()
+        query_website_tool = QueryWebsiteTool()
+        terminal_tool = TerminalTool()
+        code_writer_tool = CodeWriterTool()
+        code_editor_tool = CodeEditorTool()
+
+        # Create tools from the toolsets
+        tools = ToolsFactory.create_global_tools(
+            toolsets=[web_search, write_file_tool, read_file_tool, process_csv_tool, query_website_tool, terminal_tool, code_writer_tool, code_editor_tool],
+        )
         return tools
+
 
     def initialize_vectorstore(self):
         embeddings_model = OpenAIEmbeddings()
@@ -183,11 +310,11 @@ class Swarms:
         todo_prompt = PromptTemplate.from_template("You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}""")
         todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
         # search = SerpAPIWrapper()
-        tools = [
-            # Tool(name="Search", func=search.run, description="useful for when you need to answer questions about current events"),
-            Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!"),
-            Tool(name="AUTONOMOUS Worker AGENT", func=self.worker_node.run_agent, description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on")
-        ]
+
+        tools = ToolsFactory.create_global_tools_from_names(
+            toolnames=["TODO", "AUTONOMOUS Worker AGENT"],
+            llm=llm,
+        )
 
         suffix = """Question: {task}\n{agent_scratchpad}"""
         prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n"""
