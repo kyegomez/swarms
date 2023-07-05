@@ -58,20 +58,17 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 web_search = DuckDuckGoSearchRun()
 
 
-tools = {
-    'web_search': web_search,
-    'write_file_tool': WriteFileTool(root_dir="./data"),
-    'read_file_tool': ReadFileTool(root_dir="./data"),
-    'process_csv': process_csv,
-    # 'multimodal_agent_tool': multimodal_agent_tool,
-    'query_website_tool': query_website_tool,
-    'terminal': Terminal,
-    'code_writer': CodeWriter,
-    'code_editor': CodeEditor,
-    # 'math_tool': math_tool
-    # HumanInputRun(), # Activate if you want the permit asking for help from the human
-}
-
+tools = [
+    Tool(name='web_search', func=web_search.run, description='Runs a web search'),
+    Tool(name='write_file_tool', func=WriteFileTool(root_dir="./data").run, description='Writes a file'),
+    Tool(name='read_file_tool', func=ReadFileTool(root_dir="./data").run, description='Reads a file'),
+    Tool(name='process_csv', func=process_csv.run, description='Processes a CSV file'),
+    Tool(name='query_website_tool', func=query_website_tool.run, description='Queries a website'),
+    Tool(name='terminal', func=Terminal.run, description='Operates a terminal'),
+    Tool(name='code_writer', func=CodeWriter.run, description='Writes code'),
+    Tool(name='code_editor', func=CodeEditor.run, description='Edits code'),
+    # Add any additional tools here...
+]
 
 ############## Vectorstore
 embeddings_model = OpenAIEmbeddings()
@@ -98,7 +95,7 @@ worker_agent.chain.verbose = True
 class WorkerNode:
     def __init__(self, llm, tools, vectorstore):
         self.llm = llm
-        self.tools = tools  # Add this line here
+        self.tools = tools
         self.vectorstore = vectorstore
 
 
@@ -107,7 +104,7 @@ class WorkerNode:
         self.agent = AutoGPT.from_llm_and_tools(
             ai_name=ai_name,
             ai_role=ai_role,
-            tools=self.tools,  # Change this line to use self.tools
+            tools=tools,
             llm=self.llm,
             memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
             human_in_the_loop=human_in_the_loop,
@@ -120,6 +117,7 @@ class WorkerNode:
         Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
         """
         self.agent.run([f"{tree_of_thoughts_prompt} {prompt}"])
+
 
 
 #inti worker node with llm
@@ -222,20 +220,25 @@ class Swarms:
 
     def initialize_tools(self, llm):
         web_search = DuckDuckGoSearchRun()
-        tools = {
-            'web_search': web_search,
-            'write_file_tool': WriteFileTool(root_dir="./data"),
-            'read_file_tool': ReadFileTool(root_dir="./data"),
-            'process_csv': process_csv,
-            #  'multimodal_agent_tool': multimodal_agent_tool,
-            'query_website_tool': WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-            'terminal': Terminal,
-            'code_writer': CodeWriter,
-            'code_editor': CodeEditor,
-            #  'math_tool': math_tool
-        }
+        # tools = [web_search, WriteFileTool(root_dir="./data"), ReadFileTool(root_dir="./data"), process_csv,
+        #         #  multimodal_agent_tool, 
+        #         WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+        #          Terminal, CodeWriter, CodeEditor, 
+        #         #  math_tool
+        #          ]
+        tools = [
+            Tool(name='web_search', func=web_search.run, description='Runs a web search'),
+            Tool(name='write_file_tool', func=WriteFileTool(root_dir="./data").run, description='Writes a file'),
+            Tool(name='read_file_tool', func=ReadFileTool(root_dir="./data").run, description='Reads a file'),
+            Tool(name='process_csv', func=process_csv.run, description='Processes a CSV file'),
+            Tool(name='query_website_tool', func=query_website_tool.run, description='Queries a website'),
+            Tool(name='terminal', func=Terminal.run, description='Operates a terminal'),
+            Tool(name='code_writer', func=CodeWriter.run, description='Writes code'),
+            Tool(name='code_editor', func=CodeEditor.run, description='Edits code'),
+        # Add any additional tools here...
+        ]
         return tools
-    
+
     def initialize_vectorstore(self):
         embeddings_model = OpenAIEmbeddings()
         embedding_size = 1536
