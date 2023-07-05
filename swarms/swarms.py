@@ -44,9 +44,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain, BaseCombineDocumentsChain
 
 from langchain.tools.human.tool import HumanInputRun
-
-# from swarms.agents.workers.auto_agent import MultiModalVisualAgent
-# from swarms.agents.workers import multimodal_agent_tool
 from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool, math_tool
 
 

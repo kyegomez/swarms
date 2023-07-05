@@ -20,11 +20,12 @@ from bs4 import BeautifulSoup
 # import llama_index
 # from llama_index import GPTVectorStoreIndex
 # from llama_index.readers.database import DatabaseReader
-
 # from logger import logger
-
 from swarms.utils.logger import logger
 import os
+
+
+from langchain.chat_models import ChatOpenAI
 
 class ToolScope(Enum):
     GLOBAL = "global"
@@ -32,7 +33,7 @@ class ToolScope(Enum):
 
 
 SessionGetter = Callable[[], Tuple[str, AgentExecutor]]
-# openai_api_key = os.environ["OPENAI_API_KEY"]
+
 llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
 
 
