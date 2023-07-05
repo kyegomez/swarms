@@ -18,7 +18,7 @@ class WorkerNode(BaseTool):
     vectorstore: VectorStore = Field(description="Vector store")
 
     def __init__(self, llm, tools, vectorstore):
-        super().__init__()
+        super().__init__(llm=llm, tools=tools, vectorstore=vectorstore)
         self.llm = llm
         self.tools = tools
         self.vectorstore = vectorstore

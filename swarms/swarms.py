@@ -33,7 +33,7 @@ class Swarms:
 
     def initialize_worker_node(self, llm, tools, vectorstore):
         worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
-        worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={})
+        worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={})
         return worker_node
 
     def initialize_boss_node(self, llm, vectorstore):
