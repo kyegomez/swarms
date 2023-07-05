@@ -123,89 +123,78 @@ class WorkerNode:
 # #inti worker node with llm
 worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
 
-# #create an agent within the worker node
-# worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={})
+class BossNode:
+    def __init__(self, openai_api_key, llm, vectorstore, task_execution_chain, verbose, max_iterations):
+        self.llm = llm
+        self.openai_api_key = openai_api_key
+        self.vectorstore = vectorstore
+        self.task_execution_chain = task_execution_chain
+        self.verbose = verbose
+        self.max_iterations = max_iterations
 
-# #use the agent to perform a task
-# worker_node.run_agent("Find 20 potential customers for a Swarms based AI Agent automation infrastructure")
+        self.baby_agi = BabyAGI.from_llm(
+            llm=self.llm,
+            vectorstore=self.vectorstore,
+            task_execution_chain=self.task_execution_chain
+        )
 
-# class BossNode:
-#     def __init__(self, openai_api_key, llm, vectorstore, task_execution_chain, verbose, max_iterations):
-#         self.llm = llm
-#         self.openai_api_key = openai_api_key
-#         self.vectorstore = vectorstore
-#         self.task_execution_chain = task_execution_chain
-#         self.verbose = verbose
-#         self.max_iterations = max_iterations
+    def create_task(self, objective):
+        return {"objective": objective}
 
-#         self.baby_agi = BabyAGI.from_llm(
-#             llm=self.llm,
-#             vectorstore=self.vectorstore,
-#             task_execution_chain=self.task_execution_chain
-#         )
-
-#     def create_task(self, objective):
-#         return {"objective": objective}
-
-#     def execute_task(self, task):
-#         self.baby_agi(task)
+    def execute_task(self, task):
+        self.baby_agi(task)
 
 
-# ########### ===============> inputs to boss None
-# todo_prompt = PromptTemplate.from_template(
-#     "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"""
-# )
-# todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
-# # search = SerpAPIWrapper()
-# tools = [
-#     # Tool(
-#     #     name="Search",
-#     #     func=search.run,
-#     #     description="useful for when you need to answer questions about current events",
-#     # ),
-#     Tool(
-#         name="TODO",
-#         func=todo_chain.run,
-#         description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
-#     ),
-#     Tool(
-#         name="AUTONOMOUS Worker AGENT",
-#         func=worker_agent.run,
-#         description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
-#     )
-# ]
+########### ===============> inputs to boss None
+todo_prompt = PromptTemplate.from_template(
+    "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"""
+)
+todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
+# search = SerpAPIWrapper()
+tools = [
+    # Tool(
+    #     name="Search",
+    #     func=search.run,
+    #     description="useful for when you need to answer questions about current events",
+    # ),
+    Tool(
+        name="TODO",
+        func=todo_chain.run,
+        description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!",
+    ),
+    Tool(
+        name="AUTONOMOUS Worker AGENT",
+        func=worker_node.run,
+        description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
+    )
+]
 
 
 
-# suffix = """Question: {task}
-# {agent_scratchpad}"""
+suffix = """Question: {task}
+{agent_scratchpad}"""
 
-# prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
+prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
 
-# """
-# prompt = ZeroShotAgent.create_prompt(
-#     tools,
-#     prefix=prefix,
-#     suffix=suffix,
-#     input_variables=["objective", "task", "context", "agent_scratchpad"],
-# )
+"""
+prompt = ZeroShotAgent.create_prompt(
+    tools,
+    prefix=prefix,
+    suffix=suffix,
+    input_variables=["objective", "task", "context", "agent_scratchpad"],
+)
 
-# llm = OpenAI(temperature=0)
-# llm_chain = LLMChain(llm=llm, prompt=prompt)
-# tool_names = [tool.name for tool in tools]
+llm = OpenAI(temperature=0)
+llm_chain = LLMChain(llm=llm, prompt=prompt)
+tool_names = [tool.name for tool in tools]
 
-# agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
-# agent_executor = AgentExecutor.from_agent_and_tools(
-#     agent=agent, tools=tools, verbose=True
-# )
+agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
+agent_executor = AgentExecutor.from_agent_and_tools(
+    agent=agent, tools=tools, verbose=True
+)
 
-# boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
+boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
 
-# #create  a task 
-# task = boss_node.create_task(objective="Write a research paper on the impact of climate change on global agriculture")
-
-# #execute the task
-# boss_node.execute_task(task)
 
 
 
