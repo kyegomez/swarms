@@ -1,11 +1,9 @@
+import os
 from enum import Enum
 from typing import Callable, Tuple
 
 from langchain.agents.agent import AgentExecutor
 from langchain.agents.tools import BaseTool, Tool
-
-
-
 from typing import Optional
 
 from langchain.agents import load_tools
@@ -20,21 +18,18 @@ from bs4 import BeautifulSoup
 # import llama_index
 # from llama_index import GPTVectorStoreIndex
 # from llama_index.readers.database import DatabaseReader
+
 # from logger import logger
+
 from swarms.utils.logger import logger
-import os
-
-
-from langchain.chat_models import ChatOpenAI
-
 class ToolScope(Enum):
     GLOBAL = "global"
     SESSION = "session"
 
 
 SessionGetter = Callable[[], Tuple[str, AgentExecutor]]
-
-llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
+openai_api_key = os.getenv["OPENAI_API_KEY"]
+llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=openai_api_key)
 
 
 def tool(
@@ -1948,7 +1943,7 @@ count_tokens(yaml.dump(raw_spotify_api_spec))
 from langchain.llms.openai import OpenAI
 from langchain.agents.agent_toolkits.openapi import planner
 
-llm = OpenAI(model_name="gpt-4", temperature=0.0)
+llm = OpenAI(model_name="gpt-4", temperature=0.0, openai_api_key=openai_api_key)
 
 spotify_agent = planner.create_openapi_agent(spotify_api_spec, requests_wrapper, llm)
 user_query = (
@@ -1989,7 +1984,7 @@ from langchain.agents.agent_toolkits import NLAToolkit
 
 # Select the LLM to use. Here, we use text-davinci-003
 llm = OpenAI(
-    temperature=0, max_tokens=700
+    temperature=0, max_tokens=700, openai_api_key=openai_api_key
 )  # You can swap between different core LLM's here.
 
 speak_toolkit = NLAToolkit.from_llm_and_url(llm, "https://api.speak.com/openapi.yaml")
@@ -2079,7 +2074,7 @@ from langchain.vectorstores import Chroma
 from langchain.text_splitter import CharacterTextSplitter
 from langchain import OpenAI, VectorDBQA
 
-llm = OpenAI(temperature=0)
+llm = OpenAI(temperature=0, openai_api_key=openai_api_key)
 
 
 from langchain.document_loaders import TextLoader
