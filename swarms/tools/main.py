@@ -24,6 +24,7 @@ from bs4 import BeautifulSoup
 # from logger import logger
 
 from swarms.utils.logger import logger
+import os
 
 class ToolScope(Enum):
     GLOBAL = "global"
@@ -2261,9 +2262,6 @@ router_toolkit = VectorStoreRouterToolkit(
 #     ) -> str:
 #         """Use the tool asynchronously."""
 #         raise NotImplementedError("transcribe_audio does not support async")
-
-
-
 ###########=========================>
 
 #======> Calculator
