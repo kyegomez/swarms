@@ -39,12 +39,12 @@ openai_api_key = os.environ["OPENAI_API_KEY"]
 llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=openai_api_key)
 
 tools = [
-    Tool(name='web_search', func=DuckDuckGoSearchRun(), description='Runs a web search'),
-    Tool(name='write_file_tool', func=WriteFileTool(root_dir=ROOT_DIR), description='Writes a file'),
-    Tool(name='read_file_tool', func=ReadFileTool(root_dir=ROOT_DIR), description='Reads a file'),
-    Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
+    DuckDuckGoSearchRun(),
+    WriteFileTool(root_dir=ROOT_DIR),
+    ReadFileTool(root_dir=ROOT_DIR),
+    process_csv, description=('Processes a CSV file'),
     
-    Tool(name='query_website_tool', func=WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)), description='Queries a website'),
+    WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
 
     # Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
     # Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
@@ -121,7 +121,7 @@ tools += [
     ),
     Tool(
         name="AUTONOMOUS Worker AGENT",
-        func=worker_node.run_agent,
+        func=WorkerNode.run_agent,
         description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
     )
 ]
@@ -156,11 +156,12 @@ class Swarms:
     def initialize_tools(self, llm):
         web_search = DuckDuckGoSearchRun()
         tools = [
-            Tool(name='web_search', func=DuckDuckGoSearchRun(), description='Runs a web search'),
-            Tool(name='write_file_tool', func=WriteFileTool(root_dir=ROOT_DIR), description='Writes a file'),
-            Tool(name='read_file_tool', func=ReadFileTool(root_dir=ROOT_DIR), description='Reads a file'),
-            Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
-            Tool(name='query_website_tool', func=WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)), description='Queries a website'),
+            DuckDuckGoSearchRun(),
+            WriteFileTool(root_dir=ROOT_DIR),
+            ReadFileTool(root_dir=ROOT_DIR),
+            process_csv,
+            
+            WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
 
             # Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
             # Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
