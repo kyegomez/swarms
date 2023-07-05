@@ -1,106 +1,61 @@
+# ---------- Dependencies ----------
+import os
+import asyncio
+import faiss
+from typing import Optional
+from contextlib import contextmanager
 
-from collections import deque
-from typing import Dict, List, Optional, Any
-
-from langchain import LLMChain, OpenAI, PromptTemplate
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.llms import BaseLLM
-
-from langchain.vectorstores.base import VectorStore
 from pydantic import BaseModel, Field
+from langchain import LLMChain, OpenAI, PromptTemplate
 from langchain.chains.base import Chain
-
 from langchain.experimental import BabyAGI
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores.base import VectorStore
 from langchain.vectorstores import FAISS
 from langchain.docstore import InMemoryDocstore
-
+from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
-from langchain import OpenAI, SerpAPIWrapper, LLMChain
-import faiss
-
-
-
-#-------------------------------------------------------------------------- WORKER NODE
-import pandas as pd
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.tools import BaseTool, DuckDuckGoSearchRun
+from langchain.tools.file_management.read import ReadFileTool
+from langchain.tools.file_management.write import WriteFileTool
+from langchain.tools.human.tool import HumanInputRun
+from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
 from langchain.chat_models import ChatOpenAI
 
-from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
-from langchain.docstore.document import Document
-import asyncio
-import nest_asyncio
-
-# Tools
-import os
-from contextlib import contextmanager
-from typing import Optional
-
-from langchain.tools.file_management.read import ReadFileTool
-from langchain.tools.file_management.write import WriteFileTool
+# ---------- Constants ----------
 ROOT_DIR = "./data/"
 
-from langchain.tools import BaseTool, DuckDuckGoSearchRun
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain, BaseCombineDocumentsChain
-
-from langchain.tools.human.tool import HumanInputRun
-from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
-
-
+# ---------- Tools ----------
 openai_api_key = os.environ["OPENAI_API_KEY"]
-
 llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=openai_api_key)
 
-
-query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
-
-# !pip install duckduckgo_search
-web_search = DuckDuckGoSearchRun()
-
-
 tools = [
-    Tool(name='web_search', func=web_search, description='Runs a web search'),
-    Tool(name='write_file_tool', func=WriteFileTool(root_dir="./data"), description='Writes a file'),
-    Tool(name='read_file_tool', func=ReadFileTool(root_dir="./data"), description='Reads a file'),
+    Tool(name='web_search', func=DuckDuckGoSearchRun(), description='Runs a web search'),
+    Tool(name='write_file_tool', func=WriteFileTool(root_dir=ROOT_DIR), description='Writes a file'),
+    Tool(name='read_file_tool', func=ReadFileTool(root_dir=ROOT_DIR), description='Reads a file'),
     Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
-    Tool(name='query_website_tool', func=query_website_tool, description='Queries a website'),
+    Tool(name='query_website_tool', func=WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)), description='Queries a website'),
     Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
-    Tool(name='code_writer', func=CodeWriter, description='Writes code'),
-    Tool(name='code_editor', func=CodeEditor, description='Edits code'),
-# Add any additional tools here...
+    Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
+    Tool(name='code_editor', func=CodeEditor(), description='Edits code'),
 ]
 
-############## Vectorstore
+# ---------- Vector Store ----------
 embeddings_model = OpenAIEmbeddings()
 embedding_size = 1536
 index = faiss.IndexFlatL2(embedding_size)
 vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
-####################################################################### => Worker Node
 
-
-# worker_agent = AutoGPT.from_llm_and_tools(
-#     ai_name="WorkerX",
-#     ai_role="Assistant",
-#     tools=tools,
-#     llm=llm,
-#     memory=vectorstore.as_retriever(search_kwargs={"k": 8}),
-#     human_in_the_loop=True, # Set to True if you want to add feedback at each step.
-# )
-
-# worker_agent.chain.verbose = True
-
-
-
-
+# ---------- Worker Node ----------
 class WorkerNode:
     def __init__(self, llm, tools, vectorstore):
         self.llm = llm
         self.tools = tools
         self.vectorstore = vectorstore
 
-
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
-        # Instantiate the agent
         self.agent = AutoGPT.from_llm_and_tools(
             ai_name=ai_name,
             ai_role=ai_role,
@@ -111,22 +66,19 @@ class WorkerNode:
         )
         self.agent.chain.verbose = True
 
+    def run_agent```python
     def run_agent(self, prompt):
-        # Run the agent with the given prompt
         tree_of_thoughts_prompt = """
         Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
         """
         self.agent.run([f"{tree_of_thoughts_prompt} {prompt}"])
 
-
-
-# #inti worker node with llm
 worker_node = WorkerNode(llm=llm, tools=tools, vectorstore=vectorstore)
 
+# ---------- Boss Node ----------
 class BossNode:
-    def __init__(self, openai_api_key, llm, vectorstore, task_execution_chain, verbose, max_iterations):
+    def __init__(self, llm, vectorstore, task_execution_chain, verbose, max_iterations):
         self.llm = llm
-        self.openai_api_key = openai_api_key
         self.vectorstore = vectorstore
         self.task_execution_chain = task_execution_chain
         self.verbose = verbose
@@ -144,19 +96,13 @@ class BossNode:
     def execute_task(self, task):
         self.baby_agi(task)
 
-
-########### ===============> inputs to boss None
+# ---------- Inputs to Boss Node ----------
 todo_prompt = PromptTemplate.from_template(
     "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"""
 )
 todo_chain = LLMChain(llm=OpenAI(temperature=0), prompt=todo_prompt)
-# search = SerpAPIWrapper()
-tools = [
-    # Tool(
-    #     name="Search",
-    #     func=search.run,
-    #     description="useful for when you need to answer questions about current events",
-    # ),
+
+tools += [
     Tool(
         name="TODO",
         func=todo_chain.run,
@@ -169,14 +115,11 @@ tools = [
     )
 ]
 
-
-
 suffix = """Question: {task}
 {agent_scratchpad}"""
-
 prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.
-
 """
+
 prompt = ZeroShotAgent.create_prompt(
     tools,
     prefix=prefix,
@@ -189,9 +132,7 @@ llm_chain = LLMChain(llm=llm, prompt=prompt)
 tool_names = [tool.name for tool in tools]
 
 agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tool_names)
-agent_executor = AgentExecutor.from_agent_and_tools(
-    agent=agent, tools=tools, verbose=True
-)
+agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
 
 # boss_node = BossNode(llm=llm, vectorstore=vectorstore, task_execution_chain=agent_executor, verbose=True, max_iterations=5)
 
@@ -209,22 +150,15 @@ class Swarms:
 
     def initialize_tools(self, llm):
         web_search = DuckDuckGoSearchRun()
-        # tools = [web_search, WriteFileTool(root_dir="./data"), ReadFileTool(root_dir="./data"), process_csv,
-        #         #  multimodal_agent_tool, 
-        #         WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-        #          Terminal, CodeWriter, CodeEditor, 
-        #         #  math_tool
-        #          ]
         tools = [
-            Tool(name='web_search', func=web_search, description='Runs a web search'),
-            Tool(name='write_file_tool', func=WriteFileTool(root_dir="./data"), description='Writes a file'),
-            Tool(name='read_file_tool', func=ReadFileTool(root_dir="./data"), description='Reads a file'),
+            Tool(name='web_search', func=DuckDuckGoSearchRun(), description='Runs a web search'),
+            Tool(name='write_file_tool', func=WriteFileTool(root_dir=ROOT_DIR), description='Writes a file'),
+            Tool(name='read_file_tool', func=ReadFileTool(root_dir=ROOT_DIR), description='Reads a file'),
             Tool(name='process_csv', func=process_csv, description='Processes a CSV file'),
-            Tool(name='query_website_tool', func=query_website_tool, description='Queries a website'),
+            Tool(name='query_website_tool', func=WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)), description='Queries a website'),
             Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
-            Tool(name='code_writer', func=CodeWriter, description='Writes code'),
-            Tool(name='code_editor', func=CodeEditor, description='Edits code'),
-        # Add any additional tools here...
+            Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
+            Tool(name='code_editor', func=CodeEditor(), description='Edits code'),
         ]
         return tools
 
