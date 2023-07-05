@@ -1,5 +1,5 @@
 from swarms.tools.agent_tools import *
-from langchain.tools import BaseTool, tool
+from langchain.tools import BaseTool
 from typing import Optional, Type
 from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
@@ -26,7 +26,7 @@ class WorkerNode(BaseTool):
         )
         self.agent.chain.verbose = True
 
-    @tool
+    # @tool
         # name="Worker AutoBot Agent",
         # description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on",
     def _run(
