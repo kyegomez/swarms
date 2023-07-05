@@ -207,7 +207,7 @@ def dim_multiline(message: str) -> str:
 
 from abc import ABC, abstractmethod, abstractstaticmethod
 
-# from env import DotEnv
+
 
 STATIC_DIR = "static"
 
@@ -274,8 +274,8 @@ class StaticUploader(AbstractUploader):
         self.endpoint = endpoint
 
     @staticmethod
-    def from_settings(settings: DotEnv, path: Path, endpoint: str) -> "StaticUploader":
-        return StaticUploader(settings["SERVER"], path, endpoint)
+    def from_settings(path: Path, endpoint: str) -> "StaticUploader":
+        return StaticUploader(os.environ["SERVER"], path, endpoint)
 
     def get_url(self, uploaded_path: str) -> str:
         return f"{self.server}/{uploaded_path}"
