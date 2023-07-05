@@ -8,19 +8,24 @@ from contextlib import contextmanager
 from pydantic import BaseModel, Field
 from langchain import LLMChain, OpenAI, PromptTemplate
 from langchain.chains.base import Chain
+
 from langchain.experimental import BabyAGI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores.base import VectorStore
 from langchain.vectorstores import FAISS
+
 from langchain.docstore import InMemoryDocstore
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.tools import BaseTool, DuckDuckGoSearchRun
 from langchain.tools.file_management.read import ReadFileTool
+
 from langchain.tools.file_management.write import WriteFileTool
 from langchain.tools.human.tool import HumanInputRun
 from swarms.tools import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
+
 from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
 from langchain.chat_models import ChatOpenAI
 
@@ -66,7 +71,6 @@ class WorkerNode:
         )
         self.agent.chain.verbose = True
 
-    def run_agent```python
     def run_agent(self, prompt):
         tree_of_thoughts_prompt = """
         Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
