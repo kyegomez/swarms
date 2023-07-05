@@ -8,7 +8,9 @@ from langchain.callbacks.manager import (
 
 class WorkerNode(BaseTool):
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on """
-
+    name = "WorkerNode"
+    description = "A worker node that can perform complex tasks"
+    
     def __init__(self, llm, tools, vectorstore):
         super().__init__()
         self.llm = llm
