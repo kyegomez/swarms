@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.5.9',
+  version = '0.6.0',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -60,7 +60,6 @@ setup(
         'gradio_tools',
         'arxiv',
         'google-api-python-client',
-        'google-auth-oauth',
         'google-auth-httplib2',
         'beautifulsoup4==4.11.2',
         'O365',

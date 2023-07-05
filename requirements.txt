@@ -40,7 +40,6 @@ ggl
 gradio_tools
 arxiv
 google-api-python-client 
-google-auth-oauth
 google-auth-httplib2
 beautifulsoup4==4.11.2
 O365
