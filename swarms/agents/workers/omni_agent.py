@@ -1,4 +1,4 @@
-from langchain import tool
+from langchain.tools import tool
 from swarms.agents.workers.multi_modal.omni_agent import chat_huggingface
 
 class OmniWorkerAgent:
@@ -9,7 +9,7 @@ class OmniWorkerAgent:
 
     @tool
     def chat(self, data):
-        """Chat with omni-modality model that uses huggingface to query for a specific model at run time. Translate text to speech, creat images and more"""
+        """Chat with omni-modality model that uses huggingface to query for a specific model at run time. Translate text to speech, create images and more"""
         messages = data.get("messages")
         api_key = data.get("api_key", self.api_key)
         api_endpoint = data.get("api_endpoint", self.api_endpoint)
@@ -18,9 +18,9 @@ class OmniWorkerAgent:
         if not(api_key and api_type and api_endpoint):
             raise ValueError("Please provide api_key, api_type, and api_endpoint")
         
-        response = self.chat_huggingface(messages, api_key, api_type, api_endpoint)
+        response = chat_huggingface(messages, api_key, api_type, api_endpoint)
         return response
-    
+
 
 
 # #usage
