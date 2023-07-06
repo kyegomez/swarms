@@ -1,26 +1,26 @@
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.worker import WorkerNode
 from swarms.agents.boss.boss_agent import BossNode
-from swarms.agents.workers.omni_worker import OmniWorkerAgent
+# from swarms.agents.workers.omni_worker import OmniWorkerAgent
 
 
 
 class Swarms:
     def __init__(self,
                   openai_api_key,
-                  omni_api_key=None, 
-                  omni_api_endpoint=None,
-                  omni_api_type=None
+                #   omni_api_key=None, 
+                #   omni_api_endpoint=None,
+                #   omni_api_type=None
                   ):
         self.openai_api_key = openai_api_key
-        self.omni_api_key = omni_api_key
-        self.omni_api_endpoint = omni_api_endpoint
-        self.omni_api_key = omni_api_type
+        # self.omni_api_key = omni_api_key
+        # self.omni_api_endpoint = omni_api_endpoint
+        # self.omni_api_key = omni_api_type
 
-        if omni_api_key and omni_api_endpoint and omni_api_type:
-            self.omni_worker_agent = OmniWorkerAgent(omni_api_key, omni_api_endpoint, omni_api_type)
-        else:
-            self.omni_worker_agent = None
+        # if omni_api_key and omni_api_endpoint and omni_api_type:
+        #     self.omni_worker_agent = OmniWorkerAgent(omni_api_key, omni_api_endpoint, omni_api_type)
+        # else:
+        #     self.omni_worker_agent = None
 
     def initialize_llm(self):
         # Initialize language model
