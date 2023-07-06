@@ -20,3 +20,8 @@ class BossNode:
             print(f"Validation Error while initializing BabyAGI: {e}")
         except Exception as e:
             print(f"Unexpected Error while initializing BabyAGI: {e}")
+    def create_task(self, objective):
+        return {"objective": objective}
+
+    def execute_task(self, task):
+        self.baby_agi(task)
