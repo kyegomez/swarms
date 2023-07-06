@@ -6,34 +6,29 @@ from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
-from typing import List, Any
+from typing import List, Any, Dict
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+class WorkerNodeArgs(BaseModel):
+    prompt: str
+    run_manager: Optional[CallbackManagerForToolRun] = None
+
 @tool("WorkerNode")
-class WorkerNode:
+class WorkerNode(BaseTool):
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
-    # name = "WorkerNode"
-    # description = "Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
-    # llm: ChatOpenAI  # add this line
-    # tools: List[Tool]
-    # vectorstore: VectorStore
-    llm: Any
-    tools: List[Any]
-    vectorstore: Any
-    agent: Any = None
-
     
-    def __init__(self, llm: Any, tools: List[Any], vectorstore: Any):
-        logging.info("Initializing WorkerNode")
-        super().__init__()
-        self.llm = llm
-        self.tools = tools
-        self.vectorstore = vectorstore
-        self.agent = None
+    args_schema: Optional[Type[BaseModel]] = WorkerNodeArgs
+    """Pydantic model class to validate and parse the tool's input arguments."""
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.llm = kwargs.get('llm')
+        self.tools = kwargs.get('tools')
+        self.vectorstore = kwargs.get('vectorstore')
+        self.agent = None
 
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
         logging.info("Creating agent in WorkerNode")
@@ -48,11 +43,11 @@ class WorkerNode:
         )
         self.agent.chain.verbose = True
 
-    # @tool("perform_task")
     def _run(
-        self, prompt: str, run_manager: Optional[CallbackManagerForToolRun] = None
+        self, tool_input: Dict[str, Any], run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> str:
         """Use the tool."""
+        prompt = self._parse_input(tool_input)
         tree_of_thoughts_prompt = """
         Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
         """
@@ -64,7 +59,6 @@ class WorkerNode:
     ) -> str:
         """Use the tool asynchronously."""
         raise NotImplementedError("WorkerNode does not support async")
-
 
 
 
