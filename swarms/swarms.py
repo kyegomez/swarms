@@ -3,6 +3,7 @@ from swarms.agents.workers.worker import WorkerNode
 from swarms.agents.boss.boss_agent import BossNode
 # from swarms.agents.workers.omni_worker import OmniWorkerAgent
 
+from swarms.agents.workers.worker import worker_tool
 import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -50,7 +51,7 @@ class Swarms:
         todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
         tools = [
             Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!"),
-            worker_node,
+            worker_tool
         ]
         suffix = """Question: {task}\n{agent_scratchpad}"""
         prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n"""

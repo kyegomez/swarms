@@ -13,20 +13,22 @@ import logging
 from pydantic import BaseModel, Extra
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class WorkerNodeArgs(BaseModel):
-    prompt: str
-    run_manager: Optional[CallbackManagerForToolRun] = None
+# class WorkerNodeArgs(BaseModel):
+#     prompt: str
+#     run_manager: Optional[CallbackManagerForToolRun] = None
 
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.forbid
+#     class Config:
+#         arbitrary_types_allowed = True
+#         extra = Extra.forbid
 
-@tool("WorkerNode")
-class WorkerNode(BaseTool):
+# @tool("WorkerNode")
+class WorkerNode(
+    # BaseTool
+    ):
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
     
-    args_schema: Optional[Type[BaseModel]] = WorkerNodeArgs
-    """Pydantic model class to validate and parse the tool's input arguments."""
+    # args_schema: Optional[Type[BaseModel]] = WorkerNodeArgs
+    # """Pydantic model class to validate and parse the tool's input arguments."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -66,7 +68,11 @@ class WorkerNode(BaseTool):
         raise NotImplementedError("WorkerNode does not support async")
 
 
-
+worker_tool = Tool(
+    name="WorkerNode AI Agent",
+    func=WorkerNode._run,
+    description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
+)
 
 # class WorkerNode(BaseTool):
 #     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on """
