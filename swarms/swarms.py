@@ -2,7 +2,8 @@ from swarms.tools.agent_tools import *
 from swarms.agents.workers.worker import WorkerNode
 from swarms.agents.boss.boss_agent import BossNode
 # from swarms.agents.workers.omni_worker import OmniWorkerAgent
-from swarms.tools.main import RequestsGet, ExitConversation
+# from swarms.tools.main import RequestsGet, ExitConversation
+# visual agent
 
 from swarms.agents.workers.worker import worker_tool
 import logging
@@ -29,10 +30,10 @@ class Swarms:
             process_csv,
             WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
             
-            CodeEditor,
-            Terminal,
-            RequestsGet,
-            ExitConversation
+            # CodeEditor,
+            # Terminal,
+            # RequestsGet,
+            # ExitConversation
 
             #code editor + terminal editor + visual agent
 
