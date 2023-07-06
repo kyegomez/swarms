@@ -1,23 +1,22 @@
 from swarms.tools.agent_tools import *
 from langchain.tools import BaseTool
 from typing import Optional, Type
+
 from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
 from typing import List, Any
-
-#
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
 import logging
-
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-@tool
+@tool("WorkerNode")
 class WorkerNode:
-    name = "WorkerNode"
-    description = "Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
+    """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
+    # name = "WorkerNode"
+    # description = "Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
     # llm: ChatOpenAI  # add this line
     # tools: List[Tool]
     # vectorstore: VectorStore
