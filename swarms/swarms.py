@@ -24,6 +24,7 @@ class Swarms:
             process_csv,
             WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
         ]
+        assert tools is not None, "tools is not initialized"
         return tools
 
     def initialize_vectorstore(self):
@@ -60,9 +61,12 @@ class Swarms:
     def run_swarms(self, objective):
         # Run the swarm with the given objective
         worker_tools = self.initialize_tools(OpenAI)
+        assert worker_tools is not None, "worker_tools is not initialized"
+
         vectorstore = self.initialize_vectorstore()
         worker_node = self.initialize_worker_node(worker_tools, vectorstore)
         boss_node = self.initialize_boss_node(vectorstore, worker_node)
+
         task = boss_node.create_task(objective)
         boss_node.execute_task(task)
         worker_node.run_agent(objective)
