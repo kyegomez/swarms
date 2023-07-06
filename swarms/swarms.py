@@ -60,7 +60,7 @@ class Swarms:
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
         agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
-        return BossNode(self.openai_api_key, llm, vectorstore, agent_executor, verbose=True, max_iterations=5)
+        return BossNode(self.openai_api_key, llm, vectorstore, agent_executor, max_iterations=5)
 
     def run_swarms(self, objective):
         try:
