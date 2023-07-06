@@ -33,7 +33,23 @@ from langchain.llms.openai import OpenAI
 
 # Grounding DINO
 # import groundingdino.datasets.transforms as T
-import swarms.agents.workers.models.GroundingDINO.groundingdino.datasets.transforms as T
+from swarms.agents.workers.models.GroundingDINO.groundingdino.datasets.transforms import (
+    Compose,
+    Normalize,
+    ToTensor,
+    crop,
+    hflip,
+    resize,
+    pad,
+    ResizeDebug,
+    RandomCrop,
+    RandomSizeCrop,
+    CenterCrop,
+    RandomHorizontalFlip,
+    RandomResize,
+    RandomPad,
+    RandomSelect
+)
 from swarms.agents.workers.models.GroundingDINO.groundingdino.models import build_model
 from swarms.agents.workers.models.GroundingDINO.groundingdino.util import box_ops
 from swarms.agents.workers.models.GroundingDINO.groundingdino.util.slconfig import SLConfig
@@ -45,7 +61,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import wget
 
-VISUAL_CHATGPT_PREFIX = """Worker Multi-Modal Agent is designed to be able to assist with a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. Worker Multi-Modal Agent is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
+VISUAL_AGENT_PREFIX = """Worker Multi-Modal Agent is designed to be able to assist with a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. Worker Multi-Modal Agent is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
 
 Worker Multi-Modal Agent is able to process and understand large amounts of text and images. As a language model, Worker Multi-Modal Agent can not directly read images, but it has a list of tools to finish different visual tasks. Each image will have a file name formed as "image/xxx.png", and Worker Multi-Modal Agent can invoke different tools to indirectly understand pictures. When talking about images, Worker Multi-Modal Agent is very strict to the file name and will never fabricate nonexistent files. When using tools to generate new image files, Worker Multi-Modal Agent is also known that the image may not be the same as the user's demand, and will use other visual question answering tools or description tools to observe the real image. Worker Multi-Modal Agent is able to use tools in a sequence, and is loyal to the tool observation outputs rather than faking the image content and image file name. It will remember to provide the file name from the last tool observation, if a new image is generated.
 
@@ -59,7 +75,7 @@ TOOLS:
 
 Worker Multi-Modal Agent  has access to the following tools:"""
 
-VISUAL_CHATGPT_FORMAT_INSTRUCTIONS = """To use a tool, please use the following format:
+VISUAL_AGENT_FORMAT_INSTRUCTIONS = """To use a tool, please use the following format:
 
 ```
 Thought: Do I need to use a tool? Yes
@@ -76,7 +92,7 @@ Thought: Do I need to use a tool? No
 ```
 """
 
-VISUAL_CHATGPT_SUFFIX = """You are very strict to the filename correctness and will never fake a file name if it does not exist.
+VISUAL_AGENT_SUFFIX = """You are very strict to the filename correctness and will never fake a file name if it does not exist.
 You will remember to provide the image file name loyally if it's provided in the last tool observation.
 
 Begin!
@@ -90,7 +106,7 @@ The thoughts and observations are only visible for Worker Multi-Modal Agent, Wor
 Thought: Do I need to use a tool? {agent_scratchpad} Let's think step by step.
 """
 
-VISUAL_CHATGPT_PREFIX_CN = """Worker Multi-Modal Agent 旨在能够协助完成范围广泛的文本和视觉相关任务，从回答简单的问题到提供对广泛主题的深入解释和讨论。 Worker Multi-Modal Agent 能够根据收到的输入生成类似人类的文本，使其能够进行听起来自然的对话，并提供连贯且与手头主题相关的响应。
+VISUAL_AGENT_PREFIX_CN = """Worker Multi-Modal Agent 旨在能够协助完成范围广泛的文本和视觉相关任务，从回答简单的问题到提供对广泛主题的深入解释和讨论。 Worker Multi-Modal Agent 能够根据收到的输入生成类似人类的文本，使其能够进行听起来自然的对话，并提供连贯且与手头主题相关的响应。
 
 Worker Multi-Modal Agent 能够处理和理解大量文本和图像。作为一种语言模型，Worker Multi-Modal Agent 不能直接读取图像，但它有一系列工具来完成不同的视觉任务。每张图片都会有一个文件名，格式为“image/xxx.png”，Worker Multi-Modal Agent可以调用不同的工具来间接理解图片。在谈论图片时，Worker Multi-Modal Agent 对文件名的要求非常严格，绝不会伪造不存在的文件。在使用工具生成新的图像文件时，Worker Multi-Modal Agent也知道图像可能与用户需求不一样，会使用其他视觉问答工具或描述工具来观察真实图像。 Worker Multi-Modal Agent 能够按顺序使用工具，并且忠于工具观察输出，而不是伪造图像内容和图像文件名。如果生成新图像，它将记得提供上次工具观察的文件名。
 
@@ -103,7 +119,7 @@ Human 可能会向 Worker Multi-Modal Agent 提供带有描述的新图形。描
 
 Worker Multi-Modal Agent 可以使用这些工具:"""
 
-VISUAL_CHATGPT_FORMAT_INSTRUCTIONS_CN = """用户使用中文和你进行聊天，但是工具的参数应当使用英文。如果要调用工具，你必须遵循如下格式:
+VISUAL_AGENT_FORMAT_INSTRUCTIONS_CN = """用户使用中文和你进行聊天，但是工具的参数应当使用英文。如果要调用工具，你必须遵循如下格式:
 
 ```
 Thought: Do I need to use a tool? Yes
@@ -121,7 +137,7 @@ Thought: Do I need to use a tool? No
 ```
 """
 
-VISUAL_CHATGPT_SUFFIX_CN = """你对文件名的正确性非常严格，而且永远不会伪造不存在的文件。
+VISUAL_AGENT_SUFFIX_CN = """你对文件名的正确性非常严格，而且永远不会伪造不存在的文件。
 
 开始!
 
@@ -1046,11 +1062,11 @@ class Text2Box:
          # load image
         image_pil = Image.open(image_path).convert("RGB")  # load image
 
-        transform = T.Compose(
+        transform = Compose(
             [
-                T.RandomResize([512], max_size=1333),
-                T.ToTensor(),
-                T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                RandomResize([512], max_size=1333),
+                ToTensor(),
+                Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
         image, _ = transform(image_pil, None)  # 3, h, w
@@ -1495,9 +1511,9 @@ class MultiModalVisualAgent:
     def init_agent(self, lang):
         self.memory.clear() 
         if lang=='English':
-            PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = VISUAL_CHATGPT_PREFIX, VISUAL_CHATGPT_FORMAT_INSTRUCTIONS, VISUAL_CHATGPT_SUFFIX
+            PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = VISUAL_AGENT_PREFIX, VISUAL_AGENT_FORMAT_INSTRUCTIONS, VISUAL_AGENT_SUFFIX
         else:
-            PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = VISUAL_CHATGPT_PREFIX_CN, VISUAL_CHATGPT_FORMAT_INSTRUCTIONS_CN, VISUAL_CHATGPT_SUFFIX_CN
+            PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = VISUAL_AGENT_PREFIX_CN, VISUAL_AGENT_FORMAT_INSTRUCTIONS_CN, VISUAL_AGENT_SUFFIX_CN
 
         self.agent = initialize_agent(
             self.tools,
