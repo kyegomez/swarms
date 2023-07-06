@@ -2,6 +2,7 @@ from swarms.tools.agent_tools import *
 from swarms.agents.workers.worker import WorkerNode
 from swarms.agents.boss.boss_agent import BossNode
 # from swarms.agents.workers.omni_worker import OmniWorkerAgent
+from swarms.tools.main import RequestsGet, ExitConversation
 
 from swarms.agents.workers.worker import worker_tool
 import logging
@@ -24,8 +25,17 @@ class Swarms:
             web_search,
             WriteFileTool(root_dir=ROOT_DIR),
             ReadFileTool(root_dir=ROOT_DIR),
+
             process_csv,
             WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+            
+            CodeEditor,
+            Terminal,
+            RequestsGet,
+            ExitConversation
+
+            #code editor + terminal editor + visual agent
+
         ]
         assert tools is not None, "tools is not initialized"
         return tools
