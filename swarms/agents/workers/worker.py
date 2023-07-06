@@ -38,10 +38,10 @@ class WorkerNode:
     def run(self, tool_input: Dict[str, Any]) -> str:
         """Use the tool."""
         prompt = tool_input['prompt']
-        tree_of_thoughts_prompt = """
-        Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realizes they're wrong at any point then they leave. The question is...
-        """
-        self.agent.run([f"{tree_of_thoughts_prompt}{prompt}"])
+        # tree_of_thoughts_prompt = """
+        # Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realizes they're wrong at any point then they leave. The question is...
+        # """
+        self.agent.run([f"{prompt}"])
         return "Task completed by WorkerNode"
 
 worker_tool = Tool(
