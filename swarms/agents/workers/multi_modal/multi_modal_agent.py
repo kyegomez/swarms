@@ -55,7 +55,7 @@ from swarms.agents.workers.models.GroundingDINO.groundingdino.util import box_op
 from swarms.agents.workers.models.GroundingDINO.groundingdino.util.slconfig import SLConfig
 from swarms.agents.workers.models.GroundingDINO.groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 
-from swarms.agents.workers.models.segment_anything.segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
+from swarms.agents.workers.models.segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
