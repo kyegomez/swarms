@@ -20,4 +20,6 @@ I want it to have neumorphism-style. Serve it on port 4500.
 """
 
 # Run Swarms
-swarm.run_swarms(objective)
+task = swarm.run_swarms(objective)
+
+print(task)
