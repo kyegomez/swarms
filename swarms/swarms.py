@@ -42,20 +42,20 @@ class Swarms:
         llm = self.initialize_llm(ChatOpenAI)
         worker_node = WorkerNode(llm=llm, tools=worker_tools, vectorstore=vectorstore)
         worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={})
-        worker_node_tool = Tool(name="WorkerNode AI Agent", func=worker_node.run, description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on")
+        worker_node_tool = Tool(name="WorkerNode AI Agent", func=worker_node.run, description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish any complex tasks, it can search the internet or write code or spawn child multi-modality models to process and generate images and text or audio and so on")
         return worker_node_tool
 
     def initialize_boss_node(self, vectorstore, worker_node):
         # Initialize boss node
         llm = self.initialize_llm(OpenAI)
-        todo_prompt = PromptTemplate.from_template("You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}")
+        todo_prompt = PromptTemplate.from_template("You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating an worker to help you accomplish your task. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you.")
         todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
         tools = [
             Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!"),
             worker_node
         ]
         suffix = """Question: {task}\n{agent_scratchpad}"""
-        prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n"""
+        prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
         prompt = ZeroShotAgent.create_prompt(tools, prefix=prefix, suffix=suffix, input_variables=["objective", "task", "context", "agent_scratchpad"],)
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
