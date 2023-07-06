@@ -26,7 +26,7 @@ class WorkerNode(BaseTool):
     agent: Any = None
 
     
-    def __init__(self, llm, tools, vectorstore):
+    def __init__(self, llm: Any, tools: List[Any], vectorstore: Any):
         logging.info("Initializing WorkerNode")
         super().__init__()
         self.llm = llm
