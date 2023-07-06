@@ -27,12 +27,12 @@ from huggingface_hub.inference_api import InferenceApi
 from huggingface_hub.inference_api import ALL_TASKS
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=str, default="config.yml")
+parser.add_argument("--config", type=str, default="swarms/agents/workers/multi_modal_workers/omni_agent/config.yml")
 parser.add_argument("--mode", type=str, default="cli")
 args = parser.parse_args()
 
 if __name__ != "__main__":
-    args.config = "config.yml"
+    args.config = "swarms/agents/workers/multi_modal_workers/omni_agent/config.yml"
     args.mode = "gradio"
 
 config = yaml.load(open(args.config, "r"), Loader=yaml.FullLoader)
