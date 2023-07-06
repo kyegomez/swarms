@@ -279,3 +279,10 @@ The agent learns to call external APIs for extra information that is missing fro
 
 * Communication -> How reliable and fast is the communication between each indivual agent.
 
+
+
+# EcoSystem
+
+* [The-Compiler, compile natural language into serene, reliable, and secure programs](https://github.com/kyegomez/the-compiler)
+
+*[The Replicator, an autonomous swarm that conducts Multi-Modal AI research by creating new underlying mathematical operations and models](https://github.com/kyegomez/The-Replicator)
