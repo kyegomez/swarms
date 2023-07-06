@@ -89,7 +89,7 @@ selenium
 # ONNI AGENT REQUIREMENTS
 diffusers
 controlnet_aux
-tiktoken==0.3.3
+tiktoken
 
 espnet==202301
 espnet_model_zoo==0.1.7
