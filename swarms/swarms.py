@@ -35,9 +35,7 @@ class Swarms:
             ReadFileTool(root_dir=ROOT_DIR),
             process_csv,
             WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-            # self.omni_worker_agent.chat  # Add the OmniWorkerAgent's chat method as a tool
         ]
-
         if self.omni_worker_agent:
             tools.append(self.omni_worker_agent.chat) #add omniworker agent class
         return tools
