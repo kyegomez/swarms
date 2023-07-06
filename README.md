@@ -62,16 +62,8 @@ The ports you can use are 4500 and 6500.
 swarm.run_swarms(objective)
 ```
 
-# Method2
-Download via Github, and install requirements
-```bash
-git clone https://github.com/kyegomez/swarms.git
-cd swarms
-pip install -r requirements.txt
-```
-
-# Method 3
-Simple example by:
+# Method 2
+Download via Github, and install requirements. Simple example by:
 
 * `git cloning https://github.com/kyegomez/swarms.git`
 
