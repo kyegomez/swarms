@@ -42,7 +42,8 @@ class Swarms:
         llm = self.initialize_llm(ChatOpenAI)
         worker_node = WorkerNode(llm=llm, tools=worker_tools, vectorstore=vectorstore)
         worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={})
-        return worker_tool(name="WorkerNode AI Agent", func=worker_node.run, description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on")
+        worker_node_tool = Tool(name="WorkerNode AI Agent", func=worker_node.run, description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on")
+        return worker_node_tool
 
     def initialize_boss_node(self, vectorstore, worker_node):
         # Initialize boss node
