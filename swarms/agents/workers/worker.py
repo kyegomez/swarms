@@ -14,9 +14,10 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class WorkerNode(BaseTool):
+@tool
+class WorkerNode:
     name = "WorkerNode"
-    description = "A worker node that can perform complex tasks"
+    description = "Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
     # llm: ChatOpenAI  # add this line
     # tools: List[Tool]
     # vectorstore: VectorStore
@@ -48,7 +49,7 @@ class WorkerNode(BaseTool):
         )
         self.agent.chain.verbose = True
 
-    @tool("perform_task")
+    # @tool("perform_task")
     def _run(
         self, prompt: str, run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> str:
