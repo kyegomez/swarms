@@ -43,7 +43,7 @@ class Swarms:
 
     def initialize_vectorstore(self):
         # Initialize vector store
-        embeddings_model = OpenAIEmbeddings()
+        embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
         embedding_size = 1536
         index = faiss.IndexFlatL2(embedding_size)
         return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
