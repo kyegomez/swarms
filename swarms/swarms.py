@@ -36,8 +36,8 @@ class Swarms:
             process_csv,
             WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
         ]
-        if self.omni_worker_agent:
-            tools.append(self.omni_worker_agent.chat) #add omniworker agent class
+        # if self.omni_worker_agent:
+        #     tools.append(self.omni_worker_agent.chat) #add omniworker agent class
         return tools
 
     def initialize_vectorstore(self):
