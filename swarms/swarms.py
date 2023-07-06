@@ -3,7 +3,9 @@ from swarms.agents.workers.worker import WorkerNode
 from swarms.agents.boss.boss_agent import BossNode
 # from swarms.agents.workers.omni_worker import OmniWorkerAgent
 
+import logging
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Swarms:
     def __init__(self, openai_api_key):
@@ -59,17 +61,21 @@ class Swarms:
         return BossNode(self.openai_api_key, llm, vectorstore, agent_executor, verbose=True, max_iterations=5)
 
     def run_swarms(self, objective):
-        # Run the swarm with the given objective
-        worker_tools = self.initialize_tools(OpenAI)
-        assert worker_tools is not None, "worker_tools is not initialized"
+        try:
+            # Run the swarm with the given objective
+            worker_tools = self.initialize_tools(OpenAI)
+            assert worker_tools is not None, "worker_tools is not initialized"
 
-        vectorstore = self.initialize_vectorstore()
-        worker_node = self.initialize_worker_node(worker_tools, vectorstore)
-        boss_node = self.initialize_boss_node(vectorstore, worker_node)
+            vectorstore = self.initialize_vectorstore()
+            worker_node = self.initialize_worker_node(worker_tools, vectorstore)
+            boss_node = self.initialize_boss_node(vectorstore, worker_node)
 
-        task = boss_node.create_task(objective)
-        boss_node.execute_task(task)
-        worker_node.run_agent(objective)
+            task = boss_node.create_task(objective)
+            boss_node.execute_task(task)
+            worker_node.run_agent(objective)
+        except Exception as e:
+            logging.error(f"An error occurred in run_swarms: {e}")
+            raise
 
 
 
