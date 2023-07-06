@@ -13,6 +13,9 @@ from langchain.memory.chat_message_histories import FileChatMessageHistory
 class WorkerNode(BaseTool):
     name = "WorkerNode"
     description = "A worker node that can perform complex tasks"
+    llm: ChatOpenAI  # add this line
+    tools: List[Tool]
+    vectorstore: VectorStore
     
     def __init__(self, llm, tools, vectorstore):
         super().__init__()
