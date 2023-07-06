@@ -1,4 +1,4 @@
-from swarms.agents.workers.multi_modal.multi_modal_agent import MultiModalVisualAgent
+from swarms.agents.workers.multi_modal_agents.multi_modal_agent import MultiModalVisualAgent
 from langchain.tools import BaseTool
 
 class MultiModalVisualAgentTool(BaseTool):
