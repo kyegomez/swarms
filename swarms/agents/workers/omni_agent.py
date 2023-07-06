@@ -9,6 +9,7 @@ class OmniWorkerAgent:
 
     @tool
     def chat(self, data):
+        """Chat with omni-modality model that uses huggingface to query for a specific model at run time. Translate text to speech, creat images and more"""
         messages = data.get("messages")
         api_key = data.get("api_key", self.api_key)
         api_endpoint = data.get("api_endpoint", self.api_endpoint)
@@ -22,17 +23,17 @@ class OmniWorkerAgent:
     
 
 
-#usage
-agent = OmniWorkerAgent(api_key="your key", api_endpoint="api endpoint", api_type="you types")
+# #usage
+# agent = OmniWorkerAgent(api_key="your key", api_endpoint="api endpoint", api_type="you types")
 
-data = {
-    "messages": "your_messages",
-    "api_key": "your_api_key",
-    "api_endpoint": "your_api_endpoint",
-    "api_type": "your_api_type"
-}
+# data = {
+#     "messages": "your_messages",
+#     "api_key": "your_api_key",
+#     "api_endpoint": "your_api_endpoint",
+#     "api_type": "your_api_type"
+# }
 
-response = agent.chat(data)
+# response = agent.chat(data)
 
 
-print(response)  # Prints the response
+# print(response)  # Prints the response
