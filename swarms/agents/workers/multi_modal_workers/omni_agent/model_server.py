@@ -13,10 +13,10 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
 from datasets import load_dataset
 from PIL import Image
-import flask
-from flask import request, jsonify
+# import flask
+# from flask import request, jsonify
 import waitress
-from flask_cors import CORS
+# from flask_cors import CORS
 import io
 from torchvision import transforms
 import torch
@@ -62,14 +62,14 @@ port = config["local_inference_endpoint"]["port"]
 local_deployment = config["local_deployment"]
 device = config.get("device", "cuda:0") 
 
-PROXY = None
-if config["proxy"]:
-    PROXY = {
-        "https": config["proxy"],
-    }
+# PROXY = None
+# if config["proxy"]:
+#     PROXY = {
+#         "https": config["proxy"],
+#     }
 
-app = flask.Flask(__name__)
-CORS(app)
+# app = flask.Flask(__name__)
+# CORS(app)
 
 start = time.time()
 
