@@ -17,7 +17,7 @@ from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
 from langchain import OpenAI, SerpAPIWrapper, LLMChain
 
 
-from swarms.agents.workers.auto_agent import agent
+from swarms.agents.workers.auto_worker import agent
 
 # Define your embedding model
 embeddings_model = OpenAIEmbeddings()

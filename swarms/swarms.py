@@ -1,7 +1,7 @@
 from swarms.tools.agent_tools import *
-from swarms.agents.workers.worker_agent import WorkerNode
+from swarms.agents.workers.worker import WorkerNode
 from swarms.agents.boss.boss_agent import BossNode
-from swarms.agents.workers.omni_agent import OmniWorkerAgent
+from swarms.agents.workers.omni_worker import OmniWorkerAgent
 
 
 
