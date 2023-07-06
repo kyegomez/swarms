@@ -13,28 +13,13 @@ import logging
 from pydantic import BaseModel, Extra
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# class WorkerNodeArgs(BaseModel):
-#     prompt: str
-#     run_manager: Optional[CallbackManagerForToolRun] = None
-
-#     class Config:
-#         arbitrary_types_allowed = True
-#         extra = Extra.forbid
-
-# @tool("WorkerNode")
-class WorkerNode(
-    # BaseTool
-    ):
+class WorkerNode:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
-    
-    # args_schema: Optional[Type[BaseModel]] = WorkerNodeArgs
-    # """Pydantic model class to validate and parse the tool's input arguments."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.llm = kwargs.get('llm')
-        self.tools = kwargs.get('tools')
-        self.vectorstore = kwargs.get('vectorstore')
+    def __init__(self, llm, tools, vectorstore):
+        self.llm = llm
+        self.tools = tools
+        self.vectorstore = vectorstore
         self.agent = None
 
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
@@ -50,27 +35,18 @@ class WorkerNode(
         )
         self.agent.chain.verbose = True
 
-    def _run(
-        self, tool_input: Dict[str, Any], run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> str:
+    def run(self, tool_input: Dict[str, Any]) -> str:
         """Use the tool."""
-        prompt = self._parse_input(tool_input)
+        prompt = tool_input['prompt']
         tree_of_thoughts_prompt = """
-        Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
+        Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realizes they're wrong at any point then they leave. The question is...
         """
         self.agent.run([f"{tree_of_thoughts_prompt}{prompt}"])
         return "Task completed by WorkerNode"
 
-    async def _arun(
-        self, prompt: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None
-    ) -> str:
-        """Use the tool asynchronously."""
-        raise NotImplementedError("WorkerNode does not support async")
-
-
 worker_tool = Tool(
     name="WorkerNode AI Agent",
-    func=WorkerNode._run,
+    func=WorkerNode.run,
     description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
 )
 

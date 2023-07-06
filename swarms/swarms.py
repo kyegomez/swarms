@@ -42,7 +42,7 @@ class Swarms:
         llm = self.initialize_llm(ChatOpenAI)
         worker_node = WorkerNode(llm=llm, tools=worker_tools, vectorstore=vectorstore)
         worker_node.create_agent(ai_name="AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={})
-        return worker_node
+        return worker_tool(name="WorkerNode AI Agent", func=worker_node.run, description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on")
 
     def initialize_boss_node(self, vectorstore, worker_node):
         # Initialize boss node
@@ -51,7 +51,7 @@ class Swarms:
         todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
         tools = [
             Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!"),
-            worker_tool
+            worker_node
         ]
         suffix = """Question: {task}\n{agent_scratchpad}"""
         prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n"""
@@ -69,6 +69,7 @@ class Swarms:
 
             vectorstore = self.initialize_vectorstore()
             worker_node = self.initialize_worker_node(worker_tools, vectorstore)
+
             boss_node = self.initialize_boss_node(vectorstore, worker_node)
 
             task = boss_node.create_task(objective)
