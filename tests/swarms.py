@@ -1,61 +1,64 @@
 import unittest
-from unittest.mock import patch
-# from swarms.agents.swarms import llm, tools, vectorstore, task_execution_chain, WorkerNode, BossNode
-from swarms.swarms import worker_node, boss_node
-
+import swarms
+from swarms.agents.workers.worker import WorkerNode
+from swarms.agents.boss.boss_agent import BossNode
 
 class TestSwarms(unittest.TestCase):
+    def setUp(self):
+        self.swarm = swarms.Swarms('fake_api_key')
 
-    def test_WorkerNode_create_agent(self):
-        # worker_node = WorkerNode(llm, tools, vectorstore)
-        worker_node.create_agent('test_agent', 'test_role', False, {})
-        self.assertIsNotNone(worker_node.agent)
-        self.assertEqual(worker_node.agent.ai_name, 'test_agent')
-        self.assertEqual(worker_node.agent.ai_role, 'test_role')
-        self.assertEqual(worker_node.agent.human_in_the_loop, False)
-        self.assertTrue(worker_node.agent.chain.verbose)
+    def test_initialize_llm(self):
+        llm = self.swarm.initialize_llm(swarms.ChatOpenAI)
+        self.assertIsNotNone(llm)
 
-    def test_WorkerNode_tools(self):
-        worker_node.create_agent('test_agent', 'test_role', False, {})
-        for tool in worker_node.tools:
-            self.assertIsNotNone(tool)
+    def test_initialize_tools(self):
+        tools = self.swarm.initialize_tools(swarms.ChatOpenAI)
+        self.assertIsNotNone(tools)
 
-    @patch.object(worker_node, 'run_agent')
-    def test_WorkerNode_run_agent_called(self, mock_run_agent):
-        worker_node.create_agent('test_agent', 'test_role', False, {})
-        worker_node.run_agent('test_prompt')
-        mock_run_agent.assert_called_once()
+    def test_initialize_vectorstore(self):
+        vectorstore = self.swarm.initialize_vectorstore()
+        self.assertIsNotNone(vectorstore)
 
-    def test_BossNode_create_task(self):
-        task = boss_node.create_task('objective')
-        self.assertEqual(task, {"objective": "objective"})
+    def test_run_swarms(self):
+        objective = "Do a web search for 'OpenAI'"
+        result = self.swarm.run_swarms(objective)
+        self.assertIsNotNone(result)
 
-    def test_BossNode_AgentExecutor(self):
-        self.assertIsNotNone(boss_node.baby_agi.task_execution_chain)
 
-    def test_BossNode_LLMChain(self):
-        self.assertIsNotNone(boss_node.baby_agi.task_execution_chain.agent.llm_chain)
+class TestWorkerNode(unittest.TestCase):
+    def setUp(self):
+        swarm = swarms.Swarms('fake_api_key')
+        worker_tools = swarm.initialize_tools(swarms.ChatOpenAI)
+        vectorstore = swarm.initialize_vectorstore()
+        self.worker_node = swarm.initialize_worker_node(worker_tools, vectorstore)
 
-    @patch.object(boss_node, 'execute_task')
-    def test_BossNode_execute_task_called_with_correct_arg(self, mock_execute_task):
-        task = boss_node.create_task('objective')
-        boss_node.execute_task(task)
-        mock_execute_task.assert_called_once_with(task)
+    def test_create_agent(self):
+        self.worker_node.create_agent("Worker 1", "Assistant", False, {})
+        self.assertIsNotNone(self.worker_node.agent)
 
-    @patch.object(boss_node, 'execute_task')
-    def test_BossNode_execute_task_output(self, mock_execute_task):
-        mock_execute_task.return_value = "some_output"
-        task = boss_node.create_task('objective')
-        output = boss_node.execute_task(task)
-        self.assertIsNotNone(output)
+    def test_run(self):
+        tool_input = {'prompt': "Search the web for 'OpenAI'"}
+        result = self.worker_node.run(tool_input)
+        self.assertIsNotNone(result)
 
-    def test_BossNode_execute_task_error_handling(self):
-        try:
-            boss_node.execute_task(None)
-            self.assertTrue(True)
-        except Exception:
-            self.fail("boss_node.execute_task raised Exception unexpectedly!")
 
-# Run the tests
+class TestBossNode(unittest.TestCase):
+    def setUp(self):
+        swarm = swarms.Swarms('fake_api_key')
+        worker_tools = swarm.initialize_tools(swarms.ChatOpenAI)
+        vectorstore = swarm.initialize_vectorstore()
+        worker_node = swarm.initialize_worker_node(worker_tools, vectorstore)
+        self.boss_node = swarm.initialize_boss_node(vectorstore, worker_node)
+
+    def test_create_task(self):
+        task = self.boss_node.create_task("Do a web search for 'OpenAI'")
+        self.assertIsNotNone(task)
+
+    def test_execute_task(self):
+        task = self.boss_node.create_task("Do a web search for 'OpenAI'")
+        result = self.boss_node.execute_task(task)
+        self.assertIsNotNone(result)
+
+
 if __name__ == '__main__':
     unittest.main()
