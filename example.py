@@ -1,11 +1,14 @@
+import os
 from swarms import Swarms
 
 
 # Retrieve your API key from the environment or replace with your actual key
 # api_key = "sksdsds"
 
+api_key = os.getenv("OPENAI_API_KEY")
+
 # Initialize Swarms with your API key
-swarm = Swarms()
+swarm = Swarms(openai_api_key=api_key)
 
 # Define an objective
 objective = """
