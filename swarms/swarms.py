@@ -9,9 +9,9 @@ class Swarms:
     def __init__(self, openai_api_key):
         self.openai_api_key = openai_api_key
 
-    def initialize_llm(self, llm_class, temperature=0):
+    def initialize_llm(self, llm_class):
         # Initialize language model
-        return llm_class(temperature=temperature, openai_api_key=self.openai_api_key)
+        return llm_class(openai_api_key=self.openai_api_key)
 
     def initialize_tools(self, llm):
         # Initialize tools
