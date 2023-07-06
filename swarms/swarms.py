@@ -58,7 +58,7 @@ class Swarms:
 
     def run_swarms(self, objective):
         # Run the swarm with the given objective
-        worker_tools = self.initialize_tools(ChatOpenAI)
+        worker_tools = self.initialize_tools(OpenAI)
         vectorstore = self.initialize_vectorstore()
         worker_node = self.initialize_worker_node(worker_tools, vectorstore)
         boss_node = self.initialize_boss_node(vectorstore, worker_node)
