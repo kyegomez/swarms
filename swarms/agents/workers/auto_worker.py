@@ -32,7 +32,7 @@ from langchain.embeddings import OpenAIEmbeddings
 
 from langchain.tools.human.tool import HumanInputRun
 # from swarms.agents.workers.auto_agent import 
-from swarms.agents.workers.visual_agent import multimodal_agent_tool
+from swarms.agents.workers.visual_worker import multimodal_agent_tool
 from swarms.tools.main import Terminal, CodeWriter, CodeEditor, process_csv, WebpageQATool
 
 

@@ -1,0 +1,1 @@
+from swarms.agents.workers.multi_modal_workers.omni_agent.omni_agent import chat_huggingface
