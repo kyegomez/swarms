@@ -13,7 +13,8 @@ class Swarms:
         # Initialize language model
         return llm_class(openai_api_key=self.openai_api_key)
 
-    def initialize_tools(self, llm):
+    def initialize_tools(self, llm_class):
+        llm = self.initialize_llm(llm_class)
         # Initialize tools
         web_search = DuckDuckGoSearchRun()
         tools = [
