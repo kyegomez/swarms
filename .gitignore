@@ -1,0 +1,12 @@
+__pycache__/
+.venv/
+
+.env
+
+image/
+audio/
+video/
+dataframe/
+
+static/generated
+swarms/__pycache__
