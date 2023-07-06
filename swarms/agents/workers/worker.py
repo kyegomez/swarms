@@ -10,6 +10,9 @@ from typing import List, Any
 #
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class WorkerNode(BaseTool):
     name = "WorkerNode"
@@ -24,13 +27,16 @@ class WorkerNode(BaseTool):
 
     
     def __init__(self, llm, tools, vectorstore):
+        logging.info("Initializing WorkerNode")
         super().__init__()
         self.llm = llm
         self.tools = tools
         self.vectorstore = vectorstore
         self.agent = None
 
+
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
+        logging.info("Creating agent in WorkerNode")
         self.agent = AutoGPT.from_llm_and_tools(
             ai_name=ai_name,
             ai_role=ai_role,
