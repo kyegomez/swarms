@@ -74,8 +74,7 @@ class Swarms:
             boss_node = self.initialize_boss_node(vectorstore, worker_node)
 
             task = boss_node.create_task(objective)
-            boss_node.execute_task(task)
-            worker_node.run_agent(objective)
+            return boss_node.execute_task(task)
         except Exception as e:
             logging.error(f"An error occurred in run_swarms: {e}")
             raise
