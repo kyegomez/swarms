@@ -7,6 +7,8 @@ from langchain.callbacks.manager import (
 )
 
 #
+from langchain.memory.chat_message_histories import FileChatMessageHistory
+
 
 class WorkerNode(BaseTool):
     name = "WorkerNode"
@@ -27,6 +29,7 @@ class WorkerNode(BaseTool):
             llm=self.llm,
             memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
             human_in_the_loop=human_in_the_loop,
+            chat_history_memory=FileChatMessageHistory("chat_history.txt"),
         )
         self.agent.chain.verbose = True
 

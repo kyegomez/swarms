@@ -4,7 +4,6 @@ from swarms.agents.boss.boss_agent import BossNode
 # from swarms.agents.workers.omni_worker import OmniWorkerAgent
 
 
-
 class Swarms:
     def __init__(self,
                   openai_api_key,
