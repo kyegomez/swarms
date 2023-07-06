@@ -6,15 +6,20 @@ from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
 import logging
+from pydantic import BaseModel, Extra
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class WorkerNodeArgs(BaseModel):
     prompt: str
     run_manager: Optional[CallbackManagerForToolRun] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = Extra.forbid
 
 @tool("WorkerNode")
 class WorkerNode(BaseTool):
