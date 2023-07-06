@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  swarms:
+    build: .
+    ports:
+      - "${EVAL_PORT}:${EVAL_PORT}"
+    environment:
+      EVAL_PORT: 8000
+      MODEL_NAME: gpt-4
+      CELERY_BROKER_URL: redis://redis:6379
+      SERVER: http://localhost:${EVAL_PORT}
+      USE_GPU: False
+      PLAYGROUND_DIR: playground
+      LOG_LEVEL: INFO
+      BOT_NAME: Orca
+      # You will need to set these environment variables to your actual keys in production
+      OPENAI_API_KEY: your_openai_api_key
+      WINEDB_HOST: your_winedb_host
+      WINEDB_PASSWORD: your_winedb_password
+      BING_SEARCH_URL: your_bing_search_url
+      BING_SUBSCRIPTION_KEY: your_bing_subscription_key
+      SERPAPI_API_KEY: your_serpapi_api_key
+    depends_on:
+      - redis
+    volumes:
+      - .:/usr/src/app
+
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
