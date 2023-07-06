@@ -62,6 +62,32 @@ class Swarms:
         boss_node.execute_task(task)
         worker_node.run_agent(objective)
 
+
+
+
+# usage
+def swarm(api_key, objective):
+    swarms = Swarms(api_key)
+    return swarms.run_swarms(objective)
+
+# # Use the function
+# api_key = "APIKEY"
+# objective = "What is the capital of the UK?"
+# result = swarm(api_key, objective)
+# print(result)  # Prints: "The capital of the UK is London."
+
+
+
+
+
+
+
+
+
+
+
+
+
 # class Swarms:
 #     def __init__(self, num_nodes: int, llm: BaseLLM, self_scaling: bool): 
 #         self.nodes = [WorkerNode(llm) for _ in range(num_nodes)]
