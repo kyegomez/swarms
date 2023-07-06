@@ -18,10 +18,10 @@ from diffusers.utils import load_image
 from pydub import AudioSegment
 import threading
 from queue import Queue
-import flask
-from flask import request, jsonify
+# import flask
+# from flask import request, jsonify
 import waitress
-from flask_cors import CORS, cross_origin
+# from flask_cors import CORS, cross_origin
 from swarms.agents.workers.multi_modal_workers.omni_agent.get_token_ids import get_token_ids_for_task_parsing, get_token_ids_for_choose_model, count_tokens, get_max_context_length
 from huggingface_hub.inference_api import InferenceApi
 from huggingface_hub.inference_api import ALL_TASKS
@@ -1011,60 +1011,60 @@ def cli():
         messages.append({"role": "assistant", "content": answer["message"]})
 
 
-def server():
-    http_listen = config["http_listen"]
-    host = http_listen["host"]
-    port = http_listen["port"]
+# def server():
+#     http_listen = config["http_listen"]
+#     host = http_listen["host"]
+#     port = http_listen["port"]
 
-    app = flask.Flask(__name__, static_folder="public", static_url_path="/")
-    app.config['DEBUG'] = False
-    CORS(app)
+#     app = flask.Flask(__name__, static_folder="public", static_url_path="/")
+#     app.config['DEBUG'] = False
+#     CORS(app)
     
-    @cross_origin()
-    @app.route('/tasks', methods=['POST'])
-    def tasks():
-        data = request.get_json()
-        messages = data["messages"]
-        api_key = data.get("api_key", API_KEY)
-        api_endpoint = data.get("api_endpoint", API_ENDPOINT)
-        api_type = data.get("api_type", API_TYPE)
-        if api_key is None or api_type is None or api_endpoint is None:
-            return jsonify({"error": "Please provide api_key, api_type and api_endpoint"}) 
-        response = chat_huggingface(messages, api_key, api_type, api_endpoint, return_planning=True)
-        return jsonify(response)
+#     @cross_origin()
+#     @app.route('/tasks', methods=['POST'])
+#     def tasks():
+#         data = request.get_json()
+#         messages = data["messages"]
+#         api_key = data.get("api_key", API_KEY)
+#         api_endpoint = data.get("api_endpoint", API_ENDPOINT)
+#         api_type = data.get("api_type", API_TYPE)
+#         if api_key is None or api_type is None or api_endpoint is None:
+#             return jsonify({"error": "Please provide api_key, api_type and api_endpoint"}) 
+#         response = chat_huggingface(messages, api_key, api_type, api_endpoint, return_planning=True)
+#         return jsonify(response)
 
-    @cross_origin()
-    @app.route('/results', methods=['POST'])
-    def results():
-        data = request.get_json()
-        messages = data["messages"]
-        api_key = data.get("api_key", API_KEY)
-        api_endpoint = data.get("api_endpoint", API_ENDPOINT)
-        api_type = data.get("api_type", API_TYPE)
-        if api_key is None or api_type is None or api_endpoint is None:
-            return jsonify({"error": "Please provide api_key, api_type and api_endpoint"}) 
-        response = chat_huggingface(messages, api_key, api_type, api_endpoint, return_results=True)
-        return jsonify(response)
+#     @cross_origin()
+#     @app.route('/results', methods=['POST'])
+#     def results():
+#         data = request.get_json()
+#         messages = data["messages"]
+#         api_key = data.get("api_key", API_KEY)
+#         api_endpoint = data.get("api_endpoint", API_ENDPOINT)
+#         api_type = data.get("api_type", API_TYPE)
+#         if api_key is None or api_type is None or api_endpoint is None:
+#             return jsonify({"error": "Please provide api_key, api_type and api_endpoint"}) 
+#         response = chat_huggingface(messages, api_key, api_type, api_endpoint, return_results=True)
+#         return jsonify(response)
 
-    @cross_origin()
-    @app.route('/hugginggpt', methods=['POST'])
-    def chat():
-        data = request.get_json()
-        messages = data["messages"]
-        api_key = data.get("api_key", API_KEY)
-        api_endpoint = data.get("api_endpoint", API_ENDPOINT)
-        api_type = data.get("api_type", API_TYPE)
-        if api_key is None or api_type is None or api_endpoint is None:
-            return jsonify({"error": "Please provide api_key, api_type and api_endpoint"}) 
-        response = chat_huggingface(messages, api_key, api_type, api_endpoint)
-        return jsonify(response)
-    print("server running...")
-    waitress.serve(app, host=host, port=port)
+#     @cross_origin()
+#     @app.route('/hugginggpt', methods=['POST'])
+#     def chat():
+#         data = request.get_json()
+#         messages = data["messages"]
+#         api_key = data.get("api_key", API_KEY)
+#         api_endpoint = data.get("api_endpoint", API_ENDPOINT)
+#         api_type = data.get("api_type", API_TYPE)
+#         if api_key is None or api_type is None or api_endpoint is None:
+#             return jsonify({"error": "Please provide api_key, api_type and api_endpoint"}) 
+#         response = chat_huggingface(messages, api_key, api_type, api_endpoint)
+#         return jsonify(response)
+#     print("server running...")
+#     waitress.serve(app, host=host, port=port)
 
-if __name__ == "__main__":
-    if args.mode == "test":
-        test()
-    elif args.mode == "server":
-        server()
-    elif args.mode == "cli":
-        cli()
+# if __name__ == "__main__":
+#     if args.mode == "test":
+#         test()
+#     elif args.mode == "server":
+#         server()
+#     elif args.mode == "cli":
+#         cli()
