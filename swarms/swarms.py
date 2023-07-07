@@ -3,7 +3,11 @@ import logging
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.worker import WorkerNode, worker_tool
 from swarms.agents.boss.boss_agent import BossNode
+
 from swarms.tools.main import RequestsGet
+from swarms.agents.workers.multi_modal_workers.multi_modal_agent import MultiModalVisualAgent
+
+
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -96,11 +100,10 @@ class Swarms:
         #     raise
         #===============> optional approach
         try:
-            # Run the swarm with the given objective
             vectorstore = self.initialize_vectorstore()
-            worker_node = self.initialize_worker_node([], vectorstore)  # Initialize with an empty tool list
-            worker_tools = self.initialize_tools(OpenAI, worker_node)  # Now the worker_node instance exists and can be passed to initialize_tools
-            worker_node.add_tool(worker_tools[-1])  # Add the self-reference tool to the actual worker_node
+            worker_node = self.initialize_worker_node([], vectorstore)  
+            worker_tools = self.initialize_tools(OpenAI, worker_node)  
+            worker_node.tools = worker_tools  # Set the tools attribute of the worker_node to worker_tools
 
             if run_as.lower() == 'worker':
                 tool_input = {'prompt': objective}
@@ -112,7 +115,6 @@ class Swarms:
         except Exception as e:
             logging.error(f"An error occurred in run_swarms: {e}")
             raise
-
 
 
 
