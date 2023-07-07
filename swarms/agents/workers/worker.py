@@ -40,11 +40,14 @@ class WorkerNode:
         self.tools.append(tool)
 
     def run(self, tool_input: Dict[str, Any]) -> str:
-        """Use the tool."""
+        if not isinstance(tool_input, dict):
+            raise TypeError("tool_input must be a dictionary")
+        if 'prompt' not in tool_input:
+            raise ValueError("tool_input must contain the key 'prompt'")
         prompt = tool_input['prompt']
-        # tree_of_thoughts_prompt = """
-        # Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realizes they're wrong at any point then they leave. The question is...
-        # """
+        if prompt is None:
+            raise ValueError("Prompt not found in tool_input")
+        
         self.agent.run([f"{prompt}"])
         return "Task completed by WorkerNode"
 
