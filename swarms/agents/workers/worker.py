@@ -44,6 +44,7 @@ class WorkerNode:
             raise TypeError("tool_input must be a dictionary")
         if 'prompt' not in tool_input:
             raise ValueError("tool_input must contain the key 'prompt'")
+        
         prompt = tool_input['prompt']
         if prompt is None:
             raise ValueError("Prompt not found in tool_input")
