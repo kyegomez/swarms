@@ -28,6 +28,8 @@ class Swarms:
             WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
 
             RequestsGet()
+            Tool(name="RequestsGet", func=RequestsGet.get, description="A portal to the internet, Use this when you need to get specific content from a website. Input should be a  url (i.e. https://www.google.com). The output will be the text response of the GET request."),
+
             
             # CodeEditor,
             # Terminal,
