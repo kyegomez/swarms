@@ -3,7 +3,7 @@ import logging
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.worker import WorkerNode, worker_tool
 from swarms.agents.boss.boss_agent import BossNode
-from swarms.tools.main import RequestsGet
+# from swarms.tools.main import RequestsGet
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -99,6 +99,20 @@ class Swarms:
 
 
 
+
+
+
+
+# usage
+def swarm(api_key, objective):
+    swarms = Swarms(api_key)
+    return swarms.run_swarms(objective)
+
+# # Use the function
+# api_key = "APIKEY"
+# objective = "What is the capital of the UK?"
+# result = swarm(api_key, objective)
+# print(result)  # Prints: "The capital of the UK is London."
 
 
 
@@ -331,21 +345,6 @@ class Swarms:
 #         task = boss_node.create_task(objective)
 #         boss_node.execute_task(task)
 #         worker_node.run_agent(objective)
-
-
-
-
-# usage
-def swarm(api_key, objective):
-    swarms = Swarms(api_key)
-    return swarms.run_swarms(objective)
-
-# # Use the function
-# api_key = "APIKEY"
-# objective = "What is the capital of the UK?"
-# result = swarm(api_key, objective)
-# print(result)  # Prints: "The capital of the UK is London."
-
 
 
 
