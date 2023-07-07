@@ -2,10 +2,9 @@ import os
 from celery import Celery
 from celery.result import AsyncResult
 
-from api.container import agent_manager
-# from env import settings
+from api.container import swarms
 
-celery_broker = os.environ["CELERY_BROKER_URL"]
+celery_broker = os.getenv("CELERY_BROKER_URL", "")
 
 
 celery_app = Celery(__name__)
@@ -22,7 +21,7 @@ celery_app.conf.update(
 
 @celery_app.task(name="task_execute", bind=True)
 def task_execute(self, session: str, prompt: str):
-    executor = agent_manager.create_executor(session, self)
+    executor = swarms.create_executor(session, self)
     response = executor({"input": prompt})
     result = {"output": response["output"]}
 
