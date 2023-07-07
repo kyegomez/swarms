@@ -1,12 +1,9 @@
-from swarms.tools.agent_tools import *
-from swarms.agents.workers.worker import WorkerNode
-from swarms.agents.boss.boss_agent import BossNode
-# from swarms.agents.workers.omni_worker import OmniWorkerAgent
-# from swarms.tools.main import RequestsGet, ExitConversation
-# visual agent
-
-from swarms.agents.workers.worker import worker_tool
 import logging
+
+from swarms.tools.agent_tools import *
+from swarms.agents.workers.worker import WorkerNode, worker_tool
+from swarms.agents.boss.boss_agent import BossNode
+from swarms.tools.main import RequestsGet
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -29,6 +26,8 @@ class Swarms:
 
             process_csv,
             WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+
+            RequestsGet()
             
             # CodeEditor,
             # Terminal,

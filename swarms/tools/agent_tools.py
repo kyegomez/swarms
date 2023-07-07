@@ -34,26 +34,3 @@ from langchain.tools import tool
 
 # ---------- Constants ----------
 ROOT_DIR = "./data/"
-
-# ---------- Tools ----------
-# openai_api_key = os.environ["OPENAI_API_KEY"]
-# llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=openai_api_key)
-
-# worker_tools = [
-#     DuckDuckGoSearchRun(),
-#     WriteFileTool(root_dir=ROOT_DIR),
-#     ReadFileTool(root_dir=ROOT_DIR),
-#     process_csv,
-    
-#     WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-
-#     # Tool(name='terminal', func=Terminal.execute, description='Operates a terminal'),
-#     # Tool(name='code_writer', func=CodeWriter(), description='Writes code'),
-#     # Tool(name='code_editor', func=CodeEditor(), description='Edits code'),#
-# ]
-
-# # ---------- Vector Store ----------
-# embeddings_model = OpenAIEmbeddings()
-# embedding_size = 1536
-# index = faiss.IndexFlatL2(embedding_size)
-# vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
