@@ -17,11 +17,6 @@ import requests
 from bs4 import BeautifulSoup
 
 
-# import llama_index
-# from llama_index import GPTVectorStoreIndex
-# from llama_index.readers.database import DatabaseReader
-
-# from logger import logger
 
 from swarms.utils.logger import logger
 class ToolScope(Enum):
@@ -30,10 +25,6 @@ class ToolScope(Enum):
 
 
 SessionGetter = Callable[[], Tuple[str, AgentExecutor]]
-
-# openai_api_key = os.environ["OPENAI_API_KEY"]
-# llm = ChatOpenAI(model_name="gpt-4", temperature=1.0, openai_api_key=openai_api_key)
-
 
 def tool(
     name: str,
@@ -91,13 +82,13 @@ class BaseToolSet:
 
 
 class RequestsGet(BaseToolSet):
-    @tool(
-        name="Requests Get",
-        description="A portal to the internet. "
-        "Use this when you need to get specific content from a website."
-        "Input should be a  url (i.e. https://www.google.com)."
-        "The output will be the text response of the GET request.",
-    )
+    # @tool(
+    #     name="Requests Get",
+    #     description="A portal to the internet. "
+    #     "Use this when you need to get specific content from a website."
+    #     "Input should be a  url (i.e. https://www.google.com)."
+    #     "The output will be the text response of the GET request.",
+    # )
     def get(self, url: str) -> str:
         """Run the tool."""
         html = requests.get(url).text
@@ -1068,7 +1059,7 @@ class CodeEditor(BaseToolSet):
         "ex. test.py "
         "Output will be success or error message.",
     )
-    def delete(self, inputs: str) -> str:
+    def delete(self, inputs: str, filepath: str) -> str:
         try:
             with open(filepath, "w") as f:
                 f.write("")
