@@ -35,6 +35,10 @@ class WorkerNode:
         )
         self.agent.chain.verbose = True
 
+    def add_tool(self, tool: Tool):
+        """adds a new tool to the agents toolset"""
+        self.tools.append(tool)
+
     def run(self, tool_input: Dict[str, Any]) -> str:
         """Use the tool."""
         prompt = tool_input['prompt']
