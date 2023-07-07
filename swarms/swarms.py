@@ -77,7 +77,7 @@ class Swarms:
         return BossNode(llm, vectorstore, agent_executor, max_iterations=5)
 
 
-    def run_swarms(self, objective, run_as='worker'):
+    def run_swarms(self, objective, run_as=None):
         try:
             # Run the swarm with the given objective
             worker_tools = self.initialize_tools(OpenAI)
