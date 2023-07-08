@@ -36,28 +36,24 @@ class WorkerNode:
         self.agent.chain.verbose = True
 
     def add_tool(self, tool: Tool):
-        """adds a new tool to the agents toolset"""
         self.tools.append(tool)
 
-    def run(self, tool_input: Dict[str, Any]) -> str:
-        if not isinstance(tool_input, dict):
-            raise TypeError("tool_input must be a dictionary")
-        if 'prompt' not in tool_input:
-            raise ValueError("tool_input must contain the key 'prompt'")
+    def run(self, prompt: str) -> str:
+        if not isinstance(prompt, str):
+            raise TypeError("Prompt must be a string")
         
-        prompt = tool_input['prompt']
-        if prompt is None:
-            raise ValueError("Prompt not found in tool_input")
-        
+        if not prompt:
+            raise ValueError("Prompt is empty")
+
         self.agent.run([f"{prompt}"])
         return "Task completed by WorkerNode"
+    
 
 worker_tool = Tool(
     name="WorkerNode AI Agent",
     func=WorkerNode.run,
     description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
 )
-
 
 
 class WorkerNodeInitializer:
@@ -92,9 +88,7 @@ class WorkerNodeInitializer:
         worker_node.create_agent(ai_name="Swarm Worker AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={})
         return worker_node
 
-
-# usage
-def worker_node(api_key):
-    initializer = WorkerNodeInitializer(api_key)
-    worker = initializer.create_worker_node()
-    return worker
+def worker_node(openai_api_key):
+    initializer = WorkerNodeInitializer(openai_api_key)
+    worker_node = initializer.create_worker_node()
+    return worker_node
