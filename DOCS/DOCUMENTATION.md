@@ -21,6 +21,29 @@ def __init__(self, llm, tools, vectorstore)
 - `add_tool(tool)`: Adds a tool to the worker node.
 - `run(prompt)`: Runs the worker node to complete a task specified by the prompt.
 
+
+#### Example Usage
+
+```python
+
+
+from swarms import worker_node
+
+# Your OpenAI API key
+api_key = "sk-your api key"
+
+# Initialize a WorkerNode with your API key
+node = worker_node(api_key)
+
+# Define an objective
+objective = "Please make a web GUI for using HTTP API server..."
+
+# Run the task
+task = node.run(objective)
+
+print(task)
+```
+
 ### BossNode
 The `BossNode` class represents an agent responsible for creating and managing tasks for the worker agent(s). It interacts with the worker node(s) to delegate tasks and monitor their progress.
 
@@ -66,11 +89,29 @@ def __init__(self, openai_api_key)
 
 ## Example Usage
 ```python
-api_key = "your_openai_api_key"
-objective = "Complete the project report"
+from swarms import Swarms
 
-swarms = Swarms(api_key)
-swarms.run_swarms(objective)
+api_key = "sksdsds"
+
+# Initialize Swarms with your API key
+swarm = Swarms(openai_api_key=api_key)
+
+# Define an objective
+objective = """
+Please make a web GUI for using HTTP API server. 
+The name of it is Swarms. 
+You can check the server code at ./main.py. 
+The server is served on localhost:8000. 
+Users should be able to write text input as 'query' and url array as 'files', and check the response. 
+Users input form should be delivered in JSON format. 
+I want it to have neumorphism-style. Serve it on port 4500.
+
+"""
+
+# Run Swarms
+task = swarm.run_swarms(objective)
+
+print(task)
 ```
 
 This will create a swarm of agents to complete the given objective. The boss agent will create tasks and delegate them to the worker agent(s) for execution.
