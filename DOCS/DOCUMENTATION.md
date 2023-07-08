@@ -6,70 +6,111 @@ The Swarm module includes the implementation of two classes, `WorkerNode` and `B
 ## Key Classes
 
 ### WorkerNode
+The `WorkerNode` class represents an autonomous agent instance that functions as a worker to accomplish complex tasks. It has the ability to search the internet, process and generate images, text, audio, and more.
+
+#### Constructor
 ```python
-class WorkerNode:
+def __init__(self, llm, tools, vectorstore)
 ```
+- `llm` (required): The language model used by the worker node.
+- `tools` (required): A list of tools available to the worker node.
+- `vectorstore` (required): The vector store used by the worker node.
 
-The WorkerNode class represents an autonomous worker agent that can perform a range of tasks.
-
-__Methods__:
-
-- `create_agent(ai_name: str, ai_role: str, human_in_the_loop: bool, search_kwargs: dict) -> None`:
-
-    This method creates a new autonomous agent that can complete tasks. The agent utilizes several tools such as search engines, a file writer/reader, and a multi-modal visual tool. 
-    The agent's configuration is customizable through the method parameters. 
-
-    ```python
-    # Example usage
-    worker_node = WorkerNode(llm, tools, vectorstore)
-    worker_node.create_agent('test_agent', 'test_role', False, {})
-    ```
-
-- `run_agent(prompt: str) -> None`:
-
-    This method runs the agent on a given task, defined by the `prompt` parameter.
-
-    ```python
-    # Example usage
-    worker_node = WorkerNode(llm, tools, vectorstore)
-    worker_node.create_agent('test_agent', 'test_role', False, {})
-    worker_node.run_agent('Calculate the square root of 144.')
-    ```
+#### Methods
+- `create_agent(ai_name, ai_role, human_in_the_loop, search_kwargs)`: Creates an agent within the worker node.
+- `add_tool(tool)`: Adds a tool to the worker node.
+- `run(prompt)`: Runs the worker node to complete a task specified by the prompt.
 
 ### BossNode
+The `BossNode` class represents an agent responsible for creating and managing tasks for the worker agent(s). It interacts with the worker node(s) to delegate tasks and monitor their progress.
+
+#### Constructor
 ```python
-class BossNode:
+def __init__(self, llm, vectorstore, agent_executor, max_iterations)
+```
+- `llm` (required): The language model used by the boss node.
+- `vectorstore` (required): The vector store used by the boss node.
+- `agent_executor` (required): The agent executor used to execute tasks.
+- `max_iterations` (required): The maximum number of iterations for task execution.
+
+#### Methods
+- `create_task(objective)`: Creates a task with the given objective.
+- `execute_task(task)`: Executes the given task by interacting with the worker agent(s).
+
+### LLM
+The `LLM` class is a utility class that provides an interface to different language models (LLMs) such as OpenAI's ChatGPT and Hugging Face models. It is used to initialize the language model for the worker and boss nodes.
+
+#### Constructor
+```python
+def __init__(self, openai_api_key=None, hf_repo_id=None, hf_api_token=None, model_kwargs=None)
+```
+- `openai_api_key` (optional): The API key for OpenAI's models.
+- `hf_repo_id` (optional): The repository ID for the Hugging Face model.
+- `hf_api_token` (optional): The API token for the Hugging Face model.
+- `model_kwargs` (optional): Additional keyword arguments to pass to the language model.
+
+#### Methods
+- `run(prompt)`: Runs the language model with the given prompt and returns the generated response.
+
+### Swarms
+The `Swarms` class is a wrapper class that encapsulates the functionality of the worker and boss nodes. It provides a convenient way to initialize and run a swarm of agents to accomplish tasks.
+
+#### Constructor
+```python
+def __init__(self, openai_api_key)
+```
+- `openai_api_key` (required): The API key for OpenAI's models.
+
+#### Methods
+- `run_swarms(objective)`: Runs the swarm with the given objective by initializing the worker and boss nodes.
+
+## Example Usage
+```python
+api_key = "your_openai_api_key"
+objective = "Complete the project report"
+
+swarms = Swarms(api_key)
+swarms.run_swarms(objective)
 ```
 
-The BossNode class represents a manager agent that can create tasks and control the execution of these tasks.
+This will create a swarm of agents to complete the given objective. The boss agent will create tasks and delegate them to the worker agent(s) for execution.
 
-__Methods__:
+Please make sure to replace `"your_openai_api_key"` with your actual OpenAI API key.
 
-- `create_task(objective: str) -> dict`:
+## Configuration
+The Swarms module can be configured by modifying the following parameters:
 
-    This method creates a new task based on the provided `objective`. The created task is a dictionary with the objective as its value.
+### WorkerNode
+- `llm_class`: The language model class to use for the worker node (default: `ChatOpenAI`).
+- `temperature`: The temperature parameter for the language model (default: `0.5`).
 
-    ```python
-    # Example usage
-    boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
-    task = boss_node.create_task('Find the square root of 144.')
-    ```
+### BossNode
+- `llm_class`: The language model class to use for the boss node (default: `OpenAI`).
+- `max_iterations`: The maximum number of iterations for task execution (default: `5`).
 
-- `execute_task(task: dict) -> None`:
+### LLM
+- `openai_api_key`: The API key for OpenAI's models.
+- `hf_repo_id`: The repository ID for the Hugging Face model.
+- `hf_api_token`: The API token for the Hugging Face model.
+- `model_kwargs`: Additional keyword arguments to pass to the language model.
 
-    This method triggers the execution of a given task.
+## Tool Configuration
+The Swarms module supports various tools that can be added to the worker node for performing specific tasks. The following tools are available:
 
-    ```python
-    # Example usage
-    boss_node = BossNode(llm, vectorstore, task_execution_chain, False, 3)
-    task = boss_node.create_task('Find the square root of 144.')
-    boss_node.execute_task(task)
-    ```
+- `DuckDuckGoSearchRun`: A tool for performing web searches.
+- `WriteFileTool`: A tool for writing files.
+- `ReadFileTool`: A tool for reading files.
+- `process_csv`: A tool for processing CSV files.
+- `WebpageQATool`: A tool for performing question answering using web pages.
 
-### Note
+Additional tools can be added by extending the functionality of the `Tool` class.
 
-Before creating the WorkerNode and BossNode, make sure to initialize the lower level model (llm), tools, and vectorstore which are used as parameters in the constructors of the two classes.
+## Advanced Usage
+For more advanced usage, you can customize the tools and parameters according to your specific requirements. The Swarms module provides flexibility and extensibility to accommodate various use cases.
 
-In addition, the WorkerNode class uses the MultiModalVisualAgentTool which is a custom tool that enables the worker agent to run multi-modal visual tasks. Ensure that this tool is correctly initialized before running the WorkerNode.
+For example, you can add your own custom tools by extending the `Tool` class and adding them to the worker node. You can also modify the prompt templates used by the boss node to customize the interaction between the boss and worker agents.
 
-This documentation provides an overview of the main functionalities of the Swarm module. For additional details and advanced functionalities, please review the source code and the accompanying comments.
+Please refer to the source code and documentation of the Swarms module for more details and examples.
+
+## Conclusion
+The Swarms module provides a powerful framework for creating and managing swarms of autonomous agents to accomplish complex tasks. With the WorkerNode and BossNode classes, along with the LLM utility class, you can easily set up and run a swarm of agents to tackle any objective. The module is highly configurable and extensible, allowing you to tailor it to your specific needs.

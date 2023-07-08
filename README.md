@@ -121,6 +121,8 @@ Here is the detailed roadmap of our priorities and planned features for the near
 ## TODO
 
 
+* Create extensive documentation
+
 * Make sure that the boss agent successfully calls the worker agent if when it's finished makinng a plan
 
 * Make sure the worker agent can access tools like web browser, terminal, and code editor, and multi-modal agents
