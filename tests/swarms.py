@@ -1,6 +1,6 @@
 import unittest
 import swarms
-from swarms.agents.workers.worker import WorkerNode
+from swarms.agents.workers.worker_agent import WorkerNode
 from swarms.agents.boss.boss_agent import BossNode
 
 class TestSwarms(unittest.TestCase):

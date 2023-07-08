@@ -58,43 +58,43 @@ worker_tool = Tool(
     description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
 )
 
-# class WorkerNode(BaseTool):
-#     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on """
-#     name = "WorkerNode"
-#     description = "A worker node that can perform complex tasks"
-    
-#     def __init__(self, llm, tools, vectorstore):
-#         super().__init__()
-#         self.llm = llm
-#         self.tools = tools
-#         self.vectorstore = vectorstore
 
-#     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
-#         self.agent = AutoGPT.from_llm_and_tools(
-#             ai_name=ai_name,
-#             ai_role=ai_role,
-#             tools=self.tools,
-#             llm=self.llm,
-#             memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
-#             human_in_the_loop=human_in_the_loop,
-#         )
-#         self.agent.chain.verbose = True
 
-#     # @tool
-#         # name="Worker AutoBot Agent",
-#         # description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on",
-#     def _run(
-#         self, prompt: str, run_manager: Optional[CallbackManagerForToolRun] = None
-#     ) -> str:
-#         """Use the tool."""
-#         tree_of_thoughts_prompt = """
-#         Imagine three different experts are answering this question. All experts will write down each chain of thought of each step of their thinking, then share it with the group. Then all experts will go on to the next step, etc. If any expert realises they're wrong at any point then they leave. The question is...
-#         """
-#         self.agent.run([f"{tree_of_thoughts_prompt}{prompt}"])
-#         return "Task completed by WorkerNode"
+class WorkerNodeInitializer:
+    def __init__(self, openai_api_key):
+        self.openai_api_key = openai_api_key
 
-#     async def _arun(
-#         self, prompt: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None
-#     ) -> str:
-#         """Use the tool asynchronously."""
-#         raise NotImplementedError("WorkerNode does not support async")
+    def initialize_llm(self, llm_class, temperature=0.5):
+        return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
+
+    def initialize_tools(self, llm_class):
+        llm = self.initialize_llm(llm_class)
+        web_search = DuckDuckGoSearchRun()
+        tools = [
+            web_search,
+            WriteFileTool(root_dir=ROOT_DIR),
+            ReadFileTool(root_dir=ROOT_DIR),
+            process_csv,
+            WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+        ]
+        return tools
+
+    def initialize_vectorstore(self):
+        embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+        embedding_size = 1536
+        index = faiss.IndexFlatL2(embedding_size)
+        return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+
+    def create_worker_node(self, llm_class=ChatOpenAI):
+        worker_tools = self.initialize_tools(llm_class)
+        vectorstore = self.initialize_vectorstore()
+        worker_node = WorkerNode(llm=self.initialize_llm(llm_class), tools=worker_tools, vectorstore=vectorstore)
+        worker_node.create_agent(ai_name="Swarm Worker AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={})
+        return worker_node
+
+
+# usage
+def worker_node(api_key):
+    initializer = WorkerNodeInitializer(api_key)
+    worker = initializer.create_worker_node()
+    return worker
