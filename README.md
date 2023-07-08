@@ -120,6 +120,13 @@ Here is the detailed roadmap of our priorities and planned features for the near
 
 ## TODO
 
+
+* Make sure that the boss agent successfully calls the worker agent if when it's finished makinng a plan
+
+* Make sure the worker agent can access tools like web browser, terminal, and code editor, and multi-modal agents
+
+* Make sure inputs and outputs from boss to worker are well defined and are collaborating if not then readjust prompt
+
 * Create a tool that creates other tools with access to write code, debug, and an architectural argent that creates the architecture and then another agent that creates the code[Architecter(with code examples), code generator (with access to writing code and terminalrools)] -- The Compiler?
 
 * Create a screenshot tool that takes a screen shot and then passes it to a worker multi-modal agent for visual context.
