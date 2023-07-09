@@ -241,110 +241,110 @@ class ToolsFactory:
 
 
 ##########################################+>  SYS
-import signal
-from typing import Optional, Tuple
+# import signal
+# from typing import Optional, Tuple
 
-from ptrace.debugger import (
-    NewProcessEvent,
-    ProcessExecution,
-    ProcessExit,
-    ProcessSignal,
-    PtraceDebugger,
-    PtraceProcess,
-)
-from ptrace.func_call import FunctionCallOptions
-from ptrace.syscall import PtraceSyscall
-from ptrace.tools import signal_to_exitcode
-
-
-class SyscallTimeoutException(Exception):
-    def __init__(self, pid: int, *args) -> None:
-        super().__init__(f"deadline exceeded while waiting syscall for {pid}", *args)
+# from ptrace.debugger import (
+#     NewProcessEvent,
+#     ProcessExecution,
+#     ProcessExit,
+#     ProcessSignal,
+#     PtraceDebugger,
+#     PtraceProcess,
+# )
+# from ptrace.func_call import FunctionCallOptions
+# from ptrace.syscall import PtraceSyscall
+# from ptrace.tools import signal_to_exitcode
 
 
-class SyscallTracer:
-    def __init__(self, pid: int):
-        self.debugger: PtraceDebugger = PtraceDebugger()
-        self.pid: int = pid
-        self.process: PtraceProcess = None
+# class SyscallTimeoutException(Exception):
+#     def __init__(self, pid: int, *args) -> None:
+#         super().__init__(f"deadline exceeded while waiting syscall for {pid}", *args)
 
-    def is_waiting(self, syscall: PtraceSyscall) -> bool:
-        if syscall.name.startswith("wait"):
-            return True
-        return False
 
-    def attach(self):
-        self.process = self.debugger.addProcess(self.pid, False)
+# class SyscallTracer:
+#     def __init__(self, pid: int):
+#         self.debugger: PtraceDebugger = PtraceDebugger()
+#         self.pid: int = pid
+#         self.process: PtraceProcess = None
 
-    def detach(self):
-        self.process.detach()
-        self.debugger.quit()
+#     def is_waiting(self, syscall: PtraceSyscall) -> bool:
+#         if syscall.name.startswith("wait"):
+#             return True
+#         return False
 
-    def set_timer(self, timeout: int):
-        def handler(signum, frame):
-            raise SyscallTimeoutException(self.process.pid)
+#     def attach(self):
+#         self.process = self.debugger.addProcess(self.pid, False)
 
-        signal.signal(signal.SIGALRM, handler)
-        signal.alarm(timeout)
+#     def detach(self):
+#         self.process.detach()
+#         self.debugger.quit()
 
-    def reset_timer(self):
-        signal.alarm(0)
+#     def set_timer(self, timeout: int):
+#         def handler(signum, frame):
+#             raise SyscallTimeoutException(self.process.pid)
 
-    def wait_syscall_with_timeout(self, timeout: int):
-        self.set_timer(timeout)
-        self.process.waitSyscall()
-        self.reset_timer()
+#         signal.signal(signal.SIGALRM, handler)
+#         signal.alarm(timeout)
 
-    def wait_until_stop_or_exit(self) -> Tuple[Optional[int], str]:
-        self.process.syscall()
-        exitcode = None
-        reason = ""
-        while True:
-            if not self.debugger:
-                break
+#     def reset_timer(self):
+#         signal.alarm(0)
 
-            try:
-                self.wait_syscall_with_timeout(30)
-            except ProcessExit as event:
-                if event.exitcode is not None:
-                    exitcode = event.exitcode
-                continue
-            except ProcessSignal as event:
-                event.process.syscall(event.signum)
-                exitcode = signal_to_exitcode(event.signum)
-                reason = event.reason
-                continue
-            except NewProcessEvent as event:
-                continue
-            except ProcessExecution as event:
-                continue
-            except Exception as e:
-                reason = str(e)
-                break
+#     def wait_syscall_with_timeout(self, timeout: int):
+#         self.set_timer(timeout)
+#         self.process.waitSyscall()
+#         self.reset_timer()
 
-            syscall = self.process.syscall_state.event(
-                FunctionCallOptions(
-                    write_types=False,
-                    write_argname=False,
-                    string_max_length=300,
-                    replace_socketcall=True,
-                    write_address=False,
-                    max_array_count=20,
-                )
-            )
+#     def wait_until_stop_or_exit(self) -> Tuple[Optional[int], str]:
+#         self.process.syscall()
+#         exitcode = None
+#         reason = ""
+#         while True:
+#             if not self.debugger:
+#                 break
 
-            self.process.syscall()
+#             try:
+#                 self.wait_syscall_with_timeout(30)
+#             except ProcessExit as event:
+#                 if event.exitcode is not None:
+#                     exitcode = event.exitcode
+#                 continue
+#             except ProcessSignal as event:
+#                 event.process.syscall(event.signum)
+#                 exitcode = signal_to_exitcode(event.signum)
+#                 reason = event.reason
+#                 continue
+#             except NewProcessEvent as event:
+#                 continue
+#             except ProcessExecution as event:
+#                 continue
+#             except Exception as e:
+#                 reason = str(e)
+#                 break
 
-            if syscall is None:
-                continue
+#             syscall = self.process.syscall_state.event(
+#                 FunctionCallOptions(
+#                     write_types=False,
+#                     write_argname=False,
+#                     string_max_length=300,
+#                     replace_socketcall=True,
+#                     write_address=False,
+#                     max_array_count=20,
+#                 )
+#             )
 
-            if syscall.result:
-                continue
+#             self.process.syscall()
 
-        self.reset_timer()
+#             if syscall is None:
+#                 continue
 
-        return exitcode, reason
-    ##########################################+> SYS CALL END
+#             if syscall.result:
+#                 continue
+
+#         self.reset_timer()
+
+#         return exitcode, reason
+#     ##########################################+> SYS CALL END
 
 
 

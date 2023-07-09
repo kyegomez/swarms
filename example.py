@@ -1,5 +1,5 @@
 import os
-from swarms import Swarms
+from swarms.swarms import Swarms
 
 
 # Retrieve your API key from the environment or replace with your actual key
