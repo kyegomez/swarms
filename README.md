@@ -120,6 +120,7 @@ Here is the detailed roadmap of our priorities and planned features for the near
 
 ## TODO
 
+* Create a non-langchain worker and swarm class and compare
 
 * Create extensive documentation
 
