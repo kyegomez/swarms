@@ -47,4 +47,5 @@ COPY . .
 EXPOSE ${EVAL_PORT}
 
 # Run example.py when the container launches
-CMD ["python", "example.py"]
+# Run the application
+CMD ["python3.10", "-m", "api.main", "serve"]
