@@ -31,7 +31,7 @@ Welcome to Swarms - the future of AI, where we leverage the power of autonomous 
 
 ---
 
-## Vision
+## Purpose
 Artificial Intelligence has grown at an exponential rate over the past decade. Yet, we are far from fully harnessing its potential. Today's AI operates in isolation, each working separately in their corner. But life doesn't work like that. The world doesn't work like that. Success isn't built in silos; it's built in teams.
 
 Imagine a world where AI models work in unison. Where they can collaborate, interact, and pool their collective intelligence to achieve more than any single model could. This is the future we envision. But today, we lack a framework for AI to collaborate effectively, to form a true swarm of intelligent agents.
