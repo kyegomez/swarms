@@ -4,12 +4,12 @@ services:
   swarms:
     build: .
     ports:
-      - "${EVAL_PORT}:${EVAL_PORT}"
+      - "${SWARMS_PORT}:${SWARMS_PORT}"
     environment:
-      EVAL_PORT: 8000
+      SWARMS_PORT: 8000
       MODEL_NAME: gpt-4
       CELERY_BROKER_URL: redis://redis:6379
-      SERVER: http://localhost:${EVAL_PORT}
+      SERVER: http://localhost:${SWARMS_PORT}
       USE_GPU: False
       PLAYGROUND_DIR: playground
       LOG_LEVEL: INFO
