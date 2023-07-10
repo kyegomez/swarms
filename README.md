@@ -40,6 +40,8 @@
 
 Welcome to Swarms - the future of AI, where we leverage the power of autonomous agents to create 'swarms' of Language Models (LLM) that work together, creating a dynamic and interactive AI system.
 
+---
+
 ## Vision
 Artificial Intelligence has grown at an exponential rate over the past decade. Yet, we are far from fully harnessing its potential. Today's AI operates in isolation, each working separately in their corner. But life doesn't work like that. The world doesn't work like that. Success isn't built in silos; it's built in teams.
 
@@ -52,13 +54,16 @@ But here at Swarms, we have a secret sauce. It's not just a technology or a brea
 
 We are uniquely positioned to take on this challenge with 1,500+ devoted researchers in Agora. We have assembled a team of world-class experts, experienced and driven, united by a shared vision. Our commitment to breaking barriers, pushing boundaries, and our belief in the power of collective intelligence makes us the best team to usher in this future to fundamentally advance our species, Humanity.
 
+---
 
 ## Table of Contents
 1. [Installation](#installation)
 2. [Sharing](#sharing)
+---
 
 ## Installation
 There are 2 methods, one is through `git clone` and the other is by `pip install swarms`. Check out the [document](/DOCUMENTATION.md) for more information on the classes.
+---
 
 # Method1
 * Pip install `python3 -m pip install swarms`
@@ -76,6 +81,8 @@ objective = "What is the capital of the Uk"
 result = swarm(api_key, objective)
 print(result)
 ```
+
+---
 
 # Method 2
 Download via Github, and install requirements. Simple example by:
@@ -114,7 +121,7 @@ swarm.run_swarms(objective)
 
 This will create and execute a task to write a summary about the latest news on quantum computing. The result will be the summary of the news.
 
-
+---
 
 ## Share with your Friends
 
@@ -132,11 +139,14 @@ Share on Pinterest: [![Share on Pinterest](https://img.shields.io/badge/-Share%2
 
 Share on WhatsApp: [![Share on WhatsApp](https://img.shields.io/badge/-Share%20on%20WhatsApp-green)](https://api.whatsapp.com/send?text=Check%20out%20Swarms%20-%20the%20future%20of%20AI%20%23swarms%20%23AI%0A%0Ahttps%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
+---
+
 ## Contribute
 We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](./CONTRIBUTING.md).
 
 Thank you for being a part of our project!
 
+---
 # Roadmap
 
 Please checkout our [Roadmap](DOCS/ROADMAP.md) and consider contributing to make the dream of Swarms real to advance Humanity.
@@ -151,6 +161,7 @@ Please checkout our [Roadmap](DOCS/ROADMAP.md) and consider contributing to make
 
 Our goal is to continuously improve Swarms by following this roadmap, while also being adaptable to new needs and opportunities as they arise.
 
+---
 
 # Bounty Program
 
@@ -167,6 +178,8 @@ Here's how it works:
 4. **Submit your Contribution**: Once your work is complete, submit it for review. We'll evaluate your contribution based on its quality, relevance, and the value it brings to Swarms.
 
 5. **Earn Rewards**: If your contribution is approved, you'll earn a bounty. The amount of the bounty depends on the complexity of the task, the quality of your work, and the value it brings to Swarms.
+
+---
 
 ## The Plan
 
@@ -185,7 +198,7 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 
 
 
-
+---
 
 # EcoSystem
 
@@ -195,6 +208,7 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 
 * Make a swarm that checks arxviv for papers -> checks if there is a github link -> then implements them and checks them
 
+---
 
 # Demos
 
@@ -204,7 +218,4 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 
 [![Watch the swarm video](https://img.youtube.com/vi/Br62cDMYXgc/maxresdefault.jpg)](https://youtu.be/Br62cDMYXgc)
 
-
-
-
-
+---
