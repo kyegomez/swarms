@@ -6,7 +6,11 @@
 
 # Swarming AI Agents (Swarms)
 
-![Swarming banner](images/swarms.png)
+<!-- ![Swarming banner](images/swarms.png)
+
+ -->
+
+![Swarms video](images/swarms_demo.mp4)
 
 [![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
@@ -90,6 +94,7 @@ swarm.run_swarms(objective)
 ```
 
 This will create and execute a task to write a summary about the latest news on quantum computing. The result will be the summary of the news.
+
 
 
 ## Share with your Friends
