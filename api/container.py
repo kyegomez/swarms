@@ -5,16 +5,17 @@ from typing import Dict, List
 
 from fastapi.templating import Jinja2Templates
 
-from swarms import Swarms
-from swarms.utils.utils import BaseHandler, FileHandler, FileType, StaticUploader, CsvToDataframe
+from swarms.agents.utils.manager import AgentManager
+from swarms.utils.utils import BaseHandler, FileHandler, FileType
+from swarms.tools.main import CsvToDataframe, ExitConversation, RequestsGet, CodeEditor, Terminal
 
-from swarms.tools.main import BaseToolSet, ExitConversation, RequestsGet, CodeEditor, Terminal
+from swarms.tools.main import BaseToolSet
 
+from swarms.utils.utils import StaticUploader
 
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.chdir(BASE_DIR / os.getenv("PLAYGROUND_DIR"))
+os.chdir(BASE_DIR / os.environ["PLAYGROUND_DIR"])
 
-api_key = os.getenv("OPENAI_API_KEY")
 
 toolsets: List[BaseToolSet] = [
     Terminal(),
@@ -24,9 +25,10 @@ toolsets: List[BaseToolSet] = [
 ]
 handlers: Dict[FileType, BaseHandler] = {FileType.DATAFRAME: CsvToDataframe()}
 
-if os.getenv("USE_GPU") == "True":
+if os.environ["USE_GPU"]:
     import torch
 
+    # from core.handlers.image import ImageCaptioning
     from swarms.tools.main import ImageCaptioning
     from swarms.tools.main import (
         ImageEditing,
@@ -46,16 +48,14 @@ if os.getenv("USE_GPU") == "True":
         )
         handlers[FileType.IMAGE] = ImageCaptioning("cuda")
 
-swarms = Swarms(api_key)
+agent_manager = AgentManager.create(toolsets=toolsets)
 
 file_handler = FileHandler(handlers=handlers, path=BASE_DIR)
 
 templates = Jinja2Templates(directory=BASE_DIR / "api" / "templates")
 
-uploader = StaticUploader(
-    static_dir=BASE_DIR / "static",
-    endpoint="static",
-    public_url=os.getenv("PUBLIC_URL")
+uploader = StaticUploader.from_settings(
+ path=BASE_DIR / "static", endpoint="static"
 )
 
-reload_dirs = [BASE_DIR / "swarms", BASE_DIR / "api"]
+reload_dirs = [BASE_DIR / "core", BASE_DIR / "api"]
