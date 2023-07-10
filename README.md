@@ -46,8 +46,17 @@ We are uniquely positioned to take on this challenge with 1,500+ devoted researc
 ---
 
 ## Table of Contents
-1. [Installation](#installation)
-2. [Sharing](#sharing)
+1. [Introduction](#introduction)
+2. [Vision](#purpose)
+3. [Installation](#installation)
+4. [Share on Social Media](#share-on-social-media)
+5. [Other Platforms](#other-platforms)
+6. [Contribute](#contribute)
+7. [Roadmap](#roadmap)
+8. [Bounty Program](#bounty-program)
+9. [EcoSystem](#ecosystem)
+10. [Demos](#demos)
+
 ---
 
 ## Installation
