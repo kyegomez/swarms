@@ -296,5 +296,7 @@ The agent learns to call external APIs for extra information that is missing fro
 
 ![Swarms Demo](images/Screenshot_48.png)
 
+## Swarm Video Demo {Click for more}
+
 [![Watch the swarm video](https://img.youtube.com/vi/Br62cDMYXgc/maxresdefault.jpg)](https://youtu.be/Br62cDMYXgc)
 
