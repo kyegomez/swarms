@@ -1,30 +1,61 @@
+# FROM nvidia/cuda:11.7.0-runtime-ubuntu20.04
+# WORKDIR /app/
+
+# ENV DEBIAN_FRONTEND=noninteractive
+
+# RUN \
+#   apt-get update && \
+#   apt-get install -y software-properties-common && \
+#   add-apt-repository ppa:deadsnakes/ppa && \
+#   apt-get install -y python3.10 python3-pip curl && \
+#   curl -sSL https://install.python-poetry.org | python3 - && \
+#   apt-get install -y nodejs npm
+
+# ENV PATH "/root/.local/bin:$PATH"
+
+# COPY pyproject.toml .
+# COPY poetry.lock .
+
+# COPY api/__init__.py api/__init__.py
+# RUN poetry config virtualenvs.in-project true
+# RUN poetry config virtualenvs.path .venv
+# RUN poetry config installer.max-workers 10
+# RUN poetry env use 3.10
+# RUN poetry install --with tools,gpu
+
+# COPY . .
+
+# ENV PORT 8001
+
+# ENTRYPOINT ["poetry", "run", "serve"]
+
+
 FROM nvidia/cuda:11.7.0-runtime-ubuntu20.04
+
+# Set working directory
 WORKDIR /app/
 
+# Install system dependencies
 ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get install -y python3.10 python3-pip curl && \
+    apt-get install -y nodejs npm
 
-RUN \
-  apt-get update && \
-  apt-get install -y software-properties-common && \
-  add-apt-repository ppa:deadsnakes/ppa && \
-  apt-get install -y python3.10 python3-pip curl && \
-  curl -sSL https://install.python-poetry.org | python3 - && \
-  apt-get install -y nodejs npm
-
+# Set environment variables
 ENV PATH "/root/.local/bin:$PATH"
-
-COPY pyproject.toml .
-COPY poetry.lock .
-
-COPY api/__init__.py api/__init__.py
-RUN poetry config virtualenvs.in-project true
-RUN poetry config virtualenvs.path .venv
-RUN poetry config installer.max-workers 10
-RUN poetry env use 3.10
-RUN poetry install --with tools,gpu
-
-COPY . .
-
 ENV PORT 8001
 
-ENTRYPOINT ["poetry", "run", "serve"]
+# Copy project files
+COPY requirements.txt .
+
+# Install project dependencies
+RUN python3.10 -m pip install --upgrade pip && \
+    python3.10 -m pip install --no-cache-dir -r requirements.txt
+
+# Copy application files
+COPY . .
+
+# Run the application
+CMD ["python3.10", "app.py"]
