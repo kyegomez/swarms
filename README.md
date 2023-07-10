@@ -6,11 +6,7 @@
 
 # Swarming AI Agents (Swarms)
 
-<!-- ![Swarming banner](images/swarms.png)
-
- -->
-
-![Swarms video](images/swarms_demo.mp4)
+![Swarming banner](images/swarms.png)
 
 [![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
@@ -294,3 +290,13 @@ The agent learns to call external APIs for extra information that is missing fro
 *[The Replicator, an autonomous swarm that conducts Multi-Modal AI research by creating new underlying mathematical operations and models](https://github.com/kyegomez/The-Replicator)
 
 * Make a swarm that checks arxviv for papers -> checks if there is a github link -> then implements them and checks them
+
+
+# Demos
+
+![Swarms Demo](images/Screenshot_48.png)
+
+[![Watch the swarm video](https://img.youtube.com/vi/T-Br62cDMYXgc/maxresdefault.jpg)](https://youtu.be/T-Br62cDMYXgc)
+
+
+https://www.youtube.com/watch?v=Br62cDMYXgc
