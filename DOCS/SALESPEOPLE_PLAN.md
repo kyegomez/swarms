@@ -1,4 +1,4 @@
-**Open Source Freelancer Salespeople Recruitment Plan**
+# **Open Source Freelancer Salespeople Recruitment Plan**
 
 In the spirit of Jeff Bezos' philosophy of thinking long-term, customer obsession, and commitment to operational excellence, here is a strategic plan to attract open-source freelancer salespeople to Swarms.
 
