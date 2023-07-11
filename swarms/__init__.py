@@ -1,4 +1,3 @@
 # from swarms import Swarms, swarm
 from swarms.swarms import Swarms, swarm
-from swarms.agents import worker_node
-from swarms.agents.workers.worker_ultranode import UltraNode
+from swarms.agents import worker_node, UltraNode
