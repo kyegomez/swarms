@@ -145,10 +145,28 @@ Where:
 
 ❏ Minimize Effort & Sacrifice (How can we make this easier? More Seamless? Convenient?)
 
+### Swarms Examples
+
+### Swarms Value Proposition
+
+"Leap into a new era of productivity with Swarms. Automate up to 50% of your business tasks with the power of cooperative AI, a proven solution trusted by thousands worldwide. With an easy integration process, your dream of seamless automation is just a few steps away."
+
+Where:
+
+- The dream outcome is achieving a significant boost in efficiency and productivity by automating 30-50% of your daily business tasks with Swarms. 
+
+- The perceived likelihood of success is backed by our strong track record, with thousands of successful implementations and satisfied customers globally.
+
+- We've minimized the time delay to success. Swarms provides quick and painless onboarding, with step-by-step support to ensure smooth integration into your existing workflow.
+
+- The effort and sacrifice required is significantly less than traditional methods. Swarms is designed for ease of use, requiring minimal technical know-how. Plus, our dedicated support team is always at hand to ensure a seamless experience.
+
+In essence, Swarms makes the dream of comprehensive business automation an attainable reality. Join thousands of our active users in harnessing the power of cooperative AI, and transform your business operations with us today.
+
 ### Value prop SWARMS
 ```
 We've helped thousands of people just like you automate 30% of their activities with Swarms. And, all it takes to get started is a fast simple onboarding flow that asks you to integrate your tools and datasources. 
-````
+```
 
 In today's competitive landscape, organizations of all sizes are continually seeking ways to automate routine tasks, streamline processes, and make data-driven decisions. Enter Swarms, a revolutionary AI-based technology that leverages the power of multiple autonomous agents to perform tasks with unprecedented speed and accuracy.
 
