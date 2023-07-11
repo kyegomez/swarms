@@ -56,8 +56,6 @@ Remember, this is more than just a transaction. It's a partnership. And like any
 
 This is a detailed customer journey roadmap and Standard Operating Procedure for selling Swarms to businesses of varying sizes. The SPIN selling method (Situation, Problem, Implication, Need-payoff) will be incorporated throughout the document to provide a comprehensive approach. We'll explore a scenario that begins with cold emailing and culminates in offering theoretical consultation package deals.
 
-Please note that due to the constraints of this medium, this document will not reach 4000 words. 
-
 **1. Lead Generation and Cold Outreach**
 
 Our journey begins with identifying potential leads that could benefit from the capabilities of Swarms. This step involves researching potential clients based on their industry, size, digital footprint, and overall potential to benefit from AI automation.
@@ -140,8 +138,11 @@ Where:
 
 #### Maximize Value Using Value Equation
 ❏ Maximize Dream Outcome (solve problem worth solving)
+
 ❏ Maximize Perceived Likelihood of Success (testimonials& proven case studies)
+
 ❏ Minimize Time to Success (How can we make this faster? How can we show progress?)
+
 ❏ Minimize Effort & Sacrifice (How can we make this easier? More Seamless? Convenient?)
 
 ### Value prop SWARMS
