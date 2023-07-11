@@ -1,7 +1,10 @@
-from core.prompts.input import EVAL_PREFIX, EVAL_SUFFIX
-from core.tools.base import BaseToolSet
-from core.tools.factory import ToolsFactory
-from env import settings
+import os
+
+from swarms.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
+from swarms.tools.main import BaseToolSet
+from swarms.tools.main import ToolsFactory
+
+
 from langchain.chat_models.base import BaseChatModel
 from langchain.schema import BaseOutputParser
 from langchain.callbacks.base import BaseCallbackManager
@@ -33,9 +36,9 @@ class AgentBuilder:
 
         toolnames = ["wikipedia"]
 
-        if settings["SERPAPI_API_KEY"]:
+        if os.environ["SERPAPI_API_KEY"]:
             toolnames.append("serpapi")
-        if settings["BING_SEARCH_URL"] and settings["BING_SUBSCRIPTION_KEY"]:
+        if os.environ["BING_SEARCH_URL"] and os.environ["BING_SUBSCRIPTION_KEY"]:
             toolnames.append("bing-search")
 
         self.global_tools = [
@@ -73,8 +76,8 @@ class AgentBuilder:
                     self.toolsets
                 ),  # for names and descriptions
             ],
-            system_message=EVAL_PREFIX.format(bot_name=settings["BOT_NAME"]),
-            human_message=EVAL_SUFFIX.format(bot_name=settings["BOT_NAME"]),
+            system_message=EVAL_PREFIX.format(bot_name=os.environ["BOT_NAME"]),
+            human_message=EVAL_SUFFIX.format(bot_name=os.environ["BOT_NAME"]),
             output_parser=self.parser,
             max_iterations=30,
         )
