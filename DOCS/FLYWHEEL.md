@@ -15,3 +15,51 @@
 7. **Wider Adoption of Swarms:** An ever-improving product, a growing user base, and an increasing number of passionate salespeople accelerate the adoption of Swarms.
 
 8. **Return to Step 1:** As the community, user base, and sales network continue to grow, the cycle repeats, each time speeding up the flywheel.
+
+
+```markdown
+               +---------------------+
+               |   Building a       |
+               |  Supportive        | <--+
+               |   Community        |    |
+               +--------+-----------+    |
+                        |                |
+                        v                |
+               +--------+-----------+    |
+               |   Increased        |    |
+               | Contributions &    |    |
+               |   Sales Efforts    |    |
+               +--------+-----------+    |
+                        |                |
+                        v                |
+               +--------+-----------+    |
+               |   Improvement in   |    |
+               | Quality & Market   |    |
+               |       Reach        |    |
+               +--------+-----------+    |
+                        |                |
+                        v                |
+               +--------+-----------+    |
+               |   Rise in User     |    |
+               |        Base        |    |
+               +--------+-----------+    |
+                        |                |
+                        v                |
+               +--------+-----------+    |
+               |  Greater Financial |    |
+               |     Incentives     |    |
+               +--------+-----------+    |
+                        |                |
+                        v                |
+               +--------+-----------+    |
+               | Attract More        |    |
+               | Developers &       |    |
+               | Salespeople         |    |
+               +--------+-----------+    |
+                        |                |
+                        v                |
+               +--------+-----------+    |
+               |  Wider Adoption of  |    |
+               |       Swarms        |----+
+               +---------------------+
+```
