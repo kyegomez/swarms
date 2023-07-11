@@ -68,7 +68,7 @@ class UltraNode:
         # The prompt is not needed here either
         return self.execute_task()
 
-from worker_node import UltraNode
+# from worker_node import UltraNode
 
-node = UltraNode('objective')
-result = node.execute()
+# node = UltraNode('objective')
+# result = node.execute()
