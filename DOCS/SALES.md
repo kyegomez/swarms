@@ -332,6 +332,12 @@ Throughout this journey, the focus should be on simplicity and intuitiveness. Ju
 
 # Open Source Salesperson Onboarding: Post Course Completion
 
+### For more assistance check out these resources
+
+* [Pricing Package](https://www.acquisition.com/hubfs/Offer%20Checklists%20-%20PDF%20Downloads/Pricing-Value-Checklist.pdf?hsLang=en)
+
+*[Alex Hormozi](https://www.acquisition.com/offers-value-equation)
+
 Once a salesperson has completed the initial course and had their one-on-one session, the onboarding continues to the next phase – preparing them for sales activities and ensuring they have the necessary tools and resources.
 
 ## Access to CRM and Sales Tools
