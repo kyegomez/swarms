@@ -4,7 +4,7 @@ from pathlib import Path
 
 # from env import DotEnv
 
-from swarms.utils.utils import AbstractUploader
+from swarms.utils.main import AbstractUploader
 
 class StaticUploader(AbstractUploader):
     def __init__(self, server: str, path: Path, endpoint: str):
