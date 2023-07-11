@@ -18,7 +18,7 @@ from langchain.schema import (
     SystemMessage,
 )
 from langchain.utils import get_from_dict_or_env
-from logger import logger
+from swarms.utils.logger import logger
 from pydantic import BaseModel, Extra, Field, root_validator
 from tenacity import (
     before_sleep_log,
