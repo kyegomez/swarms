@@ -225,7 +225,7 @@ class AbstractUploader(ABC):
 
 
 #========================= upload s3
-import os
+
 
 import boto3
 
@@ -262,7 +262,6 @@ class S3Uploader(AbstractUploader):
 #========================= upload s3
 
 #========================> upload/static
-import os
 import shutil
 from pathlib import Path
 
@@ -291,11 +290,9 @@ class StaticUploader(AbstractUploader):
 
 
 #========================> handlers/base
-import os
-import shutil
+
 import uuid
 from enum import Enum
-from pathlib import Path
 from typing import Dict
 
 import requests
@@ -402,7 +399,6 @@ class FileHandler:
 
 
 #############===========================>
-import pandas as pd
 
 from swarms.prompts.prompts import DATAFRAME_PROMPT
 
@@ -425,77 +421,3 @@ class CsvToDataframe(BaseHandler):
 
 
 
-
-#========================> handlers/image
-import torch
-from PIL import Image
-from transformers import BlipForConditionalGeneration, BlipProcessor
-
-# from core.prompts.file import IMAGE_PROMPT
-from swarms.prompts.prompts import IMAGE_PROMPT
-
-
-
-class ImageCaptioning(BaseHandler):
-    def __init__(self, device):
-        print("Initializing ImageCaptioning to %s" % device)
-        self.device = device
-        self.torch_dtype = torch.float16 if "cuda" in device else torch.float32
-        self.processor = BlipProcessor.from_pretrained(
-            "Salesforce/blip-image-captioning-base"
-        )
-        self.model = BlipForConditionalGeneration.from_pretrained(
-            "Salesforce/blip-image-captioning-base", torch_dtype=self.torch_dtype
-        ).to(self.device)
-
-    def handle(self, filename: str):
-        img = Image.open(filename)
-        width, height = img.size
-        ratio = min(512 / width, 512 / height)
-        width_new, height_new = (round(width * ratio), round(height * ratio))
-        img = img.resize((width_new, height_new))
-        img = img.convert("RGB")
-        img.save(filename, "PNG")
-        print(f"Resize image form {width}x{height} to {width_new}x{height_new}")
-
-        inputs = self.processor(Image.open(filename), return_tensors="pt").to(
-            self.device, self.torch_dtype
-        )
-        out = self.model.generate(**inputs)
-        description = self.processor.decode(out[0], skip_special_tokens=True)
-        print(
-            f"\nProcessed ImageCaptioning, Input Image: {filename}, Output Text: {description}"
-        )
-
-        return IMAGE_PROMPT.format(filename=filename, description=description)
-    
-
-
-
-# from autogpt.agent import Agent
-# from swarms.agents.swarms import worker_node
-
-# class MultiAgent(worker_node):
-
-#     def __init__(
-#             self,
-#             ai_name,
-#             memory,
-#             full_message_history,
-#             prompt,
-#             user_input,
-#             agent_id
-#     ):
-#         super().__init__(
-#             ai_name=ai_name,
-#             memory=memory,
-#             full_message_history=full_message_history,
-#             next_action_count=0,
-#             prompt=prompt,
-#             user_input=user_input,
-#         )
-#         self.agent_id = agent_id
-#         self.auditory_buffer = []  # contains the non processed parts of the conversation
-
-#     def receive_message(self, speaker, message):
-#         self.auditory_buffer.append((speaker.ai_name, message))
