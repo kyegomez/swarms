@@ -117,8 +117,6 @@ The ports you can use are 4500 and 6500.
 swarm.run_swarms(objective)
 ```
 
-This will create and execute a task to write a summary about the latest news on quantum computing. The result will be the summary of the news.
-
 ---
 
 ## Share with your Friends
@@ -196,6 +194,8 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 *[The Replicator, an autonomous swarm that conducts Multi-Modal AI research by creating new underlying mathematical operations and models](https://github.com/kyegomez/The-Replicator)
 
 * Make a swarm that checks arxviv for papers -> checks if there is a github link -> then implements them and checks them
+
+* [SwarmLogic, where a swarm is your API, database, and backend!](https://github.com/kyegomez/SwarmLogic)
 
 ---
 
