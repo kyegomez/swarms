@@ -1,5 +1,5 @@
 from typing import Dict, Optional
-from celery import Task
+# from celery import Task
 
 from langchain.agents.agent import AgentExecutor
 from langchain.callbacks.base import CallbackManager
