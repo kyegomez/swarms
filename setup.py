@@ -72,7 +72,7 @@ setup(
         'python-dotenv',
         'boto3',
         'uvicorn==0.21.1',
-        'python-ptrace==0.9.8',
+        'python-==0.9.8',
         'jinja2==3.1.2',
         'python-multipart==0.0.6',
         'celery==5.2.7',
