@@ -82,7 +82,7 @@
 5. **Security and Compliance Risks**: As the user base grows and the software becomes more complex, the risk of security issues increases. Moreover, as contributors from various regions join, compliance with various international laws could become an issue.
    * **Mitigation**: Establish strong security practices from the start. Regularly conduct security audits. Seek legal counsel to understand and adhere to international laws and regulations.
 
-Activation Plan for the Flywheel:
+## Activation Plan for the Flywheel:
 
 1. **Community Building**: Begin by fostering a supportive community around Swarms. Encourage early adopters to contribute and provide feedback. Create comprehensive documentation, community guidelines, and a forum for discussion and support.
 
