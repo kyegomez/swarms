@@ -2,7 +2,7 @@ from typing import Dict, Optional
 # from celery import Task
 
 from langchain.agents.agent import AgentExecutor
-from langchain.callbacks.base import CallbackManager
+from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks import set_handler
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.memory.chat_memory import BaseChatMemory
