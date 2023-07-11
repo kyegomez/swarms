@@ -6,12 +6,12 @@ from typing import Dict, List
 from fastapi.templating import Jinja2Templates
 
 from swarms.agents.utils.manager import AgentManager
-from swarms.utils.utils import BaseHandler, FileHandler, FileType
+from swarms.utils.main import BaseHandler, FileHandler, FileType
 from swarms.tools.main import CsvToDataframe, ExitConversation, RequestsGet, CodeEditor, Terminal
 
 from swarms.tools.main import BaseToolSet
 
-from swarms.utils.utils import StaticUploader
+from swarms.utils.main import StaticUploader
 
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.chdir(BASE_DIR / os.environ["PLAYGROUND_DIR"])

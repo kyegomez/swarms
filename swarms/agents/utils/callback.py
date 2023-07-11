@@ -5,7 +5,7 @@ from langchain.schema import AgentAction, AgentFinish, LLMResult
 # from celery import Task
 
 # from ansi import ANSI, Color, Style, dim_multiline
-from swarms.utils.utils import ANSI, Color, Style, dim_multiline
+from swarms.utils.main import ANSI, Color, Style, dim_multiline
 from swarms.utils.logger import logger
 
 
