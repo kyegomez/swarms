@@ -1,4 +1,4 @@
-from swarms import UltraNode
+from swarms.agents.workers.worker_ultranode import UltraNode
 
 # Define an objective
 objective = """
