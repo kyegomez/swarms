@@ -428,7 +428,7 @@ import time
 from datetime import datetime
 from typing import Dict, List
 
-from swarms.utils.utils import ANSI, Color, Style # test
+from swarms.utils.main import ANSI, Color, Style # test
 
 class Terminal(BaseToolSet):
     def __init__(self):
@@ -1100,7 +1100,7 @@ from transformers import (
 )
 
 
-from swarms.utils.utils import get_new_image_name
+from swarms.utils.main import get_new_image_name
 
 
 class MaskFormer(BaseToolSet):
@@ -1309,7 +1309,7 @@ from transformers import BlipForConditionalGeneration, BlipProcessor
 # from core.prompts.file import IMAGE_PROMPT
 from swarms.prompts.prompts import IMAGE_PROMPT
 
-from swarms.utils.utils import BaseHandler
+from swarms.utils.main import BaseHandler
 
 class ImageCaptioning(BaseHandler):
     def __init__(self, device):
