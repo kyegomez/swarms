@@ -16,10 +16,18 @@ from swarms.utils.main import StaticUploader
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-playground = os.environ["PLAYGROUND_DIR"] = '/path/to/directory'
 
-os.chdir(BASE_DIR / playground)
+# Check if "PLAYGROUND_DIR" environment variable exists, if not, set a default value
+playground = os.environ.get("PLAYGROUND_DIR", './playground')
 
+# Ensure the path exists before changing the directory
+os.makedirs(BASE_DIR / playground, exist_ok=True)
+
+try:
+    os.chdir(BASE_DIR / playground)
+except Exception as e:
+    logging.error(f"Failed to change directory: {e}")
+    
 class WorkerUltraNode:
     def __init__(self, objective: str):
         if not isinstance(objective, str):
