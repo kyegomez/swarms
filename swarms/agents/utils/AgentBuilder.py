@@ -11,7 +11,7 @@ from langchain.callbacks.base import BaseCallbackManager
 
 from .chat_agent import ConversationalChatAgent
 from .llm import ChatOpenAI
-from .parser import EvalOutputParser
+from .EvalOutputParser import EvalOutputParser
 
 
 class AgentBuilder:
@@ -21,9 +21,9 @@ class AgentBuilder:
         self.global_tools: list = None
         self.toolsets = toolsets
 
-    def build_llm(self, callback_manager: BaseCallbackManager = None):
+    def build_llm(self, callback_manager: BaseCallbackManager = None, openai_api_key: str = None):
         self.llm = ChatOpenAI(
-            temperature=0, callback_manager=callback_manager, verbose=True
+            temperature=0, callback_manager=callback_manager, verbose=True, openai_api_key=openai_api_key
         )
         self.llm.check_access()
 
