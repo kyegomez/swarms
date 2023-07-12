@@ -13,7 +13,7 @@ from .builder import AgentBuilder
 from .callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
 
 
-CallbackManager.set_handler(EVALCallbackHandler())
+CallbackManager.set_handler(handler=EVALCallbackHandler())
 
 
 class AgentManager:
