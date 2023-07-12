@@ -17,6 +17,8 @@ class WorkerNode:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
 
     def __init__(self, llm, tools, vectorstore):
+        if not llm or not tools or not vectorstore:
+            raise ValueError("llm, tools, and vectorstore cannot be None")
         self.llm = llm
         self.tools = tools
         self.vectorstore = vectorstore
@@ -24,18 +26,26 @@ class WorkerNode:
 
     def create_agent(self, ai_name, ai_role, human_in_the_loop, search_kwargs):
         logging.info("Creating agent in WorkerNode")
-        self.agent = AutoGPT.from_llm_and_tools(
-            ai_name=ai_name,
-            ai_role=ai_role,
-            tools=self.tools,
-            llm=self.llm,
-            memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
-            human_in_the_loop=human_in_the_loop,
-            chat_history_memory=FileChatMessageHistory("chat_history.txt"),
-        )
-        self.agent.chain.verbose = True
+        try:
+                
+            self.agent = AutoGPT.from_llm_and_tools(
+                ai_name=ai_name,
+                ai_role=ai_role,
+                tools=self.tools,
+                llm=self.llm,
+                memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
+                human_in_the_loop=human_in_the_loop,
+                chat_history_memory=FileChatMessageHistory("chat_history.txt"),
+            )
+            self.agent.chain.verbose = True
+
+        except Exception as e:
+            logging.error(f"Error while creating agent: {str(e)}")
+            raise e
 
     def add_tool(self, tool: Tool):
+        if not isinstance(tool, Tool):
+            raise TypeError("Tool must be an instance of Tool")
         self.tools.append(tool)
 
     def run(self, prompt: str) -> str:
@@ -44,26 +54,40 @@ class WorkerNode:
         
         if not prompt:
             raise ValueError("Prompt is empty")
+        
+        try:
+                
 
-        self.agent.run([f"{prompt}"])
-        return "Task completed by WorkerNode"
+            self.agent.run([f"{prompt}"])
+            return "Task completed by WorkerNode"
+        except Exception as e:
+            logging.error(f"While running the agent: {str(e)}")
+            raise e
+        
     
 
-worker_tool = Tool(
-    name="WorkerNode AI Agent",
-    func=WorkerNode.run,
-    description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
-)
+# worker_tool = Tool(
+#     name="WorkerNode AI Agent",
+#     func=WorkerNode.run,
+#     description="Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"
+# )
 
 
 class WorkerNodeInitializer:
     def __init__(self, openai_api_key):
+        if not openai_api_key:
+            raise ValueError("openai_api_key cannot be None")
         self.openai_api_key = openai_api_key
 
     def initialize_llm(self, llm_class, temperature=0.5):
+        if not llm_class:
+            raise ValueError("llm_class cannot be None")
         return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
 
     def initialize_tools(self, llm_class):
+        if not llm_class:
+            raise ValueError("llm_class cannot be none")
+        logging.info('Creating WorkerNode')
         llm = self.initialize_llm(llm_class)
         web_search = DuckDuckGoSearchRun()
         tools = [
@@ -82,6 +106,8 @@ class WorkerNodeInitializer:
         return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
     def create_worker_node(self, llm_class=ChatOpenAI):
+        if not llm_class:
+            raise ValueError("llm_class cannot be None")
         worker_tools = self.initialize_tools(llm_class)
         vectorstore = self.initialize_vectorstore()
         worker_node = WorkerNode(llm=self.initialize_llm(llm_class), tools=worker_tools, vectorstore=vectorstore)
@@ -89,6 +115,8 @@ class WorkerNodeInitializer:
         return worker_node
 
 def worker_node(openai_api_key):
+    if not openai_api_key:
+        raise ValueError("openai_api_key cannot be none")
     initializer = WorkerNodeInitializer(openai_api_key)
     worker_node = initializer.create_worker_node()
     return worker_node
