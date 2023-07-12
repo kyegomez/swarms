@@ -140,7 +140,7 @@ class ChatOpenAI(BaseChatModel, BaseModel):
     """
 
     client: Any  #: :meta private:
-    model_name: str = os.environ["MODEL_NAME"] or 'gpt-4'
+    model_name: str =  os.environ.get("MODEL_NAME", "gpt-4")
     """Model name to use."""
     model_kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""
