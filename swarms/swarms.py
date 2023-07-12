@@ -1,11 +1,11 @@
 from swarms.tools.agent_tools import *
-from swarms.agents.workers.worker_agent import WorkerNode
+from swarms.agents.workers.WorkerNode import WorkerNode
 from swarms.agents.boss.boss_agent import BossNode
 # from swarms.agents.workers.omni_worker import OmniWorkerAgent
 # from swarms.tools.main import RequestsGet, ExitConversation
 # visual agent
 
-from swarms.agents.workers.worker_agent import worker_tool
+from swarms.agents.workers.WorkerNode import worker_tool
 import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
