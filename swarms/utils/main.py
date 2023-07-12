@@ -402,7 +402,7 @@ class FileHandler:
 
 from swarms.prompts.prompts import DATAFRAME_PROMPT
 
-
+import pandas as pd
 class CsvToDataframe(BaseHandler):
     def handle(self, filename: str):
         df = pd.read_csv(filename)
