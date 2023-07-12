@@ -9,8 +9,8 @@ from langchain.chat_models.base import BaseChatModel
 from langchain.schema import BaseOutputParser
 from langchain.callbacks.base import BaseCallbackManager
 
-from .chat_agent import ConversationalChatAgent
-from .llm import ChatOpenAI
+from .ConversationalChatAgent import ConversationalChatAgent
+from .ChatOpenAI import ChatOpenAI
 from .EvalOutputParser import EvalOutputParser
 
 
