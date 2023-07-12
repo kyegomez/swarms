@@ -1,6 +1,6 @@
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.WorkerNode import WorkerNode
-from swarms.agents.boss.boss_agent import BossNode
+from swarms.agents.boss.BossNode import BossNode
 # from swarms.agents.workers.omni_worker import OmniWorkerAgent
 # from swarms.tools.main import RequestsGet, ExitConversation
 # visual agent
