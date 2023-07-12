@@ -6,7 +6,8 @@ from typing import Dict, List
 
 from swarms.agents.utils.AgentManager import AgentManager
 from swarms.utils.main import BaseHandler, FileHandler, FileType
-from swarms.tools.agent_tools import ExitConversation, RequestsGet, CodeEditor, Terminal
+
+from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 from swarms.utils.main import CsvToDataframe
 
 from swarms.tools.main import BaseToolSet
