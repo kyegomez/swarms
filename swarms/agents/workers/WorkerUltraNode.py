@@ -16,7 +16,9 @@ from swarms.utils.main import StaticUploader
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.chdir(BASE_DIR / os.environ["PLAYGROUND_DIR"])
+playground = os.environ["PLAYGROUND_DIR"] = '/path/to/directory'
+
+os.chdir(BASE_DIR / playground)
 
 class WorkerUltraNode:
     def __init__(self, objective: str):
