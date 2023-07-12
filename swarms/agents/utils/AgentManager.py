@@ -10,7 +10,7 @@ from langchain.memory.chat_memory import BaseChatMemory
 
 from swarms.tools.main import BaseToolSet, ToolsFactory
 from .AgentBuilder import AgentBuilder
-from .callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
+from .Calback import EVALCallbackHandler, ExecutionTracingCallbackHandler
 
 
 CallbackManager.set_handler(handler=EVALCallbackHandler())
