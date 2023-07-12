@@ -13,7 +13,8 @@ from .AgentBuilder import AgentBuilder
 from .Calback import EVALCallbackHandler, ExecutionTracingCallbackHandler
 
 
-CallbackManager.set_handler(handler=EVALCallbackHandler())
+callback_manager_instance = CallbackManager()
+callback_manager_instance.set_handler(handler=EVALCallbackHandler())
 
 class AgentManager:
     def __init__(self, toolsets: list[BaseToolSet] = []):
