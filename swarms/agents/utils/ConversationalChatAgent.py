@@ -24,7 +24,7 @@ from swarms.prompts.prompts import EVAL_TOOL_RESPONSE
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class ConversationalChatAgent:
+class ConversationalChatAgent(Agent):
     """An agent designed to hold a conversation in addition to using tools."""
 
     output_parser: BaseOutputParser
