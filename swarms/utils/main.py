@@ -274,7 +274,11 @@ class StaticUploader(AbstractUploader):
 
     @staticmethod
     def from_settings(path: Path, endpoint: str) -> "StaticUploader":
-        return StaticUploader(os.environ["SERVER"], path, endpoint)
+        server = os.environ.get("SERVER")
+        if server is None:
+            raise EnvironmentError("'SERVER' environment variable is not set.")
+        return StaticUploader(server, path, endpoint)
+
 
     def get_url(self, uploaded_path: str) -> str:
         return f"{self.server}/{uploaded_path}"
