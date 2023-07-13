@@ -1,6 +1,7 @@
 """OpenAI chat wrapper."""
 from __future__ import annotations
 
+import os
 import logging
 import sys
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
@@ -17,8 +18,9 @@ from langchain.schema import (
     HumanMessage,
     SystemMessage,
 )
+
 from langchain.utils import get_from_dict_or_env
-from logger import logger
+from swarms.utils.logger import logger
 from pydantic import BaseModel, Extra, Field, root_validator
 from tenacity import (
     before_sleep_log,
@@ -30,7 +32,7 @@ from tenacity import (
 
 
 # from ansi import ANSI, Color, Style
-from swarms.utils.utils import ANSI, Color, Style
+from swarms.utils.main import ANSI, Color, Style
 import os
 
 def _create_retry_decorator(llm: ChatOpenAI) -> Callable[[Any], Any]:
@@ -138,7 +140,7 @@ class ChatOpenAI(BaseChatModel, BaseModel):
     """
 
     client: Any  #: :meta private:
-    model_name: str = os.env["MODEL_NAME"]
+    model_name: str =  os.environ.get("MODEL_NAME", "gpt-4")
     """Model name to use."""
     model_kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""

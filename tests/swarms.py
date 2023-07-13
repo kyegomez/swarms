@@ -1,7 +1,7 @@
 import unittest
 import swarms
-from swarms.agents.workers.worker_agent import WorkerNode
-from swarms.agents.boss.boss_agent import BossNode
+from swarms.agents.workers.WorkerNode import WorkerNode
+from swarms.agents.boss.BossNode import BossNode
 
 class TestSwarms(unittest.TestCase):
     def setUp(self):
