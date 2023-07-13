@@ -29,7 +29,9 @@ except Exception as e:
     logging.error(f"Failed to change directory: {e}")
     
 class WorkerUltraNode:
-    def __init__(self, objective: str):
+    def __init__(self, objective: str, openai_api_key: str):
+        self.openai_api_key = openai_api_key
+
         if not isinstance(objective, str):
             raise TypeError("Objective must be a string")
         if not objective:
@@ -69,7 +71,7 @@ class WorkerUltraNode:
             )
 
 
-            self.session = self.agent_manager.create_executor(objective)
+            self.session = self.agent_manager.create_executor(objective, self.openai_api_key)
 
         except Exception as e:
             logging.error(f"Error while initializing WorkerUltraNode: {str(e)}")
@@ -105,10 +107,8 @@ class WorkerUltraNode:
 
 
 
-def WorkerUltra(objective: str):
-    # Instantiate WorkerUltraNode with the user's objective
-    worker_node = WorkerUltraNode(objective)
-
+def WorkerUltra(objective: str, openai_api_key: str):
+    worker_node = WorkerUltraNode(objective, openai_api_key)
     # Return the result of the execution
     return worker_node.result
 
