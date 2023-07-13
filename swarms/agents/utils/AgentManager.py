@@ -36,7 +36,7 @@ class AgentManager:
             self.memories[session] = self.create_memory()
         return self.memories[session]
 
-    def create_executor(self, session: str, execution: Optional[Task] = None) -> AgentExecutor:
+    def create_executor(self, session: str, execution: Optional[Task] = None, openai_api_key: str = None) -> AgentExecutor:
         try:
             builder = AgentBuilder(self.toolsets)
             builder.build_parser()
@@ -45,6 +45,7 @@ class AgentManager:
             eval_callback = EVALCallbackHandler()
             eval_callback.set_parser(builder.get_parser())
             callbacks.append(eval_callback)
+
             if execution:
                 execution_callback = ExecutionTracingCallbackHandler(execution)
                 execution_callback.set_parser(builder.get_parser())
@@ -52,7 +53,7 @@ class AgentManager:
 
             callback_manager = CallbackManager(callbacks)
 
-            builder.build_llm(callback_manager)
+            builder.build_llm(callback_manager, openai_api_key)
             builder.build_global_tools()
 
             memory: BaseChatMemory = self.get_or_create_memory(session)
