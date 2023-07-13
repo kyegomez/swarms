@@ -123,7 +123,7 @@ class ModelNotFoundException(Exception):
         )
 
 
-class ChatOpenAI(BaseChatModel, BaseModel):
+class ChatOpenAI(BaseChatModel):
     """Wrapper around OpenAI Chat large language models.
 
     To use, you should have the ``openai`` python package installed, and the
