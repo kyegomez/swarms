@@ -23,10 +23,7 @@ class AgentBuilder:
         self.toolsets = toolsets
 
     def build_llm(self, callback_manager: BaseCallbackManager = None, openai_api_key: str = None):
-        self.llm = ChatOpenAI(
-            temperature=0, callback_manager=callback_manager, verbose=True, openai_api_key=openai_api_key
-        )
-        self.llm.check_access()
+        self.llm = ChatOpenAI(openai_api_key=openai_api_key, temperature=0, callback_manager=callback_manager, verbose=True)
 
     def build_parser(self):
         self.parser = EvalOutputParser()
