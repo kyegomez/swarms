@@ -1,5 +1,21 @@
+import os
 from swarms import WorkerUltra
 
-objective = "What is the capital of the UK?"
-result = WorkerUltra(objective)
-print(result)  # Prints: "The capital of the UK is London."
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Define an objective
+objective = """
+Please make a web GUI for using HTTP API server.
+The name of it is Swarms.
+You can check the server code at ./main.py.
+The server is served on localhost:8000.
+Users should be able to write text input as 'query' and url array as 'files', and check the response.
+Users input form should be delivered in JSON format.
+I want it to have neumorphism-style. Serve it on port 4500.
+
+"""
+
+node = WorkerUltra(objective, openai_api_key=api_key)
+
+
+result = node.execute()
