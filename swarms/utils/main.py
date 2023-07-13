@@ -367,19 +367,17 @@ class FileHandler:
 
     def handle(self, url: str) -> str:
         try:
-            if url.startswith(settings["SERVER"]):
-                local_filepath = url[len(settings["SERVER"]) + 1 :]
+            if url.startswith(os.environ.get("SERVER", "")):
+                local_filepath = url[len(os.environ.get("SERVER", "")) + 1 :]
                 local_filename = Path("file") / local_filepath.split("/")[-1]
                 src = self.path / local_filepath
-                dst = self.path / settings["PLAYGROUND_DIR"] / local_filename
+                dst = self.path / os.environ.get("PLAYGROUND_DIR", "./playground") / local_filename
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy(src, dst)
             else:
                 local_filename = self.download(url)
-
-            try:
-                handler = self.handlers[FileType.from_url(url)]
-            except KeyError:
+            handler = self.handlers.get(FileType.from_url(url))
+            if handler is None:
                 if FileType.from_url(url) == FileType.IMAGE:
                     raise Exception(
                         f"No handler for {FileType.from_url(url)}. "
@@ -387,10 +385,9 @@ class FileHandler:
                     )
                 else:
                     raise Exception(f"No handler for {FileType.from_url(url)}")
-            handler.handle(local_filename)
+            return handler.handle(local_filename)
         except Exception as e:
             raise e
-        
 ########################### =>  base end
 
 
