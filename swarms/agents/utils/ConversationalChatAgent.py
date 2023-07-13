@@ -150,12 +150,12 @@ class ConversationalChatAgent(Agent):
             logging.error(f"Error while creating agent from LLM and tools: {str(e)}")
             raise e
         
-class OutputParser(AgentOutputParser):
-    def parse(self, full_output: str) -> AgentAction:
-        return AgentAction(action="chat", details={'message': full_output})
+# class OutputParser(AgentOutputParser):
+#     def parse(self, full_output: str) -> AgentAction:
+#         return AgentAction(action="chat", details={'message': full_output})
 
 
-class ChatAgent(ConversationalChatAgent):
-    def _get_default_output_parser(self):
-        """Get default output parser for this class."""
-        return OutputParser()
+# class ChatAgent(ConversationalChatAgent):
+#     def _get_default_output_parser(self):
+#         """Get default output parser for this class."""
+#         return OutputParser()

@@ -9,7 +9,7 @@ from langchain.chat_models.base import BaseChatModel
 from langchain.schema import BaseOutputParser
 from langchain.callbacks.base import BaseCallbackManager
 
-from .ConversationalChatAgent import ChatAgent
+from .ConversationalChatAgent import ConversationalChatAgent
 # from .ChatOpenAI import ChatOpenAI
 from langchain.chat_models import ChatOpenAI
 from .EvalOutputParser import EvalOutputParser
@@ -79,7 +79,7 @@ class AgentBuilder:
         if self.global_tools is None:
             raise ValueError("Global tools must be initialized before agent")
 
-        return ChatAgent.from_llm_and_tools(
+        return ConversationalChatAgent.from_llm_and_tools(
             llm=self.llm,
             tools=[
                 *self.global_tools,
