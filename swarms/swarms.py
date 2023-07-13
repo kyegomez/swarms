@@ -1,6 +1,7 @@
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.WorkerNode import WorkerNode, worker_node
 from swarms.agents.boss.BossNode import BossNode
+from swarms.agents.workers.WorkerUltraNode import WorkerUltra
 
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
