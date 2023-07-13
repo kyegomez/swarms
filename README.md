@@ -189,6 +189,9 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 
 # EcoSystem
 
+[![Star History Chart](https://api.star-history.com/svg?repos=kyegomez/swarms&type=Date)](https://star-history.com/#kyegomez/swarms)
+
+
 * [The-Compiler, compile natural language into serene, reliable, and secure programs](https://github.com/kyegomez/the-compiler)
 
 *[The Replicator, an autonomous swarm that conducts Multi-Modal AI research by creating new underlying mathematical operations and models](https://github.com/kyegomez/The-Replicator)
@@ -208,10 +211,6 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 [![Watch the swarm video](https://img.youtube.com/vi/Br62cDMYXgc/maxresdefault.jpg)](https://youtu.be/Br62cDMYXgc)
 
 ---
-
-
-
-
 
 
 
