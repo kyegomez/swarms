@@ -41,9 +41,6 @@ class AgentManager:
             builder = AgentBuilder(self.toolsets)
             builder.build_parser()
 
-            agent = builder.get_agent()
-            if not agent:
-                raise ValueError("Agent not created")
 
             callbacks = []
             eval_callback = EVALCallbackHandler()
@@ -55,11 +52,18 @@ class AgentManager:
                 execution_callback.set_parser(builder.get_parser())
                 callbacks.append(execution_callback)
 
+            #llm init
             callback_manager = CallbackManager(callbacks)
-
             builder.build_llm(callback_manager, openai_api_key)
+            if builder.llm is None:
+                raise ValueError('LLM not created')
 
             builder.build_global_tools()
+
+            #agent init
+            agent = builder.get_agent()
+            if not agent:
+                raise ValueError("Agent not created")
 
             memory: BaseChatMemory = self.get_or_create_memory(session)
             tools = [
@@ -73,17 +77,36 @@ class AgentManager:
             for tool in tools:
                 tool.callback_manager = callback_manager
 
-            # Ensure the 'agent' key is present in the values dictionary
-            values = {'agent': agent, 'tools': tools}
+            # # Ensure the 'agent' key is present in the values dictionary
+            # values = {'agent': agent, 'tools': tools}
 
-            executor = AgentExecutor.from_agent_and_tools(**values)
+            # executor = AgentExecutor.from_agent_and_tools(
+            #     agent=agent,
+            #     tools=tools,
+            #     memory=memory,
+            #     callback_manager=callback_manager,
+            #     verbose=True,
+            # )
 
+             # Prepare the arguments for the executor
+            executor_args = {
+                'agent': agent,
+                'tools': tools,
+                'memory': memory,
+                'callback_manager': callback_manager,
+                'verbose': True  # Or any other value based on your requirement
+            }
+
+            executor = AgentExecutor.from_agent_and_tools(**executor_args)
+
+            if 'agent' not in executor.__dict__:
+                executor.__dict__['agent'] = agent
             self.executors[session] = executor
+
             return executor
         except Exception as e:
             logging.error(f"Error while creating executor: {str(e)}")
             raise e
-
 
     @staticmethod
     def create(toolsets: list[BaseToolSet]) -> "AgentManager":
