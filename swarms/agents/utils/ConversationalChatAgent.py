@@ -1,6 +1,7 @@
 from typing import Any, List, Optional, Sequence, Tuple
+import logging
 
-from langchain.agents.agent import Agent
+from swarms.agents.utils.Agent import Agent
 from langchain.callbacks.base import BaseCallbackManager
 from langchain.chains import LLMChain
 from langchain.schema import BaseOutputParser
@@ -20,8 +21,16 @@ from langchain.schema import (
 )
 from langchain.tools.base import BaseTool
 
+
+from langchain.agents.agent import AgentOutputParser
+from langchain.schema import AgentAction
+
+
 from swarms.prompts.prompts import EVAL_TOOL_RESPONSE
 
+
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class ConversationalChatAgent(Agent):
     """An agent designed to hold a conversation in addition to using tools."""
@@ -31,7 +40,11 @@ class ConversationalChatAgent(Agent):
     @property
     def _agent_type(self) -> str:
         raise NotImplementedError
+        
+    def _get_default_output_parser(cls, **kwargs: Any) -> AgentOutputParser:
+        """Get default output parser for this class."""
 
+    
     @property
     def observation_prefix(self) -> str:
         """Prefix to append the observation with."""
@@ -51,6 +64,17 @@ class ConversationalChatAgent(Agent):
         output_parser: BaseOutputParser,
         input_variables: Optional[List[str]] = None,
     ) -> BasePromptTemplate:
+        if not isinstance(tools, Sequence):
+            raise TypeError("Tools must be a sequence")
+        if not isinstance(system_message, str):
+            raise TypeError("System message must be a string")
+        if not isinstance(human_message, str):
+            raise TypeError("Human message must be a string")
+        if not isinstance(output_parser, BaseOutputParser):
+            raise TypeError("Output parser must be an instance of BaseOutputParser")
+        if input_variables and not isinstance(input_variables, list):
+            raise TypeError("Input variables must be a list")
+
         tool_strings = "\n".join(
             [f"> {tool.name}: {tool.description}" for tool in tools]
         )
@@ -75,7 +99,8 @@ class ConversationalChatAgent(Agent):
         try:
             response = self.output_parser.parse(llm_output)
             return response["action"], response["action_input"]
-        except Exception:
+        except Exception as e:
+            logging.error(f"Error while extracting tool and input: {str(e)}")
             raise ValueError(f"Could not parse LLM output: {llm_output}")
 
     def _construct_scratchpad(
@@ -118,9 +143,14 @@ class ConversationalChatAgent(Agent):
             callback_manager=callback_manager,
         )
         tool_names = [tool.name for tool in tools]
-        return cls(
-            llm_chain=llm_chain,
-            allowed_tools=tool_names,
-            output_parser=output_parser,
-            **kwargs,
-        )
+        try:
+            return cls(
+                llm_chain=llm_chain,
+                allowed_tools=tool_names,
+                output_parser=output_parser,
+                **kwargs,
+            )
+        except Exception as e:
+            logging.error(f"Error while creating agent from LLM and tools: {str(e)}")
+            raise e
+    

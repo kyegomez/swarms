@@ -1,4 +1,4 @@
-from swarms import UltraNode
+from swarms import WorkerUltraUltraNode
 
 # Define an objective
 objective = """
@@ -12,6 +12,6 @@ I want it to have neumorphism-style. Serve it on port 4500.
 
 """
 
-node = UltraNode(objective)
+node = WorkerUltraUltraNode(objective)
 
 result = node.execute()
