@@ -274,7 +274,7 @@ class StaticUploader(AbstractUploader):
 
     @staticmethod
     def from_settings(path: Path, endpoint: str) -> "StaticUploader":
-        server = os.environ.get("SERVER", "default_server_value")
+        server = os.environ.get("SERVER", "http://localhost:8000")
         return StaticUploader(server, path, endpoint)
 
 
@@ -370,8 +370,8 @@ class FileHandler:
 
     def handle(self, url: str) -> str:
         try:
-            if url.startswith(os.environ.get("SERVER", "")):
-                local_filepath = url[len(os.environ.get("SERVER", "")) + 1 :]
+            if url.startswith(os.environ.get("SERVER", "http://localhost:8000")):
+                local_filepath = url[len(os.environ.get("SERVER", "http://localhost:8000")) + 1 :]
                 local_filename = Path("file") / local_filepath.split("/")[-1]
                 src = self.path / local_filepath
                 dst = self.path / os.environ.get("PLAYGROUND_DIR", "./playground") / local_filename
