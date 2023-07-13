@@ -1,5 +1,6 @@
 """OpenAI chat wrapper."""
 from __future__ import annotations
+from abc import abstractmethod
 
 import os
 import logging
@@ -123,7 +124,7 @@ class ModelNotFoundException(Exception):
         )
 
 
-class ChatOpenAI(BaseChatModel):
+class ChatOpenAI(BaseChatModel, BaseModel):
     """Wrapper around OpenAI Chat large language models.
 
     To use, you should have the ``openai`` python package installed, and the
@@ -158,6 +159,13 @@ class ChatOpenAI(BaseChatModel):
         """Configuration for this pydantic object."""
 
         extra = Extra.ignore
+    
+    @abstractmethod
+    @property
+    def _llm_type(self) -> str:
+        # Return a string indicating the type of this language model
+        return 'ChatOpenAI'
+
 
     def check_access(self) -> None:
         """Check that the user has access to the model."""
