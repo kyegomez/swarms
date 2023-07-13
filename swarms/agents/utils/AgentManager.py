@@ -41,6 +41,10 @@ class AgentManager:
             builder = AgentBuilder(self.toolsets)
             builder.build_parser()
 
+            agent = builder.get_agent()
+            if not agent:
+                raise ValueError("Agent not created")
+
             callbacks = []
             eval_callback = EVALCallbackHandler()
             eval_callback.set_parser(builder.get_parser())
@@ -54,7 +58,7 @@ class AgentManager:
             callback_manager = CallbackManager(callbacks)
 
             builder.build_llm(callback_manager, openai_api_key)
-            
+
             builder.build_global_tools()
 
             memory: BaseChatMemory = self.get_or_create_memory(session)
@@ -70,7 +74,7 @@ class AgentManager:
                 tool.callback_manager = callback_manager
 
             executor = AgentExecutor.from_agent_and_tools(
-                agent=builder.get_agent(),
+                agent=agent,
                 tools=tools,
                 memory=memory,
                 callback_manager=callback_manager,
