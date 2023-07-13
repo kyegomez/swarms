@@ -160,12 +160,11 @@ class ChatOpenAI(BaseChatModel, BaseModel):
 
         extra = Extra.ignore
     
-    @abstractmethod
     @property
+    @abstractmethod
     def _llm_type(self) -> str:
         # Return a string indicating the type of this language model
         return 'ChatOpenAI'
-
 
     def check_access(self) -> None:
         """Check that the user has access to the model."""
