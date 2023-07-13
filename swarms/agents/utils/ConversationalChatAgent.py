@@ -20,12 +20,11 @@ from langchain.schema import (
     HumanMessage,
 )
 from langchain.tools.base import BaseTool
-
 from swarms.prompts.prompts import EVAL_TOOL_RESPONSE
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class ConversationalChatAgent(Agent):
+class ConversationalChatAgent:
     """An agent designed to hold a conversation in addition to using tools."""
 
     output_parser: BaseOutputParser
