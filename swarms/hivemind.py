@@ -1,0 +1,2 @@
+# many boss + workers in unison
+#kye gomez jul 13 4:01pm, can scale up the number of swarms working on a probkem with `hivemind(swarms=4, or swarms=auto which will scale the agents depending on the complexity)`

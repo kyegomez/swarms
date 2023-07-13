@@ -9,23 +9,32 @@ from langchain.chat_models.base import BaseChatModel
 from langchain.schema import BaseOutputParser
 from langchain.callbacks.base import BaseCallbackManager
 
-from .chat_agent import ConversationalChatAgent
-from .llm import ChatOpenAI
-from .parser import EvalOutputParser
+from .ConversationalChatAgent import ConversationalChatAgent
+# from .ChatOpenAI import ChatOpenAI
+from langchain.chat_models import ChatOpenAI
+from .EvalOutputParser import EvalOutputParser
 
 
 class AgentBuilder:
-    def __init__(self, toolsets: list[BaseToolSet] = []):
+    def __init__(self, toolsets: list[BaseToolSet] = [], openai_api_key: str = None, serpapi_api_key: str = None, bing_search_url: str = None, bing_subscription_key: str = None):
         self.llm: BaseChatModel = None
         self.parser: BaseOutputParser = None
         self.global_tools: list = None
         self.toolsets = toolsets
+        self.openai_api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+        self.serpapi_api_key = serpapi_api_key or os.getenv('SERPAPI_API_KEY')
+        self.bing_search_url = bing_search_url or os.getenv('BING_SEARCH_URL')
+        self.bing_subscription_key = bing_subscription_key or os.getenv('BING_SUBSCRIPTION_KEY')
+        if not self.openai_api_key:
+            raise ValueError("OpenAI key is missing, it should either be set as an environment variable or passed as a parameter")
 
-    def build_llm(self, callback_manager: BaseCallbackManager = None):
-        self.llm = ChatOpenAI(
-            temperature=0, callback_manager=callback_manager, verbose=True
-        )
-        self.llm.check_access()
+    def build_llm(self, callback_manager: BaseCallbackManager = None, openai_api_key: str = None):
+        if openai_api_key is None:
+            openai_api_key = os.getenv('OPENAI_API_KEY')
+            if openai_api_key is None:
+                raise ValueError("OpenAI API key is missing. It should either be set as an environment variable or passed as a parameter.")
+        
+        self.llm = ChatOpenAI(openai_api_key=openai_api_key, temperature=0.5, callback_manager=callback_manager, verbose=True)
 
     def build_parser(self):
         self.parser = EvalOutputParser()
@@ -36,9 +45,11 @@ class AgentBuilder:
 
         toolnames = ["wikipedia"]
 
-        if os.environ["SERPAPI_API_KEY"]:
+
+        if self.serpapi_api_key:
             toolnames.append("serpapi")
-        if os.environ["BING_SEARCH_URL"] and os.environ["BING_SUBSCRIPTION_KEY"]:
+        
+        if self.bing_search_url and self.bing_subscription_key:
             toolnames.append("bing-search")
 
         self.global_tools = [
@@ -76,8 +87,8 @@ class AgentBuilder:
                     self.toolsets
                 ),  # for names and descriptions
             ],
-            system_message=EVAL_PREFIX.format(bot_name=os.environ["BOT_NAME"]),
-            human_message=EVAL_SUFFIX.format(bot_name=os.environ["BOT_NAME"]),
+            system_message=EVAL_PREFIX.format(bot_name=os.environ["BOT_NAME"] or 'WorkerUltraNode'),
+            human_message=EVAL_SUFFIX.format(bot_name=os.environ["BOT_NAME"] or 'WorkerUltraNode'),
             output_parser=self.parser,
             max_iterations=30,
         )
