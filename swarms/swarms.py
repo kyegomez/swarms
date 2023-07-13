@@ -66,7 +66,7 @@ class Swarms:
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
             embedding_size = 1536
             index = faiss.IndexFlatL2(embedding_size)
-            
+
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
@@ -96,7 +96,7 @@ class Swarms:
             logging.error(f"Failed to initialize worker node: {e}")
             raise
 
-    def initialize_boss_node(self, vectorstore, worker_node, llm_class=OpenAI, max_iterations=5, verbose=True):
+    def initialize_boss_node(self, vectorstore, worker_node, llm_class=OpenAI, max_iterations=5, verbose=False):
         """
         Init BossNode
 
