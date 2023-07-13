@@ -87,8 +87,8 @@ class AgentBuilder:
                     self.toolsets
                 ),  # for names and descriptions
             ],
-            system_message=EVAL_PREFIX.format(bot_name=os.environ["BOT_NAME"]),
-            human_message=EVAL_SUFFIX.format(bot_name=os.environ["BOT_NAME"]),
+            system_message=EVAL_PREFIX.format(bot_name=os.environ["BOT_NAME"] or 'WorkerUltraNode'),
+            human_message=EVAL_SUFFIX.format(bot_name=os.environ["BOT_NAME"] or 'WorkerUltraNode'),
             output_parser=self.parser,
             max_iterations=30,
         )

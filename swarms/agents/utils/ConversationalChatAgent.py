@@ -1,7 +1,7 @@
 from typing import Any, List, Optional, Sequence, Tuple
 import logging
 
-from langchain.agents.agent import Agent
+from swarms.agents.utils.Agent import Agent
 from langchain.callbacks.base import BaseCallbackManager
 from langchain.chains import LLMChain
 from langchain.schema import BaseOutputParser
