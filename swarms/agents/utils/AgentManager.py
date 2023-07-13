@@ -84,7 +84,10 @@ class AgentManager:
                 callback_manager=callback_manager,
                 verbose=True,
             )
+            if 'agent' not in executor.__dict__:
+                executor.__dict__['agent'] = agent
             self.executors[session] = executor
+
             return executor
         except Exception as e:
             logging.error(f"Error while creating executor: {str(e)}")
