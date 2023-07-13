@@ -1,4 +1,3 @@
-##########################
 # Swarms Documentation
 
 ## ClassName
@@ -188,3 +187,54 @@ Please refer to the source code and documentation of the Swarms module for more 
 ## Conclusion
 
 The Swarms module provides a powerful framework for creating and managing swarms of autonomous agents to accomplish complex tasks. With the `WorkerNode` and `BossNode` classes, along with the `LLM` utility class, you can easily set up and run a swarm of agents to tackle any objective. The module is highly configurable and extensible, allowing you to tailor it to your specific needs.
+
+
+## LLM
+### Purpose
+The `LLM` class provides an interface to different language models (LLMs) such as OpenAI's ChatGPT and Hugging Face models. It allows you to initialize and run a language model with a given prompt and obtain the generated response.
+
+### Systems Understanding
+The `LLM` class takes an OpenAI API key or Hugging Face repository ID and API token as input. It uses these credentials to initialize the language model, either from OpenAI's models or from a specific Hugging Face repository. The language model can then be run with a prompt, and the generated response is returned.
+
+### Usage Example
+```python
+from swarms import LLM
+
+# Create an instance of LLM with OpenAI API key
+llm_instance = LLM(openai_api_key="your_openai_key")
+
+# Run the language model with a prompt
+result = llm_instance.run("Who won the FIFA World Cup in 1998?")
+print(result)
+
+# Create an instance of LLM with Hugging Face repository ID and API token
+llm_instance = LLM(hf_repo_id="google/flan-t5-xl", hf_api_token="your_hf_api_token")
+
+# Run the language model with a prompt
+result = llm_instance.run("Who won the FIFA World Cup in 1998?")
+print(result)
+```
+
+### Constructor
+```python
+def __init__(self, openai_api_key: Optional[str] = None,
+             hf_repo_id: Optional[str] = None,
+             hf_api_token: Optional[str] = None,
+             model_kwargs: Optional[dict] = None)
+```
+- `openai_api_key` (optional): The API key for OpenAI's models.
+- `hf_repo_id` (optional): The repository ID for the Hugging Face model.
+- `hf_api_token` (optional): The API token for the Hugging Face model.
+- `model_kwargs` (optional): Additional keyword arguments to pass to the language model.
+
+### Methods
+- `run(prompt: str) -> str`: Runs the language model with the given prompt and returns the generated response.
+
+### Args
+- `prompt` (str): The prompt to be passed to the language model.
+
+### Returns
+- `result` (str): The generated response from the language model.
+
+## Conclusion
+The `LLM` class provides a convenient way to initialize and run different language models using either OpenAI's API or Hugging Face models. By providing the necessary credentials and a prompt, you can obtain the generated response from the language model.
