@@ -23,7 +23,12 @@ class AgentBuilder:
         self.toolsets = toolsets
 
     def build_llm(self, callback_manager: BaseCallbackManager = None, openai_api_key: str = None):
-        self.llm = ChatOpenAI(openai_api_key=openai_api_key, temperature=0, callback_manager=callback_manager, verbose=True)
+        if openai_api_key is None:
+            openai_api_key = os.getenv('OPENAI_API_KEY')
+            if openai_api_key is None:
+                raise ValueError("OpenAI API key is missing. It should either be set as an environment variable or passed as a parameter.")
+        
+        self.llm = ChatOpenAI(openai_api_key=openai_api_key, temperature=0.5, callback_manager=callback_manager, verbose=True)
 
     def build_parser(self):
         self.parser = EvalOutputParser()
