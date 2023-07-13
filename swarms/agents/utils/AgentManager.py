@@ -38,41 +38,41 @@ class AgentManager:
 
     def create_executor(self, session_id: str, task: Optional[Task] = None, openai_api_key: str = None) -> AgentExecutor:
         try:
-            # Create an agent setup with the provided toolsets
-            agent_setup = AgentSetup(self.toolsets)
+            # Create an agent builder with the provided toolsets
+            agent_builder = AgentBuilder(self.toolsets)
 
             # Setup the parser for the agent
-            agent_setup.setup_parser()
+            agent_builder.build_parser()
 
             # Initialize an empty list for callbacks
             callbacks = []
 
             # Create and setup an evaluation callback, then add it to the callbacks list
             eval_callback = EvaluationCallbackHandler()
-            eval_callback.set_parser(agent_setup.get_parser())
+            eval_callback.set_parser(agent_builder.get_parser())
             callbacks.append(eval_callback)
 
             # If a task is provided, create and setup an execution tracing callback, then add it to the callbacks list
             if task:
                 execution_trace_callback = ExecutionTracingCallbackHandler(task)
-                execution_trace_callback.set_parser(agent_setup.get_parser())
+                execution_trace_callback.set_parser(agent_builder.get_parser())
                 callbacks.append(execution_trace_callback)
 
             # Create a callback manager with the callbacks
             callback_manager = CallbackManager(callbacks)
 
             # Setup the language model with the callback manager and OpenAI API key
-            agent_setup.setup_language_model(callback_manager, openai_api_key)
+            agent_builder.build_llm(callback_manager, openai_api_key)
 
             # Setup the global tools for the agent
-            agent_setup.setup_tools()
+            agent_builder.build_global_tools()
 
             # Get or create a memory for the session
             chat_memory = self.get_or_create_memory(session_id)
 
             # Create a list of tools by combining global tools and per session tools
             tools = [
-                *agent_setup.get_global_tools(),
+                *agent_builder.get_global_tools(),
                 *ToolsFactory.create_per_session_tools(
                     self.toolsets,
                     get_session=lambda: (session_id, self.executors[session_id]),
@@ -85,7 +85,7 @@ class AgentManager:
 
             # Create an executor from the agent and tools
             executor = AgentExecutor.from_agent_and_tools(
-                agent=agent_setup.get_agent(),
+                agent=agent_builder.get_agent(),
                 tools=tools,
                 memory=chat_memory,
                 callback_manager=callback_manager,
@@ -100,6 +100,7 @@ class AgentManager:
         except Exception as e:
             logging.error(f"Error while creating executor: {str(e)}")
             raise e
+
 
     @staticmethod
     def create(toolsets: list[BaseToolSet]) -> "AgentManager":
