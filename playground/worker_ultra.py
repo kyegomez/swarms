@@ -1,5 +1,6 @@
 import os
-from swarms.swarms import WorkerUltra
+# from swarms.swarms import WorkerUltra
+from ..swarms.swarms import WorkerUltra
 
 api_key = os.getenv("OPENAI_API_KEY")
 
