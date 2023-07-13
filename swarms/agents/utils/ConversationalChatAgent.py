@@ -32,7 +32,7 @@ from swarms.prompts.prompts import EVAL_TOOL_RESPONSE
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class ConversationalChatAgent:
+class ConversationalChatAgent(Agent):
     """An agent designed to hold a conversation in addition to using tools."""
 
     output_parser: BaseOutputParser
@@ -40,7 +40,11 @@ class ConversationalChatAgent:
     @property
     def _agent_type(self) -> str:
         raise NotImplementedError
+        
+    def _get_default_output_parser(cls, **kwargs: Any) -> AgentOutputParser:
+        """Get default output parser for this class."""
 
+    
     @property
     def observation_prefix(self) -> str:
         """Prefix to append the observation with."""
@@ -53,7 +57,7 @@ class ConversationalChatAgent:
 
     @classmethod
     def create_prompt(
-        Agent,
+        cls,
         tools: Sequence[BaseTool],
         system_message: str,
         human_message: str,
@@ -114,7 +118,7 @@ class ConversationalChatAgent:
 
     @classmethod
     def from_llm_and_tools(
-        Agent,
+        cls,
         llm: BaseLanguageModel,
         tools: Sequence[BaseTool],
         system_message: str,
@@ -125,8 +129,8 @@ class ConversationalChatAgent:
         **kwargs: Any,
     ) -> Agent:
         """Construct an agent from an LLM and tools."""
-        Agent._validate_tools(tools)
-        prompt = Agent.create_prompt(
+        cls._validate_tools(tools)
+        prompt = cls.create_prompt(
             tools,
             system_message=system_message,
             human_message=human_message,
@@ -140,7 +144,7 @@ class ConversationalChatAgent:
         )
         tool_names = [tool.name for tool in tools]
         try:
-            return Agent(
+            return cls(
                 llm_chain=llm_chain,
                 allowed_tools=tool_names,
                 output_parser=output_parser,
@@ -149,13 +153,4 @@ class ConversationalChatAgent:
         except Exception as e:
             logging.error(f"Error while creating agent from LLM and tools: {str(e)}")
             raise e
-        
-# class OutputParser(AgentOutputParser):
-#     def parse(self, full_output: str) -> AgentAction:
-#         return AgentAction(action="chat", details={'message': full_output})
-
-
-# class ChatAgent(ConversationalChatAgent):
-#     def _get_default_output_parser(self):
-#         """Get default output parser for this class."""
-#         return OutputParser()
+    
