@@ -1,6 +1,5 @@
 """OpenAI chat wrapper."""
 from __future__ import annotations
-from abc import abstractmethod
 
 import os
 import logging
@@ -159,12 +158,6 @@ class ChatOpenAI(BaseChatModel, BaseModel):
         """Configuration for this pydantic object."""
 
         extra = Extra.ignore
-    
-    @property
-    @abstractmethod
-    def _llm_type(self) -> str:
-        # Return a string indicating the type of this language model
-        return 'ChatOpenAI'
 
     def check_access(self) -> None:
         """Check that the user has access to the model."""
