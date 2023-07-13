@@ -16,11 +16,17 @@ from .EvalOutputParser import EvalOutputParser
 
 
 class AgentBuilder:
-    def __init__(self, toolsets: list[BaseToolSet] = []):
+    def __init__(self, toolsets: list[BaseToolSet] = [], openai_api_key: str = None, serpapi_api_key: str = None, bing_search_url: str = None, bing_subscription_key: str = None):
         self.llm: BaseChatModel = None
         self.parser: BaseOutputParser = None
         self.global_tools: list = None
         self.toolsets = toolsets
+        self.openai_api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+        self.serpapi_api_key = serpapi_api_key or os.getenv('SERPAPI_API_KEY')
+        self.bing_search_url = bing_search_url or os.getenv('BING_SEARCH_URL')
+        self.bing_subscription_key = bing_subscription_key or os.getenv('BING_SUBSCRIPTION_KEY')
+        if not self.openai_api_key:
+            raise ValueError("OpenAI key is missing, it should either be set as an environment variable or passed as a parameter")
 
     def build_llm(self, callback_manager: BaseCallbackManager = None, openai_api_key: str = None):
         if openai_api_key is None:
@@ -39,9 +45,11 @@ class AgentBuilder:
 
         toolnames = ["wikipedia"]
 
-        if os.environ["SERPAPI_API_KEY"]:
+
+        if self.serpapi_api_key:
             toolnames.append("serpapi")
-        if os.environ["BING_SEARCH_URL"] and os.environ["BING_SUBSCRIPTION_KEY"]:
+        
+        if self.bing_search_url and self.bing_subscription_key:
             toolnames.append("bing-search")
 
         self.global_tools = [
