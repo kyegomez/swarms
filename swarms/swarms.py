@@ -9,7 +9,6 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 class Swarms:
     def __init__(self, openai_api_key=""):
         #openai_api_key: the openai key. Default is empty
-
         if not openai_api_key:
             logging.error("OpenAI key is not provided")
             raise ValueError("OpenAI API key is required")
@@ -24,8 +23,7 @@ class Swarms:
             llm_class(class): The Language model class. Default is OpenAI.
             temperature (float): The Temperature for the language model. Default is 0.5
         """
-        try:
-                
+        try: 
             # Initialize language model
             return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
         except Exception as e:
@@ -49,10 +47,11 @@ class Swarms:
 
                 process_csv,
                 WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-
             ]
+
             assert tools is not None, "tools is not initialized"
             return tools
+
         except Exception as e:
             logging.error(f"Failed to initialize tools: {e}")
             raise
@@ -67,6 +66,7 @@ class Swarms:
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
             embedding_size = 1536
             index = faiss.IndexFlatL2(embedding_size)
+            
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
