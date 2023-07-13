@@ -36,46 +36,66 @@ class AgentManager:
             self.memories[session] = self.create_memory()
         return self.memories[session]
 
-    def create_executor(self, session: str, execution: Optional[Task] = None, openai_api_key: str = None) -> AgentExecutor:
+    def create_executor(self, session_id: str, task: Optional[Task] = None, openai_api_key: str = None) -> AgentExecutor:
         try:
-            builder = AgentBuilder(self.toolsets)
-            builder.build_parser()
+            # Create an agent setup with the provided toolsets
+            agent_setup = AgentSetup(self.toolsets)
 
+            # Setup the parser for the agent
+            agent_setup.setup_parser()
+
+            # Initialize an empty list for callbacks
             callbacks = []
-            eval_callback = EVALCallbackHandler()
-            eval_callback.set_parser(builder.get_parser())
+
+            # Create and setup an evaluation callback, then add it to the callbacks list
+            eval_callback = EvaluationCallbackHandler()
+            eval_callback.set_parser(agent_setup.get_parser())
             callbacks.append(eval_callback)
 
-            if execution:
-                execution_callback = ExecutionTracingCallbackHandler(execution)
-                execution_callback.set_parser(builder.get_parser())
-                callbacks.append(execution_callback)
+            # If a task is provided, create and setup an execution tracing callback, then add it to the callbacks list
+            if task:
+                execution_trace_callback = ExecutionTracingCallbackHandler(task)
+                execution_trace_callback.set_parser(agent_setup.get_parser())
+                callbacks.append(execution_trace_callback)
 
+            # Create a callback manager with the callbacks
             callback_manager = CallbackManager(callbacks)
 
-            builder.build_llm(callback_manager, openai_api_key)
-            builder.build_global_tools()
+            # Setup the language model with the callback manager and OpenAI API key
+            agent_setup.setup_language_model(callback_manager, openai_api_key)
 
-            memory: BaseChatMemory = self.get_or_create_memory(session)
+            # Setup the global tools for the agent
+            agent_setup.setup_tools()
+
+            # Get or create a memory for the session
+            chat_memory = self.get_or_create_memory(session_id)
+
+            # Create a list of tools by combining global tools and per session tools
             tools = [
-                *builder.get_global_tools(),
+                *agent_setup.get_global_tools(),
                 *ToolsFactory.create_per_session_tools(
                     self.toolsets,
-                    get_session=lambda: (session, self.executors[session]),
+                    get_session=lambda: (session_id, self.executors[session_id]),
                 ),
             ]
 
+            # Set the callback manager for each tool
             for tool in tools:
                 tool.callback_manager = callback_manager
 
+            # Create an executor from the agent and tools
             executor = AgentExecutor.from_agent_and_tools(
-                agent=builder.get_agent(),
+                agent=agent_setup.get_agent(),
                 tools=tools,
-                memory=memory,
+                memory=chat_memory,
                 callback_manager=callback_manager,
                 verbose=True,
             )
-            self.executors[session] = executor
+
+            # Store the executor in the executors dictionary
+            self.executors[session_id] = executor
+
+            # Return the executor
             return executor
         except Exception as e:
             logging.error(f"Error while creating executor: {str(e)}")
