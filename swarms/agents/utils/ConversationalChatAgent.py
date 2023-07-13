@@ -32,7 +32,7 @@ from swarms.prompts.prompts import EVAL_TOOL_RESPONSE
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class ConversationalChatAgent(Agent):
+class ConversationalChatAgent:
     """An agent designed to hold a conversation in addition to using tools."""
 
     output_parser: BaseOutputParser
@@ -53,7 +53,7 @@ class ConversationalChatAgent(Agent):
 
     @classmethod
     def create_prompt(
-        cls,
+        Agent,
         tools: Sequence[BaseTool],
         system_message: str,
         human_message: str,
@@ -114,7 +114,7 @@ class ConversationalChatAgent(Agent):
 
     @classmethod
     def from_llm_and_tools(
-        cls,
+        Agent,
         llm: BaseLanguageModel,
         tools: Sequence[BaseTool],
         system_message: str,
@@ -125,8 +125,8 @@ class ConversationalChatAgent(Agent):
         **kwargs: Any,
     ) -> Agent:
         """Construct an agent from an LLM and tools."""
-        cls._validate_tools(tools)
-        prompt = cls.create_prompt(
+        Agent._validate_tools(tools)
+        prompt = Agent.create_prompt(
             tools,
             system_message=system_message,
             human_message=human_message,
@@ -140,7 +140,7 @@ class ConversationalChatAgent(Agent):
         )
         tool_names = [tool.name for tool in tools]
         try:
-            return cls(
+            return Agent(
                 llm_chain=llm_chain,
                 allowed_tools=tool_names,
                 output_parser=output_parser,
