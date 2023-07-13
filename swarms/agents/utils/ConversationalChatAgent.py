@@ -141,3 +141,8 @@ class ConversationalChatAgent(Agent):
         except Exception as e:
             logging.error(f"Error while creating agent from LLM and tools: {str(e)}")
             raise e
+        
+
+class ChatAgent(ConversationalChatAgent):
+    def _get_default_output_parser(self):
+        """Get default output parser for this class."""
