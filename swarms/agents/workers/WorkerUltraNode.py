@@ -92,8 +92,7 @@ class WorkerUltraNode:
             "answer": res["output"],
             "files": [self.uploader.upload(file) for file in files],
         }
-    
-    
+
 
     def execute(self):
         try:
@@ -104,7 +103,12 @@ class WorkerUltraNode:
             logging.error(f"Error while executing: {str(e)}")
             raise e
 
-# from worker_node import UltraNode
 
-# node = UltraNode('objective')
-# result = node.execute()
+
+def WorkerUltra(objective: str):
+    # Instantiate WorkerUltraNode with the user's objective
+    worker_node = WorkerUltraNode(objective)
+
+    # Return the result of the execution
+    return worker_node.result
+
