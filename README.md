@@ -110,6 +110,26 @@ The ports you can use are 4500 and 6500.
 swarm.run_swarms(objective)
 ```
 
+* Or just the worker no `BossNode`:
+
+```python
+from swarms import worker_node
+
+# Your OpenAI API key
+api_key = "sksdsds"
+
+# Initialize a WorkerNode with your API key
+node = worker_node(api_key)
+
+# Define an objective
+objective = "Please make a web GUI for using HTTP API server..."
+
+# Run the task
+task = node.run(objective)
+
+print(task)
+```
+
 # Various agents
 
 Here are some agents in the swarm you can use!
