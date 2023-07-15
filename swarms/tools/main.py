@@ -1502,7 +1502,7 @@ def pushd(new_dir):
 
 @tool
 def process_csv(
-    csv_file_path: str, instructions: str, output_path: Optional[str] = None
+    llm, csv_file_path: str, instructions: str, output_path: Optional[str] = None
 ) -> str:
     """Process a CSV by with pandas in a limited REPL.\
  Only use this after writing data to disk as a csv file.\
@@ -1513,7 +1513,7 @@ def process_csv(
             df = pd.read_csv(csv_file_path)
         except Exception as e:
             return f"Error: {e}"
-        agent = create_pandas_dataframe_agent(llm, df, max_iterations=30, verbose=True)
+        agent = create_pandas_dataframe_agent(llm, df, max_iterations=30, verbose=False)
         if output_path is not None:
             instructions += f" Save output to disk at {output_path}"
         try:
