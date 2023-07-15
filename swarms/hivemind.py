@@ -5,6 +5,8 @@ import concurrent.futures
 import logging
 
 from swarms.swarms import Swarms
+
+#this needs to change, we need to specify exactly what needs to be imported
 from swarms.tools.agent_tools import *
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
