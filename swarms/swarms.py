@@ -70,7 +70,7 @@ class Swarms:
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
-            raise
+            return None
 
     def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant"):
         """
@@ -156,7 +156,7 @@ class Swarms:
             return boss_node.execute_task(task)
         except Exception as e:
             logging.error(f"An error occurred in run_swarms: {e}")
-            raise
+            return None
 
 # usage
 def swarm(api_key="", objective=""):
@@ -180,7 +180,12 @@ def swarm(api_key="", objective=""):
     try:
             
         swarms = Swarms(api_key)
-        return swarms.run_swarms(objective)
+        result = swarms.run_swarms(objective)
+        if result is None:
+            logging.error("Failed to run swarms")
+        else:
+            logging.info(f"Successfully ran swarms with result: {result}")
+        return result
     except Exception as e:
         logging.error(f"An error occured in swarm: {e}")
-        raise
+        return None
