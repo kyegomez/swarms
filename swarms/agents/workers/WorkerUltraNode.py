@@ -108,7 +108,7 @@ class WorkerUltraNode:
 
 
 def WorkerUltra(objective: str, openai_api_key=None):
-    # If the openai_api_key parameter is not provided, try to get the API key from an environment variable
+    # If the openai_api_key parameter is not provided, try to get the API key from an environment variable # 
     if openai_api_key is None:
         openai_api_key = os.getenv('OPENAI_API_KEY')
 
