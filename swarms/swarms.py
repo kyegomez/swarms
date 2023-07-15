@@ -8,6 +8,9 @@ from swarms.agents.workers.WorkerUltraNode import WorkerUltra
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+from swarms.utils.task import Task
+
 class Swarms:
     def __init__(self, openai_api_key=""):
         #openai_api_key: the openai key. Default is empty
