@@ -13,7 +13,7 @@ from swarms.utils.main import CsvToDataframe
 from swarms.tools.main import BaseToolSet
 from swarms.utils.main import StaticUploader
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -107,8 +107,15 @@ class WorkerUltraNode:
 
 
 
-def WorkerUltra(objective: str, openai_api_key: str):
+def WorkerUltra(objective: str, openai_api_key=None):
+    # If the openai_api_key parameter is not provided, try to get the API key from an environment variable
+    if openai_api_key is None:
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+
+    if not openai_api_key or not isinstance(openai_api_key, str):
+        logging.error("Invalid OpenAI key")
+        raise ValueError("A valid OpenAI API key is required")
+
     worker_node = WorkerUltraNode(objective, openai_api_key)
     # Return the result of the execution
     return worker_node.result
-
