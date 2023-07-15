@@ -10,7 +10,7 @@ from swarms.tools.agent_tools import *
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-
+# add typechecking, documentation, and deeper error handling 
 class HiveMind:
     def __init__(self, openai_api_key="", num_swarms=1, max_workers=None):
         self.openai_api_key = openai_api_key
@@ -45,3 +45,26 @@ class HiveMind:
                 except Exception as e:
                     logging.error(f"An error occurred in a swarm: {e}")
         return results
+    
+    def add_swarm(self):
+        self.swarms.append(Swarms(self.openai_api_key))
+
+    def remove_swarm(self, index):
+        try:
+            self.swarms.pop(index)
+        except IndexError:
+            logging.error(f"No swarm found at index {index}")
+        
+    def get_progress(self):
+        #this assumes that the swarms class has a get progress method
+        pass
+
+    def cancel_swarm(self, index):
+        try:
+            self.swarms[index].cancel()
+        except IndexError:
+            logging.error(f"No swarm found at index {index}")
+
+    def queue_tasks(self, tasks):
+        for task in tasks:
+            self.run_swarms(task)
