@@ -6,7 +6,7 @@ from swarms.agents.workers.WorkerNode import WorkerNode, worker_node
 from swarms.agents.boss.BossNode import BossNode
 from swarms.agents.workers.WorkerUltraNode import WorkerUltra
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Swarms:
     def __init__(self, openai_api_key=""):
