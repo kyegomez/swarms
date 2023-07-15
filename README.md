@@ -129,7 +129,7 @@ swarm.run_swarms(objective)
 ---
 
 ## Contribute
-We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](./CONTRIBUTING.md).
+We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](DOCS/C0NTRIBUTING.md).
 
 Thank you for being a part of our project!
 
