@@ -1,9 +1,11 @@
+import logging
+import asyncio
+
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.WorkerNode import WorkerNode, worker_node
 from swarms.agents.boss.BossNode import BossNode
 from swarms.agents.workers.WorkerUltraNode import WorkerUltra
 
-import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Swarms:
@@ -135,7 +137,7 @@ class Swarms:
 
 
 
-    def run_swarms(self, objective):
+    async def run_swarms(self, objective):
         """
         Run the swarm with the given objective
 
@@ -171,16 +173,15 @@ def swarm(api_key="", objective=""):
     The result of the swarm.
     """
 
-    if not api_key:
-        logging.error("OpenAIkey is not provided")
-        raise ValueError("OpenAI API key is not provided")
-    if not objective:
-        logging.error("Objective is not provided")
-        raise ValueError("Objective is required")
+    if not api_key or not isinstance(api_key, str):
+        logging.error("Invalid OpenAI key")
+        raise ValueError("A valid OpenAI API key is required")
+    if not objective or not isinstance(objective, str):
+        logging.error("Invalid objective")
+        raise ValueError("A valid objective is required")
     try:
-            
         swarms = Swarms(api_key)
-        result = swarms.run_swarms(objective)
+        result = asyncio.run(swarms.run_swarms(objective))
         if result is None:
             logging.error("Failed to run swarms")
         else:
