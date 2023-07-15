@@ -155,7 +155,10 @@ class Swarms:
             boss_node = self.initialize_boss_node(vectorstore, worker_node)
 
             task = boss_node.create_task(objective)
-            return boss_node.execute_task(task)
+            logging.info(f"Running task: {task}")
+            result = await boss_node.execute_task(task)
+            logging.info(f"Completed tasks: {task}")
+            return result
         except Exception as e:
             logging.error(f"An error occurred in run_swarms: {e}")
             return None
@@ -181,12 +184,15 @@ def swarm(api_key="", objective=""):
         raise ValueError("A valid objective is required")
     try:
         swarms = Swarms(api_key)
-        result = asyncio.run(swarms.run_swarms(objective))
-        if result is None:
+        loop = asyncio.get_event_loop()
+        tasks = [loop.create_task(swarms.run_swarms(objective))]
+        completed, pending = loop.run_until_complete(asyncio.wait(tasks))
+        results = [t.result() for t in completed]
+        if not results or any(result is None for result in results):
             logging.error("Failed to run swarms")
         else:
-            logging.info(f"Successfully ran swarms with result: {result}")
-        return result
+            logging.info(f"Successfully ran swarms with results: {results}")
+        return results
     except Exception as e:
         logging.error(f"An error occured in swarm: {e}")
         return None
