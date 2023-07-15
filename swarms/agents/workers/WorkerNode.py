@@ -11,7 +11,7 @@ from langchain.memory.chat_message_histories import FileChatMessageHistory
 
 import logging
 from pydantic import BaseModel, Extra
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class WorkerNode:
