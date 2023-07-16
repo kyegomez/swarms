@@ -9,8 +9,8 @@ from langchain.memory.chat_memory import BaseChatMemory
 from swarms.tools.main import BaseToolSet, ToolsFactory
 from swarms.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
 
-from swarms.agents.utils.AgentBuilder import AgentSetup
-from swarms.agents.utils.EvalOutputParser import EVALCallbackHandler, ExecutionTracingCallbackHandler
+from swarms.agents.utils.agent_setup import AgentSetup
+from swarms.agents.utils.callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
 
 callback_manager_instance = CallbackManager(EVALCallbackHandler())
 
