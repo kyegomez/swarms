@@ -119,4 +119,4 @@ def BossNode(objective, api_key=None, vectorstore=None, worker_node=None, llm_cl
 
     boss = BossNode(llm, vectorstore, agent_executor, max_iterations)
     task = boss.create_task(objective)
-    boss.execute_task(task)
+    boss.run(task)
