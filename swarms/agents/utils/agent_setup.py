@@ -12,7 +12,7 @@ from langchain.callbacks.base import BaseCallbackManager
 from .ConversationalChatAgent import ConversationalChatAgent
 # from .ChatOpenAI import ChatOpenAI
 from langchain.chat_models import ChatOpenAI
-from .callback import EvalOutputParser
+from .output_parser import EvalOutputParser
 
 
 
