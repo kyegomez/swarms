@@ -33,6 +33,20 @@ class BossNode:
             logging.error(f"Unexpected Error while initializing BabyAGI: {e}")
             raise
 
+    def initialize_vectorstore(self):
+        """
+        Init vector store
+        """
+        try:     
+            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+            embedding_size = 1536
+            index = faiss.IndexFlatL2(embedding_size)
+            return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+        except Exception as e:
+            logging.error(f"Failed to initialize vector store: {e}")
+            return None
+
+
     def create_task(self, objective):
         """
         Creates a task with the given objective.
@@ -54,3 +68,24 @@ class BossNode:
         except Exception as e:
             logging.error(f"Error while executing task: {e}")
             raise
+
+
+
+def boss_node(objective, api_key=None, llm=None, vectorstore=None, agent_executor=None, max_iterations=10):
+#wrapper function to initialize and use Bossnode with given parameters
+    #api keys can be passed as an argument or set as an env
+    api_key = api_key or os.getenv("API_KEY")
+
+    if not api_key:
+        raise ValueError("API key must be providef either as argument as an env named 'api_key'")
+    
+    if not llm:
+        raise ValueError("Language model must be provided")
+    if not vectorstore:
+        raise ValueError("Vectorstore must be provided")
+    if not agent_executor:
+        raise ValueError('Agent Executor must be provided')
+    
+    boss = BossNode(llm, vectorstore, agent_executor, max_iterations)
+    task = boss.create_task(objective)
+    boss.execute_task(task)
