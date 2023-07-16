@@ -6,16 +6,14 @@ from typing import Dict, List
 
 from swarms.agents.utils.AgentManager import AgentManager
 from swarms.utils.main import BaseHandler, FileHandler, FileType
-
 from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 from swarms.utils.main import CsvToDataframe
-
 from swarms.tools.main import BaseToolSet
 from swarms.utils.main import StaticUploader
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Check if "PLAYGROUND_DIR" environment variable exists, if not, set a default value
 playground = os.environ.get("PLAYGROUND_DIR", './playground')
@@ -27,7 +25,7 @@ try:
     os.chdir(BASE_DIR / playground)
 except Exception as e:
     logging.error(f"Failed to change directory: {e}")
-    
+
 class WorkerUltraNode:
     def __init__(self, objective: str, openai_api_key: str):
         self.openai_api_key = openai_api_key 
@@ -62,15 +60,11 @@ class WorkerUltraNode:
                 handlers[FileType.IMAGE] = ImageCaptioning("cuda")
 
         try:
-
-
             self.agent_manager = AgentManager.create(toolsets=toolsets)
             self.file_handler = FileHandler(handlers=handlers, path=BASE_DIR)
             self.uploader = StaticUploader.from_settings(
                 path=BASE_DIR / "static", endpoint="static"
             )
-
-
             self.session = self.agent_manager.create_executor(objective, self.openai_api_key)
 
         except Exception as e:
@@ -95,31 +89,12 @@ class WorkerUltraNode:
             "files": [self.uploader.upload(file) for file in files],
         }
 
-
     def execute(self):
         try:
-                
-            # The prompt is not needed here either
             return self.execute_task()
         except Exception as e:
             logging.error(f"Error while executing: {str(e)}")
             raise e
-
-
-
-# def WorkerUltra(objective: str, openai_api_key=None):
-#     # If the openai_api_key parameter is not provided, try to get the API key from an environment variable # 
-#     if openai_api_key is None:
-#         openai_api_key = os.getenv('OPENAI_API_KEY')
-
-#     if not openai_api_key or not isinstance(openai_api_key, str):
-#         logging.error("Invalid OpenAI key")
-#         raise ValueError("A valid OpenAI API key is required")
-
-#     worker_node = WorkerUltraNode(objective, openai_api_key)
-#     # Return the result of the execution
-#     return worker_node.result
-
 
 class WorkerUltra:
     def __init__(self, objective, api_key=None):
@@ -134,5 +109,3 @@ class WorkerUltra:
         except Exception as e:
             logging.error(f"Error while executing: {str(e)}")
             raise e
-
-
