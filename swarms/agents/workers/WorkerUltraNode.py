@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 
-from swarms.agents.utils.AgentManager import AgentCreator
+from swarms.agents.utils.agent_creator import AgentCreator
 from swarms.utils.main import BaseHandler, FileHandler, FileType
 from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 from swarms.utils.main import CsvToDataframe

@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from fastapi.templating import Jinja2Templates
 
-from swarms.agents.utils.AgentManager import AgentManager
+from swarms.agents.utils.agent_creator import AgentManager
 from swarms.utils.main import BaseHandler, FileHandler, FileType
 from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 
