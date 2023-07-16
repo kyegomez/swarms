@@ -15,7 +15,7 @@ I want it to have neumorphism-style. Serve it on port 4500.
 
 """
 
-node = WorkerUltra(objective, openai_api_key=api_key)
+node = WorkerUltra(objective, api_key=api_key)
 
 
 result = node.execute()
