@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 
-from swarms.agents.utils.AgentManager import AgentManager
+from swarms.agents.utils.AgentManager import AgentCreator
 from swarms.utils.main import BaseHandler, FileHandler, FileType
 from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 from swarms.utils.main import CsvToDataframe
@@ -60,7 +60,7 @@ class WorkerUltraNode:
                 handlers[FileType.IMAGE] = ImageCaptioning("cuda")
 
         try:
-            self.agent_manager = AgentManager.create(toolsets=toolsets)
+            self.agent_manager = AgentCreator.create(toolsets=toolsets)
             self.file_handler = FileHandler(handlers=handlers, path=BASE_DIR)
             self.uploader = StaticUploader.from_settings(
                 path=BASE_DIR / "static", endpoint="static"
