@@ -6,7 +6,7 @@ from swarms.tools.agent_tools import *
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ---------- Boss Node ----------
-class BossNode:
+class BossNodeInitializer:
     """
     The BossNode class is responsible for creating and executing tasks using the BabyAGI model.
     It takes a language model (llm), a vectorstore for memory, an agent_executor for task execution, and a maximum number of iterations for the BabyAGI model.
@@ -72,7 +72,7 @@ class BossNode:
             raise ValueError("Objective cannot be empty.")
         return {"objective": objective}
 
-    def execute_task(self, task):
+    def run(self, task):
         """
         Executes a task using the BabyAGI model.
         """
@@ -89,7 +89,7 @@ class BossNode:
 
 # from swarms import BossNode, OpenAI, LLMChain, Tool, ZeroShotAgent, AgentExecutor, PromptTemplate
 
-def boss_node(objective, api_key=None, vectorstore=None, worker_node=None, llm_class=OpenAI, max_iterations=5, verbose=False):
+def BossNode(objective, api_key=None, vectorstore=None, worker_node=None, llm_class=OpenAI, max_iterations=5, verbose=False):
     """
     Wrapper function to initialize and use BossNode with given parameters.
     API key can be passed as argument or set as an environment variable.
