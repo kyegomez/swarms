@@ -30,7 +30,7 @@ except Exception as e:
     
 class WorkerUltraNode:
     def __init__(self, objective: str, openai_api_key: str):
-        self.openai_api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+        self.openai_api_key = openai_api_key 
 
         if not isinstance(objective, str):
             raise TypeError("Objective must be a string")
