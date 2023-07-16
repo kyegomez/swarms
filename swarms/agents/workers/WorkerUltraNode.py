@@ -107,15 +107,32 @@ class WorkerUltraNode:
 
 
 
-def WorkerUltra(objective: str, openai_api_key=None):
-    # If the openai_api_key parameter is not provided, try to get the API key from an environment variable # 
-    if openai_api_key is None:
-        openai_api_key = os.getenv('OPENAI_API_KEY')
+# def WorkerUltra(objective: str, openai_api_key=None):
+#     # If the openai_api_key parameter is not provided, try to get the API key from an environment variable # 
+#     if openai_api_key is None:
+#         openai_api_key = os.getenv('OPENAI_API_KEY')
 
-    if not openai_api_key or not isinstance(openai_api_key, str):
-        logging.error("Invalid OpenAI key")
-        raise ValueError("A valid OpenAI API key is required")
+#     if not openai_api_key or not isinstance(openai_api_key, str):
+#         logging.error("Invalid OpenAI key")
+#         raise ValueError("A valid OpenAI API key is required")
 
-    worker_node = WorkerUltraNode(objective, openai_api_key)
-    # Return the result of the execution
-    return worker_node.result
+#     worker_node = WorkerUltraNode(objective, openai_api_key)
+#     # Return the result of the execution
+#     return worker_node.result
+
+
+class WorkerUltra:
+    def __init__(self, objective, api_key=None):
+        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
+        if not self.api_key:
+            raise ValueError("API key must be provided either as argument or as an environment variable named 'OPENAI_API_KEY'.")
+        self.worker_node = WorkerUltraNode(objective, self.api_key)
+
+    def execute(self):
+        try:
+            return self.worker_node.execute_task()
+        except Exception as e:
+            logging.error(f"Error while executing: {str(e)}")
+            raise e
+
+
