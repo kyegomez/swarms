@@ -10,7 +10,8 @@ from swarms.tools.main import BaseToolSet, ToolsFactory
 from swarms.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
 
 from swarms.agents.utils.agent_setup import AgentSetup
-from .callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
+# from .callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
+from swarms.agents.utils.Calback import EVALCallbackHandler, ExecutionTracingCallbackHandler
 
 callback_manager_instance = CallbackManager(EVALCallbackHandler())
 
