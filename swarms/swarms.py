@@ -3,7 +3,7 @@ import asyncio
 
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.WorkerNode import WorkerNode, worker_node
-from swarms.agents.boss.BossNode import BossNode
+from swarms.agents.boss.BossNode import BossNodeInitializer as BossNode
 from swarms.agents.workers.WorkerUltraNode import WorkerUltra
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -159,7 +159,7 @@ class Swarms:
 
             task = boss_node.create_task(objective)
             logging.info(f"Running task: {task}")
-            result = await boss_node.execute_task(task)
+            result = await boss_node.run(task)
             logging.info(f"Completed tasks: {task}")
             return result
         except Exception as e:
