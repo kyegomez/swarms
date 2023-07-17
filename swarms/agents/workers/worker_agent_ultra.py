@@ -43,10 +43,11 @@ class WorkerUltraNode:
     def create_agent(self, ai_name="Swarm Worker AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={}, verbose=False):
         logging.info("Creating agent in WorkerNode")
         try:
+            tools_dict = {type(tool).__name__: tool for tool in self.toolsets}
             self.agent = AutoGPT.from_llm_and_tools(
                 ai_name=ai_name,
                 ai_role=ai_role,
-                tools=self.toolsets,
+                tools=tools_dict,  # Pass the dictionary instead of the list
                 llm=self.llm,
                 memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
                 human_in_the_loop=human_in_the_loop,
