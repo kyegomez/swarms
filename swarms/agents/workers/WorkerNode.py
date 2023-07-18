@@ -13,6 +13,7 @@ import logging
 from pydantic import BaseModel, Extra
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+from swarms.tools.main import Terminal
 
 class WorkerNode:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
@@ -107,6 +108,7 @@ class WorkerNodeInitializer:
                 ReadFileTool(root_dir=ROOT_DIR),
                 process_csv,
                 WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+                Terminal,
             ]
             if not tools:
                 logging.error("Tools are not initialized")
