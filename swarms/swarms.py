@@ -1,10 +1,15 @@
+import logging
+import asyncio
+
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.WorkerNode import WorkerNode, worker_node
-from swarms.agents.boss.BossNode import BossNode
+from swarms.agents.boss.BossNode import BossNodeInitializer as BossNode
 from swarms.agents.workers.WorkerUltraNode import WorkerUltra
 
-import logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+from swarms.utils.task import Task
 
 class Swarms:
     def __init__(self, openai_api_key=""):
@@ -70,7 +75,7 @@ class Swarms:
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
-            raise
+            return None
 
     def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant"):
         """
@@ -112,11 +117,11 @@ class Swarms:
 
             # Initialize boss node
             llm = self.initialize_llm(llm_class)
-            todo_prompt = PromptTemplate.from_template("You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating an worker to help you accomplish your task. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn an worker agent after creating a plan and pass the objective and plan to the worker agent.")
+            todo_prompt = PromptTemplate.from_template("You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating an worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn an worker agent after creating a plan and pass the objective and plan to the worker agent.")
             todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
 
             tools = [
-                Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for. Output: a todo list for that objective. Please be very clear what the objective is!"),
+                Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for your objective. Note create a todo list then assign a ranking from 0.0 to 1.0 to each task, then sort the tasks based on the tasks most likely to achieve the objective. The Output: a todo list for that objective with rankings for each step from 0.1 Please be very clear what the objective is!"),
                 worker_node
             ]
             suffix = """Question: {task}\n{agent_scratchpad}"""
@@ -135,7 +140,7 @@ class Swarms:
 
 
 
-    def run_swarms(self, objective):
+    async def run_swarms(self, objective):
         """
         Run the swarm with the given objective
 
@@ -153,10 +158,13 @@ class Swarms:
             boss_node = self.initialize_boss_node(vectorstore, worker_node)
 
             task = boss_node.create_task(objective)
-            return boss_node.execute_task(task)
+            logging.info(f"Running task: {task}")
+            result = await boss_node.run(task)
+            logging.info(f"Completed tasks: {task}")
+            return result
         except Exception as e:
             logging.error(f"An error occurred in run_swarms: {e}")
-            raise
+            return None
 
 # usage
 def swarm(api_key="", objective=""):
@@ -171,16 +179,23 @@ def swarm(api_key="", objective=""):
     The result of the swarm.
     """
 
-    if not api_key:
-        logging.error("OpenAIkey is not provided")
-        raise ValueError("OpenAI API key is not provided")
-    if not objective:
-        logging.error("Objective is not provided")
-        raise ValueError("Objective is required")
+    if not api_key or not isinstance(api_key, str):
+        logging.error("Invalid OpenAI key")
+        raise ValueError("A valid OpenAI API key is required")
+    if not objective or not isinstance(objective, str):
+        logging.error("Invalid objective")
+        raise ValueError("A valid objective is required")
     try:
-            
         swarms = Swarms(api_key)
-        return swarms.run_swarms(objective)
+        loop = asyncio.get_event_loop()
+        tasks = [loop.create_task(swarms.run_swarms(objective))]
+        completed, pending = loop.run_until_complete(asyncio.wait(tasks))
+        results = [t.result() for t in completed]
+        if not results or any(result is None for result in results):
+            logging.error("Failed to run swarms")
+        else:
+            logging.info(f"Successfully ran swarms with results: {results}")
+        return results
     except Exception as e:
         logging.error(f"An error occured in swarm: {e}")
-        raise
+        return None

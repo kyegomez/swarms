@@ -12,10 +12,11 @@ from langchain.callbacks.base import BaseCallbackManager
 from .ConversationalChatAgent import ConversationalChatAgent
 # from .ChatOpenAI import ChatOpenAI
 from langchain.chat_models import ChatOpenAI
-from .EvalOutputParser import EvalOutputParser
+from .output_parser import EvalOutputParser
 
 
-class AgentBuilder:
+
+class AgentSetup:
     def __init__(self, toolsets: list[BaseToolSet] = [], openai_api_key: str = None, serpapi_api_key: str = None, bing_search_url: str = None, bing_subscription_key: str = None):
         self.llm: BaseChatModel = None
         self.parser: BaseOutputParser = None
@@ -28,7 +29,7 @@ class AgentBuilder:
         if not self.openai_api_key:
             raise ValueError("OpenAI key is missing, it should either be set as an environment variable or passed as a parameter")
 
-    def build_llm(self, callback_manager: BaseCallbackManager = None, openai_api_key: str = None):
+    def setup_llm(self, callback_manager: BaseCallbackManager = None, openai_api_key: str = None):
         if openai_api_key is None:
             openai_api_key = os.getenv('OPENAI_API_KEY')
             if openai_api_key is None:
@@ -36,15 +37,14 @@ class AgentBuilder:
         
         self.llm = ChatOpenAI(openai_api_key=openai_api_key, temperature=0.5, callback_manager=callback_manager, verbose=True)
 
-    def build_parser(self):
+    def setup_parser(self):
         self.parser = EvalOutputParser()
 
-    def build_global_tools(self):
+    def setup_global_tools(self):
         if self.llm is None:
             raise ValueError("LLM must be initialized before tools")
 
         toolnames = ["wikipedia"]
-
 
         if self.serpapi_api_key:
             toolnames.append("serpapi")

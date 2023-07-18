@@ -4,18 +4,16 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 
-from swarms.agents.utils.AgentManager import AgentManager
+from swarms.agents.utils.agent_creator import AgentCreator
 from swarms.utils.main import BaseHandler, FileHandler, FileType
-
 from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 from swarms.utils.main import CsvToDataframe
-
 from swarms.tools.main import BaseToolSet
 from swarms.utils.main import StaticUploader
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Check if "PLAYGROUND_DIR" environment variable exists, if not, set a default value
 playground = os.environ.get("PLAYGROUND_DIR", './playground')
@@ -27,10 +25,10 @@ try:
     os.chdir(BASE_DIR / playground)
 except Exception as e:
     logging.error(f"Failed to change directory: {e}")
-    
+
 class WorkerUltraNode:
     def __init__(self, objective: str, openai_api_key: str):
-        self.openai_api_key = openai_api_key
+        self.openai_api_key = openai_api_key 
 
         if not isinstance(objective, str):
             raise TypeError("Objective must be a string")
@@ -62,15 +60,11 @@ class WorkerUltraNode:
                 handlers[FileType.IMAGE] = ImageCaptioning("cuda")
 
         try:
-
-
-            self.agent_manager = AgentManager.create(toolsets=toolsets)
+            self.agent_manager = AgentCreator.create(toolsets=toolsets)
             self.file_handler = FileHandler(handlers=handlers, path=BASE_DIR)
             self.uploader = StaticUploader.from_settings(
                 path=BASE_DIR / "static", endpoint="static"
             )
-
-
             self.session = self.agent_manager.create_executor(objective, self.openai_api_key)
 
         except Exception as e:
@@ -95,20 +89,23 @@ class WorkerUltraNode:
             "files": [self.uploader.upload(file) for file in files],
         }
 
-
     def execute(self):
         try:
-                
-            # The prompt is not needed here either
             return self.execute_task()
         except Exception as e:
             logging.error(f"Error while executing: {str(e)}")
             raise e
 
+class WorkerUltra:
+    def __init__(self, objective, api_key=None):
+        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
+        if not self.api_key:
+            raise ValueError("API key must be provided either as argument or as an environment variable named 'OPENAI_API_KEY'.")
+        self.worker_node = WorkerUltraNode(objective, self.api_key)
 
-
-def WorkerUltra(objective: str, openai_api_key: str):
-    worker_node = WorkerUltraNode(objective, openai_api_key)
-    # Return the result of the execution
-    return worker_node.result
-
+    def execute(self):
+        try:
+            return self.worker_node.execute_task()
+        except Exception as e:
+            logging.error(f"Error while executing: {str(e)}")
+            raise e

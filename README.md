@@ -34,7 +34,10 @@ Welcome to Swarms - the future of AI, where we leverage the power of autonomous 
 ## Purpose
 At Swarms, we're transforming the landscape of AI from siloed AI agents to a unified 'swarm' of intelligence. Through relentless iteration and the power of collective insight from our 1500+ Agora researchers, we're developing a groundbreaking framework for AI collaboration. Our mission is to catalyze a paradigm shift, advancing Humanity with the power of unified autonomous AI agent swarms.
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> WorkerULTRANODE
 
 ---
 
@@ -53,7 +56,7 @@ At Swarms, we're transforming the landscape of AI from siloed AI agents to a uni
 ---
 
 ## Installation
-There are 2 methods, one is through `git clone` and the other is by `pip install swarms`. Check out the [document](/DOCUMENTATION.md) for more information on the classes.
+There are 2 methods, one is through `git clone` and the other is by `pip install swarms`. Check out the [DOCUMENTATION](DOCS/DOCUMENTATION.md) for more information on the classes.
 ---
 
 # Method1
@@ -153,7 +156,7 @@ Here are some agents in the swarm you can use!
 ---
 
 ## Contribute
-We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](./CONTRIBUTING.md).
+We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](DOCS/C0NTRIBUTING.md).
 
 Thank you for being a part of our project!
 

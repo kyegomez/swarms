@@ -1,22 +1,21 @@
-from typing import Dict, Optional
+import os
 import logging
-
+from typing import Dict, Optional
 from celery import Task
-
 from langchain.agents.agent import AgentExecutor
 from langchain.callbacks.manager import CallbackManager
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.memory.chat_memory import BaseChatMemory
-
 from swarms.tools.main import BaseToolSet, ToolsFactory
-from .AgentBuilder import AgentBuilder
-from .Calback import EVALCallbackHandler, ExecutionTracingCallbackHandler
+from swarms.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
 
+from swarms.agents.utils.agent_setup import AgentSetup
+# from .callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
+from swarms.agents.utils.Calback import EVALCallbackHandler, ExecutionTracingCallbackHandler
 
 callback_manager_instance = CallbackManager(EVALCallbackHandler())
 
-
-class AgentManager:
+class AgentCreator:
     def __init__(self, toolsets: list[BaseToolSet] = []):
         if not isinstance(toolsets, list):
             raise TypeError("Toolsets must be a list")
@@ -38,9 +37,8 @@ class AgentManager:
 
     def create_executor(self, session: str, execution: Optional[Task] = None, openai_api_key: str = None) -> AgentExecutor:
         try:
-            builder = AgentBuilder(self.toolsets)
-            builder.build_parser()
-
+            builder = AgentSetup(self.toolsets)
+            builder.setup_parser()
 
             callbacks = []
             eval_callback = EVALCallbackHandler()
@@ -52,15 +50,13 @@ class AgentManager:
                 execution_callback.set_parser(builder.get_parser())
                 callbacks.append(execution_callback)
 
-            #llm init
             callback_manager = CallbackManager(callbacks)
-            builder.build_llm(callback_manager, openai_api_key)
+            builder.setup_llm(callback_manager, openai_api_key)
             if builder.llm is None:
                 raise ValueError('LLM not created')
 
-            builder.build_global_tools()
+            builder.setup_global_tools()
 
-            #agent init
             agent = builder.get_agent()
             if not agent:
                 raise ValueError("Agent not created")
@@ -77,27 +73,13 @@ class AgentManager:
             for tool in tools:
                 tool.callback_manager = callback_manager
 
-            # # Ensure the 'agent' key is present in the values dictionary
-            # values = {'agent': agent, 'tools': tools}
-
-            # executor = AgentExecutor.from_agent_and_tools(
-            #     agent=agent,
-            #     tools=tools,
-            #     memory=memory,
-            #     callback_manager=callback_manager,
-            #     verbose=True,
-            # )
-
-             # Prepare the arguments for the executor
-            executor_args = {
-                'agent': agent,
-                'tools': tools,
-                'memory': memory,
-                'callback_manager': callback_manager,
-                'verbose': True  # Or any other value based on your requirement
-            }
-
-            executor = AgentExecutor.from_agent_and_tools(**executor_args)
+            executor = AgentExecutor.from_agent_and_tools(
+                agent=agent,
+                tools=tools,
+                memory=memory,
+                callback_manager=callback_manager,
+                verbose=True,
+            )
 
             if 'agent' not in executor.__dict__:
                 executor.__dict__['agent'] = agent
@@ -109,7 +91,7 @@ class AgentManager:
             raise e
 
     @staticmethod
-    def create(toolsets: list[BaseToolSet]) -> "AgentManager":
+    def create(toolsets: list[BaseToolSet]) -> "AgentCreator":
         if not isinstance(toolsets, list):
             raise TypeError("Toolsets must be a list")
-        return AgentManager(toolsets=toolsets)
+        return AgentCreator(toolsets=toolsets)
