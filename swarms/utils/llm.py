@@ -4,7 +4,7 @@ import logging
 
 from langchain import PromptTemplate, HuggingFaceHub, ChatOpenAI, LLMChain
 
-# Configure logging
+# Configure logging-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
