@@ -52,8 +52,8 @@ At Swarms, we're transforming the landscape of AI from siloed AI agents to a uni
 ---
 
 ## Installation
+
 There are 2 methods, one is through `git clone` and the other is by `pip install swarms`. Check out the [DOCUMENTATION](DOCS/DOCUMENTATION.md) for more information on the classes.
----
 
 # Method1
 * Pip install `python3 -m pip install swarms`
