@@ -1,11 +1,13 @@
-from swarms.tools.agent_tools import *
-from langchain.tools import BaseTool
+import os
+import logging
 from typing import Optional, Type
-
 from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
+
+
+from swarms.tools.agent_tools import *
 from typing import List, Any, Dict, Optional
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
@@ -14,26 +16,38 @@ from pydantic import BaseModel, Extra
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-class WorkerNode:
+
+
+from typing import List, Any, Dict, Optional
+from langchain.memory.chat_message_histories import FileChatMessageHistory
+from swarms.utils.main import BaseHandler, FileHandler, FileType
+from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
+from swarms.utils.main import CsvToDataframe
+from swarms.tools.main import BaseToolSet
+from swarms.utils.main import StaticUploader
+
+
+class WorkerUltraNode:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
 
-    def __init__(self, llm, tools, vectorstore):
-        if not llm or not tools or not vectorstore:
-            logging.error("llm, tools, and vectorstore cannot be None.")
-            raise ValueError("llm, tools, and vectorstore cannot be None.")
+    def __init__(self, llm, toolsets, vectorstore):
+        if not llm or not toolsets or not vectorstore:
+            logging.error("llm, toolsets, and vectorstore cannot be None.")
+            raise ValueError("llm, toolsets, and vectorstore cannot be None.")
         
         self.llm = llm
-        self.tools = tools
+        self.toolsets = toolsets
         self.vectorstore = vectorstore
         self.agent = None
 
     def create_agent(self, ai_name="Swarm Worker AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={}, verbose=False):
         logging.info("Creating agent in WorkerNode")
         try:
+            tools_list = list(self.toolsets.values())
             self.agent = AutoGPT.from_llm_and_tools(
                 ai_name=ai_name,
                 ai_role=ai_role,
-                tools=self.tools,
+                tools=tools_list,  # Pass the dictionary instead of the list
                 llm=self.llm,
                 memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
                 human_in_the_loop=human_in_the_loop,
@@ -44,13 +58,12 @@ class WorkerNode:
             logging.error(f"Error while creating agent: {str(e)}")
             raise e
 
-
-    def add_tool(self, tool: Tool):
-        if not isinstance(tool, Tool):
-            logging.error("Tool must be an instance of Tool.")
-            raise TypeError("Tool must be an instance of Tool.")
+    def add_toolset(self, toolset: BaseToolSet):
+        if not isinstance(toolset, BaseToolSet):
+            logging.error("Toolset must be an instance of BaseToolSet.")
+            raise TypeError("Toolset must be an instance of BaseToolSet.")
         
-        self.tools.append(tool)
+        self.toolsets.append(toolset)
 
     def run(self, prompt: str) -> str:
         if not isinstance(prompt, str):
@@ -68,11 +81,7 @@ class WorkerNode:
             logging.error(f"While running the agent: {str(e)}")
             raise e
 
-        
-    
-
-
-class WorkerNodeInitializer:
+class WorkerUltraNodeInitializer:
     def __init__(self, openai_api_key):
         if not openai_api_key:
             logging.error("OpenAI API key is not provided")
@@ -91,29 +100,35 @@ class WorkerNodeInitializer:
             logging.error(f"Failed to initialize language model: {e}")
             raise
 
-    def initialize_tools(self, llm_class):
-        if not llm_class:
-            logging.error("llm_class not cannot be none")
-            raise ValueError("llm_class cannot be none")
+    def initialize_toolsets(self):
         try:
-                
-            logging.info('Creating WorkerNode')
-            llm = self.initialize_llm(llm_class)
-            web_search = DuckDuckGoSearchRun()
-
-            tools = [
-                web_search,
-                WriteFileTool(root_dir=ROOT_DIR),
-                ReadFileTool(root_dir=ROOT_DIR),
-                process_csv,
-                WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+            toolsets: List[BaseToolSet] = [
+                Terminal(),
+                CodeEditor(),
+                RequestsGet(),
+                ExitConversation(),
             ]
-            if not tools:
-                logging.error("Tools are not initialized")
-                raise ValueError("Tools are not initialized")
-            return tools
+            handlers: Dict[FileType, BaseHandler] = {FileType.DATAFRAME: CsvToDataframe()}
+
+            if os.environ.get("USE_GPU", False):
+                import torch
+                from swarms.tools.main import ImageCaptioning
+                from swarms.tools.main import ImageEditing, InstructPix2Pix, Text2Image, VisualQuestionAnswering
+
+                if torch.cuda.is_available():
+                    toolsets.extend(
+                        [
+                            Text2Image("cuda"),
+                            ImageEditing("cuda"),
+                            InstructPix2Pix("cuda"),
+                            VisualQuestionAnswering("cuda"),
+                        ]
+                    )
+                    handlers[FileType.IMAGE] = ImageCaptioning("cuda")
+
+            return toolsets
         except Exception as e:
-            logging.error(f"Failed to initialize tools: {e}")
+            logging.error(f"Failed to initialize toolsets: {e}")
 
     def initialize_vectorstore(self):
         try:
@@ -131,27 +146,24 @@ class WorkerNodeInitializer:
             logging.error("llm_class cannot be None.")
             raise ValueError("llm_class cannot be None.")
         try:
-            worker_tools = self.initialize_tools(llm_class)
+            worker_toolsets = self.initialize_toolsets()
             vectorstore = self.initialize_vectorstore()
-            worker_node = WorkerNode(llm=self.initialize_llm(llm_class), tools=worker_tools, vectorstore=vectorstore)
+            worker_node = WorkerUltraNode(llm=self.initialize_llm(llm_class), toolsets=worker_toolsets, vectorstore=vectorstore)
             worker_node.create_agent(ai_name=ai_name, ai_role=ai_role, human_in_the_loop=human_in_the_loop, search_kwargs=search_kwargs, verbose=verbose)
             return worker_node
         except Exception as e:
             logging.error(f"Failed to create worker node: {e}")
             raise
 
-def worker_node(openai_api_key):
+def worker_ultra_node(openai_api_key):
     if not openai_api_key:
         logging.error("OpenAI API key is not provided")
         raise ValueError("OpenAI API key is required")
     
     try:
-
-        initializer = WorkerNodeInitializer(openai_api_key)
+        initializer = WorkerUltraNodeInitializer(openai_api_key)
         worker_node = initializer.create_worker_node()
         return worker_node
     except Exception as e:
-        logging.error(f"An error occured in worker_node: {e}")
+        logging.error(f"An error occurred in worker_node: {e}")
         raise
-
-
