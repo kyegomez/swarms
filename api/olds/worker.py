@@ -3,7 +3,7 @@ import os
 from celery import Celery
 from celery.result import AsyncResult
 
-from api.container import agent_manager
+from api.olds.container import agent_manager
 
 
 celery_app = Celery(__name__)
