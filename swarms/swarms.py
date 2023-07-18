@@ -4,7 +4,7 @@ import asyncio
 from swarms.tools.agent_tools import *
 from swarms.agents.workers.WorkerNode import WorkerNode, worker_node
 from swarms.agents.boss.BossNode import BossNodeInitializer as BossNode
-from swarms.agents.workers.WorkerUltraNode import WorkerUltra
+from swarms.agents.workers.worker_ultra_node import WorkerUltra
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

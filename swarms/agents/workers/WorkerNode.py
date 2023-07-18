@@ -40,7 +40,7 @@ class WorkerNode:
                 human_in_the_loop=human_in_the_loop,
                 chat_history_memory=FileChatMessageHistory("chat_history.txt"),
             )
-            self.agent.chain.verbose = verbose
+            # self.agent.chain.verbose = verbose
         except Exception as e:
             logging.error(f"Error while creating agent: {str(e)}")
             raise e
