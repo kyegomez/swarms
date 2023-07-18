@@ -2,7 +2,9 @@ from typing import Optional
 import os
 import logging
 
-from langchain import PromptTemplate, HuggingFaceHub, ChatOpenAI, LLMChain
+from langchain import PromptTemplate, LLMChain, HuggingFaceHub
+from langchain.chat_models import ChatOpenAI
+
 
 # Configure logging-
 logging.basicConfig(level=logging.INFO)
