@@ -53,6 +53,7 @@ class LLM:
             raise
 
 # example
+from swarms.utils.llm import LLM
 llm_instance = LLM(openai_api_key="your_openai_key")
 result = llm_instance.run("Who won the FIFA World Cup in 1998?")
 print(result)
