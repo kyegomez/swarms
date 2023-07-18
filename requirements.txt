@@ -10,7 +10,7 @@ nest_asyncio
 bs4
 playwright
 
-duckduckgo_search
+duckduckgo-search
 faiss-cpu
 wget==3.2
 
