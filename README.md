@@ -34,10 +34,6 @@ Welcome to Swarms - the future of AI, where we leverage the power of autonomous 
 ## Purpose
 At Swarms, we're transforming the landscape of AI from siloed AI agents to a unified 'swarm' of intelligence. Through relentless iteration and the power of collective insight from our 1500+ Agora researchers, we're developing a groundbreaking framework for AI collaboration. Our mission is to catalyze a paradigm shift, advancing Humanity with the power of unified autonomous AI agent swarms.
 
-<<<<<<< HEAD
-
-=======
->>>>>>> WorkerULTRANODE
 
 ---
 
