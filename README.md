@@ -141,8 +141,6 @@ Here are some agents in the swarm you can use!
 
 ---
 
-## Share with your Friends
-
 
 # Docker Setup
 
@@ -186,6 +184,8 @@ curl -X POST -H "Content-Type: application/json" -d '{"api_key": "your_openai_ap
 ```
 Replace your_openai_api_key and your_objective with your actual OpenAI API key and objective.
 
+
+## Share with your Friends
 
 [![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
 
