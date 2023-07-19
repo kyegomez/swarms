@@ -139,10 +139,52 @@ Here are some agents in the swarm you can use!
 | Swarms       | `from swarms.swarms import Swarms`                 | ```python import os from swarms.swarms import Swarms api_key = os.getenv("OPENAI_API_KEY") swarm = Swarms(openai_api_key=api_key) objective = "Please make a web GUI for using HTTP API server..." task = swarm.run_swarms(objective) print(task)``` |
 
 
-
 ---
 
 ## Share with your Friends
+
+
+# Docker Setup
+
+* Build the Docker image
+
+* You can build the Docker image using the provided Dockerfile. Navigate to the infra/Docker directory where the Dockerfiles are located.
+
+* For the CPU version, use:
+
+```bash
+docker build -t swarms-api:latest -f Dockerfile.cpu .
+```
+For the GPU version, use:
+
+```bash
+docker build -t swarms-api:gpu -f Dockerfile.gpu .
+```
+### Run the Docker container
+
+After building the Docker image, you can run the Swarms API in a Docker container. Replace your_redis_host and your_redis_port with your actual Redis host and port.
+
+For the CPU version:
+
+```bash
+docker run -p 8000:8000 -e REDIS_HOST=your_redis_host -e REDIS_PORT=your_redis_port swarms-api:latest
+```
+
+## For the GPU version:
+```bash
+docker run --gpus all -p 8000:8000 -e REDIS_HOST=your_redis_host -e REDIS_PORT=your_redis_port swarms-api:gpu
+```
+
+## Access the Swarms API
+
+* The Swarms API will be accessible at http://localhost:8000. You can use tools like curl or Postman to send requests to the API.
+
+Here's an example curl command to send a POST request to the /chat endpoint:
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"api_key": "your_openai_api_key", "objective": "your_objective"}' http://localhost:8000/chat
+```
+Replace your_openai_api_key and your_objective with your actual OpenAI API key and objective.
 
 
 [![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
