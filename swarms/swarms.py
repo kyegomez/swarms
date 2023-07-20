@@ -166,7 +166,7 @@ class Swarms:
             logging.error(f"An error occurred in run_swarms: {e}")
             return None
 
-# usage
+# usage-
 def swarm(api_key="", objective=""):
     """
     Run the swarm with the given API key and objective.
