@@ -8,9 +8,6 @@ from dotenv import load_dotenv
 from io import BytesIO
 from typing import Any, List, Optional, Sequence, Tuple, Union, TYPE_CHECKING
 
-from codeboxapi import CodeBox
-from codeboxapi.schema import CodeBoxOutput
-from codeinterpreterapi.chains.remove_download_link import remove_download_link
 from pydantic import BaseModel, BaseSettings, root_validator
 
 from langchain.agents import AgentExecutor, BaseSingleActionAgent
