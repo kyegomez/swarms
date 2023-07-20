@@ -1,4 +1,4 @@
-from swarms.tools.agent_tools import *
+from swarms.agents.tools.agent_tools import *
 from langchain.tools import BaseTool
 from typing import Optional, Type
 
@@ -13,7 +13,7 @@ import logging
 from pydantic import BaseModel, Extra
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-from swarms.tools.main import Terminal
+from swarms.agents.tools.main import Terminal
 
 class WorkerNode:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""

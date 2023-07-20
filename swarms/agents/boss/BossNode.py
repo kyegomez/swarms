@@ -1,7 +1,7 @@
 from pydantic import ValidationError
 import logging
 
-from swarms.tools.agent_tools import *
+from swarms.agents.tools.agent_tools import *
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
