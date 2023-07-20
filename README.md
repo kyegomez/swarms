@@ -15,11 +15,21 @@ Welcome to Swarms - the future of AI, where we leverage the power of autonomous 
 
 ---
 
-<div align="center">
-
-
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)
 [![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
+
+
+<div align="center">
+<p>
+<img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/kyegomez/swarms" />
+<img alt="GitHub Last Commit" src="https://img.shields.io/github/last-commit/kyegomez/swarms" />
+<img alt="" src="https://img.shields.io/github/repo-size/kyegomez/swarms" />
+<img alt="GitHub Issues" src="https://img.shields.io/github/issues/kyegomez/swarms" />
+<img alt="GitHub Pull Requests" src="https://img.shields.io/github/issues-pr/kyegomez/swarms" />
+<br />
+</div>
+
+
 
 ### Share on Social Media
 
@@ -276,6 +286,12 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 [![Watch the swarm video](https://img.youtube.com/vi/Br62cDMYXgc/maxresdefault.jpg)](https://youtu.be/Br62cDMYXgc)
 
 ---
+
+
+
+
+
+
 
 
 
