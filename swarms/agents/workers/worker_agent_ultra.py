@@ -7,7 +7,7 @@ from langchain.callbacks.manager import (
 )
 
 
-from swarms.tools.agent_tools import *
+from swarms.agents.tools.agent_tools import *
 from typing import List, Any, Dict, Optional
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
@@ -21,9 +21,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 from typing import List, Any, Dict, Optional
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 from swarms.utils.main import BaseHandler, FileHandler, FileType
-from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
+from swarms.agents.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 from swarms.utils.main import CsvToDataframe
-from swarms.tools.main import BaseToolSet
+from swarms.agents.tools.main import BaseToolSet
 from swarms.utils.main import StaticUploader
 
 
@@ -112,8 +112,8 @@ class WorkerUltraNodeInitializer:
 
             if os.environ.get("USE_GPU", False):
                 import torch
-                from swarms.tools.main import ImageCaptioning
-                from swarms.tools.main import ImageEditing, InstructPix2Pix, Text2Image, VisualQuestionAnswering
+                from swarms.agents.tools.main import ImageCaptioning
+                from swarms.agents.tools.main import ImageEditing, InstructPix2Pix, Text2Image, VisualQuestionAnswering
 
                 if torch.cuda.is_available():
                     toolsets.extend(
