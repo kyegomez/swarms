@@ -22,19 +22,3 @@ class OmniWorkerAgent:
         response = chat_huggingface(messages, api_key, api_type, api_endpoint)
         return response
 
-
-
-# #usage
-# agent = OmniWorkerAgent(api_key="your key", api_endpoint="api endpoint", api_type="you types")
-
-# data = {
-#     "messages": "your_messages",
-#     "api_key": "your_api_key",
-#     "api_endpoint": "your_api_endpoint",
-#     "api_type": "your_api_type"
-# }
-
-# response = agent.chat(data)
-
-
-# print(response)  # Prints the response
