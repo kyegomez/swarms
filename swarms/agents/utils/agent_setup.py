@@ -1,8 +1,8 @@
 import os
 
 from swarms.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
-from swarms.tools.main import BaseToolSet
-from swarms.tools.main import ToolsFactory
+from swarms.agents.tools.main import BaseToolSet
+from swarms.agents.tools.main import ToolsFactory
 
 
 from langchain.chat_models.base import BaseChatModel
