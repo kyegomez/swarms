@@ -13,13 +13,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 from swarms.utils.task import Task
 
 class Swarms:
-    def __init__(self, openai_api_key=""):
+    def __init__(self, openai_api_key="", use_vectorstore=True):
         #openai_api_key: the openai key. Default is empty
         if not openai_api_key:
             logging.error("OpenAI key is not provided")
             raise ValueError("OpenAI API key is required")
         
         self.openai_api_key = openai_api_key
+        self.use_vectorstore = use_vectorstore
 
     def initialize_llm(self, llm_class, temperature=0.5):
         """
@@ -153,7 +154,7 @@ class Swarms:
             worker_tools = self.initialize_tools(OpenAI)
             assert worker_tools is not None, "worker_tools is not initialized"
 
-            vectorstore = self.initialize_vectorstore()
+            vectorstore = self.initialize_vectorstore() if self.use_vectorstore else None
             worker_node = self.initialize_worker_node(worker_tools, vectorstore)
 
             boss_node = self.initialize_boss_node(vectorstore, worker_node)
