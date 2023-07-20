@@ -4,6 +4,8 @@
 
 [Swarms](https://discord.gg/qUtxnK2NMf) is brought to you by Agora, the open source AI research organization. Join Agora and help create swarms and receive support to advance Humanity.
 
+![Join the Agora discord](https://img.shields.io/discord/1110910277110743103?label=Discord&logo=discord&logoColor=white&style=plastic&color=d7b023)
+
 ---
 
 ## Swarming AI Agents (Swarms)
@@ -15,7 +17,7 @@ Welcome to Swarms - the future of AI, where we leverage the power of autonomous 
 
 ---
 
-![Discord Link](https://img.shields.io/discord/1110910277110743103?label=Discord&logo=discord&logoColor=white&style=plastic&color=d7b023)
+![Join the Agora discord](https://img.shields.io/discord/1110910277110743103?label=Discord&logo=discord&logoColor=white&style=plastic&color=d7b023)
 
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)
 [![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
@@ -40,7 +42,7 @@ Welcome to Swarms - the future of AI, where we leverage the power of autonomous 
 
 ### Share on Social Media
 
-[![](https://img.shields.io/badge/badge-preview-success.svg?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iZGlzY29yZCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMjQgMjQiPgogIDxwYXRoIGQ9Ik0xOC41OSw1Ljg5Yy0xLjIzLS41Ny0yLjU0LS45OS0zLjkyLTEuMjMtLjE3LC4zLS4zNywuNzEtLjUsMS4wNC0xLjQ2LS4yMi0yLjkxLS4yMi00LjM0LDAtLjE0LS4zMy0uMzQtLjc0LS41MS0xLjA0LTEuMzgsLjI0LTIuNjksLjY2LTMuOTIsMS4yMy0yLjQ4LDMuNzQtMy4xNSw3LjM5LTIuODIsMTAuOTgsMS42NSwxLjIzLDMuMjQsMS45Nyw0LjgxLDIuNDYsLjM5LS41MywuNzMtMS4xLDEuMDMtMS42OS0uNTctLjIxLTEuMTEtLjQ4LTEuNjItLjc5LC4xNC0uMSwuMjctLjIxLC40LS4zMSwzLjEzLDEuNDYsNi41MiwxLjQ2LDkuNjEsMCwuMTMsLjExLC4yNiwuMjEsLjQsLjMxLS41MSwuMzEtMS4wNiwuNTctMS42MiwuNzksLjMsLjU5LC42NCwxLjE2LDEuMDMsMS42OSwxLjU3LS40OSwzLjE3LTEuMjMsNC44MS0yLjQ2LC4zOS00LjE3LS42Ny03Ljc4LTIuODItMTAuOThaTTguODQsMTQuNjdjLS45NCwwLTEuNzEtLjg3LTEuNzEtMS45NHMuNzUtMS45NCwxLjcxLTEuOTQsMS43MiwuODcsMS43MSwxLjk0YzAsMS4wNi0uNzUsMS45NC0xLjcxLDEuOTRabTYuMzEsMGMtLjk0LDAtMS43MS0uODctMS43MS0xLjk0cy43NS0xLjk0LDEuNzEtMS45NCwxLjcyLC44NywxLjcxLDEuOTRjMCwxLjA2LS43NSwxLjk0LTEuNzEsMS45NFoiLz4KPC9zdmc%2B)](https://discord.gg/qUtxnK2NMf)[![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
+[![Join the Agora discord](https://img.shields.io/discord/1110910277110743103?label=Discord&logo=discord&logoColor=white&style=plastic&color=d7b023)![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
 
 [![Share on Reddit](https://img.shields.io/badge/-Share%20on%20Reddit-orange)](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=Swarms%20-%20the%20future%20of%20AI) [![Share on Hacker News](https://img.shields.io/badge/-Share%20on%20Hacker%20News-orange)](https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&t=Swarms%20-%20the%20future%20of%20AI) [![Share on Pinterest](https://img.shields.io/badge/-Share%20on%20Pinterest-red)](https://pinterest.com/pin/create/button/?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&media=https%3A%2F%2Fexample.com%2Fimage.jpg&description=Swarms%20-%20the%20future%20of%20AI) [![Share on WhatsApp](https://img.shields.io/badge/-Share%20on%20WhatsApp-green)](https://api.whatsapp.com/send?text=Check%20out%20Swarms%20-%20the%20future%20of%20AI%20%23swarms%20%23AI%0A%0Ahttps%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
