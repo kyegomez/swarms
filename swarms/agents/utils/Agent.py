@@ -615,3 +615,8 @@ class ExceptionTool(BaseTool):
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
         return query
+
+
+
+
+
