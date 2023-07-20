@@ -36,12 +36,15 @@ class Swarms:
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
 
-    def initialize_tools(self, llm_class):
+    def initialize_tools(self, llm_class, extra_tools=None):
         """
         Init tools
         
         Params:
             llm_class (class): The Language model class. Default is OpenAI
+
+        extra_tools = [CustomTool()]
+            worker_tools = swarms.initialize_tools(OpenAI, extra_tools)
         """
         try:
             llm = self.initialize_llm(llm_class)
@@ -55,6 +58,11 @@ class Swarms:
                 process_csv,
                 WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
             ]
+
+            if extra_tools:
+                tools.extend(extra_tools)
+
+
 
             assert tools is not None, "tools is not initialized"
             return tools
