@@ -1307,7 +1307,8 @@ from PIL import Image
 from transformers import BlipForConditionalGeneration, BlipProcessor
 
 # from core.prompts.file import IMAGE_PROMPT
-from swarms.prompts.prompts import IMAGE_PROMPT
+# from swarms.agents.prompts import IMAGE_PROMPT
+from swarms.agents.prompts import IMAGE_PROMPT
 
 from swarms.utils.main import BaseHandler
 
