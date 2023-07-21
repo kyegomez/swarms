@@ -75,7 +75,7 @@ setup(
         'jinja2==3.1.2',
         'python-multipart==0.0.6',
         'celery==5.2.7',
-        'redis==4.5.4',
+        'redis==4.6.0',
         'sentencepiece',
         'bitsandbytes==0.37.2',
         'psycopg2-binary==2.9.5',
