@@ -26,7 +26,7 @@ from langchain.agents.agent import AgentOutputParser
 from langchain.schema import AgentAction
 
 
-from swarms.prompts.prompts import EVAL_TOOL_RESPONSE
+from .prompts import EVAL_TOOL_RESPONSE
 
 
 

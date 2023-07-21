@@ -400,7 +400,7 @@ class FileHandler:
 
 #############===========================>
 
-from swarms.prompts.prompts import DATAFRAME_PROMPT
+from swarms.agents.prompts.prompts import DATAFRAME_PROMPT
 
 import pandas as pd
 class CsvToDataframe(BaseHandler):

@@ -3,7 +3,7 @@ from typing import Dict
 
 from langchain.schema import BaseOutputParser
 
-from swarms.prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
+from swarms.agents.prompts.prompts import EVAL_FORMAT_INSTRUCTIONS
 
 class EvalOutputParser(BaseOutputParser):
     @staticmethod

@@ -7,7 +7,7 @@ from langchain.callbacks.manager import CallbackManager
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.memory.chat_memory import BaseChatMemory
 from swarms.agents.tools.main import BaseToolSet, ToolsFactory
-from swarms.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
+from swarms.agents.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
 
 from swarms.agents.utils.agent_setup import AgentSetup
 # from .callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
