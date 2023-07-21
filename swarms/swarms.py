@@ -176,8 +176,8 @@ class Swarms:
             logging.error(f"An error occurred in run_swarms: {e}")
             return None
 
-# usage-
-def swarm(api_key="", objective=""):
+# usage-# usage-
+async def swarm(api_key="", objective=""):
     """
     Run the swarm with the given API key and objective.
 
@@ -197,15 +197,12 @@ def swarm(api_key="", objective=""):
         raise ValueError("A valid objective is required")
     try:
         swarms = Swarms(api_key)
-        loop = asyncio.get_event_loop()
-        tasks = [loop.create_task(swarms.run_swarms(objective))]
-        completed, pending = loop.run_until_complete(asyncio.wait(tasks))
-        results = [t.result() for t in completed]
-        if not results or any(result is None for result in results):
+        result = await swarms.run_swarms(objective)
+        if result is None:
             logging.error("Failed to run swarms")
         else:
-            logging.info(f"Successfully ran swarms with results: {results}")
-        return results
+            logging.info(f"Successfully ran swarms with results: {result}")
+        return result
     except Exception as e:
         logging.error(f"An error occured in swarm: {e}")
         return None
