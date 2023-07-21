@@ -98,6 +98,8 @@ setup(
         'typeguard',
         'pytesseract',
         'huggingface_hub',
+        'fastapi_cache',
+        'fastapi-limiter'
     ],
   classifiers=[
     'Development Status :: 4 - Beta',
