@@ -76,7 +76,7 @@ python-multipart==0.0.6
 
 celery==5.2.7
 redis==4.5.4
-sentencepiece==0.1.97
+sentencepiece==0.1.99
 
 bitsandbytes==0.37.2
 psycopg2-binary==2.9.5
