@@ -105,3 +105,6 @@ typeguard
 
 pytesseract
 huggingface_hub
+
+fastapi_cache
+fastapi-limiter
