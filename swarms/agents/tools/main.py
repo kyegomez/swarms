@@ -422,54 +422,54 @@ class ToolsFactory:
 
 ################## => stdout end
 
-# import os
-# import subprocess
-# import time
-# from datetime import datetime
-# from typing import Dict, List
+import os
+import subprocess
+import time
+from datetime import datetime
+from typing import Dict, List
 
-# from swarms.utils.main import ANSI, Color, Style # test
+from swarms.utils.main import ANSI, Color, Style # test
 
-# class Terminal(BaseToolSet):
-#     def __init__(self):
-#         self.sessions: Dict[str, List[SyscallTracer]] = {}
+class Terminal(BaseToolSet):
+    def __init__(self):
+        self.sessions: Dict[str, List[SyscallTracer]] = {}
 
-#     @tool(
-#         name="Terminal",
-#         description="Executes commands in a terminal."
-#         "If linux errno occurs, we have to solve the problem with the terminal. "
-#         "Input must be one valid command. "
-#         "Output will be any output from running that command.",
-#         scope=ToolScope.SESSION,
-#     )
-#     def execute(self, commands: str, get_session: SessionGetter) -> str:
-#         session, _ = get_session()
+    @tool(
+        name="Terminal",
+        description="Executes commands in a terminal."
+        "If linux errno occurs, we have to solve the problem with the terminal. "
+        "Input must be one valid command. "
+        "Output will be any output from running that command.",
+        scope=ToolScope.SESSION,
+    )
+    def execute(self, commands: str, get_session: SessionGetter) -> str:
+        session, _ = get_session()
 
-#         try:
-#             process = subprocess.Popen(
-#                 commands,
-#                 shell=True,
-#                 stdout=subprocess.PIPE,
-#                 stderr=subprocess.PIPE,
-#             )
-#             logger.info(ANSI("Realtime Terminal Output").to(Color.magenta()) + ": ")
+        try:
+            process = subprocess.Popen(
+                commands,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            logger.info(ANSI("Realtime Terminal Output").to(Color.magenta()) + ": ")
 
-#             output = ""
-#             tracer = StdoutTracer(
-#                 process,
-#                 on_output=lambda p, o: logger.info(
-#                     ANSI(p).to(Style.dim()) + " " + o.strip("\n")
-#                 ),
-#             )
-#             exitcode, output = tracer.wait_until_stop_or_exit()
-#         except Exception as e:
-#             output = str(e)
+            output = ""
+            tracer = StdoutTracer(
+                process,
+                on_output=lambda p, o: logger.info(
+                    ANSI(p).to(Style.dim()) + " " + o.strip("\n")
+                ),
+            )
+            exitcode, output = tracer.wait_until_stop_or_exit()
+        except Exception as e:
+            output = str(e)
 
-#         logger.debug(
-#             f"\nProcessed Terminal, Input Commands: {commands} "
-#             f"Output Answer: {output}"
-#         )
-#         return output
+        logger.debug(
+            f"\nProcessed Terminal, Input Commands: {commands} "
+            f"Output Answer: {output}"
+        )
+        return output
 
 
 # if __name__ == "__main__":
