@@ -1,6 +1,6 @@
 import os
 
-from swarms.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
+from swarms.agents.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
 from swarms.agents.tools.main import BaseToolSet
 from swarms.agents.tools.main import ToolsFactory
 
