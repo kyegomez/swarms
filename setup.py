@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.8.5',
+  version = '0.8.6',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -72,7 +72,6 @@ setup(
         'python-dotenv',
         'boto3',
         'uvicorn==0.21.1',
-        'python-==0.9.8',
         'jinja2==3.1.2',
         'python-multipart==0.0.6',
         'celery==5.2.7',
@@ -99,7 +98,7 @@ setup(
         'pytesseract',
         'huggingface_hub',
         'fastapi_cache',
-        'fastapi-limiter'
+        'fastapi-limiter',
     ],
   classifiers=[
     'Development Status :: 4 - Beta',
