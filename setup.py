@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'swarms',
   packages = find_packages(exclude=[]),
-  version = '0.9.5',
+  version = '0.9.6',
   license='MIT',
   description = 'Swarms - Pytorch',
   author = 'Kye Gomez',
@@ -35,7 +35,7 @@ setup(
         'albumentations',
         'basicsr',
         'controlnet-aux',
-        'diffusers==0.14.0',
+        'diffusers',
         'einops',
         'gradio',
         'imageio',
