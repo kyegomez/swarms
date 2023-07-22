@@ -138,12 +138,12 @@ class Swarms:
             todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
 
             #math tool
-            llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
+            # llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
 
             tools = [
                 Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for your objective. Note create a todo list then assign a ranking from 0.0 to 1.0 to each task, then sort the tasks based on the tasks most likely to achieve the objective. The Output: a todo list for that objective with rankings for each step from 0.1 Please be very clear what the objective is!"),
                 worker_node,
-                Tool(name="Calculator", func=llm_math_chain.run, description="useful for when you need to answer questions about math")
+                # Tool(name="Calculator", func=llm_math_chain.run, description="useful for when you need to answer questions about math")
             ]
 
             suffix = """Question: {task}\n{agent_scratchpad}"""
