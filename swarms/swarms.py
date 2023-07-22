@@ -3,9 +3,9 @@ import asyncio
 
 # from swarms.agents.tools.agent_tools import *
 from swarms.agents.tools.agent_tools import *
-from swarms.agents.workers.WorkerNode import WorkerNodeInitializer, worker_node
-from swarms.agents.boss.BossNode import BossNodeInitializer as BossNode
-from swarms.agents.workers.worker_ultra_node import WorkerUltra
+from swarms.workers.WorkerNode import WorkerNodeInitializer, worker_node
+from swarms.boss.boss_node import BossNodeInitializer as BossNode
+from swarms.workers.worker_ultra_node import WorkerUltra
 
 from langchain import LLMMathChain
 
