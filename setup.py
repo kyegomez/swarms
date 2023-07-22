@@ -23,6 +23,7 @@ setup(
         'langchain',
         'torch',
         'torchvision',
+        'torchaudio',
         'asyncio',
         'nest_asyncio',
         'bs4',
