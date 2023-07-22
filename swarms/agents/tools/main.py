@@ -16,8 +16,6 @@ from langchain.chat_models import ChatOpenAI
 import requests
 from bs4 import BeautifulSoup
 
-
-
 from swarms.utils.logger import logger
 class ToolScope(Enum):
     GLOBAL = "global"
