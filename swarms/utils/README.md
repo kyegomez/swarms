@@ -104,7 +104,7 @@ from langchain.vectorstores import FAISS
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 import faiss
-from swarms.agents.workers.auto_agent import AutoGPT
+from swarms.workers.auto_agent import AutoGPT
 from collections import deque
 from typing import Dict, Any
 
