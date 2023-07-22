@@ -15,6 +15,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 from swarms.utils.task import Task
 
+# TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models
+# TODO: Move away from OPENAI
 class Swarms:
     def __init__(self, openai_api_key="", use_vectorstore=True, use_async=True, human_in_the_loop=True):
         #openai_api_key: the openai key. Default is empty
@@ -137,16 +139,11 @@ class Swarms:
 
             #math tool
             llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
-            math_tool = Tool(
-                name="Calculator",
-                func=llm_math_chain.run,
-                description="useful for when you need to answer questions about math"
-            )
 
             tools = [
                 Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for your objective. Note create a todo list then assign a ranking from 0.0 to 1.0 to each task, then sort the tasks based on the tasks most likely to achieve the objective. The Output: a todo list for that objective with rankings for each step from 0.1 Please be very clear what the objective is!"),
                 worker_node,
-                math_tool
+                Tool(name="Calculator", func=llm_math_chain.run, description="useful for when you need to answer questions about math")
             ]
 
             suffix = """Question: {task}\n{agent_scratchpad}"""
