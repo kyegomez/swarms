@@ -30,7 +30,7 @@ from langchain.llms.openai import OpenAI
 
 # Grounding DINO
 # import groundingdino.datasets.transforms as T
-from swarms.agents.workers.models import (
+from swarms.workers.models import (
     Compose,
     Normalize,
     ToTensor,
@@ -48,12 +48,12 @@ from swarms.agents.workers.models import (
     RandomSelect
 )
 
-from swarms.agents.workers.models import build_model
-from swarms.agents.workers.models  import box_ops
-from swarms.agents.workers.models import SLConfig
-from swarms.agents.workers.models import clean_state_dict, get_phrases_from_posmap
+from swarms.workers.models import build_model
+from swarms.workers.models  import box_ops
+from swarms.workers.models import SLConfig
+from swarms.workers.models import clean_state_dict, get_phrases_from_posmap
 
-from swarms.agents.workers.models.segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
+from swarms.workers.models.segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
