@@ -7,6 +7,9 @@ from swarms.agents.workers.WorkerNode import WorkerNodeInitializer, worker_node
 from swarms.agents.boss.BossNode import BossNodeInitializer as BossNode
 from swarms.agents.workers.worker_ultra_node import WorkerUltra
 
+from langchain import LLMMathChain
+
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
@@ -88,7 +91,7 @@ class Swarms:
             logging.error(f"Failed to initialize vector store: {e}")
             return None
 
-    def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant"):
+    def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant", human_in_the_loop=True):
         """
         Init WorkerNode
 
@@ -104,7 +107,7 @@ class Swarms:
             # Initialize worker node
             llm = self.initialize_llm(ChatOpenAI)
             worker_node = WorkerNodeInitializer(llm=llm, tools=worker_tools, vectorstore=vectorstore)
-            worker_node.create_agent(ai_name=ai_name, ai_role="Assistant", human_in_the_loop=False, search_kwargs={}) # add search kwargs
+            worker_node.create_agent(ai_name=ai_name, ai_role="Assistant", human_in_the_loop=False, search_kwargs={}, human_in_the_loop=human_in_the_loop) # add search kwargs
 
             worker_node_tool = Tool(name="WorkerNode AI Agent", func=worker_node.run, description="Input: an objective with a todo list for that objective. Output: your task completed: Please be very clear what the objective and task instructions are. The Swarm worker agent is Useful for when you need to spawn an autonomous agent instance as a worker to accomplish any complex tasks, it can search the internet or write code or spawn child multi-modality models to process and generate images and text or audio and so on")
             return worker_node_tool
@@ -131,10 +134,20 @@ class Swarms:
             todo_prompt = PromptTemplate.from_template("You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating an worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn an worker agent after creating a plan and pass the objective and plan to the worker agent.")
             todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
 
+            #math tool
+            llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
+            math_tool = Tool(
+                    name="Calculator",
+                    func=llm_math_chain.run,
+                    description="useful for when you need to answer questions about math"
+                ),
+
             tools = [
                 Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for your objective. Note create a todo list then assign a ranking from 0.0 to 1.0 to each task, then sort the tasks based on the tasks most likely to achieve the objective. The Output: a todo list for that objective with rankings for each step from 0.1 Please be very clear what the objective is!"),
-                worker_node
+                worker_node,
+                math_tool
             ]
+
             suffix = """Question: {task}\n{agent_scratchpad}"""
             prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
             
@@ -211,3 +224,5 @@ def swarm(api_key="", objective=""):
     except Exception as e:
         logging.error(f"An error occured in swarm: {e}")
         return None
+
+

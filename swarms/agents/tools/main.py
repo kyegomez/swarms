@@ -2303,19 +2303,19 @@ list_tool.run({})
 #         raise NotImplementedError("transcribe_audio does not support async")
 ###########=========================>
 
-#======> Calculator
-from langchain import LLMMathChain
+# #======> Calculator
+# from langchain import LLMMathChain
 
-llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
-math_tool = Tool(
-        name="Calculator",
-        func=llm_math_chain.run,
-        description="useful for when you need to answer questions about math"
-    ),
+# llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
+# math_tool = Tool(
+#         name="Calculator",
+#         func=llm_math_chain.run,
+#         description="useful for when you need to answer questions about math"
+#     ),
 
-#####==========================================================================> TOOLS
-from langchain.tools.human.tool import HumanInputRun
-from langchain.tools import BaseTool, DuckDuckGoSearchRun
+# #####==========================================================================> TOOLS
+# from langchain.tools.human.tool import HumanInputRun
+# from langchain.tools import BaseTool, DuckDuckGoSearchRun
 
 
 
