@@ -17,6 +17,8 @@ from swarms.utils.task import Task
 
 # TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models
 # TODO: Move away from OPENAI
+# TODO: ADD Universal Communication Layer, a vectorstore
+# TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
 class Swarms:
     def __init__(self, openai_api_key="", use_vectorstore=True, use_async=True, human_in_the_loop=True):
         #openai_api_key: the openai key. Default is empty
