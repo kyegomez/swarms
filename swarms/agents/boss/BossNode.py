@@ -26,6 +26,7 @@ class BossNodeInitializer:
                 vectorstore=self.vectorstore,
                 task_execution_chain=self.agent_executor,
                 max_iterations=self.max_iterations,
+                human_in_the_loop=True
             )
         except ValidationError as e:
             logging.error(f"Validation Error while initializing BabyAGI: {e}")
