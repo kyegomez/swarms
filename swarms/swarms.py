@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 from swarms.utils.task import Task
 
 class Swarms:
-    def __init__(self, openai_api_key="", use_vectorstore=True):
+    def __init__(self, openai_api_key="", use_vectorstore=True, use_async=True):
         #openai_api_key: the openai key. Default is empty
         if not openai_api_key:
             logging.error("OpenAI key is not provided")
@@ -21,6 +21,7 @@ class Swarms:
         
         self.openai_api_key = openai_api_key
         self.use_vectorstore = use_vectorstore
+        self.use_async = use_async
 
     def initialize_llm(self, llm_class, temperature=0.5):
         """
@@ -150,7 +151,7 @@ class Swarms:
 
 
 
-    async def run_swarms(self, objective):
+    def run_swarms(self, objective):
         """
         Run the swarm with the given objective
 
@@ -169,15 +170,19 @@ class Swarms:
 
             task = boss_node.create_task(objective)
             logging.info(f"Running task: {task}")
-            result = await boss_node.run(task)
+            if self.use_async:
+                loop = asyncio.get_event_loop()
+                result = loop.run_until_complete(boss_node.run(task))
+            else:
+                result = boss_node.run(task)
             logging.info(f"Completed tasks: {task}")
             return result
         except Exception as e:
             logging.error(f"An error occurred in run_swarms: {e}")
             return None
-
+        
 # usage-# usage-
-async def swarm(api_key="", objective=""):
+def swarm(api_key="", objective=""):
     """
     Run the swarm with the given API key and objective.
 
@@ -196,8 +201,8 @@ async def swarm(api_key="", objective=""):
         logging.error("Invalid objective")
         raise ValueError("A valid objective is required")
     try:
-        swarms = Swarms(api_key)
-        result = await swarms.run_swarms(objective)
+        swarms = Swarms(api_key, use_async=False) # Turn off async
+        result = swarms.run_swarms(objective)
         if result is None:
             logging.error("Failed to run swarms")
         else:
