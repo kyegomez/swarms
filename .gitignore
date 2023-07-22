@@ -11,3 +11,4 @@ dataframe/
 static/generated
 swarms/__pycache__
 venv
+.DS_Store
