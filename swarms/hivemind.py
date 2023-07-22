@@ -1,4 +1,4 @@
-# many boss + workers in unison
+#  workers in unison
 #kye gomez jul 13 4:01pm, can scale up the number of swarms working on a probkem with `hivemind(swarms=4, or swarms=auto which will scale the agents depending on the complexity)`
 
 import concurrent.futures
@@ -11,8 +11,8 @@ from swarms.agents.tools.agent_tools import *
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 # add typechecking, documentation, and deeper error handling 
+# TODO: MANY WORKERS
 class HiveMind:
     def __init__(self, openai_api_key="", num_swarms=1, max_workers=None):
         self.openai_api_key = openai_api_key
