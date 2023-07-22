@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 from swarms.agents.tools.main import Terminal
 
-class WorkerNode:
+class WorkerNodeInitializer:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
 
     def __init__(self, llm, tools, vectorstore):
@@ -73,7 +73,7 @@ class WorkerNode:
     
 
 
-class WorkerNodeInitializer:
+class WorkerNode:
     def __init__(self, openai_api_key):
         if not openai_api_key:
             logging.error("OpenAI API key is not provided")
