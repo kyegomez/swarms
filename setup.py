@@ -30,7 +30,7 @@ setup(
         'duckduckgo_search',
         'faiss-cpu',
         'wget==3.2',
-        'accelerate==0.17.1',
+        'accelerate',
         'addict',
         'albumentations',
         'basicsr',
@@ -97,7 +97,7 @@ setup(
         'typeguard',
         'pytesseract',
         'huggingface_hub',
-        'fastapi_cache',
+        'fastapi-cache',
         'fastapi-limiter',
     ],
   classifiers=[
