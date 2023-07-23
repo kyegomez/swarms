@@ -131,26 +131,26 @@ message='Request to OpenAI API' method=post path=https://api.openai.com/v1/engin
 api_version=None data='{"input": ["Create the JavaScript code to capture user input and deploy the web GUI on port 4500."], "encoding_format": "base64"}' message='Post details'
 https://api.openai.com:443 "POST /v1/engines/text-embedding-ada-002/embeddings HTTP/1.1" 200 None
 message='OpenAI API response' path=https://api.openai.com/v1/engines/text-embedding-ada-002/embeddings processing_ms=40 request_id=d5225adb1208b38e2639a23afcccf29d response_code=200
-An error occurred in run_swarms: Tried to add ids that already exist: {'result_1'}
+An error occurred in run: Tried to add ids that already exist: {'result_1'}
 ╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
 │ /content/swarms/example.py:26 in <module>                                                        │
 │                                                                                                  │
 │   23 """                                                                                         │
 │   24                                                                                             │
 │   25 # Run Swarms                                                                                │
-│ ❱ 26 task = swarm.run_swarms(objective)                                                          │
+│ ❱ 26 task = swarm.run(objective)                                                          │
 │   27                                                                                             │
 │   28 print(task)                                                                                 │
 │   29                                                                                             │
 │                                                                                                  │
-│ /content/swarms/swarms/swarms.py:79 in run_swarms                                                │
+│ /content/swarms/swarms/swarms.py:79 in run                                                │
 │                                                                                                  │
 │    76 │   │   │   boss_node = self.initialize_boss_node(vectorstore, worker_node)                │
 │    77 │   │   │                                                                                  │
 │    78 │   │   │   task = boss_node.create_task(objective)                                        │
 │ ❱  79 │   │   │   return boss_node.execute_task(task)                                            │
 │    80 │   │   except Exception as e:                                                             │
-│    81 │   │   │   logging.error(f"An error occurred in run_swarms: {e}")                         │
+│    81 │   │   │   logging.error(f"An error occurred in run: {e}")                         │
 │    82 │   │   │   raise                                                                          │
 │                                                                                                  │
 │ /content/swarms/swarms/agents/boss/boss_agent.py:27 in execute_task                              │
