@@ -12,3 +12,6 @@ static/generated
 swarms/__pycache__
 venv
 .DS_Store
+
+.DS_STORE
+swarms/agents/.DS_Store
