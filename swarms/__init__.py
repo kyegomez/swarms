@@ -1,5 +1,5 @@
 # from swarms import Swarms, swarm
-from swarms.swarms import Swarms, swarm
+from swarms.swarms import HierarchicalSwarm, swarm
 from swarms.workers import worker_node
 from swarms.workers.worker_ultra_node import WorkerUltraNode, WorkerUltra
 from swarms.workers.worker_agent_ultra import worker_ultra_node

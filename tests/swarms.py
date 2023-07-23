@@ -19,9 +19,9 @@ class TestSwarms(unittest.TestCase):
         vectorstore = self.swarm.initialize_vectorstore()
         self.assertIsNotNone(vectorstore)
 
-    def test_run_swarms(self):
+    def test_run(self):
         objective = "Do a web search for 'OpenAI'"
-        result = self.swarm.run_swarms(objective)
+        result = self.swarm.run(objective)
         self.assertIsNotNone(result)
 
 
