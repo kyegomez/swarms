@@ -92,7 +92,7 @@
 #         return BossNode(llm, vectorstore, agent_executor, max_iterations=5)
 
 
-#     def run_swarms(self, objective, run_as=None):
+#     def run(self, objective, run_as=None):
 #         try:
 #             # Run the swarm with the given objective
 #             worker_tools = self.initialize_tools(OpenAI)
@@ -109,7 +109,7 @@
 #                 task = boss_node.create_task(objective)
 #                 return boss_node.execute_task(task)
 #         except Exception as e:
-#             logging.error(f"An error occurred in run_swarms: {e}")
+#             logging.error(f"An error occurred in run: {e}")
 #             raise
 
 
@@ -218,7 +218,7 @@
 #         agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
 #         return BossNode(self.openai_api_key, llm, vectorstore, agent_executor, verbose=True, max_iterations=5)
 
-#     def run_swarms(self, objective):
+#     def run(self, objective):
 #         # Run the swarm with the given objective
 #         llm = self.initialize_llm()
 #         worker_tools = self.initialize_tools(llm)

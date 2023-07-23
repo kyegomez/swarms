@@ -22,7 +22,7 @@ async def startup():
 
 @app.post("/chat", dependencies=[Depends(RateLimiter(times=2, minutes=1))])
 @cache(expire=60)  # Cache results for 1 minute
-async def run_swarms(swarm_input: SwarmInput):
+async def run(swarm_input: SwarmInput):
     try:
         results = swarm(swarm_input.api_key, swarm_input.objective)
         if not results:

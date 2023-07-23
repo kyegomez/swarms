@@ -22,7 +22,7 @@ swarm = Swarms(api_key=api_key)
 objective = "Please make a web GUI for using HTTP API server..."
 
 # Run Swarms
-result = swarm.run_swarms(objective)
+result = swarm.run(objective)
 
 print(result)
 ```
@@ -37,7 +37,7 @@ def __init__(self, openai_api_key)
 
 ## Methods
 
-### run_swarms(objective)
+### run(objective)
 
 Runs the swarm with the given objective by initializing the worker and boss nodes.
 
@@ -59,7 +59,7 @@ swarm = Swarms(api_key=api_key)
 objective = "Please make a web GUI for using HTTP API server..."
 
 # Run Swarms
-result = swarm.run_swarms(objective)
+result = swarm.run(objective)
 
 print(result)
 ```

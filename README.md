@@ -129,7 +129,7 @@ The ports you can use are 4500 and 6500.
 """
 
 # Run Swarms
-swarm.run_swarms(objective)
+swarm.run(objective)
 ```
 
 * Or just the worker no `BossNode`:
@@ -159,7 +159,7 @@ Here are some agents in the swarm you can use!
 | Agent        | Import Statement                                   | Example Usage                                           |
 |--------------|----------------------------------------------------|---------------------------------------------------------|
 | WorkerNode   | `from swarms import worker_node`                   | ```python api_key = "sksdsds" node = worker_node(api_key) objective = "Please make a web GUI for using HTTP API server..." task = node.run(objective) print(task)``` |
-| Swarms       | `from swarms.swarms import Swarms`                 | ```python import os from swarms.swarms import Swarms api_key = os.getenv("OPENAI_API_KEY") swarm = Swarms(openai_api_key=api_key) objective = "Please make a web GUI for using HTTP API server..." task = swarm.run_swarms(objective) print(task)``` |
+| Swarms       | `from swarms.swarms import Swarms`                 | ```python import os from swarms.swarms import Swarms api_key = os.getenv("OPENAI_API_KEY") swarm = Swarms(openai_api_key=api_key) objective = "Please make a web GUI for using HTTP API server..." task = swarm.run(objective) print(task)``` |
 
 
 ---

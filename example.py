@@ -1,10 +1,10 @@
 import os
-from swarms.swarms import Swarms
+from swarms.swarms import HierarchicalSwarm
 
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize Swarms with your API key
-swarm = Swarms(openai_api_key=api_key)
+swarm = HierarchicalSwarm(openai_api_key=api_key)
 
 # Define an objective
 objective = """
@@ -19,6 +19,6 @@ I want it to have neumorphism-style. Serve it on port 4500.
 """
 
 # Run Swarms
-task = swarm.run_swarms(objective)
+task = swarm.run(objective)
 
 print(task)

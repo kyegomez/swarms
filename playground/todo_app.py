@@ -1,11 +1,11 @@
-from swarms import Swarms
+from swarms import HierarchicalSwarm
 
 
 # Retrieve your API key from the environment or replace with your actual key
 api_key = "sksdsds"
 
-# Initialize Swarms with your API key
-swarm = Swarms(openai_api_key=api_key)
+# Initialize HierarchicalSwarm with your API key
+swarm = HierarchicalSwarm(openai_api_key=api_key)
 
 # Define an objective
 objective = """
@@ -16,5 +16,5 @@ The ports you can use are 4500 and 6500.
 
 """
 
-# Run Swarms
-swarm.run_swarms(objective)
+# Run HierarchicalSwarm
+swarm.run(objective)

@@ -7,19 +7,20 @@ from swarms.workers.WorkerNode import WorkerNodeInitializer, worker_node
 from swarms.boss.boss_node import BossNodeInitializer as BossNode
 from swarms.workers.worker_ultra_node import WorkerUltra
 
-from langchain import LLMMathChain
+from swarms.utils.task import Task
+from swarms.agents.models.hf import HuggingFaceLLM
 
+# from langchain import LLMMathChain
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
-from swarms.utils.task import Task
 
 # TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI
 # TODO: ADD Universal Communication Layer, a ocean vectorstore instance
 # TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
 # TODO: Add RLHF Data collection, ask user how the swarm is performing
-class Swarms:
+
+class HierarchicalSwarm:
     def __init__(self, openai_api_key="", use_vectorstore=True, use_async=True, human_in_the_loop=True):
         #openai_api_key: the openai key. Default is empty
         if not openai_api_key:
@@ -41,7 +42,10 @@ class Swarms:
         """
         try: 
             # Initialize language model
-            return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
+            if self.llm_class == OpenAI:
+                return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
+            else:
+                return self.llm_class(model_id="gpt-2", temperature=temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
 
@@ -164,7 +168,7 @@ class Swarms:
 
 
 
-    def run_swarms(self, objective):
+    def run(self, objective):
         """
         Run the swarm with the given objective
 
@@ -191,7 +195,7 @@ class Swarms:
             logging.info(f"Completed tasks: {task}")
             return result
         except Exception as e:
-            logging.error(f"An error occurred in run_swarms: {e}")
+            logging.error(f"An error occurred in run: {e}")
             return None
         
 # usage-# usage-
@@ -214,8 +218,8 @@ def swarm(api_key="", objective=""):
         logging.error("Invalid objective")
         raise ValueError("A valid objective is required")
     try:
-        swarms = Swarms(api_key, use_async=False) # Turn off async
-        result = swarms.run_swarms(objective)
+        swarms = HierarchicalSwarm(api_key, use_async=False) # Turn off async
+        result = swarms.run(objective)
         if result is None:
             logging.error("Failed to run swarms")
         else:
