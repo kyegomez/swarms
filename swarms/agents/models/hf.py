@@ -14,7 +14,6 @@ class HuggingFaceLLM:
         model: The loaded model instance.
         logger: Logger instance for the class.
     """
-
     def __init__(self, model_id: str, device: str = None, max_length: int = 20, quantize: bool = False, quantization_config: dict = None):
         """
         Constructs all the necessary attributes for the HuggingFaceLLM object.
@@ -50,7 +49,6 @@ class HuggingFaceLLM:
         except Exception as e:
             self.logger.error(f"Failed to load the model or the tokenizer: {e}")
             raise
-
     def generate_text(self, prompt_text: str, max_length: int = None):
         """
         Generates text based on the input prompt using the loaded model.
