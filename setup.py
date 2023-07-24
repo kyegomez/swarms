@@ -32,6 +32,7 @@ setup(
         'faiss-cpu',
         'wget==3.2',
         'accelerate',
+        'sphinx_rtd_theme',
         'addict',
         'albumentations',
         'basicsr',
