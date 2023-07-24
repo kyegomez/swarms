@@ -212,3 +212,5 @@ This code demonstrates the complete loop to repeat steps 3-7 until a stopping cr
 
 
 
+
+* Integrate petals to handle huggingface LLM
