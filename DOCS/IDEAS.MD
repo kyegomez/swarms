@@ -222,9 +222,13 @@ This code demonstrates the complete loop to repeat steps 3-7 until a stopping cr
 
 ```python
 
-from swarms import OpenAI, Orchestrator
+from swarms import OpenAI, Orchestrator, Swarm
 
-Orchestrator(OpenAI, nodes=40)
+orchestrated = Orchestrate(OpenAI, nodes=40) #handles all the task assignment and allocation and agent communication using a vectorstore as a universal communication layer and also handlles the task completion logic
+
+Objective = "Make a business website for a marketing consultancy"
+
+Swarms = (Swarms(orchestrated, auto=True, Objective))
 ```
 
 In terms of architecture, the swarm might look something like this:
@@ -245,3 +249,6 @@ In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Data
 
 - Weaknesses: An Omni-Vector Embedding Database might add complexity to the system in terms of setup and maintenance. It might also require significant computational resources, depending on the volume of data being handled and the complexity of the vectors. The handling and transmission of high-dimensional vectors could also pose challenges in terms of network load.
 
+
+
+* Handling absurdly long sequences => first transform the objective if it's more than 1000tokens into a txt file similiar to how Claude works => then chunk it into sizes of 8000 seq length embeddings => then embed it and store in the vector database => then connext the agent model to it
