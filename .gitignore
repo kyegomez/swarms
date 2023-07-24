@@ -15,3 +15,6 @@ venv
 
 .DS_STORE
 swarms/agents/.DS_Store
+
+_build
+
