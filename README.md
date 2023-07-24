@@ -111,13 +111,13 @@ Download via Github, and install requirements. Simple example by:
 * or create a new file:
 
 ```python
-from swarms.swarms import Swarms
+from swarms.swarms import HierarchicalSwarm
 
 # Retrieve your API key from the environment or replace with your actual key
 api_key = "sksdsds"
 
 # Initialize Swarms with your API key
-swarm = Swarms(openai_api_key=api_key)
+swarm = HierarchicalSwarm(openai_api_key=api_key)
 
 # Define an objective
 objective = """
