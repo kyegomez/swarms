@@ -214,3 +214,34 @@ This code demonstrates the complete loop to repeat steps 3-7 until a stopping cr
 
 
 * Integrate petals to handle huggingface LLM
+
+
+
+# Orchestrator
+* Takes in an agent class with vector store, then handles all the communication and scales up a swarm with number of agents and handles task assignment and task completion
+
+```python
+
+from swarms import OpenAI, Orchestrator
+
+Orchestrator(OpenAI, nodes=40)
+```
+
+In terms of architecture, the swarm might look something like this:
+
+```
+                                           (Orchestrator)
+                                             /        \
+           Tools + Vector DB -- (LLM Agent)---(Communication Layer)       (Communication Layer)---(LLM Agent)-- Tools + Vector DB 
+              /                  |                                           |                 \
+(Task Assignment)      (Task Completion)                    (Task Assignment)       (Task Completion)
+```
+
+Each LLM agent communicates with the orchestrator through a dedicated communication layer. The orchestrator assigns tasks to each LLM agent, which the agents then complete and return. This setup allows for a high degree of flexibility, scalability, and robustness.
+
+In the context of swarm LLMs, one could consider an **Omni-Vector Embedding Database** for communication. This database could store and manage the high-dimensional vectors produced by each LLM agent.
+
+- Strengths: This approach would allow for similarity-based lookup and matching of LLM-generated vectors, which can be particularly useful for tasks that involve finding similar outputs or recognizing patterns.
+
+- Weaknesses: An Omni-Vector Embedding Database might add complexity to the system in terms of setup and maintenance. It might also require significant computational resources, depending on the volume of data being handled and the complexity of the vectors. The handling and transmission of high-dimensional vectors could also pose challenges in terms of network load.
+
