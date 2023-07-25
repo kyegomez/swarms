@@ -110,3 +110,8 @@ fastapi_cache
 fastapi-limiter
 
 sphinx_rtd_theme
+pegasusx
+
+
+
+oceandb

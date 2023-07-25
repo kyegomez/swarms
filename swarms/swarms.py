@@ -21,9 +21,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # TODO: Add RLHF Data collection, ask user how the swarm is performing
 
 class HierarchicalSwarm:
-    def __init__(self, model_id: str = None, openai_api_key="", 
-                 use_vectorstore=True, embedding_size: int = None, use_async=True, 
-    human_in_the_loop=True, model_type: str = None, boss_prompt: str = None):
+    def __init__(self, model_id: str = None, 
+    openai_api_key="", 
+    use_vectorstore=True, embedding_size: int = None, use_async=True, 
+    human_in_the_loop=True, model_type: str = None, boss_prompt: str = None,
+    worker_prompt:str = None,
+    temperature=None,
+    max_iterations=None,
+    ):
         #openai_api_key: the openai key. Default is empty
         if not model_id:
             logging.error("Model ID is not provided")
@@ -38,12 +43,18 @@ class HierarchicalSwarm:
         
         self.use_async = use_async
         self.human_in_the_loop = human_in_the_loop
+        self.model_type = model_type
+
         self.embedding_size = embedding_size
-        
         self.boss_prompt = boss_prompt
+        self.worker_prompt = worker_prompt
+
+        self.temperature = temperature
+        self.max_iterations = max_iterations
 
 
-    def initialize_llm(self, llm_class, temperature=0.5):
+
+    def initialize_llm(self, llm_class):
         """
         Init LLM 
 
@@ -54,9 +65,9 @@ class HierarchicalSwarm:
         try: 
             # Initialize language model
             if self.llm_class == 'openai' or OpenAI:
-                return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
+                return llm_class(openai_api_key=self.openai_api_key, temperature=self.temperature)
             elif self.model_type == "huggingface":
-                return HuggingFaceLLM(model_id=self.model_id, temperature=temperature)
+                return HuggingFaceLLM(model_id=self.model_id, temperature=self.temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
 
@@ -97,9 +108,7 @@ class HierarchicalSwarm:
         """
         Init vector store
         """
-
-        try:
-                
+        try:     
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
             embedding_size = self.embedding_size or 8192
             index = faiss.IndexFlatL2(embedding_size)
@@ -119,21 +128,20 @@ class HierarchicalSwarm:
             llm_class (class): The Language model class. Default is ChatOpenAI
             ai_name (str): The AI name. Default is "Swarms worker AI assistant"        
         """
-
-        try:
-                
+        try:    
             # Initialize worker node
             llm = self.initialize_llm(ChatOpenAI)
             worker_node = WorkerNodeInitializer(llm=llm, tools=worker_tools, vectorstore=vectorstore)
             worker_node.create_agent(ai_name=ai_name, ai_role="Assistant", search_kwargs={}, human_in_the_loop=self.human_in_the_loop) # add search kwargs
+            worker_description = self.worker_prompt
 
-            worker_node_tool = Tool(name="WorkerNode AI Agent", func=worker_node.run, description="Input: an objective with a todo list for that objective. Output: your task completed: Please be very clear what the objective and task instructions are. The Swarm worker agent is Useful for when you need to spawn an autonomous agent instance as a worker to accomplish any complex tasks, it can search the internet or write code or spawn child multi-modality models to process and generate images and text or audio and so on")
+            worker_node_tool = Tool(name="WorkerNode AI Agent", func=worker_node.run, description= worker_description or "Input: an objective with a todo list for that objective. Output: your task completed: Please be very clear what the objective and task instructions are. The Swarm worker agent is Useful for when you need to spawn an autonomous agent instance as a worker to accomplish any complex tasks, it can search the internet or write code or spawn child multi-modality models to process and generate images and text or audio and so on")
             return worker_node_tool
         except Exception as e:
             logging.error(f"Failed to initialize worker node: {e}")
             raise
 
-    def initialize_boss_node(self, vectorstore, worker_node, llm_class=OpenAI, max_iterations=5, verbose=False):
+    def initialize_boss_node(self, vectorstore, worker_node, llm_class=OpenAI, max_iterations=None, verbose=False):
         """
         Init BossNode
 
@@ -167,7 +175,7 @@ class HierarchicalSwarm:
             agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
 
             agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=verbose)
-            return BossNode(llm, vectorstore, agent_executor, max_iterations=max_iterations)
+            return BossNode(llm, vectorstore, agent_executor, max_iterations=self.max_iterations)
         except Exception as e:
             logging.error(f"Failed to initialize boss node: {e}")
             raise
@@ -206,7 +214,7 @@ class HierarchicalSwarm:
             return None
         
 # usage-# usage-
-def swarm(api_key="", objective="", model_type=""):
+def swarm(api_key="", objective="", model_type="", model_id=""):
     """
     Run the swarm with the given API key and objective.
 
@@ -225,7 +233,7 @@ def swarm(api_key="", objective="", model_type=""):
         logging.error("Invalid objective")
         raise ValueError("A valid objective is required")
     try:
-        swarms = HierarchicalSwarm(api_key, use_async=False, model_type=model_type) # Turn off async
+        swarms = HierarchicalSwarm(api_key,  model_id, use_async=False, model_type=model_type) # Turn off async
         result = swarms.run(objective)
         if result is None:
             logging.error("Failed to run swarms")
@@ -235,5 +243,4 @@ def swarm(api_key="", objective="", model_type=""):
     except Exception as e:
         logging.error(f"An error occured in swarm: {e}")
         return None
-
 
