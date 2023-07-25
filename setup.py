@@ -27,6 +27,8 @@ setup(
         'asyncio',
         'nest_asyncio',
         'bs4',
+        'pegasusx',
+        'oceandb',
         'playwright',
         'duckduckgo_search',
         'faiss-cpu',
