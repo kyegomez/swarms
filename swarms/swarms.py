@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # TODO: Add RLHF Data collection, ask user how the swarm is performing
 
 class HierarchicalSwarm:
-    def __init__(self, model_id: str = None, openai_api_key="", use_vectorstore=True, use_async=True, human_in_the_loop=True, model_type: str = None):
+    def __init__(self, model_id: str = None, openai_api_key="", use_vectorstore=True, embedding_size: int = None, use_async=True, human_in_the_loop=True, model_type: str = None):
         #openai_api_key: the openai key. Default is empty
         if not model_id:
             logging.error("Model ID is not provided")
@@ -50,8 +50,6 @@ class HierarchicalSwarm:
                 return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
             elif self.model_type == "huggingface":
                 return HuggingFaceLLM(model_id=self.model_id, temperature=temperature)
-            else:
-                return self.llm_class(model_id="gpt-2", temperature=temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
 
@@ -98,7 +96,7 @@ class HierarchicalSwarm:
         try:
                 
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = 1536
+            embedding_size = 9000
             index = faiss.IndexFlatL2(embedding_size)
 
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
@@ -149,13 +147,11 @@ class HierarchicalSwarm:
             todo_prompt = PromptTemplate.from_template("You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating an worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn an worker agent after creating a plan and pass the objective and plan to the worker agent.")
             todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
 
-            #math tool
-            # llm_math_chain = LLMMathChain.from_llm(llm=llm, verbose=True)
+
 
             tools = [
                 Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for your objective. Note create a todo list then assign a ranking from 0.0 to 1.0 to each task, then sort the tasks based on the tasks most likely to achieve the objective. The Output: a todo list for that objective with rankings for each step from 0.1 Please be very clear what the objective is!"),
                 worker_node,
-                # Tool(name="Calculator", func=llm_math_chain.run, description="useful for when you need to answer questions about math")
             ]
 
             suffix = """Question: {task}\n{agent_scratchpad}"""
