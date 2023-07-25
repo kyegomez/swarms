@@ -46,7 +46,7 @@ class HierarchicalSwarm:
         """
         try: 
             # Initialize language model
-            if self.llm_class == OpenAI:
+            if self.llm_class == 'openai' or OpenAI:
                 return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
             elif self.model_type == "huggingface":
                 return HuggingFaceLLM(model_id=self.model_id, temperature=temperature)
@@ -96,7 +96,7 @@ class HierarchicalSwarm:
         try:
                 
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = 9000
+            embedding_size = self.embedding_size or 8192
             index = faiss.IndexFlatL2(embedding_size)
 
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
