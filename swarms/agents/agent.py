@@ -19,7 +19,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class AgentNodeInitializer:
     """Useful for when you need to spawn an autonomous agent instance as a agent to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
 
-    def __init__(self, llm, tools, vectorstore):
+    def __init__(self, 
+    llm, 
+    tools, 
+    vectorstore, 
+    temperature, 
+    model_type: str=None, 
+    human_in_the_loop=True,
+    model_id: str = None,
+    embedding_size: int = 8192,
+    system_prompt: str = None,
+    max_iterations: int = None):
         if not llm or not tools or not vectorstore:
             logging.error("llm, tools, and vectorstore cannot be None.")
             raise ValueError("llm, tools, and vectorstore cannot be None.")
@@ -27,9 +37,23 @@ class AgentNodeInitializer:
         self.llm = llm
         self.tools = tools
         self.vectorstore = vectorstore
+        
         self.agent = None
+        self.temperature = temperature
+        self.model_type = model_type
+        
+        self.human_in_the_loop = human_in_the_loop
+        self.prompt = prompt
+        self.model_id = model_id
 
-    def create_agent(self, ai_name="Swarm Agent AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={}, verbose=False):
+        self.embedding_size = embedding_size
+        self.system_prompt system_prompt
+
+
+
+
+
+    def create_agent(self, ai_name="Swarm Agent AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={}, verbose=False):
         logging.info("Creating agent in AgentNode")
         try:
             self.agent = AutoGPT.from_llm_and_tools(
@@ -78,16 +102,23 @@ class AgentNode:
         
         self.openai_api_key = openai_api_key
 
-    def initialize_llm(self, llm_class, temperature=0.5):
-        if not llm_class:
-            logging.error("llm_class cannot be none")
-            raise ValueError("llm_class cannot be None")
-        
-        try:
-            return llm_class(openai_api_key=self.openai_api_key, temperature=temperature)
+    def initialize_llm(self, llm_class):
+        """
+        Init LLM 
+
+        Params:
+            llm_class(class): The Language model class. Default is OpenAI.
+            temperature (float): The Temperature for the language model. Default is 0.5
+        """
+        try: 
+            # Initialize language model
+            if self.llm_class == 'openai' or OpenAI:
+                return llm_class(openai_api_key=self.openai_api_key, temperature=self.temperature)
+            elif self.model_type == "huggingface":
+                return HuggingFaceLLM(model_id=self.model_id, temperature=self.temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
-            raise
+
 
     def initialize_tools(self, llm_class):
         if not llm_class:
@@ -116,8 +147,7 @@ class AgentNode:
     def initialize_vectorstore(self):
         try:
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = 1536
-            index = faiss.IndexFlatL2(embedding_size)
+            index = faiss.IndexFlatL2(self.embedding_size)
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
@@ -137,7 +167,11 @@ class AgentNode:
             logging.error(f"Failed to create agent node: {e}")
             raise
 
-def agent(openai_api_key):
+def agent(openai_api_key, ojective, model_type, model_id):
+    if not objective or not isinstance(objective, str):
+        logging.error("Invalid objective")
+        raise ValueError("A valid objective is required")
+
     if not openai_api_key:
         logging.error("OpenAI API key is not provided")
         raise ValueError("OpenAI API key is required")
