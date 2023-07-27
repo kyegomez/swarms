@@ -178,6 +178,7 @@ def agent(openai_api_key, ojective, model_type, model_id):
     try:
         initializer = AgentNodeInitializer(openai_api_key)
         agent = initializer.create_agent()
+        agent = agent.run(objective)
         return agent
     except Exception as e:
         logging.error(f"An error occured in agent: {e}")
