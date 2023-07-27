@@ -4,15 +4,10 @@ from swarms.utils.logger import logger
 
 from langchain.tools import BaseTool
 
-from langchain.callbacks.manager import (
-    AsyncCallbackManagerForToolRun,
-    CallbackManagerForToolRun,
-)
-from typing import List, Any, Dict, Optional, Type
+from typing import List, Any, Optional
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
 import logging
-from pydantic import BaseModel, Extra
 from swarms.agents.models.hf import HuggingFaceLLM
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

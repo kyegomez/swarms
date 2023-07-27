@@ -9,7 +9,6 @@
 import datetime
 import os
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -134,7 +133,7 @@ class COCOVisualizer:
 
     def addtgt(self, tgt):
         """ """
-        if tgt is None or not "boxes" in tgt:
+        if tgt is None or "boxes" not in tgt:
             ax = plt.gca()
 
             if "caption" in tgt:

@@ -1,6 +1,6 @@
 import pytest
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from swarms.swarms import HierarchicalSwarm  # replace with your actual module name
 
 @pytest.fixture
@@ -69,5 +69,5 @@ def test_initialize_tools_with_extra_tools(mock_llm, swarm):
 @patch('your_module.FAISS')
 def test_initialize_vectorstore(mock_faiss, mock_openai_embeddings, swarm):
     mock_openai_embeddings.return_value.embed_query = 'embed_query'
-    vectorstore = swarm.initialize_vectorstore()
+    swarm.initialize_vectorstore()
     mock_faiss.assert_called_once_with('embed_query', instance_of(faiss.IndexFlatL2), instance_of(InMemoryDocstore), {})

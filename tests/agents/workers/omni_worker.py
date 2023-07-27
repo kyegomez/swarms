@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import Mock
 from swarms.worker.omni_worker import OmniWorkerAgent  # replace 'yourmodule' with the actual module name
 
 @pytest.fixture

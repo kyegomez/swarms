@@ -2,7 +2,6 @@ import typer
 from groundingdino.util.inference import load_model, load_image, predict
 from tqdm import tqdm
 import torchvision
-import torch
 import fiftyone as fo
 
 
@@ -23,7 +22,6 @@ def main(
     
     dataset = fo.Dataset.from_images_dir(image_directory)
 
-    samples = []
 
     if subsample is not None: 
         

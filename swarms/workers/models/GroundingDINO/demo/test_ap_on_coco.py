@@ -1,12 +1,9 @@
 import argparse
-import os
-import sys
 import time
 
-import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, DistributedSampler
+from torch.utils.data import DataLoader
 
 from groundingdino.models import build_model
 import groundingdino.datasets.transforms as T

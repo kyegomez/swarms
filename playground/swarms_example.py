@@ -1,5 +1,4 @@
 from swarms import HierarchicalSwarm
-import os
 
 # Retrieve your API key from the environment or replace with your actual key
 api_key = ""

@@ -42,6 +42,6 @@ async def run(swarm_input: SwarmInput):
     except ValueError as ve:
         logging.error("A ValueError occurred", exc_info=True)
         raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
+    except Exception:
         logging.error("An error occurred", exc_info=True)
         raise HTTPException(status_code=500, detail="An unexpected error occurred")

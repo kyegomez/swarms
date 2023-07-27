@@ -1,8 +1,7 @@
 import pytest
 import torch
-from unittest.mock import Mock, MagicMock
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from swarms.agents.models.hf import HuggingFaceLLM  # replace with actual import
+from unittest.mock import Mock
+from swarms.agents.models.hf import HuggingFaceLLM  
 
 
 @pytest.fixture
@@ -50,7 +49,7 @@ def test_init_with_quantize(hugging_face_llm, mock_autotokenizer, mock_automodel
     }
     mock_bitsandbytesconfig.return_value = quantization_config
 
-    hugging_face_llm = HuggingFaceLLM(model_id='test', quantize=True)
+    HuggingFaceLLM(model_id='test', quantize=True)
 
     mock_bitsandbytesconfig.assert_called_once_with(**quantization_config)
     mock_autotokenizer.from_pretrained.assert_called_once_with('test')

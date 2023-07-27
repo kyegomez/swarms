@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import Mock, MagicMock
-from swarms.workers.worker_agent_ultra import WorkerUltraNode, WorkerUltraNodeInitializer  # import your module here
+from unittest.mock import Mock
+from swarms.workers.worker_agent_ultra import WorkerUltraNode  # import your module here
 
 def test_create_agent():
     mock_llm = Mock()
@@ -42,4 +42,4 @@ def test_worker_node():
 
 def test_worker_node_no_key():
     with pytest.raises(ValueError):
-        worker = worker_ultra_node(None)
+        worker_ultra_node(None)

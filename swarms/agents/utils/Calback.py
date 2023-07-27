@@ -51,17 +51,17 @@ class EVALCallbackHandler(BaseCallbackHandler):
     def on_chain_start(
         self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
     ) -> None:
-        logger.info(ANSI(f"Entering new chain.").to(Color.green(), Style.italic()))
+        logger.info(ANSI("Entering new chain.").to(Color.green(), Style.italic()))
         logger.info(ANSI("Prompted Text").to(Color.yellow()) + f': {inputs["input"]}\n')
 
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> None:
-        logger.info(ANSI(f"Finished chain.").to(Color.green(), Style.italic()))
+        logger.info(ANSI("Finished chain.").to(Color.green(), Style.italic()))
 
     def on_chain_error(
         self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any
     ) -> None:
         logger.error(
-            ANSI(f"Chain Error").to(Color.red()) + ": " + dim_multiline(str(error))
+            ANSI("Chain Error").to(Color.red()) + ": " + dim_multiline(str(error))
         )
 
     def on_tool_start(
