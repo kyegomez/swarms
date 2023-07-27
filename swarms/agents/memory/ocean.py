@@ -21,6 +21,13 @@ class OceanDB:
             return collection
         except Exception as e:
             logging.error(f"Failed to create collection. Error {e}")
+
+    def append_document(self, collection, document: str, id: str):
+        try:
+            return collection.add(documents=[document], ids[id])
+        except Exception as e:
+            logging.error(f"Faield to append document to the collection. Error {e}")
+            raise
     
     def add_documents(self, collection, documents: List[str], ids: List[str]):
         try:
