@@ -1,5 +1,5 @@
 #input agent or multiple: => it handles multi agent communication, it handles task assignment, task execution, report back with a status, auto scaling,  number of agent nodes,
-#make it optional to have distributed communication protocols, trco, rdp, http, microsoervice
+#make it optional to have distributed communication protocols, trco, rdp, http, microsoervice, make it optional to collect data from users runs
 """
 # Orchestrator
 * Takes in an agent class with vector store, then handles all the communication and scales up a swarm with number of agents and handles task assignment and task completion
@@ -14,6 +14,10 @@ Objective = "Make a business website for a marketing consultancy"
 
 Swarms = (Swarms(orchestrated, auto=True, Objective))
 ```
+
+
+
+
 
 In terms of architecture, the swarm might look something like this:
 
@@ -110,6 +114,39 @@ class Orchestrator(ABC):
     def get_vector_db(self):
         """Retrieve the vector database"""
         return self.vector_db
+
+    def append_to_db(self, collection, result: str):
+        """append the result of the swarm to a specifici collection in the database"""
+        try:
+            self.vector_db.append_document(collection, result, id=str(id(result)))
+        except Exception as e:
+            logging.error(f"Failed to append the agent output to database. Error: {e}")
+            raise
+
+    def run(self, objective:str, collection):
+        """Runs"""
+
+        if not objective or not isinstance(objective, str):
+            logging.error("Invalid objective")
+            raise ValueError("A valid objective is required")
+        
+        try:
+            #add objective to agent
+            self.task_queue.append(objective)
+
+            #assign tasks to agents
+            results = [self.assign_task() for _ in range(len(self.task_queue))]
+            
+            for result in results:
+                self.append_to_db(collection, result)
+            
+
+            logging.info(f"Successfully ran swarms with results: {results}")
+            return results
+        except Exception as e:
+            logging.error(f"An error occured in swarm: {e}")
+            return None
+
 
 
 
