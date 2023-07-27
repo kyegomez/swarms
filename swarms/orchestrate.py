@@ -1,3 +1,10 @@
+#input agent or multiple: => it handles multi agent communication, it handles task assignment, task execution, report back with a status, auto scaling,  number of agent nodes, 
+"""
+from swarms import WorkerNode, Orchestrate
+
+Orchestrate(WorkerNode, autoscale=True, nodes=int, swarm_type="flat")
+
+"""
 from abc import ABC, abstractmethod
 import celery
 from typing import List, Dict, Any
@@ -29,3 +36,9 @@ class Orchestrator(ABC):
     def get_vector_db(self) -> np.ndarray:
         """Retrieve the vector database"""
         pass
+
+
+
+#PRE CONFIGURED AGENTS WITH domain explicit TOOLS
+#Build your own Agent
+# Learn from previous runs in session management => it's a sucessful run => omniversal memory for all swarms  
