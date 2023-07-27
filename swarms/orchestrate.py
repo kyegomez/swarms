@@ -135,7 +135,7 @@ class Orchestrator(ABC):
             self.task_queue.append(objective)
 
             #assign tasks to agents
-            results = [self.assign_task() for _ in range(len(self.task_queue))]
+            results = [self.assign_task(agent_id, task) for agent_id, task in zip(range(len(self.agents)), self.task_queue)]
             
             for result in results:
                 self.append_to_db(collection, result)
