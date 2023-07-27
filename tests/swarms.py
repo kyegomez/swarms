@@ -1,64 +1,73 @@
-import unittest
-import swarms
-from swarms.workers.worker_node import WorkerNode
-from swarms.boss.BossNode import BossNode
+import pytest
+import logging
+from unittest.mock import Mock, patch
+from swarms.swarms import HierarchicalSwarm  # replace with your actual module name
 
-class TestSwarms(unittest.TestCase):
-    def setUp(self):
-        self.swarm = swarms.Swarms('fake_api_key')
+@pytest.fixture
+def swarm():
+    return HierarchicalSwarm(
+        model_id='gpt-4', 
+        openai_api_key='some_api_key', 
+        use_vectorstore=True, 
+        embedding_size=1024, 
+        use_async=False, 
+        human_in_the_loop=True, 
+        model_type='openai', 
+        boss_prompt='boss', 
+        worker_prompt='worker', 
+        temperature=0.5,
+        max_iterations=100,
+        logging_enabled=True
+    )
 
-    def test_initialize_llm(self):
-        llm = self.swarm.initialize_llm(swarms.ChatOpenAI)
-        self.assertIsNotNone(llm)
+@pytest.fixture
+def swarm_no_logging():
+    return HierarchicalSwarm(logging_enabled=False)
 
-    def test_initialize_tools(self):
-        tools = self.swarm.initialize_tools(swarms.ChatOpenAI)
-        self.assertIsNotNone(tools)
+def test_swarm_init(swarm):
+    assert swarm.model_id == 'gpt-4'
+    assert swarm.openai_api_key == 'some_api_key'
+    assert swarm.use_vectorstore
+    assert swarm.embedding_size == 1024
+    assert not swarm.use_async
+    assert swarm.human_in_the_loop
+    assert swarm.model_type == 'openai'
+    assert swarm.boss_prompt == 'boss'
+    assert swarm.worker_prompt == 'worker'
+    assert swarm.temperature == 0.5
+    assert swarm.max_iterations == 100
+    assert swarm.logging_enabled
+    assert isinstance(swarm.logger, logging.Logger)
 
-    def test_initialize_vectorstore(self):
-        vectorstore = self.swarm.initialize_vectorstore()
-        self.assertIsNotNone(vectorstore)
+def test_swarm_no_logging_init(swarm_no_logging):
+    assert not swarm_no_logging.logging_enabled
+    assert swarm_no_logging.logger.disabled
 
-    def test_run(self):
-        objective = "Do a web search for 'OpenAI'"
-        result = self.swarm.run(objective)
-        self.assertIsNotNone(result)
+@patch('your_module.OpenAI')
+@patch('your_module.HuggingFaceLLM')
+def test_initialize_llm(mock_huggingface, mock_openai, swarm):
+    swarm.initialize_llm('openai')
+    mock_openai.assert_called_once_with(openai_api_key='some_api_key', temperature=0.5)
+    
+    swarm.initialize_llm('huggingface')
+    mock_huggingface.assert_called_once_with(model_id='gpt-4', temperature=0.5)
 
+@patch('your_module.HierarchicalSwarm.initialize_llm')
+def test_initialize_tools(mock_llm, swarm):
+    mock_llm.return_value = 'mock_llm_class'
+    tools = swarm.initialize_tools('openai')
+    assert 'mock_llm_class' in tools
 
-class TestWorkerNode(unittest.TestCase):
-    def setUp(self):
-        swarm = swarms.Swarms('fake_api_key')
-        worker_tools = swarm.initialize_tools(swarms.ChatOpenAI)
-        vectorstore = swarm.initialize_vectorstore()
-        self.worker_node = swarm.initialize_worker_node(worker_tools, vectorstore)
+@patch('your_module.HierarchicalSwarm.initialize_llm')
+def test_initialize_tools_with_extra_tools(mock_llm, swarm):
+    mock_llm.return_value = 'mock_llm_class'
+    tools = swarm.initialize_tools('openai', extra_tools=['tool1', 'tool2'])
+    assert 'tool1' in tools
+    assert 'tool2' in tools
 
-    def test_create_agent(self):
-        self.worker_node.create_agent("Worker 1", "Assistant", False, {})
-        self.assertIsNotNone(self.worker_node.agent)
-
-    def test_run(self):
-        tool_input = {'prompt': "Search the web for 'OpenAI'"}
-        result = self.worker_node.run(tool_input)
-        self.assertIsNotNone(result)
-
-
-class TestBossNode(unittest.TestCase):
-    def setUp(self):
-        swarm = swarms.Swarms('fake_api_key')
-        worker_tools = swarm.initialize_tools(swarms.ChatOpenAI)
-        vectorstore = swarm.initialize_vectorstore()
-        worker_node = swarm.initialize_worker_node(worker_tools, vectorstore)
-        self.boss_node = swarm.initialize_boss_node(vectorstore, worker_node)
-
-    def test_create_task(self):
-        task = self.boss_node.create_task("Do a web search for 'OpenAI'")
-        self.assertIsNotNone(task)
-
-    def test_execute_task(self):
-        task = self.boss_node.create_task("Do a web search for 'OpenAI'")
-        result = self.boss_node.execute_task(task)
-        self.assertIsNotNone(result)
-
-
-if __name__ == '__main__':
-    unittest.main()
+@patch('your_module.OpenAIEmbeddings')
+@patch('your_module.FAISS')
+def test_initialize_vectorstore(mock_faiss, mock_openai_embeddings, swarm):
+    mock_openai_embeddings.return_value.embed_query = 'embed_query'
+    vectorstore = swarm.initialize_vectorstore()
+    mock_faiss.assert_called_once_with('embed_query', instance_of(faiss.IndexFlatL2), instance_of(InMemoryDocstore), {})
