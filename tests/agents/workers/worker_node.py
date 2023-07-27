@@ -2,7 +2,7 @@ import pytest
 from swarms.agents.tools.agent_tools import *
 from unittest.mock import MagicMock, patch
 from pydantic import ValidationError
-from swarms.worker.worker_nodegit add  import WorkerNodeInitializer, WorkerNode  # replace your_module with actual module name
+from swarms.worker.worker_node import WorkerNodeInitializer, WorkerNode  # replace your_module with actual module name
 
 
 # Mock Tool for testing
