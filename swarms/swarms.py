@@ -3,7 +3,7 @@ import asyncio
 
 # from swarms.agents.tools.agent_tools import *
 from swarms.agents.tools.agent_tools import *
-from swarms.workers.WorkerNode import WorkerNodeInitializer, worker_node
+from swarms.workers.worker_node import WorkerNodeInitializer, worker_node
 from swarms.boss.boss_node import BossNodeInitializer as BossNode
 from swarms.workers.worker_ultra_node import WorkerUltra
 
@@ -11,7 +11,6 @@ from swarms.utils.task import Task
 from swarms.agents.models.hf import HuggingFaceLLM
 
 # from langchain import LLMMathChain
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
@@ -19,6 +18,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # TODO: ADD Universal Communication Layer, a ocean vectorstore instance
 # TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
 # TODO: Add RLHF Data collection, ask user how the swarm is performing
+# TODO: Create an onboarding process if not settings are preconfigured like `from swarms import Swarm, Swarm()` => then initiate onboarding name your swarm + provide purpose + etc 
+# TODO: Off
 
 class HierarchicalSwarm:
     def __init__(self, model_id: str = None, 
