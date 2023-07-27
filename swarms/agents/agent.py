@@ -178,7 +178,7 @@ class AgentNode:
             logging.error(f"Failed to create agent node: {e}")
             raise
 
-def agent(openai_api_key, objective, model_type, model_id):
+def agent(openai_api_key, objective):
     if not objective or not isinstance(objective, str):
         logging.error("Invalid objective")
         raise ValueError("A valid objective is required")
