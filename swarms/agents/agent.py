@@ -16,83 +16,93 @@ from swarms.agents.models.hf import HuggingFaceLLM
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 class AgentNodeInitializer:
-    """Useful for when you need to spawn an autonomous agent instance as a agent to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
+    """Useful for spawning autonomous agent instances to accomplish complex tasks."""
 
     def __init__(self, 
-    llm, 
-    tools, 
-    vectorstore, 
-    temperature, 
-    model_type: str=None, 
-    human_in_the_loop=True,
-    model_id: str = None,
-    embedding_size: int = 8192,
-    system_prompt: str = None,
-    max_iterations: int = None):
+                 llm: Optional[Any] = None, 
+                 tools: Optional[List[BaseTool]] = None, 
+                 vectorstore: Optional[List[Any]] = None, 
+                 temperature: float = 0.5,
+                 model_type: Optional[str] = None, 
+                 human_in_the_loop: bool = True,
+                 model_id: Optional[str] = None,
+                 embedding_size: int = 8192,
+                 system_prompt: Optional[str] = None,
+                 max_iterations: Optional[int] = None,
+                 agent_name: Optional[str] = None,
+                 agent_role: Optional[str] = None,
+                 verbose: bool = False,
+                 openai_api_key: Optional[str] = None):
 
-    
-        if not llm or not tools or not vectorstore:
-            logging.error("llm, tools, and vectorstore cannot be None.")
-            raise ValueError("llm, tools, and vectorstore cannot be None.")
-        
-        self.llm = llm
-        self.tools = tools
-        self.vectorstore = vectorstore
-        
-        self.agent = None
+        if not openai_api_key and (model_type is None or model_type.lower() == 'openai'):
+            raise ValueError("OpenAI API key cannot be None when model_type is 'openai'")
+
+        self.llm = llm or self.initialize_llm(model_type, model_id, openai_api_key, temperature)
+        self.tools = tools or []
+        self.vectorstore = vectorstore or []
+
         self.temperature = temperature
         self.model_type = model_type
-        
         self.human_in_the_loop = human_in_the_loop
-        self.prompt = prompt
+
         self.model_id = model_id
-
         self.embedding_size = embedding_size
-        self.system_prompt system_prompt
+        self.system_prompt = system_prompt
 
+        self.agent_name = agent_name
+        self.agent_role = agent_role
+        self.verbose = verbose
 
+        self.openai_api_key = openai_api_key
+        self.agent = None
+        
+        self.initialize_agent()
 
-
-
-    def create_agent(self, ai_name="Swarm Agent AI Assistant", ai_role="Assistant", human_in_the_loop=True, search_kwargs={}, verbose=False):
-        logging.info("Creating agent in AgentNode")
+    def initialize_llm(self, model_type: str, model_id: str, openai_api_key: str, temperature: float):
         try:
-            self.agent = AutoGPT.from_llm_and_tools(
-                ai_name=ai_name,
-                ai_role=ai_role,
-                tools=self.tools,
-                llm=self.llm,
-                memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
-                human_in_the_loop=human_in_the_loop,
-                chat_history_memory=FileChatMessageHistory("chat_history.txt"),
-            )
-            # self.agent.chain.verbose = verbose
+            if model_type.lower() == 'openai':
+                return ChatOpenAI(openai_api_key=openai_api_key, temperature=temperature)
+            elif model_type.lower() == 'huggingface':
+                return HuggingFaceLLM(model_id=model_id, temperature=temperature)
+            else:
+                raise ValueError("Invalid model_type. It should be either 'openai' or 'huggingface'")
         except Exception as e:
-            logging.error(f"Error while creating agent: {str(e)}")
+            logger.error(f"Failed to initialize language model: {e}")
             raise e
 
-    def add_tool(self, tool: Tool):
-        if not isinstance(tool, Tool):
-            logging.error("Tool must be an instance of Tool.")
-            raise TypeError("Tool must be an instance of Tool.")
-        
+    def initialize_agent(self):
+        try:
+            self.agent = AutoGPT.from_llm_and_tools(
+                ai_name=self.agent_name,
+                ai_role=self.agent_role,
+                tools=self.tools,
+                llm=self.llm,
+                memory=self.vectorstore.as_retriever(search_kwargs={}),
+                human_in_the_loop=self.human_in_the_loop,
+                chat_history_memory=FileChatMessageHistory("chat_history.txt"),
+                verbose=self.verbose,
+            )
+        except Exception as e:
+            logger.error(f"Error while creating agent: {str(e)}")
+            raise e
+
+    def add_tool(self, tool: BaseTool):
+        if not isinstance(tool, BaseTool):
+            logger.error("Tool must be an instance of BaseTool.")
+            raise TypeError("Tool must be an instance of BaseTool.")
         self.tools.append(tool)
 
     def run(self, prompt: str) -> str:
-        if not isinstance(prompt, str):
-            logging.error("Prompt must be a string.")
-            raise TypeError("Prompt must be a string.")
-        
         if not prompt:
-            logging.error("Prompt is empty.")
+            logger.error("Prompt is empty.")
             raise ValueError("Prompt is empty.")
-        
         try:
             self.agent.run([f"{prompt}"])
             return "Task completed by AgentNode"
         except Exception as e:
-            logging.error(f"While running the agent: {str(e)}")
+            logger.error(f"While running the agent: {str(e)}")
             raise e
 
 
@@ -120,7 +130,6 @@ class AgentNode:
                 return HuggingFaceLLM(model_id=self.model_id, temperature=self.temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
-
 
     def initialize_tools(self, llm_class):
         if not llm_class:
