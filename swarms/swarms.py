@@ -2,8 +2,24 @@ import asyncio
 import logging
 from typing import Optional
 
+import faiss
+from langchain import LLMChain, OpenAI, PromptTemplate
+from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
+from langchain.chat_models import ChatOpenAI
+from langchain.docstore import InMemoryDocstore
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.tools import DuckDuckGoSearchRun
+from langchain.tools.file_management.read import ReadFileTool
+from langchain.tools.file_management.write import WriteFileTool
+from langchain.vectorstores import FAISS
+from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
+
+
+
 from swarms.agents.models.hf import HuggingFaceLLM
-from swarms.agents.tools.agent_tools import *
+
+# from langchain.tools.human.tool import HumanInputRun
+from swarms.agents.tools.main import WebpageQATool, process_csv
 from swarms.boss.boss_node import BossNodeInitializer as BossNode
 from swarms.workers.worker_node import WorkerNodeInitializer
 
@@ -16,6 +32,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
 # TODO: Add RLHF Data collection, ask user how the swarm is performing
 # TODO: Create an onboarding process if not settings are preconfigured like `from swarms import Swarm, Swarm()` => then initiate onboarding name your swarm + provide purpose + etc 
+
+
+# ---------- Constants ----------
+ROOT_DIR = "./data/"
 
 class HierarchicalSwarm:
     def __init__(
@@ -242,7 +262,7 @@ def swarm(
         logging.error("Invalid objective")
         raise ValueError("A valid objective is required")
     try:
-        swarms = HierarchicalSwarm(api_key, model_id=model_type, use_async=False, model_type=model_type, logging_enabled=logging_enabled) # Turn off async
+        swarms = HierarchicalSwarm(api_key, model_id=model_type, use_async=False, model_type=model_type) #logging_enabled=logging_enabled) # Turn off async
         result = swarms.run(objective)
         if result is None:
             logging.error("Failed to run swarms")
