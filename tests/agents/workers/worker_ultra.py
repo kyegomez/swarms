@@ -58,6 +58,6 @@ def test_worker_ultra_node_initializer_initialize_vectorstore(worker_ultra_node_
         assert vectorstore is not None
 
 def test_worker_ultra_node_initializer_create_worker_node(worker_ultra_node_initializer):
-    with patch.object(worker_ultra_node_initializer, 'initialize_llm') as mock_llm, patch.object(worker_ultra_node_initializer, 'initialize_toolsets') as mock_toolsets, patch.object(worker_ultra_node_initializer, 'initialize_vectorstore') as mock_vectorstore:
+    with patch.object(worker_ultra_node_initializer, 'initialize_llm'), patch.object(worker_ultra_node_initializer, 'initialize_toolsets'), patch.object(worker_ultra_node_initializer, 'initialize_vectorstore'):
         worker_node = worker_ultra_node_initializer.create_worker_node()
         assert worker_node is not None

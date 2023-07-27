@@ -1,7 +1,7 @@
 import unittest
 import os
-from unittest.mock import patch, MagicMock
-from langchain import PromptTemplate, HuggingFaceHub, ChatOpenAI, LLMChain
+from unittest.mock import patch
+from langchain import HuggingFaceHub, ChatOpenAI
 
 from swarms.agents.models.llm import LLM
 

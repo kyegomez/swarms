@@ -2,10 +2,9 @@ import logging
 import asyncio
 
 from swarms.agents.tools.agent_tools import *
-from swarms.workers.worker_node import WorkerNodeInitializer, worker_node
+from swarms.workers.worker_node import WorkerNodeInitializer
 from swarms.boss.boss_node import BossNodeInitializer as BossNode
 
-from swarms.utils.task import Task
 from swarms.agents.models.hf import HuggingFaceLLM
 
 # from langchain import LLMMathChain

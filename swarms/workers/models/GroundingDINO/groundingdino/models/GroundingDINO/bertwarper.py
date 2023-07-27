@@ -6,11 +6,7 @@
 # ------------------------------------------------------------------------
 
 import torch
-import torch.nn.functional as F
-import torch.utils.checkpoint as checkpoint
-from torch import Tensor, nn
-from torchvision.ops.boxes import nms
-from transformers import BertConfig, BertModel, BertPreTrainedModel
+from torch import nn
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
 

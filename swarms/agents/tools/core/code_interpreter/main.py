@@ -4,9 +4,8 @@ import json
 import re
 import uuid
 from dataclasses import dataclass
-from dotenv import load_dotenv
 from io import BytesIO
-from typing import Any, List, Optional, Sequence, Tuple, Union, TYPE_CHECKING
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 from pydantic import BaseModel, BaseSettings, root_validator
 
@@ -727,9 +726,9 @@ class CodeInterpreterSession:
         for file in self.output_files:
             if str(file.name) in final_response:
                 # rm ![Any](file.name) from the response
-                final_response = re.sub(rf"\n\n!\[.*\]\(.*\)", "", final_response)
+                final_response = re.sub(r"\n\n!\[.*\]\(.*\)", "", final_response)
 
-        if self.output_files and re.search(rf"\n\[.*\]\(.*\)", final_response):
+        if self.output_files and re.search(r"\n\[.*\]\(.*\)", final_response):
             final_response = await remove_download_link(final_response, self.llm)
 
         return CodeInterpreterResponse(content=final_response, files=self.output_files)

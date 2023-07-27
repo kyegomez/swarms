@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import Mock, patch
-from pydantic import ValidationError
 from swarms.agents.tools.agent_tools import *
 from swarms.boss.boss_node import BossNodeInitializer, BossNode
 # For initializing BossNodeInitializer in multiple tests

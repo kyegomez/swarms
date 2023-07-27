@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 ############
 from langchain.prompts import PromptTemplate
@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 #######################
 
-from pydantic import BaseModel, Field
 
 class WorkerSims(BaseMemory):
     llm: BaseLanguageModel

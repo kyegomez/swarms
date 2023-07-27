@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, BertModel, BertTokenizer, RobertaModel, RobertaTokenizerFast
+from transformers import AutoTokenizer, BertModel, RobertaModel
 import os
 
 def get_tokenlizer(text_encoder_type):

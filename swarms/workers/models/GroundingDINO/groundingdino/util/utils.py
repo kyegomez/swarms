@@ -268,7 +268,8 @@ def get_embedder(multires, i=0):
     }
 
     embedder_obj = Embedder(**embed_kwargs)
-    embed = lambda x, eo=embedder_obj: eo.embed(x)
+    def embed(x, eo=embedder_obj):
+        return eo.embed(x)
     return embed, embedder_obj.out_dim
 
 

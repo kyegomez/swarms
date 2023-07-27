@@ -8,24 +8,18 @@ from diffusers import DiffusionPipeline, StableDiffusionControlNetPipeline, Cont
 from diffusers.utils import load_image
 from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
 from diffusers.utils import export_to_video
-from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan, SpeechT5ForSpeechToSpeech
-from transformers import BlipProcessor, BlipForConditionalGeneration
-from transformers import TrOCRProcessor, VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
+from transformers import SpeechT5Processor, SpeechT5HifiGan, SpeechT5ForSpeechToSpeech
+from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
 from datasets import load_dataset
 from PIL import Image
 # import flask
 # from flask import request, jsonify
 import waitress
 # from flask_cors import CORS
-import io
 from torchvision import transforms
 import torch
 import torchaudio
-from speechbrain.pretrained import WaveformEnhancement
-import joblib
-from huggingface_hub import hf_hub_url, cached_download
-from transformers import AutoImageProcessor, TimesformerForVideoClassification
-from transformers import MaskFormerFeatureExtractor, MaskFormerForInstanceSegmentation, AutoFeatureExtractor
+from transformers import MaskFormerFeatureExtractor, MaskFormerForInstanceSegmentation
 from controlnet_aux import OpenposeDetector, MLSDdetector, HEDdetector, CannyDetector, MidasDetector
 from controlnet_aux.open_pose.body import Body
 from controlnet_aux.mlsd.models.mbv2_mlsd_large import MobileV2_MLSD_Large
@@ -119,7 +113,7 @@ def load_pipes(local_deployment):
                 "device": device
             },
             "espnet/kan-bayashi_ljspeech_vits": {
-                "model": Text2Speech.from_pretrained(f"espnet/kan-bayashi_ljspeech_vits"),
+                "model": Text2Speech.from_pretrained("espnet/kan-bayashi_ljspeech_vits"),
                 "device": device
             },
             "lambdalabs/sd-image-variations-diffusers": {
