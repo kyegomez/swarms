@@ -123,7 +123,7 @@ class HierarchicalSwarm:
             logging.error(f"Failed to initialize vector store: {e}")
             return None
 
-    def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant", human_in_the_loop=True):
+    def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant",):
         """
         Init WorkerNode
 
