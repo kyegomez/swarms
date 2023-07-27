@@ -59,7 +59,7 @@ class HierarchicalSwarm:
 
 
 
-    def initialize_llm(self, llm_class):
+    def initialize_llm(self, llm_class: str = None):
         """
         Init LLM 
 
