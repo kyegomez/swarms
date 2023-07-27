@@ -20,13 +20,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # TODO: Off
 
 class HierarchicalSwarm:
-    def __init__(self, model_id: str = None, 
-    openai_api_key="", 
-    use_vectorstore=True, embedding_size: int = None, use_async=True, 
-    human_in_the_loop=True, model_type: str = None, boss_prompt: str = None,
-    worker_prompt:str = None,
-    temperature=None,
-    max_iterations=None,
+    def __init__(self, 
+                model_id: str = None, 
+                openai_api_key="", 
+                use_vectorstore=True, 
+                embedding_size: int = None, 
+                use_async=True, 
+                human_in_the_loop=True, 
+                model_type: str = None, 
+                boss_prompt: str = None,
+                worker_prompt:str = None,
+                temperature=None,
+                max_iterations=None,
+                log_level: str = 'INFO'
     ):
         #openai_api_key: the openai key. Default is empty
         if not model_id:
@@ -63,8 +69,8 @@ class HierarchicalSwarm:
         """
         try: 
             # Initialize language model
-            if self.llm_class == 'openai' or OpenAI:
-                return llm_class(openai_api_key=self.openai_api_key, temperature=self.temperature)
+            if self.llm_class == 'openai':
+                return OpenAI(openai_api_key=self.openai_api_key, temperature=self.temperature)
             elif self.model_type == "huggingface":
                 return HuggingFaceLLM(model_id=self.model_id, temperature=self.temperature)
         except Exception as e:
@@ -109,7 +115,7 @@ class HierarchicalSwarm:
         """
         try:     
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = self.embedding_size or 8192
+            embedding_size = self.embedding_size
             index = faiss.IndexFlatL2(embedding_size)
 
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
@@ -232,7 +238,7 @@ def swarm(api_key="", objective="", model_type="", model_id=""):
         logging.error("Invalid objective")
         raise ValueError("A valid objective is required")
     try:
-        swarms = HierarchicalSwarm(api_key,  model_id, use_async=False, model_type=model_type) # Turn off async
+        swarms = HierarchicalSwarm(api_key,  model_id=model_type, use_async=False, model_type=model_type) # Turn off async
         result = swarms.run(objective)
         if result is None:
             logging.error("Failed to run swarms")
