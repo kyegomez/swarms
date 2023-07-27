@@ -24,7 +24,7 @@ In terms of architecture, the swarm might look something like this:
 ```
                                            (Orchestrator)
                                              /        \
-           Tools + Vector DB -- (LLM Agent)---(Communication Layer)       (Communication Layer)---(LLM Agent)-- Tools + Vector DB 
+            ( Agent)---(Communication Layer)       (Communication Layer)---(Agent)
               /                  |                                           |                 \
 (Task Assignment)      (Task Completion)                    (Task Assignment)       (Task Completion)
 ```
@@ -46,7 +46,9 @@ Orchestrate(WorkerNode, autoscale=True, nodes=int, swarm_type="flat")
 from abc import ABC, abstractmethod
 import celery
 from typing import List, Dict, Any
+
 import numpy as np
+import threading
 
 from swarms.agents.memory.ocean import OceanDB
 
@@ -63,7 +65,7 @@ class Orchestrator(ABC):
         self.task_queue = task_queue
         self.vector_db = vector_db
         self.current_tasks = {}
-        self.lock = Lock()
+        self.lock = threading.Lock()
         
     @abstractmethod
     def assign_task(self, agent_id: int, task: Dict[str, Any]) -> None:

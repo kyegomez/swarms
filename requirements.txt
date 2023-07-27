@@ -23,7 +23,6 @@ controlnet-aux
 diffusers==0.14.0
 
 einops
-gradio
 imageio
 
 imageio-ffmpeg
@@ -111,7 +110,5 @@ fastapi-limiter
 
 sphinx_rtd_theme
 pegasusx
-
-
 
 oceandb
