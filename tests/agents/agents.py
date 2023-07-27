@@ -115,3 +115,4 @@ def test_agent(openai_api_key, objective):
             mock_agent_node.run.return_value = 'Agent output'
             result = agent(openai_api_key, objective)
             assert result == 'Agent output'
+
