@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from swarms.workers.worker_agent_ultra import WorkerUltraNode, WorkerUltraNodeInitializer  # replace 'yourmodule' with the actual module name
+from swarms.workers.worker_agent_ultra import WorkerUltraNode, WorkerUltraNodeInitializer  
 
 @pytest.fixture
 def llm_mock():
