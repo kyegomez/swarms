@@ -22,7 +22,7 @@ ENV EVAL_PORT=8000 \
     USE_GPU=False \
     PLAYGROUND_DIR=playground \
     LOG_LEVEL=INFO \
-    BOT_NAME=Orca \
+    BOT_NAME=Swarm \
     # You will need to set these environment variables to your actual keys in production
     OPENAI_API_KEY=your_openai_api_key \
     WINEDB_HOST=your_winedb_host \
