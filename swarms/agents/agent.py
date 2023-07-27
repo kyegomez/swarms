@@ -30,6 +30,8 @@ class AgentNodeInitializer:
     embedding_size: int = 8192,
     system_prompt: str = None,
     max_iterations: int = None):
+
+    
         if not llm or not tools or not vectorstore:
             logging.error("llm, tools, and vectorstore cannot be None.")
             raise ValueError("llm, tools, and vectorstore cannot be None.")
