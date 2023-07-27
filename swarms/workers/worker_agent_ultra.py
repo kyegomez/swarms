@@ -1,30 +1,23 @@
 import os
 import logging
-from typing import Optional, Type
-from langchain.callbacks.manager import (
-    AsyncCallbackManagerForToolRun,
-    CallbackManagerForToolRun,
-)
 
 
 from swarms.agents.tools.agent_tools import *
-from typing import List, Any, Dict, Optional
+from typing import List, Dict
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
 import logging
-from pydantic import BaseModel, Extra
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 
 
-from typing import List, Any, Dict, Optional
+from typing import List, Dict
 from langchain.memory.chat_message_histories import FileChatMessageHistory
-from swarms.utils.main import BaseHandler, FileHandler, FileType
+from swarms.utils.main import BaseHandler, FileType
 from swarms.agents.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 from swarms.utils.main import CsvToDataframe
 from swarms.agents.tools.main import BaseToolSet
-from swarms.utils.main import StaticUploader
 
 
 class WorkerUltraNode:

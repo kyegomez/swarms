@@ -11,10 +11,7 @@ import math
 import numpy as np
 import argparse
 import inspect
-import tempfile
-from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration, BlipForQuestionAnswering
-from transformers import AutoImageProcessor, UperNetForSemanticSegmentation
 
 from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline, StableDiffusionInstructPix2PixPipeline
 from diffusers import EulerAncestralDiscreteScheduler
@@ -34,22 +31,10 @@ from swarms.workers.models import (
     Compose,
     Normalize,
     ToTensor,
-    crop,
-    hflip,
-    resize,
-    pad,
-    ResizeDebug,
-    RandomCrop,
-    RandomSizeCrop,
-    CenterCrop,
-    RandomHorizontalFlip,
-    RandomResize,
-    RandomPad,
-    RandomSelect
+    RandomResize
 )
 
 from swarms.workers.models import build_model
-from swarms.workers.models  import box_ops
 from swarms.workers.models import SLConfig
 from swarms.workers.models import clean_state_dict, get_phrases_from_posmap
 
@@ -1019,8 +1004,6 @@ class Segmenting:
         sorted_anns = sorted(masks, key=(lambda x: x['area']), reverse=True)
         ax = plt.gca()
         ax.set_autoscale_on(False)
-        polygons = []
-        color = []
         for ann in sorted_anns:
             m = ann['segmentation']
             img = np.ones((m.shape[0], m.shape[1], 3))
@@ -1363,7 +1346,7 @@ class ObjectSegmenting:
             image = self.sam.show_mask(mask[0].cpu().numpy(), image, random_color=True, transparency=0.3)
 
 
-        merged_mask_image = Image.fromarray(merged_mask)
+        Image.fromarray(merged_mask)
 
         return merged_mask
 
@@ -1371,7 +1354,7 @@ class ObjectSegmenting:
 class ImageEditing:
     template_model = True
     def __init__(self, Text2Box:Text2Box, Segmenting:Segmenting, Inpainting:Inpainting):
-        print(f"Initializing ImageEditing")
+        print("Initializing ImageEditing")
         self.sam = Segmenting
         self.grounding = Text2Box
         self.inpaint = Inpainting

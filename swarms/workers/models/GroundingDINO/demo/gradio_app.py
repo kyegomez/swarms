@@ -1,12 +1,8 @@
 import argparse
-from functools import partial
 import cv2
-import requests
 import os
-from io import BytesIO
 from PIL import Image
 import numpy as np
-from pathlib import Path
 
 
 import warnings
@@ -26,7 +22,7 @@ import gradio as gr
 from groundingdino.models import build_model
 from groundingdino.util.slconfig import SLConfig
 from groundingdino.util.utils import clean_state_dict
-from groundingdino.util.inference import annotate, load_image, predict
+from groundingdino.util.inference import annotate, predict
 import groundingdino.datasets.transforms as T
 
 from huggingface_hub import hf_hub_download
@@ -71,7 +67,6 @@ model = load_model_hf(config_file, ckpt_repo_id, ckpt_filenmae)
 
 def run_grounding(input_image, grounding_caption, box_threshold, text_threshold):
     init_image = input_image.convert("RGB")
-    original_size = init_image.size
 
     _, image_tensor = image_transform_grounding(init_image)
     image_pil: Image = image_transform_grounding_for_vis(init_image)

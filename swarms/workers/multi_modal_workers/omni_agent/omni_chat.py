@@ -20,11 +20,9 @@ import threading
 from queue import Queue
 # import flask
 # from flask import request, jsonify
-import waitress
 # from flask_cors import CORS, cross_origin
 from swarms.workers.multi_modal_workers.omni_agent.get_token_ids import get_token_ids_for_task_parsing, get_token_ids_for_choose_model, count_tokens, get_max_context_length
 from huggingface_hub.inference_api import InferenceApi
-from huggingface_hub.inference_api import ALL_TASKS
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", type=str, default="swarms/agents/workers/multi_modal_workers/omni_agent/config.yml")
@@ -253,7 +251,7 @@ def record_case(success, **args):
 
 def image_to_bytes(img_url):
     img_byte = io.BytesIO()
-    type = img_url.split(".")[-1]
+    img_url.split(".")[-1]
     load_image(img_url).save(img_byte, format="png")
     img_data = img_byte.getvalue()
     return img_data
@@ -809,7 +807,7 @@ def run_task(input, command, results, api_key, api_type, api_endpoint):
         else:
             logger.warning(f"Task {command['task']} is not available. ControlNet need to be deployed locally.")
             record_case(success=False, **{"input": input, "task": command, "reason": f"Task {command['task']} is not available. ControlNet need to be deployed locally.", "op":"message"})
-            inference_result = {"error": f"service related to ControlNet is not available."}
+            inference_result = {"error": "service related to ControlNet is not available."}
             results[id] = collect_result(command, "", inference_result)
             return False
     elif task in ["summarization", "translation", "conversational", "text-generation", "text2text-generation"]: # ChatGPT Can do
@@ -872,7 +870,7 @@ def run_task(input, command, results, api_key, api_type, api_endpoint):
                 reason = choose["reason"]
                 best_model_id = choose["id"]
                 hosted_on = "local" if best_model_id in all_avaliable_models["local"] else "huggingface"
-            except Exception as e:
+            except Exception:
                 logger.warning(f"the response [ {choose_str} ] is not a valid JSON, try to find the model id and reason in the response.")
                 choose_str = find_json(choose_str)
                 best_model_id, reason, choose  = get_id_reason(choose_str)

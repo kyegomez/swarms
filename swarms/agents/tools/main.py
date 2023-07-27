@@ -10,7 +10,6 @@ from langchain.agents import load_tools
 from langchain.agents.tools import BaseTool
 from langchain.llms.base import BaseLLM
 
-from langchain.chat_models import ChatOpenAI
 
 
 import requests
@@ -58,9 +57,8 @@ class ToolWrapper:
     ) -> BaseTool:
         func = self.func
         if self.is_per_session():
-            func = lambda *args, **kwargs: self.func(
-                *args, **kwargs, get_session=get_session
-            )
+            def func(*args, **kwargs):
+                return self.func(*args, **kwargs, get_session=get_session)
 
         return Tool(
             name=self.name,
@@ -170,7 +168,7 @@ class ExitConversation(BaseToolSet):
         _, executor = get_session()
         del executor
 
-        logger.debug(f"\nProcessed ExitConversation.")
+        logger.debug("\nProcessed ExitConversation.")
 
         return message
     
@@ -422,8 +420,6 @@ class ToolsFactory:
 
 import os
 import subprocess
-import time
-from datetime import datetime
 from typing import Dict, List
 
 from swarms.utils.main import ANSI, Color, Style # test
@@ -940,7 +936,7 @@ class CodeEditor(BaseToolSet):
     @tool(
         name="CodeEditor.READ",
         description="Read and understand code. "
-        f"Input should be filename and line number group. ex. test.py|1-10 "
+        "Input should be filename and line number group. ex. test.py|1-10 "
         "and the output will be code. ",
     )
     def read(self, inputs: str) -> str:
@@ -1470,14 +1466,11 @@ import pandas as pd
 from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
 from langchain.docstore.document import Document
 import asyncio
-import nest_asyncio
 
 # Tools
 from contextlib import contextmanager
 from typing import Optional
 from langchain.agents import tool
-from langchain.tools.file_management.read import ReadFileTool
-from langchain.tools.file_management.write import WriteFileTool
 
 ROOT_DIR = "./data/"
 
@@ -1485,7 +1478,7 @@ from langchain.tools import BaseTool, DuckDuckGoSearchRun
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from pydantic import Field
-from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain, BaseCombineDocumentsChain
+from langchain.chains.qa_with_sources.loading import BaseCombineDocumentsChain
 
 
 
@@ -1787,14 +1780,6 @@ web_search = DuckDuckGoSearchRun()
 
 ######################## ######################################################## file system
 
-from langchain.tools.file_management import (
-    ReadFileTool,
-    CopyFileTool,
-    DeleteFileTool,
-    MoveFileTool,
-    WriteFileTool,
-    ListDirectoryTool,
-)
 from langchain.agents.agent_toolkits import FileManagementToolkit
 from tempfile import TemporaryDirectory
 

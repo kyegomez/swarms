@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 from swarms.agents.memory.oceandb import OceanDB
 
 

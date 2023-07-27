@@ -1,4 +1,3 @@
-import os
 import logging
 from typing import Dict, Optional
 from celery import Task
@@ -7,7 +6,6 @@ from langchain.callbacks.manager import CallbackManager
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.memory.chat_memory import BaseChatMemory
 from swarms.agents.tools.main import BaseToolSet, ToolsFactory
-from swarms.agents.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
 
 from swarms.agents.utils.agent_setup import AgentSetup
 # from .callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
@@ -31,7 +29,7 @@ class AgentCreator:
             raise TypeError("Session must be a string")
         if not session:
             raise ValueError("Session is empty")
-        if not (session in self.memories):
+        if session not in self.memories:
             self.memories[session] = self.create_memory()
         return self.memories[session]
 

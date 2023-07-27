@@ -1,1 +1,0 @@
-from segment_anything import segment_anything
