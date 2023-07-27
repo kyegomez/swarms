@@ -17,19 +17,21 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
 # TODO: Add RLHF Data collection, ask user how the swarm is performing
 # TODO: Create an onboarding process if not settings are preconfigured like `from swarms import Swarm, Swarm()` => then initiate onboarding name your swarm + provide purpose + etc 
-# TODO: Off
 
 class HierarchicalSwarm:
     def __init__(
         self, 
         model_id: Optional[str] = None, 
         openai_api_key: Optional[str] = "", 
+
         use_vectorstore: Optional[bool] = True, 
         embedding_size: Optional[int] = None, 
         use_async: Optional[bool] = True, 
+
         human_in_the_loop: Optional[bool] = True, 
         model_type: Optional[str] = None, 
         boss_prompt: Optional[str] = None,
+
         worker_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_iterations: Optional[int] = None,
@@ -57,7 +59,7 @@ class HierarchicalSwarm:
 
 
 
-    def initialize_llm(self, llm_class: Optional = None):
+    def initialize_llm(self, llm_class):
         """
         Init LLM 
 
