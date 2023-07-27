@@ -51,7 +51,7 @@ class Orchestrator(ABC):
     def __init__(self, 
     agent, 
     agent_list: List[Any], 
-    task_queue: celery.Celery, 
+    task_queue: List[Any], 
     vector_db: OceanDB
     ):
         self.agent = agent
@@ -97,7 +97,7 @@ class Orchestrator(ABC):
             raise
     
     @abstractmethod
-    def update_vector_db(self, data: np.ndarray) -> None:
+    def update_vector_db(self, data) -> None:
         """Update the vector database"""
         try:
             self.vector_db.add_documents([data['vector']], [str(data['task_id'])])
@@ -107,7 +107,7 @@ class Orchestrator(ABC):
 
 
     @abstractmethod
-    def get_vector_db(self) -> np.ndarray:
+    def get_vector_db(self):
         """Retrieve the vector database"""
         return self.vector_db
 
