@@ -44,8 +44,11 @@ import celery
 from typing import List, Dict, Any
 import numpy as np
 
+from swarms.agents.
+
 class Orchestrator(ABC):
-    def __init__(self, agent_list: List[Any], task_queue: celery.Celery, vector_db: np.ndarray):
+    def __init__(self, agent, agent_list: List[Any], task_queue: celery.Celery, vector_db: np.ndarray):
+        self.agent = agent
         self.agents = agent_list
         self.task_queue = task_queue
         self.vector_db = vector_db
