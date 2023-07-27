@@ -2,7 +2,7 @@ import pytest
 import torch
 from unittest.mock import Mock, MagicMock
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from your_module import HuggingFaceLLM  # replace with actual import
+from swarms.agents.models.hf import HuggingFaceLLM  # replace with actual import
 
 
 @pytest.fixture
