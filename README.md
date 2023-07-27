@@ -12,8 +12,7 @@
 
 ![Swarming banner](images/swarms.png)
 
-Welcome to Swarms - the future of AI, where we leverage the power of autonomous agents to create 'swarms' of Language Models (LLM) that work together, creating a dynamic and interactive AI system.
-
+Introducing Swarms, automating all digital activities with multi-agent collaboration, get started in 30 seconds in a seamless onboarding experience.
 
 ---
 
