@@ -1,5 +1,7 @@
 import pytest
-from swarms.worker.omni_worker import OmniWorkerAgent  # replace 'yourmodule' with the actual module name
+
+from swarms.worker.omni_worker import OmniWorkerAgent
+
 
 @pytest.fixture
 def omni_worker():
