@@ -4,6 +4,7 @@ from typing import Optional
 
 import faiss
 from langchain import LLMChain, OpenAI, PromptTemplate
+from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
@@ -12,9 +13,6 @@ from langchain.tools import DuckDuckGoSearchRun
 from langchain.tools.file_management.read import ReadFileTool
 from langchain.tools.file_management.write import WriteFileTool
 from langchain.vectorstores import FAISS
-from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
-
-
 
 from swarms.agents.models.hf import HuggingFaceLLM
 

@@ -1,11 +1,30 @@
-from swarms.agents.tools.agent_tools import *
-
-from langchain.memory.chat_message_histories import FileChatMessageHistory
-
 import logging
+
+import faiss
+from langchain.agents import Tool
+from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
+from langchain.chat_models import ChatOpenAI
+from langchain.docstore import InMemoryDocstore
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
+from langchain.memory.chat_message_histories import FileChatMessageHistory
+from langchain.tools import DuckDuckGoSearchRun
+from langchain.tools.file_management.read import ReadFileTool
+from langchain.tools.file_management.write import WriteFileTool
+from langchain.vectorstores import FAISS
+
+# from langchain.tools.human.tool import HumanInputRun
+from swarms.agents.tools.main import WebpageQATool, process_csv
+from swarms.workers.worker_node import WorkerNodeInitializer
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-from swarms.agents.tools.main import Terminal
+
+
+ROOT_DIR = "./data/"
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 class WorkerNodeInitializer:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
@@ -100,7 +119,6 @@ class WorkerNode:
                 ReadFileTool(root_dir=ROOT_DIR),
                 process_csv,
                 WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-                Terminal,
             ]
             if not tools:
                 logging.error("Tools are not initialized")
