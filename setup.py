@@ -84,7 +84,7 @@ setup(
         'bitsandbytes==0.37.2',
         'psycopg2-binary==2.9.5',
         'google-search-results==2.4.2',
-        'black==23.1.0',
+        'black==23.7.0',
         'Pillow',
         'selenium',
         'diffusers',
