@@ -1,13 +1,3 @@
-# Agora 🏛️
-
-![Agora banner](images/Agora-Banner-blend.png)
-
-[Swarms](https://discord.gg/qUtxnK2NMf) is brought to you by Agora, the open source AI research organization. Join Agora and help create swarms and receive support to advance Humanity.
-
-![Join the Agora discord](https://img.shields.io/discord/1110910277110743103?label=Discord&logo=discord&logoColor=white&style=plastic&color=d7b023)
-
----
-
 ## Swarming AI Agents (Swarms)
 
 ![Swarming banner](images/swarms.png)
