@@ -1,19 +1,17 @@
 import os
 
-from swarms.agents.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
-from swarms.agents.tools.main import BaseToolSet
-from swarms.agents.tools.main import ToolsFactory
-
-
-from langchain.chat_models.base import BaseChatModel
-from langchain.schema import BaseOutputParser
 from langchain.callbacks.base import BaseCallbackManager
 
-from .ConversationalChatAgent import ConversationalChatAgent
 # from .ChatOpenAI import ChatOpenAI
 from langchain.chat_models import ChatOpenAI
-from .output_parser import EvalOutputParser
+from langchain.chat_models.base import BaseChatModel
+from langchain.schema import BaseOutputParser
 
+from swarms.agents.prompts.prompts import EVAL_PREFIX, EVAL_SUFFIX
+from swarms.agents.tools.main import BaseToolSet, ToolsFactory
+
+from .ConversationalChatAgent import ConversationalChatAgent
+from .output_parser import EvalOutputParser
 
 
 class AgentSetup:

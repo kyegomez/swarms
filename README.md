@@ -1,4 +1,4 @@
-## Swarming AI Agents (Swarms)
+## Swarms of Autonomous AI Agents 
 
 ![Swarming banner](images/swarms.png)
 

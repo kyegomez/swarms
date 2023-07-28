@@ -1,13 +1,12 @@
 """OpenAI chat wrapper."""
 from __future__ import annotations
 
-import os
 import logging
+import os
 import sys
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 import openai
-
 from langchain.chat_models.base import BaseChatModel
 from langchain.schema import (
     AIMessage,
@@ -18,9 +17,7 @@ from langchain.schema import (
     HumanMessage,
     SystemMessage,
 )
-
 from langchain.utils import get_from_dict_or_env
-from swarms.utils.logger import logger
 from pydantic import BaseModel, Extra, Field, root_validator
 from tenacity import (
     before_sleep_log,
@@ -30,10 +27,11 @@ from tenacity import (
     wait_exponential,
 )
 
+from swarms.utils.logger import logger
 
 # from ansi import ANSI, Color, Style
 from swarms.utils.main import ANSI, Color, Style
-import os
+
 
 def _create_retry_decorator(llm: ChatOpenAI) -> Callable[[Any], Any]:
     import openai
