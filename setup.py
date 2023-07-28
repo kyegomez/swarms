@@ -78,7 +78,7 @@ setup(
         'uvicorn==0.21.1',
         'jinja2==3.1.2',
         'python-multipart==0.0.6',
-        'celery==5.2.7',
+        'celery==5.3.1',
         'redis==4.6.0',
         'sentencepiece',
         'bitsandbytes==0.41.0',
