@@ -76,12 +76,9 @@ There are 2 methods, one is through `git clone` and the other is by `pip install
 
 from swarms import swarm
 
-api_key = "api key for openai"
-
 objective = "What is the capital of the Uk"
 
-result = swarm(api_key, objective)
-print(result)
+swarm(objective)
 ```
 
 ---
