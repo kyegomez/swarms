@@ -4,8 +4,7 @@ from __future__ import annotations
 import warnings
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-from pydantic import Extra, Field
-
+from langchain.base_language import BaseLanguageModel
 from langchain.callbacks.manager import (
     AsyncCallbackManager,
     AsyncCallbackManagerForChainRun,
@@ -24,7 +23,7 @@ from langchain.schema import (
     NoOpOutputParser,
     PromptValue,
 )
-from langchain.base_language import BaseLanguageModel
+from pydantic import Extra, Field
 
 
 class LLMChain(Chain):
