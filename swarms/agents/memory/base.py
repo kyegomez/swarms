@@ -7,7 +7,6 @@ import math
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
-
 from typing import (
     Any,
     Callable,
@@ -22,8 +21,6 @@ from typing import (
     TypeVar,
 )
 
-from pydantic import Field, root_validator
-
 from langchain.callbacks.manager import (
     AsyncCallbackManagerForRetrieverRun,
     CallbackManagerForRetrieverRun,
@@ -31,6 +28,7 @@ from langchain.callbacks.manager import (
 from langchain.docstore.document import Document
 from langchain.embeddings.base import Embeddings
 from langchain.schema import BaseRetriever
+from pydantic import Field, root_validator
 
 VST = TypeVar("VST", bound="VectorStore")
 
