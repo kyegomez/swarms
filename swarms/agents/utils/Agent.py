@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import yaml
-from pydantic import BaseModel, root_validator
-
 from langchain.agents.agent_types import AgentType
+from langchain.base_language import BaseLanguageModel
 from langchain.callbacks.base import BaseCallbackManager
 from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
@@ -26,9 +25,9 @@ from langchain.schema import (
     BaseOutputParser,
     BasePromptTemplate,
 )
-from langchain.schema.language_model import BaseLanguageModel
 from langchain.schema.messages import BaseMessage
 from langchain.tools.base import BaseTool
+from pydantic import BaseModel, root_validator
 
 logger = logging.getLogger(__name__)
 

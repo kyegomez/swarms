@@ -7,8 +7,6 @@ from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, List, Optional, Sequence, Tuple, Union
 
-from pydantic import BaseModel, BaseSettings, root_validator
-
 from langchain.agents import AgentExecutor, BaseSingleActionAgent
 from langchain.base_language import BaseLanguageModel
 from langchain.callbacks import AsyncIteratorCallbackHandler
@@ -36,8 +34,7 @@ from langchain.schema import (
 )
 from langchain.tools import BaseTool, StructuredTool
 from langchain.tools.convert_to_openai import format_tool_to_openai_function
-
-
+from pydantic import BaseModel, BaseSettings, root_validator
 
 remove_dl_link_prompt = ChatPromptTemplate(
     input_variables=["input_response"],
@@ -295,7 +292,7 @@ class File(BaseModel):
         return f"File(name={self.name})"
 
 
-from langchain.schema import HumanMessage, AIMessage  # type: ignore
+from langchain.schema import AIMessage, HumanMessage  # type: ignore
 
 
 class UserRequest(HumanMessage):

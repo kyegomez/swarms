@@ -3,16 +3,14 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from langchain import LLMChain
+from langchain.base_language import BaseLanguageModel
+
 ############
 from langchain.prompts import PromptTemplate
 from langchain.retrievers import TimeWeightedVectorStoreRetriever
 from langchain.schema import BaseMemory, Document
-
-from langchain.schema.language_model import BaseLanguageModel
 from langchain.utils import mock_now
-from langchain import LLMChain
-from langchain.schema.language_model import BaseLanguageModel
-
 
 logger = logging.getLogger(__name__)
 
