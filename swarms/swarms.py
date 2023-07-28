@@ -15,12 +15,10 @@ from langchain.tools.file_management.write import WriteFileTool
 from langchain.vectorstores import FAISS
 
 
-# from langchain.tools.human.tool import HumanInputRun
 from swarms.agents.tools.main import WebpageQATool, process_csv
 from swarms.boss.boss_node import BossNodeInitializer as BossNode
 from swarms.workers.worker_node import WorkerNodeInitializer
 
-# from langchain import LLMMathChain
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
@@ -42,9 +40,10 @@ class HierarchicalSwarm:
         use_vectorstore: Optional[bool] = True, 
         embedding_size: Optional[int] = None, 
         use_async: Optional[bool] = True, 
+        worker_name: Optional[str] = "Swarm Worker AI Assistant",
 
         human_in_the_loop: Optional[bool] = True, 
-        boss_prompt: Optional[str] = None,
+        boss_prompt: Optional[str] = "You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n",
 
         worker_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
@@ -132,23 +131,11 @@ class HierarchicalSwarm:
             logging.error(f"Failed to initialize vector store: {e}")
             return None
 
-    def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant",):
-        """
-        Init WorkerNode
-
-        Params:
-            worker_tools (list): The list of worker tools.
-            vectorstore (object): The vector store object
-            llm_class (class): The Language model class. Default is ChatOpenAI
-            ai_name (str): The AI name. Default is "Swarms worker AI assistant"        
-        """
+    def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI):
         try:    
-            # Initialize worker node
-            llm = self.initialize_llm(ChatOpenAI)
-            worker_node = WorkerNodeInitializer(llm=llm, tools=worker_tools, vectorstore=vectorstore)
-            worker_node.create_agent(ai_name=ai_name, ai_role="Assistant", search_kwargs={}, human_in_the_loop=self.human_in_the_loop) # add search kwargs
+            worker_node = WorkerNodeInitializer(llm=self.llm, tools=worker_tools, vectorstore=vectorstore)
+            worker_node.create_agent(ai_name=self.worker_name, ai_role="Assistant", search_kwargs={}, human_in_the_loop=self.human_in_the_loop)
             worker_description = self.worker_prompt
-
             worker_node_tool = Tool(name="WorkerNode AI Agent", func=worker_node.run, description= worker_description or "Input: an objective with a todo list for that objective. Output: your task completed: Please be very clear what the objective and task instructions are. The Swarm worker agent is Useful for when you need to spawn an autonomous agent instance as a worker to accomplish any complex tasks, it can search the internet or write code or spawn child multi-modality models to process and generate images and text or audio and so on")
             return worker_node_tool
         except Exception as e:
@@ -173,7 +160,7 @@ class HierarchicalSwarm:
             llm = self.initialize_llm(llm_class)
             
             # prompt = self.boss_prompt
-            todo_prompt = PromptTemplate.from_template({self.boss_prompt} or "You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating an worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn an worker agent after creating a plan and pass the objective and plan to the worker agent.")
+            todo_prompt = PromptTemplate.from_template(self.boss_prompt)
             todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
 
             tools = [
