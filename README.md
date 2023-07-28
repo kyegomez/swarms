@@ -3,7 +3,7 @@
 
 # Swarms of Autonomous AI Agents  🤖 🤖 🤖
 
-![Swarming banner icon](images/swarmsbannernew.png)
+<!-- ![Swarming banner icon](images/swarmsbannernew.png) -->
 
 Introducing Swarms, automating all digital activities with multi-agent collaboration, get started in 30 seconds in a seamless onboarding experience.
 
