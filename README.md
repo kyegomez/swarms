@@ -1,9 +1,11 @@
+<div>
 ## Swarms of Autonomous AI Agents 
 
 ![Swarming banner](images/swarms.png)
 
 Introducing Swarms, automating all digital activities with multi-agent collaboration, get started in 30 seconds in a seamless onboarding experience.
 
+</div>
 ---
 
 ![Join the Agora discord](https://img.shields.io/discord/1110910277110743103?label=Discord&logo=discord&logoColor=white&style=plastic&color=d7b023)
