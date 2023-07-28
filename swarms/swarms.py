@@ -14,7 +14,6 @@ from langchain.tools.file_management.read import ReadFileTool
 from langchain.tools.file_management.write import WriteFileTool
 from langchain.vectorstores import FAISS
 
-from swarms.agents.models.hf import HuggingFaceLLM
 
 # from langchain.tools.human.tool import HumanInputRun
 from swarms.agents.tools.main import WebpageQATool, process_csv
@@ -38,7 +37,6 @@ ROOT_DIR = "./data/"
 class HierarchicalSwarm:
     def __init__(
         self, 
-        model_id: Optional[str] = None, 
         openai_api_key: Optional[str] = "", 
 
         use_vectorstore: Optional[bool] = True, 
@@ -46,21 +44,18 @@ class HierarchicalSwarm:
         use_async: Optional[bool] = True, 
 
         human_in_the_loop: Optional[bool] = True, 
-        model_type: Optional[str] = None, 
         boss_prompt: Optional[str] = None,
 
         worker_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_iterations: Optional[int] = None,
         logging_enabled: Optional[bool] = True):
-        
-        self.model_id = model_id        
+            
         self.openai_api_key = openai_api_key
         self.use_vectorstore = use_vectorstore
 
         self.use_async = use_async
         self.human_in_the_loop = human_in_the_loop
-        self.model_type = model_type
 
         self.embedding_size = embedding_size
         self.boss_prompt = boss_prompt
@@ -86,10 +81,7 @@ class HierarchicalSwarm:
         """
         try: 
             # Initialize language model
-            if self.llm_class == 'openai':
-                return OpenAI(openai_api_key=self.openai_api_key, temperature=self.temperature)
-            elif self.model_type == "huggingface":
-                return HuggingFaceLLM(model_id=self.model_id, temperature=self.temperature)
+            return OpenAI(openai_api_key=self.openai_api_key, temperature=self.temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
 
@@ -197,7 +189,8 @@ class HierarchicalSwarm:
             agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
 
             agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=verbose)
-            return BossNode(llm, vectorstore, agent_executor, max_iterations=self.max_iterations)
+            return BossNode(llm, vectorstore, 
+            agent_executor, max_iterations=self.max_iterations)
         except Exception as e:
             logging.error(f"Failed to initialize boss node: {e}")
             raise
@@ -239,8 +232,6 @@ class HierarchicalSwarm:
 def swarm(
     api_key: Optional[str]="", 
     objective: Optional[str]="", 
-    model_type: Optional[str]="", 
-    model_id: Optional[str]=""
     ):
     """
     Run the swarm with the given API key and objective.
@@ -260,7 +251,7 @@ def swarm(
         logging.error("Invalid objective")
         raise ValueError("A valid objective is required")
     try:
-        swarms = HierarchicalSwarm(api_key, model_id=model_type, use_async=False, model_type=model_type) #logging_enabled=logging_enabled) # Turn off async
+        swarms = HierarchicalSwarm(api_key, use_async=False) #logging_enabled=logging_enabled) # Turn off async
         result = swarms.run(objective)
         if result is None:
             logging.error("Failed to run swarms")
