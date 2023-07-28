@@ -1,6 +1,7 @@
-<div align=">
+<div align="center">
 
-## Swarms of Autonomous AI Agents 
+
+# Swarms of Autonomous AI Agents 
 
 ![Swarming banner](images/swarms.png)
 
