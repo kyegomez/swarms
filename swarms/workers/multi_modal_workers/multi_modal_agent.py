@@ -1,48 +1,58 @@
 # coding: utf-8
-import os
-import gradio as gr
-import random
-import torch
-import cv2
-import re
-import uuid
-from PIL import Image, ImageDraw, ImageOps, ImageFont
-import math
-import numpy as np
 import argparse
 import inspect
-from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration, BlipForQuestionAnswering
+import math
+import os
+import random
+import re
+import uuid
 
-from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline, StableDiffusionInstructPix2PixPipeline
-from diffusers import EulerAncestralDiscreteScheduler
-from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
+import cv2
+import gradio as gr
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import wget
+from controlnet_aux import HEDdetector, MLSDdetector, OpenposeDetector
+from diffusers import (
+    ControlNetModel,
+    EulerAncestralDiscreteScheduler,
+    StableDiffusionControlNetPipeline,
+    StableDiffusionInpaintPipeline,
+    StableDiffusionInstructPix2PixPipeline,
+    StableDiffusionPipeline,
+    UniPCMultistepScheduler,
+)
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
-
-from controlnet_aux import OpenposeDetector, MLSDdetector, HEDdetector
-
 from langchain.agents.initialize import initialize_agent
 from langchain.agents.tools import Tool
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.llms.openai import OpenAI
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from transformers import (
+    BlipForConditionalGeneration,
+    BlipForQuestionAnswering,
+    BlipProcessor,
+    pipeline,
+)
 
 # Grounding DINO
 # import groundingdino.datasets.transforms as T
 from swarms.workers.models import (
     Compose,
     Normalize,
+    RandomResize,
+    SLConfig,
     ToTensor,
-    RandomResize
+    build_model,
+    clean_state_dict,
+    get_phrases_from_posmap,
 )
-
-from swarms.workers.models import build_model
-from swarms.workers.models import SLConfig
-from swarms.workers.models import clean_state_dict, get_phrases_from_posmap
-
-from swarms.workers.models.segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import wget
+from swarms.workers.models.segment_anything import (
+    SamAutomaticMaskGenerator,
+    SamPredictor,
+    build_sam,
+)
 
 VISUAL_AGENT_PREFIX = """Worker Multi-Modal Agent is designed to be able to assist with a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. Worker Multi-Modal Agent is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
 
