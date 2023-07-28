@@ -15,7 +15,7 @@ from langchain.vectorstores import FAISS
 
 # from langchain.tools.human.tool import HumanInputRun
 from swarms.agents.tools.main import WebpageQATool, process_csv
-from swarms.workers.worker_node import WorkerNodeInitializer
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
