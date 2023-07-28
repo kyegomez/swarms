@@ -152,7 +152,27 @@ Here are some agents in the swarm you can use!
 | WorkerNode   | `from swarms import worker_node`                   | ```python api_key = "sksdsds" node = worker_node(api_key) objective = "Please make a web GUI for using HTTP API server..." task = node.run(objective) print(task)``` |
 | Swarms       | `from swarms.swarms import Swarms`                 | ```python import os from swarms.swarms import Swarms api_key = os.getenv("OPENAI_API_KEY") swarm = Swarms(openai_api_key=api_key) objective = "Please make a web GUI for using HTTP API server..." task = swarm.run(objective) print(task)``` |
 
+## Hierarhical Swarm
 
+```python
+from swarms import HierarchicalSwarm
+
+swarm = HierarchicalSwarm(
+    openai_api_key="your_openai_api_key", 
+    use_vectorstore=True, 
+    embedding_size=768, 
+    use_async=True, 
+    worker_name="My Custom Worker", 
+    human_in_the_loop=True, 
+    boss_prompt="You are a custom boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n ", 
+    worker_prompt="You are a custom worker in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n ", 
+    temperature=0.5, 
+    max_iterations=5, 
+    logging_enabled=True
+)
+result = swarm.run("your_objective")
+
+```
 ---
 
 
