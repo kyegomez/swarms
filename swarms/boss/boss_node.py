@@ -103,25 +103,22 @@ class BossNodeInitializer:
 
 
 class BossNode:
-    #the bossNode is responsible for creating and executing tasks using the BABYAGI model
-    #it takes a lm a vectorstore for memory and agent_executor for task exeuction, and a maximum number of iterations, for the babyagi model
     def __init__(self,
-                objective,
-                vectorstore,
-                boss_system_prompt: Optional[str] = "You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating a worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn a worker agent after creating a plan and pass the objective and plan to the worker agent.",
-                api_key=None,
-                worker_node=None, 
-                llm_class=OpenAI, 
-                max_iterations=5, 
-                verbose=False
-                ):
+                 objective,
+                 vectorstore,
+                 boss_system_prompt: Optional[str] = "You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating a worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn a worker agent after creating a plan and pass the objective and plan to the worker agent.",
+                 api_key=None,
+                 worker_node=None,
+                 llm_class=OpenAI,
+                 max_iterations=5,
+                 verbose=False,
+                 embedding_size=512  # You should provide an appropriate value for embedding_size
+                 ):
         
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.vectorstore = vectorstore
         self.worker_node = worker_node
-
         self.boss_system_prompt = boss_system_prompt
-        
         self.llm_class = llm_class
         self.max_iterations = max_iterations
         self.verbose = verbose
@@ -129,7 +126,16 @@ class BossNode:
         if not self.api_key:
             raise ValueError("[BossNode][ValueError][API KEY must be provided either as an argument or as an environment variable API_KEY]")
         
-        self.llm = self.initialize_llm(self.llm_class)
+        self.boss_initializer = BossNodeInitializer(
+            llm=None, 
+            vectorstore=self.vectorstore, 
+            agent_executor=None, 
+            max_iterations=self.max_iterations, 
+            human_in_the_loop=None, 
+            embedding_size=embedding_size
+        )
+
+        self.llm = self.boss_initializer.initialize_llm(self.llm_class)
 
         todo_prompt = PromptTemplate.from_template(boss_system_prompt)
         todo_chain = LLMChain(llm=self.llm, prompt=todo_prompt)
@@ -147,7 +153,14 @@ class BossNode:
 
         self.agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
 
-        self.boss = BossNodeInitializer(self.llm, self.vectorstore, self.agent_executor, self.max_iterations)
+        self.boss = BossNodeInitializer(
+            llm=self.llm, 
+            vectorstore=self.vectorstore, 
+            agent_executor=self.agent_executor, 
+            max_iterations=self.max_iterations,
+            human_in_the_loop=None,  # You may need to adjust this
+            embedding_size=embedding_size
+        )
         self.task = self.boss.create_task(objective)
 
     def run(self):
