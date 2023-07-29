@@ -28,7 +28,7 @@ class HierarchicalSwarm:
         self, 
         openai_api_key: Optional[str] = "", 
         use_vectorstore: Optional[bool] = True, 
-        # embedding_size: Optional[int] = None, 
+
         use_async: Optional[bool] = True, 
         worker_name: Optional[str] = "Swarm Worker AI Assistant",
         verbose: Optional[bool] = False,
@@ -44,7 +44,7 @@ class HierarchicalSwarm:
         self.use_async = use_async
         self.worker_name = worker_name
         self.human_in_the_loop = human_in_the_loop
-        # self.embedding_size = embedding_size
+
         self.boss_prompt = boss_prompt
         self.temperature = temperature
         self.max_iterations = max_iterations
