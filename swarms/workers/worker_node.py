@@ -66,8 +66,8 @@ class WorkerNodeInitializer:
             vectorstore = self.initialize_vectorstore()
             
             self.agent = AutoGPT.from_llm_and_tools(
-                worker_name=self.worker_name,
-                worker_role=self.worker_role,
+                ai_name=self.worker_name,
+                ai_role=self.worker_role,
                 tools=self.tools,
                 llm=self.llm,
                 memory=vectorstore,
