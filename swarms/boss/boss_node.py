@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 import faiss
 from langchain import LLMChain, OpenAI, PromptTemplate
@@ -99,36 +100,55 @@ class BossNodeInitializer:
 
 
 
-# from swarms import BossNode, OpenAI, LLMChain, Tool, ZeroShotAgent, AgentExecutor, PromptTemplate
 
-def BossNode(objective, api_key=None, vectorstore=None, worker_node=None, llm_class=OpenAI, max_iterations=5, verbose=False):
-    """
-    Wrapper function to initialize and use BossNode with given parameters.
-    API key can be passed as argument or set as an environment variable.
-    """
-    api_key = api_key or os.getenv('API_KEY')
 
-    if not api_key:
-        raise ValueError("API key must be provided either as argument or as an environment variable named 'API_KEY'.")
+class BossNode:
+    #the bossNode is responsible for creating and executing tasks using the BABYAGI model
+    #it takes a lm a vectorstore for memory and agent_executor for task exeuction, and a maximum number of iterations, for the babyagi model
+    def __init__(self,
+                objective,
+                vectorstore,
+                boss_system_prompt: Optional[str] = "You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating a worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn a worker agent after creating a plan and pass the objective and plan to the worker agent.",
+                api_key=None,
+                worker_node=None, 
+                llm_class=OpenAI, 
+                max_iterations=5, 
+                verbose=False
+                ):
+        
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.vectorstore = vectorstore
+        self.worker_node = worker_node
 
-    llm = BossNode.initialize_llm(llm_class)  # This function should be defined elsewhere
+        self.boss_system_prompt = boss_system_prompt
+        
+        self.llm_class = llm_class
+        self.max_iterations = max_iterations
+        self.verbose = verbose
 
-    todo_prompt = PromptTemplate.from_template("You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating a worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn a worker agent after creating a plan and pass the objective and plan to the worker agent.")
-    todo_chain = LLMChain(llm=llm, prompt=todo_prompt)
+        if not self.api_key:
+            raise ValueError("[BossNode][ValueError][API KEY must be provided either as an argument or as an environment variable API_KEY]")
+        
+        self.llm = self.initialize_llm(self.llm_class)
 
-    tools = [
-        Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for your objective. Note create a todo list then assign a ranking from 0.0 to 1.0 to each task, then sort the tasks based on the tasks most likely to achieve the objective. The Output: a todo list for that objective with rankings for each step from 0.1 Please be very clear what the objective is!"),
-        worker_node
-    ]
-    suffix = """Question: {task}\n{agent_scratchpad}"""
-    prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
-    
-    prompt = ZeroShotAgent.create_prompt(tools, prefix=prefix, suffix=suffix, input_variables=["objective", "task", "context", "agent_scratchpad"],)
-    llm_chain = LLMChain(llm=llm, prompt=prompt)
-    agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
+        todo_prompt = PromptTemplate.from_template(boss_system_prompt)
+        todo_chain = LLMChain(llm=self.llm, prompt=todo_prompt)
 
-    agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=verbose)
+        tools = [
+            Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for your objective. Note create a todo list then assign a ranking from 0.0 to 1.0 to each task, then sort the tasks based on the tasks most likely to achieve the objective. The Output: a todo list for that objective with rankings for each step from 0.1 Please be very clear what the objective is!"),
+            self.worker_node
+        ]
+        suffix = """Question: {task}\n{agent_scratchpad}"""
+        prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
+        
+        prompt = ZeroShotAgent.create_prompt(tools, prefix=prefix, suffix=suffix, input_variables=["objective", "task", "context", "agent_scratchpad"],)
+        llm_chain = LLMChain(llm=self.llm, prompt=prompt)
+        agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
 
-    boss = BossNode(llm, vectorstore, agent_executor, max_iterations)
-    task = boss.create_task(objective)
-    boss.run(task)
+        self.agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
+
+        self.boss = BossNodeInitializer(self.llm, self.vectorstore, self.agent_executor, self.max_iterations)
+        self.task = self.boss.create_task(objective)
+
+    def run(self):
+        self.boss.run(self.task)
