@@ -149,6 +149,7 @@ class WorkerNode:
             logging.error(f"Failed to initialize language model: {e}")
             raise
 
+
     def initialize_tools(self, llm_class):
         if not llm_class:
             logging.error("llm_class not cannot be none")
