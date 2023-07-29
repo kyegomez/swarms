@@ -53,7 +53,7 @@ class BossNodeInitializer:
         """
         try:     
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = self.embedding_size
+            embedding_size = 8192
             index = faiss.IndexFlatL2(embedding_size)
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as e:
