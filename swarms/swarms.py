@@ -134,7 +134,7 @@ class HierarchicalSwarm:
     def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI):
         try:    
             llm = self.initialize_llm(ChatOpenAI)
-            worker_node = WorkerNodeInitializer(llm=self.llm, tools=worker_tools, vectorstore=vectorstore)
+            worker_node = WorkerNodeInitializer(llm=llm, tools=worker_tools, vectorstore=vectorstore)
             worker_node.create_agent(ai_name=self.worker_name, ai_role="Assistant", search_kwargs={}, human_in_the_loop=self.human_in_the_loop)
             worker_description = self.worker_prompt
             worker_node_tool = Tool(name="WorkerNode AI Agent", func=worker_node.run, description= worker_description or "Input: an objective with a todo list for that objective. Output: your task completed: Please be very clear what the objective and task instructions are. The Swarm worker agent is Useful for when you need to spawn an autonomous agent instance as a worker to accomplish any complex tasks, it can search the internet or write code or spawn child multi-modality models to process and generate images and text or audio and so on")
