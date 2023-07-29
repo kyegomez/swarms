@@ -118,7 +118,7 @@ class WorkerNodeInitializer:
             raise e
 
 class WorkerNode:
-    def __init__(self, openai_api_key):
+    def __init__(self, openai_api_key, worker_name, worker_role):
         if not openai_api_key:
             logging.error("OpenAI API key is not provided")
             raise ValueError("openai_api_key cannot be None")
