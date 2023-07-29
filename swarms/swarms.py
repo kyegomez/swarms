@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # ---------- Constants ----------
 ROOT_DIR = "./data/"
 
+
 class HierarchicalSwarm:
     def __init__(
         self, 
@@ -80,20 +81,19 @@ class HierarchicalSwarm:
             objective(str): The task
         """
         try:
-            task = self.boss_node.create_task(objective)
-            logging.info(f"Running task: {task}")
+            self.boss_node.task = self.boss_node.create_task(objective)
+            logging.info(f"Running task: {self.boss_node.task}")
             if self.use_async:
                 loop = asyncio.get_event_loop()
-                result = loop.run_until_complete(self.boss_node.run(task))
+                result = loop.run_until_complete(self.boss_node.run())
             else:
-                result = self.boss_node.run(task)
-            logging.info(f"Completed tasks: {task}")
+                result = self.boss_node.run()
+            logging.info(f"Completed tasks: {self.boss_node.task}")
             return result
         except Exception as e:
             logging.error(f"An error occurred in run: {e}")
             return None
-        
-# usage-# usage-
+
 def swarm(
     api_key: Optional[str]="", 
     objective: Optional[str]="", 
@@ -126,4 +126,3 @@ def swarm(
     except Exception as e:
         logging.error(f"An error occured in swarm: {e}")
         return None
-
