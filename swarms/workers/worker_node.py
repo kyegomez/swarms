@@ -137,6 +137,9 @@ class WorkerNode:
         
         self.openai_api_key = openai_api_key
         self.worker_node_initializer = WorkerNodeInitializer(openai_api_key)
+        self.name = worker_name  # Added a name attribute
+        self.description = "A worker node that executes tasks"  # Added a description attribute
+
 
     def initialize_llm(self, llm_class, temperature):
         if not llm_class:
@@ -190,6 +193,7 @@ class WorkerNode:
                 human_in_the_loop=human_in_the_loop, 
                 search_kwargs=search_kwargs,
             )
+            worker_node.name = worker_name  # Setting the name here
             return worker_node
         except Exception as e:
             logging.error(f"Failed to create worker node: {e}")
