@@ -70,7 +70,7 @@ class HierarchicalSwarm:
 
 
 
-    def initialize_llm(self, llm_class, temperature=0.5):
+    def initialize_llm(self, llm_class):
         """
         Init LLM 
 
@@ -80,13 +80,9 @@ class HierarchicalSwarm:
         """
         try: 
             # Initialize language model
-            if self.llm_class == OpenAI:
-                return llm_class(openai_api_key=self.openai_api_key, temperature=self.temperature)
-            else:
-                return self.llm_class(model_id="gpt-2", temperature=self.temperature)
+            return llm_class(openai_api_key=self.openai_api_key, temperature=self.temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
-
 
     def initialize_tools(self, llm_class, extra_tools=None):
         """
