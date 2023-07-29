@@ -129,7 +129,7 @@ class BossNode:
         if not self.api_key:
             raise ValueError("[BossNode][ValueError][API KEY must be provided either as an argument or as an environment variable API_KEY]")
         
-        self.llm = llm_class
+        self.llm = self.initialize_llm(self.llm_class)
 
         todo_prompt = PromptTemplate.from_template(boss_system_prompt)
         todo_chain = LLMChain(llm=self.llm, prompt=todo_prompt)
