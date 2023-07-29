@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, List, Union
 
 import faiss
 from langchain.agents import Tool
@@ -25,46 +26,63 @@ ROOT_DIR = "./data/"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 class WorkerNodeInitializer:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
 
-    def __init__(self, llm, tools, vectorstore):
-        if not llm or not tools or not vectorstore:
-            logging.error("llm, tools, and vectorstore cannot be None.")
-            raise ValueError("llm, tools, and vectorstore cannot be None.")
+    def __init__(self, 
+                 llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
+                 tools: Optional[List[Tool]] = None, 
+                 vectorstore: Optional[FAISS] = None,
+                 ai_name: str = "Swarm Worker AI Assistant", 
+                 ai_role: str = "Assistant", 
+                 human_in_the_loop: bool = False, 
+                 search_kwargs: dict = {}, 
+                 verbose: bool = False,
+                 chat_history_file: str = "chat_history.txt"):
         
-        self.llm = llm
-        self.tools = tools
-        self.vectorstore = vectorstore
-        self.agent = None
+        self.llm = llm if llm is not None else ChatOpenAI()
+        self.tools = tools if tools is not None else [ReadFileTool(), WriteFileTool()]
+        self.vectorstore = vectorstore if vectorstore is not None else FAISS(faiss.IndexFlatIP(512))
 
-    def create_agent(self, ai_name="Swarm Worker AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={}, verbose=False):
+        # Initializing agent in the constructor
+        self.ai_name = ai_name
+        self.ai_role = ai_role
+        self.human_in_the_loop = human_in_the_loop
+        self.search_kwargs = search_kwargs
+        self.verbose = verbose
+        self.chat_history_file = chat_history_file
+
+        self.create_agent()
+
+    def create_agent(self):
+        
         logging.info("Creating agent in WorkerNode")
         try:
             self.agent = AutoGPT.from_llm_and_tools(
-                ai_name=ai_name,
-                ai_role=ai_role,
+                ai_name=self.ai_name,
+                ai_role=self.ai_role,
                 tools=self.tools,
                 llm=self.llm,
-                memory=self.vectorstore.as_retriever(search_kwargs=search_kwargs),
-                human_in_the_loop=human_in_the_loop,
-                chat_history_memory=FileChatMessageHistory("chat_history.txt"),
+                memory=self.vectorstore.as_retriever(search_kwargs=self.search_kwargs),
+                human_in_the_loop=self.human_in_the_loop,
+                chat_history_memory=FileChatMessageHistory(self.chat_history_file),
             )
             # self.agent.chain.verbose = verbose
         except Exception as e:
             logging.error(f"Error while creating agent: {str(e)}")
             raise e
 
-
-    def add_tool(self, tool: Tool):
+    def add_tool(self, tool: Optional[Tool] = None):
+        if tool is None:
+            tool = DuckDuckGoSearchRun()
+        
         if not isinstance(tool, Tool):
             logging.error("Tool must be an instance of Tool.")
             raise TypeError("Tool must be an instance of Tool.")
         
         self.tools.append(tool)
 
-    def run(self, prompt: str) -> str:
+    def run(self, prompt) -> str:
         if not isinstance(prompt, str):
             logging.error("Prompt must be a string.")
             raise TypeError("Prompt must be a string.")
@@ -79,9 +97,6 @@ class WorkerNodeInitializer:
         except Exception as e:
             logging.error(f"While running the agent: {str(e)}")
             raise e
-
-        
-    
 
 
 class WorkerNode:
