@@ -160,7 +160,7 @@ class WorkerNode:
         except Exception as e:
             logging.error(f"Failed to initialize tools: {e}")
 
-    def create_worker_node(self, llm_class=ChatOpenAI, worker_name, worker_role, human_in_the_loop, search_kwargs={}, verbose):
+    def create_worker_node(self, worker_name, worker_role, human_in_the_loop, llm_class=ChatOpenAI, search_kwargs={}, **kwargs):
         if not llm_class:
             logging.error("llm_class cannot be None.")
             raise ValueError("llm_class cannot be None.")
@@ -175,13 +175,13 @@ class WorkerNode:
                 ai_name=worker_name, 
                 ai_role=worker_role, 
                 human_in_the_loop=human_in_the_loop, 
-                search_kwargs=search_kwargs, 
-                verbose=verbose
+                search_kwargs=search_kwargs,
             )
             return worker_node
         except Exception as e:
             logging.error(f"Failed to create worker node: {e}")
             raise
+
 
 def worker_node(openai_api_key):
     if not openai_api_key:
