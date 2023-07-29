@@ -64,7 +64,7 @@ class HierarchicalSwarm:
         self.worker_node = WorkerNode(
             openai_api_key=self.openai_api_key,
             # use_vectorstore=self.use_vectorstore,
-            embedding_size=self.embedding_size,
+            # embedding_size=self.embedding_size,
             worker_name=self.worker_name,
             worker_prompt=self.worker_prompt,
             temperature=self.temperature,
