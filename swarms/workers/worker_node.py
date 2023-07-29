@@ -35,11 +35,11 @@ class WorkerNodeInitializer:
                  tools: Optional[List[Tool]] = None, 
                  vectorstore: Optional[FAISS] = None,
                  embedding_size: Optional[int] = 1926,
-                 worker_name: str = "Swarm Worker AI Assistant", 
-                 worker_role: str = "Assistant", 
-                 human_in_the_loop: bool = False, 
+                 worker_name: Optional[str] = "Swarm Worker AI Assistant", 
+                 worker_role: Optional[str] = "Assistant", 
+                 human_in_the_loop: Optional[bool] = False, 
                  search_kwargs: dict = {}, 
-                 verbose: bool = False,
+                 verbose: Optional[bool] = False,
                  chat_history_file: str = "chat_history.txt"):
         
         self.llm = llm if llm is not None else ChatOpenAI()
