@@ -101,12 +101,11 @@ class BossNodeInitializer:
 
 
 
-
 class BossNode:
     def __init__(self,
                  objective,
                  vectorstore,
-                 boss_system_prompt: Optional[str] = "You are a boss planer in a swarm who is an expert at coming up with a todo list for a given objective and then creating a worker to help you accomplish your task. Rate every task on the importance of it's probability to complete the main objective on a scale from 0 to 1, an integer. Come up with a todo list for this objective: {objective} and then spawn a worker agent to complete the task for you. Always spawn a worker agent after creating a plan and pass the objective and plan to the worker agent.",
+                 boss_system_prompt: Optional[str] = "You are a boss planner in a swarm...",
                  api_key=None,
                  worker_node=None,
                  llm_class=OpenAI,
@@ -126,26 +125,17 @@ class BossNode:
         if not self.api_key:
             raise ValueError("[BossNode][ValueError][API KEY must be provided either as an argument or as an environment variable API_KEY]")
         
-        self.boss_initializer = BossNodeInitializer(
-            llm=None, 
-            vectorstore=self.vectorstore, 
-            agent_executor=None, 
-            max_iterations=self.max_iterations, 
-            human_in_the_loop=None, 
-            embedding_size=embedding_size
-        )
-
-        self.llm = self.boss_initializer.initialize_llm(self.llm_class)
+        self.llm = self.initialize_llm(self.llm_class)
 
         todo_prompt = PromptTemplate.from_template(boss_system_prompt)
         todo_chain = LLMChain(llm=self.llm, prompt=todo_prompt)
 
         tools = [
-            Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists. Input: an objective to create a todo list for your objective. Note create a todo list then assign a ranking from 0.0 to 1.0 to each task, then sort the tasks based on the tasks most likely to achieve the objective. The Output: a todo list for that objective with rankings for each step from 0.1 Please be very clear what the objective is!"),
+            Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists..."),
             self.worker_node
         ]
         suffix = """Question: {task}\n{agent_scratchpad}"""
-        prefix = """You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
+        prefix = """You are a Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
         
         prompt = ZeroShotAgent.create_prompt(tools, prefix=prefix, suffix=suffix, input_variables=["objective", "task", "context", "agent_scratchpad"],)
         llm_chain = LLMChain(llm=self.llm, prompt=prompt)
@@ -153,15 +143,23 @@ class BossNode:
 
         self.agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
 
-        self.boss = BossNodeInitializer(
+        self.boss_initializer = BossNodeInitializer(
             llm=self.llm, 
             vectorstore=self.vectorstore, 
             agent_executor=self.agent_executor, 
-            max_iterations=self.max_iterations,
+            max_iterations=self.max_iterations, 
             human_in_the_loop=None,  # You may need to adjust this
             embedding_size=embedding_size
         )
-        self.task = self.boss.create_task(objective)
+        self.task = self.boss_initializer.create_task(objective)
+
+    def initialize_llm(self, llm_class, temperature=0.5):
+        try:
+            return llm_class(openai_api_key=self.api_key, temperature=temperature)
+        except Exception as e:
+            logging.error(f"Failed to initialize language model: {e}")
+            raise e
 
     def run(self):
-        self.boss.run(self.task)
+        self.boss_initializer.run(self.task)
+
