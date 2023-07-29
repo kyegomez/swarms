@@ -103,7 +103,7 @@ class BossNodeInitializer:
 
 class BossNode:
     def __init__(self,
-                 vectorstore,
+                #  vectorstore,
                  objective: Optional[str] = None,
                  boss_system_prompt: Optional[str] = "You are a boss planner in a swarm...",
                  api_key=None,
@@ -115,7 +115,7 @@ class BossNode:
                  ):
         
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.vectorstore = vectorstore
+        # self.vectorstore = vectorstore
         self.worker_node = worker_node
         self.boss_system_prompt = boss_system_prompt
         self.llm_class = llm_class
@@ -143,9 +143,11 @@ class BossNode:
 
         self.agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
 
+        vectorstore = self.initialize_vectorstore()
+
         self.boss_initializer = BossNodeInitializer(
             llm=self.llm, 
-            vectorstore=self.vectorstore, 
+            vectorstore=vectorstore, 
             agent_executor=self.agent_executor, 
             max_iterations=self.max_iterations, 
             human_in_the_loop=None,  # You may need to adjust this
@@ -159,6 +161,17 @@ class BossNode:
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
             raise e
+        
+    def initialize_vectorstore(self):
+        try:     
+            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+            embedding_size = self.embedding_size
+            index = faiss.IndexFlatL2(embedding_size)
+            return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+        except Exception as e:
+            logging.error(f"Failed to initialize vector store: {e}")
+            return None
+        
 
     def run(self):
         self.boss_initializer.run(self.task)
