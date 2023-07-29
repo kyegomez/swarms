@@ -26,6 +26,7 @@ ROOT_DIR = "./data/"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 class WorkerNodeInitializer:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
 
@@ -42,7 +43,7 @@ class WorkerNodeInitializer:
         
         self.llm = llm if llm is not None else ChatOpenAI()
         self.tools = tools if tools is not None else [ReadFileTool(), WriteFileTool()]
-        self.vectorstore = vectorstore if vectorstore is not None else FAISS(faiss.IndexFlatIP(512))
+        self.vectorstore = vectorstore if vectorstore is not None else #FAISS(faiss.IndexFlatIP(512))
 
         # Initializing agent in the constructor
         self.ai_name = ai_name
