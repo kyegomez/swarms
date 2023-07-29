@@ -55,7 +55,7 @@ class HierarchicalSwarm:
         self.human_in_the_loop = human_in_the_loop
         self.embedding_size = embedding_size
         self.boss_prompt = boss_prompt
-        self.worker_prompt = worker_prompt
+        # self.worker_prompt = worker_prompt
         self.temperature = temperature
         self.max_iterations = max_iterations
         self.logging_enabled = logging_enabled
@@ -66,7 +66,7 @@ class HierarchicalSwarm:
             # use_vectorstore=self.use_vectorstore,
             # embedding_size=self.embedding_size,
             worker_name=self.worker_name,
-            worker_prompt=self.worker_prompt,
+            # worker_prompt=self.worker_prompt,
             temperature=self.temperature,
             human_in_the_loop=self.human_in_the_loop,
             verbose=self.verbose
