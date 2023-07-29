@@ -138,7 +138,7 @@ class WorkerNode:
         self.worker_node_initializer = WorkerNodeInitializer(openai_api_key)
         self.name = worker_name  # Added a name attribute
         self.description = "A worker node that executes tasks"  # Added a description attribute
-        self.embedding_size = embedding_size
+        # self.embedding_size = embedding_size
 
 
     def initialize_llm(self, llm_class, temperature):
