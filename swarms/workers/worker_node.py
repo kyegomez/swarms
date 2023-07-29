@@ -126,7 +126,7 @@ class WorkerNode:
         self.openai_api_key = openai_api_key
         self.worker_node_initializer = WorkerNodeInitializer(openai_api_key)
 
-    def initialize_llm(self, llm_class, temperature=0.5):
+    def initialize_llm(self, llm_class, temperature):
         if not llm_class:
             logging.error("llm_class cannot be none")
             raise ValueError("llm_class cannot be None")
@@ -160,7 +160,7 @@ class WorkerNode:
         except Exception as e:
             logging.error(f"Failed to initialize tools: {e}")
 
-    def create_worker_node(self, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={}, verbose=False):
+    def create_worker_node(self, llm_class=ChatOpenAI, worker_name, worker_role, human_in_the_loop, search_kwargs={}, verbose):
         if not llm_class:
             logging.error("llm_class cannot be None.")
             raise ValueError("llm_class cannot be None.")
@@ -172,8 +172,8 @@ class WorkerNode:
                 llm=self.initialize_llm(llm_class), 
                 tools=worker_tools, 
                 vectorstore=vectorstore,
-                ai_name=ai_name, 
-                ai_role=ai_role, 
+                ai_name=worker_name, 
+                ai_role=worker_role, 
                 human_in_the_loop=human_in_the_loop, 
                 search_kwargs=search_kwargs, 
                 verbose=verbose
