@@ -29,7 +29,7 @@ class Anthropic:
             d["top_p"] = self.top_p
         return d
 
-    def _call(self, prompt, stop=None):
+    def generate(self, prompt, stop=None):
         """Call out to Anthropic's completion endpoint."""
         stop = stop or []
         params = self._default_params()
