@@ -44,11 +44,12 @@ class WorkerNodeInitializer:
         
         self.llm = llm if llm is not None else ChatOpenAI()
         self.tools = tools if tools is not None else [ReadFileTool(), WriteFileTool()]
-        self.vectorstore = vectorstore #if vectorstore is not None else #FAISS(faiss.IndexFlatIP(512))
+        self.vectorstore = vectorstore
 
         # Initializing agent in the constructor
         self.worker_name = worker_name
         self.worker_role = worker_role
+        self.embedding_size = embedding_size
         self.human_in_the_loop = human_in_the_loop
         self.search_kwargs = search_kwargs
         self.verbose = verbose
@@ -60,14 +61,16 @@ class WorkerNodeInitializer:
         
         logging.info("Creating agent in WorkerNode")
         try:
-            if self.vectorstore is None:
-                raise ValueError("Vectorstore is not initialized in WorkerNodeInitializer")
+            # if self.vectorstore is None:
+            #     raise ValueError("Vectorstore is not initialized in WorkerNodeInitializer")
+            vectorstore = self.initialize_vectorstore()
+            
             self.agent = AutoGPT.from_llm_and_tools(
                 worker_name=self.worker_name,
                 worker_role=self.worker_role,
                 tools=self.tools,
                 llm=self.llm,
-                memory=self.vectorstore.as_retriever(search_kwargs=self.search_kwargs),
+                memory=vectorstore,
                 human_in_the_loop=self.human_in_the_loop,
                 chat_history_memory=FileChatMessageHistory(self.chat_history_file),
             )
@@ -85,6 +88,17 @@ class WorkerNodeInitializer:
             raise TypeError("Tool must be an instance of Tool.")
         
         self.tools.append(tool)
+
+    def initialize_vectorstore(self):
+        try:
+            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+            embedding_size = self.embedding_size
+            index = faiss.IndexFlatL2(embedding_size=embedding_size)
+            return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+        
+        except Exception as e:
+            logging.error(f"Failed to initialize vector store: {e}")
+            return None
 
     def run(self, prompt) -> str:
         if not isinstance(prompt, str):
