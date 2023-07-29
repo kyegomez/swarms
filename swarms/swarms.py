@@ -46,7 +46,7 @@ class HierarchicalSwarm:
         boss_prompt: Optional[str] = "You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n",
 
         worker_prompt: Optional[str] = None,
-        temperature: Optional[float] = None,
+        temperature: Optional[float] = 0.5,
         max_iterations: Optional[int] = None,
         logging_enabled: Optional[bool] = True):
             
