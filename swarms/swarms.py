@@ -80,7 +80,7 @@ class HierarchicalSwarm:
         """
         try: 
             # Initialize language model
-            self.llm = OpenAI(openai_api_key=self.openai_api_key, temperature=self.temperature)
+            self.llm = llm_class(openai_api_key=self.openai_api_key, temperature=self.temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
 
