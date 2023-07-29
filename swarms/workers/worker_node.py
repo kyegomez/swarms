@@ -34,8 +34,9 @@ class WorkerNodeInitializer:
                  llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
                  tools: Optional[List[Tool]] = None, 
                  vectorstore: Optional[FAISS] = None,
-                 ai_name: str = "Swarm Worker AI Assistant", 
-                 ai_role: str = "Assistant", 
+                 embedding_size: Optional[int] = 1926,
+                 worker_name: str = "Swarm Worker AI Assistant", 
+                 worker_role: str = "Assistant", 
                  human_in_the_loop: bool = False, 
                  search_kwargs: dict = {}, 
                  verbose: bool = False,
@@ -46,8 +47,8 @@ class WorkerNodeInitializer:
         self.vectorstore = vectorstore #if vectorstore is not None else #FAISS(faiss.IndexFlatIP(512))
 
         # Initializing agent in the constructor
-        self.ai_name = ai_name
-        self.ai_role = ai_role
+        self.worker_name = worker_name
+        self.worker_role = worker_role
         self.human_in_the_loop = human_in_the_loop
         self.search_kwargs = search_kwargs
         self.verbose = verbose
@@ -62,8 +63,8 @@ class WorkerNodeInitializer:
             if self.vectorstore is None:
                 raise ValueError("Vectorstore is not initialized in WorkerNodeInitializer")
             self.agent = AutoGPT.from_llm_and_tools(
-                ai_name=self.ai_name,
-                ai_role=self.ai_role,
+                worker_name=self.worker_name,
+                worker_role=self.worker_role,
                 tools=self.tools,
                 llm=self.llm,
                 memory=self.vectorstore.as_retriever(search_kwargs=self.search_kwargs),
@@ -101,7 +102,6 @@ class WorkerNodeInitializer:
             logging.error(f"While running the agent: {str(e)}")
             raise e
 
-
 class WorkerNode:
     def __init__(self, openai_api_key):
         if not openai_api_key:
@@ -109,6 +109,7 @@ class WorkerNode:
             raise ValueError("openai_api_key cannot be None")
         
         self.openai_api_key = openai_api_key
+        self.worker_node_initializer = WorkerNodeInitializer(openai_api_key)
 
     def initialize_llm(self, llm_class, temperature=0.5):
         if not llm_class:
@@ -126,7 +127,6 @@ class WorkerNode:
             logging.error("llm_class not cannot be none")
             raise ValueError("llm_class cannot be none")
         try:
-                
             logging.info('Creating WorkerNode')
             llm = self.initialize_llm(llm_class)
             web_search = DuckDuckGoSearchRun()
@@ -145,26 +145,24 @@ class WorkerNode:
         except Exception as e:
             logging.error(f"Failed to initialize tools: {e}")
 
-    def initialize_vectorstore(self):
-        try:
-                
-            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = 1536
-            index = faiss.IndexFlatL2(embedding_size)
-            return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
-        except Exception as e:
-            logging.error(f"Failed to initialize vector store: {e}")
-            raise
-
     def create_worker_node(self, llm_class=ChatOpenAI, ai_name="Swarm Worker AI Assistant", ai_role="Assistant", human_in_the_loop=False, search_kwargs={}, verbose=False):
         if not llm_class:
             logging.error("llm_class cannot be None.")
             raise ValueError("llm_class cannot be None.")
         try:
             worker_tools = self.initialize_tools(llm_class)
-            vectorstore = self.initialize_vectorstore()
-            worker_node = WorkerNode(llm=self.initialize_llm(llm_class), tools=worker_tools, vectorstore=vectorstore)
-            worker_node.create_agent(ai_name=ai_name, ai_role=ai_role, human_in_the_loop=human_in_the_loop, search_kwargs=search_kwargs, verbose=verbose)
+            vectorstore = self.worker_node_initializer.initialize_vectorstore()
+            worker_node = WorkerNodeInitializer(
+                openai_api_key=self.openai_api_key,
+                llm=self.initialize_llm(llm_class), 
+                tools=worker_tools, 
+                vectorstore=vectorstore,
+                ai_name=ai_name, 
+                ai_role=ai_role, 
+                human_in_the_loop=human_in_the_loop, 
+                search_kwargs=search_kwargs, 
+                verbose=verbose
+            )
             return worker_node
         except Exception as e:
             logging.error(f"Failed to create worker node: {e}")
@@ -176,12 +174,8 @@ def worker_node(openai_api_key):
         raise ValueError("OpenAI API key is required")
     
     try:
-
-        initializer = WorkerNodeInitializer(openai_api_key)
-        worker_node = initializer.create_worker_node()
-        return worker_node
+        worker_node = WorkerNode(openai_api_key)
+        return worker_node.create_worker_node()
     except Exception as e:
         logging.error(f"An error occured in worker_node: {e}")
         raise
-
-
