@@ -110,7 +110,6 @@ class BossNode:
                  llm_class=OpenAI,
                  max_iterations=5,
                  verbose=False,
-                #  embedding_size=512  # You should provide an appropriate value for embedding_size
                  ):
         
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
@@ -149,8 +148,6 @@ class BossNode:
             vectorstore=vectorstore, 
             agent_executor=self.agent_executor, 
             max_iterations=self.max_iterations, 
-            human_in_the_loop=None,  # You may need to adjust this
-            embedding_size=embedding_size
         )
         self.task = self.boss_initializer.create_task(objective)
 
