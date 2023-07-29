@@ -1,24 +1,22 @@
 from __future__ import annotations
 
 from typing import List, Optional
+from pydantic import ValidationError
+
+
+from swarms.agents.utils.Agent import AgentOutputParser
+from swarms.agents.utils.human_input import HumanInputRun
+from swarms.agents.prompts.prompt_generator import FINISH_NAME
+
 
 from langchain.chains.llm import LLMChain
 from langchain.chat_models.base import BaseChatModel
 from langchain.memory import ChatMessageHistory
-from langchain.schema import (
-    BaseChatMessageHistory,
-    Document,
-)
+
+from langchain.schema import (BaseChatMessageHistory, Document,)
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.tools.base import BaseTool
-from langchain.tools.human.tool import HumanInputRun
 from langchain.vectorstores.base import VectorStoreRetriever
-from langchain_experimental.autonomous_agents.autogpt.prompt_generator import (
-    FINISH_NAME,
-)
-from pydantic import ValidationError
-
-from swarms.agents.utils.Agent import AgentOutputParser
 
 
 class Agent:
