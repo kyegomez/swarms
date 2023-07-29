@@ -20,7 +20,7 @@ class BossNodeInitializer:
     The BossNode class is responsible for creating and executing tasks using the BabyAGI model.
     It takes a language model (llm), a vectorstore for memory, an agent_executor for task execution, and a maximum number of iterations for the BabyAGI model.
     """
-    def __init__(self, llm, vectorstore, agent_executor, max_iterations):
+    def __init__(self, llm, vectorstore, agent_executor, max_iterations, human_in_the_loop, embedding_size):
         if not llm or not vectorstore or not agent_executor or not max_iterations:
             logging.error("llm, vectorstore, agent_executor, and max_iterations cannot be None.")
             raise ValueError("llm, vectorstore, agent_executor, and max_iterations cannot be None.")
@@ -28,6 +28,8 @@ class BossNodeInitializer:
         self.vectorstore = vectorstore
         self.agent_executor = agent_executor
         self.max_iterations = max_iterations
+        self.human_in_the_loop = human_in_the_loop
+        self.embedding_size = embedding_size
 
         try:
             self.baby_agi = BabyAGI.from_llm(
@@ -35,7 +37,7 @@ class BossNodeInitializer:
                 vectorstore=self.vectorstore,
                 task_execution_chain=self.agent_executor,
                 max_iterations=self.max_iterations,
-                human_in_the_loop=True
+                human_in_the_loop=self.human_in_the_loop
             )
         except ValidationError as e:
             logging.error(f"Validation Error while initializing BabyAGI: {e}")
@@ -50,7 +52,7 @@ class BossNodeInitializer:
         """
         try:     
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = 1536
+            embedding_size = self.embedding_size
             index = faiss.IndexFlatL2(embedding_size)
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as e:
