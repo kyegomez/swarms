@@ -66,7 +66,7 @@ class HierarchicalSwarm:
         self.logging_enabled = logging_enabled
 
         self.verbose = verbose
-        
+
 
         self.logger = logging.getLogger()
         if not logging_enabled:
@@ -134,6 +134,7 @@ class HierarchicalSwarm:
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
             return None
+
 
     def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI):
         try:    
@@ -203,6 +204,8 @@ class HierarchicalSwarm:
             assert worker_tools is not None, "worker_tools is not initialized"
 
             vectorstore = self.initialize_vectorstore() if self.use_vectorstore else None
+            assert vectorstore is not None, "vectorstore is not initialized"
+
             worker_node = self.initialize_worker_node(worker_tools, vectorstore)
 
             boss_node = self.initialize_boss_node(vectorstore, worker_node)
