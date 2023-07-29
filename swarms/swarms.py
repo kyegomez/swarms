@@ -2,6 +2,9 @@ import asyncio
 import logging
 from typing import Optional
 
+from langchain import LLMChain, OpenAI, PromptTemplate
+
+
 from swarms.agents.tools.main import WebpageQATool, process_csv
 from swarms.boss.boss_node import BossNode
 from swarms.workers.worker_node import WorkerNode
@@ -56,10 +59,13 @@ class HierarchicalSwarm:
         )
 
         self.boss_node = BossNode(
+            objective="",
+            api_key=self.openai_api_key,
+            vectorstore=None,
             worker_node=self.worker_node,
+            llm_class=OpenAI,
             max_iterations=self.max_iterations,
-            human_in_the_loop=self.human_in_the_loop,
-            embedding_size=self.embedding_size
+            verbose=self.verbose
         )
 
         self.logger = logging.getLogger()
