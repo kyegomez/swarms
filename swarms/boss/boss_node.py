@@ -21,7 +21,7 @@ class BossNodeInitializer:
     The BossNode class is responsible for creating and executing tasks using the BabyAGI model.
     It takes a language model (llm), a vectorstore for memory, an agent_executor for task execution, and a maximum number of iterations for the BabyAGI model.
     """
-    def __init__(self, llm, vectorstore, agent_executor, max_iterations, human_in_the_loop, embedding_size):
+    def __init__(self, llm, vectorstore, agent_executor, max_iterations, human_in_the_loop):
         if not llm or not vectorstore or not agent_executor or not max_iterations:
             logging.error("llm, vectorstore, agent_executor, and max_iterations cannot be None.")
             raise ValueError("llm, vectorstore, agent_executor, and max_iterations cannot be None.")
@@ -30,7 +30,6 @@ class BossNodeInitializer:
         self.agent_executor = agent_executor
         self.max_iterations = max_iterations
         self.human_in_the_loop = human_in_the_loop
-        self.embedding_size = embedding_size
 
         try:
             self.baby_agi = BabyAGI.from_llm(
@@ -111,7 +110,7 @@ class BossNode:
                  llm_class=OpenAI,
                  max_iterations=5,
                  verbose=False,
-                 embedding_size=512  # You should provide an appropriate value for embedding_size
+                #  embedding_size=512  # You should provide an appropriate value for embedding_size
                  ):
         
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
