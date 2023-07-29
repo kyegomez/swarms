@@ -2,19 +2,6 @@ import asyncio
 import logging
 from typing import Optional
 
-import faiss
-from langchain import LLMChain, OpenAI, PromptTemplate
-from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
-from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
-from langchain.chat_models import ChatOpenAI
-from langchain.docstore import InMemoryDocstore
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.tools import DuckDuckGoSearchRun
-from langchain.tools.file_management.read import ReadFileTool
-from langchain.tools.file_management.write import WriteFileTool
-from langchain.vectorstores import FAISS
-
-
 from swarms.agents.tools.main import WebpageQATool, process_csv
 from swarms.boss.boss_node import BossNode
 from swarms.workers.worker_node import WorkerNode
@@ -55,7 +42,6 @@ class HierarchicalSwarm:
         self.human_in_the_loop = human_in_the_loop
         self.embedding_size = embedding_size
         self.boss_prompt = boss_prompt
-        # self.worker_prompt = worker_prompt
         self.temperature = temperature
         self.max_iterations = max_iterations
         self.logging_enabled = logging_enabled
@@ -63,10 +49,7 @@ class HierarchicalSwarm:
 
         self.worker_node = WorkerNode(
             openai_api_key=self.openai_api_key,
-            # use_vectorstore=self.use_vectorstore,
-            # embedding_size=self.embedding_size,
             worker_name=self.worker_name,
-            # worker_prompt=self.worker_prompt,
             temperature=self.temperature,
             human_in_the_loop=self.human_in_the_loop,
             verbose=self.verbose
