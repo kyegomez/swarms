@@ -39,7 +39,7 @@ streamlit
 
 test-tube
 timm
-torchmetrics
+# torchmetrics
 
 webdataset
 yapf
@@ -49,7 +49,7 @@ wikipedia==1.4.0
 httpx
 ggl
 
-gradio_tools
+
 arxiv
 google-api-python-client 
 
