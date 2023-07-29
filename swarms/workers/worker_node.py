@@ -119,19 +119,20 @@ class WorkerNodeInitializer:
 
 class WorkerNode:
     def __init__(self, 
-                 openai_api_key: str,
-                 llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
-                 tools: Optional[List[Tool]] = None, 
-                 vectorstore: Optional[FAISS] = None,
-                 embedding_size: Optional[int] = 1926,
-                 worker_name: Optional[str] = "Swarm Worker AI Assistant", 
-                 worker_role: Optional[str] = "Assistant", 
-                 human_in_the_loop: Optional[bool] = False, 
-                 search_kwargs: dict = {}, 
-                 verbose: Optional[bool] = False,
-                 chat_history_file: str = "chat_history.txt"):        
-                if not openai_api_key:
-            logging.error("OpenAI API key is not provided")
+            openai_api_key: str,
+            temperature: int, 
+            llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
+            tools: Optional[List[Tool]] = None, 
+            vectorstore: Optional[FAISS] = None,
+            embedding_size: Optional[int] = 1926,
+            worker_name: Optional[str] = "Swarm Worker AI Assistant", 
+            worker_role: Optional[str] = "Assistant", 
+            human_in_the_loop: Optional[bool] = False, 
+            search_kwargs: dict = {}, 
+            verbose: Optional[bool] = False,
+            chat_history_file: str = "chat_history.txt"):       
+    
+        if not openai_api_key:
             raise ValueError("openai_api_key cannot be None")
         
         self.openai_api_key = openai_api_key
