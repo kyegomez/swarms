@@ -43,7 +43,7 @@ class WorkerNodeInitializer:
         
         self.llm = llm if llm is not None else ChatOpenAI()
         self.tools = tools if tools is not None else [ReadFileTool(), WriteFileTool()]
-        self.vectorstore = vectorstore if vectorstore is not None else #FAISS(faiss.IndexFlatIP(512))
+        self.vectorstore = vectorstore #if vectorstore is not None else #FAISS(faiss.IndexFlatIP(512))
 
         # Initializing agent in the constructor
         self.ai_name = ai_name
