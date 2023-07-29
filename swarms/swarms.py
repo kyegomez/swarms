@@ -60,9 +60,7 @@ class HierarchicalSwarm:
         )
 
         self.boss_node = BossNode(
-            objective="",
             api_key=self.openai_api_key,
-            vectorstore=None,
             worker_node=self.worker_node,
             llm_class=OpenAI,
             max_iterations=self.max_iterations,
@@ -74,12 +72,6 @@ class HierarchicalSwarm:
             self.logger.disabled = True
 
     def run(self, objective):
-        """
-        Run the swarm with the given objective
-
-        Params:
-            objective(str): The task
-        """
         try:
             self.boss_node.task = self.boss_node.create_task(objective)
             logging.info(f"Running task: {self.boss_node.task}")
@@ -98,16 +90,6 @@ def swarm(
     api_key: Optional[str]="", 
     objective: Optional[str]="", 
     ):
-    """
-    Run the swarm with the given API key and objective.
-
-    Parameters:
-    api_key (str): The OpenAI API key. Default is an empty string.
-    objective (str): The objective. Default is an empty string.
-
-    Returns:
-    The result of the swarm.
-    """
 
     if not api_key or not isinstance(api_key, str):
         logging.error("Invalid OpenAI key")
