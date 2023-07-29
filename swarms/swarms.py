@@ -133,6 +133,7 @@ class HierarchicalSwarm:
 
     def initialize_worker_node(self, worker_tools, vectorstore, llm_class=ChatOpenAI):
         try:    
+            llm = self.initialize_llm(ChatOpenAI)
             worker_node = WorkerNodeInitializer(llm=self.llm, tools=worker_tools, vectorstore=vectorstore)
             worker_node.create_agent(ai_name=self.worker_name, ai_role="Assistant", search_kwargs={}, human_in_the_loop=self.human_in_the_loop)
             worker_description = self.worker_prompt
