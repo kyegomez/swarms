@@ -29,8 +29,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class WorkerNodeInitializer:
     """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
-
     def __init__(self, 
+                 openai_api_key: str,
                  llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
                  tools: Optional[List[Tool]] = None, 
                  vectorstore: Optional[FAISS] = None,
@@ -41,7 +41,7 @@ class WorkerNodeInitializer:
                  search_kwargs: dict = {}, 
                  verbose: Optional[bool] = False,
                  chat_history_file: str = "chat_history.txt"):
-        
+        self.openai_api_key = openai_api_key
         self.llm = llm if llm is not None else ChatOpenAI()
         self.tools = tools if tools is not None else [ReadFileTool(), WriteFileTool()]
         self.vectorstore = vectorstore
@@ -168,7 +168,7 @@ class WorkerNode:
             worker_tools = self.initialize_tools(llm_class)
             vectorstore = self.worker_node_initializer.initialize_vectorstore()
             worker_node = WorkerNodeInitializer(
-                openai_api_key=self.openai_api_key,
+                openai_api_key=self.openai_api_key, # pass the openai_api_key
                 llm=self.initialize_llm(llm_class), 
                 tools=worker_tools, 
                 vectorstore=vectorstore,
@@ -181,6 +181,7 @@ class WorkerNode:
         except Exception as e:
             logging.error(f"Failed to create worker node: {e}")
             raise
+
 
 
 def worker_node(openai_api_key):
