@@ -33,7 +33,7 @@ class WorkerNodeInitializer:
                  openai_api_key: str,
                  llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
                  tools: Optional[List[Tool]] = None, 
-                 vectorstore: Optional[FAISS] = None,
+                #  vectorstore: Optional[FAISS] = None,
                  embedding_size: Optional[int] = 1926,
                  worker_name: Optional[str] = "Swarm Worker AI Assistant", 
                  worker_role: Optional[str] = "Assistant", 
@@ -44,7 +44,7 @@ class WorkerNodeInitializer:
         self.openai_api_key = openai_api_key
         self.llm = llm if llm is not None else ChatOpenAI()
         self.tools = tools if tools is not None else [ReadFileTool(), WriteFileTool()]
-        self.vectorstore = vectorstore
+        # self.vectorstore = vectorstore
 
         # Initializing agent in the constructor
         self.worker_name = worker_name
@@ -91,9 +91,8 @@ class WorkerNodeInitializer:
 
     def initialize_vectorstore(self):
         try:
-            embedding_size = self.embedding_size
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = embedding_size
+            embedding_size = self.embedding_size
             index = faiss.IndexFlatL2(embedding_size=embedding_size)
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         
@@ -123,8 +122,8 @@ class WorkerNode:
             temperature: int, 
             llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
             tools: Optional[List[Tool]] = None, 
-            vectorstore: Optional[FAISS] = None,
-            embedding_size: Optional[int] = 1926,
+            # vectorstore: Optional[FAISS] = None,
+            embedding_size: Optional[int] = 4026,
             worker_name: Optional[str] = "Swarm Worker AI Assistant", 
             worker_role: Optional[str] = "Assistant", 
             human_in_the_loop: Optional[bool] = False, 
@@ -139,6 +138,7 @@ class WorkerNode:
         self.worker_node_initializer = WorkerNodeInitializer(openai_api_key)
         self.name = worker_name  # Added a name attribute
         self.description = "A worker node that executes tasks"  # Added a description attribute
+        self.embedding_size = embedding_size
 
 
     def initialize_llm(self, llm_class, temperature):
