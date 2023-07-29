@@ -41,6 +41,7 @@ class HierarchicalSwarm:
         embedding_size: Optional[int] = None, 
         use_async: Optional[bool] = True, 
         worker_name: Optional[str] = "Swarm Worker AI Assistant",
+        verbose: Optional[bool] = False,
 
         human_in_the_loop: Optional[bool] = True, 
         boss_prompt: Optional[str] = "You are an Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n",
@@ -63,6 +64,9 @@ class HierarchicalSwarm:
         self.temperature = temperature
         self.max_iterations = max_iterations
         self.logging_enabled = logging_enabled
+
+        self.verbose = verbose
+        
 
         self.logger = logging.getLogger()
         if not logging_enabled:
@@ -143,7 +147,7 @@ class HierarchicalSwarm:
             logging.error(f"Failed to initialize worker node: {e}")
             raise
 
-    def initialize_boss_node(self, vectorstore, worker_node, llm_class=OpenAI, max_iterations=None, verbose=False):
+    def initialize_boss_node(self, vectorstore, worker_node, llm_class=OpenAI):
         """
         Init BossNode
 
@@ -176,7 +180,7 @@ class HierarchicalSwarm:
             llm_chain = LLMChain(llm=llm, prompt=prompt)
             agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
 
-            agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=verbose)
+            agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
             return BossNode(llm, vectorstore, 
             agent_executor, max_iterations=self.max_iterations)
         except Exception as e:
