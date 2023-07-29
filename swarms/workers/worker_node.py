@@ -59,6 +59,8 @@ class WorkerNodeInitializer:
         
         logging.info("Creating agent in WorkerNode")
         try:
+            if self.vectorstore is None:
+                raise ValueError("Vectorstore is not initialized in WorkerNodeInitializer")
             self.agent = AutoGPT.from_llm_and_tools(
                 ai_name=self.ai_name,
                 ai_role=self.ai_role,
