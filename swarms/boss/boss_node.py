@@ -103,8 +103,8 @@ class BossNodeInitializer:
 
 class BossNode:
     def __init__(self,
-                 objective,
                  vectorstore,
+                 objective: Optional[str] = None,
                  boss_system_prompt: Optional[str] = "You are a boss planner in a swarm...",
                  api_key=None,
                  worker_node=None,
