@@ -8,6 +8,8 @@ from swarms.agents.utils.Agent import AgentOutputParser
 from swarms.agents.utils.human_input import HumanInputRun
 from swarms.agents.prompts.prompt_generator import FINISH_NAME
 from swarms.agents.models.base import AbstractModel
+from swarms.agents.prompts.agent_output_parser import AgentOutputParser
+
 
 
 from langchain.chains.llm import LLMChain
@@ -26,7 +28,7 @@ class Agent:
         ai_name: str,
         chain: LLMChain,
         memory: VectorStoreRetriever,
-        output_parser: BaseAgentOutputParser,
+        output_parser: AgentOutputParser,
         tools: List[BaseTool],
         feedback_tool: Optional[HumanInputRun] = None,
         chat_history_memory: Optional[BaseChatMessageHistory] = None,
@@ -49,7 +51,7 @@ class Agent:
         tools: List[BaseTool],
         llm: AbstractModel,
         human_in_the_loop: bool = False,
-        output_parser: Optional[BaseAgentOutputParser] = None,
+        output_parser: Optional[AgentOutputParser] = None,
         chat_history_memory: Optional[BaseChatMessageHistory] = None,
     ) -> Agent:
         prompt = AgentPrompt(
