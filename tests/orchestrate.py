@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from swarms.orchestrate import Orchestrator
+from swarms.orchestrator.orchestrate import Orchestrator
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 import pytest
 import logging
 from unittest.mock import patch
-from swarms.swarms import HierarchicalSwarm  # replace with your actual module name
+from swarms.swarms.swarms import HierarchicalSwarm  # replace with your actual module name
 
 @pytest.fixture
 def swarm():
