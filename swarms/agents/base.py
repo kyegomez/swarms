@@ -10,13 +10,14 @@ from swarms.agents.prompts.prompt_generator import FINISH_NAME
 from swarms.agents.models.base import AbstractModel
 from swarms.agents.prompts.agent_output_parser import AgentOutputParser
 from swarms.agents.prompts.agent_prompt_auto import PromptConstructor, MessageFormatter
+from swarms.agents.prompts.agent_prompt import AIMessage, HumanMessage, SystemMessage
 
 
 
 from langchain.chains.llm import LLMChain
 from langchain.memory import ChatMessageHistory
-from langchain.schema import (BaseChatMessageHistory, Document,)
-from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
+from langchain.schema import (BaseChatMessageHistory, Document)
+
 from langchain.tools.base import BaseTool
 from langchain.vectorstores.base import VectorStoreRetriever
 
