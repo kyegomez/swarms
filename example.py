@@ -1,5 +1,5 @@
 import os
-from swarms.swarms import HierarchicalSwarm
+from swarms.swarms.swarms import HierarchicalSwarm
 
 api_key = os.getenv("OPENAI_API_KEY")
 
