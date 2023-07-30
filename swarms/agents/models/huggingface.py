@@ -27,7 +27,7 @@ class HuggingFaceLLM:
         except Exception as e:
             self.logger.error(f"Failed to load the model or the tokenizer: {e}")
             raise
-    def generate_text(self, prompt_text: str, max_length: int = None):
+    def generate(self, prompt_text: str, max_length: int = None):
         max_length = max_length if max_length else self.max_length
         try:
             inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(self.device)
