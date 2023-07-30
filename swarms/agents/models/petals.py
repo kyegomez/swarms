@@ -1,4 +1,3 @@
-import os
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 class Petals:

@@ -7,12 +7,11 @@ from pydantic import ValidationError
 from swarms.agents.utils.Agent import AgentOutputParser
 from swarms.agents.utils.human_input import HumanInputRun
 from swarms.agents.prompts.prompt_generator import FINISH_NAME
+from swarms.agents.models.base import AbstractModel
 
 
 from langchain.chains.llm import LLMChain
-from langchain.chat_models.base import BaseChatModel
 from langchain.memory import ChatMessageHistory
-
 from langchain.schema import (BaseChatMessageHistory, Document,)
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.tools.base import BaseTool
@@ -25,17 +24,17 @@ class Agent:
     def __init__(
         self,
         ai_name: str,
-        memory: VectorStoreRetriever,
         chain: LLMChain,
+        memory: VectorStoreRetriever,
         output_parser: BaseAgentOutputParser,
         tools: List[BaseTool],
         feedback_tool: Optional[HumanInputRun] = None,
         chat_history_memory: Optional[BaseChatMessageHistory] = None,
     ):
         self.ai_name = ai_name
+        self.chain = chain
         self.memory = memory
         self.next_action_count = 0
-        self.chain = chain
         self.output_parser = output_parser
         self.tools = tools
         self.feedback_tool = feedback_tool
@@ -48,7 +47,7 @@ class Agent:
         ai_role: str,
         memory: VectorStoreRetriever,
         tools: List[BaseTool],
-        llm: BaseChatModel,
+        llm: AbstractModel,
         human_in_the_loop: bool = False,
         output_parser: Optional[BaseAgentOutputParser] = None,
         chat_history_memory: Optional[BaseChatMessageHistory] = None,
