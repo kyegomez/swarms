@@ -9,6 +9,7 @@ from swarms.agents.utils.human_input import HumanInputRun
 from swarms.agents.prompts.prompt_generator import FINISH_NAME
 from swarms.agents.models.base import AbstractModel
 from swarms.agents.prompts.agent_output_parser import AgentOutputParser
+from swarms.agents.prompts.agent_prompt_auto import PromptConstructor, MessageFormatter
 
 
 
@@ -18,7 +19,6 @@ from langchain.schema import (BaseChatMessageHistory, Document,)
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.tools.base import BaseTool
 from langchain.vectorstores.base import VectorStoreRetriever
-
 
 class Agent:
     """Base Agent class"""
@@ -54,15 +54,12 @@ class Agent:
         output_parser: Optional[AgentOutputParser] = None,
         chat_history_memory: Optional[BaseChatMessageHistory] = None,
     ) -> Agent:
-        prompt = AgentPrompt(
-            ai_name=ai_name,
-            ai_role=ai_role,
-            tools=tools,
-            input_variables=["memory", "messages", "goals", "user_input"],
-            token_counter=llm.get_num_tokens,
-        )
+        prompt_constructor = PromptConstructor(ai_name=ai_name,
+                                               ai_role=ai_role,
+                                               tools=tools)
+        message_formatter = MessageFormatter()
         human_feedback_tool = HumanInputRun() if human_in_the_loop else None
-        chain = LLMChain(llm=llm, prompt=prompt)
+        chain = LLMChain(llm=llm, prompt_constructor=prompt_constructor, message_formatter=message_formatter)
         return cls(
             ai_name,
             memory,
