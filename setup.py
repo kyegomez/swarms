@@ -90,7 +90,7 @@ setup(
         'diffusers',
         'controlnet_aux',
         'tiktoken',
-        'espnet==202301',
+        'espnet==202304',
         'espnet_model_zoo==0.1.7',
         'flask==2.2.3',
         'flask_cors==3.0.10',
