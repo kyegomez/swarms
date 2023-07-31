@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout actions
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Init environment 
