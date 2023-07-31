@@ -92,7 +92,7 @@ setup(
         'tiktoken',
         'espnet==202301',
         'espnet_model_zoo==0.1.7',
-        'flask==2.2.3',
+        'flask==2.3.2',
         'flask_cors==3.0.10',
         'waitress==2.1.2',
         'asteroid',
