@@ -78,7 +78,7 @@ redis==4.6.0
 sentencepiece
 
 bitsandbytes==0.41.0
-psycopg2-binary==2.9.5
+psycopg2-binary==2.9.6
 google-search-results==2.4.2
 
 black==23.7.0
