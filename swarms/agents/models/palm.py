@@ -21,8 +21,6 @@ import google.generativeai as genai
 class ChatGooglePalmError(Exception):
     """Error raised when there is an issue with the Google PaLM API."""
 
-
-
 def _truncate_at_stop_tokens(
     text: str,
     stop: Optional[List[str]],
@@ -37,12 +35,8 @@ def _truncate_at_stop_tokens(
             text = text[:stop_token_idx]
     return text
 
-
-
 def _response_to_result(response: genai.types.ChatResponse, stop: Optional[List[str]]) -> Dict[str, Any]:
     """Convert a PaLM chat response to a result dictionary."""
-    # Code will need to be rewritten due to removal of schema imports.
-    # Instead of creating a ChatResult object, you would directly return a dictionary.
     result = {
         "id": response.id,
         "created": response.created,
@@ -64,8 +58,6 @@ def _response_to_result(response: genai.types.ChatResponse, stop: Optional[List[
 
 def _messages_to_prompt_dict(messages: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Convert a list of message dictionaries to a prompt dictionary."""
-    # Code will need to be rewritten due to removal of schema imports.
-    # Instead of using BaseMessage.from_dict, you would directly create a dictionary from each message dict.
     prompt = {"messages": []}
     for message in messages:
         prompt["messages"].append({
