@@ -14,6 +14,7 @@ duckduckgo-search
 faiss-cpu
 wget==3.2
 
+codeinterpreterapi
 accelerate
 addict
 albumentations
