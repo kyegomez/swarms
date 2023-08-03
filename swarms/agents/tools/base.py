@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+from enum import Enum
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional, Type, Union
 from pydantic import BaseModel
+
+
+from swarms.utils.logger import logger
+
+class ToolScope(Enum):
+    GLOBAL = "global"
+    SESSION = "session"
+
+
 
 class ToolException(Exception):
     pass
@@ -88,3 +98,115 @@ def tool(
             return Tool(name, description, func)
 
     return decorator
+
+
+
+SessionGetter = Callable[[], Tuple[str, AgentExecutor]]
+
+def tool(
+    name: str,
+    description: str,
+    scope: ToolScope = ToolScope.GLOBAL,
+):
+    def decorator(func):
+        func.name = name
+        func.description = description
+        func.is_tool = True
+        func.scope = scope
+        return func
+
+    return decorator
+
+
+class ToolWrapper:
+    def __init__(self, name: str, description: str, scope: ToolScope, func):
+        self.name = name
+        self.description = description
+        self.scope = scope
+        self.func = func
+
+    def is_global(self) -> bool:
+        return self.scope == ToolScope.GLOBAL
+
+    def is_per_session(self) -> bool:
+        return self.scope == ToolScope.SESSION
+
+    def to_tool(
+        self,
+        get_session: SessionGetter = lambda: [],
+    ) -> BaseTool:
+        func = self.func
+        if self.is_per_session():
+            def func(*args, **kwargs):
+                return self.func(*args, **kwargs, get_session=get_session)
+
+        return Tool(
+            name=self.name,
+            description=self.description,
+            func=func,
+        )
+
+
+class BaseToolSet:
+    def tool_wrappers(cls) -> list[ToolWrapper]:
+        methods = [
+            getattr(cls, m) for m in dir(cls) if hasattr(getattr(cls, m), "is_tool")
+        ]
+        return [ToolWrapper(m.name, m.description, m.scope, m) for m in methods]
+    
+
+
+class ToolsFactory:
+    @staticmethod
+    def from_toolset(
+        toolset: BaseToolSet,
+        only_global: Optional[bool] = False,
+        only_per_session: Optional[bool] = False,
+        get_session: SessionGetter = lambda: [],
+    ) -> list[BaseTool]:
+        tools = []
+        for wrapper in toolset.tool_wrappers():
+            if only_global and not wrapper.is_global():
+                continue
+            if only_per_session and not wrapper.is_per_session():
+                continue
+            tools.append(wrapper.to_tool(get_session=get_session))
+        return tools
+
+    @staticmethod
+    def create_global_tools(
+        toolsets: list[BaseToolSet],
+    ) -> list[BaseTool]:
+        tools = []
+        for toolset in toolsets:
+            tools.extend(
+                ToolsFactory.from_toolset(
+                    toolset=toolset,
+                    only_global=True,
+                )
+            )
+        return tools
+
+    @staticmethod
+    def create_per_session_tools(
+        toolsets: list[BaseToolSet],
+        get_session: SessionGetter = lambda: [],
+    ) -> list[BaseTool]:
+        tools = []
+        for toolset in toolsets:
+            tools.extend(
+                ToolsFactory.from_toolset(
+                    toolset=toolset,
+                    only_per_session=True,
+                    get_session=get_session,
+                )
+            )
+        return tools
+
+    @staticmethod
+    def create_global_tools_from_names(
+        toolnames: list[str],
+        llm: Optional[BaseLLM],
+    ) -> list[BaseTool]:
+        return load_tools(toolnames, llm=llm)
+    
