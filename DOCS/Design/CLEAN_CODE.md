@@ -30,6 +30,13 @@ _____________________________________
 4. Use searchable names.
 5. Replace magic numbers with named constants.
 6. Avoid encodings. Don't append prefixes or type information.
+7. The Name of a variable, Function, or Class should answer  why it exists, what it does , and how it can used. Comments are a burden
+8. Clarity is King
+9. ClassNames should not be a verb
+10. Methods should have verb or verb phrase names
+11. Be simple. Be Direct. Say what you mean, mean what you say.
+12. Don't use the same word for 2 purposes
+13.
 
 ## Functions rules
 1. Small.
@@ -38,6 +45,18 @@ _____________________________________
 4. Prefer fewer arguments.
 5. Have no side effects.
 6. Don't use flag arguments. Split method into several independent methods that can be called from the client without the flag.
+7. Smaller than 20 lines long
+8. The Stepdown rule => function -> next level of abstraction
+
+
+## ErrorHandling
+1. Specify where the error in print
+2. Don't use a single variable
+3. 
+
+## If statements
+1. 
+
 
 ## Comments rules
 1. Always try to explain yourself in code.
