@@ -6,6 +6,7 @@ from langchain.agents import Tool
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
+# TODO: refactor to Agent class
 from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
 from langchain.vectorstores import FAISS
 
