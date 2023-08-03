@@ -8,22 +8,23 @@ from typing import Optional
 import pandas as pd
 from langchain.agents import tool
 from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
-from langchain.docstore.document import Document
-
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
-from langchain.tools.human.tool import HumanInputRun
+from langchain.docstore.document import Document
 from langchain.memory.chat_message_histories import FileChatMessageHistory
-
+from langchain.tools.human.tool import HumanInputRun
 
 ROOT_DIR = "./data/"
 
 from langchain.chains.qa_with_sources.loading import BaseCombineDocumentsChain
+from langchain.chat_models import ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.tools import BaseTool, DuckDuckGoSearchRun
-from pydantic import Field
-
 from langchain.tools.file_management.read import ReadFileTool
 from langchain.tools.file_management.write import WriteFileTool
+from pydantic import Field
+
+llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
+
 
 
 
