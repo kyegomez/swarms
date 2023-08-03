@@ -18,7 +18,7 @@ import google.generativeai as genai
 
 ###############helpers
 
-class ChatGooglePalmError(Exception):
+class GooglePalmError(Exception):
     """Error raised when there is an issue with the Google PaLM API."""
 
 def _truncate_at_stop_tokens(
@@ -69,7 +69,7 @@ def _messages_to_prompt_dict(messages: List[Dict[str, Any]]) -> Dict[str, Any]:
 def _create_retry_decorator() -> Callable[[Any], Any]:
     """Create a retry decorator with exponential backoff."""
     return retry(
-        retry=retry_if_exception_type(ChatGooglePalmError),
+        retry=retry_if_exception_type(GooglePalmError),
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=1, min=2, max=30),
         before_sleep=before_sleep_log(logger, logging.DEBUG),
@@ -77,7 +77,7 @@ def _create_retry_decorator() -> Callable[[Any], Any]:
     )
 
 ####################### => main class
-class ChatGooglePalm(BaseModel):
+class GooglePalm(BaseModel):
     """Wrapper around Google's PaLM Chat API."""
 
     client: Any  #: :meta private:
