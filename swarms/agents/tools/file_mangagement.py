@@ -1,5 +1,3 @@
-######################## ######################################################## file system
-
 from langchain.agents.agent_toolkits import FileManagementToolkit
 from tempfile import TemporaryDirectory
 
@@ -17,8 +15,3 @@ file_management_tools = FileManagementToolkit(
 ).get_tools()
 
 read_tool, write_tool, list_tool = file_management_tools
-# write_tool.run({"file_path": "example.txt", "text": "Hello World!"})
-
-# # List files in the working directory
-# list_tool.run({})
-

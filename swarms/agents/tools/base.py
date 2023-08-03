@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from enum import Enum
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional, Type, Union, Tuple
+from typing import Any, Callable, Optional, Type, Tuple
 from pydantic import BaseModel
 
-from swarms.utils.logger import logger
 
 from langchain.llms.base import BaseLLM
 from langchain.agents.agent import AgentExecutor
