@@ -1,6 +1,13 @@
-##########################################+>  SYS
+
+import os
 import signal
-from typing import Optional, Tuple
+import subprocess
+import time
+from datetime import datetime
+import re
+
+from pathlib import Path
+from typing import Callable, Dict, Literal, Optional, Tuple, Union, List
 
 from ptrace.debugger import (
     NewProcessEvent,
@@ -14,8 +21,9 @@ from ptrace.func_call import FunctionCallOptions
 from ptrace.syscall import PtraceSyscall
 from ptrace.tools import signal_to_exitcode
 
+from swarms.agents.tools.base import BaseToolSet, SessionGetter, ToolScope, tool
 from swarms.utils.logger import logger
-from swarms.agents.tools.base import SessionGetter, BaseTool, ToolScope, tool, BaseToolSet
+from swarms.utils.main import ANSI, Color, Style  # test
 
 
 class SyscallTimeoutException(Exception):
@@ -75,9 +83,9 @@ class SyscallTracer:
                 exitcode = signal_to_exitcode(event.signum)
                 reason = event.reason
                 continue
-            except NewProcessEvent as event:
+            except NewProcessEvent:
                 continue
-            except ProcessExecution as event:
+            except ProcessExecution:
                 continue
             except Exception as e:
                 reason = str(e)
@@ -111,11 +119,6 @@ class SyscallTracer:
 
 ############### => st dout.py
 
-import os
-import time
-import subprocess
-from datetime import datetime
-from typing import Callable, Literal, Optional, Union, Tuple
 
 PipeType = Union[Literal["stdout"], Literal["stderr"]]
 
@@ -181,13 +184,7 @@ class StdoutTracer:
 
         return (exitcode, output)
 
-################## => stdout end
 
-import os
-import subprocess
-from typing import Dict, List
-
-from swarms.utils.main import ANSI, Color, Style # test
 
 class Terminal(BaseToolSet):
     def __init__(self):
@@ -231,20 +228,6 @@ class Terminal(BaseToolSet):
         return output
 
 
-# if __name__ == "__main__":
-#     import time
-
-#     o = Terminal().execute(
-#         "sleep 1; echo 1; sleep 2; echo 2; sleep 3; echo 3; sleep 10;",
-#         lambda: ("", None),
-#     )
-#     print(o)
-
-#     time.sleep(10)  # see if timer has reset
-
-
-###################=> EDITOR/VERIFY
-from pathlib import Path
 
 
 def verify(func):
@@ -258,10 +241,8 @@ def verify(func):
         return func(*args, **kwargs)
 
     return wrapper
-#=====================> EDITOR/END VERIFY
 
 
-###### EDITOR/WRITE.PY
 
 """
 write protocol:
@@ -480,11 +461,6 @@ class CodeReader:
         return SummaryCommand.from_str(command).execute()
 
 
-# if __name__ == "__main__":
-#     summary = CodeReader.summary("read.py|1|class ReadCommand:")
-#     print(summary)
-
-#============================> EDITOR/READ.PY END
 
 
 
@@ -547,8 +523,6 @@ test.py|7,5|9,13|news_titles = []
 ---~~~+++===+++~~~---
 test.py|11,16|11,16|_titles
 """
-
-import re
 
 
 
@@ -652,49 +626,47 @@ class CodePatcher:
         return written, deleted
 
 
-if __name__ == "__main__":
-    commands = """test.py|2,1|2,1|from bs4 import BeautifulSoup
+# if __name__ == "__main__":
+#     commands = """test.py|2,1|2,1|from bs4 import BeautifulSoup
 
----~~~+++===+++~~~---
-test.py|5,5|5,33|html = requests.get(url).text
-    soup = BeautifulSoup(html, "html.parser")
-    news_results = soup.find_all("div", class_="BNeawe vvjwJb AP7Wnd")
----~~~+++===+++~~~---
-test.py|7,5|9,13|news_titles = []
-    for result in news_results:
-        news_titles
----~~~+++===+++~~~---
-test.py|11,16|11,16|_titles
-"""
+# ---~~~+++===+++~~~---
+# test.py|5,5|5,33|html = requests.get(url).text
+#     soup = BeautifulSoup(html, "html.parser")
+#     news_results = soup.find_all("div", class_="BNeawe vvjwJb AP7Wnd")
+# ---~~~+++===+++~~~---
+# test.py|7,5|9,13|news_titles = []
+#     for result in news_results:
+#         news_titles
+# ---~~~+++===+++~~~---
+# test.py|11,16|11,16|_titles
+# """
 
-    example = """import requests
+#     example = """import requests
 
-def crawl_news(keyword):
-    url = f"https://www.google.com/search?q={keyword}+news"
-    response = requests.get(url)
+# def crawl_news(keyword):
+#     url = f"https://www.google.com/search?q={keyword}+news"
+#     response = requests.get(url)
 
-    news = []
-    for result in response:
-        news.append(result.text)
+#     news = []
+#     for result in response:
+#         news.append(result.text)
 
-    return news
-"""
-    testfile = "test.py"
-    with open(testfile, "w") as f:
-        f.write(example)
+#     return news
+# """
+#     testfile = "test.py"
+#     with open(testfile, "w") as f:
+#         f.write(example)
 
-    patcher = CodePatcher()
-    written, deleted = patcher.patch(commands)
-    print(f"written: {written}, deleted: {deleted}")
+#     patcher = CodePatcher()
+#     written, deleted = patcher.patch(commands)
+#     print(f"written: {written}, deleted: {deleted}")
 
-####################### => EDITOR/PATCH.PY
-
-
+# ####################### => EDITOR/PATCH.PY
 
 
 
 
-###################### EDITOR// INIT.PY
+
 
 
 class CodeEditor(BaseToolSet):
