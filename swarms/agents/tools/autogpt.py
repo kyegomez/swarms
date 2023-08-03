@@ -1,26 +1,21 @@
-#--------------------------------------> AUTO GPT TOOLS
-
-# General 
-import os
-import pandas as pd
-
-from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
-from langchain.docstore.document import Document
 import asyncio
+import os
 
 # Tools
 from contextlib import contextmanager
 from typing import Optional
+
+import pandas as pd
 from langchain.agents import tool
+from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
+from langchain.docstore.document import Document
 
 ROOT_DIR = "./data/"
 
-from langchain.tools import BaseTool, DuckDuckGoSearchRun
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-from pydantic import Field
 from langchain.chains.qa_with_sources.loading import BaseCombineDocumentsChain
-
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.tools import BaseTool, DuckDuckGoSearchRun
+from pydantic import Field
 
 
 @contextmanager
