@@ -1,26 +1,23 @@
 import logging
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 import faiss
 from langchain.agents import Tool
-from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.experimental.autonomous_agents.autogpt.agent import AutoGPT
-from langchain.memory.chat_message_histories import FileChatMessageHistory
-from langchain.tools import DuckDuckGoSearchRun
-from langchain.tools.file_management.read import ReadFileTool
-from langchain.tools.file_management.write import WriteFileTool
 from langchain.vectorstores import FAISS
 
-# from langchain.tools.human.tool import HumanInputRun
-from swarms.agents.tools.main import WebpageQATool, process_csv
-
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-
+from swarms.agents.tools.autogpt import (
+    FileChatMessageHistory,
+    ReadFileTool,
+    WebpageQATool,
+    WriteFileTool,
+    load_qa_with_sources_chain,
+    process_csv,
+    web_search,
+)
 
 ROOT_DIR = "./data/"
 
@@ -160,7 +157,6 @@ class WorkerNode:
         try:
             logging.info('Creating WorkerNode')
             llm = self.initialize_llm(llm_class)
-            web_search = DuckDuckGoSearchRun()
 
             tools = [
                 web_search,
