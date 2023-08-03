@@ -338,3 +338,86 @@ asyncio.run(generate_response())
 Remember to replace `your_client` with an actual instance of your client. Also, ensure the `model_name` is the correct name of the model that you want to use.
 
 The `temperature`, `top_p`, `top_k`, and `n` parameters control the randomness and diversity of the generated responses. You can adjust these parameters based on your application's requirements.
+
+
+
+
+
+Here's a `CodeInterpreterTool` class adhering to your abstract `Tool` class:
+
+```python
+from typing import Callable, Any, List
+from codeinterpreterapi import CodeInterpreterSession, File, ToolException
+
+class CodeInterpreterTool(Tool):
+    def __init__(self, name: str, description: str):
+        super().__init__(name, description, self.run)
+
+    def run(self, user_request: str, file_paths: List[str] = []) -> Any:
+        # create a session
+        session = CodeInterpreterSession()
+        session.start()
+
+        # create files from paths
+        files = [File.from_path(file_path) for file_path in file_paths]
+
+        try:
+            # generate a response based on user input
+            response = session.generate_response(user_request, files=files)
+
+            # output the response (text + image)
+            print("AI: ", response.content)
+            for file in response.files:
+                file.show_image()
+        except Exception as e:
+            raise ToolException(f"Error running CodeInterpreterTool: {e}")
+        finally:
+            # terminate the session
+            session.stop()
+
+    async def arun(self, user_request: str, file_paths: List[str] = []) -> Any:
+        # create a session
+        session = CodeInterpreterSession()
+        await session.astart()
+
+        # create files from paths
+        files = [File.from_path(file_path) for file_path in file_paths]
+
+        try:
+            # generate a response based on user input
+            response = await session.generate_response(user_request, files=files)
+
+            # output the response (text + image)
+            print("AI: ", response.content)
+            for file in response.files:
+                file.show_image()
+        except Exception as e:
+            raise ToolException(f"Error running CodeInterpreterTool: {e}")
+        finally:
+            # terminate the session
+            await session.astop()
+```
+
+## `CodeInterpreterTool`:
+
+```python
+tool = CodeInterpreterTool("Code Interpreter", "A tool to interpret code and generate useful outputs.")
+tool.run("Plot the bitcoin chart of 2023 YTD")
+
+# Or with file inputs
+tool.run("Analyze this dataset and plot something interesting about it.", ["examples/assets/iris.csv"])
+```
+
+To use the asynchronous version, simply replace `run` with `arun` and ensure your calling code is in an async context:
+
+```python
+import asyncio
+
+tool = CodeInterpreterTool("Code Interpreter", "A tool to interpret code and generate useful outputs.")
+asyncio.run(tool.arun("Plot the bitcoin chart of 2023 YTD"))
+
+# Or with file inputs
+asyncio.run(tool.arun("Analyze this dataset and plot something interesting about it.", ["examples/assets/iris.csv"]))
+```
+
+The `CodeInterpreterTool` class is a flexible tool that uses the `CodeInterpreterSession` from the `codeinterpreterapi` package to run the code interpretation and return the result. It provides both synchronous and asynchronous methods for convenience, and ensures that exceptions are handled gracefully.
