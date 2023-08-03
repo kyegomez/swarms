@@ -343,61 +343,6 @@ The `temperature`, `top_p`, `top_k`, and `n` parameters control the randomness a
 
 
 
-Here's a `CodeInterpreterTool` class adhering to your abstract `Tool` class:
-
-```python
-from typing import Callable, Any, List
-from codeinterpreterapi import CodeInterpreterSession, File, ToolException
-
-class CodeInterpreterTool(Tool):
-    def __init__(self, name: str, description: str):
-        super().__init__(name, description, self.run)
-
-    def run(self, user_request: str, file_paths: List[str] = []) -> Any:
-        # create a session
-        session = CodeInterpreterSession()
-        session.start()
-
-        # create files from paths
-        files = [File.from_path(file_path) for file_path in file_paths]
-
-        try:
-            # generate a response based on user input
-            response = session.generate_response(user_request, files=files)
-
-            # output the response (text + image)
-            print("AI: ", response.content)
-            for file in response.files:
-                file.show_image()
-        except Exception as e:
-            raise ToolException(f"Error running CodeInterpreterTool: {e}")
-        finally:
-            # terminate the session
-            session.stop()
-
-    async def arun(self, user_request: str, file_paths: List[str] = []) -> Any:
-        # create a session
-        session = CodeInterpreterSession()
-        await session.astart()
-
-        # create files from paths
-        files = [File.from_path(file_path) for file_path in file_paths]
-
-        try:
-            # generate a response based on user input
-            response = await session.generate_response(user_request, files=files)
-
-            # output the response (text + image)
-            print("AI: ", response.content)
-            for file in response.files:
-                file.show_image()
-        except Exception as e:
-            raise ToolException(f"Error running CodeInterpreterTool: {e}")
-        finally:
-            # terminate the session
-            await session.astop()
-```
-
 ## `CodeInterpreterTool`:
 
 ```python
