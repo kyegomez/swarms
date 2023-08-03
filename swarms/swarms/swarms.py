@@ -3,11 +3,11 @@ import logging
 from typing import Optional
 
 from langchain import OpenAI
+
 from swarms.boss.boss_node import BossNode
 from swarms.workers.worker_node import WorkerNode
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 # TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI
 # TODO: ADD Universal Communication Layer, a ocean vectorstore instance
