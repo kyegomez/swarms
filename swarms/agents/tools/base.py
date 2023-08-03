@@ -7,6 +7,9 @@ from pydantic import BaseModel
 
 from swarms.utils.logger import logger
 
+from langchain.llms.base import BaseLLM
+from langchain.agents.agent import AgentExecutor
+from langchain.agents import load_tools
 
 class ToolScope(Enum):
     GLOBAL = "global"
