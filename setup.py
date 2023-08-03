@@ -29,6 +29,7 @@ setup(
         'bs4',
         'pegasusx',
         'oceandb',
+        'codeinterpreterapi[all]',
         'playwright',
         'duckduckgo_search',
         'faiss-cpu',
