@@ -1,13 +1,12 @@
 
 import os
+import re
 import signal
 import subprocess
 import time
 from datetime import datetime
-import re
-
 from pathlib import Path
-from typing import Callable, Dict, Literal, Optional, Tuple, Union, List
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 from ptrace.debugger import (
     NewProcessEvent,
@@ -113,11 +112,6 @@ class SyscallTracer:
         self.reset_timer()
 
         return exitcode, reason
-    ##########################################+> SYS CALL END
-
-
-
-############### => st dout.py
 
 
 PipeType = Union[Literal["stdout"], Literal["stderr"]]
@@ -289,11 +283,11 @@ class CodeWriter:
     def append(command: str) -> str:
         return WriteCommand.from_str(command).with_mode("a").execute()
     
-#================> END 
 
 
 
-#============================> EDITOR/READ.PY
+
+
 """
 read protocol:
 
@@ -465,7 +459,6 @@ class CodeReader:
 
 
 
-#=================================> EDITOR/PATCH.PY
 """
 patch protocol:
 
@@ -624,44 +617,6 @@ class CodePatcher:
                 written += w
                 deleted += d
         return written, deleted
-
-
-# if __name__ == "__main__":
-#     commands = """test.py|2,1|2,1|from bs4 import BeautifulSoup
-
-# ---~~~+++===+++~~~---
-# test.py|5,5|5,33|html = requests.get(url).text
-#     soup = BeautifulSoup(html, "html.parser")
-#     news_results = soup.find_all("div", class_="BNeawe vvjwJb AP7Wnd")
-# ---~~~+++===+++~~~---
-# test.py|7,5|9,13|news_titles = []
-#     for result in news_results:
-#         news_titles
-# ---~~~+++===+++~~~---
-# test.py|11,16|11,16|_titles
-# """
-
-#     example = """import requests
-
-# def crawl_news(keyword):
-#     url = f"https://www.google.com/search?q={keyword}+news"
-#     response = requests.get(url)
-
-#     news = []
-#     for result in response:
-#         news.append(result.text)
-
-#     return news
-# """
-#     testfile = "test.py"
-#     with open(testfile, "w") as f:
-#         f.write(example)
-
-#     patcher = CodePatcher()
-#     written, deleted = patcher.patch(commands)
-#     print(f"written: {written}, deleted: {deleted}")
-
-# ####################### => EDITOR/PATCH.PY
 
 
 
