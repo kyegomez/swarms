@@ -17,6 +17,7 @@ from transformers import (
     CLIPSegForImageSegmentation,
     CLIPSegProcessor,
 )
+
 from swarms.agents.prompts.prompts import IMAGE_PROMPT
 from swarms.agents.tools.base import tool
 from swarms.agents.tools.main import BaseToolSet

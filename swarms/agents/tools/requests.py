@@ -1,10 +1,9 @@
 
 import requests
-
 from bs4 import BeautifulSoup
-from swarms.agents.tools.base import BaseToolSet
+
+from swarms.agents.tools.base import BaseToolSet, tool
 from swarms.utils.logger import logger
-from swarms.agents.tools.base import tool
 
 
 class RequestsGet(BaseToolSet):
