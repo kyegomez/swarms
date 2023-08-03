@@ -3,7 +3,7 @@ from swarms.agents.tools.base import Tool, ToolException
 from typing import Callable, Any, List
 from codeinterpreterapi import CodeInterpreterSession, File, ToolException
 
-class CodeInterpreterTool(Tool):
+class CodeInterpreter(Tool):
     def __init__(self, name: str, description: str):
         super().__init__(name, description, self.run)
 
@@ -24,7 +24,7 @@ class CodeInterpreterTool(Tool):
             for file in response.files:
                 file.show_image()
         except Exception as e:
-            raise ToolException(f"Error running CodeInterpreterTool: {e}")
+            raise ToolException(f"Error running CodeInterpreter: {e}")
         finally:
             # terminate the session
             session.stop()
@@ -46,14 +46,14 @@ class CodeInterpreterTool(Tool):
             for file in response.files:
                 file.show_image()
         except Exception as e:
-            raise ToolException(f"Error running CodeInterpreterTool: {e}")
+            raise ToolException(f"Error running CodeInterpreter: {e}")
         finally:
             # terminate the session
             await session.astop()
 
 """
 
-tool = CodeInterpreterTool("Code Interpreter", "A tool to interpret code and generate useful outputs.")
+tool = CodeInterpreter("Code Interpreter", "A tool to interpret code and generate useful outputs.")
 tool.run("Plot the bitcoin chart of 2023 YTD")
 
 # Or with file inputs
@@ -63,7 +63,7 @@ tool.run("Analyze this dataset and plot something interesting about it.", ["exam
 
 import asyncio
 
-tool = CodeInterpreterTool("Code Interpreter", "A tool to interpret code and generate useful outputs.")
+tool = CodeInterpreter("Code Interpreter", "A tool to interpret code and generate useful outputs.")
 asyncio.run(tool.arun("Plot the bitcoin chart of 2023 YTD"))
 
 # Or with file inputs
