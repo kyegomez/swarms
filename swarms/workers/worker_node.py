@@ -15,6 +15,7 @@ from swarms.agents.tools.autogpt import (
     ReadFileTool,
     WebpageQATool,
     WriteFileTool,
+    DuckDuckGoSearchRun,
     load_qa_with_sources_chain,
     process_csv,
     web_search,
