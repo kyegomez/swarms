@@ -781,23 +781,23 @@ class CodeEditor(BaseToolSet):
         )
         return output
 
-    # @tool(
-    #     name="CodeEditor.PATCH",
-    #     description="Patch the code to correct the error if an error occurs or to improve it. "
-    #     "Input is a list of patches. The patch is separated by {seperator}. ".format(
-    #         seperator=CodePatcher.separator.replace("\n", "\\n")
-    #     )
-    #     + "Each patch has to be formatted like below.\n"
-    #     "<filepath>|<start_line>,<start_col>|<end_line>,<end_col>|<new_code>"
-    #     "Here is an example. If the original code is:\n"
-    #     "print('hello world')\n"
-    #     "and you want to change it to:\n"
-    #     "print('hi corca')\n"
-    #     "then the patch should be:\n"
-    #     "test.py|1,8|1,19|hi corca\n"
-    #     "Code between start and end will be replaced with new_code. "
-    #     "The output will be written/deleted bytes or error message. ",
-    # )
+    @tool(
+        name="CodeEditor.PATCH",
+        description="Patch the code to correct the error if an error occurs or to improve it. "
+        "Input is a list of patches. The patch is separated by {seperator}. ".format(
+            seperator=CodePatcher.separator.replace("\n", "\\n")
+        )
+        + "Each patch has to be formatted like below.\n"
+        "<filepath>|<start_line>,<start_col>|<end_line>,<end_col>|<new_code>"
+        "Here is an example. If the original code is:\n"
+        "print('hello world')\n"
+        "and you want to change it to:\n"
+        "print('hi corca')\n"
+        "then the patch should be:\n"
+        "test.py|1,8|1,19|hi corca\n"
+        "Code between start and end will be replaced with new_code. "
+        "The output will be written/deleted bytes or error message. ",
+    )
     def patch(self, patches: str) -> str:
         try:
             w, d = CodePatcher.patch(patches)
@@ -832,6 +832,3 @@ class CodeEditor(BaseToolSet):
         )
         return output
     
-###################### EDITOR// INIT.PY END
-
-
