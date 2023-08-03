@@ -343,10 +343,10 @@ The `temperature`, `top_p`, `top_k`, and `n` parameters control the randomness a
 
 
 
-## `CodeInterpreterTool`:
+## `CodeInterpreter`:
 
 ```python
-tool = CodeInterpreterTool("Code Interpreter", "A tool to interpret code and generate useful outputs.")
+tool = CodeInterpreter("Code Interpreter", "A tool to interpret code and generate useful outputs.")
 tool.run("Plot the bitcoin chart of 2023 YTD")
 
 # Or with file inputs
@@ -358,11 +358,11 @@ To use the asynchronous version, simply replace `run` with `arun` and ensure you
 ```python
 import asyncio
 
-tool = CodeInterpreterTool("Code Interpreter", "A tool to interpret code and generate useful outputs.")
+tool = CodeInterpreter("Code Interpreter", "A tool to interpret code and generate useful outputs.")
 asyncio.run(tool.arun("Plot the bitcoin chart of 2023 YTD"))
 
 # Or with file inputs
 asyncio.run(tool.arun("Analyze this dataset and plot something interesting about it.", ["examples/assets/iris.csv"]))
 ```
 
-The `CodeInterpreterTool` class is a flexible tool that uses the `CodeInterpreterSession` from the `codeinterpreterapi` package to run the code interpretation and return the result. It provides both synchronous and asynchronous methods for convenience, and ensures that exceptions are handled gracefully.
+The `CodeInterpreter` class is a flexible tool that uses the `CodeInterpreterSession` from the `codeinterpreterapi` package to run the code interpretation and return the result. It provides both synchronous and asynchronous methods for convenience, and ensures that exceptions are handled gracefully.
