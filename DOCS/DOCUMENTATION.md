@@ -238,3 +238,103 @@ def __init__(self, openai_api_key: Optional[str] = None,
 
 ## Conclusion
 The `LLM` class provides a convenient way to initialize and run different language models using either OpenAI's API or Hugging Face models. By providing the necessary credentials and a prompt, you can obtain the generated response from the language model.
+
+
+
+
+
+
+# `GooglePalm` class:
+
+### Example 1: Using Dictionaries as Messages
+
+```python
+from google_palm import GooglePalm
+
+# Initialize the GooglePalm instance
+gp = GooglePalm(
+    client=your_client,
+    model_name="models/chat-bison-001",
+    temperature=0.7,
+    top_p=0.9,
+    top_k=10,
+    n=5
+)
+
+# Create some messages
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Who won the world series in 2020?"},
+]
+
+# Generate a response
+response = gp.generate(messages)
+
+# Print the generated response
+print(response)
+```
+
+### Example 2: Using BaseMessage and Its Subclasses as Messages
+
+```python
+from google_palm import GooglePalm
+from langchain.schema.messages import SystemMessage, HumanMessage
+
+# Initialize the GooglePalm instance
+gp = GooglePalm(
+    client=your_client,
+    model_name="models/chat-bison-001",
+    temperature=0.7,
+    top_p=0.9,
+    top_k=10,
+    n=5
+)
+
+# Create some messages
+messages = [
+    SystemMessage(content="You are a helpful assistant."),
+    HumanMessage(content="Who won the world series in 2020?"),
+]
+
+# Generate a response
+response = gp.generate(messages)
+
+# Print the generated response
+print(response)
+```
+
+### Example 3: Using GooglePalm with Asynchronous Function
+
+```python
+import asyncio
+from google_palm import GooglePalm
+from langchain.schema.messages import SystemMessage, HumanMessage
+
+# Initialize the GooglePalm instance
+gp = GooglePalm(
+    client=your_client,
+    model_name="models/chat-bison-001",
+    temperature=0.7,
+    top_p=0.9,
+    top_k=10,
+    n=5
+)
+
+# Create some messages
+messages = [
+    SystemMessage(content="You are a helpful assistant."),
+    HumanMessage(content="Who won the world series in 2020?"),
+]
+
+# Define an asynchronous function
+async def generate_response():
+    response = await gp._agenerate(messages)
+    print(response)
+
+# Run the asynchronous function
+asyncio.run(generate_response())
+```
+
+Remember to replace `your_client` with an actual instance of your client. Also, ensure the `model_name` is the correct name of the model that you want to use.
+
+The `temperature`, `top_p`, `top_k`, and `n` parameters control the randomness and diversity of the generated responses. You can adjust these parameters based on your application's requirements.

@@ -1,22 +1,22 @@
 from __future__ import annotations
 
 from typing import List, Optional
-from pydantic import ValidationError
-
-
-from swarms.agents.utils.Agent import AgentOutputParser
-from swarms.agents.utils.human_input import HumanInputRun
-from swarms.agents.prompts.prompt_generator import FINISH_NAME
-from swarms.agents.models.base import AbstractModel
-from swarms.agents.prompts.agent_output_parser import AgentOutputParser
-from swarms.agents.prompts.agent_prompt_auto import PromptConstructor, MessageFormatter
-from swarms.agents.prompts.agent_prompt import AIMessage, HumanMessage, SystemMessage
-from swarms.agents.tools.base import BaseTool
 
 from langchain.chains.llm import LLMChain
 from langchain.memory import ChatMessageHistory
-from langchain.schema import (BaseChatMessageHistory, Document)
+from langchain.schema import BaseChatMessageHistory, Document
 from langchain.vectorstores.base import VectorStoreRetriever
+from pydantic import ValidationError
+
+from swarms.agents.models.base import AbstractModel
+from swarms.agents.prompts.agent_output_parser import AgentOutputParser
+from swarms.agents.prompts.agent_prompt import AIMessage, HumanMessage, SystemMessage
+from swarms.agents.prompts.agent_prompt_auto import MessageFormatter, PromptConstructor
+from swarms.agents.prompts.prompt_generator import FINISH_NAME
+from swarms.agents.tools.base import BaseTool
+from swarms.agents.utils.Agent import AgentOutputParser
+from swarms.agents.utils.human_input import HumanInputRun
+
 
 class Agent:
     """Base Agent class"""
