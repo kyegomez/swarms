@@ -51,22 +51,17 @@ Introducing Swarms, automating all digital activities with multi-agent collabora
 ## Purpose
 At Swarms, we're transforming the landscape of AI from siloed AI agents to a unified 'swarm' of intelligence. Through relentless iteration and the power of collective insight from our 1500+ Agora researchers, we're developing a groundbreaking framework for AI collaboration. Our mission is to catalyze a paradigm shift, advancing Humanity with the power of unified autonomous AI agent swarms.
 
+-----
+## Hiring
+We're hiring:
+* Engineers, 
+* Researchers, 
+* interns, 
+* And, salespeople 
 
----
+to work on democratizing swarms, email me at with your story `kye@apac.ai`
 
-## Table of Contents
-1. [Introduction](#introduction)
-2. [Vision](#purpose)
-3. [Installation](#installation)
-4. [Share on Social Media](#share-on-social-media)
-5. [Other Platforms](#other-platforms)
-6. [Contribute](#contribute)
-7. [Roadmap](#roadmap)
-8. [Bounty Program](#bounty-program)
-9. [EcoSystem](#ecosystem)
-10. [Demos](#demos)
-
----
+----------
 
 ## Installation
 
