@@ -154,7 +154,7 @@ print(huggingface.generate(prompt))
 ```python
 # Import the necessary classes
 
-from swarms import Anthropic, HuggingFaceLLM
+from swarms.models import Anthropic, HuggingFaceLLM
 
 # Create an instance of the Anthropic class
 
