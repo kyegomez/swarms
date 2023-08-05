@@ -1,207 +1,34 @@
-# Agents
-Agents are individual building blocks in a swarm, they each have a driving force in our case a language model, with long term memory and the capacity to use tools in other words an agent is:
+# Introduction to Agents in Swarms
+================================
 
-LLM => Long Term Memory => Tools
+Welcome to the revolutionary world of Agents in Swarms. If you're familiar with my philosophy from the Linux world, you'll know that I'm a big believer in simplicity, modularity, and the power of open collaboration. The same principles apply here.
 
-That's it.
+Agents are the individual building blocks in a swarm. They are the worker bees, each with a specific task, but all working together towards a common goal. In our case, an agent is a combination of a Language Model (LLM), Long Term Memory, and Tools.
 
-That's as simple as it can get.
+In other words, an agent is:
 
-Our Agent classes have to be as simple as humanely possible, they should be plug in and play with any of language model classes, vectorstores, and tools. 
+`LLM => Long Term Memory => Tools`
 
-## File structure
+That's it. That's as simple as it can get.
+
+Why does this work? Because each component has a specific, well-defined role. The Language Model is the driving force, generating text based on a given prompt. The Long Term Memory stores information that the agent can draw upon to make its output more coherent and contextually relevant. The Tools provide additional capabilities, such as the ability to parse text, search the web, or interact with APIs.
+
+But the real beauty of this system is not just in the individual components, but in how they work together. The Language Model, Long Term Memory, and Tools are not isolated silos, but interconnected parts of a whole. The output of one becomes the input of another, creating a feedback loop of continuous learning and improvement.
+
+And the best part? Our Agent classes are designed to be as simple as humanely possible. They are plug-and-play with any of our language model classes, vector stores, and tools. This means you can easily swap out one component for another, allowing for endless customization and flexibility.
+
+The file structure is equally straightforward:
+
 ```
 * memory
 * models
-* tools 
+* tools
 * utils
-* mem
-```
-
-
-# Swarms Documentation
-
-====================
-
-## Language Models
-
----------------
-
-Language models are the driving force of our agents. They are responsible for generating text based on a given prompt. We currently support two types of language models: Anthropic and HuggingFace.
-
-### Anthropic
-
-The `Anthropic` class is a wrapper for the Anthropic large language models.
-
-#### Initialization
 
 ```
 
-Anthropic(model="claude-2", max_tokens_to_sample=256, temperature=None, top_k=None, top_p=None, streaming=False, default_request_timeout=None)
+Each directory contains different components of the swarm. The `models` directory contains the language models, the `memory` directory contains the long-term memory, the `tools` directory contains the tools, the `utils` directory contains various utility functions.
 
-```
+In conclusion, the Agents in Swarms represent a new way of thinking about AI. They are simple, modular, and highly customizable, allowing you to create powerful AI systems that are more than the sum of their parts. And as always, we're just getting started. There's always room for improvement, for simplification, for making things even better. That's the spirit of open collaboration. That's the spirit of Swarms.
 
-
-
-##### Parameters
-
-- `model` (str, optional): The name of the model to use. Default is "claude-2".
-
-- `max_tokens_to_sample` (int, optional): The maximum number of tokens to sample. Default is 256.
-
-- `temperature` (float, optional): The temperature to use for the generation. Higher values result in more random outputs.
-
-- `top_k` (int, optional): The number of top tokens to consider for the generation.
-
-- `top_p` (float, optional): The cumulative probability of parameter highest probability vocabulary tokens to keep for nucleus sampling.
-
-- `streaming` (bool, optional): Whether to use streaming mode. Default is False.
-
-- `default_request_timeout` (int, optional): The default request timeout in seconds. Default is 600.
-
-##### Example
-
-```
-
-anthropic = Anthropic(model="claude-2", max_tokens_to_sample=100, temperature=0.8)
-
-```
-
-
-
-#### Generation
-
-```
-
-anthropic.generate(prompt, stop=None)
-
-```
-
-
-
-##### Parameters
-
-- `prompt` (str): The prompt to use for the generation.
-
-- `stop` (list, optional): A list of stop sequences. The generation will stop if one of these sequences is encountered.
-
-##### Returns
-
-- `str`: The generated text.
-
-##### Example
-
-```
-
-prompt = "Once upon a time"
-
-stop = ["The end"]
-
-print(anthropic.generate(prompt, stop))
-
-```
-
-
-
-### HuggingFaceLLM
-
-The `HuggingFaceLLM` class is a wrapper for the HuggingFace language models.
-
-#### Initialization
-
-```
-
-HuggingFaceLLM(model_id: str, device: str = None, max_length: int = 20, quantize: bool = False, quantization_config: dict = None)
-
-```
-
-
-
-##### Parameters
-
-- `model_id` (str): The ID of the model to use.
-
-- `device` (str, optional): The device to use for the generation. Default is "cuda" if available, otherwise "cpu".
-
-- `max_length` (int, optional): The maximum length of the generated text. Default is 20.
-
-- `quantize` (bool, optional): Whether to quantize the model. Default is False.
-
-- `quantization_config` (dict, optional): The configuration for the quantization.
-
-##### Example
-
-```
-
-huggingface = HuggingFaceLLM(model_id="gpt2", device="cpu", max_length=50)
-
-```
-
-
-
-#### Generation
-
-```
-
-huggingface.generate(prompt_text: str, max_length: int = None)
-
-```
-
-
-
-##### Parameters
-
-- `prompt_text` (str): The prompt to use for the generation.
-
-- `max_length` (int, optional): The maximum length of the generated text. If not provided, the default value specified during initialization is used.
-
-##### Returns
-
-- `str`: The generated text.
-
-##### Example
-
-```
-
-prompt = "Once upon a time"
-
-print(huggingface.generate(prompt))
-
-```
-
-
-### Full Examples
-
-```python
-# Import the necessary classes
-
-from swarms import Anthropic, HuggingFaceLLM
-
-# Create an instance of the Anthropic class
-
-anthropic = Anthropic(model="claude-2", max_tokens_to_sample=100, temperature=0.8)
-
-# Use the Anthropic instance to generate text
-
-prompt = "Once upon a time"
-
-stop = ["The end"]
-
-print("Anthropic output:")
-
-print(anthropic.generate(prompt, stop))
-
-# Create an instance of the HuggingFaceLLM class
-
-huggingface = HuggingFaceLLM(model_id="gpt2", device="cpu", max_length=50)
-
-# Use the HuggingFaceLLM instance to generate text
-
-prompt = "Once upon a time"
-
-print("\nHuggingFaceLLM output:")
-
-print(huggingface.generate(prompt))
-
-```
-
+Thanks for becoming an alpha build user, email kye@apac.ai with all complaints
