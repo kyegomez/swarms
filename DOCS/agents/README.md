@@ -33,7 +33,7 @@ Let's see how simple it is to use these components with some examples:
 
 ```python
 # Import the necessary classes
-from swarms.models import Anthropic, HuggingFaceLLM
+from swarms.agents import Anthropic, HuggingFaceLLM
 
 # Create an instance of the Anthropic class
 anthropic = Anthropic(model="claude-2", max_tokens_to_sample=100, temperature=0.8)
@@ -65,6 +65,8 @@ agent = Agent(
     memory=vectorstore,
     tools=tool,
 )
+
+agent.run("Make me an instagram clone")
 ```
 
 
