@@ -61,7 +61,7 @@ from swarms.agents import vectorstore, tool, Agent
 
 # Create an instance of the Agent class
 agent = Agent(
-    llm=HuggingFaceLLM,
+    llm=huggingface,
     memory=vectorstore,
     tools=tool,
 )
@@ -72,5 +72,4 @@ agent.run("Make me an instagram clone")
 
 In conclusion, the Agents in Swarms represent a new way of thinking about AI. They are simple, modular, and highly customizable, allowing you to create powerful AI systems that are more than the sum of their parts. And as always, we're just getting started. There's always room for improvement, for simplification, for making things even better. That's the spirit of open collaboration. That's the spirit of Swarms.
 
-Thanks for becoming an alpha build user, email kye@apac.ai with all complaints
-
+Thanks for becoming an alpha build user, email kye@apac.ai with all complaints.
