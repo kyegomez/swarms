@@ -9,10 +9,10 @@ from langchain.vectorstores.base import VectorStoreRetriever
 from pydantic import ValidationError
 
 from swarms.agents.models.base import AbstractModel
-from swarms.agents.prompts.agent_output_parser import AgentOutputParser
-from swarms.agents.prompts.agent_prompt import AIMessage, HumanMessage, SystemMessage
-from swarms.agents.prompts.agent_prompt_auto import MessageFormatter, PromptConstructor
-from swarms.agents.prompts.prompt_generator import FINISH_NAME
+from swarms.agents.models.prompts.agent_output_parser import AgentOutputParser
+from swarms.agents.models.prompts.agent_prompt import AIMessage, HumanMessage, SystemMessage
+from swarms.agents.models.prompts.agent_prompt_auto import MessageFormatter, PromptConstructor
+from swarms.agents.models.prompts.prompt_generator import FINISH_NAME
 from swarms.agents.tools.base import BaseTool
 from swarms.agents.utils.Agent import AgentOutputParser
 from swarms.agents.utils.human_input import HumanInputRun

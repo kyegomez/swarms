@@ -18,7 +18,7 @@ from transformers import (
     CLIPSegProcessor,
 )
 
-from swarms.agents.prompts.prompts import IMAGE_PROMPT
+from swarms.agents.models.prompts.prompts import IMAGE_PROMPT
 from swarms.agents.tools.base import tool
 from swarms.agents.tools.main import BaseToolSet
 from swarms.utils.logger import logger
