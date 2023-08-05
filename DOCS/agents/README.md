@@ -56,7 +56,7 @@ print(huggingface.generate(prompt))
 
 And to build an agent:
 
-```
+```python
 from swarms.agents import vectorstore, tool, Agent
 
 # Create an instance of the Agent class
