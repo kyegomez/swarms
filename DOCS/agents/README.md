@@ -31,7 +31,7 @@ Each directory contains different components of the swarm. The `models` direct
 
 Let's see how simple it is to use these components with some examples:
 
-```
+```python
 # Import the necessary classes
 from swarms.models import Anthropic, HuggingFaceLLM
 
@@ -53,7 +53,6 @@ print("\nHuggingFaceLLM output:")
 print(huggingface.generate(prompt))
 ```
 
-Copy code
 
 And to build an agent:
 
@@ -68,7 +67,6 @@ agent = Agent(
 )
 ```
 
-Copy code
 
 In conclusion, the Agents in Swarms represent a new way of thinking about AI. They are simple, modular, and highly customizable, allowing you to create powerful AI systems that are more than the sum of their parts. And as always, we're just getting started. There's always room for improvement, for simplification, for making things even better. That's the spirit of open collaboration. That's the spirit of Swarms.
 
