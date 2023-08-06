@@ -26,8 +26,17 @@ from tenacity import (
     wait_exponential,
 )
 
-from langchain.embeddings.base import Embeddings
-from langchain.utils import get_from_dict_or_env, get_pydantic_field_names
+from swarms.utils.embeddings.base import Embeddings
+
+def get_from_dict_or_env(values: dict, key: str, env_key: str, default: Any = None) -> Any:
+    import os
+
+    return values.get(key) or os.getenv(env_key) or default
+
+
+def get_pydantic_field_names(cls: Any) -> Set[str]:
+    return set(cls.__annotations__.keys())
+
 
 logger = logging.getLogger(__name__)
 
@@ -303,8 +312,6 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             }  # type: ignore[assignment]  # noqa: E501
         return openai_args
 
-    # please refer to
-    # https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb
     def _get_len_safe_embeddings(
         self, texts: List[str], *, engine: str, chunk_size: Optional[int] = None
     ) -> List[List[float]]:
