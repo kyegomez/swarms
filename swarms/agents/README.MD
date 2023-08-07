@@ -1,7 +1,7 @@
 Introduction to Agents in Swarms
 ================================
 
-Welcome to the revolutionary world of Agents in Swarms. If you're familiar with my philosophy from the Linux world, you'll know that I'm a big believer in simplicity, modularity, and the power of open collaboration. The same principles apply here.
+Welcome to the revolutionary world of Agents in Swarms. I'm a big believer in simplicity, modularity, and the power of open collaboration. The same principles apply here.
 
 Agents are the individual building blocks in a swarm. They are the worker bees, each with a specific task, but all working together towards a common goal. In our case, an agent is a combination of a Language Model (LLM), Long Term Memory, and Tools.
 
