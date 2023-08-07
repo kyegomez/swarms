@@ -1,12 +1,10 @@
 from typing import Any, Dict, List
 from pydantic import Field
 
-from langchain.memory.chat_memory import BaseChatMemory, get_prompt_input_key
-from langchain.vectorstores.base import VectorStoreRetriever
+from swarms.agents.memory.base_memory import BaseChatMemory, get_prompt_input_key
+from swarms.agents.memory.base import VectorStoreRetriever
 
-
-
-class AutoGPTMemory(BaseChatMemory):
+class AgentMemory(BaseChatMemory):
     retriever: VectorStoreRetriever = Field(exclude=True)
     """VectorStoreRetriever object to connect to."""
 
