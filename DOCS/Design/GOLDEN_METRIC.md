@@ -87,7 +87,7 @@ The UTCS rate is not merely about task completion; it's about the comprehensive 
 
 We can represent the UTCS rate with the following equation:
 
-```
+```latex
 \[ UTCS Rate = \frac{(Completed Tasks \times User Satisfaction)}{(Total Tasks)} \times 100 \]
 ```
 
@@ -102,7 +102,9 @@ However, this basic representation doesn't factor in a critical component: syste
 
 Here’s the formula:
 
+```latex
 \[ SEI = \frac{UTCS Rate}{(Memory Consumption + Time Window + Task Complexity)} \]
+```
 
 Where:
 - Memory Consumption signifies the system resources used to accomplish tasks.
