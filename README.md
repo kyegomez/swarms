@@ -53,13 +53,7 @@ At Swarms, we're transforming the landscape of AI from siloed AI agents to a uni
 
 -----
 ## Hiring
-We're hiring:
-* Engineers, 
-* Researchers, 
-* Interns, 
-* And, salespeople 
-
-to work on democratizing swarms, email me at with your story at `kye@apac.ai`
+We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on democratizing swarms, email me at with your story at `kye@apac.ai`
 
 ----------
 
