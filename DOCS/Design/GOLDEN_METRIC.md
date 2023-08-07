@@ -87,7 +87,9 @@ The UTCS rate is not merely about task completion; it's about the comprehensive 
 
 We can represent the UTCS rate with the following equation:
 
+```
 \[ UTCS Rate = \frac{(Completed Tasks \times User Satisfaction)}{(Total Tasks)} \times 100 \]
+```
 
 Where:
 - Completed Tasks refer to the number of tasks Swarms executes without errors.
