@@ -2,7 +2,10 @@
 
 ![Swarming banner icon](images/swarmsbanner2.png)
 
+
 <div align="center">
+Introducing Swarms, automating all digital activities with multi-agent collaboration, get started in 30 seconds in a seamless onboarding experience.
+
 
 
 
@@ -32,9 +35,6 @@
 
 </div>
 
----
-
-Introducing Swarms, automating all digital activities with multi-agent collaboration, get started in 30 seconds in a seamless onboarding experience.
 
 
 
@@ -51,7 +51,7 @@ We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on
 
 There are 2 methods, one is through `git clone` and the other is by `pip install swarms`. Check out the [DOCUMENTATION](DOCS/DOCUMENTATION.md) for more information on the classes.
 
-# Method1
+# Method 1
 * Pip install `python3 -m pip install swarms`
 
 * Create new python file and unleash superintelligence
