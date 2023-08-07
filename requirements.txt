@@ -1,6 +1,6 @@
 transformers
 openai
-langchain==0.0.240
+langchain==0.0.254
 
 torch
 torchvision
