@@ -41,7 +41,6 @@
 
 Introducing Swarms, automating all digital activities with multi-agent collaboration, get started in 30 seconds in a seamless onboarding experience.
 
-</div>
 
 
 ## Purpose
