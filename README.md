@@ -1,9 +1,9 @@
 <div align="center">
 
 
-# Swarms of Autonomous AI Agents  🤖 🤖 🤖
+<!-- # Swarms 🤖 🤖 🤖 -->
 
-<!-- ![Swarming banner icon](images/swarmsbannernew.png) -->
+![Swarming banner icon](images/github-banner-swarms.png)
 
 Introducing Swarms, automating all digital activities with multi-agent collaboration, get started in 30 seconds in a seamless onboarding experience.
 

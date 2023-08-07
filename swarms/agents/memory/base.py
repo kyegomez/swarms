@@ -25,9 +25,12 @@ from langchain.callbacks.manager import (
     AsyncCallbackManagerForRetrieverRun,
     CallbackManagerForRetrieverRun,
 )
-from langchain.docstore.document import Document
-from langchain.embeddings.base import Embeddings
+
+from swarms.agents.memory.document import Document
+from swarms.utils.embeddings.base import Embeddings
+
 from langchain.schema import BaseRetriever
+
 from pydantic import Field, root_validator
 
 VST = TypeVar("VST", bound="VectorStore")

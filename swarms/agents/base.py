@@ -3,15 +3,23 @@ from __future__ import annotations
 from typing import List, Optional
 
 from langchain.chains.llm import LLMChain
-from langchain.memory import ChatMessageHistory
-from langchain.schema import BaseChatMessageHistory, Document
-from langchain.vectorstores.base import VectorStoreRetriever
 from pydantic import ValidationError
 
+from swarms.agents.memory.base import VectorStoreRetriever
+from swarms.agents.memory.base_memory import BaseChatMessageHistory
+from swarms.agents.memory.chat_message_history import ChatMessageHistory
+from swarms.agents.memory.document import Document
 from swarms.agents.models.base import AbstractModel
 from swarms.agents.models.prompts.agent_output_parser import AgentOutputParser
-from swarms.agents.models.prompts.agent_prompt import AIMessage, HumanMessage, SystemMessage
-from swarms.agents.models.prompts.agent_prompt_auto import MessageFormatter, PromptConstructor
+from swarms.agents.models.prompts.agent_prompt import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage,
+)
+from swarms.agents.models.prompts.agent_prompt_auto import (
+    MessageFormatter,
+    PromptConstructor,
+)
 from swarms.agents.models.prompts.prompt_generator import FINISH_NAME
 from swarms.agents.tools.base import BaseTool
 from swarms.agents.utils.Agent import AgentOutputParser
