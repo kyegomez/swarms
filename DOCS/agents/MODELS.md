@@ -1,6 +1,6 @@
-## swarms Package Documentation
+## LLMs in Swarms Documentation
 
-Welcome to the documentation for the "swarms" package, designed to facilitate seamless integration with various AI language models and APIs. This package empowers developers, end-users, and system administrators to interact with AI models from different providers, such as OpenAI, Hugging Face, Google PaLM, and Anthropic.
+Welcome to the documentation for the llm section of the swarms package, designed to facilitate seamless integration with various AI language models and APIs. This package empowers developers, end-users, and system administrators to interact with AI models from different providers, such as OpenAI, Hugging Face, Google PaLM, and Anthropic.
 
 ### Table of Contents
 1. [OpenAI](#openai)
@@ -8,7 +8,7 @@ Welcome to the documentation for the "swarms" package, designed to facilitate se
 3. [Google PaLM](#google-palm)
 4. [Anthropic](#anthropic)
 
-### 1. OpenAI (swarms.OpenAI)
+### 1. OpenAI (swarms.agents.models.OpenAI)
 
 The OpenAI class provides an interface to interact with OpenAI's language models. It allows both synchronous and asynchronous interactions.
 
@@ -46,7 +46,7 @@ async_responses = asyncio.run(chat.ask_multiple(ids, "How is {id}?"))
 print(async_responses)
 ```
 
-### 2. HuggingFace (swarms.HuggingFaceLLM)
+### 2. HuggingFace (swarms.agents.models.HuggingFaceLLM)
 
 The HuggingFaceLLM class allows interaction with language models from Hugging Face.
 
@@ -77,7 +77,7 @@ generated_text = hugging_face_model.generate(prompt)
 print(generated_text)
 ```
 
-### 3. Google PaLM (swarms.GooglePalm)
+### 3. Google PaLM (swarms.agents.models.GooglePalm)
 
 The GooglePalm class provides an interface for Google's PaLM Chat API.
 
@@ -109,7 +109,7 @@ response = google_palm.generate(messages)
 print(response["choices"][0]["text"])
 ```
 
-### 4. Anthropic (swarms.Anthropic)
+### 4. Anthropic (swarms.agents.models.Anthropic)
 
 The Anthropic class enables interaction with Anthropic's large language models.
 
