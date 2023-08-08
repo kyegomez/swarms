@@ -133,6 +133,13 @@ print(task)
 ```
 ---
 
+# Documentation
+For documentation, go here, [the docs folder in the root diectory](docs)
+
+**NOTE: We need help building the documentation**
+
+-----
+
 # Docker Setup
 
 * Build the Docker image
