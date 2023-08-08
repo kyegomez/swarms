@@ -141,6 +141,7 @@ For documentation, go here, [the docs folder in the root diectory](docs)
 -----
 
 # Docker Setup
+The docker file is located in the docker folder in the `infra` folder, [click here and navigate here in your environment](/infr)
 
 * Build the Docker image
 
