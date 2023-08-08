@@ -53,7 +53,7 @@ We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on
 There are 2 methods, one is through `git clone` and the other is by `pip install swarms`. Check out the [DOCUMENTATION](DOCS/DOCUMENTATION.md) for more information on the classes.
 
 # Method 1
-* Pip install `python3 -m pip install swarms`
+* Pip install `pip3 install swarms`
 
 * Create new python file and unleash superintelligence
 
