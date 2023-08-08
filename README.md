@@ -208,6 +208,20 @@ curl -X POST -H "Content-Type: application/json" -d '{"api_key": "your_openai_ap
 Replace your_openai_api_key and your_objective with your actual OpenAI API key and objective.
 
 
+
+# ✨ Features
+* Easy to use Base LLMs, `OpenAI` `Palm` `Anthropic` `HuggingFace`
+* Enterprise Grade, Production Ready with robust Error Handling
+* Multi-Modality Native with Multi-Modal LLMs as tools
+* Infinite Memory Processing: Store infinite sequences of infinite Multi-Modal data, text, images, videos, audio
+* Usability: Extreme emphasis on useability, code is at it's theortical minimum simplicity factor to use
+* Reliability: Outputs that accomplish tasks and activities you wish to execute.
+* Fluidity: A seamless all-around experience to build production grade workflows
+* Speed: Lower the time to automate tasks by 90%. 
+* Simplicity: Swarms is extremely simple to use, if not thee simplest agent framework of all time
+* Powerful: Swarms is capable of building entire software apps, to large scale data analysis, and handling chaotic situations
+
+
 ## Share with your Friends
 
 [![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
