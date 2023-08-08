@@ -6,6 +6,7 @@ from swarms.agents.models.anthropic import Anthropic
 from swarms.agents.models.huggingface import HuggingFaceLLM
 from swarms.agents.models.palm import GooglePalm
 from swarms.agents.models.petals import Petals
+from swarms.agents.models.openai import OpenAI
 
 ###########
 #tools
@@ -18,4 +19,3 @@ from swarms.agents.tools.file_mangagement import read_tool, write_tool, list_too
 from swarms.agents.tools.requests import RequestsGet
 
 from swarms.agents.tools.developer import Terminal, CodeEditor
-
