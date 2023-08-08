@@ -17,6 +17,12 @@ class OpenAI:
             params=params, 
             save_messages=save_messages)
     
+    def __call__(self, message, **kwargs):
+        try:
+            return self.ai(message, **kwargs)
+        except Exception as error:
+            print(f"Error in OpenAI, {error}")
+    
     def generate(self, message, **kwargs):
         try:
             return self.ai(message, **kwargs)
@@ -30,6 +36,6 @@ class OpenAI:
 #usage
 #from swarms import OpenAI()
 #chat = OpenAI()
-#response = chat("Hello World")
+#response = chat.generate("Hello World")
 #print(response)
 
