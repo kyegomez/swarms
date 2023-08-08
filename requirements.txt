@@ -113,3 +113,5 @@ sphinx_rtd_theme
 pegasusx
 
 oceandb
+
+simpleaichat
