@@ -10,7 +10,12 @@ class OpenAI:
                  save_messages=True):
         self.api_key = api_key or self._fetch_api_key()
         self.system = system or "You are a helpful assistant"
-        self.ai = AIChat(api_key=self.api_key, system=self.system, console=console, model=model, params=params, save_messages=save_messages)
+        self.ai = AIChat(api_key=self.api_key, 
+            system=self.system, 
+            console=console, 
+            model=model, 
+            params=params, 
+            save_messages=save_messages)
     
     def generate(self, message, **kwargs):
         try:
@@ -27,3 +32,4 @@ class OpenAI:
 #chat = OpenAI()
 #response = chat("Hello World")
 #print(response)
+
