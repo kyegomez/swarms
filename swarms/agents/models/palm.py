@@ -112,6 +112,26 @@ class GooglePalm(BaseModel):
             return await self.client.chat_async(**kwargs)
 
         return await _achat_with_retry(**kwargs)
+    
+    def __call__(
+        self,
+        messages: List[Dict[str, Any]],
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        prompt = _messages_to_prompt_dict(messages)
+
+        response: genai.types.ChatResponse = self.chat_with_retry(
+            model=self.model_name,
+            prompt=prompt,
+            temperature=self.temperature,
+            top_p=self.top_p,
+            top_k=self.top_k,
+            candidate_count=self.n,
+            **kwargs,
+        )
+
+        return _response_to_result(response, stop)
 
     def generate(
         self,

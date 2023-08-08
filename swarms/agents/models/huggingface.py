@@ -27,6 +27,19 @@ class HuggingFaceLLM:
         except Exception as e:
             self.logger.error(f"Failed to load the model or the tokenizer: {e}")
             raise
+
+    def __call__(self, prompt_text: str, max_length: int = None):
+        max_length = max_length if max_length else self.max_length
+        try:
+            inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(self.device)
+            with torch.no_grad():
+                outputs = self.model.generate(inputs, max_length=max_length, do_sample=True)
+            return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        except Exception as e:
+            self.logger.error(f"Failed to generate the text: {e}")
+            raise
+
+
     def generate(self, prompt_text: str, max_length: int = None):
         max_length = max_length if max_length else self.max_length
         try:

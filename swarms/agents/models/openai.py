@@ -97,4 +97,3 @@ class OpenAI:
 #async
 # async_responses = asyncio.run(chat.ask_multiple(['id1', 'id2'], "How is {id}"))
 # print(async_responses)
-# 
