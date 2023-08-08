@@ -1,186 +1,143 @@
-# Models Documentation
+## swarms Package Documentation
 
-====================
+Welcome to the documentation for the "swarms" package, designed to facilitate seamless integration with various AI language models and APIs. This package empowers developers, end-users, and system administrators to interact with AI models from different providers, such as OpenAI, Hugging Face, Google PaLM, and Anthropic.
 
-## Language Models
+### Table of Contents
+1. [OpenAI](#openai)
+2. [HuggingFace](#huggingface)
+3. [Google PaLM](#google-palm)
+4. [Anthropic](#anthropic)
 
----------------
+### 1. OpenAI (swarms.OpenAI)
 
-Language models are the driving force of our agents. They are responsible for generating text based on a given prompt. We currently support two types of language models: Anthropic and HuggingFace.
+The OpenAI class provides an interface to interact with OpenAI's language models. It allows both synchronous and asynchronous interactions.
 
-### Anthropic
-
-The `Anthropic` class is a wrapper for the Anthropic large language models.
-
-#### Initialization
-
-```
-
-Anthropic(model="claude-2", max_tokens_to_sample=256, temperature=None, top_k=None, top_p=None, streaming=False, default_request_timeout=None)
-
-```
-
-
-
-##### Parameters
-
-- `model` (str, optional): The name of the model to use. Default is "claude-2".
-
-- `max_tokens_to_sample` (int, optional): The maximum number of tokens to sample. Default is 256.
-
-- `temperature` (float, optional): The temperature to use for the generation. Higher values result in more random outputs.
-
-- `top_k` (int, optional): The number of top tokens to consider for the generation.
-
-- `top_p` (float, optional): The cumulative probability of parameter highest probability vocabulary tokens to keep for nucleus sampling.
-
-- `streaming` (bool, optional): Whether to use streaming mode. Default is False.
-
-- `default_request_timeout` (int, optional): The default request timeout in seconds. Default is 600.
-
-##### Example
-
-```
-
-anthropic = Anthropic(model="claude-2", max_tokens_to_sample=100, temperature=0.8)
-
-```
-
-
-
-#### Generation
-
-```
-
-anthropic.generate(prompt, stop=None)
-
-```
-
-
-
-##### Parameters
-
-- `prompt` (str): The prompt to use for the generation.
-
-- `stop` (list, optional): A list of stop sequences. The generation will stop if one of these sequences is encountered.
-
-##### Returns
-
-- `str`: The generated text.
-
-##### Example
-
-```
-
-prompt = "Once upon a time"
-
-stop = ["The end"]
-
-print(anthropic.generate(prompt, stop))
-
-```
-
-
-
-### HuggingFaceLLM
-
-The `HuggingFaceLLM` class is a wrapper for the HuggingFace language models.
-
-#### Initialization
-
-```
-
-HuggingFaceLLM(model_id: str, device: str = None, max_length: int = 20, quantize: bool = False, quantization_config: dict = None)
-
-```
-
-
-
-##### Parameters
-
-- `model_id` (str): The ID of the model to use.
-
-- `device` (str, optional): The device to use for the generation. Default is "cuda" if available, otherwise "cpu".
-
-- `max_length` (int, optional): The maximum length of the generated text. Default is 20.
-
-- `quantize` (bool, optional): Whether to quantize the model. Default is False.
-
-- `quantization_config` (dict, optional): The configuration for the quantization.
-
-##### Example
-
-```
-
-huggingface = HuggingFaceLLM(model_id="gpt2", device="cpu", max_length=50)
-
-```
-
-
-
-#### Generation
-
-```
-
-huggingface.generate(prompt_text: str, max_length: int = None)
-
-```
-
-
-
-##### Parameters
-
-- `prompt_text` (str): The prompt to use for the generation.
-
-- `max_length` (int, optional): The maximum length of the generated text. If not provided, the default value specified during initialization is used.
-
-##### Returns
-
-- `str`: The generated text.
-
-##### Example
-
-```
-
-prompt = "Once upon a time"
-
-print(huggingface.generate(prompt))
-
-```
-
-
-### Full Examples
-
+**Constructor:**
 ```python
-# Import the necessary classes
-
-from swarms.models import Anthropic, HuggingFaceLLM
-
-# Create an instance of the Anthropic class
-
-anthropic = Anthropic(model="claude-2", max_tokens_to_sample=100, temperature=0.8)
-
-# Use the Anthropic instance to generate text
-
-prompt = "Once upon a time"
-
-stop = ["The end"]
-
-print("Anthropic output:")
-
-print(anthropic.generate(prompt, stop))
-
-# Create an instance of the HuggingFaceLLM class
-
-huggingface = HuggingFaceLLM(model_id="gpt2", device="cpu", max_length=50)
-
-# Use the HuggingFaceLLM instance to generate text
-
-prompt = "Once upon a time"
-
-print("\nHuggingFaceLLM output:")
-
-print(huggingface.generate(prompt))
-
+OpenAI(api_key: str, system: str = None, console: bool = True, model: str = None, params: dict = None, save_messages: bool = True)
 ```
 
+**Attributes:**
+- `api_key` (str): Your OpenAI API key.
+- `system` (str, optional): A system message to be used in conversations.
+- `console` (bool, default=True): Display console logs.
+- `model` (str, optional): Name of the language model to use.
+- `params` (dict, optional): Additional parameters for model interactions.
+- `save_messages` (bool, default=True): Save conversation messages.
+
+**Methods:**
+- `generate(message: str, **kwargs) -> str`: Generate a response using the OpenAI model.
+- `generate_async(message: str, **kwargs) -> str`: Generate a response asynchronously.
+- `ask_multiple(ids: List[str], question_template: str) -> List[str]`: Query multiple IDs simultaneously.
+- `stream_multiple(ids: List[str], question_template: str) -> List[str]`: Stream multiple responses.
+
+**Usage Example:**
+```python
+from swarms import OpenAI
+import asyncio
+
+chat = OpenAI(api_key="YOUR_OPENAI_API_KEY")
+
+response = chat.generate("Hello, how can I assist you?")
+print(response)
+
+ids = ["id1", "id2", "id3"]
+async_responses = asyncio.run(chat.ask_multiple(ids, "How is {id}?"))
+print(async_responses)
+```
+
+### 2. HuggingFace (swarms.HuggingFaceLLM)
+
+The HuggingFaceLLM class allows interaction with language models from Hugging Face.
+
+**Constructor:**
+```python
+HuggingFaceLLM(model_id: str, device: str = None, max_length: int = 20, quantize: bool = False, quantization_config: dict = None)
+```
+
+**Attributes:**
+- `model_id` (str): ID or name of the Hugging Face model.
+- `device` (str, optional): Device to run the model on (e.g., 'cuda', 'cpu').
+- `max_length` (int, default=20): Maximum length of generated text.
+- `quantize` (bool, default=False): Apply model quantization.
+- `quantization_config` (dict, optional): Configuration for quantization.
+
+**Methods:**
+- `generate(prompt_text: str, max_length: int = None) -> str`: Generate text based on a prompt.
+
+**Usage Example:**
+```python
+from swarms import HuggingFaceLLM
+
+model_id = "gpt2"
+hugging_face_model = HuggingFaceLLM(model_id=model_id)
+
+prompt = "Once upon a time"
+generated_text = hugging_face_model.generate(prompt)
+print(generated_text)
+```
+
+### 3. Google PaLM (swarms.GooglePalm)
+
+The GooglePalm class provides an interface for Google's PaLM Chat API.
+
+**Constructor:**
+```python
+GooglePalm(model_name: str = "models/chat-bison-001", google_api_key: str = None, temperature: float = None, top_p: float = None, top_k: int = None, n: int = 1)
+```
+
+**Attributes:**
+- `model_name` (str): Name of the Google PaLM model.
+- `google_api_key` (str, optional): Google API key.
+- `temperature` (float, optional): Temperature for text generation.
+- `top_p` (float, optional): Top-p sampling value.
+- `top_k` (int, optional): Top-k sampling value.
+- `n` (int, default=1): Number of candidate completions.
+
+**Methods:**
+- `generate(messages: List[Dict[str, Any]], stop: List[str] = None, **kwargs) -> Dict[str, Any]`: Generate text based on a list of messages.
+- `__call__(messages: List[Dict[str, Any]], stop: List[str] = None, **kwargs) -> Dict[str, Any]`: Generate text using the call syntax.
+
+**Usage Example:**
+```python
+from swarms import GooglePalm
+
+google_palm = GooglePalm()
+messages = [{"role": "system", "content": "You are a helpful assistant"}, {"role": "user", "content": "Tell me a joke"}]
+
+response = google_palm.generate(messages)
+print(response["choices"][0]["text"])
+```
+
+### 4. Anthropic (swarms.Anthropic)
+
+The Anthropic class enables interaction with Anthropic's large language models.
+
+**Constructor:**
+```python
+Anthropic(model: str = "claude-2", max_tokens_to_sample: int = 256, temperature: float = None, top_k: int = None, top_p: float = None, streaming: bool = False, default_request_timeout: int = None)
+```
+
+**Attributes:**
+- `model` (str): Name of the Anthropic model.
+- `max_tokens_to_sample` (int, default=256): Maximum tokens to sample.
+- `temperature` (float, optional): Temperature for text generation.
+- `top_k` (int, optional): Top-k sampling value.
+- `top_p` (float, optional): Top-p sampling value.
+- `streaming` (bool, default=False): Enable streaming mode.
+- `default_request_timeout` (int, optional): Default request timeout.
+
+**Methods:**
+- `generate(prompt: str, stop: List[str] = None) -> str`: Generate text based on a prompt.
+
+**Usage Example:**
+```python
+from swarms import Anthropic
+
+anthropic = Anthropic()
+prompt = "Once upon a time"
+generated_text = anthropic.generate(prompt)
+print(generated_text)
+```
+
+This concludes the documentation for the "swarms" package, providing you with tools to seamlessly integrate with various language models and APIs. Happy coding!
