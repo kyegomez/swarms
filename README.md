@@ -82,6 +82,15 @@ Download via Github, and install requirements. Simple example by:
 * or create a new file:
 
 ```python
+from swarms import OpenAI
+
+chat = OpenAI()
+response = chat("Hello world!")
+
+```
+
+
+```python
 from swarms.swarms import HierarchicalSwarm
 
 # Retrieve your API key from the environment or replace with your actual key
