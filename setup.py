@@ -28,6 +28,7 @@ setup(
         'nest_asyncio',
         'bs4',
         'pegasusx',
+        'google-generativeai',
         'oceandb',
         'codeinterpreterapi',
         'playwright',
