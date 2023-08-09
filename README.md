@@ -1,6 +1,6 @@
 <!-- # Swarms 🤖 🤖 🤖 -->
 
-![Swarming banner icon](images/swarmsbanner2.png)
+![Swarming banner icon](images/swarmsbanner.png)
 
 
 <div align="center">
