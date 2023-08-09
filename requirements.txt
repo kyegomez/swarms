@@ -36,17 +36,13 @@ opencv-python
 
 prettytable
 safetensors
-streamlit
+google-generativeai
 
 test-tube
 timm
-# torchmetrics
-
 webdataset
 yapf
-wolframalpha
 
-wikipedia==1.4.0
 httpx
 ggl
 
