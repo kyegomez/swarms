@@ -13,7 +13,7 @@ class OpenAI:
                  model=None,
                  params=None,
                  save_messages=True):
-        self.api_key = api_key or self._fetch_api_key()
+        self.api_key = api_key or self.fetch_api_key()
         self.system = system or "You are a helpful assistant"
 
         try:
