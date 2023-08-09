@@ -5,7 +5,6 @@ import concurrent.futures
 import logging
 
 #this needs to change, we need to specify exactly what needs to be imported
-from swarms.agents.tools.agent_tools import *
 from swarms.swarms.swarms import HierarchicalSwarm
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
