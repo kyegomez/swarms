@@ -31,7 +31,7 @@ class WorkerNodeInitializer:
                  openai_api_key: str,
                  llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
                  tools: Optional[List[Tool]] = None, 
-                 embedding_size: Optional[int] = 1926,
+                 embedding_size: Optional[int] = 8192,
                  worker_name: Optional[str] = "Swarm Worker AI Assistant", 
                  worker_role: Optional[str] = "Assistant", 
                  human_in_the_loop: Optional[bool] = False, 
@@ -45,7 +45,7 @@ class WorkerNodeInitializer:
 
         self.worker_name = worker_name
         self.worker_role = worker_role
-        self.embedding_size = embedding_size
+        self.embedding_size = 8192
         self.human_in_the_loop = human_in_the_loop
         self.search_kwargs = search_kwargs
         self.verbose = verbose
