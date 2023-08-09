@@ -25,6 +25,8 @@ from swarms.utils.logger import logger
 from swarms.utils.main import ANSI, Color, Style  # test
 
 
+from langchain.tools import tool
+
 #helpers
 PipeType = Union[Literal["stdout"], Literal["stderr"]]
 
