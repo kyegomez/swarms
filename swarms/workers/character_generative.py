@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain.experimental.generative_agents.memory import GenerativeAgentMemory
+from langchain_experimental.generative_agents.memory import GenerativeAgentMemory
 
 from swarms.utils.schema.base import BaseLanguageModel
 
