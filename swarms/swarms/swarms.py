@@ -50,7 +50,7 @@ class HierarchicalSwarm:
 
         self.worker_node = WorkerNode(
             openai_api_key=self.openai_api_key,
-            worker_name=self.worker_name,
+            # worker_name=self.worker_name,
             temperature=self.temperature,
             human_in_the_loop=self.human_in_the_loop,
             verbose=self.verbose
