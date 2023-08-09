@@ -1,114 +1,133 @@
+# transformers
+# openai
+# langchain==0.0.240
+
+# torch
+# torchvision
+# asyncio
+
+# nest_asyncio
+# bs4
+# playwright
+
+# duckduckgo-search
+# faiss-cpu
+# wget==3.2
+
+# # codeinterpreterapi
+# accelerate
+# addict
+# albumentations
+
+# basicsr
+# controlnet-aux
+# diffusers==0.14.0
+# langchain-experimental
+
+# einops
+# imageio
+
+# imageio-ffmpeg
+# kornia
+# numpy
+
+# omegaconf
+# open_clip_torch
+# opencv-python
+
+# prettytable
+# safetensors
+# google-generativeai
+
+# test-tube
+# timm
+# webdataset
+# yapf
+
+# httpx
+# ggl
+
+
+# arxiv
+# google-api-python-client 
+
+# google-auth-httplib2
+# beautifulsoup4==4.11.2
+# O365
+
+# pytube
+# pydub
+# llama-index
+
+# fastapi==0.94.1
+# pydantic==1.10.6
+# tenacity==8.2.2
+
+# python-dotenv
+# boto3
+# uvicorn==0.21.1
+
+# python-ptrace
+# jinja2==3.1.2
+# python-multipart==0.0.6
+
+# celery==5.3.1
+# redis==4.6.0
+# sentencepiece
+
+# bitsandbytes==0.41.0
+# psycopg2-binary==2.9.5
+# google-search-results==2.4.2
+
+# black==23.7.0
+# Pillow
+# selenium
+
+# # ONNI AGENT REQUIREMENTS
+# diffusers
+# controlnet_aux
+# tiktoken
+
+# espnet==202304
+# espnet_model_zoo==0.1.7
+# # flask==2.2.3
+
+# # flask_cors==3.0.10
+# waitress==2.1.2
+# asteroid
+
+# speechbrain
+# timm
+# typeguard
+
+# pytesseract
+# huggingface_hub
+
+# fastapi_cache
+# fastapi-limiter
+
+# sphinx_rtd_theme
+# pegasusx
+
+# oceandb
+
+# simpleaichat
+
 transformers
-openai
-langchain==0.0.240
-
-torch
-torchvision
-asyncio
-
+langchain==0.2.1
 nest_asyncio
-bs4
-playwright
-
-duckduckgo-search
-faiss-cpu
-wget==3.2
-
-# codeinterpreterapi
-accelerate
-addict
-albumentations
-
-basicsr
-controlnet-aux
-diffusers==0.14.0
+pegasusx
+google-generativeai 
+oceandb
 langchain-experimental
-
-einops
-imageio
-
-imageio-ffmpeg
-kornia
-numpy
-
-omegaconf
-open_clip_torch
-opencv-python
-
-prettytable
-safetensors
-google-generativeai
-
-test-tube
-timm
-webdataset
-yapf
-
+playwright
+duckduckgo_search
+wget==3.2
+simpleaichat
 httpx
 ggl
-
-
-arxiv
-google-api-python-client 
-
-google-auth-httplib2
-beautifulsoup4==4.11.2
-O365
-
-pytube
-pydub
-llama-index
-
-fastapi==0.94.1
-pydantic==1.10.6
-tenacity==8.2.2
-
-python-dotenv
-boto3
-uvicorn==0.21.1
-
-python-ptrace
-jinja2==3.1.2
-python-multipart==0.0.6
-
-celery==5.3.1
-redis==4.6.0
-sentencepiece
-
-bitsandbytes==0.41.0
-psycopg2-binary==2.9.5
+beautifulsoup4
+celery
+redis
 google-search-results==2.4.2
-
-black==23.7.0
 Pillow
-selenium
-
-# ONNI AGENT REQUIREMENTS
-diffusers
-controlnet_aux
-tiktoken
-
-espnet==202304
-espnet_model_zoo==0.1.7
-# flask==2.2.3
-
-# flask_cors==3.0.10
-waitress==2.1.2
-asteroid
-
-speechbrain
-timm
-typeguard
-
-pytesseract
-huggingface_hub
-
-fastapi_cache
-fastapi-limiter
-
-sphinx_rtd_theme
-pegasusx
-
-oceandb
-
-simpleaichat
