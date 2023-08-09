@@ -18,9 +18,9 @@ from ptrace.debugger import (
 )
 from ptrace.func_call import FunctionCallOptions
 from ptrace.syscall import PtraceSyscall
-from ptrace.Tools import signal_to_exitcode
+from ptrace.tools import signal_to_exitcode
 
-from swarms.agents.Tools.base import BaseToolSet, SessionGetter, ToolScope, Tool
+from swarms.agents.tools.base import BaseToolSet, SessionGetter, ToolScope, tool
 from swarms.utils.logger import logger
 from swarms.utils.main import ANSI, Color, Style  # test
 
@@ -34,7 +34,7 @@ def verify(func):
         try:
             filepath = args[0].filepath
         except AttributeError:
-            raise Exception("This Tool doesn't have filepath. Please check your code.")
+            raise Exception("This tool doesn't have filepath. Please check your code.")
         if not str(Path(filepath).resolve()).startswith(str(Path().resolve())):
             return "You can't access file outside of playground."
         return func(*args, **kwargs)
@@ -201,7 +201,7 @@ class Terminal(BaseToolSet):
     def __init__(self):
         self.sessions: Dict[str, List[SyscallTracer]] = {}
 
-    @Tool(
+    @tool(
         name="Terminal",
         description="Executes commands in a terminal."
         "If linux errno occurs, we have to solve the problem with the terminal. "
@@ -629,7 +629,7 @@ class CodePatcher:
 
 
 class CodeEditor(BaseToolSet):
-    @Tool(
+    @tool(
         name="CodeEditor.READ",
         description="Read and understand code. "
         "Input should be filename and line number group. ex. test.py|1-10 "
@@ -647,7 +647,7 @@ class CodeEditor(BaseToolSet):
         )
         return output
 
-    @Tool(
+    @tool(
         name="CodeEditor.SUMMARY",
         description="Summary code. "
         "Read the code structured into a tree. "
@@ -667,10 +667,10 @@ class CodeEditor(BaseToolSet):
         )
         return output
 
-    @Tool(
+    @tool(
         name="CodeEditor.APPEND",
         description="Append code to the existing file. "
-        "If the code is completed, use the Terminal Tool to execute it, if not, append the code through the this Tool. "
+        "If the code is completed, use the Terminal tool to execute it, if not, append the code through the this tool. "
         "Input should be filename and code to append. "
         "Input code must be the code that should be appended, NOT whole code. "
         "ex. test.py\nprint('hello world')\n "
@@ -689,10 +689,10 @@ class CodeEditor(BaseToolSet):
         )
         return output
 
-    @Tool(
+    @tool(
         name="CodeEditor.WRITE",
-        description="Write code to create a new Tool. "
-        "If the code is completed, use the Terminal Tool to execute it, if not, append the code through the CodeEditor.APPEND Tool. "
+        description="Write code to create a new tool. "
+        "If the code is completed, use the Terminal tool to execute it, if not, append the code through the CodeEditor.APPEND tool. "
         "Input should be formatted like: "
         "<filename>\n<code>\n\n"
         "Here is an example: "
@@ -712,7 +712,7 @@ class CodeEditor(BaseToolSet):
         )
         return output
 
-    @Tool(
+    @tool(
         name="CodeEditor.PATCH",
         description="Patch the code to correct the error if an error occurs or to improve it. "
         "Input is a list of patches. The patch is separated by {seperator}. ".format(
@@ -742,7 +742,7 @@ class CodeEditor(BaseToolSet):
         )
         return output
 
-    @Tool(
+    @tool(
         name="CodeEditor.DELETE",
         description="Delete code in file for a new start. "
         "Input should be filename."
