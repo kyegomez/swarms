@@ -61,7 +61,7 @@ setup(
         'ggl',
         'beautifulsoup4==4.11.2',
         'llama-index',
-        'fastapi==0.94.1',
+        'fastapi',
         'pydantic==1.10.6',
         'tenacity==8.2.2',
         'python-dotenv',
