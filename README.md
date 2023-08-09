@@ -10,15 +10,6 @@ Introducing Swarms, automating all digital activities with multi-agent collabora
 
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)[![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
 
-<!-- <p>
-<img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/kyegomez/swarms" />
-<img alt="GitHub Last Commit" src="https://img.shields.io/github/last-commit/kyegomez/swarms" />
-<img alt="" src="https://img.shields.io/github/repo-size/kyegomez/swarms" />
-<img alt="GitHub Issues" src="https://img.shields.io/github/issues/kyegomez/swarms" />
-<img alt="GitHub Pull Requests" src="https://img.shields.io/github/issues-pr/kyegomez/swarms" />
-<br />
-</div> -->
-
 
 
 
