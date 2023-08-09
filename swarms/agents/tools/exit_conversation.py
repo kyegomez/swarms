@@ -1,9 +1,9 @@
-from swarms.agents.tools.base import BaseToolSet, SessionGetter, ToolScope, tool
+from swarms.agents.tools.base import BaseToolSet, SessionGetter, ToolScope, Tool
 from swarms.utils.logger import logger
 
 
 class ExitConversation(BaseToolSet):
-    @tool(
+    @Tool(
         name="Exit Conversation",
         description="A tool to exit the conversation. "
         "Use this when you want to exit the conversation. "
