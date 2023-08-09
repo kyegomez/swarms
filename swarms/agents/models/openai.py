@@ -25,14 +25,14 @@ class OpenAI:
                 params=params, 
                 save_messages=save_messages)
             
-            self.async_ai = AsyncAIChat(
-                api_key=self.api_key,
-                system=self.system,
-                console=console,
-                model=model,
-                params=params,
-                save_messages=save_messages
-            )
+            # self.async_ai = AsyncAIChat(
+            #     api_key=self.api_key,
+            #     system=self.system,
+            #     console=console,
+            #     model=model,
+            #     params=params,
+            #     save_messages=save_messages
+            # )
         
         except Exception as error:
             raise ValueError(f"Failed to initialize the chat with error: {error}, check inputs and input types")
