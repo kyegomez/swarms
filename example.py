@@ -30,5 +30,5 @@
 from swarms.agents.models.openai import OpenAI
 
 chat = OpenAI()
-response = chat.generate("Hello World")
+response = chat("Hello World")
 print(response)
