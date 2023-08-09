@@ -114,7 +114,7 @@
 # simpleaichat
 
 transformers
-langchain==0.2.1
+langchain==langchain==0.0.240
 nest_asyncio
 pegasusx
 google-generativeai 
