@@ -14,7 +14,7 @@ duckduckgo-search
 faiss-cpu
 wget==3.2
 
-codeinterpreterapi
+# codeinterpreterapi
 accelerate
 addict
 albumentations
@@ -22,6 +22,7 @@ albumentations
 basicsr
 controlnet-aux
 diffusers==0.14.0
+langchain-experimental
 
 einops
 imageio
