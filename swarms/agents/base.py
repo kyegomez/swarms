@@ -20,7 +20,7 @@ from swarms.agents.models.prompts.agent_prompt_auto import (
     MessageFormatter,
     PromptConstructor,
 )
-from swarms.agents.models.prompts.prompt_generator import FINISH_NAME
+from swarms.agents.models.prompts.agent_prompt_generator import FINISH_NAME
 from swarms.agents.tools.base import BaseTool
 from swarms.agents.utils.Agent import AgentOutputParser
 from swarms.agents.utils.human_input import HumanInputRun
