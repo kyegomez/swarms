@@ -1,19 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
-from abc import ABC
-from typing import Any, Dict, Optional, Tuple
-
-from pydantic import Field
-
+from langchain.memory.utils import get_prompt_input_key
+from pydantic import BaseModel, Field
 
 from swarms.agents.models.prompts.base import AIMessage, BaseMessage, HumanMessage
 from swarms.utils.serializable import Serializable
-from swarms.agents.memory.chat_message_history import ChatMessageHistory
-
-from langchain.memory.utils import get_prompt_input_key
 
 
 class BaseMemory(Serializable, ABC):
@@ -132,6 +126,20 @@ class BaseChatMessageHistory(ABC):
         """Remove all messages from the store"""
 
 
+class ChatMessageHistory(BaseChatMessageHistory, BaseModel):
+    """In memory implementation of chat message history.
+
+    Stores messages in an in memory list.
+    """
+
+    messages: List[BaseMessage] = []
+
+    def add_message(self, message: BaseMessage) -> None:
+        """Add a self-created message to the store"""
+        self.messages.append(message)
+
+    def clear(self) -> None:
+        self.messages = []
 
 class BaseChatMemory(BaseMemory, ABC):
     """Abstract base class for chat memory."""
@@ -165,3 +173,4 @@ class BaseChatMemory(BaseMemory, ABC):
     def clear(self) -> None:
         """Clear memory contents."""
         self.chat_memory.clear()
+
