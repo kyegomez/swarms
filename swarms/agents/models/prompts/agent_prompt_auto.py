@@ -9,7 +9,7 @@ class TokenUtils:
 
 
 class PromptConstructor:
-    def __init__(self, ai_name: str, ai_role: str, tools: List[BaseTool]):
+    def __init__(self, ai_name: str, ai_role: str, tools):
         self.ai_name = ai_name
         self.ai_role = ai_role
         self.tools = tools
