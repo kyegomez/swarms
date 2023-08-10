@@ -26,8 +26,6 @@ from pydantic import Field
 llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
 
 
-
-
 @contextmanager
 def pushd(new_dir):
     """Context manager for changing the current working directory."""
@@ -136,3 +134,9 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 # !pip install duckduckgo_search
 web_search = DuckDuckGoSearchRun()
 
+
+
+# from swarms.agents.tools.code_intepretor import CodeInterpreter
+
+# # @tool
+# code_intepret = CodeInterpreter()
