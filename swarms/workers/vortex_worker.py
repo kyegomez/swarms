@@ -88,7 +88,7 @@ class VortexWorkerAgent:
             openai_api_key = self.openai_api_key or os.getenv("OPENAI_API_KEY")
             embeddings_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
             embedding_size = 8192
-            index = faiss.IndexFlatL2(embedding_size=embedding_size)
+            index = faiss.IndexFlatL2(s)
             return FAISS(embeddings_model, index, InMemoryDocstore({}), {})
         except Exception as error:
             logging.error(f"Failed to initialize vector store: {error}")
