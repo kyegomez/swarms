@@ -2,19 +2,18 @@
 #Vortex is the name of my Duck friend, ILY Vortex
 #Kye
 
-from swarms.agents.base import Agent
-
 import logging
-import faiss
+import os
 from typing import List, Optional, Union
 
+import faiss
 from langchain.agents import Tool
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
-
 from langchain.vectorstores import FAISS
 
+from swarms.agents.base import Agent
 from swarms.agents.tools.autogpt import (
     FileChatMessageHistory,
     ReadFileTool,
@@ -24,7 +23,6 @@ from swarms.agents.tools.autogpt import (
     process_csv,
     web_search,
 )
-from swarms.agents.base import Agent
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -87,7 +85,8 @@ class VortexWorkerAgent:
     
     def init_vectorstore(self):
         try:
-            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+            openai_api_key = self.openai_api_key or os.getenv("OPENAI_API_KEY")
+            embeddings_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
             index = faiss.IndexFlatL2(embedding_size=self.embedding_size)
             return FAISS(embeddings_model, index, InMemoryDocstore({}), {})
         except Exception as error:
