@@ -11,7 +11,7 @@ from swarms.agents.memory.base_memory import BaseChatMessageHistory, ChatMessage
 from swarms.agents.memory.document import Document
 from swarms.agents.models.base import AbstractModel
 
-from swarms.agents.models.prompts.agent_prompt import (
+from swarms.agents.models.prompts.base import (
     AIMessage,
     HumanMessage,
     SystemMessage,
