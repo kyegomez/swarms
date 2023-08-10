@@ -131,3 +131,4 @@ celery
 redis
 google-search-results==2.4.2
 Pillow
+fiass-cpu
