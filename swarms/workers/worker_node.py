@@ -8,7 +8,6 @@ from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain_experimental.autonomous_agents import AutoGPT
 from langchain.vectorstores import FAISS
-
 from swarms.agents.tools.autogpt import (
     FileChatMessageHistory,
     ReadFileTool,
@@ -116,7 +115,7 @@ class WorkerNode:
             llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
             tools: Optional[List[Tool]] = None, 
             # vectorstore: Optional[FAISS] = None,
-            # embedding_size: Optional[int] = 4026,
+            embedding_size: Optional[int] = 4026,
             worker_name: Optional[str] = "Swarm Worker AI Assistant", 
             worker_role: Optional[str] = "Assistant", 
             human_in_the_loop: Optional[bool] = False, 
@@ -131,7 +130,7 @@ class WorkerNode:
         self.worker_node_initializer = WorkerNodeInitializer(openai_api_key)
         self.name = worker_name  # Added a name attribute
         self.description = "A worker node that executes tasks"  # Added a description attribute
-        self.embedding_size = embedding_size
+        self.embedding_size = self.embedding_size
 
 
     def initialize_llm(self, llm_class, temperature):
