@@ -6,11 +6,13 @@ from langchain.chains.llm import LLMChain
 from pydantic import ValidationError
 
 from swarms.agents.memory.base import VectorStoreRetriever
-from swarms.agents.memory.base_memory import BaseChatMessageHistory
-from swarms.agents.memory.chat_message_history import ChatMessageHistory
+from swarms.agents.memory.base_memory import ChatMessageHistory, BaseChatMessageHistory
+
+
 from swarms.agents.memory.document import Document
 from swarms.agents.models.base import AbstractModel
 from swarms.agents.models.prompts.agent_output_parser import AgentOutputParser
+
 from swarms.agents.models.prompts.agent_prompt import (
     AIMessage,
     HumanMessage,
