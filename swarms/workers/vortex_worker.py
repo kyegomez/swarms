@@ -49,7 +49,7 @@ class VortexWorkerAgent:
         self.worker_name = worker_name
         self.worker_role = worker_role
         
-        self.embedding_size = embedding_size
+        self.embedding_size = 8192
         self.human_in_the_loop = human_in_the_loop
         self.search_kwargs = search_kwargs
         
