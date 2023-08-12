@@ -109,30 +109,94 @@ class WorkerNodeInitializer:
             raise e
 
 class WorkerNode:
-    def __init__(self, 
-            openai_api_key: str,
-            temperature: int, 
-            llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
-            tools: Optional[List[Tool]] = None, 
-            # vectorstore: Optional[FAISS] = None,
-            embedding_size: Optional[int] = 4026,
-            worker_name: Optional[str] = "Swarm Worker AI Assistant", 
-            worker_role: Optional[str] = "Assistant", 
-            human_in_the_loop: Optional[bool] = False, 
-            search_kwargs: dict = {}, 
-            verbose: Optional[bool] = False,
-            chat_history_file: str = "chat_history.txt"):       
-    
+   def __init__(self, 
+                 openai_api_key: str,
+                 temperature: Optional[int] = None, 
+                 llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
+                 tools: Optional[List[Tool]] = None,
+                 embedding_size: Optional[int] = 8192, # Default value set as 8192 from WorkerNodeInitializer
+                 worker_name: Optional[str] = "Swarm Worker AI Assistant", 
+                 worker_role: Optional[str] = "Assistant",
+                 human_in_the_loop: Optional[bool] = False, 
+                 search_kwargs: dict = {},
+                 verbose: Optional[bool] = False,
+                 chat_history_file: str = "chat_history.txt"):
+        
         if not openai_api_key:
             raise ValueError("openai_api_key cannot be None")
-        
+
         self.openai_api_key = openai_api_key
-        self.worker_node_initializer = WorkerNodeInitializer(openai_api_key)
-        self.name = worker_name  # Added a name attribute
-        self.description = "A worker node that executes tasks"  # Added a description attribute
-        self.embedding_size = self.embedding_size
+        self.llm = llm if llm is not None else ChatOpenAI()
+        self.tools = tools if tools is not None else [ReadFileTool(), WriteFileTool()]
+        self.embedding_size = embedding_size
+        self.worker_name = worker_name
+        self.worker_role = worker_role
+        self.human_in_the_loop = human_in_the_loop
+        self.search_kwargs = search_kwargs
+        self.verbose = verbose
+        self.chat_history_file = chat_history_file
 
+        # Properties from WorkerNode
+        self.temperature = temperature
+        self.description = "A worker node that executes tasks"
+        self.create_agent()
+      
+    def create_agent(self):
+        logging.info("Creating agent in WorkerNode")
+        try:
+            vectorstore = self.initialize_vectorstore()
+            
+            self.agent = AutoGPT.from_llm_and_tools(
+                ai_name=self.worker_name,
+                ai_role=self.worker_role,
+                tools=self.tools,
+                llm=self.llm,
+                memory=vectorstore,
+                human_in_the_loop=self.human_in_the_loop,
+                chat_history_memory=FileChatMessageHistory(self.chat_history_file),
+            )
+        except Exception as e:
+            logging.error(f"Error while creating agent: {str(e)}")
+            raise e
 
+    def add_tool(self, tool: Optional[Tool] = None):
+        if tool is None:
+            tool = DuckDuckGoSearchRun()
+        
+        if not isinstance(tool, Tool):
+            logging.error("Tool must be an instance of Tool.")
+            raise TypeError("Tool must be an instance of Tool.")
+        
+        self.tools.append(tool)
+
+    def initialize_vectorstore(self):
+        try:
+            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+            embedding_size = self.embedding_size
+            index = faiss.IndexFlatL2(embedding_size=embedding_size)
+            return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+        
+        except Exception as e:
+            logging.error(f"Failed to initialize vector store: {e}")
+            return None
+
+    def run(self, prompt) -> str:
+        if not isinstance(prompt, str):
+            logging.error("Prompt must be a string.")
+            raise TypeError("Prompt must be a string.")
+        
+        if not prompt:
+            logging.error("Prompt is empty.")
+            raise ValueError("Prompt is empty.")
+        
+        try:
+            self.agent.run([f"{prompt}"])
+            return "Task completed by WorkerNode"
+        except Exception as e:
+            logging.error(f"While running the agent: {str(e)}")
+            raise e
+
+    # Functions from WorkerNode
     def initialize_llm(self, llm_class, temperature):
         if not llm_class:
             logging.error("llm_class cannot be none")
@@ -144,14 +208,13 @@ class WorkerNode:
             logging.error(f"Failed to initialize language model: {e}")
             raise
 
-
     def initialize_tools(self, llm_class):
         if not llm_class:
             logging.error("llm_class not cannot be none")
             raise ValueError("llm_class cannot be none")
         try:
             logging.info('Creating WorkerNode')
-            llm = self.initialize_llm(llm_class)
+            llm = self.initialize_llm(llm_class, self.temperature)  # Passed self.temperature
 
             tools = [
                 web_search,
@@ -173,10 +236,10 @@ class WorkerNode:
             raise ValueError("llm_class cannot be None.")
         try:
             worker_tools = self.initialize_tools(llm_class)
-            vectorstore = self.worker_node_initializer.initialize_vectorstore()
-            worker_node = WorkerNodeInitializer(
-                openai_api_key=self.openai_api_key, # pass the openai_api_key
-                llm=self.initialize_llm(llm_class), 
+            vectorstore = self.initialize_vectorstore()
+            worker_node = UnifiedWorkerNode(
+                openai_api_key=self.openai_api_key, 
+                llm=self.initialize_llm(llm_class, self.temperature), 
                 tools=worker_tools, 
                 vectorstore=vectorstore,
                 ai_name=worker_name, 
@@ -189,8 +252,6 @@ class WorkerNode:
         except Exception as e:
             logging.error(f"Failed to create worker node: {e}")
             raise
-
-
 
 def worker_node(openai_api_key):
     if not openai_api_key:

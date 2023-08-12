@@ -9,15 +9,10 @@ from swarms.workers.worker_node import WorkerNode
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI
-# TODO: ADD Universal Communication Layer, a ocean vectorstore instance
-# TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
-# TODO: Add RLHF Data collection, ask user how the swarm is performing
-# TODO: Create an onboarding process if not settings are preconfigured like `from swarms import Swarm, Swarm()` => then initiate onboarding name your swarm + provide purpose + etc 
-
 
 # ---------- Constants ----------
 ROOT_DIR = "./data/"
+
 
 
 class HierarchicalSwarm:
@@ -25,7 +20,6 @@ class HierarchicalSwarm:
         self, 
         openai_api_key: Optional[str] = "", 
         use_vectorstore: Optional[bool] = True, 
-
         use_async: Optional[bool] = True, 
         worker_name: Optional[str] = "Swarm Worker AI Assistant",
         verbose: Optional[bool] = False,
@@ -34,14 +28,13 @@ class HierarchicalSwarm:
         worker_prompt: Optional[str] = None,
         temperature: Optional[float] = 0.5,
         max_iterations: Optional[int] = None,
-        logging_enabled: Optional[bool] = True):
-            
+        logging_enabled: Optional[bool] = True
+    ):
         self.openai_api_key = openai_api_key
         self.use_vectorstore = use_vectorstore
         self.use_async = use_async
         self.worker_name = worker_name
         self.human_in_the_loop = human_in_the_loop
-
         self.boss_prompt = boss_prompt
         self.temperature = temperature
         self.max_iterations = max_iterations
@@ -50,7 +43,6 @@ class HierarchicalSwarm:
 
         self.worker_node = WorkerNode(
             openai_api_key=self.openai_api_key,
-            # worker_name=self.worker_name,
             temperature=self.temperature,
             human_in_the_loop=self.human_in_the_loop,
             verbose=self.verbose
@@ -85,9 +77,8 @@ class HierarchicalSwarm:
 
 def swarm(
     api_key: Optional[str]="", 
-    objective: Optional[str]="", 
-    ):
-
+    objective: Optional[str]=""
+):
     if not api_key or not isinstance(api_key, str):
         logging.error("Invalid OpenAI key")
         raise ValueError("A valid OpenAI API key is required")
@@ -95,7 +86,7 @@ def swarm(
         logging.error("Invalid objective")
         raise ValueError("A valid objective is required")
     try:
-        swarms = HierarchicalSwarm(api_key, use_async=False) #logging_enabled=logging_enabled) # Turn off async
+        swarms = HierarchicalSwarm(api_key, use_async=False)
         result = swarms.run(objective)
         if result is None:
             logging.error("Failed to run swarms")
@@ -105,3 +96,11 @@ def swarm(
     except Exception as e:
         logging.error(f"An error occured in swarm: {e}")
         return None
+    
+
+
+# TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI
+# TODO: ADD Universal Communication Layer, a ocean vectorstore instance
+# TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
+# TODO: Add RLHF Data collection, ask user how the swarm is performing
+# TODO: Create an onboarding process if not settings are preconfigured like `from swarms import Swarm, Swarm()` => then initiate onboarding name your swarm + provide purpose + etc 
