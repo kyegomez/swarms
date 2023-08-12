@@ -104,18 +104,19 @@ class BossNodeInitializer:
 
 class BossNode:
     def __init__(self,
-                #  vectorstore,
+                 llm=None,
+                 vectorstore=None,
+                 agent_executor=None,
+                 max_iterations=5,
+                 human_in_the_loop=None,
                  objective: Optional[str] = None,
                  boss_system_prompt: Optional[str] = "You are a boss planner in a swarm...",
                  api_key=None,
                  worker_node=None,
                  llm_class=OpenAI,
-                 max_iterations=5,
                  verbose=False,
                  ):
-        
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        # self.vectorstore = vectorstore
         self.worker_node = worker_node
         self.boss_system_prompt = boss_system_prompt
         self.llm_class = llm_class
@@ -123,54 +124,73 @@ class BossNode:
         self.verbose = verbose
 
         if not self.api_key:
-            raise ValueError("[BossNode][ValueError][API KEY must be provided either as an argument or as an environment variable API_KEY]")
-        
-        self.llm = self.initialize_llm(self.llm_class)
+            raise ValueError("[MasterBossNode][ValueError][API KEY must be provided either as an argument or as an environment variable API_KEY]")
 
+        # Initialize components if not provided
+        self.llm = llm if llm else self._initialize_llm(self.llm_class)
+        self.vectorstore = vectorstore if vectorstore else self._initialize_vectorstore()
+
+        # Setting up todo_chain and agent_executor
         todo_prompt = PromptTemplate.from_template(boss_system_prompt)
         todo_chain = LLMChain(llm=self.llm, prompt=todo_prompt)
-
         tools = [
             Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists..."),
             self.worker_node
         ]
         suffix = """Question: {task}\n{agent_scratchpad}"""
         prefix = """You are a Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
-        
         prompt = ZeroShotAgent.create_prompt(tools, prefix=prefix, suffix=suffix, input_variables=["objective", "task", "context", "agent_scratchpad"],)
         llm_chain = LLMChain(llm=self.llm, prompt=prompt)
         agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
+        self.agent_executor = agent_executor if agent_executor else AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
 
-        self.agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
+        # Setup BabyAGI
+        try:
+            self.baby_agi = BabyAGI.from_llm(
+                llm=self.llm,
+                vectorstore=self.vectorstore,
+                task_execution_chain=self.agent_executor,
+                max_iterations=self.max_iterations,
+                human_in_the_loop=human_in_the_loop
+            )
+        except ValidationError as e:
+            logging.error(f"Validation Error while initializing BabyAGI: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Unexpected Error while initializing BabyAGI: {e}")
+            raise
 
-        vectorstore = self.initialize_vectorstore()
+        self.task = self._create_task(objective)
 
-        self.boss_initializer = BossNodeInitializer(
-            llm=self.llm, 
-            vectorstore=vectorstore, 
-            agent_executor=self.agent_executor, 
-            max_iterations=self.max_iterations, 
-        )
-        self.task = self.boss_initializer.create_task(objective)
-
-    def initialize_llm(self, llm_class, temperature=0.5):
+    def _initialize_llm(self, llm_class, temperature=0.5):
         try:
             return llm_class(openai_api_key=self.api_key, temperature=temperature)
         except Exception as e:
             logging.error(f"Failed to initialize language model: {e}")
             raise e
-        
-    def initialize_vectorstore(self):
-        try:     
-            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+
+    def _initialize_vectorstore(self):
+        try:
+            embeddings_model = OpenAIEmbeddings(openai_api_key=self.api_key)
             embedding_size = 8192
             index = faiss.IndexFlatL2(embedding_size)
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
             return None
-        
+
+    def _create_task(self, objective):
+        if not objective:
+            logging.error("Objective cannot be empty.")
+            raise ValueError("Objective cannot be empty.")
+        return {"objective": objective}
 
     def run(self):
-        self.boss_initializer.run(self.task)
-
+        if not self.task:
+            logging.error("Task cannot be empty.")
+            raise ValueError("Task cannot be empty.")
+        try:
+            self.baby_agi(self.task)
+        except Exception as e:
+            logging.error(f"Error while executing task: {e}")
+            raise
