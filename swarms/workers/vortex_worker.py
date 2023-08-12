@@ -1,10 +1,10 @@
 #aug 10
-#Vortex is the name of my Duck friend, ILY Vortex
+#Vortex is the name of my Duck pet, ILY Vortex
 #Kye
 
 import logging
 import os
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
 
 import faiss
 from langchain.agents import Tool
@@ -36,7 +36,7 @@ class VortexWorkerAgent:
     def __init__(self,
                 openai_api_key: str,
                 llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None,
-                tools: Optional[List[Tool]] = None,
+                tools: Optional[Any] = None,
                 embedding_size: Optional[int] = 8192,
                 worker_name: Optional[str] = "Vortex Worker Agent",
                 worker_role: Optional[str] = "Assistant",
