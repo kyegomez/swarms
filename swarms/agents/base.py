@@ -7,20 +7,18 @@ from pydantic import ValidationError
 
 from swarms.agents.memory.base import VectorStoreRetriever
 from swarms.agents.memory.base_memory import BaseChatMessageHistory, ChatMessageHistory
-
 from swarms.agents.memory.document import Document
 from swarms.agents.models.base import AbstractModel
-
-from swarms.agents.models.prompts.base import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-)
 from swarms.agents.models.prompts.agent_prompt_auto import (
     MessageFormatter,
     PromptConstructor,
 )
 from swarms.agents.models.prompts.agent_prompt_generator import FINISH_NAME
+from swarms.agents.models.prompts.base import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage,
+)
 from swarms.agents.tools.base import BaseTool
 from swarms.agents.utils.Agent import AgentOutputParser
 from swarms.agents.utils.human_input import HumanInputRun
