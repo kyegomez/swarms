@@ -173,7 +173,7 @@ class WorkerNode:
         try:
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
             embedding_size = self.embedding_size
-            index = faiss.IndexFlatL2(embedding_size=embedding_size)
+            index = faiss.IndexFlatL2(embedding_size)
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         
         except Exception as e:
@@ -247,7 +247,6 @@ class WorkerNode:
                 human_in_the_loop=human_in_the_loop, 
                 search_kwargs=search_kwargs,
             )
-            worker_node.name = worker_name  # Setting the name here
             return worker_node
         except Exception as e:
             logging.error(f"Failed to create worker node: {e}")
