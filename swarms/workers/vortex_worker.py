@@ -13,7 +13,9 @@ from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 
-from swarms.agents.base import Agent
+# from swarms.agents.base import Agent
+from langchain_experimental.autonomous_agents import AutoGPT
+
 from swarms.agents.tools.autogpt import (
     FileChatMessageHistory,
     ReadFileTool,
@@ -96,7 +98,7 @@ class VortexWorkerAgent:
     def create_agent(self):
         logging.info("Creating agent in VortexWorkerAgent")
         try:
-            Agent.from_llm_and_tools(
+            AutoGPT.from_llm_and_tools(
                 ai_name=self.worker_name,
                 ai_role=self.worker_role,
                 tools=self.tools,
