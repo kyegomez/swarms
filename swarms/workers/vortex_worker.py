@@ -13,7 +13,6 @@ from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 
-# from swarms.agents.base import Agent
 from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.agents.tools.autogpt import (
@@ -59,7 +58,7 @@ class VortexWorkerAgent:
         self.chat_history_file = chat_history_file
         self.llm = llm or self.init_llm(ChatOpenAI)
         
-        self.tools = tools or self.init_tools()
+        self.tools = self.init_tools()
         self.vectorstore = self.init_vectorstore()
         self.agent = self.create_agent()
 
@@ -126,3 +125,5 @@ class VortexWorkerAgent:
         except Exception as error:
             logging.error(f"While running the agent: {str(error)}")
             raise error
+        
+
