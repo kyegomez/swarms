@@ -134,8 +134,8 @@ class BossNode:
         todo_prompt = PromptTemplate.from_template(boss_system_prompt)
         todo_chain = LLMChain(llm=self.llm, prompt=todo_prompt)
         tools = [
-            Tool(name="TODO", func=todo_chain.run, description="useful for when you need to come up with todo lists..."),
-            self.worker_node
+            Tool(name="Goal Decomposition Tool", func=todo_chain.run, description="Use Case: Decompose ambitious goals into as many explicit and well defined tasks for an AI agent to follow. Rules and Regulations, don't use this tool too often only in the beginning when the user grants you a mission."),
+            Tool(name="Swarm Worker Agent", func=self.worker_node, description="Use Case: When you want to delegate and assign the decomposed goal sub tasks to a worker agent in your swarm, Rules and Regulations, Provide a task specification sheet to the worker agent. It can use the browser, process csvs and generate content")
         ]
         suffix = """Question: {task}\n{agent_scratchpad}"""
         prefix = """You are a Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
