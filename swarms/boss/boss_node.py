@@ -141,7 +141,7 @@ class BossNode:
         prefix = """You are a Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
         prompt = ZeroShotAgent.create_prompt(tools, prefix=prefix, suffix=suffix, input_variables=["objective", "task", "context", "agent_scratchpad"],)
         llm_chain = LLMChain(llm=self.llm, prompt=prompt)
-        agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool.name for tool in tools])
+        agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=[tool for tool in tools])
         self.agent_executor = agent_executor if agent_executor else AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
 
         # Setup BabyAGI
