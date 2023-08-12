@@ -109,7 +109,7 @@ class WorkerNodeInitializer:
             raise e
 
 class WorkerNode:
-   def __init__(self, 
+    def __init__(self, 
                  openai_api_key: str,
                  temperature: Optional[int] = None, 
                  llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
@@ -237,7 +237,7 @@ class WorkerNode:
         try:
             worker_tools = self.initialize_tools(llm_class)
             vectorstore = self.initialize_vectorstore()
-            worker_node = UnifiedWorkerNode(
+            worker_node = WorkerNode(
                 openai_api_key=self.openai_api_key, 
                 llm=self.initialize_llm(llm_class, self.temperature), 
                 tools=worker_tools, 
