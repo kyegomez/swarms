@@ -19,7 +19,7 @@ setup(
   install_requires=[
         'transformers',
         'openai',
-        'langchain==0.0.240',
+        'langchain==0.0.263',
         # 'torch',
         # 'torchvision',
         # 'torchaudio',
