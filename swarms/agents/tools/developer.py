@@ -241,6 +241,47 @@ class Terminal(BaseToolSet):
         return output
 
 
+#############
+
+
+
+@tool(
+    name="Terminal",
+    description="Executes commands in a terminal."
+    "If linux errno occurs, we have to solve the problem with the terminal. "
+    "Input must be one valid command. "
+    "Output will be any output from running that command.",
+    scope=ToolScope.SESSION,
+)
+def terminal_execute(self, commands: str, get_session: SessionGetter) -> str:
+    session, _ = get_session()
+
+    try:
+        process = subprocess.Popen(
+            commands,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        logger.info(ANSI("Realtime Terminal Output").to(Color.magenta()) + ": ")
+
+        output = ""
+        tracer = StdoutTracer(
+            process,
+            on_output=lambda p, o: logger.info(
+                ANSI(p).to(Style.dim()) + " " + o.strip("\n")
+            ),
+        )
+        exitcode, output = tracer.wait_until_stop_or_exit()
+    except Exception as e:
+        output = str(e)
+
+    logger.debug(
+        f"\nProcessed Terminal, Input Commands: {commands} "
+        f"Output Answer: {output}"
+    )
+    return output
+
 
 
 
@@ -765,3 +806,139 @@ class CodeEditor(BaseToolSet):
         )
         return output
     
+#---------------- end
+
+
+@tool(
+    name="CodeEditor.READ",
+    description="Read and understand code. "
+    "Input should be filename and line number group. ex. test.py|1-10 "
+    "and the output will be code. ",
+)
+def code_editor_read(self, inputs: str) -> str:
+    try:
+        output = CodeReader.read(inputs)
+    except Exception as e:
+        output = str(e)
+
+    logger.debug(
+        f"\nProcessed CodeEditor.READ, Input Commands: {inputs} "
+        f"Output Answer: {output}"
+    )
+    return output
+
+@tool(
+    name="CodeEditor.SUMMARY",
+    description="Summary code. "
+    "Read the code structured into a tree. "
+    "If you set specific line, it will show the code from the specific line. "
+    "Input should be filename, depth, and specific line if you want. ex. test.py|2 or test.py|3|print('hello world') "
+    "and the output will be list of (line number: code). ",
+)
+def code_editor_summary(self, inputs: str) -> str:
+    try:
+        output = CodeReader.summary(inputs)
+    except Exception as e:
+        output = str(e)
+
+    logger.debug(
+        f"\nProcessed CodeEditor.SUMMARY, Input Commands: {inputs} "
+        f"Output Answer: {output}"
+    )
+    return output
+
+@tool(
+    name="CodeEditor.APPEND",
+    description="Append code to the existing file. "
+    "If the code is completed, use the Terminal tool to execute it, if not, append the code through the this tool. "
+    "Input should be filename and code to append. "
+    "Input code must be the code that should be appended, NOT whole code. "
+    "ex. test.py\nprint('hello world')\n "
+    "and the output will be last 3 lines.",
+)
+def code_editor_append(self, inputs: str) -> str:
+    try:
+        code = CodeWriter.append(inputs)
+        output = "Last 3 line was:\n" + "\n".join(code.split("\n")[-3:])
+    except Exception as e:
+        output = str(e)
+
+    logger.debug(
+        f"\nProcessed CodeEditor.APPEND, Input: {inputs} "
+        f"Output Answer: {output}"
+    )
+    return output
+
+@tool(
+    name="CodeEditor.WRITE",
+    description="Write code to create a new tool. "
+    "If the code is completed, use the Terminal tool to execute it, if not, append the code through the CodeEditor.APPEND tool. "
+    "Input should be formatted like: "
+    "<filename>\n<code>\n\n"
+    "Here is an example: "
+    "test.py\nmessage = 'hello world'\nprint(message)\n"
+    "\n"
+    "The output will be last 3 lines you wrote.",
+)
+def code_editor_write(self, inputs: str) -> str:
+    try:
+        code = CodeWriter.write(inputs.lstrip())
+        output = "Last 3 line was:\n" + "\n".join(code.split("\n")[-3:])
+    except Exception as e:
+        output = str(e)
+
+    logger.debug(
+        f"\nProcessed CodeEditor.WRITE, Input: {inputs} " f"Output Answer: {output}"
+    )
+    return output
+
+@tool(
+    name="CodeEditor.PATCH",
+    description="Patch the code to correct the error if an error occurs or to improve it. "
+    "Input is a list of patches. The patch is separated by {seperator}. ".format(
+        seperator=CodePatcher.separator.replace("\n", "\\n")
+    )
+    + "Each patch has to be formatted like below.\n"
+    "<filepath>|<start_line>,<start_col>|<end_line>,<end_col>|<new_code>"
+    "Here is an example. If the original code is:\n"
+    "print('hello world')\n"
+    "and you want to change it to:\n"
+    "print('hi corca')\n"
+    "then the patch should be:\n"
+    "test.py|1,8|1,19|hi corca\n"
+    "Code between start and end will be replaced with new_code. "
+    "The output will be written/deleted bytes or error message. ",
+)
+def code_editor_patch(self, patches: str) -> str:
+    try:
+        w, d = CodePatcher.patch(patches)
+        output = f"successfully wrote {w}, deleted {d}"
+    except Exception as e:
+        output = str(e)
+
+    logger.debug(
+        f"\nProcessed CodeEditor.PATCH, Input Patch: {patches} "
+        f"Output Answer: {output}"
+    )
+    return output
+
+@tool(
+    name="CodeEditor.DELETE",
+    description="Delete code in file for a new start. "
+    "Input should be filename."
+    "ex. test.py "
+    "Output will be success or error message.",
+)
+def code_editor_delete(self, inputs: str, filepath: str) -> str:
+    try:
+        with open(filepath, "w") as f:
+            f.write("")
+        output = "success"
+    except Exception as e:
+        output = str(e)
+
+    logger.debug(
+        f"\nProcessed CodeEditor.DELETE, Input filename: {inputs} "
+        f"Output Answer: {output}"
+    )
+    return output
