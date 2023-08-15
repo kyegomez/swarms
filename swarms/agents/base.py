@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from langchain.chains.llm import LLMChain
+
 from pydantic import ValidationError
 
 from swarms.agents.memory.base import VectorStoreRetriever
@@ -26,7 +27,6 @@ from swarms.agents.utils.human_input import HumanInputRun
 
 class Agent:
     """Base Agent class"""
-
     def __init__(
         self,
         ai_name: str,
