@@ -76,8 +76,7 @@ class Agent:
 
     def run(self, goals: List[str]) -> str:
         user_input = (
-            "Determine which next command to use, "
-            "and respond using the format specified above:"
+            "Determine which next command to use, and respond using the format specified above:"
         )
         # Interaction Loop
         loop_count = 0
@@ -120,11 +119,10 @@ class Agent:
                 result = f"Error: {action.args}. "
             else:
                 result = (
-                    f"Unknown command '{action.name}'. "
-                    f"Please refer to the 'COMMANDS' list for available "
-                    f"commands and only respond in the specified JSON format."
+                    f"""Unknown command '{action.name}'. 
+                    Please refer to the 'COMMANDS' list for available
+                    commands and only respond in the specified JSON format."""
                 )
-
             memory_to_add = (
                 f"Assistant Reply: {assistant_reply} " f"\nResult: {result} "
             )
