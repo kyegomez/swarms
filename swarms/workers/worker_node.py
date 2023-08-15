@@ -6,17 +6,27 @@ from langchain.agents import Tool
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
-from langchain_experimental.autonomous_agents import AutoGPT
 from langchain.vectorstores import FAISS
+from langchain_experimental.autonomous_agents import AutoGPT
+
 from swarms.agents.tools.autogpt import (
+    DuckDuckGoSearchRun,
     FileChatMessageHistory,
     ReadFileTool,
     WebpageQATool,
     WriteFileTool,
-    DuckDuckGoSearchRun,
     load_qa_with_sources_chain,
     process_csv,
     web_search,
+)
+from swarms.agents.tools.developer import (
+    code_editor_append,
+    code_editor_delete,
+    code_editor_patch,
+    code_editor_read,
+    code_editor_summary,
+    code_editor_write,
+    terminal_execute,
 )
 
 ROOT_DIR = "./data/"
@@ -223,6 +233,13 @@ class WorkerNode:
                 ReadFileTool(root_dir=ROOT_DIR),
                 process_csv,
                 WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
+                code_editor_append,
+                code_editor_delete,
+                code_editor_patch,
+                code_editor_read,
+                code_editor_summary,
+                code_editor_write,
+                terminal_execute,
             ]
             if not tools:
                 logging.error("Tools are not initialized")

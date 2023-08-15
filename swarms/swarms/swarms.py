@@ -47,7 +47,7 @@ class HierarchicalSwarm:
 
         self.boss_node = BossNode(
             api_key=self.openai_api_key,
-            # worker_node=self.worker_node,
+            worker_node=self.worker_node,
             llm_class=OpenAI,
             max_iterations=self.max_iterations,
             verbose=self.verbose
