@@ -56,18 +56,7 @@ swarm(objective)
 
 ---
 
-# Method 2
-Download via Github, and install requirements. Simple example by:
-
-* `git cloning https://github.com/kyegomez/swarms.git`
-
-* `cd swarms`
-
-* `python3 -m pip install -r requirements.txt`
-
-* `python3 example.py`
-
-* or create a new file:
+## Usage
 
 ```python
 from swarms import OpenAI
@@ -171,6 +160,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"api_key": "your_openai_ap
 ```
 Replace your_openai_api_key and your_objective with your actual OpenAI API key and objective.
 
+----
 
 
 # ✨ Features
@@ -248,9 +238,6 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 ---
 
 # EcoSystem
-
-[![Star History Chart](https://api.star-history.com/svg?repos=kyegomez/swarms&type=Date)](https://star-history.com/#kyegomez/swarms)
-
 
 * [The-Compiler, compile natural language into serene, reliable, and secure programs](https://github.com/kyegomez/the-compiler)
 
