@@ -108,13 +108,16 @@ class WorkerNodeInitializer:
             logging.error(f"While running the agent: {str(e)}")
             raise e
 
+
+#####################
+
 class WorkerNode:
     def __init__(self, 
                  openai_api_key: str,
                  temperature: Optional[int] = None, 
                  llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
                  tools: Optional[List[Tool]] = None,
-                 embedding_size: Optional[int] = 8192, # Default value set as 8192 from WorkerNodeInitializer
+                 embedding_size: Optional[int] = 8192, 
                  worker_name: Optional[str] = "Swarm Worker AI Assistant", 
                  worker_role: Optional[str] = "Assistant",
                  human_in_the_loop: Optional[bool] = False, 
@@ -135,8 +138,6 @@ class WorkerNode:
         self.search_kwargs = search_kwargs
         self.verbose = verbose
         self.chat_history_file = chat_history_file
-
-        # Properties from WorkerNode
         self.temperature = temperature
         self.description = "A worker node that executes tasks"
         self.create_agent()
@@ -214,7 +215,7 @@ class WorkerNode:
             raise ValueError("llm_class cannot be none")
         try:
             logging.info('Creating WorkerNode')
-            llm = self.initialize_llm(llm_class, self.temperature)  # Passed self.temperature
+            llm = self.initialize_llm(llm_class, self.temperature)  
 
             tools = [
                 web_search,
