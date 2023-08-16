@@ -1,6 +1,4 @@
-#boss node -> worker agent -> omni agent [worker of the worker]
 from langchain.tools import tool
-# from swarms.workers.multi_modal_workers.omni_agent.omni_chat import chat_huggingface
 from swarms.workers.multi_modal_workers.omni_agent.omni_chat import chat_huggingface
 
 class OmniWorkerAgent:
