@@ -1,0 +1,48 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "swarms"
+version = "1.3.8"
+description = "Swarms - Pytorch"
+license = "MIT"
+authors = ["Kye Gomez <kye@apac.ai>"]
+homepage = "https://github.com/kyegomez/swarms"
+documentation = ""  # Add this if you have documentation.
+readme = "README.md"  # Assuming you have a README.md
+repository = "https://github.com/kyegomez/swarms"
+keywords = ["artificial intelligence", "deep learning", "optimizers", "Prompt Engineering"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.6"
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+transformers = "*"
+openai = "*"
+langchain = "0.0.240"
+asyncio = "*"
+nest_asyncio = "*"
+pegasusx = "*"
+google-generativeai = "*"
+langchain-experimental = "*"
+playwright = "*"
+duckduckgo_search = "*"
+faiss-cpu = "*"
+wget = "*"
+httpx = "*"
+ggl = "*"
+beautifulsoup4 = "*"
+pydantic = "*"
+tenacity = "*"
+celery = "*"
+redis = "*"
+Pillow = "*"
+
+[tool.poetry.dev-dependencies]
+# Add development dependencies here

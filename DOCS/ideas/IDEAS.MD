@@ -379,4 +379,23 @@ Note: In the real world, the complexity of the architecture and requirements wil
 # Swarms
 
 BabyAGI -> Autogpt's -> tools -> other agents
- 
+
+- Host it on server, on premise, private learning, no learning is translating out 
+- companies are sensitive with data, models are firewalled, need privacy, huggingface, 
+- Does not transmit information, 
+- see agent activity, task history, 
+  - optimize which agents for each task
+- Assist or provide feedback to management agent
+- overview see the whole swarm, modify each agent, visualize the communication stream with blue,
+- Work optimization routines
+- output monitoring
+- stop output, agent looping,
+-quality assurance checker, adversarial agent
+-  see a holistic diagram of all agents, how are they being utilized, see number of iterations, query responses, balance loading, 
+- summary of tasks completed with critique,  type of summary, ceo summary, manager summary
+- outside of browser and accross whole operating system, switch apps, mac, linux, and windows
+-what are the skillsets behind the dev team, can be modified by experts, ui agent, manager agent, personalize agents with prompt and tools, and orca like explain your solutions, critique them then return the final output
+
+
+
+
