@@ -4,7 +4,7 @@
 
 import logging
 import os
-from typing import List, Optional, Union, Any
+from typing import Any, List, Optional, Union
 
 import faiss
 from langchain.agents import Tool
@@ -12,7 +12,6 @@ from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-
 from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.agents.tools.autogpt import (
