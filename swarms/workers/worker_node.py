@@ -1,8 +1,8 @@
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
 
 import faiss
-# from langchain.agents import Tool
+from langchain.agents import Tool
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
@@ -39,7 +39,7 @@ class WorkerNodeInitializer:
     def __init__(self, 
                  openai_api_key: str,
                  llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
-                 tools: Optional[List[Tool]] = None, 
+                 tools: Optional[List[Any]] = None, 
                  embedding_size: Optional[int] = 8192,
                  worker_name: Optional[str] = "Swarm Worker AI Assistant", 
                  worker_role: Optional[str] = "Assistant", 
@@ -119,14 +119,13 @@ class WorkerNodeInitializer:
             raise e
 
 
-#####################
 
 class WorkerNode:
     def __init__(self, 
                  openai_api_key: str,
                  temperature: Optional[int] = None, 
                  llm: Optional[Union[InMemoryDocstore, ChatOpenAI]] = None, 
-                 tools: Optional[List[Tool]] = None,
+                 tools: Optional[List[Any]] = None,
                  embedding_size: Optional[int] = 8192, 
                  worker_name: Optional[str] = "Swarm Worker AI Assistant", 
                  worker_role: Optional[str] = "Assistant",
@@ -170,7 +169,7 @@ class WorkerNode:
             logging.error(f"Error while creating agent: {str(e)}")
             raise e
 
-    def add_tool(self, tool: Optional[Tool] = None):
+    def add_tool(self, tool: Optional[Any] = None):
         if tool is None:
             tool = DuckDuckGoSearchRun()
         
@@ -270,14 +269,15 @@ class WorkerNode:
             logging.error(f"Failed to create worker node: {e}")
             raise
 
-def worker_node(openai_api_key):
+def worker_node(openai_api_key, objective):
     if not openai_api_key:
         logging.error("OpenAI API key is not provided")
         raise ValueError("OpenAI API key is required")
     
     try:
         worker_node = WorkerNode(openai_api_key)
-        return worker_node.create_worker_node()
+        worker_node.create_worker_node()
+        return worker_node.run(objective)
     except Exception as e:
         logging.error(f"An error occured in worker_node: {e}")
         raise

@@ -50,3 +50,6 @@ class HuggingFaceLLM:
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise
+
+
+
