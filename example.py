@@ -46,14 +46,16 @@
 # agent.run("Help me find resources about renewable energy.")
 
 
-###################
-from swarms.workers.worker_node import worker_node
+################
+from swarms import WorkerNode
 
 # Your OpenAI API key
-api_key = "sksdsds"
+api_key = "example key"
+
 
 # Initialize a WorkerNode with your API key
-node = worker_node(api_key)
+node = WorkerNode(api_key)
+node.create_worker_node()
 
 # Define an objective
 objective = "Please make a web GUI for using HTTP API server..."
