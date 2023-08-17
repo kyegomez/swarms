@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union, Any
+from typing import Any, List, Optional, Union
 
 import faiss
 from langchain.agents import Tool

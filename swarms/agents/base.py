@@ -4,8 +4,6 @@ from typing import List, Optional
 
 from langchain.chains.llm import LLMChain
 
-# from pydantic import ValidationError
-
 from swarms.agents.memory.base import VectorStoreRetriever
 from swarms.agents.memory.base_memory import BaseChatMessageHistory, ChatMessageHistory
 from swarms.agents.memory.document import Document
