@@ -1,5 +1,5 @@
 from typing import Any, Dict, List
-from pydantic import Field
+# from pydantic import Field
 
 from swarms.agents.memory.base_memory import BaseChatMemory, get_prompt_input_key
 from swarms.agents.memory.base import VectorStoreRetriever

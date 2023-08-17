@@ -1,10 +1,10 @@
 #swarms
 
 # worker
-from swarms.workers.worker_node import WorkerNode
+# from swarms.workers.worker_node import WorkerNode
 
 #boss
-from swarms.boss.boss_node import BossNode
+# from swarms.boss.boss_node import BossNode
 
 #models
 from swarms.agents.models.anthropic import Anthropic

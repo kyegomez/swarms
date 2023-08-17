@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from langchain.chains.llm import LLMChain
 
-from pydantic import ValidationError
+# from pydantic import ValidationError
 
 from swarms.agents.memory.base import VectorStoreRetriever
 from swarms.agents.memory.base_memory import BaseChatMessageHistory, ChatMessageHistory
@@ -106,9 +106,9 @@ class Agent:
                 tool = tools[action.name]
                 try:
                     observation = tool.run(action.args)
-                except ValidationError as e:
+                except Exception as error:
                     observation = (
-                        f"Validation Error in args: {str(e)}, args: {action.args}"
+                        f"Validation Error in args: {str(error)}, args: {action.args}"
                     )
                 except Exception as e:
                     observation = (
