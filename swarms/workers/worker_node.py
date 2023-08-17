@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional, Union
 
 import faiss
-from langchain.agents import Tool
+# from langchain.agents import Tool
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
