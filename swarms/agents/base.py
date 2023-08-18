@@ -76,10 +76,8 @@ class Agent:
         user_input = (
             "Determine which next command to use, and respond using the format specified above:"
         )
-        # Interaction Loop
         loop_count = 0
         while True:
-            # Discontinue if continuous limit is reached
             loop_count += 1
 
             # Send message to AI, get response
@@ -90,7 +88,6 @@ class Agent:
                 user_input=user_input,
             )
 
-            # Print Assistant thoughts
             print(assistant_reply)
             self.chat_history_memory.add_message(HumanMessage(content=user_input))
             self.chat_history_memory.add_message(AIMessage(content=assistant_reply))
