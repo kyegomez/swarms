@@ -1,12 +1,9 @@
-
-<!-- # Swarms 🤖 🤖 🤖 ff-->
-
 ![Swarming banner icon](images/swarmsbanner.png)
 
 
 <div align="center">
 
-Introducing Swarms, automating all digital activities with multi-agent collaboration, get started in 30 seconds in a seamless onboarding experience...
+Swarms is a modular framework that enables reliable and useful multi-agent collaboration at scale to automate real-world tasks.
 
 
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)[![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
@@ -63,27 +60,10 @@ generated_text = hugging_face_model.generate("In a world where AI")
 
 * Or just the worker no `worker_node`:
 
-```python
-from swarms import worker_node
-
-# Your OpenAI API key
-api_key = "sksdsds"
-
-# Initialize a WorkerNode with your API key
-node = worker_node(api_key)
-
-# Define an objective
-objective = "Please make a web GUI for using HTTP API server..."
-
-# Run the task
-task = node.run(objective)
-
-print(task)
-```
 ---
 
 # Documentation
-For documentation, go here, [the docs folder in the root diectory](docs)
+For documentation, go here, [the docs folder in the root diectory](https://swarms.apac.ai)
 
 **NOTE: We need help building the documentation**
 
