@@ -53,10 +53,11 @@ swarm(objective)
 ## Usage
 
 ```python
-from swarms import OpenAI
 
-chat = OpenAI()
-response = chat("Hello world!")
+from swarms import HuggingFaceLLM
+
+hugging_face_model = HuggingFaceLLM(model_id="Voicelab/trurl-2-13b")
+generated_text = hugging_face_model.generate("In a world where AI")
 
 ```
 
