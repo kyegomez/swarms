@@ -8,7 +8,6 @@ from langchain.memory.chat_memory import BaseChatMemory
 from swarms.agents.tools.main import BaseToolSet, ToolsFactory
 
 from swarms.agents.utils.agent_setup import AgentSetup
-# from .callback import EVALCallbackHandler, ExecutionTracingCallbackHandler
 from swarms.agents.utils.Calback import EVALCallbackHandler, ExecutionTracingCallbackHandler
 
 callback_manager_instance = CallbackManager(EVALCallbackHandler())
