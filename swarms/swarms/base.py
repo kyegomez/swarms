@@ -16,9 +16,5 @@ class AbstractSwarm(ABC):
         pass
 
     @abstractmethod
-    def process(self):
-        pass
-
-    @abstractmethod
-    def solve(self):
+    def run(self):
         pass

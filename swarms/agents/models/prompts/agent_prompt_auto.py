@@ -1,6 +1,6 @@
 import time
 from typing import Any, Callable, List
-from pydantic import BaseModel
+from swarms.agents.models.prompts.agent_prompt_generator import get_prompt
 
 class TokenUtils:
     @staticmethod
@@ -33,7 +33,7 @@ class PromptConstructor:
         return full_prompt
 
 
-class Message(BaseModel):
+class Message:
     content: str
 
     def count_tokens(self) -> int:
