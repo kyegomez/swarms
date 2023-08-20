@@ -57,9 +57,6 @@ hugging_face_model = HuggingFaceLLM(model_id="Voicelab/trurl-2-13b")
 generated_text = hugging_face_model.generate("In a world where AI")
 
 ```
-
-* Or just the worker no `worker_node`:
-
 ---
 
 # Documentation
