@@ -8,10 +8,6 @@ class AbstractSwarm(ABC):
         self.tools = tools
 
     @abstractmethod
-    def initialize(self):
-        pass
-
-    @abstractmethod
     def communicate(self):
         pass
 
