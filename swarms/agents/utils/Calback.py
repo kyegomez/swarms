@@ -5,8 +5,6 @@ from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import AgentAction, AgentFinish, LLMResult
 
 from swarms.utils.logger import logger
-
-# from ansi import ANSI, Color, Style, dim_multiline
 from swarms.utils.main import ANSI, Color, Style, dim_multiline
 
 

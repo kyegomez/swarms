@@ -45,7 +45,7 @@ class Agent:
         self.chat_history_memory = chat_history_memory or ChatMessageHistory()
 
     @classmethod
-    def from_llm_and_tools(
+    def integrate(
         cls,
         ai_name: str,
         ai_role: str,

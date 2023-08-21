@@ -16,8 +16,6 @@ from tenacity import (
 import google.generativeai as genai
 
 
-###############helpers
-
 class GooglePalmError(Exception):
     """Error raised when there is an issue with the Google PaLM API."""
 
