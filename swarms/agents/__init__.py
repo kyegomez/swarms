@@ -4,7 +4,7 @@
 #models
 from swarms.agents.models.anthropic import Anthropic
 from swarms.agents.models.huggingface import HuggingFaceLLM
-from swarms.agents.models.palm import GooglePalm
+# from swarms.agents.models.palm import GooglePalm
 from swarms.agents.models.petals import Petals
 from swarms.agents.models.openai import OpenAI
 

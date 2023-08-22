@@ -17,17 +17,17 @@ from swarms.agents.tools.autogpt import (
     WriteFileTool,
     load_qa_with_sources_chain,
     process_csv,
-    web_search,
+    # web_search,
 )
-from swarms.agents.tools.developer import (
-    code_editor_append,
-    code_editor_delete,
-    code_editor_patch,
-    code_editor_read,
-    code_editor_summary,
-    code_editor_write,
-    terminal_execute,
-)
+# from swarms.agents.tools.developer import (
+#     code_editor_append,
+#     code_editor_delete,
+#     code_editor_patch,
+#     code_editor_read,
+#     code_editor_summary,
+#     code_editor_write,
+#     terminal_execute,
+# )
 
 ROOT_DIR = "./data/"
 
@@ -182,8 +182,8 @@ class WorkerNode:
     def initialize_vectorstore(self):
         try:
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = self.embedding_size
-            index = faiss.IndexFlatL2(embedding_size)
+            # embedding_size = self.embedding_size
+            index = faiss.IndexFlatL2(self.embedding_size)
             return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         
         except Exception as e:
@@ -227,18 +227,11 @@ class WorkerNode:
             llm = self.initialize_llm(llm_class, self.temperature)  
 
             tools = [
-                web_search,
+                # web_search,
                 WriteFileTool(root_dir=ROOT_DIR),
                 ReadFileTool(root_dir=ROOT_DIR),
                 process_csv,
                 WebpageQATool(qa_chain=load_qa_with_sources_chain(llm)),
-                code_editor_append,
-                code_editor_delete,
-                code_editor_patch,
-                code_editor_read,
-                code_editor_summary,
-                code_editor_write,
-                terminal_execute,
             ]
             if not tools:
                 logging.error("Tools are not initialized")
@@ -276,7 +269,7 @@ def worker_node(openai_api_key, objective):
     
     try:
         worker_node = WorkerNode(openai_api_key)
-        worker_node.create_worker_node()
+        # worker_node.create_worker_node()
         return worker_node.run(objective)
     except Exception as e:
         logging.error(f"An error occured in worker_node: {e}")
