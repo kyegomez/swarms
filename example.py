@@ -47,20 +47,34 @@
 
 
 ################
-from swarms import WorkerNode
+# from swarms import WorkerNode
 
-# Your OpenAI API key
-api_key = "example key"
+# # Your OpenAI API key
+# api_key = ""
+
+# # Initialize a WorkerNode with your API key
+# node = WorkerNode(api_key)
+# # node.create_worker_node()
+
+# # Define an objective
+# objective = "Please make a web GUI for using HTTP API server..."
+
+# # Run the task
+# task = node.run(objective)
+
+# print(task)
 
 
-# Initialize a WorkerNode with your API key
-node = WorkerNode(api_key)
-node.create_worker_node()
 
-# Define an objective
-objective = "Please make a web GUI for using HTTP API server..."
+##########
+from swarms import AutoBot
 
-# Run the task
-task = node.run(objective)
 
-print(task)
+auto_bot = AutoBot(
+    openai_api_key="",
+    ai_name="Optimus Prime",
+)
+
+task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+response = auto_bot.run(task)
+print(response)

@@ -132,7 +132,7 @@ class WebpageQATool(BaseTool):
 query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 
 # !pip install duckduckgo_search
-web_search = DuckDuckGoSearchRun()
+# web_search = DuckDuckGoSearchRun()
 
 
 
@@ -140,3 +140,4 @@ web_search = DuckDuckGoSearchRun()
 
 # # @tool
 # code_intepret = CodeInterpreter()
+
