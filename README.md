@@ -38,11 +38,17 @@ There are 2 methods, one is through `git clone` and the other is by `pip install
 
 ```python
 
-from swarms import swarm
+from swarms import Worker
 
-objective = "What is the capital of the Uk"
 
-swarm(objective)
+node = Worker(
+    openai_api_key="",
+    ai_name="Optimus Prime",
+)
+
+task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+response = node.run(task)
+print(response)
 ```
 
 ---
@@ -55,6 +61,21 @@ from swarms import HuggingFaceLLM
 
 hugging_face_model = HuggingFaceLLM(model_id="Voicelab/trurl-2-13b")
 generated_text = hugging_face_model.generate("In a world where AI")
+
+```
+```python
+
+from swarms import Worker
+
+
+node = Worker(
+    openai_api_key="",
+    ai_name="Optimus Prime",
+)
+
+task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+response = node.run(task)
+print(response)
 
 ```
 ---
