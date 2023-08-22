@@ -70,7 +70,7 @@
 from swarms import AutoBot
 
 
-auto_bot = AutoBot(
+worker = AutoBot(
     openai_api_key="",
     ai_name="Optimus Prime",
 )
