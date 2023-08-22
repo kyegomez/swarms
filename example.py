@@ -76,5 +76,5 @@ worker = AutoBot(
 )
 
 task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
-response = auto_bot.run(task)
+response = worker.run(task)
 print(response)
