@@ -95,3 +95,13 @@ class AutoBot:
             return result
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")
+    
+    @log_decorator
+    @error_decorator
+    @timing_decorator
+    def __call__(self, task):
+        try:
+            results = self.agent.run([task])
+            return results
+        except Exception as error:
+            raise RuntimeError(f"Error while running agent: {error}")
