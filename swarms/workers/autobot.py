@@ -32,10 +32,14 @@ class AutoBot:
                  temperature=0.5):
         self.openai_api_key = openai_api_key
         self.temperature = temperature
-        self.llm = ChatOpenAI(model_name=model_name, 
-                            openai_api_key=self.openai_api_key, 
-                            temperature=self.temperature)
-
+        
+        try:
+            self.llm = ChatOpenAI(model_name=model_name, 
+                                openai_api_key=self.openai_api_key, 
+                                temperature=self.temperature)
+        except Exception as error:
+            raise RuntimeError(f"Error Initializing ChatOpenAI: {error}")    
+        
         self.ai_name = ai_name
         self.ai_role = ai_role
 
@@ -55,21 +59,31 @@ class AutoBot:
         ]
 
     def setup_memory(self):
-        embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-        embedding_size = 1536
-        index = faiss.IndexFlatL2(embedding_size)
-        self.vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+        try:
+            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+            embedding_size = 1536
+            index = faiss.IndexFlatL2(embedding_size)
+            self.vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+        except Exception as error:
+            raise RuntimeError(f"Error setting up memory perhaps try try tuning the embedding size: {error}")
+        
     
     def setup_agent(self):
-        self.agent = AutoGPT.from_llm_and_tools(
-            ai_name=self.ai_name,
-            ai_role=self.ai_role,
-            tools=self.tools,
-            llm=self.llm,
-            memory=self.vectorstore.as_retriever(search_kwargs={"k": 8}),
-        )
+        try: 
+            self.agent = AutoGPT.from_llm_and_tools(
+                ai_name=self.ai_name,
+                ai_role=self.ai_role,
+                tools=self.tools,
+                llm=self.llm,
+                memory=self.vectorstore.as_retriever(search_kwargs={"k": 8}),
+            )
+        
+        except Exception as error:
+            raise RuntimeError(f"Error setting up agent: {error}")
     
     def run(self, task):
-        result = self.agent.run([task])
-        return result
-    
+        try:
+            result = self.agent.run([task])
+            return result
+        except Exception as error:
+            raise RuntimeError(f"Error while running agent: {error}")
