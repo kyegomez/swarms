@@ -4,6 +4,8 @@ from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
+from langchain.tools.human.tool import HumanInputRun
+
 
 from swarms.agents.tools.autogpt import (
     ReadFileTool,
@@ -17,7 +19,7 @@ from swarms.utils.decorators import error_decorator, log_decorator, timing_decor
 ROOT_DIR = "./data/"
 
 
-class Workers:
+class Worker:
     @log_decorator
     @error_decorator
     @timing_decorator
@@ -28,9 +30,12 @@ class Workers:
                  ai_role="Worker in a swarm",
                 #  embedding_size=None,
                 #  k=None,
+                human_in_the_loop=False,
                  temperature=0.5):
         self.openai_api_key = openai_api_key
         self.temperature = temperature
+        self.human_in_the_loop = human_in_the_loop
+
         
         try:
             self.llm = ChatOpenAI(model_name=model_name, 
@@ -58,6 +63,7 @@ class Workers:
             ReadFileTool(root_dir=ROOT_DIR),
             process_csv,
             query_website_tool,
+            HumanInputRun()
         ]
 
     def setup_memory(self):
@@ -78,6 +84,7 @@ class Workers:
                 tools=self.tools,
                 llm=self.llm,
                 memory=self.vectorstore.as_retriever(search_kwargs={"k": 8}),
+                human_in_the_loop=self.human_in_the_loop
             )
         
         except Exception as error:
