@@ -11,17 +11,19 @@ from swarms.agents.tools.autogpt import (
     ReadFileTool,
     WebpageQATool,
     WriteFileTool,
-    load_qa_with_sources_chain,
     process_csv,
     # web_search,
-    query_website_tool
+    query_website_tool,
 )
-
+from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
 ROOT_DIR = "./data/"
 
 
 class AutoBot:
+    @log_decorator
+    @error_decorator
+    @timing_decorator
     def __init__(self, 
                  model_name="gpt-4", 
                  openai_api_key=None,
@@ -49,7 +51,10 @@ class AutoBot:
         self.setup_tools()
         self.setup_memory()
         self.setup_agent()
-
+    
+    @log_decorator
+    @error_decorator
+    @timing_decorator
     def setup_tools(self):
         self.tools = [
             WriteFileTool(root_dir=ROOT_DIR),
@@ -81,6 +86,9 @@ class AutoBot:
         except Exception as error:
             raise RuntimeError(f"Error setting up agent: {error}")
     
+    @log_decorator
+    @error_decorator
+    @timing_decorator
     def run(self, task):
         try:
             result = self.agent.run([task])
