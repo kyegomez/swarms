@@ -2,7 +2,8 @@
 from swarms.orchestrator.autoscaler import AutoScaler
 
 # worker
-from swarms.workers.worker_node import WorkerNode
+# from swarms.workers.worker_node import WorkerNode
+from swarms.workers.workers import Workers
 from swarms.workers.autobot import AutoBot
 
 #boss
