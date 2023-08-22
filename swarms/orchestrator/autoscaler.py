@@ -18,9 +18,11 @@ class AutoScaler:
                  initial_agents=10,
                  scale_up_factor=1,
                  idle_threshold=0.2,
-                 busy_threshold=0.7
+                 busy_threshold=0.7,
+                 agent=None,
                  ):
-        self.agents_pool = [AutoBot() for _ in range(initial_agents)]
+        self.agent = agent or AutoBot
+        self.agents_pool = [self.agent() for _ in range(initial_agents)]
         self.task_queue = queue.Queue()
         self.scale_up_factor = scale_up_factor
         self.idle_threshold = idle_threshold
@@ -71,3 +73,9 @@ class AutoScaler:
                 if available_agent:
                     available_agent.run(task)
 
+#usage of usage
+#auto_scaler = AutoScaler(agent=YourCustomAgent)
+# auto_scaler.start()
+
+#for i in range(100):
+# auto_scaler.add_task9f"task {I}})
