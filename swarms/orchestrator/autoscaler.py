@@ -6,6 +6,7 @@ from swarms.workers.autobot import AutoBot
 # TODO Handle task assignment and task delegation
 # TODO: User task => decomposed into very small sub tasks => sub tasks assigned to workers => workers complete and update the swarm, can ask for help from other agents. 
 # TODO: Missing, Task Assignment, Task delegation, Task completion, Swarm level communication with vector db
+
 class AutoScaler:
     def __init__(self, 
                  initial_agents=10,
