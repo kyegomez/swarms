@@ -2,10 +2,9 @@ import faiss
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
+from langchain.tools.human.tool import HumanInputRun
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
-from langchain.tools.human.tool import HumanInputRun
-
 
 from swarms.agents.tools.autogpt import (
     ReadFileTool,
@@ -73,7 +72,11 @@ class Worker:
             ReadFileTool(root_dir=ROOT_DIR),
             process_csv,
             query_website_tool,
-            HumanInputRun()
+            HumanInputRun(),
+            #zapier
+            #email
+            #pdf
+            # Tool(name="Goal Decomposition Tool", func=todo_chain.run, description="Use Case: Decompose ambitious goals into as many explicit and well defined tasks for an AI agent to follow. Rules and Regulations, don't use this tool too often only in the beginning when the user grants you a mission."),
         ]
         if external_tools is not None:
             self.tools.extend(external_tools)
