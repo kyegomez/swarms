@@ -28,8 +28,7 @@ class Worker:
                  openai_api_key=None,
                  ai_name="Autobot Swarm Worker",
                  ai_role="Worker in a swarm",
-                #  embedding_size=None,
-                #  k=None,
+                 external_tools = None,
                 human_in_the_loop=False,
                  temperature=0.5):
         self.openai_api_key = openai_api_key
@@ -50,14 +49,25 @@ class Worker:
         # self.embedding_size = embedding_size
         # # self.k = k
 
-        self.setup_tools()
+        self.setup_tools(external_tools)
         self.setup_memory()
         self.setup_agent()
     
     @log_decorator
     @error_decorator
     @timing_decorator
-    def setup_tools(self):
+    def setup_tools(self, external_tools):
+        """
+        external_tools = [MyTool1(), MyTool2()]
+        worker = Worker(model_name="gpt-4", 
+                openai_api_key="my_key", 
+                ai_name="My Worker", 
+                ai_role="Worker", 
+                external_tools=external_tools, 
+                human_in_the_loop=False, 
+                temperature=0.5)
+        
+        """
         self.tools = [
             WriteFileTool(root_dir=ROOT_DIR),
             ReadFileTool(root_dir=ROOT_DIR),
@@ -65,6 +75,8 @@ class Worker:
             query_website_tool,
             HumanInputRun()
         ]
+        if external_tools is not None:
+            self.tools.extend(external_tools)
 
     def setup_memory(self):
         try:
