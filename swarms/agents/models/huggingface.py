@@ -1,6 +1,6 @@
 import torch
 import logging
-from transformers import BitsAndBytesConfig
+# from transformers import BitsAndBytesConfig
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -11,16 +11,16 @@ class HuggingFaceLLM:
         self.model_id = model_id
         self.max_length = max_length
 
-        bnb_config = None
-        if quantize:
-            if not quantization_config:
-                quantization_config = {
-                    'load_in_4bit': True,
-                    'bnb_4bit_use_double_quant': True,
-                    'bnb_4bit_quant_type': "nf4",
-                    'bnb_4bit_compute_dtype': torch.bfloat16
-                }
-            bnb_config = BitsAndBytesConfig(**quantization_config)
+        # bnb_config = None
+        # if quantize:
+        #     if not quantization_config:
+        #         quantization_config = {
+        #             'load_in_4bit': True,
+        #             'bnb_4bit_use_double_quant': True,
+        #             'bnb_4bit_quant_type': "nf4",
+        #             'bnb_4bit_compute_dtype': torch.bfloat16
+        #         }
+        #     bnb_config = BitsAndBytesConfig(**quantization_config)
 
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
