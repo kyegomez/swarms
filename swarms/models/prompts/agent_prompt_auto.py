@@ -1,6 +1,6 @@
 import time
 from typing import Any, Callable, List
-from swarms.agents.models.prompts.agent_prompt_generator import get_prompt
+from swarms.models.prompts.agent_prompt_generator import get_prompt
 
 class TokenUtils:
     @staticmethod

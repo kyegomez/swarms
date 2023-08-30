@@ -7,7 +7,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.chat_models.base import BaseChatModel
 from langchain.schema import BaseOutputParser
 
-from swarms.agents.models.prompts.prebuild.multi_modal_prompts import EVAL_PREFIX, EVAL_SUFFIX
+from swarms.models.prompts.prebuild.multi_modal_prompts import EVAL_PREFIX, EVAL_SUFFIX
 from swarms.tools.main import BaseToolSet, ToolsFactory
 
 from .ConversationalChatAgent import ConversationalChatAgent
