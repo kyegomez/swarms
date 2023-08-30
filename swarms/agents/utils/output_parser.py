@@ -5,7 +5,7 @@ from typing import Dict, NamedTuple
 
 from langchain.schema import BaseOutputParser
 
-from swarms.agents.models.prompts.prebuild.multi_modal_prompts import EVAL_FORMAT_INSTRUCTIONS
+from swarms.models.prompts.prebuild.multi_modal_prompts import EVAL_FORMAT_INSTRUCTIONS
 
 
 class EvalOutputParser(BaseOutputParser):

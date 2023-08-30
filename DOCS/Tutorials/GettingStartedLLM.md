@@ -120,7 +120,7 @@ google_palm = GooglePalm()\
 messages = [{"role": "system", "content": "You are a funny assistant"}, {"role": "user", "content": "Crack me a joke"}]\
 response = google_palm.generate(messages)
 
-4\. Anthropic (swarms.agents.models.Anthropic)
+4\. Anthropic (swarms.models.Anthropic)
 ==============================================
 
 Anthropic's models, with their mysterious allure, are now at your fingertips.

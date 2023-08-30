@@ -1,7 +1,7 @@
 import pytest
 import torch
 from unittest.mock import Mock
-from swarms.agents.models.huggingface import HuggingFaceLLM  
+from swarms.models.huggingface import HuggingFaceLLM  
 
 
 @pytest.fixture
