@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from swarms.agents.memory.oceandb import OceanDB
+from swarms.memory.oceandb import OceanDB
 
 
 @pytest.fixture
