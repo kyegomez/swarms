@@ -26,7 +26,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from swarms.utils.embeddings.base import Embeddings
+from swarms.embeddings.base import Embeddings
 
 def get_from_dict_or_env(values: dict, key: str, env_key: str, default: Any = None) -> Any:
     import os
