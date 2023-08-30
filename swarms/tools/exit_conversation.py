@@ -1,6 +1,6 @@
 from langchain.tools import tool
 
-from swarms.agents.tools.base import BaseToolSet, SessionGetter, ToolScope
+from swarms.tools.base import BaseToolSet, SessionGetter, ToolScope
 from swarms.utils.logger import logger
 
 

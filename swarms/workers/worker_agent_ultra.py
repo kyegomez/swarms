@@ -14,7 +14,7 @@ from typing import Dict, List
 
 from langchain.memory.chat_message_histories import FileChatMessageHistory
 
-from swarms.agents.tools.main import (
+from swarms.tools.main import (
     BaseToolSet,
     CodeEditor,
     ExitConversation,
@@ -110,7 +110,7 @@ class WorkerUltraNodeInitializer:
             if os.environ.get("USE_GPU", False):
                 import torch
 
-                from swarms.agents.tools.main import (
+                from swarms.tools.main import (
                     ImageCaptioning,
                     ImageEditing,
                     InstructPix2Pix,

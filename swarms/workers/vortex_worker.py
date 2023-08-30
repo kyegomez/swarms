@@ -14,7 +14,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
 
-from swarms.agents.tools.autogpt import (
+from swarms.tools.autogpt import (
     FileChatMessageHistory,
     ReadFileTool,
     WebpageQATool,

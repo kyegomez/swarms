@@ -4,21 +4,21 @@ from typing import List, Optional
 
 from langchain.chains.llm import LLMChain
 
-from swarms.agents.memory.base import VectorStoreRetriever
-from swarms.agents.memory.base_memory import BaseChatMessageHistory, ChatMessageHistory
-from swarms.agents.memory.document import Document
-from swarms.agents.models.base import AbstractModel
-from swarms.agents.models.prompts.agent_prompt_auto import (
+from swarms.memory.base import VectorStoreRetriever
+from swarms.memory.base_memory import BaseChatMessageHistory, ChatMessageHistory
+from swarms.memory.document import Document
+from swarms.models.base import AbstractModel
+from swarms.models.prompts.agent_prompt_auto import (
     MessageFormatter,
     PromptConstructor,
 )
-from swarms.agents.models.prompts.agent_prompt_generator import FINISH_NAME
-from swarms.agents.models.prompts.base import (
+from swarms.models.prompts.agent_prompt_generator import FINISH_NAME
+from swarms.models.prompts.base import (
     AIMessage,
     HumanMessage,
     SystemMessage,
 )
-from swarms.agents.tools.base import BaseTool
+from swarms.tools.base import BaseTool
 from swarms.agents.utils.Agent import AgentOutputParser
 from swarms.agents.utils.human_input import HumanInputRun
 
