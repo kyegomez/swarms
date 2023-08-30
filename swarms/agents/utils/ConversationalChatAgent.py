@@ -21,7 +21,7 @@ from langchain.schema import (
 )
 from langchain.tools.base import BaseTool
 
-from swarms.agents.models.prompts.prebuild.multi_modal_prompts import EVAL_TOOL_RESPONSE
+from swarms.models.prompts.prebuild.multi_modal_prompts import EVAL_TOOL_RESPONSE
 from swarms.agents.utils.Agent import Agent
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')

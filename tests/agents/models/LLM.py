@@ -3,7 +3,7 @@ import os
 from unittest.mock import patch
 from langchain import HuggingFaceHub, ChatOpenAI
 
-from swarms.agents.models.llm import LLM
+from swarms.models.llm import LLM
 
 class TestLLM(unittest.TestCase):
     @patch.object(HuggingFaceHub, '__init__', return_value=None)

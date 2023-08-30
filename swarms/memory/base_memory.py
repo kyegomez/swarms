@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from langchain.memory.utils import get_prompt_input_key
 from pydantic import BaseModel, Field
 
-from swarms.agents.models.prompts.base import AIMessage, BaseMessage, HumanMessage
+from swarms.models.prompts.base import AIMessage, BaseMessage, HumanMessage
 from swarms.utils.serializable import Serializable
 
 

@@ -400,7 +400,7 @@ class FileHandler:
 
 #############===========================>
 
-from swarms.agents.models.prompts.prebuild.multi_modal_prompts import DATAFRAME_PROMPT
+from swarms.models.prompts.prebuild.multi_modal_prompts import DATAFRAME_PROMPT
 
 import pandas as pd
 class CsvToDataframe(BaseHandler):
