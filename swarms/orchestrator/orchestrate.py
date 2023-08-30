@@ -3,7 +3,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from swarms.agents.memory.ocean import OceanDB
+from swarms.memory.ocean import OceanDB
 
 
 class Orchestrator(ABC):
