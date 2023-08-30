@@ -23,6 +23,10 @@ At Swarms, we're transforming the landscape of AI from siloed AI agents to a uni
 
 -----
 
+# 🤝 Schedule a 1-on-1 Session
+Book a [1-on-1 Session with Kye](https://calendly.com/apacai/agora), the Creator, to discuss any issues, provide feedback, or explore how we can improve Swarms for you.
+
+
 ## Hiring
 We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on democratizing swarms, email me at with your story at `kye@apac.ai`
 
