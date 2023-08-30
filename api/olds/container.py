@@ -6,11 +6,11 @@ from fastapi.templating import Jinja2Templates
 
 from swarms.agents.utils.agent_creator import AgentManager
 from swarms.utils.main import BaseHandler, FileHandler, FileType
-from swarms.agents.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
+from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 
 from swarms.utils.main import CsvToDataframe
 
-from swarms.agents.tools.main import BaseToolSet
+from swarms.tools.main import BaseToolSet
 
 from swarms.utils.main import StaticUploader
 
@@ -30,8 +30,8 @@ if os.environ["USE_GPU"]:
     import torch
 
     # from core.handlers.image import ImageCaptioning
-    from swarms.agents.tools.main import ImageCaptioning
-    from swarms.agents.tools.main import (
+    from swarms.tools.main import ImageCaptioning
+    from swarms.tools.main import (
         ImageEditing,
         InstructPix2Pix,
         Text2Image,

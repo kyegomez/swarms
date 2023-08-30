@@ -19,8 +19,8 @@ from transformers import (
 )
 
 from swarms.agents.models.prompts.prebuild.multi_modal_prompts import IMAGE_PROMPT
-from swarms.agents.tools.base import tool
-from swarms.agents.tools.main import BaseToolSet
+from swarms.tools.base import tool
+from swarms.tools.main import BaseToolSet
 from swarms.utils.logger import logger
 from swarms.utils.main import BaseHandler, get_new_image_name
 

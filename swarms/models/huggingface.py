@@ -9,7 +9,7 @@ class HuggingFaceLLM:
                 model_id: str, 
                 device: str = None, 
                 max_length: int = 20, 
-                quantize: bool = False, 
+                # quantize: bool = False, 
                 quantization_config: dict = None
                 ):
         self.logger = logging.getLogger(__name__)

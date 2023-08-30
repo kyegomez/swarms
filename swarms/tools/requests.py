@@ -2,7 +2,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-from swarms.agents.tools.base import BaseToolSet, tool
+from swarms.tools.base import BaseToolSet, tool
 from swarms.utils.logger import logger
 
 
