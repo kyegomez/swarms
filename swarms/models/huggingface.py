@@ -30,7 +30,7 @@ class HuggingFaceLLM:
 
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-            self.model = AutoModelForCausalLM.from_pretrained(self.model_id, quantization_config=bnb_config)
+            self.model = AutoModelForCausalLM.from_pretrained(self.model_id) # quantization_config=bnb_config)
             self.model.to(self.device)
         except Exception as e:
             self.logger.error(f"Failed to load the model or the tokenizer: {e}")
