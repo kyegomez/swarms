@@ -26,7 +26,7 @@ from langchain.callbacks.manager import (
     CallbackManagerForRetrieverRun,
 )
 
-from swarms.agents.memory.document import Document
+from swarms.memory.document import Document
 from swarms.utils.embeddings.base import Embeddings
 
 from langchain.schema import BaseRetriever

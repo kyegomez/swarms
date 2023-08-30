@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from swarms.agents.memory.base import get_buffer_string
+from swarms.memory.base import get_buffer_string
 
 
 
