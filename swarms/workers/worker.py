@@ -6,7 +6,7 @@ from langchain.tools.human.tool import HumanInputRun
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
 
-from swarms.agents.tools.autogpt import (
+from swarms.tools.autogpt import (
     ReadFileTool,
     WriteFileTool,
     process_csv,

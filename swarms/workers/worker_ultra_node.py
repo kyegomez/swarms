@@ -6,9 +6,9 @@ from typing import Dict, List
 
 from swarms.agents.utils.agent_creator import AgentCreator
 from swarms.utils.main import BaseHandler, FileHandler, FileType
-from swarms.agents.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
+from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
 from swarms.utils.main import CsvToDataframe
-from swarms.agents.tools.main import BaseToolSet
+from swarms.tools.main import BaseToolSet
 from swarms.utils.main import StaticUploader
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -45,8 +45,8 @@ class WorkerUltraNode:
 
         if os.environ.get("USE_GPU", False):
             import torch
-            from swarms.agents.tools.main import ImageCaptioning
-            from swarms.agents.tools.main import ImageEditing, InstructPix2Pix, Text2Image, VisualQuestionAnswering
+            from swarms.tools.main import ImageCaptioning
+            from swarms.tools.main import ImageEditing, InstructPix2Pix, Text2Image, VisualQuestionAnswering
 
             if torch.cuda.is_available():
                 toolsets.extend(

@@ -136,7 +136,7 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 
 
 
-# from swarms.agents.tools.code_intepretor import CodeInterpreter
+# from swarms.tools.code_intepretor import CodeInterpreter
 
 # # @tool
 # code_intepret = CodeInterpreter()

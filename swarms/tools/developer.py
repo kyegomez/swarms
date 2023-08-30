@@ -20,7 +20,7 @@ from ptrace.func_call import FunctionCallOptions
 from ptrace.syscall import PtraceSyscall
 from ptrace.tools import signal_to_exitcode
 
-from swarms.agents.tools.base import BaseToolSet, SessionGetter, ToolScope, tool
+from swarms.tools.base import BaseToolSet, SessionGetter, ToolScope, tool
 from swarms.utils.logger import logger
 from swarms.utils.main import ANSI, Color, Style  # test
 

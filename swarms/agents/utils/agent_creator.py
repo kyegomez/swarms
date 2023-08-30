@@ -5,7 +5,7 @@ from langchain.agents.agent import AgentExecutor
 from langchain.callbacks.manager import CallbackManager
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.memory.chat_memory import BaseChatMemory
-from swarms.agents.tools.main import BaseToolSet, ToolsFactory
+from swarms.tools.main import BaseToolSet, ToolsFactory
 
 from swarms.agents.utils.agent_setup import AgentSetup
 from swarms.agents.utils.Calback import EVALCallbackHandler, ExecutionTracingCallbackHandler

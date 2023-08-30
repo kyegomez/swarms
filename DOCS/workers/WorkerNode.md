@@ -62,7 +62,7 @@ Copy code
 
 ```
 
-from swarms.agents.tools.autogpt import DuckDuckGoSearchRun
+from swarms.tools.autogpt import DuckDuckGoSearchRun
 
 worker_node_initializer = WorkerNodeInitializer(openai_api_key="your_openai_api_key",
 
@@ -212,7 +212,7 @@ Here is a full example of how to use the `WorkerNode` and `WorkerNodeInitiali
 
 ```python
 
-from swarms.agents.tools.autogpt import DuckDuckGoSearchRun
+from swarms.tools.autogpt import DuckDuckGoSearchRun
 
 from swarms.worker_node import WorkerNode, WorkerNodeInitializer
 
