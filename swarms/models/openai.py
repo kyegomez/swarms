@@ -1,27 +1,41 @@
-#kye 
-#aug 8, 11:51
-import warnings
+from __future__ import annotations
+
 import logging
 import sys
+import warnings
 from typing import (
+    AbstractSet,
     Any,
+    AsyncIterator,
     Collection,
     Dict,
-    Field,
+    Iterator,
     List,
     Literal,
+    Mapping,
     Optional,
     Tuple,
     Union,
-    AbstractSet
 )
 
-import openai
-import tiktoken
-import os
+from langchain.callbacks.manager import (
+    AsyncCallbackManagerForLLMRun,
+    CallbackManagerForLLMRun,
+)
+from langchain.pydantic_v1 import Field, root_validator
+from langchain.schema import Generation, LLMResult
+from langchain.schema.output import GenerationChunk
+from langchain.utils import get_from_dict_or_env
 
+logger = logging.getLogger(__name__)
+
+
+import os
 def get_from_dict_or_env(
-    data: Dict[str, Any], key: str, env_key: str, default: Optional[str] = None
+    data: Dict[str, Any], 
+    key: str, 
+    env_key: str, 
+    default: Optional[str] = None
 ) -> str:
     """Get a value from a dictionary or an environment variable."""
     if key in data and data[key]:
@@ -46,7 +60,7 @@ def get_from_env(key: str, env_key: str, default: Optional[str] = None) -> str:
 
 
 
-class OpenAIChat(BaseLLM):
+class OpenAIChat:
     """OpenAI Chat large language models.
 
     To use, you should have the ``openai`` python package installed, and the
