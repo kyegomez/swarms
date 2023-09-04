@@ -13,7 +13,12 @@ from swarms.swarms.swarms import HierarchicalSwarm
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class HiveMind:
-    def __init__(self, openai_api_key="", num_swarms=1, max_workers=None):
+    def __init__(
+            self, 
+            openai_api_key="", 
+            num_swarms=1, 
+            max_workers=None
+        ):
         self.openai_api_key = openai_api_key
         self.num_swarms = num_swarms
         self.swarms = [HierarchicalSwarm(openai_api_key) for _ in range(num_swarms)]
