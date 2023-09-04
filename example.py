@@ -2,7 +2,7 @@ from swarms import Worker
 
 
 node = Worker(
-    openai_api_key="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",
+    openai_api_key="",
     ai_name="Optimus Prime",
 
 )
