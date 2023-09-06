@@ -17,3 +17,8 @@ faiss-cpu
 openai
 google-generativeai
 duckduckgo-search
+
+
+mkdocs
+mkdocs-material
+mkdocs-glightbox
