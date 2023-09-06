@@ -85,7 +85,7 @@ print(response)
 ---
 
 # Documentation
-For documentation, go here, [the docs folder in the root diectory](https://swarms.apac.ai)
+For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
 **NOTE: We need help building the documentation**
 
