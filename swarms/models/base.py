@@ -6,4 +6,7 @@ class AbstractModel(ABC):
     def generate(self, prompt):
         #generate text using language model
         pass
+
+    def chat(self, prompt, history):
+        pass
     

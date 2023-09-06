@@ -1,0 +1,106 @@
+site_name: Swarms Docs
+plugins:
+  - glightbox
+  - search
+copyright: "&copy; APAC Corp, Inc."
+extra_css:
+  - docs/assets/css/extra.css
+extra:
+  # analytics:
+  #   provider: google
+  #   property: G-QM8EDPSCB6
+  social:
+    - icon: fontawesome/solid/house
+      link: assets/img/SwarmsLogoIcon.png
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/qUtxnK2NMf
+    - icon: fontawesome/brands/github
+      link: https://github.com/kyegomez/Swarms/
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/Swarms/
+theme:
+    name: material
+    custom_dir: docs/overrides
+    logo: assets/img/SwarmsLogoIcon.png
+    palette:
+      # Palette toggle for light mode
+    - scheme: default
+      primary: black
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    features:
+        - content.code.copy
+        - content.code.annotate
+        - navigation.tabs
+        - navigation.sections
+        - navigation.expand
+        - navigation.top
+        - announce.dismiss
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - admonition
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed
+  - tables
+  - def_list
+  - footnotes
+nav:
+- Home:
+    - Overview: "index.md"
+    - Contributing: "contributing.md"
+    - FAQ: "faq.md"
+    - Purpose: "purpose.md"
+    - Roadmap: "roadmap.md"
+    - Weaknesses: "failures.md"
+    - Design: "design.md"
+    - Flywheel: "flywheel.md"
+    - Bounties: "bounties.md"
+    - Metric: "metric.md"
+    - Distribution: "distribution"
+    - Research: "research.md"
+    - Demos: "demos.md"
+    - Architecture: "architecture.md"
+    - Checklist: "checklist.md"
+    - Hiring: "hiring.md"
+- Swarms:
+  - Overview: "swarms/index.md"
+  - AutoScaler: "swarms/swarms/autoscaler.md"
+  - Workers:
+    - Overview: "swarms/workers/index.md"
+  - Agents:
+    - Base Models:
+      - Overview: "swarms/models/index.md"
+      - HuggingFaceLLM: "swarms/models/hf.md"
+      - Anthropic: "swarms/models/anthropic.md"
+- Examples:
+    - Overview: "examples/index.md"
+    - Agents:
+      - Talk to Redshift: "examples/talk-to-redshift.md"
+      - Talk to a Webpage: "examples/talk-to-a-webpage.md"
+      - Talk to a PDF: "examples/talk-to-a-pdf.md"
+    - Data:
+      - Load and Query Pinecone: "examples/load-and-query-pinecone.md"
+      - Load and Query Marqo: "examples/load-query-and-chat-marqo.md"
+      - Query a Webpage: "examples/query-webpage.md"
+    - Misc:
+        - Count Tokens: "examples/count-tokens.md"
+        - Using Text Generation Web UI: "examples/using-text-generation-web-ui.md"
+        - Storing Conversation Memory in DynamoDB: "examples/store-conversation-memory-in-dynamodb.md"
+- Applications:
+    - CustomerSupport: 
+      - Overview: "applications/customer_support.md"
+    - Marketing: 
+      - Overview: "applications/marketing_agencies.md" 
