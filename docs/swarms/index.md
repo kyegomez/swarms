@@ -35,19 +35,6 @@ response = node.run(task)
 print(response)
 ```
 
----
-
-## Usage
-
-```python
-
-from swarms import HuggingFaceLLM
-
-hugging_face_model = HuggingFaceLLM(model_id="Voicelab/trurl-2-13b")
-generated_text = hugging_face_model.generate("In a world where AI")
-
-```
----
 
 # Documentation
 For documentation, go here, [the docs folder in the root diectory](https://swarms.apac.ai)
