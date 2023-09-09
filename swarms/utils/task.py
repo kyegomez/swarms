@@ -1,5 +1,6 @@
 import uuid
 
+
 class Task:
     def __init__(self, objective, priority=0, schedule=None, dependencies=None):
         self.id = uuid.uuid4()
