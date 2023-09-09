@@ -4,7 +4,16 @@ import os
 class Anthropic:
     """Anthropic large language models."""
 
-    def __init__(self, model="claude-2", max_tokens_to_sample=256, temperature=None, top_k=None, top_p=None, streaming=False, default_request_timeout=None):
+    def __init__(
+            self, 
+            model="claude-2", 
+            max_tokens_to_sample=256, 
+            temperature=None, 
+            top_k=None, 
+            top_p=None, 
+            streaming=False, 
+            default_request_timeout=None
+        ):
         self.model = model
         self.max_tokens_to_sample = max_tokens_to_sample
         self.temperature = temperature
