@@ -24,14 +24,16 @@ class AutoBot:
     @log_decorator
     @error_decorator
     @timing_decorator
-    def __init__(self, 
-                 model_name="gpt-4", 
-                 openai_api_key=None,
-                 ai_name="Autobot Swarm Worker",
-                 ai_role="Worker in a swarm",
-                #  embedding_size=None,
-                #  k=None,
-                 temperature=0.5):
+    def __init__(
+        self, 
+        model_name="gpt-4", 
+        openai_api_key=None,
+        ai_name="Autobot Swarm Worker",
+        ai_role="Worker in a swarm",
+        #  embedding_size=None,
+        #  k=None,
+        temperature=0.5
+    ):
         self.openai_api_key = openai_api_key
         self.temperature = temperature
         
