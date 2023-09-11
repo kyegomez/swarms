@@ -203,7 +203,8 @@ class AoTAgent:
         pruning_threshold=0.5,
         backtracking_threshold=0.4,
         initial_prompt=None,
-        openai_api_key: str = None
+        openai_api_key: str = None,
+        model = None,
     ):
         self.num_thoughts = num_thoughts
         self.max_steps = max_steps
@@ -213,7 +214,8 @@ class AoTAgent:
         self.initial_prompt = initial_prompt
         self.output = []
         self.openai_api_key = openai_api_key
-        self.model = OpenAI(api_key=self.openai_api_key)
+        self.model = model
+        self.model = self.model or OpenAI(api_key=self.openai_api_key)
 
     def solve(self):
         try:

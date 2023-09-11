@@ -1,13 +1,21 @@
 from __future__ import annotations
+
+import concurrent.futures as futures
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from logging import Logger
-from typing import Optional, Union, TYPE_CHECKING, Callable, Type
-from rich.logging import RichHandler
-import concurrent.futures as futures
 from graphlib import TopologicalSorter
+from logging import Logger
+from typing import Optional, Union
 
+from rich.logging import RichHandler
+from shapeless import shapeless
+
+from swarms.artifacts.error_artifact import ErrorArtifact
+from swarms.structs.task import BaseTask
+
+
+@shapeless
 class Workflow(ABC):
     def __init__(
         self, 
@@ -72,7 +80,7 @@ class Workflow(ABC):
         }
 
     @abstractmethod
-    def add_task(self, task: BaseTask) -> BaseTask:
+    def add(self, task: BaseTask) -> BaseTask:
         task.preprocess(self)
         self.tasks.append(task)
         return task
