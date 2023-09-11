@@ -27,7 +27,6 @@ transformers = "*"
 openai = "*"
 langchain = "0.0.240"
 asyncio = "*"
-simpleaichat = "*"
 nest_asyncio = "*"
 pegasusx = "*"
 einops = "*"
@@ -46,6 +45,7 @@ tenacity = "*"
 celery = "*"
 redis = "*"
 Pillow = "*"
+shapeless="*"
 
 [tool.poetry.dev-dependencies]
 # Add development dependencies here
