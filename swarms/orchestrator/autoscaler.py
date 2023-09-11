@@ -4,13 +4,13 @@ from time import sleep
 from swarms.workers.worker import Worker
 
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
-from shapeless import shapeless
+#from shapeless import shapeless
 
 # TODO Handle task assignment and task delegation
 # TODO: User task => decomposed into very small sub tasks => sub tasks assigned to workers => workers complete and update the swarm, can ask for help from other agents. 
 # TODO: Missing, Task Assignment, Task delegation, Task completion, Swarm level communication with vector db
 
-@shapeless
+#@shapeless
 class AutoScaler:
     @log_decorator
     @error_decorator

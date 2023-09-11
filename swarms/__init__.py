@@ -1,5 +1,5 @@
 #swarms
-from swarms.orchestrator.autoscaler import AutoScaler
+#from swarms.orchestrator.autoscaler import AutoScaler
 
 # worker
 # from swarms.workers.worker_node import WorkerNode

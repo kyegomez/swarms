@@ -1,6 +1,6 @@
-from shapeless import shapeless
+#from shapeless import shapeless
 
-@shapeless
+#@shapeless
 class ErrorArtifact:
     def __init__(
         self,
