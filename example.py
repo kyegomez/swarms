@@ -1,6 +1,5 @@
 from swarms import Worker
 
-
 node = Worker(
     openai_api_key="",
     ai_name="Optimus Prime",
