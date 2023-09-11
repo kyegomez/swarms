@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from swarms.memory.ocean import OceanDB
 
-
+## =========> 
 class Orchestrator(ABC):
     def __init__(self, 
     agent, 
@@ -14,7 +14,7 @@ class Orchestrator(ABC):
     vector_db: OceanDB
     ):
         self.agent = agent
-        self.agents = [agent_class() for _ in range(agent_list)]
+        self.agents = [agent() for _ in range(agent_list)]
         self.task_queue = task_queue
         self.vector_db = vector_db
         self.current_tasks = {}
@@ -78,7 +78,11 @@ class Orchestrator(ABC):
             logging.error(f"Failed to append the agent output to database. Error: {e}")
             raise
 
-    def run(self, objective:str, collection):
+    def run(
+        self, 
+        objective:str, 
+        collection
+    ):
         """Runs"""
 
         if not objective or not isinstance(objective, str):
