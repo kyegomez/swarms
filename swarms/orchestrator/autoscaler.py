@@ -4,22 +4,25 @@ from time import sleep
 from swarms.workers.worker import Worker
 
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
+from shapeless import shapeless
 
 # TODO Handle task assignment and task delegation
 # TODO: User task => decomposed into very small sub tasks => sub tasks assigned to workers => workers complete and update the swarm, can ask for help from other agents. 
 # TODO: Missing, Task Assignment, Task delegation, Task completion, Swarm level communication with vector db
 
+@shapeless
 class AutoScaler:
     @log_decorator
     @error_decorator
     @timing_decorator
-    def __init__(self, 
-                 initial_agents=10,
-                 scale_up_factor=1,
-                 idle_threshold=0.2,
-                 busy_threshold=0.7,
-                 agent=None,
-                 ):
+    def __init__(
+        self, 
+        initial_agents=10,
+        scale_up_factor=1,
+        idle_threshold=0.2,
+        busy_threshold=0.7,
+        agent=None,
+    ):
         self.agent = agent or Worker
         self.agents_pool = [self.agent() for _ in range(initial_agents)]
         self.task_queue = queue.Queue()
