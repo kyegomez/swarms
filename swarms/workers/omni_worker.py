@@ -2,7 +2,11 @@ from langchain.tools import tool
 from swarms.workers.multi_modal_workers.omni_agent.omni_chat import chat_huggingface
 
 class OmniWorkerAgent:
-    def __init__(self, api_key, api_endpoint, api_type):
+    def __init__(
+            self, 
+            api_key, 
+            api_endpoint, api_type
+        ):
         self.api_key = api_key
         self.api_endpoint = api_endpoint
         self.api_type = api_type
