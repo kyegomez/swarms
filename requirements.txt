@@ -17,7 +17,7 @@ faiss-cpu
 openai
 google-generativeai
 duckduckgo-search
-
+shapeless
 
 mkdocs
 mkdocs-material
