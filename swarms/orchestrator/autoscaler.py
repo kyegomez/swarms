@@ -1,7 +1,7 @@
 import threading
 import queue
 from time import sleep
-from swarms.workers.autobot import AutoBot
+from swarms.workers.worker import Worker
 
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
@@ -20,7 +20,7 @@ class AutoScaler:
                  busy_threshold=0.7,
                  agent=None,
                  ):
-        self.agent = agent or AutoBot
+        self.agent = agent or Worker
         self.agents_pool = [self.agent() for _ in range(initial_agents)]
         self.task_queue = queue.Queue()
         self.scale_up_factor = scale_up_factor
@@ -37,7 +37,7 @@ class AutoScaler:
         with self.lock:
             new_agents_counts = len(self.agents_pool) * self.scale_up_factor
             for _ in range(new_agents_counts):
-                self.agents_pool.append(AutoBot())
+                self.agents_pool.append(Worker())
     
     def scale_down(self):
         with self.lock:
