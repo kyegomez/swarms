@@ -1,8 +1,8 @@
 from abc import ABC
-from shapeless import shapeless
+#from shapeless import shapeless
 
 
-@shapeless
+#@shapeless
 class BaseTask(ABC):
     def __init__(
         self,

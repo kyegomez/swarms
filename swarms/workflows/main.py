@@ -9,13 +9,13 @@ from logging import Logger
 from typing import Optional, Union
 
 from rich.logging import RichHandler
-from shapeless import shapeless
+#from shapeless import shapeless
 
 from swarms.artifacts.error_artifact import ErrorArtifact
 from swarms.structs.task import BaseTask
 
 
-@shapeless
+#@shapeless
 class Workflow(ABC):
     def __init__(
         self, 
