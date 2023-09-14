@@ -70,7 +70,9 @@ class Orchestrator(ABC):
         agent, 
         agent_list: List[Any], 
         task_queue: List[Any], 
-        collection_name: str = "swarm"
+        collection_name: str = "swarm",
+        api_key: str = None,
+        model_name: str = None
     ):
         self.agent = agent
         self.agents = queue.Queue()
@@ -109,9 +111,15 @@ class Orchestrator(ABC):
                 task = self.task_queue.get()
             
             try:
-                result, vector_representation = agent.process_task(
-                    task
+                result = self.worker.run(task["content"])
+
+                #using the embed method to get the vector representation of the result
+                vector_representation = self.embed(
+                    result,
+                    self.api_key,
+                    self.model_name
                 )
+
                 self.collection.add(
                     embeddings=[vector_representation],
                     documents=[str(id(task))],
@@ -131,14 +139,8 @@ class Orchestrator(ABC):
             api_key=api_key,
             model_name=model_name
         )
-
         embedding = openai(input)
-        # print(embedding)
-
-        embedding_metadata = {input: embedding}
-        print(embedding_metadata)
-
-        # return embedding
+        return embedding
                 
     
     @abstractmethod
