@@ -1,4 +1,4 @@
-from swarms.workflows.main import Workflow
+from swarms.structs.workflow import Workflow
 
 workflow = Workflow()
 
