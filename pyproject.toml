@@ -45,6 +45,7 @@ tenacity = "*"
 redis = "*"
 Pillow = "*"
 shapeless="*"
+chromadb = "*"
 
 [tool.poetry.dev-dependencies]
 # Add development dependencies here
