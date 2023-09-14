@@ -11,7 +11,6 @@ from chromadb.utils import embedding_functions
 
 class Orchestrator(ABC):
     """
-
     The Orchestrator takes in an agent, worker, or boss as input 
     then handles all the logic for
     - task creation,
@@ -125,6 +124,7 @@ class Orchestrator(ABC):
                     documents=[str(id(task))],
                     ids=[str(id(task))]
                 )
+
                 logging.info(f"Task {id(str)} has been processed by agent {id(agent)} with")
             
             except Exception as error:
