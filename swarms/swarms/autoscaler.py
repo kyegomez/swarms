@@ -5,19 +5,26 @@ from time import sleep
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 from swarms.workers.worker import Worker
 
-# TODO Handle task assignment and task delegation
-# TODO: User task => decomposed into very small sub tasks => sub tasks assigned to workers => workers complete and update the swarm, can ask for help from other agents. 
-# TODO: Missing, Task Assignment, Task delegation, Task completion, Swarm level communication with vector db
-
 class AutoScaler:
     """
+
+    The AutoScaler is like a kubernetes pod, that autoscales an agent or worker or boss!
+
+    # TODO Handle task assignment and task delegation
+    # TODO: User task => decomposed into very small sub tasks => sub tasks assigned to workers => workers complete and update the swarm, can ask for help from other agents. 
+    # TODO: Missing, Task Assignment, Task delegation, Task completion, Swarm level communication with vector db
+
+    
+    Example
+    ```
     # usage of usage
     auto_scaler = AutoScaler(agent=YourCustomAgent)
     auto_scaler.start()
 
     for i in range(100):
     auto_scaler.add_task9f"task {I}})
-    
+    ```
+
     """
     @log_decorator
     @error_decorator
@@ -81,3 +88,10 @@ class AutoScaler:
                 available_agent = next((agent for agent in self.agents_pool))
                 if available_agent:
                     available_agent.run(task)
+
+    def del_agent(self):
+        with self.lock:
+            if self.agents_pool:
+                agent_to_remove = self.agents_poo.pop()
+                del agent_to_remove
+
