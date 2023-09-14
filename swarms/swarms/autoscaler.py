@@ -1,9 +1,9 @@
-import threading
 import queue
+import threading
 from time import sleep
-from swarms.workers.worker import Worker
 
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
+from swarms.workers.worker import Worker
 
 # TODO Handle task assignment and task delegation
 # TODO: User task => decomposed into very small sub tasks => sub tasks assigned to workers => workers complete and update the swarm, can ask for help from other agents. 
