@@ -152,7 +152,8 @@ class OpenAI:
             while taking rejected solutions into account and learning from them. 
             Considering the reasoning provided:\n\n
             ###'{state_text}'\n\n###
-            Devise the best possible solution for the task: {initial_prompt}, Here are evaluated solutions that were rejected: 
+            Devise the best possible solution for the task: {initial_prompt}, 
+            Here are evaluated solutions that were rejected: 
             ###{rejected_solutions}###, 
             complete the {initial_prompt} without making the same mistakes you did with the evaluated rejected solutions. Be simple. Be direct. Provide intuitive solutions as soon as you think of them."""
             answer = self.generate_text(prompt, 1)
