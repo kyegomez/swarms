@@ -2,10 +2,143 @@ from __future__ import annotations
 
 import json
 import pprint
+import uuid
+from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Optional
 
 from artifacts.main import Artifact
 from pydantic import BaseModel, Field, StrictStr, conlist
+
+from swarms.artifacts.error_artifact import ErrorArtifact
+
+
+class BaseTask(ABC):
+    class State(Enum):
+        PENDING = 1
+        EXECUTING = 2
+        FINISHED = 3
+
+    def __init__(self):
+        self.id = uuid.uuid4().hex
+        self.state = self.State.PENDING
+        self.parent_ids = []
+        self.child_ids = []
+        self.output = None
+        self.structure = None
+
+    @property
+    @abstractmethod
+    def input(self):
+        pass
+
+    @property
+    def parents(self):
+        return [self.structure.find_task(parent_id) for parent_id in self.parent_ids]
+
+    @property
+    def children(self):
+        return [self.structure.find_task(child_id) for child_id in self.child_ids]
+
+    def __rshift__(self, child):
+        return self.add_child(child)
+
+    def __lshift__(self, child):
+        return self.add_parent(child)
+
+    def preprocess(self, structure):
+        self.structure = structure
+        return self
+
+    def add_child(self, child):
+        if self.structure:
+            child.structure = self.structure
+        elif child.structure:
+            self.structure = child.structure
+
+        if child not in self.structure.tasks:
+            self.structure.tasks.append(child)
+
+        if self not in self.structure.tasks:
+            self.structure.tasks.append(self)
+
+        if child.id not in self.child_ids:
+            self.child_ids.append(child.id)
+
+        if self.id not in child.parent_ids:
+            child.parent_ids.append(self.id)
+
+        return child
+
+    def add_parent(self, parent):
+        if self.structure:
+            parent.structure = self.structure
+        elif parent.structure:
+            self.structure = parent.structure
+
+        if parent not in self.structure.tasks:
+            self.structure.tasks.append(parent)
+
+        if self not in self.structure.tasks:
+            self.structure.tasks.append(self)
+
+        if parent.id not in self.parent_ids:
+            self.parent_ids.append(parent.id)
+
+        if self.id not in parent.child_ids:
+            parent.child_ids.append(self.id)
+
+        return parent
+
+    def is_pending(self):
+        return self.state == self.State.PENDING
+
+    def is_finished(self):
+        return self.state == self.State.FINISHED
+
+    def is_executing(self):
+        return self.state == self.State.EXECUTING
+
+    def before_run(self):
+        pass
+
+    def after_run(self):
+        pass
+
+    def execute(self):
+        try:
+            self.state = self.State.EXECUTING
+            self.before_run()
+            self.output = self.run()
+            self.after_run()
+        except Exception as e:
+            self.output = ErrorArtifact(str(e))
+        finally:
+            self.state = self.State.FINISHED
+            return self.output
+
+    def can_execute(self):
+        return self.state == self.State.PENDING and all(parent.is_finished() for parent in self.parents)
+
+    def reset(self):
+        self.state = self.State.PENDING
+        self.output = None
+        return self
+
+    @abstractmethod
+    def run(self):
+        pass
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Task(BaseModel):
