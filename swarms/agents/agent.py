@@ -4,6 +4,8 @@ from typing import List, Optional
 
 from langchain.chains.llm import LLMChain
 
+from swarms.agents.utils.Agent import AgentOutputParser
+from swarms.agents.utils.human_input import HumanInputRun
 from swarms.memory.base import VectorStoreRetriever
 from swarms.memory.base_memory import BaseChatMessageHistory, ChatMessageHistory
 from swarms.memory.document import Document
@@ -19,8 +21,6 @@ from swarms.models.prompts.base import (
     SystemMessage,
 )
 from swarms.tools.base import BaseTool
-from swarms.agents.utils.Agent import AgentOutputParser
-from swarms.agents.utils.human_input import HumanInputRun
 
 
 class Agent:
