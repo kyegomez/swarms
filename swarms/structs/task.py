@@ -1,10 +1,12 @@
 from __future__ import annotations
-import pprint
-import json
 
-from typing import Optional, Any
-from pydantic import BaseModel, Field, StrictStr, StrictStr, conlist
+import json
+import pprint
+from typing import Any, Optional
+
 from artifacts.main import Artifact
+from pydantic import BaseModel, Field, StrictStr, conlist
+
 
 class Task(BaseModel):
     input: Optional[StrictStr] = Field(
