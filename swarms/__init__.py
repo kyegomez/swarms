@@ -5,7 +5,7 @@
 # from swarms.workers.worker_node import WorkerNode
 
 #boss
-from swarms.boss.boss_node import BossNode
+from swarms.boss.boss_node import Boss
 
 #models
 from swarms.models.anthropic import Anthropic
@@ -17,3 +17,6 @@ from swarms.workers.worker import Worker
 #from swarms.models.openai import OpenAIChat
 
 
+
+#workflows
+from swarms.structs.workflow import Workflow
