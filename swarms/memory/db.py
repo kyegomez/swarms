@@ -1,16 +1,17 @@
 import uuid
 from abc import ABC
-from typing import Dict, List, Optional, Any
-from .models import Task as APITask, Step as APIStep, Artifact, Status
+from typing import Any, Dict, List, Optional
+
+from swarms.memory.schemas import Artifact, Status
+from swarms.memory.schemas import Step as APIStep
+from swarms.memory.schemas import Task as APITask
 
 
 class Step(APIStep):
     additional_properties: Optional[Dict[str, str]] = None
 
-
 class Task(APITask):
     steps: List[Step] = []
-
 
 class NotFoundException(Exception):
     """
@@ -21,7 +22,6 @@ class NotFoundException(Exception):
         self.item_name = item_name
         self.item_id = item_id
         super().__init__(f"{item_name} with {item_id} not found.")
-
 
 class TaskDB(ABC):
     async def create_task(
