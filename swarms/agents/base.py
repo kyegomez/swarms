@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from agent_protocol import Agent, Step, Task
+
 
 class AbstractAgent(ABC):
     #absrtact agent class

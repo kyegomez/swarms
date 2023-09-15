@@ -46,6 +46,7 @@ redis = "*"
 Pillow = "*"
 shapeless="*"
 chromadb = "*"
+agent-protocol = "*"
 
 [tool.poetry.dev-dependencies]
 # Add development dependencies here

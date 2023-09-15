@@ -18,6 +18,9 @@ openai
 google-generativeai
 duckduckgo-search
 shapeless
+agent-protocol
+
+
 
 mkdocs
 mkdocs-material
