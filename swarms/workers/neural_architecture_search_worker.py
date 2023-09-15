@@ -68,7 +68,7 @@ dfs = AoTAgent(
     num_thoughts=2,
     max_steps=10, 
     value_threshold=1,
-    initial_prompt=task,
+    initial_prompt=system,
     openai_api_key="ENETER IN YOUR API KEY"
 )
 
