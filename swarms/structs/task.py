@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Optional
 
-from artifacts.main import Artifact
+from swarms.artifacts.main import Artifact
 from pydantic import BaseModel, Field, StrictStr, conlist
 
 from swarms.artifacts.error_artifact import ErrorArtifact

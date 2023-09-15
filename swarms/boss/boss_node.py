@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class Boss:
     """
-    The BossNode class is responsible for creating and executing tasks using the BabyAGI model.
+    The Bose class is responsible for creating and executing tasks using the BabyAGI model.
     It takes a language model (llm), a vectorstore for memory, an agent_executor for task execution, and a maximum number of iterations for the BabyAGI model.
     
     # Setup
@@ -29,15 +29,15 @@ class Boss:
     # Objective for the Boss
     objective = "Analyze website user behavior patterns over the past month."
 
-    # Create a BossNode instance
-    boss = BossNode(
+    # Create a Bose instance
+    boss = Bose(
         objective=objective, 
         boss_system_prompt="You are the main controller of a data analysis swarm...", 
         api_key=api_key, 
         worker_node=WorkerNode
     )
 
-    # Run the BossNode to process the objective
+    # Run the Bose to process the objective
     boss.run()
     """
     def __init__(
