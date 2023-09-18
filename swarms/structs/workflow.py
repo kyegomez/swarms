@@ -1,21 +1,21 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
-
-from swarms.artifacts.error_artifacts import ErrorArtifact
-from swarms.structs.task import BaseTask
 import concurrent.futures
+from typing import Any, Dict, List, Optional
 
+from swarms.artifacts.error_artifact import ErrorArtifact
+from swarms.structs.task import BaseTask
+from dataclasses import dataclass
+
+@dataclass
 class StringTask(BaseTask):
-    def __init__(
-        self,
-        task
-    ):
-        super().__init__()
-        self.task = task
+    task: str
     
     def execute(self) -> Any:
-        prompt = self.task_string.replace("{{ parent_input }}", self.parents[0].output if self.parents else "")
+        prompt = self.task_string.replace(
+            "{{ parent_input }}", self.parents[0].output if self.parents else ""
+        )
+
         response = self.structure.llm.run(prompt)
         self.output = response
         return response
@@ -24,7 +24,8 @@ class StringTask(BaseTask):
 
 class Workflow:
     """
-    Workflows are ideal for prescriptive processes that need to be executed sequentially. 
+    Workflows are ideal for prescriptive processes that need to be executed 
+    sequentially. 
     They string together multiple tasks of varying types, and can use Short-Term Memory 
     or pass specific arguments downstream.
 
