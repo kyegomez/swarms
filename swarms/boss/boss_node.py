@@ -11,8 +11,6 @@ from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import BabyAGI
 from pydantic import ValidationError
 
-
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ---------- Boss Node ----------
