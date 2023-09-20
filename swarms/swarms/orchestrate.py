@@ -9,7 +9,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 
 
-class Orchestrator(ABC):
+class Orchestrator:
     """
     The Orchestrator takes in an agent, worker, or boss as input 
     then handles all the logic for
@@ -94,7 +94,7 @@ class Orchestrator(ABC):
         self.executor = ThreadPoolExecutor(max_workers=len(agent_list))
 
         
-    @abstractmethod
+    # @abstractmethod
     def assign_task(
         self, 
         agent_id: int, 
@@ -143,7 +143,7 @@ class Orchestrator(ABC):
         return embedding
                 
     
-    @abstractmethod
+    # @abstractmethod
     def retrieve_results(self, agent_id: int) -> Any:
         """Retrieve results from a specific agent"""
 
@@ -159,7 +159,7 @@ class Orchestrator(ABC):
             logging.error(f"Failed to retrieve results from agent {agent_id}. Error {e}")
             raise
     
-    @abstractmethod
+    # @abstractmethod
     def update_vector_db(self, data) -> None:
         """Update the vector database"""
 
@@ -175,7 +175,7 @@ class Orchestrator(ABC):
             raise
 
 
-    @abstractmethod
+    # @abstractmethod
     def get_vector_db(self):
         """Retrieve the vector database"""
         return self.collection
@@ -242,7 +242,13 @@ class Orchestrator(ABC):
             ids=[f"{sender_id}_to_{receiver_id}"]
         )
 
-orchestrate = Orchestrator()
+from swarms.workers.worker import Worker
+
+orchestrate = Orchestrator(
+    Worker,
+    Worker,
+    task_queue=["what is your name"],
+)
 orchestrate.chat(
     sender_id=1,
     receiver_id=2,

@@ -4,8 +4,9 @@ from typing import Optional
 
 from langchain import OpenAI
 
-from swarms.boss.boss_node import BossNode
-from swarms.workers.worker_node import WorkerNode
+from swarms.boss.boss_node import Boss
+# from swarms.workers.worker_node import WorkerNode
+from swarms.workers.worker import Worker
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -38,14 +39,14 @@ class HierarchicalSwarm:
         self.logging_enabled = logging_enabled
         self.verbose = verbose
 
-        self.worker_node = WorkerNode(
+        self.worker_node = Worker(
             openai_api_key=self.openai_api_key,
             temperature=self.temperature,
             human_in_the_loop=self.human_in_the_loop,
             verbose=self.verbose
         )
 
-        self.boss_node = BossNode(
+        self.boss_node = Boss(
             api_key=self.openai_api_key,
             worker_node=self.worker_node,
             llm_class=OpenAI,
