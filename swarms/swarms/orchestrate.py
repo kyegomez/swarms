@@ -17,10 +17,10 @@ class Orchestrator(ABC):
     - task assignment,
     - and task compeletion.
 
-    And, the communication for millions of agents to communicate with eachother through
-    a vector database that each agent has access to communicate with.
+    And, the communication for millions of agents to chat with eachother through
+    a vector database that each agent has access to chat with.
 
-    Each LLM agent communicates with the orchestrator through a dedicated 
+    Each LLM agent chats with the orchestrator through a dedicated 
     communication layer. The orchestrator assigns tasks to each LLM agent,
     which the agents then complete and return. 
 
@@ -221,13 +221,13 @@ class Orchestrator(ABC):
             logging.error(f"An error occured in swarm: {e}")
             return None
     
-    def communicate(
+    def chat(
         self,
         sender_id: int,
         receiver_id: int,
         message: str
     ):
-        """Allows the agents to communicate with eachother thrught the vectordatabase"""
+        """Allows the agents to chat with eachother thrught the vectordatabase"""
 
         message_vector = self.embed(
             message,
@@ -242,3 +242,9 @@ class Orchestrator(ABC):
             ids=[f"{sender_id}_to_{receiver_id}"]
         )
 
+orchestrate = Orchestrator()
+orchestrate.chat(
+    sender_id=1,
+    receiver_id=2,
+    message="Hello, how are you "
+)
