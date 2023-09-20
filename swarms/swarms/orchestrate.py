@@ -4,10 +4,17 @@ import threading
 # from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List
+from enum import Enum
 
 import chromadb
 from chromadb.utils import embedding_functions
 
+
+class TaskStatus(Enum):
+    QUEUED = 1
+    RUNNING = 2
+    COMPLETED = 3
+    FAILED = 4
 
 class Orchestrator:
     """
@@ -71,7 +78,8 @@ class Orchestrator:
         task_queue: List[Any], 
         collection_name: str = "swarm",
         api_key: str = None,
-        model_name: str = None
+        model_name: str = None,
+        embed_func = None
     ):
         self.agent = agent
         self.agents = queue.Queue()
@@ -92,6 +100,8 @@ class Orchestrator:
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
         self.executor = ThreadPoolExecutor(max_workers=len(agent_list))
+        
+        self.embed_func = embed_func if embed_func else self.embed
 
         
     # @abstractmethod
