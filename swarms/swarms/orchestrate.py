@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 
 import chromadb
 from chromadb.utils import embedding_functions
-from swarms.workers.worker import Worker
+
 
 
 class Orchestrator:
@@ -245,14 +245,3 @@ class Orchestrator:
             documents=[message],
             ids=[f"{sender_id}_to_{receiver_id}"]
         )
-
-orchestrate = Orchestrator(
-    Worker,
-    Worker,
-    task_queue=["what is your name"],
-)
-orchestrate.chat(
-    sender_id=1,
-    receiver_id=2,
-    message="Hello, how are you "
-)
