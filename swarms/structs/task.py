@@ -28,7 +28,7 @@ class BaseTask(ABC):
         self.structure = None
 
     @property
-    @abstractmethod
+    # @abstractmethod
     def input(self):
         pass
 
@@ -125,7 +125,7 @@ class BaseTask(ABC):
         self.output = None
         return self
 
-    @abstractmethod
+    # @abstractmethod
     def run(self):
         pass
 

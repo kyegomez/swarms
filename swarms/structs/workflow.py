@@ -5,22 +5,20 @@ from typing import Any, Dict, List, Optional
 
 from swarms.artifacts.error_artifact import ErrorArtifact
 from swarms.structs.task import BaseTask
-from dataclasses import dataclass
 
-@dataclass
 class StringTask(BaseTask):
-    task: str
-    
+    def __init__(self, task):
+        super().__init__()
+        self.task = task
+
     def execute(self) -> Any:
-        prompt = self.task_string.replace(
+        prompt = self.task.replace(
             "{{ parent_input }}", self.parents[0].output if self.parents else ""
         )
 
-        response = self.structure.llm.run(prompt)
+        response = self.structure.llm(prompt)
         self.output = response
         return response
-
-
 
 class Workflow:
     """
