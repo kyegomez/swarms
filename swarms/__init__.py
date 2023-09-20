@@ -20,3 +20,7 @@ from swarms.workers.worker import Worker
 
 #workflows
 from swarms.structs.workflow import Workflow
+
+# swarms
+from swarms.swarms.orchestrate import Orchestrator
+from swarms.swarms.autoscaler import AutoScaler
