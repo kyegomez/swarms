@@ -17,7 +17,7 @@ from swarms.tools.autogpt import ChatOpenAI
 workflow = Workflow(ChatOpenAI)
 
 workflow.add("What's the weather in miami")
-workflow.add("Provide detauls for {{ parent_output }}")
+workflow.add("Provide details for {{ parent_output }}")
 workflow.add("Summarize the above information: {{ parent_output}}")
 
 workflow.run()
