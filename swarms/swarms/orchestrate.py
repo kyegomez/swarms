@@ -9,7 +9,6 @@ import chromadb
 from chromadb.utils import embedding_functions
 
 
-
 class Orchestrator:
     """
     The Orchestrator takes in an agent, worker, or boss as input 
@@ -263,5 +262,4 @@ class Orchestrator:
         self.executor = ThreadPoolExecutor(
             max_workers=self.agents.qsize()
         )
-    
     
