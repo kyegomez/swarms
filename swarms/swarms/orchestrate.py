@@ -245,3 +245,23 @@ class Orchestrator:
             documents=[message],
             ids=[f"{sender_id}_to_{receiver_id}"]
         )
+    
+    def add_agents(
+        self,
+        num_agents: int
+    ):
+        for _ in range(num_agents):
+            self.agents.put(self.agent())
+        self.executor = ThreadPoolExecutor(
+            max_workers=self.agents.qsize()
+        )
+    
+    def remove_agents(self, num_agents):
+        for _ in range(num_agents):
+            if not self.agents.empty():
+                self.agents.get()
+        self.executor = ThreadPoolExecutor(
+            max_workers=self.agents.qsize()
+        )
+    
+    
