@@ -220,4 +220,25 @@ class Orchestrator(ABC):
         except Exception as e:
             logging.error(f"An error occured in swarm: {e}")
             return None
+    
+    def communicate(
+        self,
+        sender_id: int,
+        receiver_id: int,
+        message: str
+    ):
+        """Allows the agents to communicate with eachother thrught the vectordatabase"""
+
+        message_vector = self.embed(
+            message,
+            self.api_key,
+            self.model_name
+        )
+
+        #store the mesage in the vector database
+        self.collection.add(
+            embeddings=[message_vector],
+            documents=[message],
+            ids=[f"{sender_id}_to_{receiver_id}"]
+        )
 
