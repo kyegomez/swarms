@@ -1,12 +1,13 @@
 import logging
 import queue
 import threading
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List
 
 import chromadb
 from chromadb.utils import embedding_functions
+from swarms.workers.worker import Worker
 
 
 class Orchestrator:
@@ -180,7 +181,10 @@ class Orchestrator:
         """Retrieve the vector database"""
         return self.collection
 
-    def append_to_db(self, result: str):
+    def append_to_db(
+        self, 
+        result: str
+    ):
         """append the result of the swarm to a specifici collection in the database"""
 
         try:
@@ -241,8 +245,6 @@ class Orchestrator:
             documents=[message],
             ids=[f"{sender_id}_to_{receiver_id}"]
         )
-
-from swarms.workers.worker import Worker
 
 orchestrate = Orchestrator(
     Worker,

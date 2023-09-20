@@ -5,7 +5,6 @@ from typing import Optional
 from langchain import OpenAI
 
 from swarms.boss.boss_node import Boss
-# from swarms.workers.worker_node import WorkerNode
 from swarms.workers.worker import Worker
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
