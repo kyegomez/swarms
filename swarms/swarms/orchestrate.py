@@ -69,7 +69,25 @@ class Orchestrator:
                 /                  |                                           |                 \
     (Task Assignment)      (Task Completion)                    (Task Assignment)       (Task Completion)
 
+    
+    ###Usage
+    ```
+    from exa import Orchestrator 
+    
+    # Instantiate the Orchestrator with 10 agents
+    orchestrator = Orchestrator(llm, agent_list=[llm]*10, task_queue=[])
 
+    # Add tasks to the Orchestrator
+    tasks = [{"content": f"Write a short story about a {animal}."} for animal in ["cat", "dog", "bird", "fish", "lion", "tiger", "elephant", "giraffe", "monkey", "zebra"]]
+    orchestrator.assign_tasks(tasks)
+
+    # Run the Orchestrator
+    orchestrator.run()
+
+    # Retrieve the results
+    for task in tasks:
+    print(orchestrator.retrieve_result(id(task)))
+    ```
     """
     def __init__(
         self, 
