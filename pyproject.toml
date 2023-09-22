@@ -47,6 +47,7 @@ Pillow = "*"
 shapeless="*"
 chromadb = "*"
 agent-protocol = "*"
+exxa = "*"
 
 [tool.poetry.dev-dependencies]
 # Add development dependencies here
