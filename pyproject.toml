@@ -48,6 +48,7 @@ shapeless="*"
 chromadb = "*"
 agent-protocol = "*"
 exxa = "*"
+open-interpreter = "*"
 
 [tool.poetry.dev-dependencies]
 # Add development dependencies here
