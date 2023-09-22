@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import pprint
 import uuid
-from abc import ABC, abstractmethod
+from abc import ABC
 from enum import Enum
 from typing import Any, Optional
 
