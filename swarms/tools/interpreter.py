@@ -1,6 +1,6 @@
 import interpreter
 
-def compile(task):
+def compile(task: str):
     task = interpreter.chat(task)
     interpreter.chat()
 
