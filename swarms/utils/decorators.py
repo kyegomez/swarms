@@ -1,8 +1,9 @@
-import time
+import functools
 import logging
-import threading 
-import functools 
+import threading
+import time
 import warnings
+
 
 def log_decorator(func):
     def wrapper(*args, **kwargs):
