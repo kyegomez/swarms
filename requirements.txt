@@ -21,6 +21,8 @@ shapeless
 agent-protocol
 chromadb
 exxa
+open-interpreter
+
 
 mkdocs
 mkdocs-material

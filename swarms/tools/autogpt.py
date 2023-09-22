@@ -140,4 +140,11 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 
 # # @tool
 # code_intepret = CodeInterpreter()
+import interpreter
+
+
+@tool
+def compile(task: str):
+    task = interpreter.chat(task)
+    interpreter.chat()
 
