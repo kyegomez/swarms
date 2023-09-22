@@ -57,7 +57,7 @@ class Orchestrator:
 
     Objective = "Make a business website for a marketing consultancy"
 
-    Swarms = (Swarms(orchestrated, auto=True, Objective))
+    Swarms = Swarms(orchestrated, auto=True, Objective))
     ```
 
     In terms of architecture, the swarm might look something like this:
@@ -97,7 +97,8 @@ class Orchestrator:
         collection_name: str = "swarm",
         api_key: str = None,
         model_name: str = None,
-        embed_func = None
+        embed_func = None,
+        worker = None
     ):
         self.agent = agent
         self.agents = queue.Queue()
@@ -258,7 +259,21 @@ class Orchestrator:
         receiver_id: int,
         message: str
     ):
-        """Allows the agents to chat with eachother thrught the vectordatabase"""
+        """
+        
+        Allows the agents to chat with eachother thrught the vectordatabase
+
+        # Instantiate the Orchestrator with 10 agents
+        orchestrator = Orchestrator(
+            llm, 
+            agent_list=[llm]*10, 
+            task_queue=[]
+        )
+
+        # Agent 1 sends a message to Agent 2
+        orchestrator.chat(sender_id=1, receiver_id=2, message="Hello, Agent 2!")
+            
+        """
 
         message_vector = self.embed(
             message,
@@ -267,11 +282,18 @@ class Orchestrator:
         )
 
         #store the mesage in the vector database
-        self.collection.add(
+        added = self.collection.add(
             embeddings=[message_vector],
             documents=[message],
             ids=[f"{sender_id}_to_{receiver_id}"]
         )
+
+        result = self.run(
+            objective=f"chat with agent {receiver_id} about {message}"
+        )
+
+        
+
     
     def add_agents(
         self,
