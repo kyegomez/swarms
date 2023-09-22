@@ -20,6 +20,7 @@ duckduckgo-search
 shapeless
 agent-protocol
 chromadb
+exxa
 
 mkdocs
 mkdocs-material
