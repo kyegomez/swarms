@@ -1,1 +1,1 @@
-from exa import Inference, GPTQInference, Mult
+from exa import Inference, GPTQInference, MultiModalInference
