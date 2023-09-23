@@ -157,9 +157,13 @@ def compile(task: str):
     ⚠️ Note: You'll be asked to approve code before it's run.
     """
 
-    task = interpreter.chat(task)
+    task = interpreter.chat(task, return_messages=True)
     interpreter.chat()
-    interpreter.reset()
+    interpreter.reset(task)
+    
+    os.environ["INTERPRETER_CLI_AUTO_RUN"] = "True"
+    os.environ["INTERPRETER_CLI_FAST_MODE"] = "True"
+    os.environ["INTERPRETER_CLI_DEBUG"] = "True"
 
 
 
