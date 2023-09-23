@@ -17,7 +17,6 @@ faiss-cpu
 openai
 google-generativeai
 duckduckgo-search
-shapeless
 agent-protocol
 chromadb
 exxa
