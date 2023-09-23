@@ -12,7 +12,8 @@ from swarms.tools.autogpt import (
     process_csv,
     # web_search,
     query_website_tool,
-    compile
+    compile, 
+    VQAinference
 )
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
@@ -79,7 +80,8 @@ class Worker:
             #email
             #pdf
             # Tool(name="Goal Decomposition Tool", func=todo_chain.run, description="Use Case: Decompose ambitious goals into as many explicit and well defined tasks for an AI agent to follow. Rules and Regulations, don't use this tool too often only in the beginning when the user grants you a mission."),
-            compile
+            compile,
+            VQAinference
         ]
         if external_tools is not None:
             self.tools.extend(external_tools)
