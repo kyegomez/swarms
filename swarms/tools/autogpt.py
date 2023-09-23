@@ -160,10 +160,10 @@ def compile(task: str):
     task = interpreter.chat(task, return_messages=True)
     interpreter.chat()
     interpreter.reset(task)
-    
-    os.environ["INTERPRETER_CLI_AUTO_RUN"] = "True"
-    os.environ["INTERPRETER_CLI_FAST_MODE"] = "True"
-    os.environ["INTERPRETER_CLI_DEBUG"] = "True"
+
+    os.environ["INTERPRETER_CLI_AUTO_RUN"] = True
+    os.environ["INTERPRETER_CLI_FAST_MODE"] = True
+    os.environ["INTERPRETER_CLI_DEBUG"] = True
 
 
 
