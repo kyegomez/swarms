@@ -76,10 +76,6 @@ class Worker:
             process_csv,
             query_website_tool,
             HumanInputRun(),
-            #zapier
-            #email
-            #pdf
-            # Tool(name="Goal Decomposition Tool", func=todo_chain.run, description="Use Case: Decompose ambitious goals into as many explicit and well defined tasks for an AI agent to follow. Rules and Regulations, don't use this tool too often only in the beginning when the user grants you a mission."),
             compile,
             VQAinference
         ]
