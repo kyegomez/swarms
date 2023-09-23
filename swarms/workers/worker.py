@@ -10,7 +10,6 @@ from swarms.tools.autogpt import (
     ReadFileTool,
     WriteFileTool,
     process_csv,
-    # web_search,
     query_website_tool,
     compile, 
     VQAinference
@@ -41,9 +40,11 @@ class Worker:
 
         
         try:
-            self.llm = ChatOpenAI(model_name=model_name, 
-                                openai_api_key=self.openai_api_key, 
-                                temperature=self.temperature)
+            self.llm = ChatOpenAI(
+                model_name=model_name, 
+                openai_api_key=self.openai_api_key, 
+                temperature=self.temperature
+            )
         except Exception as error:
             raise RuntimeError(f"Error Initializing ChatOpenAI: {error}")    
         
