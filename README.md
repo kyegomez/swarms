@@ -1,12 +1,5 @@
 ![Swarming banner icon](images/swarmsbanner.png)
 
-                                              
-  ________  _  _______ _______  _____   ______
- /  ___/\ \/ \/ /\__  \\_  __ \/     \ /  ___/
- \___ \  \     /  / __ \|  | \/  Y Y  \\___ \ 
-/____  >  \/\_/  (____  /__|  |__|_|  /____  >
-     \/               \/            \/     \/ 
-
 <div align="center">
 
 Swarms is a modular framework that enables reliable and useful multi-agent collaboration at scale to automate real-world tasks.
