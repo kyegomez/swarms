@@ -1,5 +1,6 @@
 #swarms
-from
+from swarms.logo import logo
+print(logo)
 #from swarms.orchestrator.autoscaler import AutoScaler
 
 # worker
