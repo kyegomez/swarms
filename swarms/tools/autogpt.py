@@ -10,18 +10,16 @@ from langchain.agents import tool
 from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain.docstore.document import Document
-from langchain.memory.chat_message_histories import FileChatMessageHistory
-from langchain.tools.human.tool import HumanInputRun
 
 ROOT_DIR = "./data/"
 
 from langchain.chains.qa_with_sources.loading import BaseCombineDocumentsChain
 from langchain.chat_models import ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.tools import BaseTool, DuckDuckGoSearchRun
-from langchain.tools.file_management.read import ReadFileTool
-from langchain.tools.file_management.write import WriteFileTool
+from langchain.tools import BaseTool
 from pydantic import Field
+
+from swarms.utils.logger import logger
 
 llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
 
@@ -160,4 +158,49 @@ def compile(task: str):
     task = interpreter.chat(task)
     interpreter.chat()
     interpreter.reset()
+
+
+
+
+
+# mm model workers
+import os
+
+import torch
+from PIL import Image
+from transformers import (
+    BlipForQuestionAnswering,
+    BlipProcessor,
+)
+
+@tool
+def VQAinference(self, inputs):
+    """
+    Answer Question About The Image, VQA Multi-Modal Worker agent
+    description="useful when you need an answer for a question based on an image. "
+    "like: what is the background color of the last image, how many cats in this figure, what is in this figure. "
+    "The input to this tool should be a comma separated string of two, representing the image_path and the question",
+    
+    """
+    device = "cuda:0"
+    torch_dtype = torch.float16 if "cuda" in device else torch.float32
+    processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
+    model = BlipForQuestionAnswering.from_pretrained(
+        "Salesforce/blip-vqa-base", torch_dtype=torch_dtype
+    ).to(device)
+
+    image_path, question = inputs.split(",")
+    raw_image = Image.open(image_path).convert("RGB")
+    inputs = processor(raw_image, question, return_tensors="pt").to(
+        device, torch_dtype
+    )
+    out = model.generate(**inputs)
+    answer = processor.decode(out[0], skip_special_tokens=True)
+
+    logger.debug(
+        f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input Question: {question}, "
+        f"Output Answer: {answer}"
+    )
+
+    return answer
 
