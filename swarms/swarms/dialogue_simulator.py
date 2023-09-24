@@ -1,5 +1,3 @@
-from typing import List, Callable
-
 
 class DialogueSimulator:
     def __init__(
@@ -17,8 +15,10 @@ class DialogueSimulator:
         
     def start(self, name: str, message: str):
         #init conv with a message from name
+        prompt = f"Name {name} and message: {message}"
+
         for agent in self.agents:
-            agent.receive(name, message)
+            agent.run(prompt)
         
         #increment time
         self._step += 1

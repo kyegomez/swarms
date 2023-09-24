@@ -39,7 +39,7 @@ class Worker:
         llm=None,
         openai: bool = True,
     ):
-        self.openai_api_key = openai_api_key
+        self.openai_api_key = openai_api_keyd
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
 
@@ -104,7 +104,7 @@ class Worker:
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
             embedding_size = 4096
             index = faiss.IndexFlatL2(embedding_size)
-            
+
             self.vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as error:
             raise RuntimeError(f"Error setting up memory perhaps try try tuning the embedding size: {error}")
