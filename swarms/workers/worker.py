@@ -8,11 +8,11 @@ from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.tools.autogpt import (
     ReadFileTool,
+    VQAinference,
     WriteFileTool,
+    compile,
     process_csv,
     query_website_tool,
-    compile, 
-    VQAinference
 )
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
@@ -57,6 +57,13 @@ class Worker:
         self.setup_tools(external_tools)
         self.setup_memory()
         self.setup_agent()
+    
+    def reset(self):
+        self.message_history = ["Here is the conversation so far"]
+    
+    def receieve(self, name: str, message: str) -> None:
+        self.message_history.append(f"{name}: {message}")
+
     
     @log_decorator
     @error_decorator
