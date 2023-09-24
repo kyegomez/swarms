@@ -20,7 +20,10 @@ ROOT_DIR = "./data/"
 
 
 class Worker:
-    """Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on"""
+    """
+    Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, 
+    it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on
+    """
     @log_decorator
     @error_decorator
     @timing_decorator
@@ -58,10 +61,6 @@ class Worker:
             
         self.ai_name = ai_name
         self.ai_role = ai_role
-
-        # self.embedding_size = embedding_size
-        # # self.k = k
-
         self.setup_tools(external_tools)
         self.setup_memory()
         self.setup_agent()
@@ -103,8 +102,9 @@ class Worker:
     def setup_memory(self):
         try:
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = 1536
+            embedding_size = 4096
             index = faiss.IndexFlatL2(embedding_size)
+            
             self.vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         except Exception as error:
             raise RuntimeError(f"Error setting up memory perhaps try try tuning the embedding size: {error}")
