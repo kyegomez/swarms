@@ -39,7 +39,7 @@ class Worker:
         llm=None,
         openai: bool = True,
     ):
-        self.openai_api_key = openai_api_keyd
+        self.openai_api_key = openai_api_key
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
 
