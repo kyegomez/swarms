@@ -1,4 +1,3 @@
-
 class DialogueSimulator:
     def __init__(
         self,
