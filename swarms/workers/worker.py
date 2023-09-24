@@ -32,22 +32,30 @@ class Worker:
         ai_role="Worker in a swarm",
         external_tools = None,
         human_in_the_loop=False,
-        temperature=0.5
+        temperature=0.5,
+        llm=None,
+        openai: bool = True,
     ):
         self.openai_api_key = openai_api_key
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
 
         
-        try:
-            self.llm = ChatOpenAI(
+        if self.openai is True:
+            try:
+                self.llm = ChatOpenAI(
+                    model_name=model_name, 
+                    openai_api_key=self.openai_api_key, 
+                    temperature=self.temperature
+                )
+            except Exception as error:
+                raise RuntimeError(f"Error Initializing ChatOpenAI: {error}")    
+        else:
+            self.llm = llm(
                 model_name=model_name, 
-                openai_api_key=self.openai_api_key, 
                 temperature=self.temperature
             )
-        except Exception as error:
-            raise RuntimeError(f"Error Initializing ChatOpenAI: {error}")    
-        
+            
         self.ai_name = ai_name
         self.ai_role = ai_role
 
