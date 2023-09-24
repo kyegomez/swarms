@@ -37,6 +37,20 @@ class Worker:
     - `openai` (bool): If True, use the OpenAI language model; otherwise, use `llm` (default: True).
 
     
+    #Usage 
+    ```
+    from swarms import Worker
+
+    node = Worker(
+        ai_name="Optimus Prime",
+
+    )
+
+    task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+    response = node.run(task)
+    print(response)
+    ```
+
     """
     @log_decorator
     @error_decorator
