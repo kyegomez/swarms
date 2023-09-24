@@ -23,6 +23,20 @@ class Worker:
     """
     Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, 
     it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on
+
+
+    Parameters:
+    - `model_name` (str): The name of the language model to be used (default: "gpt-4").
+    - `openai_api_key` (str): The OpenAI API key (optional).
+    - `ai_name` (str): The name of the AI worker.
+    - `ai_role` (str): The role of the AI worker.
+    - `external_tools` (list): List of external tools (optional).
+    - `human_in_the_loop` (bool): Enable human-in-the-loop interaction (default: False).
+    - `temperature` (float): The temperature parameter for response generation (default: 0.5).
+    - `llm` (ChatOpenAI): Pre-initialized ChatOpenAI model instance (optional).
+    - `openai` (bool): If True, use the OpenAI language model; otherwise, use `llm` (default: True).
+
+    
     """
     @log_decorator
     @error_decorator
