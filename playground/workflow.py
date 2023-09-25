@@ -1,6 +1,11 @@
-from swarms.structs.workflow import Workflow
 
-workflow = Workflow()
+from swarms import Workflow
+from swarms.tools.autogpt import ChatOpenAI
 
-workflow.add('Find 50 ceos in linkedin in agriculture ')
+workflow = Workflow(ChatOpenAI)
 
+workflow.add("What's the weather in miami")
+workflow.add("Provide details for {{ parent_output }}")
+workflow.add("Summarize the above information: {{ parent_output}}")
+
+workflow.run()
