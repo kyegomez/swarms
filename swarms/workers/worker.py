@@ -1,4 +1,4 @@
-import concurrent.futures
+# import concurrent.futures
 import faiss
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
@@ -120,24 +120,24 @@ class Worker:
     def add(self, task, priority=0):
         self.task_queue.append((priority, task))
     
-    def process_task(self, task):
-        try:
-            result = self.agent.run([task])
-            return result
-        except Exception as error:
-            error_message = f"Error while running task: {str(error)}"
-            return error_message
+    # def process_task(self, task):
+    #     try:
+    #         result = self.agent.run([task])
+    #         return result
+    #     except Exception as error:
+    #         error_message = f"Error while running task: {str(error)}"
+    #         return error_message
         
-    def process_tasks_parallel(self):
-        futures = [
-            self.executor.submit(
-                self.process_task,
-                task
-            ) for _, task in self.task_queue
-        ]
-        concurrent.futures.wait(futures)
-        results = [future.result() for future in futures]
-        return results
+    # def process_tasks_parallel(self):
+    #     futures = [
+    #         self.executor.submit(
+    #             self.process_task,
+    #             task
+    #         ) for _, task in self.task_queue
+    #     ]
+    #     concurrent.futures.wait(futures)
+    #     results = [future.result() for future in futures]
+    #     return results
 
     
     @log_decorator
