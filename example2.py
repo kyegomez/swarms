@@ -3,7 +3,11 @@ from swarms import Worker
 
 
 class MultiAgentDebate:
-    def __init__(self, agents: List[Worker], selection_func: Callable[[int, List[Worker]], int]):
+    def __init__(
+        self, 
+        agents: List[Worker], 
+        selection_func: Callable[[int, List[Worker]], int]
+    ):
         self.agents = agents
         self.selection_func = selection_func
 
