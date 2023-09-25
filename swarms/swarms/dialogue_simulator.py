@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Callable
 from swarms.workers.worker import Worker
 
 
