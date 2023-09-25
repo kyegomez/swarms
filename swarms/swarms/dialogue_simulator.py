@@ -12,9 +12,9 @@ class DialogueSimulator:
         self._step = 0
         self.select_next_speaker = selection_func
     
-    # def reset(self):
-    #     for agent in self.agents:
-    #         agent.reset()
+    def reset(self):
+        for agent in self.agents:
+            agent.reset()
         
     def start(self, name: str, message: str):
         #init conv with a message from name
