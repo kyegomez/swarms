@@ -12,7 +12,7 @@ max_iters = 6
 n = 0
 
 while n < max_iters:
-    name, message = simulator.step()
+    name, message = collab.step()
     print(f"({name}): {message}")
     print("\n")
     n += 1
