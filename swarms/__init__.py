@@ -19,7 +19,7 @@ from swarms.workers.worker import Worker
 
 
 
-#workflows
+#structs
 from swarms.structs.workflow import Workflow
 
 # swarms
