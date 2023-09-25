@@ -26,6 +26,12 @@ class DialogueSimulator:
         #increment time
         self._step += 1
     
+    def inject(self, name: str, message: str):
+        for agent in self.agents:
+            agent.receieve(name, message)
+        
+        self._step += 1
+    
     def step(self) -> tuple[str, str]:
         #choose next speaker
         speaker_idx = self.select_next_speaker(
