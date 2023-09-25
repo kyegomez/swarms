@@ -30,7 +30,7 @@ class DialogueSimulator:
         #choose next speaker
         speaker_idx = self.select_next_speaker(
             self._step,
-            self.agent
+            self.agents
         )
         speaker = self.agents[speaker_idx]
 
