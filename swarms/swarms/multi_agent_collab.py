@@ -90,8 +90,8 @@ class MultiAgentCollaboration:
     def run(self, max_iters: int = 10):
         n = 0
         self.reset()
-        self.inject("Debate Moderator", specified_topic)
-        print(f"(Debate Moderator): {specified_topic}")
+        self.inject("Debate Moderator")
+        print("(Debate Moderator): ")
         print("\n")
 
         while n < max_iters:
