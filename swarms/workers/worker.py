@@ -114,7 +114,7 @@ class Worker:
         """
         self.message_history.append(f"{name}: {message}")
 
-    def send(self, ) -> str:
+    def send(self) -> str:
         self.agent.run(self.message_history)
 
     def add(self, task, priority=0):
