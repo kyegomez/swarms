@@ -35,7 +35,7 @@ class DialogueSimulator:
         speaker = self.agents[speaker_idx]
 
         #2. next speaker ends message
-        message = speaker.send()
+        message = speaker.run()
 
         #everyone receives messages
         for receiver in self.agents:
