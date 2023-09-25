@@ -5,7 +5,7 @@ worker2 = Worker(ai_name="Optimus Prime", openai_api_key="")
 
 collab = DialogueSimulator(
     [worker1, worker2], 
-    DialogueSimulator.select_next_speaker
+    # DialogueSimulator.select_next_speaker
 )
 
 collab.run(
