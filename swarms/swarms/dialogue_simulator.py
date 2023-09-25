@@ -1,9 +1,10 @@
+from typing import List
 from swarms.swarms.dialogue_simulator import Worker
 
 class DialogueSimulator:
     def __init__(
         self,
-        agents[Worker],
+        agents: List[Worker],
         selection_func
     ):
         self.agents = agents
