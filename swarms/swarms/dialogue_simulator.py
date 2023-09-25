@@ -1,5 +1,5 @@
 from typing import List
-from swarms.swarms.worker import Worker
+from swarms.workers.worker import Worker
 
 
 class DialogueSimulator:
