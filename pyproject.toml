@@ -22,7 +22,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.8.1"
 transformers = "*"
 openai = "*"
 langchain = "0.0.240"
