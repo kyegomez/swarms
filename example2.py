@@ -1,19 +1,28 @@
-from typing import List
+from typing import List, Callable
 from swarms import Worker
 
 class MultiAgentDebate:
-    def __init__(self, agents: List[Worker]):
+    def __init__(self, agents: List[Worker], selection_func: Callable[[int, List[Worker]], int]):
         self.agents = agents
+        self.selection_func = selection_func
 
     def run(self, task: str):
         results = []
-        for agent in self.agents:
-            response = agent.run(task)
+        for i in range(len(self.agents)):
+            # Select the speaker based on the selection function
+            speaker_idx = self.selection_func(i, self.agents)
+            speaker = self.agents[speaker_idx]
+            response = speaker.run(task)
             results.append({
-                'agent': agent.ai_name,
+                'agent': speaker.ai_name,
                 'response': response
             })
         return results
+
+# Define a selection function
+def select_speaker(step: int, agents: List[Worker]) -> int:
+    # This function selects the speaker in a round-robin fashion
+    return step % len(agents)
 
 # Initialize agents
 agents = [
@@ -22,8 +31,8 @@ agents = [
     Worker(openai_api_key="", ai_name="Megatron")
 ]
 
-# Initialize multi-agent debate
-debate = MultiAgentDebate(agents)
+# Initialize multi-agent debate with the selection function
+debate = MultiAgentDebate(agents, select_speaker)
 
 # Run task
 task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
