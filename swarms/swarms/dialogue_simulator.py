@@ -1,57 +1,24 @@
-from typing import List, Callable
+from typing import List
 from swarms.workers.worker import Worker
 
-
 class DialogueSimulator:
-    def __init__(
-        self,
-        agents: List[Worker],
-        selection_func: Callable[[int, List[Worker]], int],
-    ):
+    def __init__(self, agents: List[Worker]):
         self.agents = agents
-        self._step = 0
-        self.select_next_speaker = selection_func
-    
-    def reset(self):
-        for agent in self.agents:
-            agent.reset()
-        
-    def start(self, name: str, message: str):
-        #init conv with a message from name
-        prompt = f"Name {name} and message: {message}"
 
-        for agent in self.agents:
-            agent.run(prompt)
-        
-        #increment time
-        self._step += 1
-    
-    def inject(self, name: str, message: str):
-        for agent in self.agents:
-            agent.receieve(name, message)
-        
-        self._step += 1
-    
-    def step(self) -> tuple[str, str]:
-        #choose next speaker
-        speaker_idx = self.select_next_speaker(
-            self._step,
-            self.agents
-        )
-        speaker = self.agents[speaker_idx]
+    def run(self, max_iters: int, name: str = None, message: str = None):
+        step = 0
+        if name and message:
+            prompt = f"Name {name} and message: {message}"
+            for agent in self.agents:
+                agent.run(prompt)
+            step += 1
 
-        #2. next speaker ends message
-        message = speaker.run()
-
-        #everyone receives messages
-        for receiver in self.agents:
-            receiver.receive(speaker.name, message)
-        
-        #increment time
-        self._step += 1
-
-        return speaker.name, message
-    
-    def select_next_speaker(step: int, agents) -> int:
-        idx = (step) % len(agents)
-        return idx
+        while step < max_iters:
+            speaker_idx = step % len(self.agents)
+            speaker = self.agents[speaker_idx]
+            speaker_message = speaker.run()
+            for receiver in self.agents:
+                receiver.receive(speaker.name, speaker_message)
+            print(f"({speaker.name}): {speaker_message}")
+            print("\n")
+            step += 1
