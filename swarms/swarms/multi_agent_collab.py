@@ -11,7 +11,6 @@ bid_parser = BidOutputParser(
     regex=r"<(\d+)>", output_keys=["bid"], default_output_key="bid"
 )
 
-# specified_topic = ChatOpenAI(temperature=1.0)(topic_specifier_prompt).content
 
 #main
 class MultiAgentCollaboration:
