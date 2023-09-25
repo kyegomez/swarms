@@ -180,7 +180,7 @@ class Worker:
         """
         try:
             embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            embedding_size = 4096
+            embedding_size = 1892
             index = faiss.IndexFlatL2(embedding_size)
 
             self.vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
