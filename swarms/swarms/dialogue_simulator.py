@@ -1,7 +1,9 @@
+from swarms.swarms.dialogue_simulator import Worker
+
 class DialogueSimulator:
     def __init__(
         self,
-        agents,
+        agents[Worker],
         selection_func
     ):
         self.agents = agents
