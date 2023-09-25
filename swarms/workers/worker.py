@@ -63,13 +63,13 @@ class Worker:
         external_tools = None,
         human_in_the_loop=False,
         temperature=0.5,
-        llm=None,
-        openai: bool = True,
+        # llm=None,
+        # openai: bool = True,
     ):
         self.openai_api_key = openai_api_key
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
-        self.openai = openai
+        # self.openai = openai
 
         
         # if self.openai is True:
