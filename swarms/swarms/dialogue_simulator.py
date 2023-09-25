@@ -21,9 +21,12 @@ class DialogueSimulator:
         while step < max_iters:
             speaker_idx = step % len(self.agents)
             speaker = self.agents[speaker_idx]
-            speaker_message = speaker.run()
+            speaker_message = speaker.run(prompt)
+
             for receiver in self.agents:
-                receiver.receive(speaker.name, speaker_message)
+                message_history = f"Speaker Name: {speaker.name} and message: {speake_message}"
+                receiver.run(message_history)
+
             print(f"({speaker.name}): {speaker_message}")
             print("\n")
             step += 1
