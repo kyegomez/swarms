@@ -1,25 +1,21 @@
-import enum
-import os
-from pathlib import Path
-import sys
-import time
-import shutil
 import argparse
 import asyncio
+import enum
+import logging
+import os
 import re
-from typing import List, Optional, Callable, Any
+import shutil
+import sys
+import time
+from pathlib import Path
+from typing import Any, Callable, List, Optional
 
 import openai
-from openai_function_call import openai_function
-from tenacity import retry, stop_after_attempt, wait_random_exponential
-import logging
-
-from smol_dev.prompts import plan, specify_file_paths, generate_code_sync
-from smol_dev.utils import generate_folder, write_file
-
 from agent_protocol import Agent, Step, Task
-
-
+from openai_function_call import openai_function
+from smol_dev.prompts import generate_code_sync, plan, specify_file_paths
+from smol_dev.utils import generate_folder, write_file
+from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 
 class DeveloperAgent:
