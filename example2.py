@@ -8,6 +8,7 @@ class MultiAgentDebate:
 
     def run(self, task: str):
         results = []
+
         for i in range(len(self.agents)):
             # Select the speaker based on the selection function
             speaker_idx = self.selection_func(i, self.agents)
@@ -25,10 +26,14 @@ def select_speaker(step: int, agents: List[Worker]) -> int:
     return step % len(agents)
 
 # Initialize agents
+worker1 = Worker(openai_api_key="", ai_name="Optimus Prime")
+worker2 = Worker(openai_api_key="", ai_name="Bumblebee")
+worker3 = Worker(openai_api_key="", ai_name="Megatron")
+
 agents = [
-    Worker(openai_api_key="", ai_name="Optimus Prime"),
-    Worker(openai_api_key="", ai_name="Bumblebee"),
-    Worker(openai_api_key="", ai_name="Megatron")
+    worker1,
+    worker2,
+    worker3
 ]
 
 # Initialize multi-agent debate with the selection function
