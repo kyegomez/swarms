@@ -115,7 +115,7 @@ class Worker:
         self.message_history.append(f"{name}: {message}")
 
     def send(self) -> str:
-        self.agent.run(self.message_history)
+        self.agent.run(task=self.message_history)
 
     def add(self, task, priority=0):
         self.task_queue.append((priority, task))
