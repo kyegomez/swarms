@@ -51,9 +51,9 @@ class Worker:
     ```
 
     """
-    @log_decorator
-    @error_decorator
-    @timing_decorator
+    # @log_decorator
+    # @error_decorator
+    # @timing_decorator
     def __init__(
         self, 
         model_name="gpt-4", 
@@ -140,9 +140,9 @@ class Worker:
     #     return results
 
     
-    @log_decorator
-    @error_decorator
-    @timing_decorator
+    # @log_decorator
+    # @error_decorator
+    # @timing_decorator
     def setup_tools(self, external_tools):
         """
         Set up tools for the worker.
@@ -205,9 +205,9 @@ class Worker:
         except Exception as error:
             raise RuntimeError(f"Error setting up agent: {error}")
     
-    @log_decorator
-    @error_decorator
-    @timing_decorator
+    # @log_decorator
+    # @error_decorator
+    # @timing_decorator
     def run(self, task):
         """
         Run the autonomous agent on a given task.
@@ -224,9 +224,9 @@ class Worker:
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")
     
-    @log_decorator
-    @error_decorator
-    @timing_decorator
+    # @log_decorator
+    # @error_decorator
+    # @timing_decorator
     def __call__(self, task):
         """
         Make the worker callable to run the agent on a given task.
