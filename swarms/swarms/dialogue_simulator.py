@@ -5,7 +5,12 @@ class DialogueSimulator:
     def __init__(self, agents: List[Worker]):
         self.agents = agents
 
-    def run(self, max_iters: int, name: str = None, message: str = None):
+    def run(
+        self, 
+        max_iters: int, 
+        name: str = None, 
+        message: str = None
+    ):
         step = 0
         if name and message:
             prompt = f"Name {name} and message: {message}"
