@@ -69,22 +69,23 @@ class Worker:
         self.openai_api_key = openai_api_key
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
+        self.openai = openai
 
         
-        if self.openai is True:
-            try:
-                self.llm = ChatOpenAI(
-                    model_name=model_name, 
-                    openai_api_key=self.openai_api_key, 
-                    temperature=self.temperature
-                )
-            except Exception as error:
-                raise RuntimeError(f"Error Initializing ChatOpenAI: {error}")    
-        else:
-            self.llm = llm(
-                model_name=model_name, 
-                temperature=self.temperature
-            )
+        # if self.openai is True:
+        #     try:
+        self.llm = ChatOpenAI(
+            model_name=model_name, 
+            openai_api_key=self.openai_api_key, 
+            temperature=self.temperature
+        )
+            # except Exception as error:
+            #     raise RuntimeError(f"Error Initializing ChatOpenAI: {error}")    
+        # else:
+        #     self.llm = llm(
+        #         model_name=model_name, 
+        #         temperature=self.temperature
+        #     )
             
         self.ai_name = ai_name
         self.ai_role = ai_role
