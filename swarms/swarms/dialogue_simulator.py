@@ -24,7 +24,7 @@ class DialogueSimulator:
             speaker_message = speaker.run(prompt)
 
             for receiver in self.agents:
-                message_history = f"Speaker Name: {speaker.name} and message: {speake_message}"
+                message_history = f"Speaker Name: {speaker.name} and message: {speaker_message}"
                 receiver.run(message_history)
 
             print(f"({speaker.name}): {speaker_message}")
