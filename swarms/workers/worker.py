@@ -93,8 +93,8 @@ class Worker:
         self.setup_memory()
         self.setup_agent()
 
-        self.task_queue = []
-        self.executor = concurrent.futures.ThreadPoolExecutor()
+        # self.task_queue = []
+        # self.executor = concurrent.futures.ThreadPoolExecutor()
         
 
     
