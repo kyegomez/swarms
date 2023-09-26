@@ -1,55 +1,28 @@
 from concurrent.futures import ThreadPoolExecutor
-
-from tabulate import tabulate
 from termcolor import colored
-
-from swarms.workers.worker import Worker
+from tabulate import tabulate
+import anthropic
+from langchain.llms import Anthropic
 
 class GodMode:
-    def __init__(
-        self, 
-        num_workers, 
-        num_llms, 
-        openai_api_key, 
-        ai_name
-    ):
-        self.workers = [
-            Worker(
-                openai_api_key=openai_api_key, 
-                ai_name=ai_name
-            ) for _ in range(num_workers)
-        ]
-        # self.llms = [LLM() for _ in range(num_llms)]
-        self.all_agents = self.workers # + self.llms
+    def __init__(self, llms):
+        self.llms = llms
 
     def run_all(self, task):
         with ThreadPoolExecutor() as executor:
-            responses = executor.map(
-                lambda agent: agent.run(task) if hasattr(
-                    agent, 'run'
-                ) else agent(task), self.all_agents
-            )
-
+            responses = executor.map(lambda llm: llm(task), self.llms)
         return list(responses)
 
     def print_responses(self, task):
         responses = self.run_all(task)
-
         table = []
-
         for i, response in enumerate(responses):
-            agent_type = "Worker" if i < len(self.workers) else "LLM"
-            table.append([agent_type, response])
-        print(
-            colored(
-                tabulate(
-                    table, 
-                    headers=["Agent Type", "Response"], 
-                    tablefmt="pretty"
-                ), "cyan")
-            )
+            table.append([f"LLM {i+1}", response])
+        print(colored(tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"))
 
 # Usage
-god_mode = GodMode(num_workers=3, openai_api_key="", ai_name="Optimus Prime")
-task = "What were the winning Boston Marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+llms = [Anthropic(model="<model_name>", anthropic_api_key="my-api-key") for _ in range(5)]
+
+god_mode = GodMode(llms)
+task = f"{anthropic.HUMAN_PROMPT} What are the biggest risks facing humanity?{anthropic.AI_PROMPT}"
 god_mode.print_responses(task)
