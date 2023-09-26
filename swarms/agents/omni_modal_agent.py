@@ -5,7 +5,8 @@ class OmniModalAgent:
     def __init__(
             self, 
             api_key, 
-            api_endpoint, api_type
+            api_endpoint, 
+            api_type
         ):
         self.api_key = api_key
         self.api_endpoint = api_endpoint
