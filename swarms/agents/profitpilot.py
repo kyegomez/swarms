@@ -17,7 +17,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from pydantic import BaseModel, Field
 
-
 llm = ChatOpenAI(temperature=0.9)
 
 
