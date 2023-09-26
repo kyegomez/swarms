@@ -1,7 +1,9 @@
-from dataclasses import dataclass
 import sys
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
+
 from swarms.workers.worker import Worker
+
 
 @dataclass
 class GroupChat:
