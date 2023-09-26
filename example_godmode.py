@@ -1,6 +1,6 @@
-from langchain.llms import GooglePalm, OpenAIChat
 
-from swarms.swarms.god_mode import Anthropic, GodMode
+from swarms.models import Anthropic, GooglePalm, OpenAIChat
+from swarms.swarms.god_mode import GodMode
 
 claude = Anthropic(anthropic_api_key="")
 palm = GooglePalm(google_api_key="")

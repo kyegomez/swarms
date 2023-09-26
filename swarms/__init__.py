@@ -12,23 +12,14 @@ from swarms.workers.worker import Worker
 # from swarms.boss.boss_node import Boss
 
 #models
-from swarms.models.anthropic import Anthropic
-from swarms.models.palm import GooglePalm
-from swarms.models.petals import Petals
-from swarms.models.openai import OpenAIChat
+import swarms.models
 
 #structs
 from swarms.structs.workflow import Workflow
 from swarms.structs.task import Task
 
 # swarms
-from swarms.swarms.dialogue_simulator import DialogueSimulator
-from swarms.swarms.autoscaler import AutoScaler
-from swarms.swarms.orchestrate import Orchestrator
-from swarms.swarms.god_mode import GodMode
-from swarms.swarms.simple_swarm import SimpleSwarm
-from swarms.swarms.multi_agent_debate import MultiAgentDebate
-
+import swarms.swarms
 
 #agents
 from swarms.swarms.profitpilot import ProfitPilot
