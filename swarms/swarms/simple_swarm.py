@@ -4,8 +4,8 @@ class SimpleSwarm:
     def __init__(
        self,
        num_workers,
-        openai_api_key,
-        ai_name
+       openai_api_key,
+       ai_name
     ):
         """
         
@@ -24,11 +24,12 @@ class SimpleSwarm:
 
     def run(self, task):
         responses = []
+
         for worker in self.workers:
             response = worker.run(task)
             responses.append(response)
+            
         return responses
     
     def __call__(self, task):
         return self.run(task) 
-    
