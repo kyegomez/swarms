@@ -8,7 +8,6 @@ class MultiModalVisualAgent:
             agent: MultiModalVisualAgent
         ):
         self.agent = agent
-        self.plan = plan
     
     async def run(self, text: str) -> str:
         #run the multi-modal visual agent with the give task
