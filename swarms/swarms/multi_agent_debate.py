@@ -1,34 +1,45 @@
-from typing import List
+from typing import List, Callable
 from swarms import Worker
 
-class MultiAgentDebate:
-    def __init__(self, agents: List[Worker]):
-        self.agents = agents
+    
+# Define a selection function
+def select_speaker(step: int, agents: List[Worker]) -> int:
+    # This function selects the speaker in a round-robin fashion
+    return step % len(agents)
 
-    def run(self, task: str):
-        results = []
+
+class MultiAgentDebate:
+    def __init__(
+        self, 
+        agents: List[Worker], 
+        selection_func: Callable[[int, List[Worker]], int]
+    ):
+        self.agents = agents
+        self.selection_func = selection_func
+
+    def reset_agents(self):
         for agent in self.agents:
-            response = agent.run(task)
+            agent.reset()
+
+    def inject_agent(self, agent: Worker):
+        self.agents.append(agent)
+
+    def run(self, task: str, max_iters: int = None):
+        self.reset_agents()
+        results = []
+        for i in range(max_iters or len(self.agents)):
+            speaker_idx = self.selection_func(i, self.agents)
+            speaker = self.agents[speaker_idx]
+            response = speaker.run(task)
             results.append({
-                'agent': agent.ai_name,
+                'agent': speaker.ai_name,
                 'response': response
             })
         return results
 
-# Initialize agents
-agents = [
-    Worker(openai_api_key="", ai_name="Optimus Prime"),
-    Worker(openai_api_key="", ai_name="Bumblebee"),
-    Worker(openai_api_key="", ai_name="Megatron")
-]
+    def update_task(self, task: str):
+        self.task = task
 
-# Initialize multi-agent debate
-debate = MultiAgentDebate(agents)
-
-# Run task
-task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
-results = debate.run(task)
-
-# Print results
-for result in results:
-    print(f"Agent {result['agent']} responded: {result['response']}")
+    def format_results(self, results):
+        formatted_results = "\n".join([f"Agent {result['agent']} responded: {result['response']}" for result in results])
+        return formatted_results
