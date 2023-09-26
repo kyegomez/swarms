@@ -1,5 +1,3 @@
-from langchain.tools import tool
-
 from swarms.workers.multi_modal_workers.omni_agent.omni_chat import chat_huggingface
 
 
@@ -13,7 +11,6 @@ class OmniModalAgent:
         self.api_endpoint = api_endpoint
         self.api_type = api_type
 
-    @tool
     def chat(self, data):
         """Chat with omni-modality model that uses huggingface to query for a specific model at run time. Translate text to speech, create images and more"""
         messages = data.get("messages")

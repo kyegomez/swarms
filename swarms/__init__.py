@@ -26,3 +26,10 @@ from swarms.structs.workflow import Workflow
 from swarms.swarms.dialogue_simulator import DialogueSimulator
 from swarms.swarms.autoscaler import AutoScaler
 from swarms.swarms.orchestrate import Orchestrator
+
+
+#agents
+from swarms.swarms.profitpilot import ProfitPilot
+from swarms.aot import AoTAgent
+from swarms.agents.multi_modal_agent import MultiModalVisualAgent
+from swarms.agents.omni_modal_agent import OmniModalAgent
