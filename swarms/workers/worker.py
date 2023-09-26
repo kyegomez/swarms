@@ -104,6 +104,11 @@ class Worker:
         """
         self.message_history = ["Here is the conversation so far"]
     
+    @property
+    def name(self):
+        return self.ai_name
+    
+    
     def receieve(self, name: str, message: str) -> None:
         """
         Receive a message and update the message history.
