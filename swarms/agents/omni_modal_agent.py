@@ -12,7 +12,10 @@ class OmniModalAgent:
         self.api_endpoint = api_endpoint
         self.api_type = api_type
 
-    def chat(self, data):
+    def chat(
+        self, 
+        data
+    ):
         """Chat with omni-modality model that uses huggingface to query for a specific model at run time. Translate text to speech, create images and more"""
         messages = data.get("messages")
         api_key = data.get("api_key", self.api_key)
