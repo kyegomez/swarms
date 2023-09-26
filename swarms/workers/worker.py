@@ -242,3 +242,5 @@ class Worker:
             return results
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")
+
+
