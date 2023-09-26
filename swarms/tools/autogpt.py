@@ -23,7 +23,6 @@ from swarms.utils.logger import logger
 from langchain.tools.file_management.write import WriteFileTool
 from langchain.tools.file_management.read import ReadFileTool
 
-llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
 
 
 @contextmanager
@@ -128,7 +127,7 @@ class WebpageQATool(BaseTool):
     async def _arun(self, url: str, question: str) -> str:
         raise NotImplementedError
 
-
+llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
 query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 
 # !pip install duckduckgo_search
@@ -141,7 +140,6 @@ query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 # # @tool
 # code_intepret = CodeInterpreter()
 import interpreter
-
 
 @tool
 def compile(task: str):

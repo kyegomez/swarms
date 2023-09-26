@@ -1,4 +1,4 @@
-from swarms.worker.worker import Worker
+from swarms.workers.worker import Worker
 
 class SimpleSwarm:
     def __init__(
