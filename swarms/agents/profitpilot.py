@@ -316,7 +316,7 @@ Previous conversation history:
 """
 
 
-class SalesGPT(Chain, BaseModel):
+class ProfitPilot(Chain, BaseModel):
     """Controller model for the Sales Agent."""
 
     conversation_history: List[str] = []
@@ -513,7 +513,7 @@ config = dict(
     product_catalog="sample_product_catalog.txt",
 )
 
-sales_agent = SalesGPT.from_llm(llm, verbose=False, **config)
+sales_agent = ProfitPilot.from_llm(llm, verbose=False, **config)
 
 # init sales agent
 sales_agent.seed_agent()
