@@ -1,4 +1,3 @@
-from typing import List, Callable
 from swarms import Worker, MultiAgentDebate, select_speaker
 
 # Initialize agents
