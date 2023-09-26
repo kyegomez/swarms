@@ -27,7 +27,8 @@ class GodMode:
             responses = executor.map(
                 lambda agent: agent.run(task) if hasattr(
                     agent, 'run'
-                ) else agent(task), self.all_agents)
+                ) else agent(task), self.all_agents
+            )
 
         return list(responses)
 
