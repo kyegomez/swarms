@@ -6,7 +6,7 @@ print(logo2)
 
 # worker
 # from swarms.workers.worker_node import WorkerNode
-# from swarms.workers.worker import Worker
+from swarms.workers.worker import Worker
 
 #boss
 # from swarms.boss.boss_node import Boss
@@ -15,10 +15,11 @@ print(logo2)
 from swarms.models.anthropic import Anthropic
 from swarms.models.palm import GooglePalm
 from swarms.models.petals import Petals
-#from swarms.models.openai import OpenAIChat
+from swarms.models.openai import OpenAIChat
 
 #structs
 from swarms.structs.workflow import Workflow
+from swarms.structs.task import Task
 
 # swarms
 from swarms.swarms.dialogue_simulator import DialogueSimulator
