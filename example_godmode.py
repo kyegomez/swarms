@@ -1,6 +1,6 @@
 
 from swarms.models import Anthropic, GooglePalm, OpenAIChat
-from swarms.swarms.god_mode import GodMode
+from swarms.swarms import GodMode
 
 claude = Anthropic(anthropic_api_key="")
 palm = GooglePalm(google_api_key="")
