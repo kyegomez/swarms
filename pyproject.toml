@@ -48,6 +48,8 @@ chromadb = "*"
 agent-protocol = "*"
 exxa = "*"
 open-interpreter = "*"
+tabulate = "*"
+termcolor = "*"
 
 [tool.poetry.dev-dependencies]
 # Add development dependencies here
