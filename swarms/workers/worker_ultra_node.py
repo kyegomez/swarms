@@ -1,23 +1,29 @@
+import logging
 import os
 import re
-import logging
 from pathlib import Path
 from typing import Dict, List
 
 from swarms.agents.utils.agent_creator import AgentCreator
-from swarms.utils.main import BaseHandler, FileHandler, FileType
-from swarms.tools.main import ExitConversation, RequestsGet, CodeEditor, Terminal
-from swarms.utils.main import CsvToDataframe
-from swarms.tools.main import BaseToolSet
-from swarms.utils.main import StaticUploader
+from swarms.tools.main import (
+    BaseToolSet,
+    CodeEditor,
+    ExitConversation,
+    RequestsGet,
+    Terminal,
+)
+from swarms.utils.main import (
+    BaseHandler,
+    CsvToDataframe,
+    FileHandler,
+    FileType,
+    StaticUploader,
+)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 # Check if "PLAYGROUND_DIR" environment variable exists, if not, set a default value
 playground = os.environ.get("PLAYGROUND_DIR", './playground')
-
 # Ensure the path exists before changing the directory
 os.makedirs(BASE_DIR / playground, exist_ok=True)
 
@@ -45,8 +51,14 @@ class WorkerUltraNode:
 
         if os.environ.get("USE_GPU", False):
             import torch
-            from swarms.tools.main import ImageCaptioning
-            from swarms.tools.main import ImageEditing, InstructPix2Pix, Text2Image, VisualQuestionAnswering
+
+            from swarms.tools.main import (
+                ImageCaptioning,
+                ImageEditing,
+                InstructPix2Pix,
+                Text2Image,
+                VisualQuestionAnswering,
+            )
 
             if torch.cuda.is_available():
                 toolsets.extend(

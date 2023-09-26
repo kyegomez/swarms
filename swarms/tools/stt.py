@@ -1,9 +1,10 @@
-#speech to text
+#speech to text tool
 
 import os
 from pydub import AudioSegment
 from pytube import YouTube
 import whisperx
+import subprocess
 
 class SpeechToText:
     def __init__(
@@ -29,6 +30,13 @@ class SpeechToText:
         self.batch_size = batch_size
         self.compute_type = compute_type
         self.hf_api_key = hf_api_key
+    
+    def install(self):
+        subprocess.run(["pip", "install", "whisperx"])
+        subprocess.run(["pip", "install", "pytube"])
+        subprocess.run(["pip", "install", "pydub"])
+        
+
     
     def download_youtube_video(self):
         audio_file = f'video.{self.audio_format}'
