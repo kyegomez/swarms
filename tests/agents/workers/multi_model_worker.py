@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from swarms.workers.multi_modal_worker import MultiModalVisualAgent, MultiModalVisualAgentTool  
+from swarms.agents.multi_modal_agent import MultiModalVisualAgent, MultiModalVisualAgentTool  
 
 @pytest.fixture
 def multimodal_agent():
