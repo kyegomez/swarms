@@ -17,7 +17,7 @@
 
 
 #agents
-from swarms.swarms.profitpilot import ProfitPilot
-from swarms.aot import AoTAgent
+from swarms.agents.profitpilot import ProfitPilot
+from swarms.agents.aot import AoTAgent
 from swarms.agents.multi_modal_agent import MultiModalVisualAgent
 from swarms.agents.omni_modal_agent import OmniModalAgent
