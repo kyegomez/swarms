@@ -4,9 +4,7 @@ from swarms.swarms.god_mode import Anthropic, GodMode
 
 claude = Anthropic(anthropic_api_key="")
 palm = GooglePalm(google_api_key="")
-gpt = OpenAIChat(
-    openai_api_key=""
-)
+gpt = OpenAIChat(openai_api_key="")
 
 # Usage
 llms = [
