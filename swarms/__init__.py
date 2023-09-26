@@ -6,16 +6,15 @@ print(logo2)
 
 # worker
 # from swarms.workers.worker_node import WorkerNode
+# from swarms.workers.worker import Worker
 
 #boss
 # from swarms.boss.boss_node import Boss
 
 #models
 from swarms.models.anthropic import Anthropic
-
-# from swarms.models.palm import GooglePalm
+from swarms.models.palm import GooglePalm
 from swarms.models.petals import Petals
-from swarms.workers.worker import Worker
 #from swarms.models.openai import OpenAIChat
 
 #structs
@@ -32,6 +31,6 @@ from swarms.swarms.multi_agent_debate import MultiAgentDebate
 
 #agents
 from swarms.swarms.profitpilot import ProfitPilot
-from swarms.aot import AoTAgent
+from swarms.agents.aot_agent import AOTAgent
 from swarms.agents.multi_modal_agent import MultiModalVisualAgent
 from swarms.agents.omni_modal_agent import OmniModalAgent
