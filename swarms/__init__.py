@@ -18,8 +18,6 @@ from swarms.models.petals import Petals
 from swarms.workers.worker import Worker
 #from swarms.models.openai import OpenAIChat
 
-
-
 #structs
 from swarms.structs.workflow import Workflow
 
