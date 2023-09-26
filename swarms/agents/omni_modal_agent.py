@@ -1,7 +1,9 @@
 from langchain.tools import tool
+
 from swarms.workers.multi_modal_workers.omni_agent.omni_chat import chat_huggingface
 
-class OmniWorkerAgent:
+
+class OmniModalAgent:
     def __init__(
             self, 
             api_key, 
