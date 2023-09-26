@@ -1,5 +1,10 @@
 from swarms import GodMode
 
-god_mode = GodMode(num_workers=3, openai_api_key="", ai_name="Optimus Prime")
-task = "What were the winning Boston Marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+# Usage
+llms = [Anthropic(model="<model_name>", anthropic_api_key="my-api-key") for _ in range(5)]
+
+god_mode = GodMode(llms)
+
+task = f"{anthropic.HUMAN_PROMPT} What are the biggest risks facing humanity?{anthropic.AI_PROMPT}"
+
 god_mode.print_responses(task)
