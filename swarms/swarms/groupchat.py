@@ -7,29 +7,29 @@ from swarms.workers.worker import Worker
 
 @dataclass
 class GroupChat:
-    """A group chat with multiple participants with a list of agents and a max number of rounds"""
+    """A group chat with multiple participants with a list of workers and a max number of rounds"""
 
-    agents: List[Worker]
+    workers: List[Worker]
     messages: List[Dict]
     max_rounds: int = 10
-    admin_name: str = "Admin" #admin agent
+    admin_name: str = "Admin" #admin worker
 
     @property
-    def agent_names(self) -> List[str]:
-        """returns the names of the agents in the group chat"""
-        return [agent.ai_name for agent in self.agents]
+    def worker_names(self) -> List[str]:
+        """returns the names of the workers in the group chat"""
+        return [worker.ai_name for worker in self.workers]
     
     def reset(self):
         self.messages.clear()
     
-    def agent_by_name(self, name: str) -> Worker:
+    def worker_by_name(self, name: str) -> Worker:
         """Find the next speaker baed on the message"""
-        return self.agents[self.agent_names.index(name)]
+        return self.workers[self.worker_names.index(name)]
     
-    def next_agent(self, agent: Worker) -> Worker:
-        """Returns the next agent in the list"""
-        return self.agents[
-            (self.agents_names.index(agent.ai_name) + 1) % len(self.agents)
+    def next_worker(self, worker: Worker) -> Worker:
+        """Returns the next worker in the list"""
+        return self.workers[
+            (self.workers_names.index(worker.ai_name) + 1) % len(self.workers)
         ]
     
     def select_speaker_msg(self):
@@ -39,7 +39,7 @@ class GroupChat:
         You are in a role play game the following rules are available:
         {self.__participant_roles()}.
 
-        Read the following conversation then select the next role from {self.agent_names}
+        Read the following conversation then select the next role from {self.worker_names}
         to play and only return the role
         """
     
@@ -55,20 +55,20 @@ class GroupChat:
             self.messages + [
                 {
                     "role": "system",
-                    "context": f"Read the above conversation. Then select the next role from {self.agent_names} to play. Only return the role.",
+                    "context": f"Read the above conversation. Then select the next role from {self.worker_names} to play. Only return the role.",
                 }
             ]
         )
         if not final:
-            return self.next_agent(last_speaker)
+            return self.next_worker(last_speaker)
         try:
-            return self.agent_by_name(name)
+            return self.worker_by_name(name)
         except ValueError:
-            return self.next_agent(last_speaker)
+            return self.next_worker(last_speaker)
         
     def _participant_roles(self):
         return "\n".join(
-            [f"{agent.ai_name}: {agent.system_message}" for agent in self.agents] 
+            [f"{worker.ai_name}: {worker.system_message}" for worker in self.workers] 
         )
     
 
@@ -117,12 +117,12 @@ class GroupChatManager(Worker):
             
             groupchat.messages.append(message)
 
-            #broadcast the message to all agents except the speaker
-            for agent in groupchat.agents:
-                if agent != speaker:
+            #broadcast the message to all workers except the speaker
+            for worker in groupchat.workers:
+                if worker != speaker:
                     self.send(
                         message,
-                        agent,
+                        worker,
                         request_reply=False,
                         silent=True,
                     )
@@ -137,12 +137,12 @@ class GroupChatManager(Worker):
             
             except KeyboardInterrupt:
                 #let the admin speak if interrupted
-                if groupchat.admin_name in groupchat.agent_names:
-                    #admin agent is a particpant
-                    speaker = groupchat.agent_by_name(groupchat.admin_name)
+                if groupchat.admin_name in groupchat.worker_names:
+                    #admin worker is a particpant
+                    speaker = groupchat.worker_by_name(groupchat.admin_name)
                     reply = speaker.generate_reply(sender=self)
                 else:
-                    #admin agent is not found in particpants
+                    #admin worker is not found in particpants
                     raise
             if reply is None:
                 break
