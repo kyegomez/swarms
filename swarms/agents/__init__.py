@@ -12,3 +12,12 @@
 # from swarms.tools.requests import RequestsGet
 
 # from swarms.tools.developer import Terminal, CodeEditor
+
+
+
+
+#agents
+from swarms.swarms.profitpilot import ProfitPilot
+from swarms.aot import AoTAgent
+from swarms.agents.multi_modal_agent import MultiModalVisualAgent
+from swarms.agents.omni_modal_agent import OmniModalAgent
