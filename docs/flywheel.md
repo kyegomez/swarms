@@ -18,7 +18,7 @@
 
 
 ```markdown
-               +---------------------+
+               +--------------------+
                |   Building a       |
                |  Supportive        | <--+
                |   Community        |    |
@@ -52,15 +52,15 @@
                         |                |
                         v                |
                +--------+-----------+    |
-               | Attract More        |    |
+               | Attract More       |    |
                | Developers &       |    |
-               | Salespeople         |    |
+               | Salespeople        |    |
                +--------+-----------+    |
                         |                |
                         v                |
-               +--------+-----------+    |
-               |  Wider Adoption of  |    |
-               |       Swarms        |----+
+               +--------+------------+   |
+               |  Wider Adoption of  |   |
+               |       Swarms        |---+
                +---------------------+
 ```
 
