@@ -1637,9 +1637,9 @@ class MultiModalAgent:
         self.langigage = language
 
         # if load_dict is None:
-        load_dict = {
-            "ImageCaptioning": "default_device"
-        }
+        # self.load_dict = {
+        #     "ImageCaptioning": "default_device"
+        # }
 
         self.agent = MultiModalVisualAgent(
             load_dict,
