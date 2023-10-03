@@ -54,7 +54,10 @@ from swarms.workers.models.segment_anything import (
     build_sam,
 )
 
-VISUAL_AGENT_PREFIX = """Worker Multi-Modal Agent is designed to be able to assist with a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. Worker Multi-Modal Agent is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
+VISUAL_AGENT_PREFIX = """
+Worker Multi-Modal Agent is designed to be able to assist with 
+a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. 
+Worker Multi-Modal Agent is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
 
 Worker Multi-Modal Agent is able to process and understand large amounts of text and images. As a language model, Worker Multi-Modal Agent can not directly read images, but it has a list of tools to finish different visual tasks. Each image will have a file name formed as "image/xxx.png", and Worker Multi-Modal Agent can invoke different tools to indirectly understand pictures. When talking about images, Worker Multi-Modal Agent is very strict to the file name and will never fabricate nonexistent files. When using tools to generate new image files, Worker Multi-Modal Agent is also known that the image may not be the same as the user's demand, and will use other visual question answering tools or description tools to observe the real image. Worker Multi-Modal Agent is able to use tools in a sequence, and is loyal to the tool observation outputs rather than faking the image content and image file name. It will remember to provide the file name from the last tool observation, if a new image is generated.
 
@@ -1470,7 +1473,13 @@ class BackgroundRemoving:
 
 
 class MultiModalVisualAgent:
-    def __init__(self, load_dict):
+    def __init__(
+        self, 
+        load_dict,
+        prefix: str = VISUAL_AGENT_PREFIX,
+        format_instructions: str = VISUAL_AGENT_FORMAT_INSTRUCTIONS,
+        suffix: str = VISUAL_AGENT_SUFFIX
+    ):
         print(f"Initializing MultiModalVisualAgent, load_dict={load_dict}")
 
         if 'ImageCaptioning' not in load_dict:
@@ -1511,9 +1520,14 @@ class MultiModalVisualAgent:
         )
 
     def init_agent(self, lang):
-        self.memory.clear() 
+        self.memory.clear()
+        
+        agent_prefix = self.prefix
+        agent_suffix = self.suffix
+        agent_format_instructions = self.format_instructions
+
         if lang=='English':
-            PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = VISUAL_AGENT_PREFIX, VISUAL_AGENT_FORMAT_INSTRUCTIONS, VISUAL_AGENT_SUFFIX
+            PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = agent_prefix, agent_format_instructions, agent_suffix
         else:
             PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = VISUAL_AGENT_PREFIX_CN, VISUAL_AGENT_FORMAT_INSTRUCTIONS_CN, VISUAL_AGENT_SUFFIX_CN
 
