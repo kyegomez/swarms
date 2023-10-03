@@ -104,7 +104,8 @@ class OmniModalAgent:
         # tools: List[BaseTool]
     ):
         self.llm = llm
-
+        
+        print("Loading tools...")
         self.tools = [
             load_tool(tool_name)
             for tool_name in [
