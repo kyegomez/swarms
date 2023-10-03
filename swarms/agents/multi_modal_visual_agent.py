@@ -28,7 +28,7 @@ from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.llms.openai import OpenAI
 
 # Grounding DINO
-import groundingdino.datasets.transforms as T
+import swarms.agents.models.groundingdino.datasets.transforms as T
 from swarms.agents.models.groundingdino.models import build_model
 from swarms.agents.models.groundingdino.util import box_ops
 from swarms.agents.models.groundingdino.util.slconfig import SLConfig
