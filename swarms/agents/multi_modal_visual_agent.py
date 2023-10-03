@@ -922,8 +922,7 @@ class Segmenting:
         return image
 
 
-    def segment_image_with_click(self, img, is_positive: bool,
-                            evt: gr.SelectData):
+    def segment_image_with_click(self, img, is_positive: bool):
                             
         self.sam_predictor.set_image(img)
         self.saved_points.append([evt.index[0], evt.index[1]])
