@@ -27,7 +27,7 @@ class GodMode:
     god_mode.run(task)
     god_mode.print_responses(task)
 
-    
+
 
 
     """
@@ -40,6 +40,7 @@ class GodMode:
         return list(responses)
 
     def print_responses(self, task):
+        """Prints the responses in a tabular format"""
         responses = self.run_all(task)
         table = []
         for i, response in enumerate(responses):
