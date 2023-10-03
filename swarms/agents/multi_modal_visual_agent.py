@@ -35,12 +35,15 @@ from swarms.agents.models.groundingdino.util.slconfig import SLConfig
 from swarms.agents.models.groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 
 # segment anything
-from segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
+from swarms.agents.models.segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import wget
 
+
+
+#prompts
 VISUAL_AGENT_PREFIX = """
 Worker Multi-Modal Agent is designed to be able to assist with 
 a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. 
