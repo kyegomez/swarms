@@ -1046,11 +1046,11 @@ class Text2Box:
          # load image
         image_pil = Image.open(image_path).convert("RGB")  # load image
 
-        transform = Compose(
+        transform = T.Compose(
             [
-                RandomResize([512], max_size=1333),
-                ToTensor(),
-                Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                T.RandomResize([512], max_size=1333),
+                T.ToTensor(),
+                T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
         image, _ = transform(image_pil, None)  # 3, h, w
