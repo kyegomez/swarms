@@ -169,42 +169,42 @@ def compile(task: str):
 
 # mm model workers
 
-# import torch
-# from PIL import Image
-# from transformers import (
-#     BlipForQuestionAnswering,
-#     BlipProcessor,
-# )
+import torch
+from PIL import Image
+from transformers import (
+    BlipForQuestionAnswering,
+    BlipProcessor,
+)
 
 
-# @tool
-# def VQAinference(self, inputs):
-#     """
-#     Answer Question About The Image, VQA Multi-Modal Worker agent
-#     description="useful when you need an answer for a question based on an image. "
-#     "like: what is the background color of the last image, how many cats in this figure, what is in this figure. "
-#     "The input to this tool should be a comma separated string of two, representing the image_path and the question",
+@tool
+def VQAinference(self, inputs):
+    """
+    Answer Question About The Image, VQA Multi-Modal Worker agent
+    description="useful when you need an answer for a question based on an image. "
+    "like: what is the background color of the last image, how many cats in this figure, what is in this figure. "
+    "The input to this tool should be a comma separated string of two, representing the image_path and the question",
     
-#     """
-#     device = "cuda:0"
-#     torch_dtype = torch.float16 if "cuda" in device else torch.float32
-#     processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
-#     model = BlipForQuestionAnswering.from_pretrained(
-#         "Salesforce/blip-vqa-base", torch_dtype=torch_dtype
-#     ).to(device)
+    """
+    device = "cuda:0"
+    torch_dtype = torch.float16 if "cuda" in device else torch.float32
+    processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
+    model = BlipForQuestionAnswering.from_pretrained(
+        "Salesforce/blip-vqa-base", torch_dtype=torch_dtype
+    ).to(device)
 
-#     image_path, question = inputs.split(",")
-#     raw_image = Image.open(image_path).convert("RGB")
-#     inputs = processor(raw_image, question, return_tensors="pt").to(
-#         device, torch_dtype
-#     )
-#     out = model.generate(**inputs)
-#     answer = processor.decode(out[0], skip_special_tokens=True)
+    image_path, question = inputs.split(",")
+    raw_image = Image.open(image_path).convert("RGB")
+    inputs = processor(raw_image, question, return_tensors="pt").to(
+        device, torch_dtype
+    )
+    out = model.generate(**inputs)
+    answer = processor.decode(out[0], skip_special_tokens=True)
 
-#     logger.debug(
-#         f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input Question: {question}, "
-#         f"Output Answer: {answer}"
-#     )
+    logger.debug(
+        f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input Question: {question}, "
+        f"Output Answer: {answer}"
+    )
 
-#     return answer
+    return answer
 
