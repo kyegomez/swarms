@@ -101,15 +101,10 @@ class OmniModalAgent:
     def __init__(
         self,
         llm: BaseLanguageModel,
-        tools: List[BaseTool]
+        # tools: List[BaseTool]
     ):
         self.llm = llm
-        self.tools = tools
-        self.chat_planner = load_chat_planner(llm)
-        self.response_generator = load_response_generator(llm)
-        self.task_executor: TaskExecutor
 
-    def tools_init(self):
         self.tools = [
             load_tool(tool_name)
             for tool_name in [
@@ -129,6 +124,10 @@ class OmniModalAgent:
                 "huggingface-tools/image-transformation",
             ]
         ]
+        
+        self.chat_planner = load_chat_planner(llm)
+        self.response_generator = load_response_generator(llm)
+        self.task_executor: TaskExecutor
     
 
     def run(self, input: str) -> str:
