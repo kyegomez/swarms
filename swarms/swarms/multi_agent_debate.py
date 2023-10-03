@@ -9,6 +9,11 @@ def select_speaker(step: int, agents: List[Worker]) -> int:
 
 
 class MultiAgentDebate:
+    """
+    MultiAgentDebate
+    
+    
+    """
     def __init__(
         self, 
         agents: List[Worker], 

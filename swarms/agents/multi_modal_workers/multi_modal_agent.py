@@ -1477,13 +1477,18 @@ class MultiModalVisualAgent:
             raise ValueError("You have to load ImageCaptioning as a basic function for MultiModalVisualAgent")
 
         self.models = {}
+
         for class_name, device in load_dict.items():
             self.models[class_name] = globals()[class_name](device=device)
 
         for class_name, module in globals().items():
             if getattr(module, 'template_model', False):
-                template_required_names = {k for k in inspect.signature(module.__init__).parameters.keys() if k!='self'}
+                template_required_names = {
+                    k for k in inspect.signature(module.__init__).parameters.keys() if k!='self'
+                }
+
                 loaded_names = set([type(e).__name__ for e in self.models.values()])
+
                 if template_required_names.issubset(loaded_names):
                     self.models[class_name] = globals()[class_name](
                         **{name: self.models[name] for name in template_required_names})
@@ -1495,9 +1500,15 @@ class MultiModalVisualAgent:
             for e in dir(instance):
                 if e.startswith('inference'):
                     func = getattr(instance, e)
-                    self.tools.append(Tool(name=func.name, description=func.description, func=func))
+                    self.tools.append(
+                        Tool(name=func.name, description=func.description, func=func)
+                    )
+
         self.llm = OpenAI(temperature=0)
-        self.memory = ConversationBufferMemory(memory_key="chat_history", output_key='output')
+        self.memory = ConversationBufferMemory(
+            memory_key="chat_history", 
+            output_key='output'
+        )
 
     def init_agent(self, lang):
         self.memory.clear() 
@@ -1513,11 +1524,19 @@ class MultiModalVisualAgent:
             verbose=True,
             memory=self.memory,
             return_intermediate_steps=True,
-            agent_kwargs={'prefix': PREFIX, 'format_instructions': FORMAT_INSTRUCTIONS,
-                          'suffix': SUFFIX}, )
+            agent_kwargs={
+                'prefix': PREFIX, 
+                'format_instructions': FORMAT_INSTRUCTIONS,
+                'suffix': SUFFIX
+            }, 
+        )
 
     def run_text(self, text):
-        self.agent.memory.buffer = cut_dialogue_history(self.agent.memory.buffer, keep_last_n_words=500)
+        self.agent.memory.buffer = cut_dialogue_history(
+            self.agent.memory.buffer, 
+            keep_last_n_words=500
+        )
+
         res = self.agent({"input": text.strip()})
         res['output'] = res['output'].replace("\\", "/")
         response = re.sub('(image/[-\w]*.png)', lambda m: f'![](file={m.group(0)})*{m.group(0)}*', res['output'])
@@ -1533,9 +1552,11 @@ class MultiModalVisualAgent:
         img = Image.open(image)
         width, height = img.size
         ratio = min(512 / width, 512 / height)
+
         width_new, height_new = (round(width * ratio), round(height * ratio))
         width_new = int(np.round(width_new / 64.0)) * 64
         height_new = int(np.round(height_new / 64.0)) * 64
+        
         img = img.resize((width_new, height_new))
         img = img.convert('RGB')
         img.save(image_filename, "PNG")
@@ -1558,12 +1579,3 @@ class MultiModalVisualAgent:
 
     def clear_memory(self):
         self.memory.clear()
-
-# if __name__ == '__main__':
-#     if not os.path.exists("checkpoints"):
-#         os.mkdir("checkpoints")
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--load', type=str, default="ImageCaptioning_cuda:0,Text2Image_cuda:0")
-#     args = parser.parse_args()
-#     load_dict = {e.split('_')[0].strip(): e.split('_')[1].strip() for e in args.load.split(',')}
-#     agent = MultiModalVisualAgent(load_dict=load_dict)

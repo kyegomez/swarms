@@ -1,6 +1,6 @@
 from agent_protocol import Agent, Step, Task
 
-from swarms.workers.multi_modal_workers.multi_modal_agent import MultiModalVisualAgent
+from swarms.agents.multi_modal_workers.multi_modal_agent import MultiModalVisualAgent
 
 class MultiModalVisualAgent:
     def __init__(

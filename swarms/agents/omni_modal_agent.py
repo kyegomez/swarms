@@ -1,4 +1,4 @@
-from swarms.workers.multi_modal_workers.omni_agent.omni_chat import chat_huggingface
+from swarms.agents.multi_modal_workers.omni_agent.omni_chat import chat_huggingface
 
 
 class OmniModalAgent:

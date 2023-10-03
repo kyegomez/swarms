@@ -6,7 +6,6 @@ from langchain.chains.llm import LLMChain
 
 from swarms.agents.utils.Agent import AgentOutputParser
 from swarms.agents.utils.human_input import HumanInputRun
-from swarms.memory.base import VectorStoreRetriever
 from swarms.memory.base_memory import BaseChatMessageHistory, ChatMessageHistory
 from swarms.memory.document import Document
 from swarms.models.base import AbstractModel
@@ -29,7 +28,7 @@ class Agent:
         self,
         ai_name: str,
         chain: LLMChain,
-        memory: VectorStoreRetriever,
+        memory,
         output_parser: AgentOutputParser,
         tools: List[BaseTool],
         feedback_tool: Optional[HumanInputRun] = None,
@@ -49,7 +48,7 @@ class Agent:
         cls,
         ai_name: str,
         ai_role: str,
-        memory: VectorStoreRetriever,
+        memory,
         tools: List[BaseTool],
         llm: AbstractModel,
         human_in_the_loop: bool = False,
