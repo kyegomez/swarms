@@ -1,4 +1,5 @@
-from swarms.agents.muti_modal_workers.multi_modal_agent import MultiModalVisualAgent
+from swarms.agents.multi_modal_workers.multi_modal_agent import MultiModalVisualAgent
+from swarms.agents.message import Message
 
 class MultiModalAgent:
     """
@@ -13,6 +14,19 @@ class MultiModalAgent:
             default_language (str, optional): Default language for the agent. Defaults to "English".
 
     Usage
+    --------------
+    For chats:
+    ------------
+    agent = MultiModalAgent()
+    agent.chat("Hello")
+
+    -----------
+
+    Or just with text
+    ------------
+    agent = MultiModalAgent()
+    agent.run_text("Hello")
+
     
     """
     def __init__(
@@ -35,8 +49,14 @@ class MultiModalAgent:
             temperature
         )
         self.language = language
+        self.history = []
+
     
-    def run_text(self, text, language=None):
+    def run_text(
+        self, 
+        text: str = None, 
+        language=None
+    ):
         """Run text through the model"""
 
         if language is None:
@@ -48,7 +68,11 @@ class MultiModalAgent:
         except Exception as e:
             return f"Error processing text: {str(e)}"
     
-    def run_img(self, image_path: str, language=None):
+    def run_img(
+        self, 
+        image_path: str, 
+        language=None
+    ):
         """If language is None"""
         if language is None:
             language = self.default_language
@@ -60,8 +84,90 @@ class MultiModalAgent:
             )
         except Exception as error:
             return f"Error processing image: {str(error)}"
+
+    def chat(
+        self,
+        msg: str = None,
+        language: str = None,
+        streaming: bool = False
+    ):
+        """
+        Run chat with the multi-modal agent
+        
+        Args:
+            msg (str, optional): Message to send to the agent. Defaults to None.
+            language (str, optional): Language to use. Defaults to None.
+            streaming (bool, optional): Whether to stream the response. Defaults to False.
+
+        Returns:
+            str: Response from the agent
+        
+        Usage:
+        --------------
+        agent = MultiModalAgent()
+        agent.chat("Hello")
+        
+        """
+        if language is None:
+            language = self.default_language
+
+        #add users message to the history
+        self.history.append(
+            Message(
+                "User",
+                msg
+            )
+        )
+
+        #process msg
+        try:
+            self.agent.init_agent(language)
+            response = self.agent.run_text(msg)
+
+            #add agent's response to the history
+            self.history.append(
+                Message(
+                    "Agent",
+                    response
+                )
+            )
+
+            #if streaming is = True
+            if streaming:
+                return self._stream_response(response)
+            else:
+                response
+
+        except Exception as error:
+            error_message = f"Error processing message: {str(error)}"
+
+            #add error to history
+            self.history.append(
+                Message(
+                    "Agent",
+                    error_message
+                )
+            )
+            return error_message
     
+    def _stream_response(
+        self, 
+        response: str = None
+    ):
+        """
+        Yield the response token by token (word by word)
+        
+        Usage:
+        --------------
+        for token in _stream_response(response):
+            print(token)
+        
+        """
+        for token in response.split():
+            yield token
+
     def clear(self):
+        """Clear agent's memory"""
         try:
             self.agent.clear_memory()
         except Exception as e:
