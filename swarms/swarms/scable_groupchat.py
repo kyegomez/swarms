@@ -20,8 +20,10 @@ class ScalableGroupChat:
 
     Worker -> ScalableGroupChat(Worker * 10) 
     -> every response is embedded and placed in chroma
-    -> every response is then retrieved and sent to the worker
+    -> every response is then retrieved by querying the database and sent then passed into the prompt of the worker
     -> every worker is then updated with the new response
+    -> every worker can communicate at any time
+    -> every worker can communicate without restrictions in parallel
 
     """
     def __init__(
@@ -32,21 +34,34 @@ class ScalableGroupChat:
     ):
         self.workers = []
         self.worker_count = worker_count
+        self.collection_name = collection_name
+        self.api_key = api_key
 
         # Create a list of Worker instances with unique names
         for i in range(worker_count):
-            self.workers.append(Worker(openai_api_key=api_key, ai_name=f"Worker-{i}"))
+            self.workers.append(
+                Worker(
+                    openai_api_key=api_key, 
+                    ai_name=f"Worker-{i}"
+                )
+            )
         
-    def embed(self, input, api_key, model_name):
+    def embed(
+        self, 
+        input, 
+        model_name
+    ):
+        """Embeds an input of size N into a vector of size M"""
         openai = embedding_functions.OpenAIEmbeddingFunction(
-            api_key=api_key,
+            api_key=self.api_key,
             model_name=model_name
         )
+
         embedding = openai(input)
+
         return embedding
                 
     
-    # @abstractmethod
     def retrieve_results(
         self, 
         agent_id: int
@@ -115,8 +130,8 @@ class ScalableGroupChat:
         
         Allows the agents to chat with eachother thrught the vectordatabase
 
-        # Instantiate the Orchestrator with 10 agents
-        orchestrator = Orchestrator(
+        # Instantiate the ScalableGroupChat with 10 agents
+        orchestrator = ScalableGroupChat(
             llm, 
             agent_list=[llm]*10, 
             task_queue=[]
@@ -131,8 +146,6 @@ class ScalableGroupChat:
         
         message_vector = self.embed(
             message,
-            self.api_key,
-            self.model_name
         )
 
         #store the mesage in the vector database
