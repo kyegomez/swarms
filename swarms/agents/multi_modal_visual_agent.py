@@ -1586,6 +1586,7 @@ class MultiModalVisualAgent:
 ###### usage
 from swarms.agents.message import Message
 
+
 class MultiModalAgent:
     """
     A user-friendly abstraction over the MultiModalVisualAgent that provides a simple interface 
