@@ -1,5 +1,4 @@
 import os
-import gradio as gr
 import random
 import torch
 import cv2
