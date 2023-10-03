@@ -10,10 +10,10 @@ from swarms.workers.worker import Worker
 # from swarms.boss.boss_node import Boss
 
 #models
-import swarms.models
+from swarms import models
 
 #structs
-import swarms.structs
+from s
 
 # swarms
 import swarms.swarms
