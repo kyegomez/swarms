@@ -21,6 +21,9 @@ agent-protocol
 chromadb
 exxa
 open-interpreter
+tabulate 
+colored
+
 
 
 mkdocs
