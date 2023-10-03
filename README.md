@@ -57,15 +57,31 @@ print(response)
 ---
 
 ## Usage
-
+- `GodMode` is a simple class that takes in x amount of llms and when given a task runs them all concurrently!
 ```python
 
-from swarms import HuggingFaceLLM
 
-hugging_face_model = HuggingFaceLLM(model_id="Voicelab/trurl-2-13b")
-generated_text = hugging_face_model.generate("In a world where AI")
+from swarms.models import Anthropic, GooglePalm, OpenAIChat
+from swarms.swarms import GodMode
 
+claude = Anthropic(anthropic_api_key="")
+palm = GooglePalm(google_api_key="")
+gpt = OpenAIChat(openai_api_key="")
+
+# Usage
+llms = [
+   claude,
+   palm,
+   gpt 
+]
+
+god_mode = GodMode(llms)
+
+task = f"What are the biggest risks facing humanity?"
+
+god_mode.print_responses(task)
 ```
+- The `Worker` is an fully feat
 ```python
 
 from swarms import Worker
