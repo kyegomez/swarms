@@ -1,45 +1,67 @@
 import argparse
 import logging
+import os
 import random
+import time
+import traceback
 import uuid
+import warnings
+
 import numpy as np
-from transformers import pipeline
-from diffusers import DiffusionPipeline, StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
-from diffusers.utils import load_image
-from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
-from diffusers.utils import export_to_video
-from transformers import SpeechT5Processor, SpeechT5HifiGan, SpeechT5ForSpeechToSpeech
-from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer
-from datasets import load_dataset
-from PIL import Image
-# import flask
-# from flask import request, jsonify
-import waitress
-# from flask_cors import CORS
-from torchvision import transforms
+import soundfile as sf
 import torch
 import torchaudio
-from transformers import MaskFormerFeatureExtractor, MaskFormerForInstanceSegmentation
-from controlnet_aux import OpenposeDetector, MLSDdetector, HEDdetector, CannyDetector, MidasDetector
-from controlnet_aux.open_pose.body import Body
-from controlnet_aux.mlsd.models.mbv2_mlsd_large import MobileV2_MLSD_Large
-from controlnet_aux.hed import Network
-from transformers import DPTForDepthEstimation, DPTFeatureExtractor
-import warnings
-import time
-from espnet2.bin.tts_inference import Text2Speech
-import soundfile as sf
-from asteroid.models import BaseModel
-import traceback
-import os
+
+# import flask
+from flask import request, jsonify
+import waitress
 import yaml
+from asteroid.models import BaseModel
+from controlnet_aux import (
+    CannyDetector,
+    HEDdetector,
+    MidasDetector,
+    MLSDdetector,
+    OpenposeDetector,
+)
+from controlnet_aux.hed import Network
+from controlnet_aux.mlsd.models.mbv2_mlsd_large import MobileV2_MLSD_Large
+from controlnet_aux.open_pose.body import Body
+from datasets import load_dataset
+from diffusers import (
+    ControlNetModel,
+    DiffusionPipeline,
+    DPMSolverMultistepScheduler,
+    StableDiffusionControlNetPipeline,
+    UniPCMultistepScheduler,
+)
+from diffusers.utils import export_to_video, load_image
+from espnet2.bin.tts_inference import Text2Speech
+from PIL import Image
 
+# from flask_cors import CORS
+from torchvision import transforms
+from transformers import (
+    AutoTokenizer,
+    DPTFeatureExtractor,
+    DPTForDepthEstimation,
+    MaskFormerFeatureExtractor,
+    MaskFormerForInstanceSegmentation,
+    SpeechT5ForSpeechToSpeech,
+    SpeechT5HifiGan,
+    SpeechT5Processor,
+    VisionEncoderDecoderModel,
+    ViTImageProcessor,
+    pipeline,
+)
+
+
+
+#logs
 warnings.filterwarnings("ignore")
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", type=str, default="configs/config.default.yaml")
 args = parser.parse_args()
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
