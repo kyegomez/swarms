@@ -1,58 +1,45 @@
-# coding: utf-8
-import argparse
-import inspect
-import math
 import os
+import gradio as gr
 import random
+import torch
+import cv2
 import re
 import uuid
-
-import cv2
-import gradio as gr
-import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw, ImageOps, ImageFont
+import math
 import numpy as np
-import torch
-import wget
-from controlnet_aux import HEDdetector, MLSDdetector, OpenposeDetector
-from diffusers import (
-    ControlNetModel,
-    EulerAncestralDiscreteScheduler,
-    StableDiffusionControlNetPipeline,
-    StableDiffusionInpaintPipeline,
-    StableDiffusionInstructPix2PixPipeline,
-    StableDiffusionPipeline,
-    UniPCMultistepScheduler,
-)
+import argparse
+import inspect
+import tempfile
+from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
+from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration, BlipForQuestionAnswering
+from transformers import AutoImageProcessor, UperNetForSemanticSegmentation
+
+from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline, StableDiffusionInstructPix2PixPipeline
+from diffusers import EulerAncestralDiscreteScheduler
+from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
+
+from controlnet_aux import OpenposeDetector, MLSDdetector, HEDdetector
+
 from langchain.agents.initialize import initialize_agent
 from langchain.agents.tools import Tool
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.llms.openai import OpenAI
-from PIL import Image, ImageDraw, ImageFont, ImageOps
-from transformers import (
-    BlipForConditionalGeneration,
-    BlipForQuestionAnswering,
-    BlipProcessor,
-    pipeline,
-)
 
 # Grounding DINO
-# import groundingdino.datasets.transforms as T
-from swarms.workers.models import (
-    Compose,
-    Normalize,
-    RandomResize,
-    SLConfig,
-    ToTensor,
-    build_model,
-    clean_state_dict,
-    get_phrases_from_posmap,
-)
-from swarms.workers.models.segment_anything import (
-    SamAutomaticMaskGenerator,
-    SamPredictor,
-    build_sam,
-)
+import groundingdino.datasets.transforms as T
+from groundingdino.models import build_model
+from groundingdino.util import box_ops
+from groundingdino.util.slconfig import SLConfig
+from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
+
+# segment anything
+from segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import wget
 
 VISUAL_AGENT_PREFIX = """
 Worker Multi-Modal Agent is designed to be able to assist with 
