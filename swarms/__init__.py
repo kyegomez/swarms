@@ -3,7 +3,7 @@ from swarms.logo import logo2
 print(logo2)
 
 # worker
-import swarms.workers
+from swarms import workers
 from swarms.workers.worker import Worker
 
 #boss
@@ -13,10 +13,11 @@ from swarms.workers.worker import Worker
 from swarms import models
 
 #structs
-from s
+from swarms import structs
 
 # swarms
-import swarms.swarms
+from swarms import swarms
 from swarms.swarms.orchestrate import Orchestrator
+
 #agents
-import swarms.agents
+from swarms import agents
