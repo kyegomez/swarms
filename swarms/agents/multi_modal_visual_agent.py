@@ -1648,7 +1648,7 @@ class MultiModalAgent:
     def run_text(
         self, 
         text: str = None, 
-        language=None
+        language = "english"
     ):
         """Run text through the model"""
 
@@ -1664,7 +1664,7 @@ class MultiModalAgent:
     def run_img(
         self, 
         image_path: str, 
-        language=None
+        language = "english"
     ):
         """If language is None"""
         if language is None:
@@ -1681,7 +1681,7 @@ class MultiModalAgent:
     def chat(
         self,
         msg: str = None,
-        language: str = None,
+        language: str = "english",
         streaming: bool = False
     ):
         """
