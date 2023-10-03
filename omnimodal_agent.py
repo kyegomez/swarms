@@ -1,6 +1,5 @@
-from langchain.
+from langchain.llms import OpenAIChat
 from swarms.agents import OmniModalAgent
-
 
 
 llm = OpenAIChat()
