@@ -1,7 +1,7 @@
 from swarms.agents import MultiModalAgent
 
 load_dict = {
-    "ImageCaptioning": "cuda:0"
+    "ImageCaptioning": "cpu"
 }
 
 node = MultiModalAgent(load_dict)
