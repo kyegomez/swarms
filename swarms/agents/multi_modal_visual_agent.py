@@ -922,10 +922,10 @@ class Segmenting:
         return image
 
 
-    def segment_image_with_click(self, img, is_positive: bool):
+    def segment_image_with_click(self, img, is_positive: bool)
                             
         self.sam_predictor.set_image(img)
-        self.saved_points.append([evt.index[0], evt.index[1]])
+        # self.saved_points.append([evt.index[0], evt.index[1]])
         self.saved_labels.append(1 if is_positive else 0)
         input_point = np.array(self.saved_points)
         input_label = np.array(self.saved_labels)
