@@ -1478,7 +1478,7 @@ class MultiModalVisualAgent:
         self.models = {}
 
         for class_name, device in load_dict.items():
-            self.models[class_name] = globals()[class_name](device=device)
+            self.models[class_name] = globals()[class_name]#(device=device)
 
         for class_name, module in globals().items():
             if getattr(module, 'template_model', False):
