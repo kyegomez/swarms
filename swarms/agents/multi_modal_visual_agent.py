@@ -1629,7 +1629,7 @@ class MultiModalAgent:
     def __init__(
         self,
         load_dict,
-        temperature,
+        temperature: int = 0.1,
         language: str = "english"
     ):
         self.load_dict = load_dict
