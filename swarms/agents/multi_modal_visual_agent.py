@@ -27,15 +27,15 @@ from langchain.agents.tools import Tool
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.llms.openai import OpenAI
 
-# Grounding DINO. 232
-import swarms.agents.models.groundingdino.datasets.transforms as T
-from swarms.agents.models.groundingdino.models import build_model
-from swarms.agents.models.groundingdino.util import box_ops
-from swarms.agents.models.groundingdino.util.slconfig import SLConfig
-from swarms.agents.models.groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
+# Grounding DINO
+import groundingdino.datasets.transforms as T
+from groundingdino.models import build_model
+from groundingdino.util import box_ops
+from groundingdino.util.slconfig import SLConfig
+from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 
 # segment anything
-from swarms.agents.models.segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
+from segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt

@@ -52,4 +52,5 @@ tabulate = "*"
 termcolor = "*"
 
 [tool.poetry.dev-dependencies]
-# Add development dependencies here
+first_dependency = {git = "https://github.com/IDEA-Research/GroundingDINO.git"}
+second_dependency = {git = "https://github.com/facebookresearch/segment-anything.git"}
