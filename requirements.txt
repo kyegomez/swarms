@@ -28,6 +28,32 @@ colored
 
 
 
+addict
+albumentations
+basicsr
+controlnet-aux
+diffusers
+einops
+imageio
+imageio-ffmpeg
+invisible-watermark
+kornia
+numpy
+omegaconf
+open_clip_torch
+openai
+opencv-python
+prettytable
+safetensors
+streamlit
+test-tube
+timm
+torchmetrics
+transformers
+webdataset
+yapf
+
+
 mkdocs
 mkdocs-material
 mkdocs-glightbox

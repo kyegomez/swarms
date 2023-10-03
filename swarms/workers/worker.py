@@ -174,7 +174,7 @@ class Worker:
             query_website_tool,
             HumanInputRun(),
             compile,
-            VQAinference
+            # VQAinference
         ]
         if external_tools is not None:
             self.tools.extend(external_tools)
