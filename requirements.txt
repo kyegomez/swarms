@@ -1,4 +1,7 @@
+faiss-gpu
 transformers
+pandas
+numpy
 langchain==0.0.240
 nest_asyncio
 pegasusx
@@ -23,10 +26,6 @@ exxa
 open-interpreter
 tabulate 
 colored
-# git+https://github.com/IDEA-Research/GroundingDINO.git
-# git+https://github.com/facebookresearch/segment-anything.git
-
-
 
 addict
 albumentations
