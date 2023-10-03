@@ -81,7 +81,7 @@ task = f"What are the biggest risks facing humanity?"
 
 god_mode.print_responses(task)
 ```
-- The `Worker` is an fully feat
+- The `Worker` is an fully feature complete agent with an llm, tools, and a vectorstore for long term memory!
 ```python
 
 from swarms import Worker
