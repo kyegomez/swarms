@@ -1,6 +1,10 @@
 from swarms.agents import MultiModalAgent
 
-node = MultiModalAgent()
+load_dict = {
+    "ImageCaptioning": "default_device"
+}
+
+node = MultiModalAgent(load_dict)
 
 text = node.run_text("What is your name? Generate a picture of yourself")
 
