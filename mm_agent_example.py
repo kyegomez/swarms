@@ -1,4 +1,4 @@
-from swarm.agents import MultiModalAgent
+from swarms.agents import MultiModalAgent
 
 node = MultiModalAgent()
 
