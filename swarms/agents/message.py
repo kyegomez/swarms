@@ -21,4 +21,7 @@ class Message:
         self.metadata = metadata or {}
 
     def __repr__(self):
+        """
+        __repr__ means 
+        """
         return f"{self.timestamp} - {self.sender}: {self.content}"
