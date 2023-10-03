@@ -23,8 +23,8 @@ exxa
 open-interpreter
 tabulate 
 colored
-pip install  git+https://github.com/IDEA-Research/GroundingDINO.git
-pip install  git+https://github.com/facebookresearch/segment-anything.git
+# git+https://github.com/IDEA-Research/GroundingDINO.git
+# git+https://github.com/facebookresearch/segment-anything.git
 
 
 
