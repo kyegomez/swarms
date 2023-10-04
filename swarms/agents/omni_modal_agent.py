@@ -36,38 +36,38 @@ from transformers import load_tool
 #         api_type = data.get("api_type", self.api_type)
 
 #         if not(api_key and api_type and api_endpoint):
-#             raise ValueError("Please provide api_key, api_type, and api_endpoint")
+# #             raise ValueError("Please provide api_key, api_type, and api_endpoint")
         
-#         response = chat_huggingface(messages, api_key, api_type, api_endpoint)
-#         return response
+# #         response = chat_huggingface(messages, api_key, api_type, api_endpoint)
+# #         return response
 
-class Step:
-    def __init__(
-        self,
-        task: str,
-        id: int,
-        dep: List[int],
-        args: Dict[str, str],
-        tool: BaseTool
-    ):
-        self.task = task
-        self.id = id
-        self.dep = dep
-        self.args = args
-        self.tool = tool
+# class Step:
+#     def __init__(
+#         self,
+#         task: str,
+#         id: int,
+#         dep: List[int],
+#         args: Dict[str, str],
+#         tool: BaseTool
+#     ):
+#         self.task = task
+#         self.id = id
+#         self.dep = dep
+#         self.args = args
+#         self.tool = tool
 
-class Plan:
-    def __init__(
-        self,
-        steps: List[Step]
-    ):
-        self.steps = steps
+# class Plan:
+#     def __init__(
+#         self,
+#         steps: List[Step]
+#     ):
+#         self.steps = steps
     
-    def __str__(self) -> str:
-        return str([str(step) for step in self.steps])
+#     def __str__(self) -> str:
+#         return str([str(step) for step in self.steps])
     
-    def __repr(self) -> str:
-        return str(self)
+#     def __repr(self) -> str:
+#         return str(self)
 
 
 
