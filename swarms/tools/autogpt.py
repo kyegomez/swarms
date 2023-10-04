@@ -126,15 +126,9 @@ class WebpageQATool(BaseTool):
     async def _arun(self, url: str, question: str) -> str:
         raise NotImplementedError
 
-llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
-query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
+# llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
+# query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
 
-# !pip install duckduckgo_search
-# web_search = DuckDuckGoSearchRun()
-
-
-
-# from swarms.tools.code_intepretor import CodeInterpreter
 
 # # @tool
 # code_intepret = CodeInterpreter()
