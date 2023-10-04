@@ -32,7 +32,7 @@ We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on
 ----------
 
 ## Installation
-* Pip install `pip3 install swarms`
+* `pip3 install swarms`
 
 ---
 
