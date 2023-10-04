@@ -9,55 +9,68 @@ The `OmniModalAgent` class is at the core of an architecture designed to facilit
 3. **Task Executor**: As the name suggests, it's responsible for executing the formulated tasks.
 4. **Tools**: A collection of tools and utilities used to process different types of tasks. They span across areas like image captioning, translation, and more.
 
+
+
 ## Structure & Organization
 
 ### Table of Contents:
-1. Introduction
-2. Architectural Analysis
-3. Methods
-    - Initialization (`__init__`)
-    - Agent Runner (`run`)
-4. Usage Examples
+1. Class Introduction and Architecture
+2. Constructor (`__init__`) 
+3. Core Methods
+    - `run`
+    - `chat`
+    - `_stream_response`
+4. Example Usage
 5. Error Messages & Exception Handling
-6. Summary
+6. Summary & Further Reading
 
-### Methods
+### Constructor (`__init__`):
+The agent is initialized with a language model (`llm`). During initialization, the agent loads a myriad of tools to facilitate a broad spectrum of tasks, from document querying to image transformations. 
 
-#### Initialization (`__init__`):
-This method initializes the agent with a given language model and loads a plethora of tools.
-Parameters:
-- **llm (BaseLanguageModel)**: The language model for the agent.
+### Core Methods:
+#### 1. `run(self, input: str) -> str`:
+Executes the OmniAgent. The agent plans its actions based on the user's input, executes those actions, and then uses a response generator to construct its reply. 
 
-During initialization, various tools like "document-question-answering", "image-captioning", and more are loaded.
+#### 2. `chat(self, msg: str, streaming: bool) -> str`:
+Facilitates an interactive chat with the agent. It processes user messages, handles exceptions, and returns a response, either in streaming format or as a whole string.
 
-#### Agent Runner (`run`):
-`run(self, input: str) -> str`:
-
-This method represents the primary operation of the OmniModalAgent. It takes an input, devises a plan using the chat planner, executes the plan with the task executor, and finally, the response generator crafts a response based on the tasks executed.
-
-Parameters:
-- **input (str)**: The input string provided by the user.
-
-Returns:
-- **response (str)**: The generated response after executing the plan.
+#### 3. `_stream_response(self, response: str)`:
+For streaming mode, this function yields the response token by token, ensuring a smooth output flow.
 
 ## Examples & Use Cases
-
-### Usage:
+Initialize the `OmniModalAgent` and communicate with it:
 ```python
 from swarms import OmniModalAgent, OpenAIChat
-
-llm = OpenAIChat()
-agent = OmniModalAgent(llm)
-response = agent.run("Hello, how are you? Create an image of how you are doing!")
+llm_instance = OpenAIChat()
+agent = OmniModalAgent(llm_instance)
+response = agent.run("Translate 'Hello' to French.")
 print(response)
 ```
-This example showcases the instantiation of the OmniModalAgent with a language model and then running the agent with a sample input.
+
+For a chat-based interaction:
+```python
+agent = OmniModalAgent(llm_instance)
+print(agent.chat("How are you doing today?"))
+```
 
 ## Error Messages & Exception Handling
-Currently, the provided code does not specify particular errors or exceptions. However, future iterations might include error handling mechanisms to cater to issues like tool loading failures, task execution errors, etc.
+The `chat` method in `OmniModalAgent` incorporates exception handling. When an error arises during message processing, it returns a formatted error message detailing the exception. This approach ensures that users receive informative feedback in case of unexpected situations.
+
+For example, if there's an internal processing error, the chat function would return: 
+```
+Error processing message: [Specific error details]
+```
 
 ## Summary
-The `OmniModalAgent` is a robust framework designed to assimilate multiple tools and processes into a singular architecture. It aids in understanding, planning, executing, and responding to user inputs in a comprehensive manner. Developers aiming to integrate advanced interactions spanning multiple domains will find this class invaluable.
+`OmniModalAgent` epitomizes the fusion of various AI tools, planners, and executors into one cohesive unit, providing a comprehensive interface for diverse tasks and modalities. The versatility and robustness of this agent make it indispensable for applications desiring to bridge multiple AI functionalities in a unified manner.
 
-For further details on the internal tools and modules like `BaseLanguageModel`, `TaskExecutor`, etc., refer to their respective documentation.
+For more extensive documentation, API references, and advanced use-cases, users are advised to refer to the primary documentation repository associated with the parent project. Regular updates, community feedback, and patches can also be found there.
+
+
+
+
+
+
+
+
+
