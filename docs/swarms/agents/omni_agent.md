@@ -10,7 +10,6 @@ The `OmniModalAgent` class is at the core of an architecture designed to facilit
 4. **Tools**: A collection of tools and utilities used to process different types of tasks. They span across areas like image captioning, translation, and more.
 
 
-
 ## Structure & Organization
 
 ### Table of Contents:
