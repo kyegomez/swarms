@@ -57,30 +57,36 @@ print(response)
 ---
 
 ## Usage
-- `GodMode` is a simple class that takes in x amount of llms and when given a task runs them all concurrently!
+- `MultiAgentDebate` is a simple class that enables multi agent collaboration.
+
 ```python
+from swarms import Worker, MultiAgentDebate, select_speaker
 
+# Initialize agents
+worker1 = Worker(openai_api_key="", ai_name="Optimus Prime")
+worker2 = Worker(openai_api_key="", ai_name="Bumblebee")
+worker3 = Worker(openai_api_key="", ai_name="Megatron")
 
-from swarms.models import Anthropic, GooglePalm, OpenAIChat
-from swarms.swarms import GodMode
-
-claude = Anthropic(anthropic_api_key="")
-palm = GooglePalm(google_api_key="")
-gpt = OpenAIChat(openai_api_key="")
-
-# Usage
-llms = [
-   claude,
-   palm,
-   gpt 
+agents = [
+    worker1,
+    worker2,
+    worker3
 ]
 
-god_mode = GodMode(llms)
+# Initialize multi-agent debate with the selection function
+debate = MultiAgentDebate(agents, select_speaker)
 
-task = f"What are the biggest risks facing humanity?"
+# Run task
+task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+results = debate.run(task, max_iters=4)
 
-god_mode.print_responses(task)
+# Print results
+for result in results:
+    print(f"Agent {result['agent']} responded: {result['response']}")
 ```
+
+----
+
 - The `Worker` is an fully feature complete agent with an llm, tools, and a vectorstore for long term memory!
 ```python
 
@@ -97,6 +103,27 @@ response = node.run(task)
 print(response)
 
 ```
+
+------
+
+### OmniModal Agent
+- OmniModal Agent is an LLM that access to 10+ multi-modal encoders and diffusers! It can generate images, videos, speech, music and so much more, get started with:
+
+```python
+from langchain.llms import OpenAIChat
+from swarms.agents import OmniModalAgent
+
+
+llm = OpenAIChat(model_name="gpt-4")
+
+agent = OmniModalAgent(llm)
+
+agent.run("Create a video of a swarm of fish")
+
+```
+
+- OmniModal Agent has a ui in the root called `python3 omni_ui.py`
+
 ---
 
 # Documentation
