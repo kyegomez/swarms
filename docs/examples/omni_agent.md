@@ -1,4 +1,4 @@
-# **Title: A Comprehensive Guide to Setting Up OmniWorker: Your Passport to Multimodal Tasks**
+# A Comprehensive Guide to Setting Up OmniWorker: Your Passport to Multimodal Tasks**
 
 **Introduction**
 - Introduction to OmniWorker
