@@ -37,6 +37,8 @@ We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on
 ---
 
 ## Usage
+
+### 
 - `MultiAgentDebate` is a simple class that enables multi agent collaboration.
 
 ```python
@@ -67,7 +69,9 @@ for result in results:
 
 ----
 
+### `Worker``
 - The `Worker` is an fully feature complete agent with an llm, tools, and a vectorstore for long term memory!
+
 ```python
 
 from swarms import Worker
@@ -86,7 +90,7 @@ print(response)
 
 ------
 
-### OmniModal Agent
+### `OmniModalAgent`
 - OmniModal Agent is an LLM that access to 10+ multi-modal encoders and diffusers! It can generate images, videos, speech, music and so much more, get started with:
 
 ```python
