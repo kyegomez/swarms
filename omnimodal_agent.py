@@ -2,7 +2,7 @@ from langchain.llms import OpenAIChat
 from swarms.agents import OmniModalAgent
 
 
-llm = OpenAIChat()
+llm = OpenAIChat(model_name="gpt-4")
 
 agent = OmniModalAgent(llm)
 
