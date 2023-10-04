@@ -1,6 +1,5 @@
 
 import faiss
-from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.tools.human.tool import HumanInputRun
@@ -10,11 +9,11 @@ from langchain_experimental.autonomous_agents import AutoGPT
 from swarms.agents.message import Message
 from swarms.tools.autogpt import (
     ReadFileTool,
-    VQAinference,
     WriteFileTool,
     compile,
     process_csv,
-    query_website_tool,
+    load_qa_with_sources_chain,
+    WebpageQATool
 )
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
@@ -129,6 +128,8 @@ class Worker:
                 temperature=0.5)
         ```
         """
+        query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(self.llm))
+
         self.tools = [
             WriteFileTool(root_dir=ROOT_DIR),
             ReadFileTool(root_dir=ROOT_DIR),
