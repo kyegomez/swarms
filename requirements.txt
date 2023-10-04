@@ -1,4 +1,4 @@
-faiss-gpu
+# faiss-gpu
 transformers
 pandas
 # langchain==0.0.240
