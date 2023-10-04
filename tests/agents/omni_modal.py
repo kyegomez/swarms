@@ -10,7 +10,11 @@ from langchain_experimental.autonomous_agents.hugginggpt.task_planner import (
     load_chat_planner,
 )
 from transformers import load_tool
-from swarms.agents import OmniModalAgent  # Replace `your_module_name` with the appropriate module name
+
+from swarms.agents import (
+    OmniModalAgent,  # Replace `your_module_name` with the appropriate module name
+)
+
 
 # Mock objects or set up fixtures for dependent classes or external methods
 @pytest.fixture
