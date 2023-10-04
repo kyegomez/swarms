@@ -17,16 +17,17 @@ from swarms.tools.autogpt import (
 )
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
-        # self.llm = ChatOpenAI(
-        #     model_name=model_name, 
-        #     openai_api_key=self.openai_api_key, 
-        #     temperature=self.temperature
-        # )
+# self.llm = ChatOpenAI(
+#     model_name=model_name, 
+#     openai_api_key=self.openai_api_key, 
+#     temperature=self.temperature
+# )
 
 #cache
 ROOT_DIR = "./data/"
 
 
+#main
 class Worker:
     """
     Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, 
@@ -60,12 +61,12 @@ class Worker:
     """
     def __init__(
         self, 
-        openai_api_key = None,
-        ai_name = "Autobot Swarm Worker",
-        ai_role = "Worker in a swarm",
+        openai_api_key: str = None,
+        ai_name: str = "Autobot Swarm Worker",
+        ai_role: str = "Worker in a swarm",
         external_tools = None,
         human_in_the_loop = False,
-        temperature = 0.5,
+        temperature: float = 0.5,
         llm = None,
     ):
         self.openai_api_key = openai_api_key
@@ -91,7 +92,11 @@ class Worker:
     def name(self):
         return self.ai_name
     
-    def receieve(self, name: str, message: str) -> None:
+    def receieve(
+        self, 
+        name: str, 
+        message: str
+    ) -> None:
         """
         Receive a message and update the message history.
 
@@ -106,8 +111,6 @@ class Worker:
 
     def add(self, task, priority=0):
         self.task_queue.append((priority, task))
-    
-
     
     def setup_tools(self, external_tools):
         """
@@ -177,7 +180,10 @@ class Worker:
     @log_decorator
     @error_decorator
     @timing_decorator
-    def run(self, task):
+    def run(
+        self,
+        task: str = None
+    ):
         """
         Run the autonomous agent on a given task.
 
@@ -196,7 +202,10 @@ class Worker:
     @log_decorator
     @error_decorator
     @timing_decorator
-    def __call__(self, task):
+    def __call__(
+        self, 
+        task: str = None
+    ):
         """
         Make the worker callable to run the agent on a given task.
 
