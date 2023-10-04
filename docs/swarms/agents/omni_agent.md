@@ -32,6 +32,7 @@ During initialization, various tools like "document-question-answering", "image-
 
 #### Agent Runner (`run`):
 `run(self, input: str) -> str`:
+
 This method represents the primary operation of the OmniModalAgent. It takes an input, devises a plan using the chat planner, executes the plan with the task executor, and finally, the response generator crafts a response based on the tasks executed.
 
 Parameters:
