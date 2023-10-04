@@ -85,6 +85,7 @@ nav:
       - Overview: "swarms/models/index.md"
       - HuggingFaceLLM: "swarms/models/hf.md"
       - Anthropic: "swarms/models/anthropic.md"
+    - OmniModalAgent: "swarms/agents/omni_agent.md"
 - Examples:
     - Overview: "examples/index.md"
     - Agents:
