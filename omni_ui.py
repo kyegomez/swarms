@@ -1,50 +1,85 @@
-import gradio as gr
-from gradio import Interface
+#Import required libraries
+from gradio import Interface, Textbox, HTML
 import threading
 import os
-from langchain.llms import OpenAIChat
-from swarms.agents import OmniModalAgent
+import glob
+import base64
+from langchain.llms import OpenAIChat  # Replace with your actual class
+from swarms.agents import OmniModalAgent  # Replace with your actual class
 
-# Initialize the OmniModalAgent
-llm = OpenAIChat(model_name="gpt-4")
-agent = OmniModalAgent(llm)
+#Function to convert image to base64
+def image_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode()
 
-# Global variable to store chat history
+#Function to get the most recently created image in the directory
+def get_latest_image():
+    list_of_files = glob.glob('./*.png')  # Replace with your image file type
+    if not list_of_files:
+        return None
+    latest_file = max(list_of_files, key=os.path.getctime)
+    return latest_file
+
+#Initialize your OmniModalAgent
+llm = OpenAIChat(model_name="gpt-4")  # Replace with your actual initialization
+agent = OmniModalAgent(llm)  # Replace with your actual initialization
+
+#Global variable to store chat history
 chat_history = []
 
+#Function to update chat
 def update_chat(user_input):
     global chat_history
     chat_history.append({"type": "user", "content": user_input})
-    
-    # Get agent response
+
+    #Get agent response
     agent_response = agent.run(user_input)
+
+    # Handle the case where agent_response is not in the expected dictionary format
+    if not isinstance(agent_response, dict):
+        agent_response = {"type": "text", "content": str(agent_response)}
+
     chat_history.append(agent_response)
-    
+
+    # Check for the most recently created image and add it to the chat history
+    latest_image = get_latest_image()
+    if latest_image:
+        chat_history.append({"type": "image", "content": latest_image})
+
     return render_chat(chat_history)
 
+#Function to render chat as HTML
+
 def render_chat(chat_history):
-    chat_str = '<div style="overflow-y: scroll; height: 400px;">'
+    chat_str = "<div style='max-height:400px;overflow-y:scroll;'>"
     for message in chat_history:
-        timestamp = message.get('timestamp', 'N/A')
         if message['type'] == 'user':
-            chat_str += f'<div style="text-align: right; color: blue; margin: 5px; border-radius: 10px; background-color: #E0F0FF; padding: 5px;">{message["content"]}<br><small>{timestamp}</small></div>'
+            chat_str += f"<p><strong>User:</strong> {message['content']}</p>"
         elif message['type'] == 'text':
-            chat_str += f'<div style="text-align: left; color: green; margin: 5px; border-radius: 10px; background-color: #E0FFE0; padding: 5px;">{message["content"]}<br><small>{timestamp}</small></div>'
+            chat_str += f"<p><strong>Agent:</strong> {message['content']}</p>"
         elif message['type'] == 'image':
-            img_path = os.path.join("root_directory", message['content'])
-            chat_str += f'<div style="text-align: left; margin: 5px;"><img src="{img_path}" alt="image" style="max-width: 100%; border-radius: 10px;"/><br><small>{timestamp}</small></div>'
-    chat_str += '</div>'
+            img_path = os.path.join(".", message['content'])
+            base64_img = image_to_base64(img_path)
+            chat_str += f"<p><strong>Agent:</strong> <img src='data:image/png;base64,{base64_img}' alt='image' width='200'/></p>"
+    chat_str += "</div>"
     return chat_str
 
-# Define Gradio interface
+#Define Gradio interface
 iface = Interface(
     fn=update_chat, 
-    inputs=gr.inputs.Textbox(lines=2, placeholder="Type your message here..."),
-    outputs=gr.outputs.HTML(label="Chat History"),
-    live=True,
-    title="Conversational AI Interface",
-    description="Chat with our AI agent!",
-    allow_flagging=False
+    inputs=Textbox(label="Your Message", type="text"), 
+    outputs=HTML(label="Chat History"),
+    live=True
 )
 
+#Function to update the chat display
+def update_display():
+    global chat_history
+    while True:
+        iface.update(render_chat(chat_history))
+
+#Run the update_display function in a separate thread
+threading.Thread(target=update_display).start()
+
+#Run Gradio interface
 iface.launch()
