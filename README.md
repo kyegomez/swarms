@@ -39,7 +39,8 @@ We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on
 ## Usage
 We have a small gallery of examples to run here, [for more check out the docs to build your own agent and or swarms!](https://docs.apac.ai)
 
-### ``
+### `MultiAgentDebate`
+
 - `MultiAgentDebate` is a simple class that enables multi agent collaboration.
 
 ```python
