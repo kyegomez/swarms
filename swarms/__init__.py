@@ -4,7 +4,7 @@ print(logo2)
 
 # worker
 from swarms import workers
-# from swarms.workers.worker import Worker
+from swarms.workers.worker import Worker
 
 #boss
 # from swarms.boss.boss_node import Boss
