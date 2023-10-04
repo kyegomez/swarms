@@ -1,3 +1,4 @@
+#pip3 install exxa
 from exa import Inference
 from swarms.agents import OmniModalAgent
 

@@ -88,17 +88,8 @@ nav:
 - Examples:
     - Overview: "examples/index.md"
     - Agents:
-      - Talk to Redshift: "examples/talk-to-redshift.md"
-      - Talk to a Webpage: "examples/talk-to-a-webpage.md"
-      - Talk to a PDF: "examples/talk-to-a-pdf.md"
-    - Data:
-      - Load and Query Pinecone: "examples/load-and-query-pinecone.md"
-      - Load and Query Marqo: "examples/load-query-and-chat-marqo.md"
-      - Query a Webpage: "examples/query-webpage.md"
-    - Misc:
-        - Count Tokens: "examples/count-tokens.md"
-        - Using Text Generation Web UI: "examples/using-text-generation-web-ui.md"
-        - Storing Conversation Memory in DynamoDB: "examples/store-conversation-memory-in-dynamodb.md"
+      - OmniAgent: "examples/omni_agent.md"
+      
 - Applications:
     - CustomerSupport: 
       - Overview: "applications/customer_support.md"
