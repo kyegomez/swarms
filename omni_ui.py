@@ -18,31 +18,33 @@ def update_chat(user_input):
     
     # Get agent response
     agent_response = agent.run(user_input)
-    
-    # Let's assume agent_response is a dictionary containing type and content.
     chat_history.append(agent_response)
     
     return render_chat(chat_history)
 
 def render_chat(chat_history):
-    chat_str = ""
+    chat_str = '<div style="overflow-y: scroll; height: 400px;">'
     for message in chat_history:
+        timestamp = message.get('timestamp', 'N/A')
         if message['type'] == 'user':
-            chat_str += f"User: {message['content']}<br>"
+            chat_str += f'<div style="text-align: right; color: blue; margin: 5px; border-radius: 10px; background-color: #E0F0FF; padding: 5px;">{message["content"]}<br><small>{timestamp}</small></div>'
         elif message['type'] == 'text':
-            chat_str += f"Agent: {message['content']}<br>"
+            chat_str += f'<div style="text-align: left; color: green; margin: 5px; border-radius: 10px; background-color: #E0FFE0; padding: 5px;">{message["content"]}<br><small>{timestamp}</small></div>'
         elif message['type'] == 'image':
             img_path = os.path.join("root_directory", message['content'])
-            chat_str += f"Agent: <img src='{img_path}' alt='image'/><br>"
+            chat_str += f'<div style="text-align: left; margin: 5px;"><img src="{img_path}" alt="image" style="max-width: 100%; border-radius: 10px;"/><br><small>{timestamp}</small></div>'
+    chat_str += '</div>'
     return chat_str
 
 # Define Gradio interface
 iface = Interface(
     fn=update_chat, 
-    inputs="text", 
+    inputs=gr.inputs.Textbox(lines=2, placeholder="Type your message here..."),
     outputs=gr.outputs.HTML(label="Chat History"),
-    live=True
+    live=True,
+    title="Conversational AI Interface",
+    description="Chat with our AI agent!",
+    allow_flagging=False
 )
 
-# Launch the Gradio interface
 iface.launch()
