@@ -32,27 +32,7 @@ We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on
 ----------
 
 ## Installation
-
-There are 2 methods, one is through `git clone` and the other is by `pip install swarms`. Check out the [DOCUMENTATION](DOCS/DOCUMENTATION.md) for more information on the classes.
-
 * Pip install `pip3 install swarms`
-
-* Create new python file and unleash superintelligence
-
-```python
-
-from swarms import Worker
-
-
-node = Worker(
-    openai_api_key="",
-    ai_name="Optimus Prime",
-)
-
-task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
-response = node.run(task)
-print(response)
-```
 
 ---
 
