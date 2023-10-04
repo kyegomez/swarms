@@ -1,5 +1,5 @@
 from typing import List, Callable
-from swarms import Worker
+from swarms.workers.worker import Worker
 
     
 # Define a selection function
