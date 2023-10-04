@@ -69,7 +69,7 @@ for result in results:
 
 ----
 
-### `Worker``
+### `Worker`
 - The `Worker` is an fully feature complete agent with an llm, tools, and a vectorstore for long term memory!
 
 ```python
