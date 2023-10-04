@@ -2,7 +2,8 @@ faiss-gpu
 transformers
 pandas
 numpy
-langchain==0.0.240
+# langchain==0.0.240
+langchain
 nest_asyncio
 pegasusx
 google-generativeai 
