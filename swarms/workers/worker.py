@@ -1,4 +1,4 @@
-# import concurrent.futures
+
 import faiss
 from langchain.chat_models import ChatOpenAI
 from langchain.docstore import InMemoryDocstore
@@ -7,6 +7,7 @@ from langchain.tools.human.tool import HumanInputRun
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
 
+from swarms.agents.message import Message
 from swarms.tools.autogpt import (
     ReadFileTool,
     VQAinference,
@@ -17,6 +18,13 @@ from swarms.tools.autogpt import (
 )
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
+        # self.llm = ChatOpenAI(
+        #     model_name=model_name, 
+        #     openai_api_key=self.openai_api_key, 
+        #     temperature=self.temperature
+        # )
+
+#cache
 ROOT_DIR = "./data/"
 
 
@@ -51,42 +59,20 @@ class Worker:
     ```
 
     """
-    # @log_decorator
-    # @error_decorator
-    # @timing_decorator
     def __init__(
         self, 
-        model_name="gpt-4", 
-        openai_api_key=None,
-        ai_name="Autobot Swarm Worker",
-        ai_role="Worker in a swarm",
+        openai_api_key = None,
+        ai_name = "Autobot Swarm Worker",
+        ai_role = "Worker in a swarm",
         external_tools = None,
-        human_in_the_loop=False,
-        temperature=0.5,
-        # llm=None,
-        # openai: bool = True,
+        human_in_the_loop = False,
+        temperature = 0.5,
+        llm = None,
     ):
         self.openai_api_key = openai_api_key
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
-        # self.openai = openai
-
-        
-        # if self.openai is True:
-        #     try:
-        self.llm = ChatOpenAI(
-            model_name=model_name, 
-            openai_api_key=self.openai_api_key, 
-            temperature=self.temperature
-        )
-            # except Exception as error:
-            #     raise RuntimeError(f"Error Initializing ChatOpenAI: {error}")    
-        # else:
-        #     self.llm = llm(
-        #         model_name=model_name, 
-        #         temperature=self.temperature
-        #     )
-            
+        self.llm = llm
         self.ai_name = ai_name
         self.ai_role = ai_role
         self.setup_tools(external_tools)
@@ -96,8 +82,6 @@ class Worker:
         # self.task_queue = []
         # self.executor = concurrent.futures.ThreadPoolExecutor()
         
-
-    
     def reset(self):
         """
         Reset the message history.
@@ -107,7 +91,6 @@ class Worker:
     @property
     def name(self):
         return self.ai_name
-    
     
     def receieve(self, name: str, message: str) -> None:
         """
@@ -125,29 +108,8 @@ class Worker:
     def add(self, task, priority=0):
         self.task_queue.append((priority, task))
     
-    # def process_task(self, task):
-    #     try:
-    #         result = self.agent.run([task])
-    #         return result
-    #     except Exception as error:
-    #         error_message = f"Error while running task: {str(error)}"
-    #         return error_message
-        
-    # def process_tasks_parallel(self):
-    #     futures = [
-    #         self.executor.submit(
-    #             self.process_task,
-    #             task
-    #         ) for _, task in self.task_queue
-    #     ]
-    #     concurrent.futures.wait(futures)
-    #     results = [future.result() for future in futures]
-    #     return results
 
     
-    # @log_decorator
-    # @error_decorator
-    # @timing_decorator
     def setup_tools(self, external_tools):
         """
         Set up tools for the worker.
@@ -178,6 +140,7 @@ class Worker:
         ]
         if external_tools is not None:
             self.tools.extend(external_tools)
+
 
     def setup_memory(self):
         """
@@ -210,9 +173,9 @@ class Worker:
         except Exception as error:
             raise RuntimeError(f"Error setting up agent: {error}")
     
-    # @log_decorator
-    # @error_decorator
-    # @timing_decorator
+    @log_decorator
+    @error_decorator
+    @timing_decorator
     def run(self, task):
         """
         Run the autonomous agent on a given task.
@@ -229,9 +192,9 @@ class Worker:
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")
     
-    # @log_decorator
-    # @error_decorator
-    # @timing_decorator
+    @log_decorator
+    @error_decorator
+    @timing_decorator
     def __call__(self, task):
         """
         Make the worker callable to run the agent on a given task.
@@ -247,5 +210,90 @@ class Worker:
             return results
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")
+
+    def health_check(self):
+        pass
+
+    @log_decorator
+    @error_decorator
+    @timing_decorator
+    def chat(
+        self,
+        msg: str = None,
+        streaming: bool = False
+    ):
+        """
+        Run chat
+        
+        Args:
+            msg (str, optional): Message to send to the agent. Defaults to None.
+            language (str, optional): Language to use. Defaults to None.
+            streaming (bool, optional): Whether to stream the response. Defaults to False.
+
+        Returns:
+            str: Response from the agent
+        
+        Usage:
+        --------------
+        agent = MultiModalAgent()
+        agent.chat("Hello")
+        
+        """
+        
+        #add users message to the history
+        self.history.append(
+            Message(
+                "User",
+                msg
+            )
+        )
+
+        #process msg
+        try:
+            response = self.agent.run(msg)
+
+            #add agent's response to the history
+            self.history.append(
+                Message(
+                    "Agent",
+                    response
+                )
+            )
+
+            #if streaming is = True
+            if streaming:
+                return self._stream_response(response)
+            else:
+                response
+
+        except Exception as error:
+            error_message = f"Error processing message: {str(error)}"
+
+            #add error to history
+            self.history.append(
+                Message(
+                    "Agent",
+                    error_message
+                )
+            )
+
+            return error_message
+    
+    def _stream_response(
+        self, 
+        response: str = None
+    ):
+        """
+        Yield the response token by token (word by word)
+        
+        Usage:
+        --------------
+        for token in _stream_response(response):
+            print(token)
+        
+        """
+        for token in response.split():
+            yield token
+
 
 
