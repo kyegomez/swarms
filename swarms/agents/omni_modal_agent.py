@@ -128,7 +128,7 @@ class OmniModalAgent:
         
         self.chat_planner = load_chat_planner(llm)
         self.response_generator = load_response_generator(llm)
-        self.task_executor = TaskExecutor
+        # self.task_executor = TaskExecutor
     
 
     def run(self, input: str) -> str:
