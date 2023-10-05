@@ -126,10 +126,6 @@ class WebpageQATool(BaseTool):
     async def _arun(self, url: str, question: str) -> str:
         raise NotImplementedError
 
-# llm = ChatOpenAI(model_name="gpt-4", temperature=1.0)
-# query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(llm))
-
-
 # # @tool
 # code_intepret = CodeInterpreter()
 import interpreter
