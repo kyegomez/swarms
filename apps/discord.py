@@ -21,7 +21,7 @@ async def greet(ctx):
     await ctx.send(f'Hello, {ctx.author.name}!')
 
 @bot.command()
-async def generate_video(ctx, *, description: str):
+async def run(ctx, *, description: str):
     """Generates a video based on the given description."""
     response = agent.run(description)  # Assuming the response provides information or a link to the generated video
     await ctx.send(response)
@@ -31,7 +31,7 @@ async def help_me(ctx):
     """Provides a list of commands and their descriptions."""
     help_text = """
     - `!greet`: Greets you.
-    - `!generate_video [description]`: Generates a video based on the given description.
+    - `!run [description]`: Generates a video based on the given description.
     - `!help_me`: Provides this list of commands and their descriptions.
     """
     await ctx.send(help_text)
