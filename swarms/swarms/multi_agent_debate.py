@@ -46,5 +46,9 @@ class MultiAgentDebate:
         self.task = task
 
     def format_results(self, results):
-        formatted_results = "\n".join([f"Agent {result['agent']} responded: {result['response']}" for result in results])
+        
+        formatted_results = "\n".join(
+            [f"Agent {result['agent']} responded: {result['response']}" for result in results]
+        )
+
         return formatted_results
