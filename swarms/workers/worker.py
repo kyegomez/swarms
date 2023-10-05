@@ -131,7 +131,9 @@ class Worker:
                 temperature=0.5)
         ```
         """
-        query_website_tool = WebpageQATool(qa_chain=load_qa_with_sources_chain(self.llm))
+        query_website_tool = WebpageQATool(
+            qa_chain=load_qa_with_sources_chain(self.llm)
+        )
 
         self.tools = [
             WriteFileTool(root_dir=ROOT_DIR),
@@ -155,7 +157,12 @@ class Worker:
             embedding_size = 1536
             index = faiss.IndexFlatL2(embedding_size)
 
-            self.vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+            self.vectorstore = FAISS(
+                embeddings_model.embed_query, 
+                index, 
+                InMemoryDocstore({}), {}
+            )
+            
         except Exception as error:
             raise RuntimeError(f"Error setting up memory perhaps try try tuning the embedding size: {error}")
         
