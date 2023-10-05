@@ -1,10 +1,12 @@
 #speech to text tool
 
 import os
+import subprocess
+
+import whisperx
 from pydub import AudioSegment
 from pytube import YouTube
-import whisperx
-import subprocess
+
 
 class SpeechToText:
     def __init__(

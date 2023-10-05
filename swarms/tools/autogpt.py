@@ -126,8 +126,6 @@ class WebpageQATool(BaseTool):
     async def _arun(self, url: str, question: str) -> str:
         raise NotImplementedError
 
-# # @tool
-# code_intepret = CodeInterpreter()
 import interpreter
 
 
@@ -197,4 +195,5 @@ def VQAinference(self, inputs):
     )
 
     return answer
+
 
