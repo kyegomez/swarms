@@ -17,6 +17,8 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from pydantic import BaseModel, Field
 from swarms.models.prompts.sales import SALES_AGENT_TOOLS_PROMPT, conversation_stages
+from swarms.tools.interpreter_tool import compile
+from swarms.agents.omni_modal_agent import OmniModalAgent
 
 
 # classes
@@ -164,16 +166,23 @@ def setup_knowledge_base(product_catalog: str = None):
 
 def get_tools(product_catalog):
     # query to get_tools can be used to be embedded and relevant tools found
-    # see here: https://langchain-langchain.vercel.app/docs/use_cases/agents/custom_agent_with_plugin_retrieval#tool-retriever
 
-    # we only use one tool for now, but this is highly extensible!
     knowledge_base = setup_knowledge_base(product_catalog)
     tools = [
         Tool(
             name="ProductSearch",
             func=knowledge_base.run,
             description="useful for when you need to answer questions about product information",
+        ),
+
+        #Interpreter
+        Tool(
+            name="Code Interepeter",
+            func=compile,
+            description="Useful when you need to run code locally, such as Python, Javascript, Shell, and more."
         )
+        
+        #omnimodal agent
     ]
 
     return tools
