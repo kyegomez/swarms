@@ -46,7 +46,7 @@ We have a small gallery of examples to run here, [for more check out the docs to
 ```python
 from swarms.workers import Worker
 from swarms.swarms import MultiAgentDebate, select_speaker
-from langchain.models import OpenAIChat
+from langchain.llms import OpenAIChat
 
 llm = OpenAIChat(
     model_name='gpt-4', 
@@ -105,7 +105,7 @@ for result in results:
 - The `Worker` is an fully feature complete agent with an llm, tools, and a vectorstore for long term memory!
 
 ```python
-from langchain.models import ChatOpenAI
+from langchain.llms import ChatOpenAI
 from swarms import Worker
 
 llm = ChatOpenAI(

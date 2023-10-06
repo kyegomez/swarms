@@ -1,4 +1,4 @@
-from langchain.models import OpenAIChat
+from langchain.llms import OpenAIChat
 from swarms import Worker
 
 llm = OpenAIChat(
