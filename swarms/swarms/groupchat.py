@@ -85,9 +85,9 @@ class GroupChatManager(Worker):
     ):
         super().__init__(
             ai_name=ai_name,
-            max_consecutive_auto_reply=max_consecutive_auto_reply,
-            human_input_mode=human_input_mode,
-            system_message=system_message,
+            # max_consecutive_auto_reply=max_consecutive_auto_reply,
+            # human_input_mode=human_input_mode,
+            # system_message=system_message,
             **kwargs
         )
         self.register_reply(
