@@ -81,7 +81,7 @@ nav:
     - AutoScaler: "swarms/swarms/autoscaler.md"
   - swarms.workers:
     - Overview: "swarms/workers/index.md"
-    - AbstractWorker: "swarms/worker/abstract_worker.md"
+    - AbstractWorker: "swarms/workers/abstract_worker.md"
   - swarms.agents:
     - AbstractAgent: "swarms/agents/abstract_agent.md"
     - OmniModalAgent: "swarms/agents/omni_agent.md"
@@ -89,6 +89,10 @@ nav:
     - Overview: "swarms/models/index.md"
     - HuggingFaceLLM: "swarms/models/hf.md"
     - Anthropic: "swarms/models/anthropic.md"
+  - swarms.structs:
+    - Overview: "swarms/structs/overview.md"
+    - Workflow: "swarms/structs/workflow.md"
+    
 - Examples:
     - Overview: "examples/index.md"
     - Agents:
