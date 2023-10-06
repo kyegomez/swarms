@@ -75,7 +75,7 @@ class SpeechToText:
             use_auth_token=self.hf_api_key, 
             device=device
         )
-        diarize_segments = diarize_model(audio_file)
+        diarize_model(audio_file)
         
         try:
             segments = result["segments"]
@@ -113,7 +113,7 @@ class SpeechToText:
             device=self.device
         )
 
-        diarize_segments = diarize_model(audio_file)
+        diarize_model(audio_file)
         
         try:
             segments = result["segments"]

@@ -1,4 +1,4 @@
-from swarms import Model, Agent, WorkerNode, vectorstore, tools, orchestrator
+from swarms import Model, Agent, vectorstore, tools, orchestrator
 
 #1 model
 Model(openai)

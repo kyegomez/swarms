@@ -281,13 +281,13 @@ class Orchestrator:
         )
 
         #store the mesage in the vector database
-        added = self.collection.add(
+        self.collection.add(
             embeddings=[message_vector],
             documents=[message],
             ids=[f"{sender_id}_to_{receiver_id}"]
         )
 
-        result = self.run(
+        self.run(
             objective=f"chat with agent {receiver_id} about {message}"
         )
 

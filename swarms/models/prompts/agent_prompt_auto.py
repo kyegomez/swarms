@@ -1,5 +1,5 @@
 import time
-from typing import Any, Callable, List
+from typing import Any, List
 from swarms.models.prompts.agent_prompt_generator import get_prompt
 
 class TokenUtils:

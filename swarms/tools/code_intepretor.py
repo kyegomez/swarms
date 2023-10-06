@@ -1,6 +1,6 @@
 #props to shroominic
 from swarms.tools.base import Tool, ToolException
-from typing import Callable, Any, List
+from typing import Any, List
 from codeinterpreterapi import CodeInterpreterSession, File, ToolException
 
 class CodeInterpreter(Tool):

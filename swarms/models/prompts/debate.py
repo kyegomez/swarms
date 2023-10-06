@@ -38,10 +38,4 @@ def debate_monitor(game_description, word_limit, character_names):
 
 
 def generate_character_header(game_description, topic, character_name, character_description):
-    prompt =  f"""{game_description}
-    Your name is {character_name}.
-    You are a presidential candidate.
-    Your description is as follows: {character_description}
-    You are debating the topic: {topic}.
-    Your goal is to be as creative as possible and make the voters think you are the best candidate.
-    """
+    pass

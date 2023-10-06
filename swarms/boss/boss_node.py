@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Optional
 
 import faiss
 from langchain import LLMChain, OpenAI, PromptTemplate

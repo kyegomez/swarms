@@ -7,12 +7,8 @@ import uuid
 from PIL import Image, ImageDraw, ImageOps, ImageFont
 import math
 import numpy as np
-import argparse
 import inspect
-import tempfile
-from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration, BlipForQuestionAnswering
-from transformers import AutoImageProcessor, UperNetForSemanticSegmentation
 
 from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline, StableDiffusionInstructPix2PixPipeline
 from diffusers import EulerAncestralDiscreteScheduler
@@ -29,7 +25,6 @@ from langchain.llms.openai import OpenAI
 # Grounding DINO
 import groundingdino.datasets.transforms as T
 from groundingdino.models import build_model
-from groundingdino.util import box_ops
 from groundingdino.util.slconfig import SLConfig
 from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 
