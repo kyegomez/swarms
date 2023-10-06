@@ -4,8 +4,8 @@ import threading
 import os
 import glob
 import base64
-from langchain.llms import ChatOpenAI  #
-from swarms.agents import OmniModalAgent  # Replace with your actual class
+from langchain.llms import OpenAIChat  
+from swarms.agents import OmniModalAgent  
 
 #Function to convert image to base64
 def image_to_base64(image_path):
@@ -21,7 +21,7 @@ def get_latest_image():
     return latest_file
 
 #Initialize your OmniModalAgent
-llm = ChatOpenAI(model_name="gpt-4")  # Replace with your actual initialization
+llm = OpenAIChat(model_name="gpt-4")  # Replace with your actual initialization
 agent = OmniModalAgent(llm)  # Replace with your actual initialization
 
 #Global variable to store chat history
