@@ -29,7 +29,10 @@ class GodMode:
 
 
     """
-    def __init__(self, llms):
+    def __init__(
+        self, 
+        llms
+    ):
         self.llms = llms
 
     def run(self, task):

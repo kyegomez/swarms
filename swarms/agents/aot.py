@@ -112,9 +112,9 @@ class OpenAI:
             rejected_solutions=None
         ):
         if (type(state) == str):
-            state_text = state
+            pass
         else:
-            state_text = '\n'.join(state)
+            '\n'.join(state)
         print("New state generating thought:", state, "\n\n")
         prompt = f"""
         Accomplish the task below by decomposing it as many very explicit subtasks as possible, be very explicit and thorough denoted by 

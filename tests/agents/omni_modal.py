@@ -1,15 +1,5 @@
 import pytest
 from langchain.base_language import BaseLanguageModel
-from langchain_experimental.autonomous_agents.hugginggpt.repsonse_generator import (
-    load_response_generator,
-)
-from langchain_experimental.autonomous_agents.hugginggpt.task_executor import (
-    TaskExecutor,
-)
-from langchain_experimental.autonomous_agents.hugginggpt.task_planner import (
-    load_chat_planner,
-)
-from transformers import load_tool
 
 from swarms.agents import (
     OmniModalAgent,  # Replace `your_module_name` with the appropriate module name

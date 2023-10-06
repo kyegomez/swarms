@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands
 from langchain.llms import OpenAIChat
 from swarms.agents import OmniModalAgent
