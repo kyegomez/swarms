@@ -86,14 +86,14 @@ def _create_retry_decorator(
         Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
     ] = None,
 ) -> Callable[[Any], Any]:
-    import openai
+    import llm
 
     errors = [
-        openai.error.Timeout,
-        openai.error.APIError,
-        openai.error.APIConnectionError,
-        openai.error.RateLimitError,
-        openai.error.ServiceUnavailableError,
+        llm.error.Timeout,
+        llm.error.APIError,
+        llm.error.APIConnectionError,
+        llm.error.RateLimitError,
+        llm.error.ServiceUnavailableError,
     ]
     return create_base_retry_decorator(
         error_types=errors, max_retries=llm.max_retries, run_manager=run_manager
@@ -247,9 +247,9 @@ class BaseOpenAI(BaseLLM):
             default="",
         )
         try:
-            import openai
+            import llm
 
-            values["client"] = openai.Completion
+            values["client"] = llm.Completion
         except ImportError:
             raise ImportError(
                 "Could not import openai python package. "
@@ -494,9 +494,9 @@ class BaseOpenAI(BaseLLM):
             "organization": self.openai_organization,
         }
         if self.openai_proxy:
-            import openai
+            import llm
 
-            openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
+            llm.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
         return {**openai_creds, **self._default_params}
 
     @property
@@ -765,22 +765,22 @@ class OpenAIChat(BaseLLM):
             values, "openai_organization", "OPENAI_ORGANIZATION", default=""
         )
         try:
-            import openai
+            import llm
 
-            openai.api_key = openai_api_key
+            llm.api_key = openai_api_key
             if openai_api_base:
-                openai.api_base = openai_api_base
+                llm.api_base = openai_api_base
             if openai_organization:
-                openai.organization = openai_organization
+                llm.organization = openai_organization
             if openai_proxy:
-                openai.proxy = {"http": openai_proxy, "https": openai_proxy}  # type: ignore[assignment]  # noqa: E501
+                llm.proxy = {"http": openai_proxy, "https": openai_proxy}  # type: ignore[assignment]  # noqa: E501
         except ImportError:
             raise ImportError(
                 "Could not import openai python package. "
                 "Please install it with `pip install openai`."
             )
         try:
-            values["client"] = openai.ChatCompletion
+            values["client"] = llm.ChatCompletion
         except AttributeError:
             raise ValueError(
                 "`openai` has no `ChatCompletion` attribute, this is likely "
