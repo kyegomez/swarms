@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 def _create_retry_decorator(embeddings: OpenAIEmbeddings) -> Callable[[Any], Any]:
-    import openai
+    import llm
 
     min_seconds = 4
     max_seconds = 10
@@ -53,18 +53,18 @@ def _create_retry_decorator(embeddings: OpenAIEmbeddings) -> Callable[[Any], Any
         stop=stop_after_attempt(embeddings.max_retries),
         wait=wait_exponential(multiplier=1, min=min_seconds, max=max_seconds),
         retry=(
-            retry_if_exception_type(openai.error.Timeout)
-            | retry_if_exception_type(openai.error.APIError)
-            | retry_if_exception_type(openai.error.APIConnectionError)
-            | retry_if_exception_type(openai.error.RateLimitError)
-            | retry_if_exception_type(openai.error.ServiceUnavailableError)
+            retry_if_exception_type(llm.error.Timeout)
+            | retry_if_exception_type(llm.error.APIError)
+            | retry_if_exception_type(llm.error.APIConnectionError)
+            | retry_if_exception_type(llm.error.RateLimitError)
+            | retry_if_exception_type(llm.error.ServiceUnavailableError)
         ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
 
 
 def _async_retry_decorator(embeddings: OpenAIEmbeddings) -> Any:
-    import openai
+    import llm
 
     min_seconds = 4
     max_seconds = 10
@@ -75,11 +75,11 @@ def _async_retry_decorator(embeddings: OpenAIEmbeddings) -> Any:
         stop=stop_after_attempt(embeddings.max_retries),
         wait=wait_exponential(multiplier=1, min=min_seconds, max=max_seconds),
         retry=(
-            retry_if_exception_type(openai.error.Timeout)
-            | retry_if_exception_type(openai.error.APIError)
-            | retry_if_exception_type(openai.error.APIConnectionError)
-            | retry_if_exception_type(openai.error.RateLimitError)
-            | retry_if_exception_type(openai.error.ServiceUnavailableError)
+            retry_if_exception_type(llm.error.Timeout)
+            | retry_if_exception_type(llm.error.APIError)
+            | retry_if_exception_type(llm.error.APIConnectionError)
+            | retry_if_exception_type(llm.error.RateLimitError)
+            | retry_if_exception_type(llm.error.ServiceUnavailableError)
         ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
@@ -98,9 +98,9 @@ def _async_retry_decorator(embeddings: OpenAIEmbeddings) -> Any:
 # https://stackoverflow.com/questions/76469415/getting-embeddings-of-length-1-from-langchain-openaiembeddings
 def _check_response(response: dict) -> dict:
     if any(len(d["embedding"]) == 1 for d in response["data"]):
-        import openai
+        import llm
 
-        raise openai.error.APIError("OpenAI API returned an empty embedding")
+        raise llm.error.APIError("OpenAI API returned an empty embedding")
     return response
 
 
@@ -278,9 +278,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             default="",
         )
         try:
-            import openai
+            import llm
 
-            values["client"] = openai.Embedding
+            values["client"] = llm.Embedding
         except ImportError:
             raise ImportError(
                 "Could not import openai python package. "
@@ -304,9 +304,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         if self.openai_api_type in ("azure", "azure_ad", "azuread"):
             openai_args["engine"] = self.deployment
         if self.openai_proxy:
-            import openai
+            import llm
 
-            openai.proxy = {
+            llm.proxy = {
                 "http": self.openai_proxy,
                 "https": self.openai_proxy,
             }  # type: ignore[assignment]  # noqa: E501
