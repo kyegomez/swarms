@@ -58,10 +58,12 @@ class Worker:
     print(response)
     ```
 
+    llm + tools + memory
+
     """
     def __init__(
         self, 
-        openai_api_key: str = None,
+
         ai_name: str = "Autobot Swarm Worker",
         ai_role: str = "Worker in a swarm",
         external_tools = None,
@@ -69,7 +71,6 @@ class Worker:
         temperature: float = 0.5,
         llm = None,
     ):
-        self.openai_api_key = openai_api_key
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
         self.llm = llm
