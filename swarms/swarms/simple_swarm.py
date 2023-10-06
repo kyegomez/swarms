@@ -4,9 +4,10 @@ from queue import Queue, PriorityQueue
 class SimpleSwarm:
     def __init__(
        self,
-       num_workers,
-       openai_api_key,
-       ai_name
+       num_workers: int = None,
+       openai_api_key: str = None,
+       ai_name: str = None,
+       rounds: int = 1,
     ):
         """
 
@@ -37,14 +38,14 @@ class SimpleSwarm:
 
         """
         self.workers = [
-            Worker(openai_api_key, ai_name) for _ in range(num_workers)
+            Worker(ai_name, ai_name, openai_api_key) for _ in range(num_workers)
         ]
         self.task_queue = Queue()
         self.priority_queue = PriorityQueue()
     
     def distribute(
         self,
-        task,
+        task: str = None,
         priority=None
     ):
         """Distribute a task to the workers"""
