@@ -56,17 +56,18 @@ class Worker:
     """
     def __init__(
         self, 
-
         ai_name: str = "Autobot Swarm Worker",
         ai_role: str = "Worker in a swarm",
         external_tools = None,
         human_in_the_loop = False,
         temperature: float = 0.5,
         llm = None,
+        openai_api_key: str = None,
     ):
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
         self.llm = llm
+        self.openai_api_key = openai_api_key
         self.ai_name = ai_name
         self.ai_role = ai_role
         self.setup_tools(external_tools)

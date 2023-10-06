@@ -1,3 +1,2 @@
-from swarms.swarms import GroupChatManager
-from swarms.agents.base import AbstractAgent
+from swarms.swarms import GroupChat
 
