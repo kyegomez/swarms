@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from swarms.artifacts.error_artifact import ErrorArtifact
 from swarms.structs.task import BaseTask
 
+
 class StringTask(BaseTask):
     def __init__(self, task):
         super().__init__()
@@ -43,10 +44,10 @@ class Workflow:
     """
     def __init__(
         self,
-        llm,
+        agent,
         parallel: bool = False
     ):
-        self.llm = llm
+        self.agent = agent
         self.tasks: List[BaseTask] = []
         self.parallel = parallel
 
