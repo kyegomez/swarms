@@ -21,9 +21,35 @@ class Task:
     
 
 class NonLinearWorkflow:
+    """
+    NonLinearWorkflow constructs a non sequential DAG of tasks to be executed by agents
+
+
+    Architecture:
+    NonLinearWorkflow = Task + Agent + Executor
+
+    ASCII Diagram:
+    +-------------------+
+    | NonLinearWorkflow |
+    +-------------------+
+    |                   |
+    |                   |
+    |                   |
+    |                   |
+    |                   |
+    |                   |
+    |                   |
+    |                   |
+    |                   |
+    |                   |
+    +-------------------+
+    
+    
+    """
     def __init__(
         self,
         agents,
+        iters_per_task
     ):
         """A workflow is a collection of tasks that can be executed in parallel or sequentially."""
         super().__init__()
