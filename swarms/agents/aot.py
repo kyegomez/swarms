@@ -2,6 +2,8 @@ import logging
 import os
 import time
 
+import openai
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -17,7 +19,7 @@ class OpenAI:
         if api_key == "" or api_key is None:
             api_key = os.environ.get("OPENAI_API_KEY", "")
         if api_key != "":
-            llm.api_key = api_key
+            openai.api_key = api_key
         else:
             raise Exception("Please provide OpenAI API key")
 
@@ -25,7 +27,7 @@ class OpenAI:
             api_base = os.environ.get("OPENAI_API_BASE", "")  # if not set, use the default base path of "https://api.openai.com/v1"
         if api_base != "":
             # e.g. https://api.openai.com/v1/ or your custom url
-            llm.api_base = api_base
+            openai.api_base = api_base
             print(f'Using custom api_base {api_base}')
             
         if api_model == "" or api_model is None:
@@ -57,14 +59,14 @@ class OpenAI:
                             "content": prompt
                         }
                     ]
-                    response = llm.ChatCompletion.create(
+                    response = openai.ChatCompletion.create(
                         model=self.api_model,
                         messages=messages,
                         max_tokens=max_tokens,
                         temperature=temperature,
                     )
                 else:
-                    response = llm.Completion.create(
+                    response = openai.Completion.create(
                         engine=self.api_model,
                         prompt=prompt,
                         n=k,
@@ -75,7 +77,7 @@ class OpenAI:
                 with open("openai.logs", 'a') as log_file:
                     log_file.write("\n" + "-----------" + '\n' +"Prompt : "+ prompt+"\n")
                 return response
-            except llm.error.RateLimitError as e:
+            except openai.error.RateLimitError as e:
                 sleep_duratoin = os.environ.get("OPENAI_RATE_TIMEOUT", 30)
                 print(f'{str(e)}, sleep for {sleep_duratoin}s, set it by env OPENAI_RATE_TIMEOUT')
                 time.sleep(sleep_duratoin)
@@ -110,9 +112,9 @@ class OpenAI:
             rejected_solutions=None
         ):
         if (type(state) == str):
-            pass
+            state_text = state
         else:
-            '\n'.join(state)
+            state_text = '\n'.join(state)
         print("New state generating thought:", state, "\n\n")
         prompt = f"""
         Accomplish the task below by decomposing it as many very explicit subtasks as possible, be very explicit and thorough denoted by 
@@ -150,8 +152,7 @@ class OpenAI:
             while taking rejected solutions into account and learning from them. 
             Considering the reasoning provided:\n\n
             ###'{state_text}'\n\n###
-            Devise the best possible solution for the task: {initial_prompt}, 
-            Here are evaluated solutions that were rejected: 
+            Devise the best possible solution for the task: {initial_prompt}, Here are evaluated solutions that were rejected: 
             ###{rejected_solutions}###, 
             complete the {initial_prompt} without making the same mistakes you did with the evaluated rejected solutions. Be simple. Be direct. Provide intuitive solutions as soon as you think of them."""
             answer = self.generate_text(prompt, 1)
@@ -192,7 +193,6 @@ class OpenAI:
 
         else:
             raise ValueError("Invalid evaluation strategy. Choose 'value' or 'vote'.")
-
 class AoTAgent:
     def __init__(
         self, 
