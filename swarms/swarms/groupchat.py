@@ -2,13 +2,13 @@ import sys
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
-from swarms.agents.base import AbstractAgent
+from swarms.workers.worker import Worker
 
 @dataclass
 class GroupChat:
     """A group chat with multiple participants with a list of agents and a max number of rounds"""
 
-    agents: List[AbstractAgent]
+    agents: List[Worker]
     messages: List[Dict]
     max_rounds: int = 10
     admin_name: str = "Admin" #admin agent
@@ -21,11 +21,11 @@ class GroupChat:
     def reset(self):
         self.messages.clear()
     
-    def agent_by_name(self, name: str) -> AbstractAgent:
+    def agent_by_name(self, name: str) -> Worker:
         """Find the next speaker baed on the message"""
         return self.agents[self.agent_names.index(name)]
     
-    def next_agent(self, agent: AbstractAgent) -> AbstractAgent:
+    def next_agent(self, agent: Worker) -> Worker:
         """Returns the next agent in the list"""
         return self.agents[
             (self.agents_names.index(agent.ai_name) + 1) % len(self.agents)
@@ -44,8 +44,8 @@ class GroupChat:
     
     def select_speaker(
         self,
-        last_speaker: AbstractAgent,
-        selector: AbstractAgent,
+        last_speaker: Worker,
+        selector: Worker,
     ):
         """Selects the next speaker"""
         selector.update_system_message(self.select_speaker_msg())
@@ -72,7 +72,7 @@ class GroupChat:
 
 
 
-class GroupChatManager(AbstractAgent):
+class GroupChatManager(Worker):
     def __init__(
         self,
         groupchat: GroupChat,
@@ -91,7 +91,7 @@ class GroupChatManager(AbstractAgent):
             **kwargs
         )
         self.register_reply(
-            AbstractAgent,
+            Worker,
             GroupChatManager.run_chat,
             config=groupchat,
             reset_config=GroupChat.reset
@@ -100,7 +100,7 @@ class GroupChatManager(AbstractAgent):
     def run(
         self,
         messages: Optional[List[Dict]] = None,
-        sender: Optional[AbstractAgent] = None,
+        sender: Optional[Worker] = None,
         config: Optional[GroupChat] = None,
     ) -> Union[str, Dict, None]:
         #run
