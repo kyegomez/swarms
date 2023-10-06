@@ -50,7 +50,7 @@ messages = [
 
 group = GroupChat(
     workers=nodes,
-    messages=messages
+    messages=messages,
     max_rounds=3,
 )
 
