@@ -49,7 +49,7 @@ messages = [
 ]
 
 group = GroupChat(
-    nodes=nodes,
+    workers=nodes,
     max_rounds=3,
     max_consecutive_auto_reply=3,
     human_input_mode="NEVER",
