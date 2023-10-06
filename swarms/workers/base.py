@@ -68,7 +68,7 @@ class AbstractWorker:
     def generate_reply(
         self,
         messages: Optional[List[Dict]] = None,
-        sender, #Optional["AbstractWorker"] = None,
+        sender = None, #Optional["AbstractWorker"] = None,
         **kwargs,
     ) -> Union[str, Dict, None]:
         """(Abstract method) Generate a reply based on the received messages.
@@ -83,7 +83,7 @@ class AbstractWorker:
     async def a_generate_reply(
         self,
         messages: Optional[List[Dict]] = None,
-        sender, #Optional["AbstractWorker"] = None,
+        sender = None, #Optional["AbstractWorker"] = None,
         **kwargs,
     ) -> Union[str, Dict, None]:
         """(Abstract async method) Generate a reply based on the received messages.
