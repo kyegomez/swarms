@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Union
 
 from swarms.workers.worker import Worker
 
+
 @dataclass
 class GroupChat:
     """A group chat with multiple participants with a list of workers and a max number of rounds"""
@@ -11,7 +12,11 @@ class GroupChat:
     workers: List[Worker]
     messages: List[Dict]
     max_rounds: int = 10
+<<<<<<< Updated upstream
     admin_name: str = "Admin" #admin worker
+=======
+    admin_name: str = "Admin"  # admin agent
+>>>>>>> Stashed changes
 
     @property
     def worker_names(self) -> List[str]:
@@ -20,17 +25,24 @@ class GroupChat:
     
     def reset(self):
         self.messages.clear()
+<<<<<<< Updated upstream
     
     def worker_by_name(self, name: str) -> Worker:
         """Find the next speaker baed on the message"""
         return self.workers[self.worker_names.index(name)]
+=======
+
+    def agent_by_name(self, name: str) -> Worker:
+        """Find the next speaker baed on the message"""
+        return self.agents[self.agent_names.index(name)]
+>>>>>>> Stashed changes
     
     def next_worker(self, worker: Worker) -> Worker:
         """Returns the next worker in the list"""
         return self.workers[
             (self.workers_names.index(worker.ai_name) + 1) % len(self.workers)
         ]
-    
+
     def select_speaker_msg(self):
         """Return the message to select the next speaker"""
 
@@ -41,7 +53,7 @@ class GroupChat:
         Read the following conversation then select the next role from {self.worker_names}
         to play and only return the role
         """
-    
+
     def select_speaker(
         self,
         last_speaker: Worker,
@@ -67,9 +79,8 @@ class GroupChat:
         
     def _participant_roles(self):
         return "\n".join(
-            [f"{worker.ai_name}: {worker.system_message}" for worker in self.workers] 
+            [f"{agent.ai_name}: {agent.system_message}" for agent in self.workers] 
         )
-
 
 
 class GroupChatManager(Worker):
@@ -77,7 +88,7 @@ class GroupChatManager(Worker):
         self,
         groupchat: GroupChat,
         name: Optional[str] = "chat_manager",
-        #unlimited auto reply
+        # unlimited auto reply
         max_consecutive_auto_reply: Optional[int] = sys.maxsize,
         human_input_mode: Optional[str] = "NEVER",
         system_message: Optional[str] = "Group chat manager",
@@ -103,18 +114,18 @@ class GroupChatManager(Worker):
         sender: Optional[Worker] = None,
         config: Optional[GroupChat] = None,
     ) -> Union[str, Dict, None]:
-        #run
+        # run
         if messages is None:
             messages = []
-        
+
         message = messages[-1]
         speaker = sender
         groupchat = config
 
         for i in range(groupchat.max_rounds):
             if message["role"] != "function":
-                message["name"]= speaker.ai_name
-            
+                message["name"] = speaker.ai_name
+
             groupchat.messages.append(message)
 
             #broadcast the message to all workers except the speaker
@@ -130,11 +141,11 @@ class GroupChatManager(Worker):
                 break
 
             try:
-                #select next speaker
+                # select next speaker
                 speaker = groupchat.select_speaker(speaker, self)
-                #let the speaker speak
+                # let the speaker speak
                 reply = speaker.generate_reply(sender=self)
-            
+
             except KeyboardInterrupt:
                 #let the admin speak if interrupted
                 if groupchat.admin_name in groupchat.worker_names:
@@ -142,12 +153,12 @@ class GroupChatManager(Worker):
                     speaker = groupchat.worker_by_name(groupchat.admin_name)
                     reply = speaker.generate_reply(sender=self)
                 else:
-                    #admin worker is not found in particpants
+                    #admin agent is not found in particpants
                     raise
             if reply is None:
                 break
 
-            #speaker sends message without requesting a reply
+            # speaker sends message without requesting a reply
             speaker.send(
                 reply,
                 self,
