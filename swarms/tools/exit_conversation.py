@@ -20,6 +20,3 @@ class ExitConversation(BaseToolSet):
         logger.debug("\nProcessed ExitConversation.")
 
         return message
-    
-
-

@@ -155,7 +155,7 @@ class Task(BaseModel):
         return pprint.pformat(self.dict(by_alias=True))
 
     def to_json(self) -> str:
-               return json.dumps(self.dict(by_alias=True, exclude_none=True))
+        return json.dumps(self.dict(by_alias=True, exclude_none=True))
 
     @classmethod
     def from_json(cls, json_str: str) -> 'Task':

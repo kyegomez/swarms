@@ -30,21 +30,19 @@ class Step:
         self.args = args
         self.tool = tool
 
+
 class Plan:
     def __init__(
         self,
         steps: List[Step]
     ):
         self.steps = steps
-    
+
     def __str__(self) -> str:
         return str([str(step) for step in self.steps])
-    
+
     def __repr(self) -> str:
         return str(self)
-
-
-
 
 
 class OmniModalAgent:
@@ -72,13 +70,14 @@ class OmniModalAgent:
     agent = OmniModalAgent(llm)
     response = agent.run("Hello, how are you? Create an image of how your are doing!")
     """
+
     def __init__(
         self,
         llm: BaseLanguageModel,
         # tools: List[BaseTool]
     ):
         self.llm = llm
-        
+
         print("Loading tools...")
         self.tools = [
             load_tool(tool_name)
@@ -99,15 +98,14 @@ class OmniModalAgent:
                 "huggingface-tools/image-transformation",
             ]
         ]
-        
+
         self.chat_planner = load_chat_planner(llm)
         self.response_generator = load_response_generator(llm)
         # self.task_executor = TaskExecutor
         self.history = []
-    
 
     def run(
-        self, 
+        self,
         input: str
     ) -> str:
         """Run the OmniAgent"""
@@ -125,7 +123,7 @@ class OmniModalAgent:
         )
 
         return response
-    
+
     def chat(
         self,
         msg: str = None,
@@ -133,7 +131,7 @@ class OmniModalAgent:
     ):
         """
         Run chat
-        
+
         Args:
             msg (str, optional): Message to send to the agent. Defaults to None.
             language (str, optional): Language to use. Defaults to None.
@@ -141,15 +139,15 @@ class OmniModalAgent:
 
         Returns:
             str: Response from the agent
-        
+
         Usage:
         --------------
         agent = MultiModalAgent()
         agent.chat("Hello")
-        
+
         """
-        
-        #add users message to the history
+
+        # add users message to the history
         self.history.append(
             Message(
                 "User",
@@ -157,11 +155,11 @@ class OmniModalAgent:
             )
         )
 
-        #process msg
+        # process msg
         try:
             response = self.agent.run(msg)
 
-            #add agent's response to the history
+            # add agent's response to the history
             self.history.append(
                 Message(
                     "Agent",
@@ -169,7 +167,7 @@ class OmniModalAgent:
                 )
             )
 
-            #if streaming is = True
+            # if streaming is = True
             if streaming:
                 return self._stream_response(response)
             else:
@@ -178,7 +176,7 @@ class OmniModalAgent:
         except Exception as error:
             error_message = f"Error processing message: {str(error)}"
 
-            #add error to history
+            # add error to history
             self.history.append(
                 Message(
                     "Agent",
@@ -187,21 +185,19 @@ class OmniModalAgent:
             )
 
             return error_message
-    
+
     def _stream_response(
-        self, 
+        self,
         response: str = None
     ):
         """
         Yield the response token by token (word by word)
-        
+
         Usage:
         --------------
         for token in _stream_response(response):
             print(token)
-        
+
         """
         for token in response.split():
             yield token
-
-

@@ -1,3 +1,4 @@
+from swarms.agents.message import Message
 import os
 import random
 import torch
@@ -36,18 +37,17 @@ import matplotlib.pyplot as plt
 import wget
 
 
-
-#prompts
+# prompts
 VISUAL_AGENT_PREFIX = """
-Worker Multi-Modal Agent is designed to be able to assist with 
-a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. 
+Worker Multi-Modal Agent is designed to be able to assist with
+a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics.
 Worker Multi-Modal Agent is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
 
 Worker Multi-Modal Agent is able to process and understand large amounts of text and images. As a language model, Worker Multi-Modal Agent can not directly read images, but it has a list of tools to finish different visual tasks. Each image will have a file name formed as "image/xxx.png", and Worker Multi-Modal Agent can invoke different tools to indirectly understand pictures. When talking about images, Worker Multi-Modal Agent is very strict to the file name and will never fabricate nonexistent files. When using tools to generate new image files, Worker Multi-Modal Agent is also known that the image may not be the same as the user's demand, and will use other visual question answering tools or description tools to observe the real image. Worker Multi-Modal Agent is able to use tools in a sequence, and is loyal to the tool observation outputs rather than faking the image content and image file name. It will remember to provide the file name from the last tool observation, if a new image is generated.
 
 Human may provide new figures to Worker Multi-Modal Agent with a description. The description helps Worker Multi-Modal Agent to understand this image, but Worker Multi-Modal Agent should use tools to finish following tasks, rather than directly imagine from the description.
 
-Overall, Worker Multi-Modal Agent is a powerful visual dialogue assistant tool that can help with a wide range of tasks and provide valuable insights and information on a wide range of topics. 
+Overall, Worker Multi-Modal Agent is a powerful visual dialogue assistant tool that can help with a wide range of tasks and provide valuable insights and information on a wide range of topics.
 
 
 TOOLS:
@@ -82,7 +82,7 @@ Previous conversation history:
 
 New input: {input}
 Since Worker Multi-Modal Agent is a text language model, Worker Multi-Modal Agent must use tools to observe images rather than imagination.
-The thoughts and observations are only visible for Worker Multi-Modal Agent, Worker Multi-Modal Agent should remember to repeat important information in the final response for Human. 
+The thoughts and observations are only visible for Worker Multi-Modal Agent, Worker Multi-Modal Agent should remember to repeat important information in the final response for Human.
 Thought: Do I need to use a tool? {agent_scratchpad} Let's think step by step.
 """
 
@@ -239,12 +239,13 @@ def get_new_image_name(org_img_name, func_name="update"):
     new_file_name = f'{this_new_uuid}_{func_name}_{recent_prev_file_name}_{most_org_file_name}.png'
     return os.path.join(head, new_file_name)
 
+
 class InstructPix2Pix:
     def __init__(self, device):
         print(f"Initializing InstructPix2Pix to {device}")
         self.device = device
         self.torch_dtype = torch.float16 if 'cuda' in device else torch.float32
-       
+
         self.pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained("timbrooks/instruct-pix2pix",
                                                                            safety_checker=StableDiffusionSafetyChecker.from_pretrained('CompVis/stable-diffusion-safety-checker'),
                                                                            torch_dtype=self.torch_dtype).to(device)
@@ -352,7 +353,7 @@ class CannyText2Image:
         self.seed = -1
         self.a_prompt = 'best quality, extremely detailed'
         self.n_prompt = 'longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, ' \
-                            'fewer digits, cropped, worst quality, low quality'
+            'fewer digits, cropped, worst quality, low quality'
 
     @prompts(name="Generate Image Condition On Canny Image",
              description="useful when you want to generate a new real image from both the user description and a canny image."
@@ -409,7 +410,7 @@ class LineText2Image:
         self.seed = -1
         self.a_prompt = 'best quality, extremely detailed'
         self.n_prompt = 'longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, ' \
-                            'fewer digits, cropped, worst quality, low quality'
+            'fewer digits, cropped, worst quality, low quality'
 
     @prompts(name="Generate Image Condition On Line Image",
              description="useful when you want to generate a new real image from both the user description "
@@ -467,7 +468,7 @@ class HedText2Image:
         self.seed = -1
         self.a_prompt = 'best quality, extremely detailed'
         self.n_prompt = 'longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, ' \
-                            'fewer digits, cropped, worst quality, low quality'
+            'fewer digits, cropped, worst quality, low quality'
 
     @prompts(name="Generate Image Condition On Soft Hed Boundary Image",
              description="useful when you want to generate a new real image from both the user description "
@@ -525,7 +526,7 @@ class ScribbleText2Image:
         self.seed = -1
         self.a_prompt = 'best quality, extremely detailed'
         self.n_prompt = 'longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, ' \
-                            'fewer digits, cropped, worst quality, low quality'
+            'fewer digits, cropped, worst quality, low quality'
 
     @prompts(name="Generate Image Condition On Sketch Image",
              description="useful when you want to generate a new real image from both the user description and "
@@ -581,7 +582,7 @@ class PoseText2Image:
         self.unconditional_guidance_scale = 9.0
         self.a_prompt = 'best quality, extremely detailed'
         self.n_prompt = 'longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit,' \
-                            ' fewer digits, cropped, worst quality, low quality'
+            ' fewer digits, cropped, worst quality, low quality'
 
     @prompts(name="Generate Image Condition On Pose Image",
              description="useful when you want to generate a new real image from both the user description "
@@ -604,6 +605,7 @@ class PoseText2Image:
               f"Output Image: {updated_image_path}")
         return updated_image_path
 
+
 class SegText2Image:
     def __init__(self, device):
         print(f"Initializing SegText2Image to {device}")
@@ -618,7 +620,7 @@ class SegText2Image:
         self.seed = -1
         self.a_prompt = 'best quality, extremely detailed'
         self.n_prompt = 'longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit,' \
-                            ' fewer digits, cropped, worst quality, low quality'
+            ' fewer digits, cropped, worst quality, low quality'
 
     @prompts(name="Generate Image Condition On Segmentations",
              description="useful when you want to generate a new real image from both the user description and segmentations. "
@@ -677,7 +679,7 @@ class DepthText2Image:
         self.seed = -1
         self.a_prompt = 'best quality, extremely detailed'
         self.n_prompt = 'longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit,' \
-                            ' fewer digits, cropped, worst quality, low quality'
+            ' fewer digits, cropped, worst quality, low quality'
 
     @prompts(name="Generate Image Condition On Depth",
              description="useful when you want to generate a new real image from both the user description and depth image. "
@@ -748,7 +750,7 @@ class NormalText2Image:
         self.seed = -1
         self.a_prompt = 'best quality, extremely detailed'
         self.n_prompt = 'longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit,' \
-                            ' fewer digits, cropped, worst quality, low quality'
+            ' fewer digits, cropped, worst quality, low quality'
 
     @prompts(name="Generate Image Condition On Normal Map",
              description="useful when you want to generate a new real image from both the user description and normal map. "
@@ -800,25 +802,23 @@ class Segmenting:
         print(f"Inintializing Segmentation to {device}")
         self.device = device
         self.torch_dtype = torch.float16 if 'cuda' in device else torch.float32
-        self.model_checkpoint_path = os.path.join("checkpoints","sam")
+        self.model_checkpoint_path = os.path.join("checkpoints", "sam")
 
         self.download_parameters()
         self.sam = build_sam(checkpoint=self.model_checkpoint_path).to(device)
         self.sam_predictor = SamPredictor(self.sam)
         self.mask_generator = SamAutomaticMaskGenerator(self.sam)
-        
+
         self.saved_points = []
         self.saved_labels = []
 
     def download_parameters(self):
         url = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
         if not os.path.exists(self.model_checkpoint_path):
-            wget.download(url,out=self.model_checkpoint_path)
+            wget.download(url, out=self.model_checkpoint_path)
 
-        
-    def show_mask(self, mask: np.ndarray,image: np.ndarray,
-                random_color: bool = False, transparency=1) -> np.ndarray:
-        
+    def show_mask(self, mask: np.ndarray, image: np.ndarray,
+                  random_color: bool = False, transparency=1) -> np.ndarray:
         """Visualize a mask on top of an image.
         Args:
             mask (np.ndarray): A 2D array of shape (H, W).
@@ -829,7 +829,7 @@ class Segmenting:
             visualized on top of the image.
             transparenccy: the transparency of the segmentation mask
         """
-        
+
         if random_color:
             color = np.concatenate([np.random.random(3)], axis=0)
         else:
@@ -839,16 +839,14 @@ class Segmenting:
 
         image = cv2.addWeighted(image, 0.7, mask_image.astype('uint8'), transparency, 0)
 
-
         return image
 
     def show_box(self, box, ax, label):
         x0, y0 = box[0], box[1]
         w, h = box[2] - box[0], box[3] - box[1]
-        ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='green', facecolor=(0,0,0,0), lw=2)) 
+        ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='green', facecolor=(0, 0, 0, 0), lw=2))
         ax.text(x0, y0, label)
 
-    
     def get_mask_with_boxes(self, image_pil, image, boxes_filt):
 
         size = image_pil.size
@@ -862,13 +860,13 @@ class Segmenting:
         transformed_boxes = self.sam_predictor.transform.apply_boxes_torch(boxes_filt, image.shape[:2]).to(self.device)
 
         masks, _, _ = self.sam_predictor.predict_torch(
-            point_coords = None,
-            point_labels = None,
-            boxes = transformed_boxes.to(self.device),
-            multimask_output = False,
+            point_coords=None,
+            point_labels=None,
+            boxes=transformed_boxes.to(self.device),
+            multimask_output=False,
         )
         return masks
-    
+
     def segment_image_with_boxes(self, image_pil, image_path, boxes_filt, pred_phrases):
 
         image = cv2.imread(image_path)
@@ -883,7 +881,7 @@ class Segmenting:
             image = self.show_mask(mask[0].cpu().numpy(), image, random_color=True, transparency=0.3)
 
         updated_image_path = get_new_image_name(image_path, func_name="segmentation")
-        
+
         new_image = Image.fromarray(image)
         new_image.save(updated_image_path)
 
@@ -895,7 +893,7 @@ class Segmenting:
             self.sam_predictor.set_image(img)
 
     def show_points(self, coords: np.ndarray, labels: np.ndarray,
-                image: np.ndarray) -> np.ndarray:
+                    image: np.ndarray) -> np.ndarray:
         """Visualize points on top of an image.
 
         Args:
@@ -916,15 +914,14 @@ class Segmenting:
                 image, p.astype(int), radius=3, color=(255, 0, 0), thickness=-1)
         return image
 
-
     def segment_image_with_click(self, img, is_positive: bool):
-                            
+
         self.sam_predictor.set_image(img)
         # self.saved_points.append([evt.index[0], evt.index[1]])
         self.saved_labels.append(1 if is_positive else 0)
         input_point = np.array(self.saved_points)
         input_label = np.array(self.saved_labels)
-        
+
         # Predict the mask
         with torch.cuda.amp.autocast():
             masks, scores, logits = self.sam_predictor.predict(
@@ -940,7 +937,7 @@ class Segmenting:
         return img
 
     def segment_image_with_coordinate(self, img, is_positive: bool,
-                            coordinate: tuple):
+                                      coordinate: tuple):
         '''
             Args:
                 img (numpy.ndarray): the given image, shape: H x W x 3.
@@ -971,13 +968,12 @@ class Segmenting:
                 multimask_output=False,
             )
 
-
         img = self.show_mask(masks[0], img, random_color=False, transparency=0.3)
 
         img = self.show_points(input_point, input_label, img)
 
         img = Image.fromarray(img)
-        
+
         result_mask = masks[0]
 
         return img, result_mask
@@ -989,11 +985,11 @@ class Segmenting:
                          "or perform segmentation on this image, "
                          "or segment all the object in this image."
                          "The input to this tool should be a string, representing the image_path")
-    def inference_all(self,image_path):
+    def inference_all(self, image_path):
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         masks = self.mask_generator.generate(image)
-        plt.figure(figsize=(20,20))
+        plt.figure(figsize=(20, 20))
         plt.imshow(image)
         if len(masks) == 0:
             return
@@ -1005,24 +1001,25 @@ class Segmenting:
             img = np.ones((m.shape[0], m.shape[1], 3))
             color_mask = np.random.random((1, 3)).tolist()[0]
             for i in range(3):
-                img[:,:,i] = color_mask[i]
+                img[:, :, i] = color_mask[i]
             ax.imshow(np.dstack((img, m)))
 
         updated_image_path = get_new_image_name(image_path, func_name="segment-image")
         plt.axis('off')
         plt.savefig(
-            updated_image_path, 
+            updated_image_path,
             bbox_inches="tight", dpi=300, pad_inches=0.0
         )
         return updated_image_path
-    
+
+
 class Text2Box:
     def __init__(self, device):
         print(f"Initializing ObjectDetection to {device}")
         self.device = device
         self.torch_dtype = torch.float16 if 'cuda' in device else torch.float32
-        self.model_checkpoint_path = os.path.join("checkpoints","groundingdino")
-        self.model_config_path = os.path.join("checkpoints","grounding_config.py")
+        self.model_checkpoint_path = os.path.join("checkpoints", "groundingdino")
+        self.model_config_path = os.path.join("checkpoints", "grounding_config.py")
         self.download_parameters()
         self.box_threshold = 0.3
         self.text_threshold = 0.25
@@ -1031,12 +1028,13 @@ class Text2Box:
     def download_parameters(self):
         url = "https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth"
         if not os.path.exists(self.model_checkpoint_path):
-            wget.download(url,out=self.model_checkpoint_path)
+            wget.download(url, out=self.model_checkpoint_path)
         config_url = "https://raw.githubusercontent.com/IDEA-Research/GroundingDINO/main/groundingdino/config/GroundingDINO_SwinT_OGC.py"
         if not os.path.exists(self.model_config_path):
-            wget.download(config_url,out=self.model_config_path)
-    def load_image(self,image_path):
-         # load image
+            wget.download(config_url, out=self.model_config_path)
+
+    def load_image(self, image_path):
+        # load image
         image_pil = Image.open(image_path).convert("RGB")  # load image
 
         transform = T.Compose(
@@ -1092,7 +1090,7 @@ class Text2Box:
                 pred_phrases.append(pred_phrase)
 
         return boxes_filt, pred_phrases
-    
+
     def plot_boxes_to_image(self, image_pil, tgt):
         H, W = tgt["size"]
         boxes = tgt["boxes"]
@@ -1132,9 +1130,9 @@ class Text2Box:
             mask_draw.rectangle([x0, y0, x1, y1], fill=255, width=2)
 
         return image_pil, mask
-    
+
     @prompts(name="Detect the Give Object",
-             description="useful when you only want to detect or find out given objects in the picture"  
+             description="useful when you only want to detect or find out given objects in the picture"
                          "The input to this tool should be a comma separated string of two, "
                          "representing the image_path, the text description of the object to be found")
     def inference(self, inputs):
@@ -1146,9 +1144,9 @@ class Text2Box:
 
         size = image_pil.size
         pred_dict = {
-        "boxes": boxes_filt,
-        "size": [size[1], size[0]],  # H,W
-        "labels": pred_phrases,}
+            "boxes": boxes_filt,
+            "size": [size[1], size[0]],  # H,W
+            "labels": pred_phrases, }
 
         image_with_box = self.plot_boxes_to_image(image_pil, pred_dict)[0]
 
@@ -1168,14 +1166,17 @@ class Inpainting:
         self.torch_dtype = torch.float16 if 'cuda' in self.device else torch.float32
 
         self.inpaint = StableDiffusionInpaintPipeline.from_pretrained(
-            "runwayml/stable-diffusion-inpainting", revision=self.revision, torch_dtype=self.torch_dtype,safety_checker=StableDiffusionSafetyChecker.from_pretrained('CompVis/stable-diffusion-safety-checker')).to(device)
+            "runwayml/stable-diffusion-inpainting", revision=self.revision, torch_dtype=self.torch_dtype, safety_checker=StableDiffusionSafetyChecker.from_pretrained('CompVis/stable-diffusion-safety-checker')).to(device)
+
     def __call__(self, prompt, image, mask_image, height=512, width=512, num_inference_steps=50):
         update_image = self.inpaint(prompt=prompt, image=image.resize((width, height)),
-                                     mask_image=mask_image.resize((width, height)), height=height, width=width, num_inference_steps=num_inference_steps).images[0]
+                                    mask_image=mask_image.resize((width, height)), height=height, width=width, num_inference_steps=num_inference_steps).images[0]
         return update_image
 
+
 class InfinityOutPainting:
-    template_model = True # Add this line to show this is a template model.
+    template_model = True  # Add this line to show this is a template model.
+
     def __init__(self, ImageCaptioning, Inpainting, VisualQuestionAnswering):
         self.llm = OpenAI(temperature=0)
         self.ImageCaption = ImageCaptioning
@@ -1195,7 +1196,7 @@ class InfinityOutPainting:
 
     def get_BLIP_caption(self, image):
         inputs = self.ImageCaption.processor(image, return_tensors="pt").to(self.ImageCaption.device,
-                                                                                self.ImageCaption.torch_dtype)
+                                                                            self.ImageCaption.torch_dtype)
         out = self.ImageCaption.model.generate(**inputs)
         BLIP_caption = self.ImageCaption.processor.decode(out[0], skip_special_tokens=True)
         return BLIP_caption
@@ -1247,8 +1248,8 @@ class InfinityOutPainting:
             temp_mask.paste(0, (x, y, x + old_img.width, y + old_img.height))
             resized_temp_canvas, resized_temp_mask = self.resize_image(temp_canvas), self.resize_image(temp_mask)
             image = self.inpaint(prompt=prompt, image=resized_temp_canvas, mask_image=resized_temp_mask,
-                                              height=resized_temp_canvas.height, width=resized_temp_canvas.width,
-                                              num_inference_steps=50).resize(
+                                 height=resized_temp_canvas.height, width=resized_temp_canvas.width,
+                                 num_inference_steps=50).resize(
                 (temp_canvas.width, temp_canvas.height), Image.ANTIALIAS)
             image = blend_gt2pt(old_img, image)
             old_img = image
@@ -1272,29 +1273,28 @@ class InfinityOutPainting:
         return updated_image_path
 
 
-
 class ObjectSegmenting:
-    template_model = True # Add this line to show this is a template model.
-    def __init__(self,  Text2Box:Text2Box, Segmenting:Segmenting):
+    template_model = True  # Add this line to show this is a template model.
+
+    def __init__(self, Text2Box: Text2Box, Segmenting: Segmenting):
         # self.llm = OpenAI(temperature=0)
         self.grounding = Text2Box
         self.sam = Segmenting
 
-
     @prompts(name="Segment the given object",
-            description="useful when you only want to segment the certain objects in the picture"
-                        "according to the given text"  
-                        "like: segment the cat,"
-                        "or can you segment an obeject for me"
-                        "The input to this tool should be a comma separated string of two, "
-                        "representing the image_path, the text description of the object to be found")
+             description="useful when you only want to segment the certain objects in the picture"
+             "according to the given text"
+             "like: segment the cat,"
+             "or can you segment an obeject for me"
+             "The input to this tool should be a comma separated string of two, "
+             "representing the image_path, the text description of the object to be found")
     def inference(self, inputs):
         image_path, det_prompt = inputs.split(",")
         print(f"image_path={image_path}, text_prompt={det_prompt}")
         image_pil, image = self.grounding.load_image(image_path)
 
         boxes_filt, pred_phrases = self.grounding.get_grounding_boxes(image, det_prompt)
-        updated_image_path = self.sam.segment_image_with_boxes(image_pil,image_path,boxes_filt,pred_phrases)
+        updated_image_path = self.sam.segment_image_with_boxes(image_pil, image_path, boxes_filt, pred_phrases)
         print(
             f"\nProcessed ObejectSegmenting, Input Image: {image_path}, Object to be Segment {det_prompt}, "
             f"Output Image: {updated_image_path}")
@@ -1305,20 +1305,20 @@ class ObjectSegmenting:
             Args:
                 mask (numpy.ndarray): shape N x 1 x H x W
             Outputs:
-                new_mask (numpy.ndarray): shape H x W       
+                new_mask (numpy.ndarray): shape H x W
         '''
         if type(masks) == torch.Tensor:
             x = masks
         elif type(masks) == np.ndarray:
-            x = torch.tensor(masks,dtype=int)
-        else:   
+            x = torch.tensor(masks, dtype=int)
+        else:
             raise TypeError("the type of the input masks must be numpy.ndarray or torch.tensor")
         x = x.squeeze(dim=1)
         value, _ = x.max(dim=0)
         new_mask = value.cpu().numpy()
         new_mask.astype(np.uint8)
         return new_mask
-    
+
     def get_mask(self, image_path, text_prompt):
 
         print(f"image_path={image_path}, text_prompt={text_prompt}")
@@ -1330,8 +1330,8 @@ class ObjectSegmenting:
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         self.sam.sam_predictor.set_image(image)
-        
-        # masks (torch.tensor) -> N x 1 x H x W 
+
+        # masks (torch.tensor) -> N x 1 x H x W
         masks = self.sam.get_mask_with_boxes(image_pil, image, boxes_filt)
 
         # merged_mask -> H x W
@@ -1341,7 +1341,6 @@ class ObjectSegmenting:
         for mask in masks:
             image = self.sam.show_mask(mask[0].cpu().numpy(), image, random_color=True, transparency=0.3)
 
-
         Image.fromarray(merged_mask)
 
         return merged_mask
@@ -1349,14 +1348,15 @@ class ObjectSegmenting:
 
 class ImageEditing:
     template_model = True
-    def __init__(self, Text2Box:Text2Box, Segmenting:Segmenting, Inpainting:Inpainting):
+
+    def __init__(self, Text2Box: Text2Box, Segmenting: Segmenting, Inpainting: Inpainting):
         print("Initializing ImageEditing")
         self.sam = Segmenting
         self.grounding = Text2Box
         self.inpaint = Inpainting
 
-    def pad_edge(self,mask,padding):
-        #mask Tensor [H,W]
+    def pad_edge(self, mask, padding):
+        # mask Tensor [H,W]
         mask = mask.numpy()
         true_indices = np.argwhere(mask)
         mask_array = np.zeros_like(mask, dtype=bool)
@@ -1364,26 +1364,26 @@ class ImageEditing:
             padded_slice = tuple(slice(max(0, i - padding), i + padding + 1) for i in idx)
             mask_array[padded_slice] = True
         new_mask = (mask_array * 255).astype(np.uint8)
-        #new_mask
+        # new_mask
         return new_mask
 
     @prompts(name="Remove Something From The Photo",
              description="useful when you want to remove and object or something from the photo "
                          "from its description or location. "
                          "The input to this tool should be a comma separated string of two, "
-                         "representing the image_path and the object need to be removed. ")    
+                         "representing the image_path and the object need to be removed. ")
     def inference_remove(self, inputs):
         image_path, to_be_removed_txt = inputs.split(",")[0], ','.join(inputs.split(',')[1:])
         return self.inference_replace_sam(f"{image_path},{to_be_removed_txt},background")
 
     @prompts(name="Replace Something From The Photo",
-            description="useful when you want to replace an object from the object description or "
-                        "location with another object from its description. "
-                        "The input to this tool should be a comma separated string of three, "
-                        "representing the image_path, the object to be replaced, the object to be replaced with ")
-    def inference_replace_sam(self,inputs):
+             description="useful when you want to replace an object from the object description or "
+             "location with another object from its description. "
+             "The input to this tool should be a comma separated string of three, "
+             "representing the image_path, the object to be replaced, the object to be replaced with ")
+    def inference_replace_sam(self, inputs):
         image_path, to_be_replaced_txt, replace_with_txt = inputs.split(",")
-        
+
         print(f"image_path={image_path}, to_be_replaced_txt={to_be_replaced_txt}")
         image_pil, image = self.grounding.load_image(image_path)
         boxes_filt, pred_phrases = self.grounding.get_grounding_boxes(image, to_be_replaced_txt)
@@ -1393,9 +1393,9 @@ class ImageEditing:
         masks = self.sam.get_mask_with_boxes(image_pil, image, boxes_filt)
         mask = torch.sum(masks, dim=0).unsqueeze(0)
         mask = torch.where(mask > 0, True, False)
-        mask = mask.squeeze(0).squeeze(0).cpu() #tensor
+        mask = mask.squeeze(0).squeeze(0).cpu()  # tensor
 
-        mask = self.pad_edge(mask,padding=20) #numpy
+        mask = self.pad_edge(mask, padding=20)  # numpy
         mask_image = Image.fromarray(mask)
 
         updated_image = self.inpaint(prompt=replace_with_txt, image=image_pil,
@@ -1408,19 +1408,21 @@ class ImageEditing:
             f"Output Image: {updated_image_path}")
         return updated_image_path
 
+
 class BackgroundRemoving:
     '''
         using to remove the background of the given picture
     '''
     template_model = True
-    def __init__(self,VisualQuestionAnswering:VisualQuestionAnswering, Text2Box:Text2Box, Segmenting:Segmenting):
+
+    def __init__(self, VisualQuestionAnswering: VisualQuestionAnswering, Text2Box: Text2Box, Segmenting: Segmenting):
         self.vqa = VisualQuestionAnswering
-        self.obj_segmenting = ObjectSegmenting(Text2Box,Segmenting)
+        self.obj_segmenting = ObjectSegmenting(Text2Box, Segmenting)
 
     @prompts(name="Remove the background",
              description="useful when you want to extract the object or remove the background,"
                          "the input should be a string image_path"
-                                )
+             )
     def inference(self, image_path):
         '''
             given a image, return the picture only contains the extracted main object
@@ -1450,14 +1452,14 @@ class BackgroundRemoving:
         vqa_input = f"{image_path}, what is the main object in the image?"
         text_prompt = self.vqa.inference(vqa_input)
 
-        mask = self.obj_segmenting.get_mask(image_path,text_prompt)
+        mask = self.obj_segmenting.get_mask(image_path, text_prompt)
 
         return mask
 
 
 class MultiModalVisualAgent:
     def __init__(
-        self, 
+        self,
         load_dict,
         prefix: str = VISUAL_AGENT_PREFIX,
         format_instructions: str = VISUAL_AGENT_FORMAT_INSTRUCTIONS,
@@ -1476,7 +1478,7 @@ class MultiModalVisualAgent:
         for class_name, module in globals().items():
             if getattr(module, 'template_model', False):
                 template_required_names = {
-                    k for k in inspect.signature(module.__init__).parameters.keys() if k!='self'
+                    k for k in inspect.signature(module.__init__).parameters.keys() if k != 'self'
                 }
 
                 loaded_names = set([type(e).__name__ for e in self.models.values()])
@@ -1484,7 +1486,7 @@ class MultiModalVisualAgent:
                 if template_required_names.issubset(loaded_names):
                     self.models[class_name] = globals()[class_name](
                         **{name: self.models[name] for name in template_required_names})
-        
+
         print(f"All the Available Functions: {self.models}")
 
         self.tools = []
@@ -1498,18 +1500,18 @@ class MultiModalVisualAgent:
 
         self.llm = OpenAI(temperature=0)
         self.memory = ConversationBufferMemory(
-            memory_key="chat_history", 
+            memory_key="chat_history",
             output_key='output'
         )
 
     def init_agent(self, lang):
         self.memory.clear()
-        
+
         agent_prefix = self.prefix
         agent_suffix = self.suffix
         agent_format_instructions = self.format_instructions
 
-        if lang=='English':
+        if lang == 'English':
             PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = agent_prefix, agent_format_instructions, agent_suffix
         else:
             PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = VISUAL_AGENT_PREFIX_CN, VISUAL_AGENT_FORMAT_INSTRUCTIONS_CN, VISUAL_AGENT_SUFFIX_CN
@@ -1522,15 +1524,15 @@ class MultiModalVisualAgent:
             memory=self.memory,
             return_intermediate_steps=True,
             agent_kwargs={
-                'prefix': PREFIX, 
+                'prefix': PREFIX,
                 'format_instructions': FORMAT_INSTRUCTIONS,
                 'suffix': SUFFIX
-            }, 
+            },
         )
 
     def run_text(self, text):
         self.agent.memory.buffer = cut_dialogue_history(
-            self.agent.memory.buffer, 
+            self.agent.memory.buffer,
             keep_last_n_words=500
         )
 
@@ -1553,7 +1555,7 @@ class MultiModalVisualAgent:
         width_new, height_new = (round(width * ratio), round(height * ratio))
         width_new = int(np.round(width_new / 64.0)) * 64
         height_new = int(np.round(height_new / 64.0)) * 64
-        
+
         img = img.resize((width_new, height_new))
         img = img.convert('RGB')
         img.save(image_filename, "PNG")
@@ -1578,29 +1580,26 @@ class MultiModalVisualAgent:
         self.memory.clear()
 
 
-
-
-###### usage
-from swarms.agents.message import Message
+# usage
 
 
 class MultiModalAgent:
     """
-    A user-friendly abstraction over the MultiModalVisualAgent that provides a simple interface 
+    A user-friendly abstraction over the MultiModalVisualAgent that provides a simple interface
     to process both text and images.
-    
+
     Initializes the MultiModalAgent.
 
     Architecture:
 
 
     Parameters:
-        load_dict (dict, optional): Dictionary of class names and devices to load. 
+        load_dict (dict, optional): Dictionary of class names and devices to load.
         Defaults to a basic configuration.
 
         temperature (float, optional): Temperature for the OpenAI model. Defaults to 0.
 
-        default_language (str, optional): Default language for the agent. 
+        default_language (str, optional): Default language for the agent.
         Defaults to "English".
 
     Usage
@@ -1617,8 +1616,9 @@ class MultiModalAgent:
     agent = MultiModalAgent()
     agent.run_text("Hello")
 
-    
+
     """
+
     def __init__(
         self,
         load_dict,
@@ -1641,11 +1641,10 @@ class MultiModalAgent:
         self.language = language
         self.history = []
 
-    
     def run_text(
-        self, 
-        text: str = None, 
-        language = "english"
+        self,
+        text: str = None,
+        language="english"
     ):
         """Run text through the model"""
 
@@ -1657,16 +1656,16 @@ class MultiModalAgent:
             return self.agent.run_text(text)
         except Exception as e:
             return f"Error processing text: {str(e)}"
-    
+
     def run_img(
-        self, 
-        image_path: str, 
-        language = "english"
+        self,
+        image_path: str,
+        language="english"
     ):
         """If language is None"""
         if language is None:
             language = self.default_language
-        
+
         try:
             return self.agent.run_image(
                 image_path,
@@ -1683,7 +1682,7 @@ class MultiModalAgent:
     ):
         """
         Run chat with the multi-modal agent
-        
+
         Args:
             msg (str, optional): Message to send to the agent. Defaults to None.
             language (str, optional): Language to use. Defaults to None.
@@ -1691,17 +1690,17 @@ class MultiModalAgent:
 
         Returns:
             str: Response from the agent
-        
+
         Usage:
         --------------
         agent = MultiModalAgent()
         agent.chat("Hello")
-        
+
         """
         if language is None:
             language = self.default_language
 
-        #add users message to the history
+        # add users message to the history
         self.history.append(
             Message(
                 "User",
@@ -1709,12 +1708,12 @@ class MultiModalAgent:
             )
         )
 
-        #process msg
+        # process msg
         try:
             self.agent.init_agent(language)
             response = self.agent.run_text(msg)
 
-            #add agent's response to the history
+            # add agent's response to the history
             self.history.append(
                 Message(
                     "Agent",
@@ -1722,7 +1721,7 @@ class MultiModalAgent:
                 )
             )
 
-            #if streaming is = True
+            # if streaming is = True
             if streaming:
                 return self._stream_response(response)
             else:
@@ -1731,7 +1730,7 @@ class MultiModalAgent:
         except Exception as error:
             error_message = f"Error processing message: {str(error)}"
 
-            #add error to history
+            # add error to history
             self.history.append(
                 Message(
                     "Agent",
@@ -1739,19 +1738,19 @@ class MultiModalAgent:
                 )
             )
             return error_message
-    
+
     def _stream_response(
-        self, 
+        self,
         response: str = None
     ):
         """
         Yield the response token by token (word by word)
-        
+
         Usage:
         --------------
         for token in _stream_response(response):
             print(token)
-        
+
         """
         for token in response.split():
             yield token
@@ -1762,5 +1761,3 @@ class MultiModalAgent:
             self.agent.clear_memory()
         except Exception as e:
             return f"Error cleaning memory: {str(e)}"
-    
-

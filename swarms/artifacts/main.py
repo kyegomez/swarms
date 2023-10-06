@@ -5,6 +5,7 @@ import json
 from typing import Optional
 from pydantic import BaseModel, Field, StrictStr
 
+
 class Artifact(BaseModel):
     """
 
@@ -33,27 +34,27 @@ class Artifact(BaseModel):
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
         return pprint.pformat(self.dict(by_alias=True))
-    
+
     @classmethod
     def from_json(cls, json_str: str) -> Artifact:
         """Create an instance of Artifact from a json string"""
         return cls.from_dict(json.loads(json_str))
-    
+
     def to_dict(self):
         """Returns the dict representation of the model"""
         _dict = self.dict(by_alias=True, exclude={}, exclude_none=True)
         return _dict
-    
+
     @classmethod
     def from_dict(cls, obj: dict) -> Artifact:
         """Create an instance of Artifact from a dict"""
-        
+
         if obj is None:
             return None
-        
+
         if not isinstance(obj, dict):
             return Artifact.parse_obj(obj)
-        
+
         _obj = Artifact.parse_obj(
             {
                 "artifact_id": obj.get("artifact_id"),
@@ -63,5 +64,3 @@ class Artifact(BaseModel):
         )
 
         return _obj
-
-

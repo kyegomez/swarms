@@ -1,6 +1,7 @@
 import json
 from typing import List
 
+
 class PromptGenerator:
     """A class for generating custom prompt strings."""
 
@@ -75,4 +76,3 @@ class PromptGenerator:
         )
 
         return prompt_string
-    

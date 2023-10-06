@@ -27,7 +27,7 @@ from torch.nn.init import constant_, xavier_uniform_
 
 try:
     from groundingdino import _C
-except:
+except BaseException:
     warnings.warn("Failed to load custom C++ ops. Running on CPU mode Only!")
 
 
@@ -241,7 +241,6 @@ class MultiScaleDeformableAttention(nn.Module):
         level_start_index: Optional[torch.Tensor] = None,
         **kwargs
     ) -> torch.Tensor:
-
         """Forward Function of MultiScaleDeformableAttention
 
         Args:
@@ -326,7 +325,7 @@ class MultiScaleDeformableAttention(nn.Module):
                     reference_points.shape[-1]
                 )
             )
-    
+
         if torch.cuda.is_available() and value.is_cuda:
             halffloat = False
             if value.dtype == torch.float16:

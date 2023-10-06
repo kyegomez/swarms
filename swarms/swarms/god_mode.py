@@ -29,8 +29,9 @@ class GodMode:
 
 
     """
+
     def __init__(
-        self, 
+        self,
         llms
     ):
         self.llms = llms
@@ -49,8 +50,8 @@ class GodMode:
         print(
             colored(
                 tabulate(
-                    table, 
-                    headers=["LLM", "Response"], 
+                    table,
+                    headers=["LLM", "Response"],
                     tablefmt="pretty"
                 ), "cyan"
             )

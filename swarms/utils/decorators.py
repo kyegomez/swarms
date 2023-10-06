@@ -13,6 +13,7 @@ def log_decorator(func):
         return result
     return wrapper
 
+
 def error_decorator(func):
     def wrapper(*args, **kwargs):
         try:
@@ -22,6 +23,7 @@ def error_decorator(func):
             raise
     return wrapper
 
+
 def timing_decorator(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
@@ -30,6 +32,7 @@ def timing_decorator(func):
         logging.info(f'{func.__name__} executed in {end_time - start_time} seconds')
         return result
     return wrapper
+
 
 def retry_decorator(max_retries=5):
     def decorator(func):
@@ -43,17 +46,21 @@ def retry_decorator(max_retries=5):
             return func(*args, **kwargs)
         return wrapper
     return decorator
-    
+
+
 def singleton_decorator(cls):
     instances = {}
+
     def wrapper(*args, **kwargs):
         if cls not in instances:
             instances[cls] = cls(*args, **kwargs)
         return instances[cls]
     return wrapper
 
+
 def synchronized_decorator(func):
     func.__lock__ = threading.Lock()
+
     def wrapper(*args, **kwargs):
         with func.__lock__:
             return func(*args, **kwargs)
@@ -67,6 +74,7 @@ def deprecated_decorator(func):
         return func(*args, **kwargs)
     return wrapper
 
+
 def validate_inputs_decorator(validator):
     def decorator(func):
         @functools.wraps(func)
@@ -76,4 +84,3 @@ def validate_inputs_decorator(validator):
             return func(*args, **kwargs)
         return wrapper
     return decorator
-

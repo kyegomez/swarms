@@ -25,7 +25,8 @@ def generate_report_prompt(question, research_summary):
            f' question or topic: "{question}" in a detailed report --'\
            " The report should focus on the answer to the question, should be well structured, informative," \
            " in depth, with facts and numbers if available, a minimum of 1,200 words and with markdown syntax and apa format. "\
-            "Write all source urls at the end of the report in apa format"
+        "Write all source urls at the end of the report in apa format"
+
 
 def generate_search_queries_prompt(question):
     """ Generates the search queries prompt for the given question.
@@ -69,6 +70,7 @@ def generate_outline_report_prompt(question, research_summary):
            ' The research report should be detailed, informative, in-depth, and a minimum of 1,200 words.' \
            ' Use appropriate Markdown syntax to format the outline and ensure readability.'
 
+
 def generate_concepts_prompt(question, research_summary):
     """ Generates the concepts prompt for the given question.
     Args: question (str): The question to generate the concepts prompt for
@@ -91,10 +93,11 @@ def generate_lesson_prompt(concept):
     """
 
     prompt = f'generate a comprehensive lesson about {concept} in Markdown syntax. This should include the definition'\
-    f'of {concept}, its historical background and development, its applications or uses in different'\
-    f'fields, and notable events or facts related to {concept}.'
+        f'of {concept}, its historical background and development, its applications or uses in different'\
+        f'fields, and notable events or facts related to {concept}.'
 
     return prompt
+
 
 def get_report_by_type(report_type):
     report_type_mapping = {

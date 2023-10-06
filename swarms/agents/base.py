@@ -10,14 +10,14 @@ class AbstractAgent:
     Agents are full and completed:
 
     Agents = llm + tools + memory
-    
-    
+
+
     """
 
     def __init__(
         self,
         name: str,
-        #tools: List[Tool],
+        # tools: List[Tool],
         #memory: Memory
     ):
         """
@@ -34,7 +34,7 @@ class AbstractAgent:
 
     def tools(self, tools):
         """init tools"""
-    
+
     def memory(self, memory_store):
         """init memory"""
         pass
@@ -47,7 +47,7 @@ class AbstractAgent:
 
     def _arun(self, taks: str):
         """Run Async run"""
-        
+
     def chat(self, messages: List[Dict]):
         """Chat with the agent"""
 
@@ -56,10 +56,9 @@ class AbstractAgent:
         messages: List[Dict]
     ):
         """Asynchronous Chat"""
-    
+
     def step(self, message: str):
         """Step through the agent"""
-    
+
     def _astep(self, message: str):
         """Asynchronous step"""
-    

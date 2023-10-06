@@ -2,23 +2,24 @@ from typing import List, Dict, Any, Union
 from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
 from graphlib import TopologicalSorter
 
+
 class Task:
     def __init__(
         self,
-        id: str, 
+        id: str,
         parents: List["Task"] = None,
         children: List["Task"] = None
     ):
         self.id = id
         self.parents = parents
         self.children = children
-    
+
     def can_execute(self):
         raise NotImplementedError
 
     def execute(self):
         raise NotImplementedError
-    
+
 
 class NonLinearWorkflow:
     """
@@ -44,8 +45,9 @@ class NonLinearWorkflow:
     |                   |
     +-------------------+
 
-    
+
     """
+
     def __init__(
         self,
         agents,
@@ -65,7 +67,7 @@ class NonLinearWorkflow:
         ), "Input must be an nstance of Task"
         self.tasks.append(task)
         return task
-    
+
     def run(self):
         """Run the workflow"""
         ordered_tasks = self.ordered_tasks
@@ -78,24 +80,24 @@ class NonLinearWorkflow:
                 if task.can_execute:
                     future = self.executor.submit(self.agents.run, task.task_string)
                     futures_list[future] = task
-            
+
             for future in as_completed(futures_list):
                 if isinstance(future.result(), Exception):
                     exit_loop = True
                     break
         return self.output_tasks()
-    
+
     def output_tasks(self) -> List[Task]:
         """Output tasks from the workflow"""
         return [task for task in self.tasks if not task.children]
-    
+
     def to_graph(self) -> Dict[str, set[str]]:
         """Convert the workflow to a graph"""
         graph = {
             task.id: set(child.id for child in task.children) for task in self.tasks
         }
         return graph
-    
+
     def order_tasks(self) -> List[Task]:
         """Order the tasks USING TOPOLOGICAL SORTING"""
         task_order = TopologicalSorter(
@@ -104,4 +106,3 @@ class NonLinearWorkflow:
         return [
             self.find_task(task_id) for task_id in task_order
         ]
-

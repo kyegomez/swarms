@@ -4,12 +4,11 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
 
-
 class Workflow:
     """
-    Workflows are ideal for prescriptive processes that need to be executed 
-    sequentially. 
-    They string together multiple tasks of varying types, and can use Short-Term Memory 
+    Workflows are ideal for prescriptive processes that need to be executed
+    sequentially.
+    They string together multiple tasks of varying types, and can use Short-Term Memory
     or pass specific arguments downstream.
 
 
@@ -94,4 +93,3 @@ class Workflow:
                 return
             else:
                 self.__run_from_task(next(iter(task.children), None))
-

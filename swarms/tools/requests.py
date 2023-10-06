@@ -35,4 +35,3 @@ class RequestsGet(BaseToolSet):
         )
 
         return content
-
