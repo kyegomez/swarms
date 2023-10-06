@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 
 
-class Agent:
+class AbstractAgent:
     """(In preview) An abstract class for AI agent.
 
     An agent can communicate with other agents and perform actions.
