@@ -33,7 +33,7 @@ class AbstractWorker:
     def send(
         self, 
         message: Union[Dict, str], 
-        recipient: "Agent", 
+        recipient, #add AbstractWorker
         request_reply: Optional[bool] = None
     ):
         """(Abstract method) Send a message to another worker."""
@@ -41,7 +41,7 @@ class AbstractWorker:
     async def a_send(
         self, 
         message: Union[Dict, str], 
-        recipient: "Agent", 
+        recipient, #add AbstractWorker
         request_reply: Optional[bool] = None
     ):
         """(Aabstract async method) Send a message to another worker."""
@@ -49,7 +49,7 @@ class AbstractWorker:
     def receive(
         self, 
         message: Union[Dict, str], 
-        sender: "Agent", 
+        sender, #add AbstractWorker
         request_reply: Optional[bool] = None
     ):
         """(Abstract method) Receive a message from another worker."""
@@ -57,7 +57,7 @@ class AbstractWorker:
     async def a_receive(
         self, 
         message: Union[Dict, str], 
-        sender: "Agent", 
+        sender, #add AbstractWorker
         request_reply: Optional[bool] = None
     ):
         """(Abstract async method) Receive a message from another worker."""
@@ -68,7 +68,7 @@ class AbstractWorker:
     def generate_reply(
         self,
         messages: Optional[List[Dict]] = None,
-        sender: Optional["Agent"] = None,
+        sender: Optional["AbstractWorker"] = None,
         **kwargs,
     ) -> Union[str, Dict, None]:
         """(Abstract method) Generate a reply based on the received messages.
@@ -83,7 +83,7 @@ class AbstractWorker:
     async def a_generate_reply(
         self,
         messages: Optional[List[Dict]] = None,
-        sender: Optional["Agent"] = None,
+        sender: Optional["AbstractWorker"] = None,
         **kwargs,
     ) -> Union[str, Dict, None]:
         """(Abstract async method) Generate a reply based on the received messages.
