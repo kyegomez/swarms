@@ -12,11 +12,7 @@ class GroupChat:
     workers: List[Worker]
     messages: List[Dict]
     max_rounds: int = 10
-<<<<<<< Updated upstream
-    admin_name: str = "Admin" #admin worker
-=======
     admin_name: str = "Admin"  # admin agent
->>>>>>> Stashed changes
 
     @property
     def worker_names(self) -> List[str]:
@@ -25,17 +21,10 @@ class GroupChat:
     
     def reset(self):
         self.messages.clear()
-<<<<<<< Updated upstream
-    
-    def worker_by_name(self, name: str) -> Worker:
-        """Find the next speaker baed on the message"""
-        return self.workers[self.worker_names.index(name)]
-=======
 
     def agent_by_name(self, name: str) -> Worker:
         """Find the next speaker baed on the message"""
         return self.agents[self.agent_names.index(name)]
->>>>>>> Stashed changes
     
     def next_worker(self, worker: Worker) -> Worker:
         """Returns the next worker in the list"""
