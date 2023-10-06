@@ -50,10 +50,8 @@ messages = [
 
 group = GroupChat(
     workers=nodes,
+    messages=messages
     max_rounds=3,
-    max_consecutive_auto_reply=3,
-    human_input_mode="NEVER",
-    system_message="Group chat manager",
 )
 
 
