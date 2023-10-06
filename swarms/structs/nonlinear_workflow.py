@@ -43,7 +43,7 @@ class NonLinearWorkflow:
     |                   |
     |                   |
     +-------------------+
-    
+
     
     """
     def __init__(
@@ -104,3 +104,4 @@ class NonLinearWorkflow:
         return [
             self.find_task(task_id) for task_id in task_order
         ]
+
