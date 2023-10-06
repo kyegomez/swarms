@@ -132,7 +132,9 @@ import interpreter
 @tool
 def compile(task: str):
     """
-    Open Interpreter lets LLMs run code (Python, Javascript, Shell, and more) locally. You can chat with Open Interpreter through a ChatGPT-like interface in your terminal by running $ interpreter after installing.
+    Open Interpreter lets LLMs run code (Python, Javascript, Shell, and more) locally. 
+    You can chat with Open Interpreter through a ChatGPT-like interface in your terminal 
+    by running $ interpreter after installing.
 
     This provides a natural-language interface to your computer's general-purpose capabilities:
 
@@ -142,7 +144,6 @@ def compile(task: str):
     ...etc.
     ⚠️ Note: You'll be asked to approve code before it's run.
     """
-
     task = interpreter.chat(task, return_messages=True)
     interpreter.chat()
     interpreter.reset(task)
@@ -156,7 +157,6 @@ def compile(task: str):
 
 
 # mm model workers
-
 import torch
 from PIL import Image
 from transformers import (
