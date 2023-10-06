@@ -221,7 +221,6 @@ class VisualQuestionAnswering(BaseToolSet):
         )
 
         return answer
-    
 
 
 class ImageCaptioning(BaseHandler):
@@ -256,8 +255,3 @@ class ImageCaptioning(BaseHandler):
         )
 
         return IMAGE_PROMPT.format(filename=filename, description=description)
-    
-
-
-
-

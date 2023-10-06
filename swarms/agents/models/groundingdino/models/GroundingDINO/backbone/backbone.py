@@ -139,7 +139,7 @@ class Backbone(BackboneBase):
         assert name not in ("resnet18", "resnet34"), "Only resnet50 and resnet101 are available."
         assert return_interm_indices in [[0, 1, 2, 3], [1, 2, 3], [3]]
         num_channels_all = [256, 512, 1024, 2048]
-        num_channels = num_channels_all[4 - len(return_interm_indices) :]
+        num_channels = num_channels_all[4 - len(return_interm_indices):]
         super().__init__(backbone, train_backbone, num_channels, return_interm_indices)
 
 
@@ -204,7 +204,7 @@ def build_backbone(args):
             use_checkpoint=use_checkpoint,
         )
 
-        bb_num_channels = backbone.num_features[4 - len(return_interm_indices) :]
+        bb_num_channels = backbone.num_features[4 - len(return_interm_indices):]
     else:
         raise NotImplementedError("Unknown backbone {}".format(args.backbone))
 

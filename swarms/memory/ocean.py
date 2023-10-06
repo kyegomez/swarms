@@ -1,10 +1,11 @@
-#init ocean
+# init ocean
 # TODO upload ocean to pip and config it to the abstract class
-import logging 
+import logging
 from typing import Union, List
 
 import oceandb
 from oceandb.utils.embedding_function import MultiModalEmbeddingFunction
+
 
 class OceanDB:
     def __init__(self):
@@ -13,7 +14,7 @@ class OceanDB:
             print(self.client.heartbeat())
         except Exception as e:
             logging.error(f"Failed to initialize OceanDB client. Error: {e}")
-    
+
     def create_collection(self, collection_name: str, modality: str):
         try:
             embedding_function = MultiModalEmbeddingFunction(modality=modality)
@@ -28,7 +29,7 @@ class OceanDB:
         except Exception as e:
             logging.error(f"Faield to append document to the collection. Error {e}")
             raise
-    
+
     def add_documents(self, collection, documents: List[str], ids: List[str]):
         try:
             return collection.add(documents=documents, ids=ids)

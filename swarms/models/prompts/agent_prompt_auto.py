@@ -2,6 +2,7 @@ import time
 from typing import Any, List
 from swarms.models.prompts.agent_prompt_generator import get_prompt
 
+
 class TokenUtils:
     @staticmethod
     def count_tokens(text: str) -> int:
@@ -16,11 +17,11 @@ class PromptConstructor:
 
     def construct_full_prompt(self, goals: List[str]) -> str:
         prompt_start = (
-            """Your decisions must always be made independently 
+            """Your decisions must always be made independently
             without seeking user assistance.\n
-            Play to your strengths as an LLM and pursue simple 
+            Play to your strengths as an LLM and pursue simple
             strategies with no legal complications.\n
-            If you have completed all your tasks, make sure to 
+            If you have completed all your tasks, make sure to
             use the "finish" command."""
         )
         # Construct full prompt

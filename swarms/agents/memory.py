@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from swarms.memory.base_memory import BaseChatMemory, get_prompt_input_key
 from swarms.memory.base import VectorStoreRetriever
 
+
 class AgentMemory(BaseChatMemory):
     retriever: VectorStoreRetriever
     """VectorStoreRetriever object to connect to."""

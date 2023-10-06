@@ -1,18 +1,19 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
+
 class Petals:
     """Petals Bloom models."""
 
     def __init__(
-            self, 
-            model_name="bigscience/bloom-petals", 
-            temperature=0.7, 
-            max_new_tokens=256, 
-            top_p=0.9, 
-            top_k=None, 
-            do_sample=True, 
-            max_length=None
-        ):
+        self,
+        model_name="bigscience/bloom-petals",
+        temperature=0.7,
+        max_new_tokens=256,
+        top_p=0.9,
+        top_k=None,
+        do_sample=True,
+        max_length=None
+    ):
         self.model_name = model_name
         self.temperature = temperature
         self.max_new_tokens = max_new_tokens

@@ -1,3 +1,12 @@
+import pandas as pd
+from swarms.models.prompts.prebuild.multi_modal_prompts import DATAFRAME_PROMPT
+import requests
+from typing import Dict
+from enum import Enum
+from pathlib import Path
+import shutil
+import boto3
+from abc import ABC, abstractmethod, abstractstaticmethod
 import os
 import random
 import uuid
@@ -13,7 +22,7 @@ def seed_everything(seed):
 
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
-    except:
+    except BaseException:
         pass
     return seed
 
@@ -75,16 +84,10 @@ def get_new_dataframe_name(org_img_name, func_name="update"):
             this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
         )
     return os.path.join(head, new_file_name)
-#########=======================> utils end
+# =======================> utils end
 
 
-
-
-
-
-
-
-#########=======================> ANSI BEGINNING
+# =======================> ANSI BEGINNING
 
 
 class Code:
@@ -200,13 +203,10 @@ def dim_multiline(message: str) -> str:
         return lines[0]
     return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(Color.black().bright())
 
-#+=============================> ANSI Ending
+# +=============================> ANSI Ending
 
 
-#================================> upload base
-
-from abc import ABC, abstractmethod, abstractstaticmethod
-
+# ================================> upload base
 
 
 STATIC_DIR = "static"
@@ -221,13 +221,10 @@ class AbstractUploader(ABC):
     def from_settings() -> "AbstractUploader":
         pass
 
-#================================> upload end
+# ================================> upload end
 
 
-#========================= upload s3
-
-
-import boto3
+# ========================= upload s3
 
 
 class S3Uploader(AbstractUploader):
@@ -259,11 +256,10 @@ class S3Uploader(AbstractUploader):
         self.client.upload_file(filepath, self.bucket, object_name)
         return self.get_url(object_name)
 
-#========================= upload s3
+# ========================= upload s3
 
-#========================> upload/static
-import shutil
-from pathlib import Path
+
+# ========================> upload/static
 
 
 class StaticUploader(AbstractUploader):
@@ -277,8 +273,6 @@ class StaticUploader(AbstractUploader):
         server = os.environ.get("SERVER", "http://localhost:8000")
         return StaticUploader(server, path, endpoint)
 
-
-
     def get_url(self, uploaded_path: str) -> str:
         return f"{self.server}/{uploaded_path}"
 
@@ -289,16 +283,10 @@ class StaticUploader(AbstractUploader):
         shutil.copy(filepath, file_path)
         endpoint_path = self.endpoint / relative_path
         return f"{self.server}/{endpoint_path}"
-    
 
 
-#========================> handlers/base
+# ========================> handlers/base
 
-import uuid
-from enum import Enum
-from typing import Dict
-
-import requests
 
 # from env import settings
 
@@ -371,7 +359,7 @@ class FileHandler:
     def handle(self, url: str) -> str:
         try:
             if url.startswith(os.environ.get("SERVER", "http://localhost:8000")):
-                local_filepath = url[len(os.environ.get("SERVER", "http://localhost:8000")) + 1 :]
+                local_filepath = url[len(os.environ.get("SERVER", "http://localhost:8000")) + 1:]
                 local_filename = Path("file") / local_filepath.split("/")[-1]
                 src = self.path / local_filepath
                 dst = self.path / os.environ.get("PLAYGROUND_DIR", "./playground") / local_filename
@@ -391,18 +379,12 @@ class FileHandler:
             return handler.handle(local_filename)
         except Exception as e:
             raise e
-########################### =>  base end
+# =>  base end
 
 
+# ===========================>
 
 
-
-
-#############===========================>
-
-from swarms.models.prompts.prebuild.multi_modal_prompts import DATAFRAME_PROMPT
-
-import pandas as pd
 class CsvToDataframe(BaseHandler):
     def handle(self, filename: str):
         df = pd.read_csv(filename)
@@ -417,7 +399,3 @@ class CsvToDataframe(BaseHandler):
         )
 
         return DATAFRAME_PROMPT.format(filename=filename, description=description)
-
-
-
-

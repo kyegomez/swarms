@@ -192,14 +192,14 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     """Timeout in seconds for the OpenAPI request."""
     headers: Any = None
     tiktoken_model_name: Optional[str] = None
-    """The model name to pass to tiktoken when using this class. 
-    Tiktoken is used to count the number of tokens in documents to constrain 
-    them to be under a certain limit. By default, when set to None, this will 
-    be the same as the embedding model name. However, there are some cases 
-    where you may want to use this Embedding class with a model name not 
-    supported by tiktoken. This can include when using Azure embeddings or 
-    when using one of the many model providers that expose an OpenAI-like 
-    API but with different models. In those cases, in order to avoid erroring 
+    """The model name to pass to tiktoken when using this class.
+    Tiktoken is used to count the number of tokens in documents to constrain
+    them to be under a certain limit. By default, when set to None, this will
+    be the same as the embedding model name. However, there are some cases
+    where you may want to use this Embedding class with a model name not
+    supported by tiktoken. This can include when using Azure embeddings or
+    when using one of the many model providers that expose an OpenAI-like
+    API but with different models. In those cases, in order to avoid erroring
     when tiktoken is called, you can specify a model name to use here."""
     show_progress_bar: bool = False
     """Whether to show a progress bar when embedding."""
@@ -345,7 +345,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 disallowed_special=self.disallowed_special,
             )
             for j in range(0, len(token), self.embedding_ctx_length):
-                tokens.append(token[j : j + self.embedding_ctx_length])
+                tokens.append(token[j: j + self.embedding_ctx_length])
                 indices.append(i)
 
         batched_embeddings: List[List[float]] = []
@@ -364,7 +364,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         for i in _iter:
             response = embed_with_retry(
                 self,
-                input=tokens[i : i + _chunk_size],
+                input=tokens[i: i + _chunk_size],
                 **self._invocation_params,
             )
             batched_embeddings.extend(r["embedding"] for r in response["data"])
@@ -426,7 +426,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 disallowed_special=self.disallowed_special,
             )
             for j in range(0, len(token), self.embedding_ctx_length):
-                tokens.append(token[j : j + self.embedding_ctx_length])
+                tokens.append(token[j: j + self.embedding_ctx_length])
                 indices.append(i)
 
         batched_embeddings: List[List[float]] = []
@@ -434,7 +434,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         for i in range(0, len(tokens), _chunk_size):
             response = await async_embed_with_retry(
                 self,
-                input=tokens[i : i + _chunk_size],
+                input=tokens[i: i + _chunk_size],
                 **self._invocation_params,
             )
             batched_embeddings.extend(r["embedding"] for r in response["data"])

@@ -25,7 +25,7 @@ from swarms.tools.base import BaseToolSet, SessionGetter, ToolScope, tool
 from swarms.utils.logger import logger
 from swarms.utils.main import ANSI, Color, Style  # test
 
-#helpers
+# helpers
 PipeType = Union[Literal["stdout"], Literal["stderr"]]
 
 
@@ -40,7 +40,6 @@ def verify(func):
         return func(*args, **kwargs)
 
     return wrapper
-
 
 
 class SyscallTimeoutException(Exception):
@@ -132,8 +131,6 @@ class SyscallTracer:
         return exitcode, reason
 
 
-
-
 class StdoutTracer:
     def __init__(
         self,
@@ -196,7 +193,6 @@ class StdoutTracer:
         return (exitcode, output)
 
 
-
 class Terminal(BaseToolSet):
     def __init__(self):
         self.sessions: Dict[str, List[SyscallTracer]] = {}
@@ -242,7 +238,6 @@ class Terminal(BaseToolSet):
 #############
 
 
-
 @tool(
     name="Terminal",
     description="Executes commands in a terminal."
@@ -281,15 +276,12 @@ def terminal_execute(self, commands: str, get_session: SessionGetter) -> str:
     return output
 
 
-
-
 """
 write protocol:
 
 <filepath>
 <content>
 """
-
 
 
 class WriteCommand:
@@ -316,7 +308,7 @@ class WriteCommand:
     @staticmethod
     def from_str(command: str) -> "WriteCommand":
         filepath = command.split(WriteCommand.separator)[0]
-        return WriteCommand(filepath, command[len(filepath) + 1 :])
+        return WriteCommand(filepath, command[len(filepath) + 1:])
 
 
 class CodeWriter:
@@ -327,10 +319,6 @@ class CodeWriter:
     @staticmethod
     def append(command: str) -> str:
         return WriteCommand.from_str(command).with_mode("a").execute()
-    
-
-
-
 
 
 """
@@ -338,6 +326,8 @@ read protocol:
 
 <filepath>|<start line>-<end line>
 """
+
+
 class Line:
     def __init__(self, content: str, line_number: int, depth: int):
         self.__content: str = content
@@ -445,7 +435,7 @@ class ReadCommand:
         if self.start == self.end:
             code = code[self.start - 1]
         else:
-            code = "".join(code[self.start - 1 : self.end])
+            code = "".join(code[self.start - 1: self.end])
         return code
 
     @staticmethod
@@ -498,10 +488,6 @@ class CodeReader:
     @staticmethod
     def summary(command: str) -> str:
         return SummaryCommand.from_str(command).execute()
-
-
-
-
 
 
 """
@@ -563,7 +549,6 @@ test.py|11,16|11,16|_titles
 """
 
 
-
 class Position:
     separator = ","
 
@@ -607,9 +592,9 @@ class PatchCommand:
         lines[self.start.line] = (
             lines[self.start.line][: self.start.col]
             + self.content
-            + lines[self.end.line][self.end.col :]
+            + lines[self.end.line][self.end.col:]
         )
-        lines = lines[: self.start.line + 1] + lines[self.end.line + 1 :]
+        lines = lines[: self.start.line + 1] + lines[self.end.line + 1:]
 
         after = self.write_lines(lines)
 
@@ -662,11 +647,6 @@ class CodePatcher:
                 written += w
                 deleted += d
         return written, deleted
-
-
-
-
-
 
 
 class CodeEditor(BaseToolSet):
@@ -803,7 +783,7 @@ class CodeEditor(BaseToolSet):
             f"Output Answer: {output}"
         )
         return output
-    
+
 #---------------- end
 
 
@@ -825,6 +805,7 @@ def code_editor_read(self, inputs: str) -> str:
     )
     return output
 
+
 @tool(
     name="CodeEditor.SUMMARY",
     description="Summary code. "
@@ -844,6 +825,7 @@ def code_editor_summary(self, inputs: str) -> str:
         f"Output Answer: {output}"
     )
     return output
+
 
 @tool(
     name="CodeEditor.APPEND",
@@ -867,6 +849,7 @@ def code_editor_append(self, inputs: str) -> str:
     )
     return output
 
+
 @tool(
     name="CodeEditor.WRITE",
     description="Write code to create a new tool. "
@@ -889,6 +872,7 @@ def code_editor_write(self, inputs: str) -> str:
         f"\nProcessed CodeEditor.WRITE, Input: {inputs} " f"Output Answer: {output}"
     )
     return output
+
 
 @tool(
     name="CodeEditor.PATCH",
@@ -919,6 +903,7 @@ def code_editor_patch(self, patches: str) -> str:
         f"Output Answer: {output}"
     )
     return output
+
 
 @tool(
     name="CodeEditor.DELETE",

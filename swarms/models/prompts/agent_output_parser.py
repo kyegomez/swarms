@@ -3,10 +3,12 @@ import re
 from abc import abstractmethod
 from typing import Dict, NamedTuple
 
+
 class AgentAction(NamedTuple):
     """Action returned by AgentOutputParser."""
     name: str
     args: Dict
+
 
 class BaseAgentOutputParser:
     """Base Output parser for Agent."""
@@ -14,6 +16,7 @@ class BaseAgentOutputParser:
     @abstractmethod
     def parse(self, text: str) -> AgentAction:
         """Return AgentAction"""
+
 
 class AgentOutputParser(BaseAgentOutputParser):
     """Output parser for Agent."""
