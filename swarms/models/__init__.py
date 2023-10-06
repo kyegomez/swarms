@@ -7,3 +7,4 @@ from swarms.models.petals import Petals
 # from swarms.models.openai import OpenAIChat
 #prompts
 from swarms.models.prompts.debate import *
+from swarms.models.mistral import Mistral
