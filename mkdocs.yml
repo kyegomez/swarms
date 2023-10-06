@@ -81,7 +81,7 @@ nav:
     - AutoScaler: "swarms/swarms/autoscaler.md"
   - swarms.workers:
     - Overview: "swarms/workers/index.md"
-    - AbstractWorker: "swarms/worker/base.md"
+    - AbstractWorker: "swarms/worker/abstract_worker.md"
   - swarms.agents:
     - AbstractAgent: "swarms/agents/abstract_agent.md"
     - OmniModalAgent: "swarms/agents/omni_agent.md"
