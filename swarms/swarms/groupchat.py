@@ -70,7 +70,8 @@ class GroupChat:
         return "\n".join(
             [f"{worker.ai_name}: {worker.system_message}" for worker in self.workers] 
         )
-    
+
+
 
 class GroupChatManager(Worker):
     def __init__(
