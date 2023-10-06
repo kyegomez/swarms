@@ -57,10 +57,7 @@ group = GroupChat(
 
 manager = GroupChatManager(
     groupchat=group,
-    name="chat_manager",
     max_consecutive_auto_reply=3,
-    human_input_mode="NEVER",
-    system_message="Group chat manager",
 )
 
 output = group.run(

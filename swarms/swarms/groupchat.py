@@ -77,14 +77,14 @@ class GroupChatManager(Worker):
     def __init__(
         self,
         groupchat: GroupChat,
-        name: Optional[str] = "chat_manager",
+        ai_name: Optional[str] = "chat_manager",
         max_consecutive_auto_reply: Optional[int] = sys.maxsize,
         human_input_mode: Optional[str] = "NEVER",
         system_message: Optional[str] = "Group chat manager",
         **kwargs
     ):
         super().__init__(
-            name=name,
+            ai_name=ai_name,
             max_consecutive_auto_reply=max_consecutive_auto_reply,
             human_input_mode=human_input_mode,
             system_message=system_message,
