@@ -1,3 +1,9 @@
+---
+title: omni_bot
+app_file: omni_ui.py
+sdk: gradio
+sdk_version: 3.33.1
+---
 ![Swarming banner icon](images/swarmsbanner.png)
 
 <div align="center">
