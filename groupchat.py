@@ -44,7 +44,7 @@ nodes = [
 messages = [
     {
         "role": "system",
-        "context": f"Create an a small feedforward in pytorch",
+        "context": "Create an a small feedforward in pytorch",
     }
 ]
 

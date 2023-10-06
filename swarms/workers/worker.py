@@ -5,7 +5,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.tools.human.tool import HumanInputRun
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
-
+from typing import Dict, List, Optional, Union
 from swarms.agents.message import Message
 from swarms.tools.autogpt import (
     ReadFileTool,
@@ -303,3 +303,12 @@ class Worker:
         """
         for token in response.split():
             yield token
+
+    @staticmethod
+    def _message_to_dict(message: Union[Dict, str]):
+        """Convert a message"""
+        if isinstance(message, str):
+            return {"content": message}
+        else:
+            return message
+    
