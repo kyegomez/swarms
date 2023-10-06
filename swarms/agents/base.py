@@ -1,3 +1,4 @@
+
 class AbsractAgent:
     def __init__(
         self,
