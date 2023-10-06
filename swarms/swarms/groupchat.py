@@ -6,29 +6,29 @@ from swarms.workers.worker import Worker
 
 @dataclass
 class GroupChat:
-    """A group chat with multiple participants with a list of agents and a max number of rounds"""
+    """A group chat with multiple participants with a list of workers and a max number of rounds"""
 
-    agents: List[Worker]
+    workers: List[Worker]
     messages: List[Dict]
     max_rounds: int = 10
     admin_name: str = "Admin" #admin agent
 
     @property
     def agent_names(self) -> List[str]:
-        """returns the names of the agents in the group chat"""
-        return [agent.ai_name for agent in self.agents]
+        """returns the names of the workers in the group chat"""
+        return [agent.ai_name for agent in self.workers]
     
     def reset(self):
         self.messages.clear()
     
     def agent_by_name(self, name: str) -> Worker:
         """Find the next speaker baed on the message"""
-        return self.agents[self.agent_names.index(name)]
+        return self.workers[self.agent_names.index(name)]
     
     def next_agent(self, agent: Worker) -> Worker:
         """Returns the next agent in the list"""
-        return self.agents[
-            (self.agents_names.index(agent.ai_name) + 1) % len(self.agents)
+        return self.workers[
+            (self.workers_names.index(agent.ai_name) + 1) % len(self.workers)
         ]
     
     def select_speaker_msg(self):
@@ -67,7 +67,7 @@ class GroupChat:
         
     def _participant_roles(self):
         return "\n".join(
-            [f"{agent.ai_name}: {agent.system_message}" for agent in self.agents] 
+            [f"{agent.ai_name}: {agent.system_message}" for agent in self.workers] 
         )
 
 
@@ -117,8 +117,8 @@ class GroupChatManager(Worker):
             
             groupchat.messages.append(message)
 
-            #broadcast the message to all agents except the speaker
-            for agent in groupchat.agents:
+            #broadcast the message to all workers except the speaker
+            for agent in groupchat.workers:
                 if agent != speaker:
                     self.send(
                         message,
