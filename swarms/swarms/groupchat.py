@@ -156,3 +156,20 @@ class GroupChatManager(Worker):
             message = self.last_message(speaker)
             message = self.last_messge(speaker)
         return True, None
+
+model = GroupChatManager(
+    groupchat=GroupChat(
+        workers=[
+            Worker(name="A", system_message="I am worker A"),
+            Worker(name="B", system_message="I am worker B"),
+            Worker(name="C", system_message="I am worker C"),
+        ]
+    )
+)
+
+model.run(
+    messages=[
+        'A: Hello, I am worker A',
+        'B: Hello, I am worker B',
+    ]
+)

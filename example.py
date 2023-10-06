@@ -1,9 +1,15 @@
+from langchain.models import OpenAIChat
 from swarms import Worker
 
-node = Worker(
-    openai_api_key="",
-    ai_name="Optimus Prime",
+llm = OpenAIChat()
 
+node = Worker(
+    llm=llm,
+    ai_name="Optimus Prime",
+    ai_role="Worker in a swarm",
+    external_tools = None,
+    human_in_the_loop = False,
+    temperature = 0.5,
 )
 
 task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
