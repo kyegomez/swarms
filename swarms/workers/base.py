@@ -23,7 +23,7 @@ class AbstractWorker:
     def name(self):
         """Get the name of the worker."""
         return self._name
-    
+
     def run(
         self,
         task: str
@@ -31,33 +31,33 @@ class AbstractWorker:
         """Run the worker agent once"""
 
     def send(
-        self, 
-        message: Union[Dict, str], 
-        recipient, #add AbstractWorker
+        self,
+        message: Union[Dict, str],
+        recipient,  # add AbstractWorker
         request_reply: Optional[bool] = None
     ):
         """(Abstract method) Send a message to another worker."""
 
     async def a_send(
-        self, 
-        message: Union[Dict, str], 
-        recipient, #add AbstractWorker
+        self,
+        message: Union[Dict, str],
+        recipient,  # add AbstractWorker
         request_reply: Optional[bool] = None
     ):
         """(Aabstract async method) Send a message to another worker."""
 
     def receive(
-        self, 
-        message: Union[Dict, str], 
-        sender, #add AbstractWorker
+        self,
+        message: Union[Dict, str],
+        sender,  # add AbstractWorker
         request_reply: Optional[bool] = None
     ):
         """(Abstract method) Receive a message from another worker."""
 
     async def a_receive(
-        self, 
-        message: Union[Dict, str], 
-        sender, #add AbstractWorker
+        self,
+        message: Union[Dict, str],
+        sender,  # add AbstractWorker
         request_reply: Optional[bool] = None
     ):
         """(Abstract async method) Receive a message from another worker."""
@@ -68,7 +68,7 @@ class AbstractWorker:
     def generate_reply(
         self,
         messages: Optional[List[Dict]] = None,
-        sender = None, #Optional["AbstractWorker"] = None,
+        sender=None,  # Optional["AbstractWorker"] = None,
         **kwargs,
     ) -> Union[str, Dict, None]:
         """(Abstract method) Generate a reply based on the received messages.
@@ -83,7 +83,7 @@ class AbstractWorker:
     async def a_generate_reply(
         self,
         messages: Optional[List[Dict]] = None,
-        sender = None, #Optional["AbstractWorker"] = None,
+        sender=None,  # Optional["AbstractWorker"] = None,
         **kwargs,
     ) -> Union[str, Dict, None]:
         """(Abstract async method) Generate a reply based on the received messages.

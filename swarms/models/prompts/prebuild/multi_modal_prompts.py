@@ -75,7 +75,7 @@ Action Input: string \\ You should put what you want to return to use here.
 
 EVAL_SUFFIX = """TOOLS
 ------
-{bot_name} can ask the user to use tools to look up information that may be helpful in answering the users original question. 
+{bot_name} can ask the user to use tools to look up information that may be helpful in answering the users original question.
 You are very strict to the filename correctness and will never fake a file name if it does not exist.
 You will remember to provide the file name loyally if it's provided in the last tool observation.
 If you have to include files in your response, you must provide the filepath in [file://filepath] format. It must be wrapped in square brackets.
@@ -92,7 +92,7 @@ Here is the user's input:
 
 {{{{{{{{input}}}}}}}}"""
 
-EVAL_TOOL_RESPONSE = """TOOL RESPONSE: 
+EVAL_TOOL_RESPONSE = """TOOL RESPONSE:
 ---------------------
 {observation}
 --------------------

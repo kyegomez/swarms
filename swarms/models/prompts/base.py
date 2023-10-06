@@ -10,6 +10,7 @@ from swarms.utils.serializable import Serializable
 if TYPE_CHECKING:
     from langchain.prompts.chat import ChatPromptTemplate
 
+
 def get_buffer_string(
     messages: Sequence[BaseMessage], human_prefix: str = "Human", ai_prefix: str = "AI"
 ) -> str:
@@ -95,7 +96,7 @@ class BaseMessageChunk(BaseMessage):
         for k, v in right.items():
             if k not in merged:
                 merged[k] = v
-            elif type(merged[k]) != type(v):
+            elif not isinstance(merged[k], type(v)):
                 raise ValueError(
                     f'additional_kwargs["{k}"] already exists in this message,'
                     " but with a different type."
@@ -133,7 +134,7 @@ class HumanMessage(BaseMessage):
     """A Message from a human."""
 
     example: bool = False
-    """Whether this Message is being passed in to the model as part of an example 
+    """Whether this Message is being passed in to the model as part of an example
         conversation.
     """
 
@@ -151,7 +152,7 @@ class AIMessage(BaseMessage):
     """A Message from an AI."""
 
     example: bool = False
-    """Whether this Message is being passed in to the model as part of an example 
+    """Whether this Message is being passed in to the model as part of an example
         conversation.
     """
 

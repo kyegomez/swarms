@@ -1,23 +1,25 @@
 from typing import List, Callable
 from swarms.workers.worker import Worker
 
-    
+
 # Define a selection function
 def select_speaker(step: int, agents: List[Worker]) -> int:
     # This function selects the speaker in a round-robin fashion
     return step % len(agents)
 
+
 class MultiAgentDebate:
     """
     MultiAgentDebate
-    
+
     Args:
-    
-    
+
+
     """
+
     def __init__(
-        self, 
-        agents: List[Worker], 
+        self,
+        agents: List[Worker],
         selection_func: Callable[[int, List[Worker]], int]
     ):
         self.agents = agents
@@ -47,7 +49,7 @@ class MultiAgentDebate:
         self.task = task
 
     def format_results(self, results):
-        
+
         formatted_results = "\n".join(
             [f"Agent {result['agent']} responded: {result['response']}" for result in results]
         )

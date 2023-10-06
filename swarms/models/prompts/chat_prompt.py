@@ -11,6 +11,7 @@ class Message:
     The base abstract Message class.
     Messages are the inputs and outputs of ChatModels.
     """
+
     def __init__(self, content: str, role: str, additional_kwargs: Dict = None):
         self.content = content
         self.role = role
@@ -25,6 +26,7 @@ class HumanMessage(Message):
     """
     A Message from a human.
     """
+
     def __init__(self, content: str, role: str = "Human", additional_kwargs: Dict = None, example: bool = False):
         super().__init__(content, role, additional_kwargs)
         self.example = example
@@ -37,6 +39,7 @@ class AIMessage(Message):
     """
     A Message from an AI.
     """
+
     def __init__(self, content: str, role: str = "AI", additional_kwargs: Dict = None, example: bool = False):
         super().__init__(content, role, additional_kwargs)
         self.example = example
@@ -50,6 +53,7 @@ class SystemMessage(Message):
     A Message for priming AI behavior, usually passed in as the first of a sequence
     of input messages.
     """
+
     def __init__(self, content: str, role: str = "System", additional_kwargs: Dict = None):
         super().__init__(content, role, additional_kwargs)
 
@@ -61,6 +65,7 @@ class FunctionMessage(Message):
     """
     A Message for passing the result of executing a function back to a model.
     """
+
     def __init__(self, content: str, role: str = "Function", name: str, additional_kwargs: Dict = None):
         super().__init__(content, role, additional_kwargs)
         self.name = name
@@ -73,6 +78,7 @@ class ChatMessage(Message):
     """
     A Message that can be assigned an arbitrary speaker (i.e. role).
     """
+
     def __init__(self, content: str, role: str, additional_kwargs: Dict = None):
         super().__init__(content, role, additional_kwargs)
 

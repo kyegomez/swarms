@@ -2,7 +2,7 @@
 """
 @File    :   visualizer.py
 @Time    :   2022/04/05 11:39:33
-@Author  :   Shilong Liu 
+@Author  :   Shilong Liu
 @Contact :   slongliu86@gmail.com
 """
 
@@ -243,7 +243,7 @@ class COCOVisualizer:
             for ann in anns:
                 c = (np.random.random((1, 3)) * 0.6 + 0.4).tolist()[0]
                 if "segmentation" in ann:
-                    if type(ann["segmentation"]) == list:
+                    if isinstance(ann["segmentation"], list):
                         # polygon
                         for seg in ann["segmentation"]:
                             poly = np.array(seg).reshape((int(len(seg) / 2), 2))
@@ -252,7 +252,7 @@ class COCOVisualizer:
                     else:
                         # mask
                         t = self.imgs[ann["image_id"]]
-                        if type(ann["segmentation"]["counts"]) == list:
+                        if isinstance(ann["segmentation"]["counts"], list):
                             rle = maskUtils.frPyObjects(
                                 [ann["segmentation"]], t["height"], t["width"]
                             )
@@ -267,7 +267,7 @@ class COCOVisualizer:
                         for i in range(3):
                             img[:, :, i] = color_mask[i]
                         ax.imshow(np.dstack((img, m * 0.5)))
-                if "keypoints" in ann and type(ann["keypoints"]) == list:
+                if "keypoints" in ann and isinstance(ann["keypoints"], list):
                     # turn skeleton into zero-based index
                     sks = np.array(self.loadCats(ann["category_id"])[0]["skeleton"]) - 1
                     kp = np.array(ann["keypoints"])

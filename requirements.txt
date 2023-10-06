@@ -50,6 +50,7 @@ torchmetrics
 transformers
 webdataset
 yapf
+autopep8
 
 
 mkdocs

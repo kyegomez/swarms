@@ -22,8 +22,6 @@ except ImportError:
         return x
 
 
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -902,7 +900,7 @@ class ConversableAgent(Agent):
                 exitcode, logs, image = self.run_code(code, lang=lang, **self._code_execution_config)
             elif lang in ["python", "Python"]:
                 if code.startswith("# filename: "):
-                    filename = code[11 : code.find("\n")].strip()
+                    filename = code[11: code.find("\n")].strip()
                 else:
                     filename = None
                 exitcode, logs, image = self.run_code(

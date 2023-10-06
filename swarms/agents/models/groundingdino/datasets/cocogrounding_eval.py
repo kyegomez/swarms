@@ -127,7 +127,7 @@ class CocoGroundingEvaluator(object):
             labels = prediction["labels"].tolist()
 
             rles = [
-                mask_util.encode(np.array(mask[0, :, :, np.newaxis], dtype=np.uint8, order="F"))[0] 
+                mask_util.encode(np.array(mask[0, :, :, np.newaxis], dtype=np.uint8, order="F"))[0]
                 for mask in masks
             ]
             for rle in rles:
@@ -244,16 +244,16 @@ def evaluate(self):
     elif p.iouType == "keypoints":
         computeIoU = self.computeOks
     self.ious = {
-        (imgId, catId): computeIoU(imgId, catId) 
-        for imgId in p.imgIds 
+        (imgId, catId): computeIoU(imgId, catId)
+        for imgId in p.imgIds
         for catId in catIds}
 
     evaluateImg = self.evaluateImg
     maxDet = p.maxDets[-1]
     evalImgs = [
-        evaluateImg(imgId, catId, areaRng, maxDet) 
-        for catId in catIds 
-        for areaRng in p.areaRng 
+        evaluateImg(imgId, catId, areaRng, maxDet)
+        for catId in catIds
+        for areaRng in p.areaRng
         for imgId in p.imgIds
     ]
     # this is NOT in the pycocotools code, but could be done outside
