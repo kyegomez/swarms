@@ -17,15 +17,8 @@ from swarms.tools.autogpt import (
 )
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
-# self.llm = ChatOpenAI(
-#     model_name=model_name, 
-#     openai_api_key=self.openai_api_key, 
-#     temperature=self.temperature
-# )
-
 #cache
 ROOT_DIR = "./data/"
-
 
 #main
 class Worker:
@@ -79,9 +72,6 @@ class Worker:
         self.setup_tools(external_tools)
         self.setup_memory()
         self.setup_agent()
-
-        # self.task_queue = []
-        # self.executor = concurrent.futures.ThreadPoolExecutor()
         
     def reset(self):
         """

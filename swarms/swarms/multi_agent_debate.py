@@ -7,10 +7,11 @@ def select_speaker(step: int, agents: List[Worker]) -> int:
     # This function selects the speaker in a round-robin fashion
     return step % len(agents)
 
-
 class MultiAgentDebate:
     """
     MultiAgentDebate
+    
+    Args:
     
     
     """

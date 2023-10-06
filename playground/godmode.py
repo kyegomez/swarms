@@ -15,6 +15,6 @@ llms = [
 
 god_mode = GodMode(llms)
 
-task = f"What are the biggest risks facing humanity?"
+task = "What are the biggest risks facing humanity?"
 
 god_mode.print_responses(task)

@@ -1,4 +1,3 @@
-import os
 import re
 from typing import Any, Callable, Dict, List, Union
 
@@ -18,7 +17,6 @@ from langchain.vectorstores import Chroma
 from pydantic import BaseModel, Field
 from swarms.models.prompts.sales import SALES_AGENT_TOOLS_PROMPT, conversation_stages
 from swarms.tools.interpreter_tool import compile
-from swarms.agents.omni_modal_agent import OmniModalAgent
 
 
 # classes
