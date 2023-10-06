@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Union
 
 from swarms.agents.base import AbstractAgent
 
-
 @dataclass
 class GroupChat:
     """A group chat with multiple participants with a list of agents and a max number of rounds"""
