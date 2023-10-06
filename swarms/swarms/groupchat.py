@@ -92,7 +92,7 @@ class GroupChatManager(Worker):
         )
         self.register_reply(
             Worker,
-            GroupChatManager.run_chat,
+            GroupChatManager.run,
             config=groupchat,
             reset_config=GroupChat.reset
         )
