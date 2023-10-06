@@ -28,8 +28,6 @@ class GodMode:
     god_mode.print_responses(task)
 
 
-
-
     """
     def __init__(self, llms):
         self.llms = llms
