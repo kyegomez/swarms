@@ -1,5 +1,5 @@
 from langchain.llms import OpenAIChat
-from swarms.swarms import GroupChat
+from swarms.swarms import GroupChat, GroupChatManager
 from swarms.workers import Worker
 
 llm = OpenAIChat(
@@ -48,12 +48,27 @@ messages = [
     }
 ]
 
-
 group = GroupChat(
-    nodes,
-    messages,
+    nodes=nodes,
+    max_rounds=3,
+    max_consecutive_auto_reply=3,
+    human_input_mode="NEVER",
+    system_message="Group chat manager",
 )
 
-output = group.run()
+
+manager = GroupChatManager(
+    groupchat=group,
+    name="chat_manager",
+    max_consecutive_auto_reply=3,
+    human_input_mode="NEVER",
+    system_message="Group chat manager",
+)
+
+output = group.run(
+    messages,
+    sender=node,
+    config=group,
+)
 
 print(output)

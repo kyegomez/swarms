@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Union
 
 from swarms.workers.worker import Worker
 
+
 @dataclass
 class GroupChat:
     """A group chat with multiple participants with a list of workers and a max number of rounds"""
@@ -77,7 +78,6 @@ class GroupChatManager(Worker):
         self,
         groupchat: GroupChat,
         name: Optional[str] = "chat_manager",
-        #unlimited auto reply
         max_consecutive_auto_reply: Optional[int] = sys.maxsize,
         human_input_mode: Optional[str] = "NEVER",
         system_message: Optional[str] = "Group chat manager",
