@@ -7,13 +7,16 @@ from swarms.swarms.orchestrate import Orchestrator
 def mock_agent():
     return Mock()
 
+
 @pytest.fixture
 def mock_task():
     return {"task_id": 1, "task_data": "data"}
 
+
 @pytest.fixture
 def mock_vector_db():
     return Mock()
+
 
 @pytest.fixture
 def orchestrator(mock_agent, mock_vector_db):
@@ -38,7 +41,9 @@ def test_retrieve_results(orchestrator, mock_vector_db):
 def test_update_vector_db(orchestrator, mock_vector_db):
     data = {"vector": [0.1, 0.2, 0.3], "task_id": 1}
     orchestrator.update_vector_db(data)
-    mock_vector_db.add_documents.assert_called_once_with([data['vector']], [str(data['task_id'])])
+    mock_vector_db.add_documents.assert_called_once_with(
+        [data["vector"]], [str(data["task_id"])]
+    )
 
 
 def test_get_vector_db(orchestrator, mock_vector_db):
@@ -49,7 +54,9 @@ def test_append_to_db(orchestrator, mock_vector_db):
     collection = "test_collection"
     result = "test_result"
     orchestrator.append_to_db(collection, result)
-    mock_vector_db.append_document.assert_called_once_with(collection, result, id=str(id(result)))
+    mock_vector_db.append_document.assert_called_once_with(
+        collection, result, id=str(id(result))
+    )
 
 
 def test_run(orchestrator, mock_agent, mock_vector_db):

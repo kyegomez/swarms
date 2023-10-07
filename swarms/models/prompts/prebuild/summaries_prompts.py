@@ -1,4 +1,3 @@
-
 SUMMARIZE_PROMPT = """
 Your output should use the following template:
 ### Summary

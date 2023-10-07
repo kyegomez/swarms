@@ -17,11 +17,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class SwarmInput(BaseModel):
     api_key: str
     objective: str
 
+
 app = FastAPI()
+
 
 @app.on_event("startup")
 async def startup():
@@ -30,6 +33,7 @@ async def startup():
     redis = await Redis.create(redis_host, redis_port)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache", coder=JsonCoder())
     await FastAPILimiter.init(f"redis://{redis_host}:{redis_port}")
+
 
 @app.post("/chat", dependencies=[Depends(RateLimiter(times=2, minutes=1))])
 @cache(expire=60)  # Cache results for 1 minute

@@ -24,17 +24,14 @@ class AbstractWorker:
         """Get the name of the worker."""
         return self._name
 
-    def run(
-        self,
-        task: str
-    ):
+    def run(self, task: str):
         """Run the worker agent once"""
 
     def send(
         self,
         message: Union[Dict, str],
         recipient,  # add AbstractWorker
-        request_reply: Optional[bool] = None
+        request_reply: Optional[bool] = None,
     ):
         """(Abstract method) Send a message to another worker."""
 
@@ -42,7 +39,7 @@ class AbstractWorker:
         self,
         message: Union[Dict, str],
         recipient,  # add AbstractWorker
-        request_reply: Optional[bool] = None
+        request_reply: Optional[bool] = None,
     ):
         """(Aabstract async method) Send a message to another worker."""
 
@@ -50,7 +47,7 @@ class AbstractWorker:
         self,
         message: Union[Dict, str],
         sender,  # add AbstractWorker
-        request_reply: Optional[bool] = None
+        request_reply: Optional[bool] = None,
     ):
         """(Abstract method) Receive a message from another worker."""
 
@@ -58,7 +55,7 @@ class AbstractWorker:
         self,
         message: Union[Dict, str],
         sender,  # add AbstractWorker
-        request_reply: Optional[bool] = None
+        request_reply: Optional[bool] = None,
     ):
         """(Abstract async method) Receive a message from another worker."""
 

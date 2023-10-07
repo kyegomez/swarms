@@ -10,9 +10,14 @@ from marshmallow.exceptions import RegistryError
 @define
 class BaseArtifact(ABC):
     id: str = field(default=Factory(lambda: uuid.uuid4().hex), kw_only=True)
-    name: str = field(default=Factory(lambda self: self.id, takes_self=True), kw_only=True)
+    name: str = field(
+        default=Factory(lambda self: self.id, takes_self=True), kw_only=True
+    )
     value: any = field()
-    type: str = field(default=Factory(lambda self: self.__class__.__name__, takes_self=True), kw_only=True)
+    type: str = field(
+        default=Factory(lambda self: self.__class__.__name__, takes_self=True),
+        kw_only=True,
+    )
 
     @classmethod
     def value_to_bytes(cls, value: any) -> bytes:
@@ -38,7 +43,7 @@ class BaseArtifact(ABC):
             ErrorArtifactSchema,
             BlobArtifactSchema,
             CsvRowArtifactSchema,
-            ListArtifactSchema
+            ListArtifactSchema,
         )
 
         class_registry.register("TextArtifact", TextArtifactSchema)

@@ -4,8 +4,7 @@ from chromadb import EmbeddingFunction
 
 def openai_embed(self, input, api_key, model_name):
     openai = EmbeddingFunction.OpenAIEmbeddingFunction(
-        api_key=api_key,
-        model_name=model_name
+        api_key=api_key, model_name=model_name
     )
     embedding = openai(input)
     return embedding

@@ -24,6 +24,7 @@ class AutoScaler:
     auto_scaler.add_task9f"task {I}})
     ```
     """
+
     @log_decorator
     @error_decorator
     @timing_decorator

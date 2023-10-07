@@ -57,7 +57,9 @@ class Registry(object):
         if module_name is None:
             module_name = module_build_function.__name__
         if not force and module_name in self._module_dict:
-            raise KeyError("{} is already registered in {}".format(module_name, self.name))
+            raise KeyError(
+                "{} is already registered in {}".format(module_name, self.name)
+            )
         self._module_dict[module_name] = module_build_function
 
         return module_build_function

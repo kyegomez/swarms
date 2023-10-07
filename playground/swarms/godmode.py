@@ -1,4 +1,3 @@
-
 from langchain.models import Anthropic, GooglePalm, OpenAIChat
 from swarms.swarms import GodMode
 
@@ -7,11 +6,7 @@ palm = GooglePalm(google_api_key="")
 gpt = OpenAIChat(openai_api_key="")
 
 # Usage
-llms = [
-   claude,
-   palm,
-   gpt 
-]
+llms = [claude, palm, gpt]
 
 god_mode = GodMode(llms)
 

@@ -6,6 +6,7 @@ from typing import Dict, NamedTuple
 
 class AgentAction(NamedTuple):
     """Action returned by AgentOutputParser."""
+
     name: str
     args: Dict
 

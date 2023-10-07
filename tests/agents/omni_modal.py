@@ -13,22 +13,26 @@ def mock_llm():
     class MockLLM(BaseLanguageModel):
         def process(self, input):
             return "mock response"
-    
+
     return MockLLM()
+
 
 @pytest.fixture
 def omni_agent(mock_llm):
     return OmniModalAgent(mock_llm)
 
+
 def test_omnimodalagent_initialization(omni_agent):
     assert omni_agent.llm is not None, "LLM initialization failed"
     assert len(omni_agent.tools) > 0, "Tools initialization failed"
+
 
 def test_omnimodalagent_run(omni_agent):
     input_string = "Hello, how are you?"
     response = omni_agent.run(input_string)
     assert response is not None, "Response generation failed"
     assert isinstance(response, str), "Response should be a string"
+
 
 def test_task_executor_initialization(omni_agent):
     assert omni_agent.task_executor is not None, "TaskExecutor initialization failed"

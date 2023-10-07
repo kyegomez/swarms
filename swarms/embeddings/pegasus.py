@@ -8,10 +8,7 @@ from pegasus import Pegasus
 
 class PegasusEmbedding:
     def __init__(
-        self,
-        modality: str,
-        multi_process: bool = False,
-        n_processes: int = 4
+        self, modality: str, multi_process: bool = False, n_processes: int = 4
     ):
         self.modality = modality
         self.multi_process = multi_process
@@ -19,7 +16,9 @@ class PegasusEmbedding:
         try:
             self.pegasus = Pegasus(modality, multi_process, n_processes)
         except Exception as e:
-            logging.error(f"Failed to initialize Pegasus with modality: {modality}: {e}")
+            logging.error(
+                f"Failed to initialize Pegasus with modality: {modality}: {e}"
+            )
             raise
 
     def embed(self, data: Union[str, list[str]]):
