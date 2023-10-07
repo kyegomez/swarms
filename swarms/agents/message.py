@@ -23,6 +23,6 @@ class Message:
 
     def __repr__(self):
         """
-        __repr__ means... 
+        __repr__ means...
         """
         return f"{self.timestamp} - {self.sender}: {self.content}"

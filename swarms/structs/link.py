@@ -50,21 +50,21 @@ class Link(Chain):
 
     prompt: BasePromptTemplate
     """Prompt object to use."""
-    
+
     llm: BaseLanguageModel
     """Language model to call."""
-    
+
     output_key: str = "text"  #: :meta private:
-    
+
     output_parser: BaseLLMOutputParser = Field(default_factory=StrOutputParser)
     """Output parser to use.
     Defaults to one that takes the most likely string but does not change it 
     otherwise."""
-    
+
     return_final_only: bool = True
     """Whether to return only the final parsed result. Defaults to True.
     If false, will return a bunch of extra information about the generation."""
-    
+
     llm_kwargs: dict = Field(default_factory=dict)
 
     class Config:
