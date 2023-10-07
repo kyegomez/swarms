@@ -11,9 +11,8 @@ class Workflow:
     They string together multiple tasks of varying types, and can use Short-Term Memory
     or pass specific arguments downstream.
 
-
-
-    ```
+    
+    Usage
     llm = LLM()
     workflow = Workflow(llm)
 
