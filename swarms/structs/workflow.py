@@ -1,30 +1,14 @@
 from __future__ import annotations
 
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
-from swarms.artifacts.error_artifact import ErrorArtifact
-from swarms.structs.task import BaseTask
-
-class StringTask(BaseTask):
-    def __init__(self, task):
-        super().__init__()
-        self.task = task
-
-    def execute(self) -> Any:
-        prompt = self.task.replace(
-            "{{ parent_input }}", self.parents[0].output if self.parents else ""
-        )
-
-        response = self.structure.llm(prompt)
-        self.output = response
-        return response
 
 class Workflow:
     """
-    Workflows are ideal for prescriptive processes that need to be executed 
-    sequentially. 
-    They string together multiple tasks of varying types, and can use Short-Term Memory 
+    Workflows are ideal for prescriptive processes that need to be executed
+    sequentially.
+    They string together multiple tasks of varying types, and can use Short-Term Memory
     or pass specific arguments downstream.
 
 
@@ -41,21 +25,34 @@ class Workflow:
 
 
     """
-    def __init__(
-        self,
-        llm,
-        parallel: bool = False
-    ):
-        self.llm = llm
-        self.tasks: List[BaseTask] = []
+    class Task:
+        def __init__(self, task: str):
+            self.task = task
+            self.parents = []
+            self.children = []
+            self.output = None
+            self.structure = None
+
+        def add_child(self, child: 'Workflow.Task'):
+            self.children.append(child)
+            child.parents.append(self)
+            child.structure = self.structure
+
+        def execute(self) -> Any:
+            prompt = self.task.replace(
+                "{{ parent_input }}", self.parents[0].output if self.parents else ""
+            )
+            response = self.structure.agent.run(prompt)
+            self.output = response
+            return response
+
+    def __init__(self, agent, parallel: bool = False):
+        self.agent = agent
+        self.tasks: List[Workflow.Task] = []
         self.parallel = parallel
 
-    
-    def add(
-        self,
-        task: BaseTask
-    ) -> BaseTask:
-        task = StringTask(task)
+    def add(self, task: str) -> Task:
+        task = self.Task(task)
 
         if self.last_task():
             self.last_task().add_child(task)
@@ -64,48 +61,35 @@ class Workflow:
             self.tasks.append(task)
         return task
 
-    def first_task(self) -> Optional[BaseTask]:
+    def first_task(self) -> Optional[Task]:
         return self.tasks[0] if self.tasks else None
-    
-    def last_task(self) -> Optional[BaseTask]:
+
+    def last_task(self) -> Optional[Task]:
         return self.tasks[-1] if self.tasks else None
 
-    def run(self, *args) -> BaseTask:
-        self._execution_args = args
-
+    def run(self, *args) -> Task:
         [task.reset() for task in self.tasks]
 
         if self.parallel:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
+            with ThreadPoolExecutor() as executor:
                 list(executor.map(self.__run_from_task, [self.first_task]))
         else:
             self.__run_from_task(self.first_task())
 
-        self._execution_args = ()
-
         return self.last_task()
 
-    
-    def context(self, task: BaseTask) -> Dict[str, Any]:
-        context = super().context(task)
+    def context(self, task: Task) -> Dict[str, Any]:
+        return {
+            "parent_output": task.parents[0].output if task.parents and task.parents[0].output else None,
+            "parent": task.parents[0] if task.parents else None,
+            "child": task.children[0] if task.children else None
+        }
 
-        context.update(
-            {
-                "parent_output": task.parents[0].output.to_text() \
-                    if task.parents and task.parents[0].output else None,
-                "parent": task.parents[0] if task.parents else None,
-                "child": task.children[0] if task.children else None
-            }
-        )
-        return context
-
-    
-    def __run_from_task(self, task: Optional[BaseTask]) -> None:
+    def __run_from_task(self, task: Optional[Task]) -> None:
         if task is None:
             return
         else:
-            if isinstance(task.execute(), ErrorArtifact):
+            if isinstance(task.execute(), Exception):
                 return
             else:
                 self.__run_from_task(next(iter(task.children), None))
-

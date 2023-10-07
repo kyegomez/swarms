@@ -1,19 +1,20 @@
 import requests
 import os
 
+
 class Anthropic:
     """Anthropic large language models."""
 
     def __init__(
-            self, 
-            model="claude-2", 
-            max_tokens_to_sample=256, 
-            temperature=None, 
-            top_k=None, 
-            top_p=None, 
-            streaming=False, 
-            default_request_timeout=None
-        ):
+        self,
+        model="claude-2",
+        max_tokens_to_sample=256,
+        temperature=None,
+        top_k=None,
+        top_p=None,
+        streaming=False,
+        default_request_timeout=None
+    ):
         self.model = model
         self.max_tokens_to_sample = max_tokens_to_sample
         self.temperature = temperature
@@ -50,7 +51,7 @@ class Anthropic:
         }
         response = requests.post(f"{self.anthropic_api_url}/completions", headers=headers, json=data, timeout=self.default_request_timeout)
         return response.json().get("completion")
-    
+
     def __call__(self, prompt, stop=None):
         """Call out to Anthropic's completion endpoint."""
         stop = stop or []

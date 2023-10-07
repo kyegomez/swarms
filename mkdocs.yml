@@ -77,20 +77,26 @@ nav:
     - Hiring: "hiring.md"
 - Swarms:
   - Overview: "swarms/index.md"
-  - AutoScaler: "swarms/swarms/autoscaler.md"
-  - Workers:
+  - swarms.swarms:
+    - AutoScaler: "swarms/swarms/autoscaler.md"
+  - swarms.workers:
     - Overview: "swarms/workers/index.md"
-  - Agents:
-    - Base Models:
-      - Overview: "swarms/models/index.md"
-      - HuggingFaceLLM: "swarms/models/hf.md"
-      - Anthropic: "swarms/models/anthropic.md"
+    - AbstractWorker: "swarms/workers/abstract_worker.md"
+  - swarms.agents:
+    - AbstractAgent: "swarms/agents/abstract_agent.md"
     - OmniModalAgent: "swarms/agents/omni_agent.md"
+  - swarms.models:
+    - Overview: "swarms/models/index.md"
+    - HuggingFaceLLM: "swarms/models/hf.md"
+    - Anthropic: "swarms/models/anthropic.md"
+  - swarms.structs:
+    - Overview: "swarms/structs/overview.md"
+    - Workflow: "swarms/structs/workflow.md"
+    
 - Examples:
     - Overview: "examples/index.md"
     - Agents:
       - OmniAgent: "examples/omni_agent.md"
-      
 - Applications:
     - CustomerSupport: 
       - Overview: "applications/customer_support.md"

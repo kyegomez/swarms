@@ -1,28 +1,64 @@
+from typing import Dict, List, Optional, Union
 
-class AbsractAgent:
+
+class AbstractAgent:
+    """(In preview) An abstract class for AI agent.
+
+    An agent can communicate with other agents and perform actions.
+    Different agents can differ in what actions they perform in the `receive` method.
+
+    Agents are full and completed:
+
+    Agents = llm + tools + memory
+
+
+    """
+
     def __init__(
         self,
-        llm,
-        temperature
-    ) -> None:
-        pass
-    
-    #single query
-    def run(self, task: str):
-        pass
+        name: str,
+        # tools: List[Tool],
+        #memory: Memory
+    ):
+        """
+        Args:
+            name (str): name of the agent.
+        """
+        # a dictionary of conversations, default value is list
+        self._name = name
 
-    # conversational back and forth
-    def chat(self, message: str):
-        message_historys = []
-        message_historys.append(message)
+    @property
+    def name(self):
+        """Get the name of the agent."""
+        return self._name
 
-        reply = self.run(message)
-        message_historys.append(reply)
+    def tools(self, tools):
+        """init tools"""
 
-        return message_historys
-
-    def step(self, message):
+    def memory(self, memory_store):
+        """init memory"""
         pass
 
     def reset(self):
-        pass
+        """(Abstract method) Reset the agent."""
+
+    def run(self, task: str):
+        """Run the agent once"""
+
+    def _arun(self, taks: str):
+        """Run Async run"""
+
+    def chat(self, messages: List[Dict]):
+        """Chat with the agent"""
+
+    def _achat(
+        self,
+        messages: List[Dict]
+    ):
+        """Asynchronous Chat"""
+
+    def step(self, message: str):
+        """Step through the agent"""
+
+    def _astep(self, message: str):
+        """Asynchronous step"""

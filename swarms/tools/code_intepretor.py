@@ -1,7 +1,8 @@
-#props to shroominic
+# props to shroominic
 from swarms.tools.base import Tool, ToolException
 from typing import Any, List
 from codeinterpreterapi import CodeInterpreterSession, File, ToolException
+
 
 class CodeInterpreter(Tool):
     def __init__(self, name: str, description: str):
@@ -50,6 +51,7 @@ class CodeInterpreter(Tool):
         finally:
             # terminate the session
             await session.astop()
+
 
 """
 

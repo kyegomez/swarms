@@ -19,7 +19,7 @@ Attention: Use '##' to split sections, not '#', and '## <SECTION_NAME>' SHOULD W
 
 ## Task list: Provided as Python list[str]. Each str is a filename, the more at the beginning, the more it is a prerequisite dependency, should be done first
 
-## Shared Knowledge: Anything that should be public like utils' functions, config's variables details that should make clear first. 
+## Shared Knowledge: Anything that should be public like utils' functions, config's variables details that should make clear first.
 
 ## Anything UNCLEAR: Provide as Plain text. Make clear here. For example, don't forget a main entry. don't forget to init 3rd party libs.
 

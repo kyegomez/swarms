@@ -14,11 +14,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # ---------- Boss Node ----------
 
+
 class Boss:
     """
     The Bose class is responsible for creating and executing tasks using the BabyAGI model.
     It takes a language model (llm), a vectorstore for memory, an agent_executor for task execution, and a maximum number of iterations for the BabyAGI model.
-    
+
     # Setup
     api_key = "YOUR_OPENAI_API_KEY" # Replace with your OpenAI API Key.
     os.environ["OPENAI_API_KEY"] = api_key
@@ -28,26 +29,27 @@ class Boss:
 
     # Create a Bose instance
     boss = Bose(
-        objective=objective, 
-        boss_system_prompt="You are the main controller of a data analysis swarm...", 
-        api_key=api_key, 
+        objective=objective,
+        boss_system_prompt="You are the main controller of a data analysis swarm...",
+        api_key=api_key,
         worker_node=WorkerNode
     )
 
     # Run the Bose to process the objective
     boss.run()
     """
+
     def __init__(
-            self, 
-            objective: str, 
-            api_key=None, 
-            max_iterations=5, 
-            human_in_the_loop=None, 
-            boss_system_prompt="You are a boss planner in a swarm...", 
-            llm_class=OpenAI, 
-            worker_node=None, 
-            verbose=False
-        ):
+        self,
+        objective: str,
+        api_key=None,
+        max_iterations=5,
+        human_in_the_loop=None,
+        boss_system_prompt="You are a boss planner in a swarm...",
+        llm_class=OpenAI,
+        worker_node=None,
+        verbose=False
+    ):
         # Store parameters
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.objective = objective
@@ -55,7 +57,7 @@ class Boss:
         self.boss_system_prompt = boss_system_prompt
         self.llm_class = llm_class
         self.verbose = verbose
-        
+
         # Initialization methods
         self.llm = self._initialize_llm()
         self.vectorstore = self._initialize_vectorstore()
@@ -65,7 +67,7 @@ class Boss:
 
     def _initialize_llm(self):
         """
-        Init LLM 
+        Init LLM
 
         Params:
             llm_class(class): The Language model class. Default is OpenAI.
@@ -84,11 +86,11 @@ class Boss:
             index = faiss.IndexFlatL2(embedding_size)
 
             return FAISS(
-                embeddings_model.embed_query, 
-                index, 
+                embeddings_model.embed_query,
+                index,
                 InMemoryDocstore({}), {}
             )
-        
+
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
             raise e
@@ -98,8 +100,8 @@ class Boss:
         todo_chain = LLMChain(llm=self.llm, prompt=todo_prompt)
         tools = [
             Tool(
-                name="Goal Decomposition Tool", 
-                func=todo_chain.run, 
+                name="Goal Decomposition Tool",
+                func=todo_chain.run,
                 description="Use Case: Decompose ambitious goals into as many explicit and well defined tasks for an AI agent to follow. Rules and Regulations, don't use this tool too often only in the beginning when the user grants you a mission."
             ),
             Tool(name="Swarm Worker Agent", func=worker_node, description="Use Case: When you want to delegate and assign the decomposed goal sub tasks to a worker agent in your swarm, Rules and Regulations, Provide a task specification sheet to the worker agent. It can use the browser, process csvs and generate content")
@@ -108,9 +110,9 @@ class Boss:
         suffix = """Question: {task}\n{agent_scratchpad}"""
         prefix = """You are a Boss in a swarm who performs one task based on the following objective: {objective}. Take into account these previously completed tasks: {context}.\n """
         prompt = ZeroShotAgent.create_prompt(
-            tools, 
-            prefix=prefix, 
-            suffix=suffix, 
+            tools,
+            prefix=prefix,
+            suffix=suffix,
             input_variables=["objective", "task", "context", "agent_scratchpad"],
         )
 

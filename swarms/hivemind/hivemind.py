@@ -1,7 +1,7 @@
 #  workers in unison
-#kye gomez jul 13 4:01pm, can scale up the number of swarms working on a probkem with `hivemind(swarms=4, or swarms=auto which will scale the agents depending on the complexity)`
-#this needs to change, we need to specify exactly what needs to be imported
-# add typechecking, documentation, and deeper error handling 
+# kye gomez jul 13 4:01pm, can scale up the number of swarms working on a probkem with `hivemind(swarms=4, or swarms=auto which will scale the agents depending on the complexity)`
+# this needs to change, we need to specify exactly what needs to be imported
+# add typechecking, documentation, and deeper error handling
 # TODO: MANY WORKERS
 
 import concurrent.futures
@@ -12,13 +12,14 @@ from swarms.swarms.swarms import HierarchicalSwarm
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 class HiveMind:
     def __init__(
-            self, 
-            openai_api_key="", 
-            num_swarms=1, 
-            max_workers=None
-        ):
+        self,
+        openai_api_key="",
+        num_swarms=1,
+        max_workers=None
+    ):
         self.openai_api_key = openai_api_key
         self.num_swarms = num_swarms
         self.swarms = [HierarchicalSwarm(openai_api_key) for _ in range(num_swarms)]
@@ -51,7 +52,7 @@ class HiveMind:
                 except Exception as e:
                     logging.error(f"An error occurred in a swarm: {e}")
         return results
-    
+
     def add_swarm(self):
         self.swarms.append(HierarchicalSwarm(self.openai_api_key))
 
@@ -60,9 +61,9 @@ class HiveMind:
             self.swarms.pop(index)
         except IndexError:
             logging.error(f"No swarm found at index {index}")
-        
+
     def get_progress(self):
-        #this assumes that the swarms class has a get progress method
+        # this assumes that the swarms class has a get progress method
         pass
 
     def cancel_swarm(self, index):

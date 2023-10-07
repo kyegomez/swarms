@@ -1,12 +1,14 @@
 from swarms.workers.worker import Worker
 from queue import Queue, PriorityQueue
 
+
 class SimpleSwarm:
     def __init__(
-       self,
-       num_workers,
-       openai_api_key,
-       ai_name
+        self,
+        num_workers: int = None,
+        openai_api_key: str = None,
+        ai_name: str = None,
+        rounds: int = 1,
     ):
         """
 
@@ -37,14 +39,14 @@ class SimpleSwarm:
 
         """
         self.workers = [
-            Worker(openai_api_key, ai_name) for _ in range(num_workers)
+            Worker(ai_name, ai_name, openai_api_key) for _ in range(num_workers)
         ]
         self.task_queue = Queue()
         self.priority_queue = PriorityQueue()
-    
+
     def distribute(
         self,
-        task,
+        task: str = None,
         priority=None
     ):
         """Distribute a task to the workers"""
@@ -52,32 +54,31 @@ class SimpleSwarm:
             self.priority_queue.put((priority, task))
         else:
             self.task_queue.put(task)
-    
+
     def _process_task(self, task):
-        #TODO, Implement load balancing, fallback mechanism
+        # TODO, Implement load balancing, fallback mechanism
         for worker in self.workers:
             response = worker.run(task)
             if response:
                 return response
         return "All Agents failed"
-    
+
     def run(self):
         """Run the simple swarm"""
 
         responses = []
 
-        #process high priority tasks first
+        # process high priority tasks first
         while not self.priority_queue.empty():
             _, task = self.priority_queue.get()
             responses.append(self._process_task(task))
-        
-        #process normal tasks
+
+        # process normal tasks
         while not self.task_queue.empty():
             task = self.task_queue.get()
             responses.append(self._process_task(task))
 
         return responses
-
 
     def run_old(self, task):
         responses = []
@@ -85,8 +86,8 @@ class SimpleSwarm:
         for worker in self.workers:
             response = worker.run(task)
             responses.append(response)
-            
+
         return responses
-    
+
     def __call__(self, task):
-        return self.run(task) 
+        return self.run(task)
