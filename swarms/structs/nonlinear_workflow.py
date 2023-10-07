@@ -1,14 +1,11 @@
-from typing import List, Dict, Any, Union
-from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from graphlib import TopologicalSorter
+from typing import Dict, List
 
 
 class Task:
     def __init__(
-        self,
-        id: str,
-        parents: List["Task"] = None,
-        children: List["Task"] = None
+        self, id: str, parents: List["Task"] = None, children: List["Task"] = None
     ):
         self.id = id
         self.parents = parents
@@ -48,11 +45,7 @@ class NonLinearWorkflow:
 
     """
 
-    def __init__(
-        self,
-        agents,
-        iters_per_task
-    ):
+    def __init__(self, agents, iters_per_task):
         """A workflow is a collection of tasks that can be executed in parallel or sequentially."""
         super().__init__()
         self.executor = ThreadPoolExecutor()
@@ -61,10 +54,7 @@ class NonLinearWorkflow:
 
     def add(self, task: Task):
         """Add a task to the workflow"""
-        assert isinstance(
-            task,
-            Task
-        ), "Input must be an nstance of Task"
+        assert isinstance(task, Task), "Input must be an nstance of Task"
         self.tasks.append(task)
         return task
 
@@ -100,9 +90,5 @@ class NonLinearWorkflow:
 
     def order_tasks(self) -> List[Task]:
         """Order the tasks USING TOPOLOGICAL SORTING"""
-        task_order = TopologicalSorter(
-            self.to_graph()
-        ).static_order()
-        return [
-            self.find_task(task_id) for task_id in task_order
-        ]
+        task_order = TopologicalSorter(self.to_graph()).static_order()
+        return [self.find_task(task_id) for task_id in task_order]

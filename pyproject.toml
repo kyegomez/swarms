@@ -50,6 +50,7 @@ exxa = "*"
 open-interpreter = "*"
 tabulate = "*"
 termcolor = "*"
+black = "*"
 
 [tool.poetry.dev-dependencies]
 first_dependency = {git = "https://github.com/IDEA-Research/GroundingDINO.git"}

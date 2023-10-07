@@ -41,44 +41,30 @@ class ScalableGroupChat:
 
         # Create a list of Worker instances with unique names
         for i in range(worker_count):
-            self.workers.append(
-                Worker(
-                    openai_api_key=api_key,
-                    ai_name=f"Worker-{i}"
-                )
-            )
+            self.workers.append(Worker(openai_api_key=api_key, ai_name=f"Worker-{i}"))
 
-    def embed(
-        self,
-        input,
-        model_name
-    ):
+    def embed(self, input, model_name):
         """Embeds an input of size N into a vector of size M"""
         openai = embedding_functions.OpenAIEmbeddingFunction(
-            api_key=self.api_key,
-            model_name=model_name
+            api_key=self.api_key, model_name=model_name
         )
 
         embedding = openai(input)
 
         return embedding
 
-    def retrieve_results(
-        self,
-        agent_id: int
-    ) -> Any:
+    def retrieve_results(self, agent_id: int) -> Any:
         """Retrieve results from a specific agent"""
 
         try:
             # Query the vector database for documents created by the agents
-            results = self.collection.query(
-                query_texts=[str(agent_id)],
-                n_results=10
-            )
+            results = self.collection.query(query_texts=[str(agent_id)], n_results=10)
 
             return results
         except Exception as e:
-            logging.error(f"Failed to retrieve results from agent {agent_id}. Error {e}")
+            logging.error(
+                f"Failed to retrieve results from agent {agent_id}. Error {e}"
+            )
             raise
 
     # @abstractmethod
@@ -89,7 +75,7 @@ class ScalableGroupChat:
             self.collection.add(
                 embeddings=[data["vector"]],
                 documents=[str(data["task_id"])],
-                ids=[str(data["task_id"])]
+                ids=[str(data["task_id"])],
             )
 
         except Exception as e:
@@ -102,28 +88,17 @@ class ScalableGroupChat:
         """Retrieve the vector database"""
         return self.collection
 
-    def append_to_db(
-        self,
-        result: str
-    ):
+    def append_to_db(self, result: str):
         """append the result of the swarm to a specifici collection in the database"""
 
         try:
-            self.collection.add(
-                documents=[result],
-                ids=[str(id(result))]
-            )
+            self.collection.add(documents=[result], ids=[str(id(result))])
 
         except Exception as e:
             logging.error(f"Failed to append the agent output to database. Error: {e}")
             raise
 
-    def chat(
-        self,
-        sender_id: int,
-        receiver_id: int,
-        message: str
-    ):
+    def chat(self, sender_id: int, receiver_id: int, message: str):
         """
 
         Allows the agents to chat with eachother thrught the vectordatabase
@@ -139,7 +114,12 @@ class ScalableGroupChat:
         orchestrator.chat(sender_id=1, receiver_id=2, message="Hello, Agent 2!")
 
         """
-        if sender_id < 0 or sender_id >= self.worker_count or receiver_id < 0 or receiver_id >= self.worker_count:
+        if (
+            sender_id < 0
+            or sender_id >= self.worker_count
+            or receiver_id < 0
+            or receiver_id >= self.worker_count
+        ):
             raise ValueError("Invalid sender or receiver ID")
 
         message_vector = self.embed(
@@ -150,9 +130,7 @@ class ScalableGroupChat:
         self.collection.add(
             embeddings=[message_vector],
             documents=[message],
-            ids=[f"{sender_id}_to_{receiver_id}"]
+            ids=[f"{sender_id}_to_{receiver_id}"],
         )
 
-        self.run(
-            objective=f"chat with agent {receiver_id} about {message}"
-        )
+        self.run(objective=f"chat with agent {receiver_id} about {message}")

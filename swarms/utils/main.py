@@ -84,6 +84,8 @@ def get_new_dataframe_name(org_img_name, func_name="update"):
             this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
         )
     return os.path.join(head, new_file_name)
+
+
 # =======================> utils end
 
 
@@ -203,6 +205,7 @@ def dim_multiline(message: str) -> str:
         return lines[0]
     return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(Color.black().bright())
 
+
 # +=============================> ANSI Ending
 
 
@@ -220,6 +223,7 @@ class AbstractUploader(ABC):
     @abstractstaticmethod
     def from_settings() -> "AbstractUploader":
         pass
+
 
 # ================================> upload end
 
@@ -255,6 +259,7 @@ class S3Uploader(AbstractUploader):
         object_name = os.path.basename(filepath)
         self.client.upload_file(filepath, self.bucket, object_name)
         return self.get_url(object_name)
+
 
 # ========================= upload s3
 
@@ -359,10 +364,16 @@ class FileHandler:
     def handle(self, url: str) -> str:
         try:
             if url.startswith(os.environ.get("SERVER", "http://localhost:8000")):
-                local_filepath = url[len(os.environ.get("SERVER", "http://localhost:8000")) + 1:]
+                local_filepath = url[
+                    len(os.environ.get("SERVER", "http://localhost:8000")) + 1:
+                ]
                 local_filename = Path("file") / local_filepath.split("/")[-1]
                 src = self.path / local_filepath
-                dst = self.path / os.environ.get("PLAYGROUND_DIR", "./playground") / local_filename
+                dst = (
+                    self.path
+                    / os.environ.get("PLAYGROUND_DIR", "./playground")
+                    / local_filename
+                )
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy(src, dst)
             else:
@@ -379,6 +390,8 @@ class FileHandler:
             return handler.handle(local_filename)
         except Exception as e:
             raise e
+
+
 # =>  base end
 
 

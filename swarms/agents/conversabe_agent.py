@@ -43,7 +43,9 @@ class ConversableAgent(Agent):
     DEFAULT_CONFIG = {
         "model": DEFAULT_MODEL,
     }
-    MAX_CONSECUTIVE_AUTO_REPLY = 100  # maximum number of consecutive auto replies (subject to future change)
+    MAX_CONSECUTIVE_AUTO_REPLY = (
+        100  # maximum number of consecutive auto replies (subject to future change)
+    )
 
     def __init__(
         self,
@@ -103,7 +105,9 @@ class ConversableAgent(Agent):
         self._oai_messages = defaultdict(list)
         self._oai_system_message = [{"content": system_message, "role": "system"}]
         self._is_termination_msg = (
-            is_termination_msg if is_termination_msg is not None else (lambda x: x.get("content") == "TERMINATE")
+            is_termination_msg
+            if is_termination_msg is not None
+            else (lambda x: x.get("content") == "TERMINATE")
         )
         if llm_config is False:
             self.llm_config = False
@@ -112,21 +116,33 @@ class ConversableAgent(Agent):
             if isinstance(llm_config, dict):
                 self.llm_config.update(llm_config)
 
-        self._code_execution_config = {} if code_execution_config is None else code_execution_config
+        self._code_execution_config = (
+            {} if code_execution_config is None else code_execution_config
+        )
         self.human_input_mode = human_input_mode
         self._max_consecutive_auto_reply = (
-            max_consecutive_auto_reply if max_consecutive_auto_reply is not None else self.MAX_CONSECUTIVE_AUTO_REPLY
+            max_consecutive_auto_reply
+            if max_consecutive_auto_reply is not None
+            else self.MAX_CONSECUTIVE_AUTO_REPLY
         )
         self._consecutive_auto_reply_counter = defaultdict(int)
-        self._max_consecutive_auto_reply_dict = defaultdict(self.max_consecutive_auto_reply)
+        self._max_consecutive_auto_reply_dict = defaultdict(
+            self.max_consecutive_auto_reply
+        )
         self._function_map = {} if function_map is None else function_map
         self._default_auto_reply = default_auto_reply
         self._reply_func_list = []
         self.reply_at_receive = defaultdict(bool)
         self.register_reply([Agent, None], ConversableAgent.generate_oai_reply)
-        self.register_reply([Agent, None], ConversableAgent.generate_code_execution_reply)
-        self.register_reply([Agent, None], ConversableAgent.generate_function_call_reply)
-        self.register_reply([Agent, None], ConversableAgent.check_termination_and_human_reply)
+        self.register_reply(
+            [Agent, None], ConversableAgent.generate_code_execution_reply
+        )
+        self.register_reply(
+            [Agent, None], ConversableAgent.generate_function_call_reply
+        )
+        self.register_reply(
+            [Agent, None], ConversableAgent.check_termination_and_human_reply
+        )
 
     def register_reply(
         self,
@@ -170,7 +186,9 @@ class ConversableAgent(Agent):
                 The function returns None. Signature: ```def reset_config(config: Any)```
         """
         if not isinstance(trigger, (type, str, Agent, Callable, list)):
-            raise ValueError("trigger must be a class, a string, an agent, a callable or a list.")
+            raise ValueError(
+                "trigger must be a class, a string, an agent, a callable or a list."
+            )
         self._reply_func_list.insert(
             position,
             {
@@ -195,7 +213,9 @@ class ConversableAgent(Agent):
         """
         self._oai_system_message[0]["content"] = system_message
 
-    def update_max_consecutive_auto_reply(self, value: int, sender: Optional[Agent] = None):
+    def update_max_consecutive_auto_reply(
+        self, value: int, sender: Optional[Agent] = None
+    ):
         """Update the maximum number of consecutive auto replies.
 
         Args:
@@ -211,7 +231,11 @@ class ConversableAgent(Agent):
 
     def max_consecutive_auto_reply(self, sender: Optional[Agent] = None) -> int:
         """The maximum number of consecutive auto replies."""
-        return self._max_consecutive_auto_reply if sender is None else self._max_consecutive_auto_reply_dict[sender]
+        return (
+            self._max_consecutive_auto_reply
+            if sender is None
+            else self._max_consecutive_auto_reply_dict[sender]
+        )
 
     @property
     def chat_messages(self) -> Dict[Agent, List[Dict]]:
@@ -236,7 +260,9 @@ class ConversableAgent(Agent):
             if n_conversations == 1:
                 for conversation in self._oai_messages.values():
                     return conversation[-1]
-            raise ValueError("More than one conversation is found. Please specify the sender to get the last message.")
+            raise ValueError(
+                "More than one conversation is found. Please specify the sender to get the last message."
+            )
         return self._oai_messages[agent][-1]
 
     @property
@@ -244,7 +270,11 @@ class ConversableAgent(Agent):
         """Bool value of whether to use docker to execute the code,
         or str value of the docker image name to use, or None when code execution is disabled.
         """
-        return None if self._code_execution_config is False else self._code_execution_config.get("use_docker")
+        return (
+            None
+            if self._code_execution_config is False
+            else self._code_execution_config.get("use_docker")
+        )
 
     @staticmethod
     def _message_to_dict(message: Union[Dict, str]):
@@ -257,7 +287,9 @@ class ConversableAgent(Agent):
         else:
             return message
 
-    def _append_oai_message(self, message: Union[Dict, str], role, conversation_id: Agent) -> bool:
+    def _append_oai_message(
+        self, message: Union[Dict, str], role, conversation_id: Agent
+    ) -> bool:
         """Append a message to the ChatCompletion conversation.
 
         If the message received is a string, it will be put in the "content" field of the new dictionary.
@@ -275,16 +307,24 @@ class ConversableAgent(Agent):
         """
         message = self._message_to_dict(message)
         # create oai message to be appended to the oai conversation that can be passed to oai directly.
-        oai_message = {k: message[k] for k in ("content", "function_call", "name", "context") if k in message}
+        oai_message = {
+            k: message[k]
+            for k in ("content", "function_call", "name", "context")
+            if k in message
+        }
         if "content" not in oai_message:
             if "function_call" in oai_message:
-                oai_message["content"] = None  # if only function_call is provided, content will be set to None.
+                oai_message[
+                    "content"
+                ] = None  # if only function_call is provided, content will be set to None.
             else:
                 return False
 
         oai_message["role"] = "function" if message.get("role") == "function" else role
         if "function_call" in oai_message:
-            oai_message["role"] = "assistant"  # only messages with role 'assistant' can have a function call.
+            oai_message[
+                "role"
+            ] = "assistant"  # only messages with role 'assistant' can have a function call.
         self._oai_messages[conversation_id].append(oai_message)
         return True
 
@@ -390,7 +430,9 @@ class ConversableAgent(Agent):
         # print the message received
         print(colored(sender.name, "yellow"), "(to", f"{self.name}):\n", flush=True)
         if message.get("role") == "function":
-            func_print = f"***** Response from calling function \"{message['name']}\" *****"
+            func_print = (
+                f"***** Response from calling function \"{message['name']}\" *****"
+            )
             print(colored(func_print, "green"), flush=True)
             print(message["content"], flush=True)
             print(colored("*" * len(func_print), "green"), flush=True)
@@ -401,7 +443,8 @@ class ConversableAgent(Agent):
                     content = oai.ChatCompletion.instantiate(
                         content,
                         message["context"],
-                        self.llm_config and self.llm_config.get("allow_format_str_template", False),
+                        self.llm_config
+                        and self.llm_config.get("allow_format_str_template", False),
                     )
                 print(content, flush=True)
             if "function_call" in message:
@@ -457,7 +500,11 @@ class ConversableAgent(Agent):
             ValueError: if the message can't be converted into a valid ChatCompletion message.
         """
         self._process_received_message(message, sender, silent)
-        if request_reply is False or request_reply is None and self.reply_at_receive[sender] is False:
+        if (
+            request_reply is False
+            or request_reply is None
+            and self.reply_at_receive[sender] is False
+        ):
             return
         reply = self.generate_reply(messages=self.chat_messages[sender], sender=sender)
         if reply is not None:
@@ -493,7 +540,11 @@ class ConversableAgent(Agent):
             ValueError: if the message can't be converted into a valid ChatCompletion message.
         """
         self._process_received_message(message, sender, silent)
-        if request_reply is False or request_reply is None and self.reply_at_receive[sender] is False:
+        if (
+            request_reply is False
+            or request_reply is None
+            and self.reply_at_receive[sender] is False
+        ):
             return
         reply = await self.a_generate_reply(sender=sender)
         if reply is not None:
@@ -551,7 +602,9 @@ class ConversableAgent(Agent):
                 "message" needs to be provided if the `generate_init_message` method is not overridden.
         """
         self._prepare_chat(recipient, clear_history)
-        await self.a_send(self.generate_init_message(**context), recipient, silent=silent)
+        await self.a_send(
+            self.generate_init_message(**context), recipient, silent=silent
+        )
 
     def reset(self):
         """Reset the agent."""
@@ -604,7 +657,9 @@ class ConversableAgent(Agent):
 
         # TODO: #1143 handle token limit exceeded error
         response = oai.ChatCompletion.create(
-            context=messages[-1].pop("context", None), messages=self._oai_system_message + messages, **llm_config
+            context=messages[-1].pop("context", None),
+            messages=self._oai_system_message + messages,
+            **llm_config,
         )
         return True, oai.ChatCompletion.extract_text_or_function_call(response)[0]
 
@@ -615,7 +670,9 @@ class ConversableAgent(Agent):
         config: Optional[Any] = None,
     ):
         """Generate a reply using code execution."""
-        code_execution_config = config if config is not None else self._code_execution_config
+        code_execution_config = (
+            config if config is not None else self._code_execution_config
+        )
         if code_execution_config is False:
             return False, None
         if messages is None:
@@ -634,7 +691,9 @@ class ConversableAgent(Agent):
             # found code blocks, execute code and push "last_n_messages" back
             exitcode, logs = self.execute_code_blocks(code_blocks)
             code_execution_config["last_n_messages"] = last_n_messages
-            exitcode2str = "execution succeeded" if exitcode == 0 else "execution failed"
+            exitcode2str = (
+                "execution succeeded" if exitcode == 0 else "execution failed"
+            )
             return True, f"exitcode: {exitcode} ({exitcode2str})\nCode output: {logs}"
 
         # no code blocks are found, push last_n_messages back and return.
@@ -681,7 +740,10 @@ class ConversableAgent(Agent):
             # if the human input is empty, and the message is a termination message, then we will terminate the conversation
             reply = reply if reply or not self._is_termination_msg(message) else "exit"
         else:
-            if self._consecutive_auto_reply_counter[sender] >= self._max_consecutive_auto_reply_dict[sender]:
+            if (
+                self._consecutive_auto_reply_counter[sender]
+                >= self._max_consecutive_auto_reply_dict[sender]
+            ):
                 if self.human_input_mode == "NEVER":
                     reply = "exit"
                 else:
@@ -776,7 +838,12 @@ class ConversableAgent(Agent):
             if asyncio.coroutines.iscoroutinefunction(reply_func):
                 continue
             if self._match_trigger(reply_func_tuple["trigger"], sender):
-                final, reply = reply_func(self, messages=messages, sender=sender, config=reply_func_tuple["config"])
+                final, reply = reply_func(
+                    self,
+                    messages=messages,
+                    sender=sender,
+                    config=reply_func_tuple["config"],
+                )
                 if final:
                     return reply
         return self._default_auto_reply
@@ -827,10 +894,18 @@ class ConversableAgent(Agent):
             if self._match_trigger(reply_func_tuple["trigger"], sender):
                 if asyncio.coroutines.iscoroutinefunction(reply_func):
                     final, reply = await reply_func(
-                        self, messages=messages, sender=sender, config=reply_func_tuple["config"]
+                        self,
+                        messages=messages,
+                        sender=sender,
+                        config=reply_func_tuple["config"],
                     )
                 else:
-                    final, reply = reply_func(self, messages=messages, sender=sender, config=reply_func_tuple["config"])
+                    final, reply = reply_func(
+                        self,
+                        messages=messages,
+                        sender=sender,
+                        config=reply_func_tuple["config"],
+                    )
                 if final:
                     return reply
         return self._default_auto_reply
@@ -897,7 +972,9 @@ class ConversableAgent(Agent):
                 flush=True,
             )
             if lang in ["bash", "shell", "sh"]:
-                exitcode, logs, image = self.run_code(code, lang=lang, **self._code_execution_config)
+                exitcode, logs, image = self.run_code(
+                    code, lang=lang, **self._code_execution_config
+                )
             elif lang in ["python", "Python"]:
                 if code.startswith("# filename: "):
                     filename = code[11: code.find("\n")].strip()

@@ -61,7 +61,7 @@ class StructuredTool(BaseTool):
         name: str,
         description: str,
         args_schema: Type[BaseModel],
-        func: Callable[..., Any]
+        func: Callable[..., Any],
     ):
         self.name = name
         self.description = description
@@ -99,14 +99,18 @@ class ToolWrapper:
 
     def to_tool(self, get_session: SessionGetter = lambda: []) -> BaseTool:
         if self.is_per_session():
-            self.func = lambda *args, **kwargs: self.func(*args, **kwargs, get_session=get_session)
+            self.func = lambda *args, **kwargs: self.func(
+                *args, **kwargs, get_session=get_session
+            )
 
         return Tool(name=self.name, description=self.description, func=self.func)
 
 
 class BaseToolSet:
     def tool_wrappers(cls) -> list[ToolWrapper]:
-        methods = [getattr(cls, m) for m in dir(cls) if hasattr(getattr(cls, m), "is_tool")]
+        methods = [
+            getattr(cls, m) for m in dir(cls) if hasattr(getattr(cls, m), "is_tool")
+        ]
         return [ToolWrapper(m.name, m.description, m.scope, m) for m in methods]
 
 
@@ -130,7 +134,9 @@ class GlobalToolsCreator(ToolCreator):
 
 
 class SessionToolsCreator(ToolCreator):
-    def create_tools(self, toolsets: list[BaseToolSet], get_session: SessionGetter = lambda: []) -> list[BaseTool]:
+    def create_tools(
+        self, toolsets: list[BaseToolSet], get_session: SessionGetter = lambda: []
+    ) -> list[BaseTool]:
         tools = []
         for toolset in toolsets:
             tools.extend(
@@ -145,7 +151,12 @@ class SessionToolsCreator(ToolCreator):
 
 class ToolsFactory:
     @staticmethod
-    def from_toolset(toolset: BaseToolSet, only_global: Optional[bool] = False, only_per_session: Optional[bool] = False, get_session: SessionGetter = lambda: []) -> list[BaseTool]:
+    def from_toolset(
+        toolset: BaseToolSet,
+        only_global: Optional[bool] = False,
+        only_per_session: Optional[bool] = False,
+        get_session: SessionGetter = lambda: [],
+    ) -> list[BaseTool]:
         tools = []
         for wrapper in toolset.tool_wrappers():
             if only_global and not wrapper.is_global():
@@ -156,9 +167,15 @@ class ToolsFactory:
         return tools
 
     @staticmethod
-    def create_tools(tool_creator: ToolCreator, toolsets: list[BaseToolSet], get_session: SessionGetter = lambda: []):
+    def create_tools(
+        tool_creator: ToolCreator,
+        toolsets: list[BaseToolSet],
+        get_session: SessionGetter = lambda: [],
+    ):
         return tool_creator.create_tools(toolsets, get_session)
 
     @staticmethod
-    def create_global_tools_from_names(toolnames: list[str], llm: Optional[BaseLLM]) -> list[BaseTool]:
+    def create_global_tools_from_names(
+        toolnames: list[str], llm: Optional[BaseLLM]
+    ) -> list[BaseTool]:
         return load_tools(toolnames, llm=llm)

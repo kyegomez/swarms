@@ -10,7 +10,9 @@ from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import BabyAGI
 from pydantic import ValidationError
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # ---------- Boss Node ----------
 
@@ -48,7 +50,7 @@ class Boss:
         boss_system_prompt="You are a boss planner in a swarm...",
         llm_class=OpenAI,
         worker_node=None,
-        verbose=False
+        verbose=False,
     ):
         # Store parameters
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
@@ -85,11 +87,7 @@ class Boss:
             embedding_size = 8192
             index = faiss.IndexFlatL2(embedding_size)
 
-            return FAISS(
-                embeddings_model.embed_query,
-                index,
-                InMemoryDocstore({}), {}
-            )
+            return FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
         except Exception as e:
             logging.error(f"Failed to initialize vector store: {e}")
@@ -102,9 +100,13 @@ class Boss:
             Tool(
                 name="Goal Decomposition Tool",
                 func=todo_chain.run,
-                description="Use Case: Decompose ambitious goals into as many explicit and well defined tasks for an AI agent to follow. Rules and Regulations, don't use this tool too often only in the beginning when the user grants you a mission."
+                description="Use Case: Decompose ambitious goals into as many explicit and well defined tasks for an AI agent to follow. Rules and Regulations, don't use this tool too often only in the beginning when the user grants you a mission.",
             ),
-            Tool(name="Swarm Worker Agent", func=worker_node, description="Use Case: When you want to delegate and assign the decomposed goal sub tasks to a worker agent in your swarm, Rules and Regulations, Provide a task specification sheet to the worker agent. It can use the browser, process csvs and generate content")
+            Tool(
+                name="Swarm Worker Agent",
+                func=worker_node,
+                description="Use Case: When you want to delegate and assign the decomposed goal sub tasks to a worker agent in your swarm, Rules and Regulations, Provide a task specification sheet to the worker agent. It can use the browser, process csvs and generate content",
+            ),
         ]
 
         suffix = """Question: {task}\n{agent_scratchpad}"""
@@ -118,7 +120,9 @@ class Boss:
 
         llm_chain = LLMChain(llm=self.llm, prompt=prompt)
         agent = ZeroShotAgent(llm_chain=llm_chain, allowed_tools=tools)
-        return AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=self.verbose)
+        return AgentExecutor.from_agent_and_tools(
+            agent=agent, tools=tools, verbose=self.verbose
+        )
 
     def _initialize_baby_agi(self, human_in_the_loop):
         try:
@@ -127,7 +131,7 @@ class Boss:
                 vectorstore=self.vectorstore,
                 task_execution_chain=self.agent_executor,
                 max_iterations=self.max_iterations,
-                human_in_the_loop=human_in_the_loop
+                human_in_the_loop=human_in_the_loop,
             )
         except ValidationError as e:
             logging.error(f"Validation Error while initializing BabyAGI: {e}")

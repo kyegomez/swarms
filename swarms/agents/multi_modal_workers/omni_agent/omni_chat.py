@@ -54,7 +54,7 @@ max_length = {
     "davinci": 2049,
     "curie": 2049,
     "babbage": 2049,
-    "ada": 2049
+    "ada": 2049,
 }
 
 
@@ -67,14 +67,14 @@ def get_max_context_length(model_name):
 
 
 def get_token_ids_for_task_parsing(model_name):
-    text = '''{"task": "text-classification",  "token-classification", "text2text-generation", "summarization", "translation",  "question-answering", "conversational", "text-generation", "sentence-similarity", "tabular-classification", "object-detection", "image-classification", "image-to-image", "image-to-text", "text-to-image", "visual-question-answering", "document-question-answering", "image-segmentation", "text-to-speech", "text-to-video", "automatic-speech-recognition", "audio-to-audio", "audio-classification", "canny-control", "hed-control", "mlsd-control", "normal-control", "openpose-control", "canny-text-to-image", "depth-text-to-image", "hed-text-to-image", "mlsd-text-to-image", "normal-text-to-image", "openpose-text-to-image", "seg-text-to-image", "args", "text", "path", "dep", "id", "<GENERATED>-"}'''
+    text = """{"task": "text-classification",  "token-classification", "text2text-generation", "summarization", "translation",  "question-answering", "conversational", "text-generation", "sentence-similarity", "tabular-classification", "object-detection", "image-classification", "image-to-image", "image-to-text", "text-to-image", "visual-question-answering", "document-question-answering", "image-segmentation", "text-to-speech", "text-to-video", "automatic-speech-recognition", "audio-to-audio", "audio-classification", "canny-control", "hed-control", "mlsd-control", "normal-control", "openpose-control", "canny-text-to-image", "depth-text-to-image", "hed-text-to-image", "mlsd-text-to-image", "normal-text-to-image", "openpose-text-to-image", "seg-text-to-image", "args", "text", "path", "dep", "id", "<GENERATED>-"}"""
     res = encodings[model_name].encode(text)
     res = list(set(res))
     return res
 
 
 def get_token_ids_for_choose_model(model_name):
-    text = '''{"id": "reason"}'''
+    text = """{"id": "reason"}"""
     res = encodings[model_name].encode(text)
     res = list(set(res))
     return res
@@ -82,7 +82,11 @@ def get_token_ids_for_choose_model(model_name):
 
 #########
 parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=str, default="swarms/agents/workers/multi_modal_workers/omni_agent/config.yml")
+parser.add_argument(
+    "--config",
+    type=str,
+    default="swarms/agents/workers/multi_modal_workers/omni_agent/config.yml",
+)
 parser.add_argument("--mode", type=str, default="cli")
 args = parser.parse_args()
 
@@ -102,7 +106,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 if not config["debug"]:
     handler.setLevel(logging.CRITICAL)
@@ -143,7 +147,9 @@ elif "azure" in config:
 elif "openai" in config:
     API_TYPE = "openai"
 else:
-    logger.warning(f"No endpoint specified in {args.config}. The endpoint will be set dynamically according to the client.")
+    logger.warning(
+        f"No endpoint specified in {args.config}. The endpoint will be set dynamically according to the client."
+    )
 
 if args.mode in ["test", "cli"]:
     assert API_TYPE, "Only server mode supports dynamic endpoint."
@@ -157,9 +163,13 @@ elif API_TYPE == "azure":
     API_KEY = config["azure"]["api_key"]
 elif API_TYPE == "openai":
     API_ENDPOINT = f"https://api.openai.com/v1/{api_name}"
-    if config["openai"]["api_key"].startswith("sk-"):  # Check for valid OpenAI key in config file
+    if config["openai"]["api_key"].startswith(
+        "sk-"
+    ):  # Check for valid OpenAI key in config file
         API_KEY = config["openai"]["api_key"]
-    elif "OPENAI_API_KEY" in os.environ and os.getenv("OPENAI_API_KEY").startswith("sk-"):  # Check for environment variable OPENAI_API_KEY
+    elif "OPENAI_API_KEY" in os.environ and os.getenv("OPENAI_API_KEY").startswith(
+        "sk-"
+    ):  # Check for environment variable OPENAI_API_KEY
         API_KEY = os.getenv("OPENAI_API_KEY")
     else:
         raise ValueError(f"Incorrect OpenAI key. Please check your {args.config} file.")
@@ -175,7 +185,12 @@ inference_mode = config["inference_mode"]
 # check the local_inference_endpoint
 Model_Server = None
 if inference_mode != "huggingface":
-    Model_Server = "http://" + config["local_inference_endpoint"]["host"] + ":" + str(config["local_inference_endpoint"]["port"])
+    Model_Server = (
+        "http://"
+        + config["local_inference_endpoint"]["host"]
+        + ":"
+        + str(config["local_inference_endpoint"]["port"])
+    )
     message = f"The server of local inference endpoints is not running, please start it first. (or using `inference_mode: huggingface` in {args.config} for a feature-limited experience)"
     try:
         r = requests.get(Model_Server + "/running")
@@ -185,9 +200,15 @@ if inference_mode != "huggingface":
         raise ValueError(message)
 
 
-parse_task_demos_or_presteps = open(config["demos_or_presteps"]["parse_task"], "r").read()
-choose_model_demos_or_presteps = open(config["demos_or_presteps"]["choose_model"], "r").read()
-response_results_demos_or_presteps = open(config["demos_or_presteps"]["response_results"], "r").read()
+parse_task_demos_or_presteps = open(
+    config["demos_or_presteps"]["parse_task"], "r"
+).read()
+choose_model_demos_or_presteps = open(
+    config["demos_or_presteps"]["choose_model"], "r"
+).read()
+response_results_demos_or_presteps = open(
+    config["demos_or_presteps"]["response_results"], "r"
+).read()
 
 parse_task_prompt = config["prompt"]["parse_task"]
 choose_model_prompt = config["prompt"]["choose_model"]
@@ -209,37 +230,54 @@ for model in MODELS:
     METADATAS[model["id"]] = model
 
 HUGGINGFACE_HEADERS = {}
-if config["huggingface"]["token"] and config["huggingface"]["token"].startswith("hf_"):  # Check for valid huggingface token in config file
+if config["huggingface"]["token"] and config["huggingface"]["token"].startswith(
+    "hf_"
+):  # Check for valid huggingface token in config file
     HUGGINGFACE_HEADERS = {
         "Authorization": f"Bearer {config['huggingface']['token']}",
     }
-elif "HUGGINGFACE_ACCESS_TOKEN" in os.environ and os.getenv("HUGGINGFACE_ACCESS_TOKEN").startswith("hf_"):  # Check for environment variable HUGGINGFACE_ACCESS_TOKEN
+elif "HUGGINGFACE_ACCESS_TOKEN" in os.environ and os.getenv(
+    "HUGGINGFACE_ACCESS_TOKEN"
+).startswith(
+    "hf_"
+):  # Check for environment variable HUGGINGFACE_ACCESS_TOKEN
     HUGGINGFACE_HEADERS = {
         "Authorization": f"Bearer {os.getenv('HUGGINGFACE_ACCESS_TOKEN')}",
     }
 else:
-    raise ValueError(f"Incorrect HuggingFace token. Please check your {args.config} file.")
+    raise ValueError(
+        f"Incorrect HuggingFace token. Please check your {args.config} file."
+    )
 
 
 def convert_chat_to_completion(data):
-    messages = data.pop('messages', [])
+    messages = data.pop("messages", [])
     tprompt = ""
-    if messages[0]['role'] == "system":
-        tprompt = messages[0]['content']
+    if messages[0]["role"] == "system":
+        tprompt = messages[0]["content"]
         messages = messages[1:]
     final_prompt = ""
     for message in messages:
-        if message['role'] == "user":
-            final_prompt += ("<im_start>" + "user" + "\n" + message['content'] + "<im_end>\n")
-        elif message['role'] == "assistant":
-            final_prompt += ("<im_start>" + "assistant" + "\n" + message['content'] + "<im_end>\n")
+        if message["role"] == "user":
+            final_prompt += (
+                "<im_start>" + "user" + "\n" + message["content"] + "<im_end>\n"
+            )
+        elif message["role"] == "assistant":
+            final_prompt += (
+                "<im_start>" + "assistant" + "\n" + message["content"] + "<im_end>\n"
+            )
         else:
-            final_prompt += ("<im_start>" + "system" + "\n" + message['content'] + "<im_end>\n")
+            final_prompt += (
+                "<im_start>" + "system" + "\n" + message["content"] + "<im_end>\n"
+            )
     final_prompt = tprompt + final_prompt
     final_prompt = final_prompt + "<im_start>assistant"
     data["prompt"] = final_prompt
-    data['stop'] = data.get('stop', ["<im_end>"])
-    data['max_tokens'] = data.get('max_tokens', max(get_max_context_length(LLM) - count_tokens(LLM_encoding, final_prompt), 1))
+    data["stop"] = data.get("stop", ["<im_end>"])
+    data["max_tokens"] = data.get(
+        "max_tokens",
+        max(get_max_context_length(LLM) - count_tokens(LLM_encoding, final_prompt), 1),
+    )
     return data
 
 
@@ -250,14 +288,9 @@ def send_request(data):
     if use_completion:
         data = convert_chat_to_completion(data)
     if api_type == "openai":
-        HEADER = {
-            "Authorization": f"Bearer {api_key}"
-        }
+        HEADER = {"Authorization": f"Bearer {api_key}"}
     elif api_type == "azure":
-        HEADER = {
-            "api-key": api_key,
-            "Content-Type": "application/json"
-        }
+        HEADER = {"api-key": api_key, "Content-Type": "application/json"}
     else:
         HEADER = None
     response = requests.post(api_endpoint, json=data, headers=HEADER, proxies=PROXY)
@@ -274,15 +307,17 @@ def replace_slot(text, entries):
     for key, value in entries.items():
         if not isinstance(value, str):
             value = str(value)
-        text = text.replace("{{" + key + "}}", value.replace('"', "'").replace('\n', ""))
+        text = text.replace(
+            "{{" + key + "}}", value.replace('"', "'").replace("\n", "")
+        )
     return text
 
 
 def find_json(s):
-    s = s.replace("\'", "\"")
+    s = s.replace("'", '"')
     start = s.find("{")
     end = s.rfind("}")
-    res = s[start:end + 1]
+    res = s[start: end + 1]
     res = res.replace("\n", "")
     return res
 
@@ -290,10 +325,10 @@ def find_json(s):
 def field_extract(s, field):
     try:
         field_rep = re.compile(f'{field}.*?:.*?"(.*?)"', re.IGNORECASE)
-        extracted = field_rep.search(s).group(1).replace("\"", "\'")
+        extracted = field_rep.search(s).group(1).replace('"', "'")
     except BaseException:
         field_rep = re.compile(f'{field}:\ *"(.*?)"', re.IGNORECASE)
-        extracted = field_rep.search(s).group(1).replace("\"", "\'")
+        extracted = field_rep.search(s).group(1).replace('"', "'")
     return extracted
 
 
@@ -377,7 +412,7 @@ def chitchat(messages, api_key, api_type, api_endpoint):
         "messages": messages,
         "api_key": api_key,
         "api_type": api_type,
-        "api_endpoint": api_endpoint
+        "api_endpoint": api_endpoint,
     }
     return send_request(data)
 
@@ -391,10 +426,7 @@ def parse_task(context, input, api_key, api_type, api_endpoint):
     start = 0
     while start <= len(context):
         history = context[start:]
-        prompt = replace_slot(parse_task_prompt, {
-            "input": input,
-            "context": history
-        })
+        prompt = replace_slot(parse_task_prompt, {"input": input, "context": history})
         messages.append({"role": "user", "content": prompt})
         history_text = "<im_end>\nuser<im_start>".join([m["content"] for m in messages])
         num = count_tokens(LLM_encoding, history_text)
@@ -408,25 +440,29 @@ def parse_task(context, input, api_key, api_type, api_endpoint):
         "model": LLM,
         "messages": messages,
         "temperature": 0,
-        "logit_bias": {item: config["logit_bias"]["parse_task"] for item in task_parsing_highlight_ids},
+        "logit_bias": {
+            item: config["logit_bias"]["parse_task"]
+            for item in task_parsing_highlight_ids
+        },
         "api_key": api_key,
         "api_type": api_type,
-        "api_endpoint": api_endpoint
+        "api_endpoint": api_endpoint,
     }
     return send_request(data)
 
 
 def choose_model(input, task, metas, api_key, api_type, api_endpoint):
-    prompt = replace_slot(choose_model_prompt, {
-        "input": input,
-        "task": task,
-        "metas": metas,
-    })
-    demos_or_presteps = replace_slot(choose_model_demos_or_presteps, {
-        "input": input,
-        "task": task,
-        "metas": metas
-    })
+    prompt = replace_slot(
+        choose_model_prompt,
+        {
+            "input": input,
+            "task": task,
+            "metas": metas,
+        },
+    )
+    demos_or_presteps = replace_slot(
+        choose_model_demos_or_presteps, {"input": input, "task": task, "metas": metas}
+    )
     messages = json.loads(demos_or_presteps)
     messages.insert(0, {"role": "system", "content": choose_model_tprompt})
     messages.append({"role": "user", "content": prompt})
@@ -435,23 +471,28 @@ def choose_model(input, task, metas, api_key, api_type, api_endpoint):
         "model": LLM,
         "messages": messages,
         "temperature": 0,
-        "logit_bias": {item: config["logit_bias"]["choose_model"] for item in choose_model_highlight_ids},  # 5
+        "logit_bias": {
+            item: config["logit_bias"]["choose_model"]
+            for item in choose_model_highlight_ids
+        },  # 5
         "api_key": api_key,
         "api_type": api_type,
-        "api_endpoint": api_endpoint
+        "api_endpoint": api_endpoint,
     }
     return send_request(data)
 
 
 def response_results(input, results, api_key, api_type, api_endpoint):
     results = [v for k, v in sorted(results.items(), key=lambda item: item[0])]
-    prompt = replace_slot(response_results_prompt, {
-        "input": input,
-    })
-    demos_or_presteps = replace_slot(response_results_demos_or_presteps, {
-        "input": input,
-        "processes": results
-    })
+    prompt = replace_slot(
+        response_results_prompt,
+        {
+            "input": input,
+        },
+    )
+    demos_or_presteps = replace_slot(
+        response_results_demos_or_presteps, {"input": input, "processes": results}
+    )
     messages = json.loads(demos_or_presteps)
     messages.insert(0, {"role": "system", "content": response_results_tprompt})
     messages.append({"role": "user", "content": prompt})
@@ -462,7 +503,7 @@ def response_results(input, results, api_key, api_type, api_endpoint):
         "temperature": 0,
         "api_key": api_key,
         "api_type": api_type,
-        "api_endpoint": api_endpoint
+        "api_endpoint": api_endpoint,
     }
     return send_request(data)
 
@@ -473,12 +514,23 @@ def huggingface_model_inference(model_id, data, task):
 
     # NLP tasks
     if task == "question-answering":
-        inputs = {"question": data["text"], "context": (data["context"] if "context" in data else "")}
+        inputs = {
+            "question": data["text"],
+            "context": (data["context"] if "context" in data else ""),
+        }
         result = inference(inputs)
     if task == "sentence-similarity":
         inputs = {"source_sentence": data["text1"], "target_sentence": data["text2"]}
         result = inference(inputs)
-    if task in ["text-classification", "token-classification", "text2text-generation", "summarization", "translation", "conversational", "text-generation"]:
+    if task in [
+        "text-classification",
+        "token-classification",
+        "text2text-generation",
+        "summarization",
+        "translation",
+        "conversational",
+        "text-generation",
+    ]:
         inputs = data["text"]
         result = inference(inputs)
 
@@ -492,7 +544,9 @@ def huggingface_model_inference(model_id, data, task):
         json_data["inputs"] = {}
         json_data["inputs"]["question"] = text
         json_data["inputs"]["image"] = img_base64
-        result = requests.post(task_url, headers=HUGGINGFACE_HEADERS, json=json_data).json()
+        result = requests.post(
+            task_url, headers=HUGGINGFACE_HEADERS, json=json_data
+        ).json()
         # result = inference(inputs) # not support
 
     if task == "image-to-image":
@@ -520,15 +574,22 @@ def huggingface_model_inference(model_id, data, task):
         predicted = inference(data=img_data)
         colors = []
         for i in range(len(predicted)):
-            colors.append((random.randint(100, 255), random.randint(100, 255), random.randint(100, 255), 155))
+            colors.append(
+                (
+                    random.randint(100, 255),
+                    random.randint(100, 255),
+                    random.randint(100, 255),
+                    155,
+                )
+            )
         for i, pred in enumerate(predicted):
             label = pred["label"]
             mask = pred.pop("mask").encode("utf-8")
             mask = base64.b64decode(mask)
-            mask = Image.open(BytesIO(mask), mode='r')
-            mask = mask.convert('L')
+            mask = Image.open(BytesIO(mask), mode="r")
+            mask = mask.convert("L")
 
-            layer = Image.new('RGBA', mask.size, colors[i])
+            layer = Image.new("RGBA", mask.size, colors[i])
             image.paste(layer, (0, 0), mask)
         name = str(uuid.uuid4())[:4]
         image.save(f"public/images/{name}.jpg")
@@ -542,15 +603,27 @@ def huggingface_model_inference(model_id, data, task):
         predicted = inference(data=img_data)
         image = Image.open(BytesIO(img_data))
         draw = ImageDraw.Draw(image)
-        labels = list(item['label'] for item in predicted)
+        labels = list(item["label"] for item in predicted)
         color_map = {}
         for label in labels:
             if label not in color_map:
-                color_map[label] = (random.randint(0, 255), random.randint(0, 100), random.randint(0, 255))
+                color_map[label] = (
+                    random.randint(0, 255),
+                    random.randint(0, 100),
+                    random.randint(0, 255),
+                )
         for label in predicted:
             box = label["box"]
-            draw.rectangle(((box["xmin"], box["ymin"]), (box["xmax"], box["ymax"])), outline=color_map[label["label"]], width=2)
-            draw.text((box["xmin"] + 5, box["ymin"] - 15), label["label"], fill=color_map[label["label"]])
+            draw.rectangle(
+                ((box["xmin"], box["ymin"]), (box["xmax"], box["ymax"])),
+                outline=color_map[label["label"]],
+                width=2,
+            )
+            draw.text(
+                (box["xmin"] + 5, box["ymin"] - 15),
+                label["label"],
+                fill=color_map[label["label"]],
+            )
         name = str(uuid.uuid4())[:4]
         image.save(f"public/images/{name}.jpg")
         result = {}
@@ -566,7 +639,9 @@ def huggingface_model_inference(model_id, data, task):
         img_url = data["image"]
         img_data = image_to_bytes(img_url)
         HUGGINGFACE_HEADERS["Content-Length"] = str(len(img_data))
-        r = requests.post(task_url, headers=HUGGINGFACE_HEADERS, data=img_data, proxies=PROXY)
+        r = requests.post(
+            task_url, headers=HUGGINGFACE_HEADERS, data=img_data, proxies=PROXY
+        )
         result = {}
         if "generated_text" in r.json()[0]:
             result["generated text"] = r.json()[0].pop("generated_text")
@@ -580,7 +655,11 @@ def huggingface_model_inference(model_id, data, task):
         with open(f"public/audios/{name}.flac", "wb") as f:
             f.write(response.content)
         result = {"generated audio": f"/audios/{name}.flac"}
-    if task in ["automatic-speech-recognition", "audio-to-audio", "audio-classification"]:
+    if task in [
+        "automatic-speech-recognition",
+        "audio-to-audio",
+        "audio-classification",
+    ]:
         audio_url = data["audio"]
         audio_data = requests.get(audio_url, timeout=10).content
         response = inference(data=audio_data, raw_response=True)
@@ -631,7 +710,15 @@ def local_model_inference(model_id, data, task):
     if task == "question-answering" or task == "sentence-similarity":
         response = requests.post(task_url, json=data)
         return response.json()
-    if task in ["text-classification", "token-classification", "text2text-generation", "summarization", "translation", "conversational", "text-generation"]:
+    if task in [
+        "text-classification",
+        "token-classification",
+        "text2text-generation",
+        "summarization",
+        "translation",
+        "conversational",
+        "text-generation",
+    ]:
         response = requests.post(task_url, json=data)
         return response.json()
 
@@ -670,22 +757,39 @@ def local_model_inference(model_id, data, task):
             return predicted
         image = load_image(img_url)
         draw = ImageDraw.Draw(image)
-        labels = list(item['label'] for item in predicted)
+        labels = list(item["label"] for item in predicted)
         color_map = {}
         for label in labels:
             if label not in color_map:
-                color_map[label] = (random.randint(0, 255), random.randint(0, 100), random.randint(0, 255))
+                color_map[label] = (
+                    random.randint(0, 255),
+                    random.randint(0, 100),
+                    random.randint(0, 255),
+                )
         for label in predicted:
             box = label["box"]
-            draw.rectangle(((box["xmin"], box["ymin"]), (box["xmax"], box["ymax"])), outline=color_map[label["label"]], width=2)
-            draw.text((box["xmin"] + 5, box["ymin"] - 15), label["label"], fill=color_map[label["label"]])
+            draw.rectangle(
+                ((box["xmin"], box["ymin"]), (box["xmax"], box["ymax"])),
+                outline=color_map[label["label"]],
+                width=2,
+            )
+            draw.text(
+                (box["xmin"] + 5, box["ymin"] - 15),
+                label["label"],
+                fill=color_map[label["label"]],
+            )
         name = str(uuid.uuid4())[:4]
         image.save(f"public/images/{name}.jpg")
         results = {}
         results["generated image"] = f"/images/{name}.jpg"
         results["predicted"] = predicted
         return results
-    if task in ["image-classification", "image-to-text", "document-question-answering", "visual-question-answering"]:
+    if task in [
+        "image-classification",
+        "image-to-text",
+        "document-question-answering",
+        "visual-question-answering",
+    ]:
         img_url = data["image"]
         text = None
         if "text" in data:
@@ -700,7 +804,11 @@ def local_model_inference(model_id, data, task):
         if "path" in results:
             results["generated audio"] = results.pop("path")
         return results
-    if task in ["automatic-speech-recognition", "audio-to-audio", "audio-classification"]:
+    if task in [
+        "automatic-speech-recognition",
+        "audio-to-audio",
+        "audio-classification",
+    ]:
         audio_url = data["audio"]
         response = requests.post(task_url, json={"audio_url": audio_url})
         return response.json()
@@ -714,8 +822,12 @@ def model_inference(model_id, data, hosted_on, task):
         if r.status_code == 200 and "loaded" in r.json() and r.json()["loaded"]:
             hosted_on = "local"
         else:
-            huggingfaceStatusUrl = f"https://api-inference.huggingface.co/status/{model_id}"
-            r = requests.get(huggingfaceStatusUrl, headers=HUGGINGFACE_HEADERS, proxies=PROXY)
+            huggingfaceStatusUrl = (
+                f"https://api-inference.huggingface.co/status/{model_id}"
+            )
+            r = requests.get(
+                huggingfaceStatusUrl, headers=HUGGINGFACE_HEADERS, proxies=PROXY
+            )
             logger.debug("Huggingface Status: " + str(r.json()))
             if r.status_code == 200 and "loaded" in r.json() and r.json()["loaded"]:
                 hosted_on = "huggingface"
@@ -756,14 +868,27 @@ def get_avaliable_models(candidates, topk=5):
         model_id = candidate["id"]
 
         if inference_mode != "local":
-            huggingfaceStatusUrl = f"https://api-inference.huggingface.co/status/{model_id}"
-            thread = threading.Thread(target=get_model_status, args=(model_id, huggingfaceStatusUrl, HUGGINGFACE_HEADERS, result_queue))
+            huggingfaceStatusUrl = (
+                f"https://api-inference.huggingface.co/status/{model_id}"
+            )
+            thread = threading.Thread(
+                target=get_model_status,
+                args=(
+                    model_id,
+                    huggingfaceStatusUrl,
+                    HUGGINGFACE_HEADERS,
+                    result_queue,
+                ),
+            )
             threads.append(thread)
             thread.start()
 
         if inference_mode != "huggingface" and config["local_deployment"] != "minimal":
             localStatusUrl = f"{Model_Server}/status/{model_id}"
-            thread = threading.Thread(target=get_model_status, args=(model_id, localStatusUrl, {}, result_queue))
+            thread = threading.Thread(
+                target=get_model_status,
+                args=(model_id, localStatusUrl, {}, result_queue),
+            )
             threads.append(thread)
             thread.start()
 
@@ -772,7 +897,10 @@ def get_avaliable_models(candidates, topk=5):
         model_id, status, endpoint_type = result_queue.get()
         if status and model_id not in all_available_models:
             all_available_models[endpoint_type].append(model_id)
-        if len(all_available_models["local"] + all_available_models["huggingface"]) >= topk:
+        if (
+            len(all_available_models["local"] + all_available_models["huggingface"])
+            >= topk
+        ):
             break
         result_count -= 1
 
@@ -807,33 +935,45 @@ def run_task(input, command, results, api_key, api_type, api_endpoint):
         if "image" in args and "<GENERATED>-" in args["image"]:
             resource_id = int(args["image"].split("-")[1])
             if "generated image" in results[resource_id]["inference result"]:
-                args["image"] = results[resource_id]["inference result"]["generated image"]
+                args["image"] = results[resource_id]["inference result"][
+                    "generated image"
+                ]
         if "audio" in args and "<GENERATED>-" in args["audio"]:
             resource_id = int(args["audio"].split("-")[1])
             if "generated audio" in results[resource_id]["inference result"]:
-                args["audio"] = results[resource_id]["inference result"]["generated audio"]
+                args["audio"] = results[resource_id]["inference result"][
+                    "generated audio"
+                ]
         if "text" in args and "<GENERATED>-" in args["text"]:
             resource_id = int(args["text"].split("-")[1])
             if "generated text" in results[resource_id]["inference result"]:
-                args["text"] = results[resource_id]["inference result"]["generated text"]
+                args["text"] = results[resource_id]["inference result"][
+                    "generated text"
+                ]
 
     text = image = audio = None
     for dep_task in dep_tasks:
         if "generated text" in dep_task["inference result"]:
             text = dep_task["inference result"]["generated text"]
-            logger.debug("Detect the generated text of dependency task (from results):" + text)
+            logger.debug(
+                "Detect the generated text of dependency task (from results):" + text
+            )
         elif "text" in dep_task["task"]["args"]:
             text = dep_task["task"]["args"]["text"]
             logger.debug("Detect the text of dependency task (from args): " + text)
         if "generated image" in dep_task["inference result"]:
             image = dep_task["inference result"]["generated image"]
-            logger.debug("Detect the generated image of dependency task (from results): " + image)
+            logger.debug(
+                "Detect the generated image of dependency task (from results): " + image
+            )
         elif "image" in dep_task["task"]["args"]:
             image = dep_task["task"]["args"]["image"]
             logger.debug("Detect the image of dependency task (from args): " + image)
         if "generated audio" in dep_task["inference result"]:
             audio = dep_task["inference result"]["generated audio"]
-            logger.debug("Detect the generated audio of dependency task (from results): " + audio)
+            logger.debug(
+                "Detect the generated audio of dependency task (from results): " + audio
+            )
         elif "audio" in dep_task["task"]["args"]:
             audio = dep_task["task"]["args"]["audio"]
             logger.debug("Detect the audio of dependency task (from args): " + audio)
@@ -849,19 +989,26 @@ def run_task(input, command, results, api_key, api_type, api_endpoint):
             args["text"] = text
 
     for resource in ["image", "audio"]:
-        if resource in args and not args[resource].startswith("public/") and len(args[resource]) > 0 and not args[resource].startswith("http"):
+        if (
+            resource in args
+            and not args[resource].startswith("public/")
+            and len(args[resource]) > 0
+            and not args[resource].startswith("http")
+        ):
             args[resource] = f"public/{args[resource]}"
 
-    if "-text-to-image" in command['task'] and "text" not in args:
-        logger.debug("control-text-to-image task, but text is empty, so we use control-generation instead.")
+    if "-text-to-image" in command["task"] and "text" not in args:
+        logger.debug(
+            "control-text-to-image task, but text is empty, so we use control-generation instead."
+        )
         control = task.split("-")[0]
 
         if control == "seg":
             task = "image-segmentation"
-            command['task'] = task
+            command["task"] = task
         elif control == "depth":
             task = "depth-estimation"
-            command['task'] = task
+            command["task"] = task
         else:
             task = f"{control}-control"
 
@@ -880,45 +1027,93 @@ def run_task(input, command, results, api_key, api_type, api_endpoint):
             choose = {"id": best_model_id, "reason": reason}
             logger.debug(f"chosen model: {choose}")
         else:
-            logger.warning(f"Task {command['task']} is not available. ControlNet need to be deployed locally.")
-            record_case(success=False, **{"input": input, "task": command, "reason": f"Task {command['task']} is not available. ControlNet need to be deployed locally.", "op": "message"})
-            inference_result = {"error": "service related to ControlNet is not available."}
+            logger.warning(
+                f"Task {command['task']} is not available. ControlNet need to be deployed locally."
+            )
+            record_case(
+                success=False,
+                **{
+                    "input": input,
+                    "task": command,
+                    "reason": f"Task {command['task']} is not available. ControlNet need to be deployed locally.",
+                    "op": "message",
+                },
+            )
+            inference_result = {
+                "error": "service related to ControlNet is not available."
+            }
             results[id] = collect_result(command, "", inference_result)
             return False
-    elif task in ["summarization", "translation", "conversational", "text-generation", "text2text-generation"]:  # ChatGPT Can do
+    elif task in [
+        "summarization",
+        "translation",
+        "conversational",
+        "text-generation",
+        "text2text-generation",
+    ]:  # ChatGPT Can do
         best_model_id = "ChatGPT"
         reason = "ChatGPT performs well on some NLP tasks as well."
         choose = {"id": best_model_id, "reason": reason}
-        messages = [{
-            "role": "user",
-            "content": f"[ {input} ] contains a task in JSON format {command}. Now you are a {command['task']} system, the arguments are {command['args']}. Just help me do {command['task']} and give me the result. The result must be in text form without any urls."
-        }]
+        messages = [
+            {
+                "role": "user",
+                "content": f"[ {input} ] contains a task in JSON format {command}. Now you are a {command['task']} system, the arguments are {command['args']}. Just help me do {command['task']} and give me the result. The result must be in text form without any urls.",
+            }
+        ]
         response = chitchat(messages, api_key, api_type, api_endpoint)
         results[id] = collect_result(command, choose, {"response": response})
         return True
     else:
         if task not in MODELS_MAP:
             logger.warning(f"no available models on {task} task.")
-            record_case(success=False, **{"input": input, "task": command, "reason": f"task not support: {command['task']}", "op": "message"})
-            inference_result = {"error": f"{command['task']} not found in available tasks."}
+            record_case(
+                success=False,
+                **{
+                    "input": input,
+                    "task": command,
+                    "reason": f"task not support: {command['task']}",
+                    "op": "message",
+                },
+            )
+            inference_result = {
+                "error": f"{command['task']} not found in available tasks."
+            }
             results[id] = collect_result(command, "", inference_result)
             return False
 
         candidates = MODELS_MAP[task][:10]
-        all_avaliable_models = get_avaliable_models(candidates, config["num_candidate_models"])
-        all_avaliable_model_ids = all_avaliable_models["local"] + all_avaliable_models["huggingface"]
+        all_avaliable_models = get_avaliable_models(
+            candidates, config["num_candidate_models"]
+        )
+        all_avaliable_model_ids = (
+            all_avaliable_models["local"] + all_avaliable_models["huggingface"]
+        )
         logger.debug(f"avaliable models on {command['task']}: {all_avaliable_models}")
 
         if len(all_avaliable_model_ids) == 0:
             logger.warning(f"no available models on {command['task']}")
-            record_case(success=False, **{"input": input, "task": command, "reason": f"no available models: {command['task']}", "op": "message"})
-            inference_result = {"error": f"no available models on {command['task']} task."}
+            record_case(
+                success=False,
+                **{
+                    "input": input,
+                    "task": command,
+                    "reason": f"no available models: {command['task']}",
+                    "op": "message",
+                },
+            )
+            inference_result = {
+                "error": f"no available models on {command['task']} task."
+            }
             results[id] = collect_result(command, "", inference_result)
             return False
 
         if len(all_avaliable_model_ids) == 1:
             best_model_id = all_avaliable_model_ids[0]
-            hosted_on = "local" if best_model_id in all_avaliable_models["local"] else "huggingface"
+            hosted_on = (
+                "local"
+                if best_model_id in all_avaliable_models["local"]
+                else "huggingface"
+            )
             reason = "Only one model available."
             choose = {"id": best_model_id, "reason": reason}
             logger.debug(f"chosen model: {choose}")
@@ -927,34 +1122,60 @@ def run_task(input, command, results, api_key, api_type, api_endpoint):
                 {
                     "id": model["id"],
                     "inference endpoint": all_avaliable_models.get(
-                        "local" if model["id"] in all_avaliable_models["local"] else "huggingface"
+                        "local"
+                        if model["id"] in all_avaliable_models["local"]
+                        else "huggingface"
                     ),
                     "likes": model.get("likes"),
-                    "description": model.get("description", "")[:config["max_description_length"]],
+                    "description": model.get("description", "")[
+                        : config["max_description_length"]
+                    ],
                     # "language": model.get("meta").get("language") if model.get("meta") else None,
-                    "tags": model.get("meta").get("tags") if model.get("meta") else None,
+                    "tags": model.get("meta").get("tags")
+                    if model.get("meta")
+                    else None,
                 }
                 for model in candidates
                 if model["id"] in all_avaliable_model_ids
             ]
 
-            choose_str = choose_model(input, command, cand_models_info, api_key, api_type, api_endpoint)
+            choose_str = choose_model(
+                input, command, cand_models_info, api_key, api_type, api_endpoint
+            )
             logger.debug(f"chosen model: {choose_str}")
             try:
                 choose = json.loads(choose_str)
                 reason = choose["reason"]
                 best_model_id = choose["id"]
-                hosted_on = "local" if best_model_id in all_avaliable_models["local"] else "huggingface"
+                hosted_on = (
+                    "local"
+                    if best_model_id in all_avaliable_models["local"]
+                    else "huggingface"
+                )
             except Exception:
-                logger.warning(f"the response [ {choose_str} ] is not a valid JSON, try to find the model id and reason in the response.")
+                logger.warning(
+                    f"the response [ {choose_str} ] is not a valid JSON, try to find the model id and reason in the response."
+                )
                 choose_str = find_json(choose_str)
                 best_model_id, reason, choose = get_id_reason(choose_str)
-                hosted_on = "local" if best_model_id in all_avaliable_models["local"] else "huggingface"
-    inference_result = model_inference(best_model_id, args, hosted_on, command['task'])
+                hosted_on = (
+                    "local"
+                    if best_model_id in all_avaliable_models["local"]
+                    else "huggingface"
+                )
+    inference_result = model_inference(best_model_id, args, hosted_on, command["task"])
 
     if "error" in inference_result:
         logger.warning(f"Inference error: {inference_result['error']}")
-        record_case(success=False, **{"input": input, "task": command, "reason": f"inference error: {inference_result['error']}", "op": "message"})
+        record_case(
+            success=False,
+            **{
+                "input": input,
+                "task": command,
+                "reason": f"inference error: {inference_result['error']}",
+                "op": "message",
+            },
+        )
         results[id] = collect_result(command, choose, inference_result)
         return False
 
@@ -962,7 +1183,14 @@ def run_task(input, command, results, api_key, api_type, api_endpoint):
     return True
 
 
-def chat_huggingface(messages, api_key, api_type, api_endpoint, return_planning=False, return_results=False):
+def chat_huggingface(
+    messages,
+    api_key,
+    api_type,
+    api_endpoint,
+    return_planning=False,
+    return_results=False,
+):
     start = time.time()
     context = messages[:-1]
     input = messages[-1]["content"]
@@ -972,7 +1200,15 @@ def chat_huggingface(messages, api_key, api_type, api_endpoint, return_planning=
     task_str = parse_task(context, input, api_key, api_type, api_endpoint)
 
     if "error" in task_str:
-        record_case(success=False, **{"input": input, "task": task_str, "reason": f"task parsing error: {task_str['error']['message']}", "op": "report message"})
+        record_case(
+            success=False,
+            **{
+                "input": input,
+                "task": task_str,
+                "reason": f"task parsing error: {task_str['error']['message']}",
+                "op": "report message",
+            },
+        )
         return {"message": task_str["error"]["message"]}
 
     task_str = task_str.strip()
@@ -983,16 +1219,46 @@ def chat_huggingface(messages, api_key, api_type, api_endpoint, return_planning=
     except Exception as e:
         logger.debug(e)
         response = chitchat(messages, api_key, api_type, api_endpoint)
-        record_case(success=False, **{"input": input, "task": task_str, "reason": "task parsing fail", "op": "chitchat"})
+        record_case(
+            success=False,
+            **{
+                "input": input,
+                "task": task_str,
+                "reason": "task parsing fail",
+                "op": "chitchat",
+            },
+        )
         return {"message": response}
 
     if task_str == "[]":  # using LLM response for empty task
-        record_case(success=False, **{"input": input, "task": [], "reason": "task parsing fail: empty", "op": "chitchat"})
+        record_case(
+            success=False,
+            **{
+                "input": input,
+                "task": [],
+                "reason": "task parsing fail: empty",
+                "op": "chitchat",
+            },
+        )
         response = chitchat(messages, api_key, api_type, api_endpoint)
         return {"message": response}
 
-    if len(tasks) == 1 and tasks[0]["task"] in ["summarization", "translation", "conversational", "text-generation", "text2text-generation"]:
-        record_case(success=True, **{"input": input, "task": tasks, "reason": "chitchat tasks", "op": "chitchat"})
+    if len(tasks) == 1 and tasks[0]["task"] in [
+        "summarization",
+        "translation",
+        "conversational",
+        "text-generation",
+        "text2text-generation",
+    ]:
+        record_case(
+            success=True,
+            **{
+                "input": input,
+                "task": tasks,
+                "reason": "chitchat tasks",
+                "op": "chitchat",
+            },
+        )
         response = chitchat(messages, api_key, api_type, api_endpoint)
         return {"message": response}
 
@@ -1019,7 +1285,10 @@ def chat_huggingface(messages, api_key, api_type, api_endpoint, return_planning=
             dep = task["dep"]
             if dep[0] == -1 or len(list(set(dep).intersection(d.keys()))) == len(dep):
                 tasks.remove(task)
-                thread = threading.Thread(target=run_task, args=(input, task, d, api_key, api_type, api_endpoint))
+                thread = threading.Thread(
+                    target=run_task,
+                    args=(input, task, d, api_key, api_type, api_endpoint),
+                )
                 thread.start()
                 threads.append(thread)
         if num_thread == len(threads):
@@ -1045,7 +1314,17 @@ def chat_huggingface(messages, api_key, api_type, api_endpoint, return_planning=
     during = end - start
 
     answer = {"message": response}
-    record_case(success=True, **{"input": input, "task": task_str, "results": results, "response": response, "during": during, "op": "response"})
+    record_case(
+        success=True,
+        **{
+            "input": input,
+            "task": task_str,
+            "results": results,
+            "response": response,
+            "during": during,
+            "op": "response",
+        },
+    )
     logger.info(f"response: {response}")
     return answer
 
@@ -1058,31 +1337,63 @@ def test():
         "Please answer all the named entities in the sentence: Iron Man is a superhero appearing in American comic books published by Marvel Comics. The character was co-created by writer and editor Stan Lee, developed by scripter Larry Lieber, and designed by artists Don Heck and Jack Kirby.",
         "please dub for me: 'Iron Man is a superhero appearing in American comic books published by Marvel Comics. The character was co-created by writer and editor Stan Lee, developed by scripter Larry Lieber, and designed by artists Don Heck and Jack Kirby.'"
         "Given an image: https://huggingface.co/datasets/mishig/sample_images/resolve/main/palace.jpg, please answer the question: What is on top of the building?",
-        "Please generate a canny image based on /examples/f.jpg"
+        "Please generate a canny image based on /examples/f.jpg",
     ]
 
     for input in inputs:
         messages = [{"role": "user", "content": input}]
-        chat_huggingface(messages, API_KEY, API_TYPE, API_ENDPOINT, return_planning=False, return_results=False)
+        chat_huggingface(
+            messages,
+            API_KEY,
+            API_TYPE,
+            API_ENDPOINT,
+            return_planning=False,
+            return_results=False,
+        )
 
     # multi rounds example
     messages = [
-        {"role": "user", "content": "Please generate a canny image based on /examples/f.jpg"},
-        {"role": "assistant", "content": """Sure. I understand your request. Based on the inference results of the models, I have generated a canny image for you. The workflow I used is as follows: First, I used the image-to-text model (nlpconnect/vit-gpt2-image-captioning) to convert the image /examples/f.jpg to text. The generated text is "a herd of giraffes and zebras grazing in a field". Second, I used the canny-control model (canny-control) to generate a canny image from the text. Unfortunately, the model failed to generate the canny image. Finally, I used the canny-text-to-image model (lllyasviel/sd-controlnet-canny) to generate a canny image from the text. The generated image is located at /images/f16d.png. I hope this answers your request. Is there anything else I can help you with?"""},
-        {"role": "user", "content": """then based on the above canny image and a prompt "a photo of a zoo", generate a new image."""},
+        {
+            "role": "user",
+            "content": "Please generate a canny image based on /examples/f.jpg",
+        },
+        {
+            "role": "assistant",
+            "content": """Sure. I understand your request. Based on the inference results of the models, I have generated a canny image for you. The workflow I used is as follows: First, I used the image-to-text model (nlpconnect/vit-gpt2-image-captioning) to convert the image /examples/f.jpg to text. The generated text is "a herd of giraffes and zebras grazing in a field". Second, I used the canny-control model (canny-control) to generate a canny image from the text. Unfortunately, the model failed to generate the canny image. Finally, I used the canny-text-to-image model (lllyasviel/sd-controlnet-canny) to generate a canny image from the text. The generated image is located at /images/f16d.png. I hope this answers your request. Is there anything else I can help you with?""",
+        },
+        {
+            "role": "user",
+            "content": """then based on the above canny image and a prompt "a photo of a zoo", generate a new image.""",
+        },
     ]
-    chat_huggingface(messages, API_KEY, API_TYPE, API_ENDPOINT, return_planning=False, return_results=False)
+    chat_huggingface(
+        messages,
+        API_KEY,
+        API_TYPE,
+        API_ENDPOINT,
+        return_planning=False,
+        return_results=False,
+    )
 
 
 def cli():
     messages = []
-    print("Welcome to Jarvis! A collaborative system that consists of an LLM as the controller and numerous expert models as collaborative executors. Jarvis can plan tasks, schedule Hugging Face models, generate friendly responses based on your requests, and help you with many things. Please enter your request (`exit` to exit).")
+    print(
+        "Welcome to Jarvis! A collaborative system that consists of an LLM as the controller and numerous expert models as collaborative executors. Jarvis can plan tasks, schedule Hugging Face models, generate friendly responses based on your requests, and help you with many things. Please enter your request (`exit` to exit)."
+    )
     while True:
         message = input("[ User ]: ")
         if message == "exit":
             break
         messages.append({"role": "user", "content": message})
-        answer = chat_huggingface(messages, API_KEY, API_TYPE, API_ENDPOINT, return_planning=False, return_results=False)
+        answer = chat_huggingface(
+            messages,
+            API_KEY,
+            API_TYPE,
+            API_ENDPOINT,
+            return_planning=False,
+            return_results=False,
+        )
         print("[ Jarvis ]: ", answer["message"])
         messages.append({"role": "assistant", "content": answer["message"]})
 

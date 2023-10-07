@@ -11,9 +11,8 @@ class Workflow:
     They string together multiple tasks of varying types, and can use Short-Term Memory
     or pass specific arguments downstream.
 
-
-
-    ```
+    
+    Usage
     llm = LLM()
     workflow = Workflow(llm)
 
@@ -25,6 +24,7 @@ class Workflow:
 
 
     """
+
     class Task:
         def __init__(self, task: str):
             self.task = task
@@ -33,7 +33,7 @@ class Workflow:
             self.output = None
             self.structure = None
 
-        def add_child(self, child: 'Workflow.Task'):
+        def add_child(self, child: "Workflow.Task"):
             self.children.append(child)
             child.parents.append(self)
             child.structure = self.structure
@@ -80,9 +80,11 @@ class Workflow:
 
     def context(self, task: Task) -> Dict[str, Any]:
         return {
-            "parent_output": task.parents[0].output if task.parents and task.parents[0].output else None,
+            "parent_output": task.parents[0].output
+            if task.parents and task.parents[0].output
+            else None,
             "parent": task.parents[0] if task.parents else None,
-            "child": task.children[0] if task.children else None
+            "child": task.children[0] if task.children else None,
         }
 
     def __run_from_task(self, task: Optional[Task]) -> None:

@@ -1,4 +1,3 @@
-
 import os
 import re
 import signal
@@ -270,8 +269,7 @@ def terminal_execute(self, commands: str, get_session: SessionGetter) -> str:
         output = str(e)
 
     logger.debug(
-        f"\nProcessed Terminal, Input Commands: {commands} "
-        f"Output Answer: {output}"
+        f"\nProcessed Terminal, Input Commands: {commands} " f"Output Answer: {output}"
     )
     return output
 
@@ -784,7 +782,8 @@ class CodeEditor(BaseToolSet):
         )
         return output
 
-#---------------- end
+
+# ---------------- end
 
 
 @tool(
@@ -844,8 +843,7 @@ def code_editor_append(self, inputs: str) -> str:
         output = str(e)
 
     logger.debug(
-        f"\nProcessed CodeEditor.APPEND, Input: {inputs} "
-        f"Output Answer: {output}"
+        f"\nProcessed CodeEditor.APPEND, Input: {inputs} " f"Output Answer: {output}"
     )
     return output
 
