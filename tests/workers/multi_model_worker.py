@@ -1,6 +1,10 @@
 import pytest
 from unittest.mock import Mock
-from swarms.agents.multi_modal_agent import MultiModalVisualAgent, MultiModalVisualAgentTool  
+from swarms.agents.multi_modal_agent import (
+    MultiModalVisualAgent,
+    MultiModalVisualAgentTool,
+)
+
 
 @pytest.fixture
 def multimodal_agent():
@@ -9,15 +13,20 @@ def multimodal_agent():
     mock_agent.run_text.return_value = "Expected output from agent"
     return mock_agent
 
+
 @pytest.fixture
 def multimodal_agent_tool(multimodal_agent):
     # Use the mocked MultiModalVisualAgent in the MultiModalVisualAgentTool
     return MultiModalVisualAgentTool(multimodal_agent)
 
-@pytest.mark.parametrize("text_input, expected_output", [
-    ("Hello, world!", "Expected output from agent"),
-    ("Another task", "Expected output from agent"),
-])
+
+@pytest.mark.parametrize(
+    "text_input, expected_output",
+    [
+        ("Hello, world!", "Expected output from agent"),
+        ("Another task", "Expected output from agent"),
+    ],
+)
 def test_run(multimodal_agent_tool, text_input, expected_output):
     assert multimodal_agent_tool._run(text_input) == expected_output
 

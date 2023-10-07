@@ -5,11 +5,7 @@ worker1 = Worker(openai_api_key="", ai_name="Optimus Prime")
 worker2 = Worker(openai_api_key="", ai_name="Bumblebee")
 worker3 = Worker(openai_api_key="", ai_name="Megatron")
 
-agents = [
-    worker1,
-    worker2,
-    worker3
-]
+agents = [worker1, worker2, worker3]
 
 # Initialize multi-agent debate with the selection function
 debate = MultiAgentDebate(agents, select_speaker)

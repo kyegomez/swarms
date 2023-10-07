@@ -66,7 +66,9 @@ class CocoGroundingEvaluator(object):
     def synchronize_between_processes(self):
         for iou_type in self.iou_types:
             self.eval_imgs[iou_type] = np.concatenate(self.eval_imgs[iou_type], 2)
-            create_common_coco_eval(self.coco_eval[iou_type], self.img_ids, self.eval_imgs[iou_type])
+            create_common_coco_eval(
+                self.coco_eval[iou_type], self.img_ids, self.eval_imgs[iou_type]
+            )
 
     def accumulate(self):
         for coco_eval in self.coco_eval.values():
@@ -127,7 +129,9 @@ class CocoGroundingEvaluator(object):
             labels = prediction["labels"].tolist()
 
             rles = [
-                mask_util.encode(np.array(mask[0, :, :, np.newaxis], dtype=np.uint8, order="F"))[0]
+                mask_util.encode(
+                    np.array(mask[0, :, :, np.newaxis], dtype=np.uint8, order="F")
+                )[0]
                 for mask in masks
             ]
             for rle in rles:
@@ -227,7 +231,9 @@ def evaluate(self):
     # add backward compatibility if useSegm is specified in params
     if p.useSegm is not None:
         p.iouType = "segm" if p.useSegm == 1 else "bbox"
-        print("useSegm (deprecated) is not None. Running {} evaluation".format(p.iouType))
+        print(
+            "useSegm (deprecated) is not None. Running {} evaluation".format(p.iouType)
+        )
     # print('Evaluate annotation type *{}*'.format(p.iouType))
     p.imgIds = list(np.unique(p.imgIds))
     if p.useCats:
@@ -246,7 +252,8 @@ def evaluate(self):
     self.ious = {
         (imgId, catId): computeIoU(imgId, catId)
         for imgId in p.imgIds
-        for catId in catIds}
+        for catId in catIds
+    }
 
     evaluateImg = self.evaluateImg
     maxDet = p.maxDets[-1]

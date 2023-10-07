@@ -112,8 +112,12 @@ def _get_text_splitter():
 
 class WebpageQATool(BaseTool):
     name = "query_webpage"
-    description = "Browse a webpage and retrieve the information relevant to the question."
-    text_splitter: RecursiveCharacterTextSplitter = Field(default_factory=_get_text_splitter)
+    description = (
+        "Browse a webpage and retrieve the information relevant to the question."
+    )
+    text_splitter: RecursiveCharacterTextSplitter = Field(
+        default_factory=_get_text_splitter
+    )
     qa_chain: BaseCombineDocumentsChain
 
     def _run(self, url: str, question: str) -> str:
@@ -124,11 +128,19 @@ class WebpageQATool(BaseTool):
         results = []
         # TODO: Handle this with a MapReduceChain
         for i in range(0, len(web_docs), 4):
-            input_docs = web_docs[i:i + 4]
-            window_result = self.qa_chain({"input_documents": input_docs, "question": question}, return_only_outputs=True)
+            input_docs = web_docs[i: i + 4]
+            window_result = self.qa_chain(
+                {"input_documents": input_docs, "question": question},
+                return_only_outputs=True,
+            )
             results.append(f"Response from window {i} - {window_result}")
-        results_docs = [Document(page_content="\n".join(results), metadata={"source": url})]
-        return self.qa_chain({"input_documents": results_docs, "question": question}, return_only_outputs=True)
+        results_docs = [
+            Document(page_content="\n".join(results), metadata={"source": url})
+        ]
+        return self.qa_chain(
+            {"input_documents": results_docs, "question": question},
+            return_only_outputs=True,
+        )
 
     async def _arun(self, url: str, question: str) -> str:
         raise NotImplementedError
@@ -179,9 +191,7 @@ def VQAinference(self, inputs):
 
     image_path, question = inputs.split(",")
     raw_image = Image.open(image_path).convert("RGB")
-    inputs = processor(raw_image, question, return_tensors="pt").to(
-        device, torch_dtype
-    )
+    inputs = processor(raw_image, question, return_tensors="pt").to(device, torch_dtype)
     out = model.generate(**inputs)
     answer = processor.decode(out[0], skip_special_tokens=True)
 

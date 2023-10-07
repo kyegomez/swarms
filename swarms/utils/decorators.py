@@ -7,10 +7,11 @@ import warnings
 
 def log_decorator(func):
     def wrapper(*args, **kwargs):
-        logging.info(f'Entering {func.__name__}')
+        logging.info(f"Entering {func.__name__}")
         result = func(*args, **kwargs)
-        logging.info(f'Exiting {func.__name__}')
+        logging.info(f"Exiting {func.__name__}")
         return result
+
     return wrapper
 
 
@@ -19,8 +20,9 @@ def error_decorator(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logging.error(f'Error in {func.__name__}: {str(e)}')
+            logging.error(f"Error in {func.__name__}: {str(e)}")
             raise
+
     return wrapper
 
 
@@ -29,8 +31,9 @@ def timing_decorator(func):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        logging.info(f'{func.__name__} executed in {end_time - start_time} seconds')
+        logging.info(f"{func.__name__} executed in {end_time - start_time} seconds")
         return result
+
     return wrapper
 
 
@@ -42,9 +45,13 @@ def retry_decorator(max_retries=5):
                 try:
                     return func(*args, **kwargs)
                 except Exception as error:
-                    logging.error(f" Error in {func.__name__}: {str(error)} Retrying ....")
+                    logging.error(
+                        f" Error in {func.__name__}: {str(error)} Retrying ...."
+                    )
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -55,6 +62,7 @@ def singleton_decorator(cls):
         if cls not in instances:
             instances[cls] = cls(*args, **kwargs)
         return instances[cls]
+
     return wrapper
 
 
@@ -64,6 +72,7 @@ def synchronized_decorator(func):
     def wrapper(*args, **kwargs):
         with func.__lock__:
             return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -72,6 +81,7 @@ def deprecated_decorator(func):
     def wrapper(*args, **kwargs):
         warnings.warn(f"{func.__name__} is deprecated", category=DeprecationWarning)
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -82,5 +92,7 @@ def validate_inputs_decorator(validator):
             if not validator(*args, **kwargs):
                 raise ValueError("Invalid Inputs")
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator

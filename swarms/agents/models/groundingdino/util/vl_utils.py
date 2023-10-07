@@ -16,7 +16,7 @@ def create_positive_map_from_span(tokenized, token_span, max_text_len=256):
     """
     positive_map = torch.zeros((len(token_span), max_text_len), dtype=torch.float)
     for j, tok_list in enumerate(token_span):
-        for (beg, end) in tok_list:
+        for beg, end in tok_list:
             beg_pos = tokenized.char_to_token(beg)
             end_pos = tokenized.char_to_token(end - 1)
             if beg_pos is None:

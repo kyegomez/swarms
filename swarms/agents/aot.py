@@ -4,7 +4,9 @@ import time
 
 import openai
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -25,11 +27,13 @@ class OpenAI:
             raise Exception("Please provide OpenAI API key")
 
         if api_base == "" or api_base is None:
-            api_base = os.environ.get("OPENAI_API_BASE", "")  # if not set, use the default base path of "https://api.openai.com/v1"
+            api_base = os.environ.get(
+                "OPENAI_API_BASE", ""
+            )  # if not set, use the default base path of "https://api.openai.com/v1"
         if api_base != "":
             # e.g. https://api.openai.com/v1/ or your custom url
             openai.api_base = api_base
-            print(f'Using custom api_base {api_base}')
+            print(f"Using custom api_base {api_base}")
 
         if api_model == "" or api_model is None:
             api_model = os.environ.get("OPENAI_API_MODEL", "")
@@ -37,29 +41,17 @@ class OpenAI:
             self.api_model = api_model
         else:
             self.api_model = "text-davinci-003"
-        print(f'Using api_model {self.api_model}')
+        print(f"Using api_model {self.api_model}")
 
-        self.use_chat_api = 'gpt' in self.api_model
+        self.use_chat_api = "gpt" in self.api_model
         self.strategy = strategy
         self.evaluation_strategy = evaluation_strategy
 
-    def run(
-        self,
-        prompt,
-        max_tokens,
-        temperature,
-        k=1,
-        stop=None
-    ):
+    def run(self, prompt, max_tokens, temperature, k=1, stop=None):
         while True:
             try:
                 if self.use_chat_api:
-                    messages = [
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ]
+                    messages = [{"role": "user", "content": prompt}]
                     response = openai.ChatCompletion.create(
                         model=self.api_model,
                         messages=messages,
@@ -75,17 +67,21 @@ class OpenAI:
                         stop=stop,
                         temperature=temperature,
                     )
-                with open("openai.logs", 'a') as log_file:
-                    log_file.write("\n" + "-----------" + '\n' + "Prompt : " + prompt + "\n")
+                with open("openai.logs", "a") as log_file:
+                    log_file.write(
+                        "\n" + "-----------" + "\n" + "Prompt : " + prompt + "\n"
+                    )
                 return response
             except openai.error.RateLimitError as e:
                 sleep_duratoin = os.environ.get("OPENAI_RATE_TIMEOUT", 30)
-                print(f'{str(e)}, sleep for {sleep_duratoin}s, set it by env OPENAI_RATE_TIMEOUT')
+                print(
+                    f"{str(e)}, sleep for {sleep_duratoin}s, set it by env OPENAI_RATE_TIMEOUT"
+                )
                 time.sleep(sleep_duratoin)
 
     def openai_choice2text_handler(self, choice):
         if self.use_chat_api:
-            text = choice['message']['content']
+            text = choice["message"]["content"]
         else:
             text = choice.text.strip()
         return text
@@ -102,20 +98,16 @@ class OpenAI:
 
         else:
             response = self.run(prompt, 300, 0.5, k)
-            thoughts = [self.openai_choice2text_handler(choice) for choice in response.choices]
+            thoughts = [
+                self.openai_choice2text_handler(choice) for choice in response.choices
+            ]
             return thoughts
 
-    def generate_thoughts(
-        self,
-        state,
-        k,
-        initial_prompt,
-        rejected_solutions=None
-    ):
-        if (isinstance(state, str)):
+    def generate_thoughts(self, state, k, initial_prompt, rejected_solutions=None):
+        if isinstance(state, str):
             state_text = state
         else:
-            state_text = '\n'.join(state)
+            state_text = "\n".join(state)
         print("New state generating thought:", state, "\n\n")
         prompt = f"""
         Accomplish the task below by decomposing it as many very explicit subtasks as possible, be very explicit and thorough denoted by
@@ -135,14 +127,10 @@ class OpenAI:
         # print(f"Generated thoughts: {thoughts}")
         return thoughts
 
-    def generate_solution(self,
-                          initial_prompt,
-                          state,
-                          rejected_solutions=None):
+    def generate_solution(self, initial_prompt, state, rejected_solutions=None):
         try:
-
             if isinstance(state, list):
-                state_text = '\n'.join(state)
+                state_text = "\n".join(state)
             else:
                 state_text = state
 
@@ -156,7 +144,7 @@ class OpenAI:
             ###{rejected_solutions}###,
             complete the {initial_prompt} without making the same mistakes you did with the evaluated rejected solutions. Be simple. Be direct. Provide intuitive solutions as soon as you think of them."""
             answer = self.generate_text(prompt, 1)
-            print(f'Generated Solution Summary {answer}')
+            print(f"Generated Solution Summary {answer}")
             return answer
         except Exception as e:
             logger.error(f"Error in generate_solutions: {e}")
@@ -166,14 +154,20 @@ class OpenAI:
         if not states:
             return {}
 
-        if self.evaluation_strategy == 'value':
+        if self.evaluation_strategy == "value":
             state_values = {}
             for state in states:
-                if (isinstance(state, str)):
+                if isinstance(state, str):
                     state_text = state
                 else:
-                    state_text = '\n'.join(state)
-                print("We receive a state of type", type(state), "For state: ", state, "\n\n")
+                    state_text = "\n".join(state)
+                print(
+                    "We receive a state of type",
+                    type(state),
+                    "For state: ",
+                    state,
+                    "\n\n",
+                )
                 prompt = f""" To achieve the following goal: '{initial_prompt}', pessimistically value the context of the past solutions and more importantly the latest generated solution you had AS A FLOAT BETWEEN 0 AND 1\n
                     Past solutions:\n\n
                     {state_text}\n
@@ -244,7 +238,11 @@ class AoTAgent:
         for next_state in thoughts:
             state_value = self.evaluated_thoughts[next_state]
             if state_value > self.value_threshold:
-                child = (state, next_state) if isinstance(state, str) else (*state, next_state)
+                child = (
+                    (state, next_state)
+                    if isinstance(state, str)
+                    else (*state, next_state)
+                )
                 self.dfs(child, step + 1)
 
                 # backtracking
@@ -255,17 +253,18 @@ class AoTAgent:
 
     def generate_and_filter_thoughts(self, state):
         thoughts = self.model.generate_thoughts(
-            state,
-            self.num_thoughts,
-            self.initial_prompt
+            state, self.num_thoughts, self.initial_prompt
         )
 
         self.evaluated_thoughts = self.model.evaluate_states(
-            thoughts,
-            self.initial_prompt
+            thoughts, self.initial_prompt
         )
 
-        filtered_thoughts = [thought for thought in thoughts if self.evaluated_thoughts[thought] >= self.pruning_threshold]
+        filtered_thoughts = [
+            thought
+            for thought in thoughts
+            if self.evaluated_thoughts[thought] >= self.pruning_threshold
+        ]
         print(f"filtered_thoughts: {filtered_thoughts}")
         return filtered_thoughts
 

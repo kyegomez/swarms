@@ -1,4 +1,3 @@
-
 import faiss
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
@@ -13,7 +12,7 @@ from swarms.tools.autogpt import (
     compile,
     process_csv,
     load_qa_with_sources_chain,
-    WebpageQATool
+    WebpageQATool,
 )
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
@@ -87,11 +86,7 @@ class Worker:
     def name(self):
         return self.ai_name
 
-    def receieve(
-        self,
-        name: str,
-        message: str
-    ) -> None:
+    def receieve(self, name: str, message: str) -> None:
         """
         Receive a message and update the message history.
 
@@ -152,13 +147,13 @@ class Worker:
             index = faiss.IndexFlatL2(embedding_size)
 
             self.vectorstore = FAISS(
-                embeddings_model.embed_query,
-                index,
-                InMemoryDocstore({}), {}
+                embeddings_model.embed_query, index, InMemoryDocstore({}), {}
             )
 
         except Exception as error:
-            raise RuntimeError(f"Error setting up memory perhaps try try tuning the embedding size: {error}")
+            raise RuntimeError(
+                f"Error setting up memory perhaps try try tuning the embedding size: {error}"
+            )
 
     def setup_agent(self):
         """
@@ -171,7 +166,7 @@ class Worker:
                 tools=self.tools,
                 llm=self.llm,
                 memory=self.vectorstore.as_retriever(search_kwargs={"k": 8}),
-                human_in_the_loop=self.human_in_the_loop
+                human_in_the_loop=self.human_in_the_loop,
             )
 
         except Exception as error:
@@ -180,10 +175,7 @@ class Worker:
     @log_decorator
     @error_decorator
     @timing_decorator
-    def run(
-        self,
-        task: str = None
-    ):
+    def run(self, task: str = None):
         """
         Run the autonomous agent on a given task.
 
@@ -202,10 +194,7 @@ class Worker:
     @log_decorator
     @error_decorator
     @timing_decorator
-    def __call__(
-        self,
-        task: str = None
-    ):
+    def __call__(self, task: str = None):
         """
         Make the worker callable to run the agent on a given task.
 
@@ -227,11 +216,7 @@ class Worker:
     @log_decorator
     @error_decorator
     @timing_decorator
-    def chat(
-        self,
-        msg: str = None,
-        streaming: bool = False
-    ):
+    def chat(self, msg: str = None, streaming: bool = False):
         """
         Run chat
 
@@ -251,24 +236,14 @@ class Worker:
         """
 
         # add users message to the history
-        self.history.append(
-            Message(
-                "User",
-                msg
-            )
-        )
+        self.history.append(Message("User", msg))
 
         # process msg
         try:
             response = self.agent.run(msg)
 
             # add agent's response to the history
-            self.history.append(
-                Message(
-                    "Agent",
-                    response
-                )
-            )
+            self.history.append(Message("Agent", response))
 
             # if streaming is = True
             if streaming:
@@ -280,19 +255,11 @@ class Worker:
             error_message = f"Error processing message: {str(error)}"
 
             # add error to history
-            self.history.append(
-                Message(
-                    "Agent",
-                    error_message
-                )
-            )
+            self.history.append(Message("Agent", error_message))
 
             return error_message
 
-    def _stream_response(
-        self,
-        response: str = None
-    ):
+    def _stream_response(self, response: str = None):
         """
         Yield the response token by token (word by word)
 

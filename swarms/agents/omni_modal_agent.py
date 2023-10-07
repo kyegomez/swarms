@@ -12,17 +12,13 @@ from langchain_experimental.autonomous_agents.hugginggpt.task_planner import (
     load_chat_planner,
 )
 from transformers import load_tool
+
 from swarms.agents.message import Message
 
 
 class Step:
     def __init__(
-        self,
-        task: str,
-        id: int,
-        dep: List[int],
-        args: Dict[str, str],
-        tool: BaseTool
+        self, task: str, id: int, dep: List[int], args: Dict[str, str], tool: BaseTool
     ):
         self.task = task
         self.id = id
@@ -32,10 +28,7 @@ class Step:
 
 
 class Plan:
-    def __init__(
-        self,
-        steps: List[Step]
-    ):
+    def __init__(self, steps: List[Step]):
         self.steps = steps
 
     def __str__(self) -> str:
@@ -104,10 +97,7 @@ class OmniModalAgent:
         # self.task_executor = TaskExecutor
         self.history = []
 
-    def run(
-        self,
-        input: str
-    ) -> str:
+    def run(self, input: str) -> str:
         """Run the OmniAgent"""
         plan = self.chat_planner.plan(
             inputs={
@@ -124,11 +114,7 @@ class OmniModalAgent:
 
         return response
 
-    def chat(
-        self,
-        msg: str = None,
-        streaming: bool = False
-    ):
+    def chat(self, msg: str = None, streaming: bool = False):
         """
         Run chat
 
@@ -148,24 +134,14 @@ class OmniModalAgent:
         """
 
         # add users message to the history
-        self.history.append(
-            Message(
-                "User",
-                msg
-            )
-        )
+        self.history.append(Message("User", msg))
 
         # process msg
         try:
             response = self.agent.run(msg)
 
             # add agent's response to the history
-            self.history.append(
-                Message(
-                    "Agent",
-                    response
-                )
-            )
+            self.history.append(Message("Agent", response))
 
             # if streaming is = True
             if streaming:
@@ -177,19 +153,11 @@ class OmniModalAgent:
             error_message = f"Error processing message: {str(error)}"
 
             # add error to history
-            self.history.append(
-                Message(
-                    "Agent",
-                    error_message
-                )
-            )
+            self.history.append(Message("Agent", error_message))
 
             return error_message
 
-    def _stream_response(
-        self,
-        response: str = None
-    ):
+    def _stream_response(self, response: str = None):
         """
         Yield the response token by token (word by word)
 

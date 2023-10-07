@@ -23,5 +23,5 @@ jobs:
 
       - name: Run tests and checks
         run: |
-          pytest tests/unit
+          pytest tests/
           pylint swarms

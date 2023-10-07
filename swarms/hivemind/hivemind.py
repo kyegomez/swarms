@@ -10,16 +10,13 @@ import logging
 
 from swarms.swarms.swarms import HierarchicalSwarm
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 class HiveMind:
-    def __init__(
-        self,
-        openai_api_key="",
-        num_swarms=1,
-        max_workers=None
-    ):
+    def __init__(self, openai_api_key="", num_swarms=1, max_workers=None):
         self.openai_api_key = openai_api_key
         self.num_swarms = num_swarms
         self.swarms = [HierarchicalSwarm(openai_api_key) for _ in range(num_swarms)]
@@ -43,8 +40,13 @@ class HiveMind:
             logging.error(f"An error occurred in run: {e}")
 
     def run(self, objective, timeout=None):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            futures = {executor.submit(self.run_swarm, swarm, objective) for swarm in self.swarms}
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
+            futures = {
+                executor.submit(self.run_swarm, swarm, objective)
+                for swarm in self.swarms
+            }
             results = []
             for future in concurrent.futures.as_completed(futures, timeout=timeout):
                 try:

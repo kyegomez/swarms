@@ -8,13 +8,13 @@ swarm = HierarchicalSwarm(
     use_vectorstore=False,
     use_async=False,
     human_in_the_loop=False,
-    logging_enabled=False
+    logging_enabled=False,
 )
 
-#run the swarm with an objective 
+# run the swarm with an objective
 result = swarm.run("Design a new car")
 
-#or huggingface
+# or huggingface
 swarm = HierarchicalSwarm(
     model_type="huggingface",
     model_id="tiaueu/falcon",

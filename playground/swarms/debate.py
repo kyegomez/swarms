@@ -89,6 +89,7 @@ class DialogueSimulator:
 
         return speaker.name, message
 
+
 class BiddingDialogueAgent(DialogueAgent):
     def __init__(
         self,
@@ -113,6 +114,7 @@ class BiddingDialogueAgent(DialogueAgent):
         )
         bid_string = self.model([SystemMessage(content=prompt)]).content
         return bid_string
+
 
 character_names = ["Donald Trump", "Kanye West", "Elizabeth Warren"]
 topic = "transcontinental high speed rail"
@@ -202,8 +204,6 @@ for (
     print(f"\n{character_header}")
     print(f"\n{character_system_message.content}")
 
-    
-
 
 class BidOutputParser(RegexParser):
     def get_format_instructions(self) -> str:
@@ -213,6 +213,7 @@ class BidOutputParser(RegexParser):
 bid_parser = BidOutputParser(
     regex=r"<(\d+)>", output_keys=["bid"], default_output_key="bid"
 )
+
 
 def generate_character_bidding_template(character_header):
     bidding_template = f"""{character_header}
@@ -231,6 +232,7 @@ def generate_character_bidding_template(character_header):
     Do nothing else.
     """
     return bidding_template
+
 
 character_bidding_templates = [
     generate_character_bidding_template(character_header)
@@ -263,6 +265,7 @@ specified_topic = ChatOpenAI(temperature=1.0)(topic_specifier_prompt).content
 print(f"Original topic:\n{topic}\n")
 print(f"Detailed topic:\n{specified_topic}\n")
 
+
 @tenacity.retry(
     stop=tenacity.stop_after_attempt(2),
     wait=tenacity.wait_none(),  # No waiting time between retries
@@ -279,6 +282,7 @@ def ask_for_bid(agent) -> str:
     bid_string = agent.bid()
     bid = int(bid_parser.parse(bid_string)["bid"])
     return bid
+
 
 def select_next_speaker(step: int, agents: List[DialogueAgent]) -> int:
     bids = []
@@ -299,6 +303,7 @@ def select_next_speaker(step: int, agents: List[DialogueAgent]) -> int:
     print(f"Selected: {selected_name}")
     print("\n")
     return idx
+
 
 characters = []
 for character_name, character_system_message, bidding_template in zip(

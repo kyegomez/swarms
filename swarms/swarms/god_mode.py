@@ -30,10 +30,7 @@ class GodMode:
 
     """
 
-    def __init__(
-        self,
-        llms
-    ):
+    def __init__(self, llms):
         self.llms = llms
 
     def run(self, task):
@@ -49,10 +46,6 @@ class GodMode:
             table.append([f"LLM {i+1}", response])
         print(
             colored(
-                tabulate(
-                    table,
-                    headers=["LLM", "Response"],
-                    tablefmt="pretty"
-                ), "cyan"
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"
             )
         )

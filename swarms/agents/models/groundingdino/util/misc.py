@@ -135,7 +135,9 @@ def all_gather_cpu(data):
 
     # obtain Tensor size of each rank
     local_size = torch.tensor([tensor.numel()], device=device, dtype=torch.long)
-    size_list = [torch.tensor([0], device=device, dtype=torch.long) for _ in range(world_size)]
+    size_list = [
+        torch.tensor([0], device=device, dtype=torch.long) for _ in range(world_size)
+    ]
     if cpu_group is None:
         dist.all_gather(size_list, local_size)
     else:
@@ -153,7 +155,9 @@ def all_gather_cpu(data):
     for _ in size_list:
         tensor_list.append(torch.empty((max_size,), dtype=torch.uint8, device=device))
     if local_size != max_size:
-        padding = torch.empty(size=(max_size - local_size,), dtype=torch.uint8, device=device)
+        padding = torch.empty(
+            size=(max_size - local_size,), dtype=torch.uint8, device=device
+        )
         tensor = torch.cat((tensor, padding), dim=0)
     if cpu_group is None:
         dist.all_gather(tensor_list, tensor)
@@ -205,7 +209,9 @@ def all_gather(data):
     for _ in size_list:
         tensor_list.append(torch.empty((max_size,), dtype=torch.uint8, device="cuda"))
     if local_size != max_size:
-        padding = torch.empty(size=(max_size - local_size,), dtype=torch.uint8, device="cuda")
+        padding = torch.empty(
+            size=(max_size - local_size,), dtype=torch.uint8, device="cuda"
+        )
         tensor = torch.cat((tensor, padding), dim=0)
     dist.all_gather(tensor_list, tensor)
 
@@ -261,7 +267,9 @@ class MetricLogger(object):
             return self.meters[attr]
         if attr in self.__dict__:
             return self.__dict__[attr]
-        raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, attr))
+        raise AttributeError(
+            "'{}' object has no attribute '{}'".format(type(self).__name__, attr)
+        )
 
     def __str__(self):
         loss_str = []
@@ -434,7 +442,9 @@ class NestedTensor(object):
         return NestedTensor(cast_tensor, cast_mask)
 
     def to_img_list_single(self, tensor, mask):
-        assert tensor.dim() == 3, "dim of tensor should be 3 but {}".format(tensor.dim())
+        assert tensor.dim() == 3, "dim of tensor should be 3 but {}".format(
+            tensor.dim()
+        )
         maxH = (~mask).sum(0).max()
         maxW = (~mask).sum(1).max()
         img = tensor[:, :maxH, :maxW]
@@ -516,11 +526,15 @@ def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTen
     padded_masks = []
     for img in tensor_list:
         padding = [(s1 - s2) for s1, s2 in zip(max_size, tuple(img.shape))]
-        padded_img = torch.nn.functional.pad(img, (0, padding[2], 0, padding[1], 0, padding[0]))
+        padded_img = torch.nn.functional.pad(
+            img, (0, padding[2], 0, padding[1], 0, padding[0])
+        )
         padded_imgs.append(padded_img)
 
         m = torch.zeros_like(img[0], dtype=torch.int, device=img.device)
-        padded_mask = torch.nn.functional.pad(m, (0, padding[2], 0, padding[1]), "constant", 1)
+        padded_mask = torch.nn.functional.pad(
+            m, (0, padding[2], 0, padding[1]), "constant", 1
+        )
         padded_masks.append(padded_mask.to(torch.bool))
 
     tensor = torch.stack(padded_imgs)
@@ -575,7 +589,9 @@ def save_on_master(*args, **kwargs):
 
 
 def init_distributed_mode(args):
-    if "WORLD_SIZE" in os.environ and os.environ["WORLD_SIZE"] != "":  # 'RANK' in os.environ and
+    if (
+        "WORLD_SIZE" in os.environ and os.environ["WORLD_SIZE"] != ""
+    ):  # 'RANK' in os.environ and
         args.rank = int(os.environ["RANK"])
         args.world_size = int(os.environ["WORLD_SIZE"])
         args.gpu = args.local_rank = int(os.environ["LOCAL_RANK"])
@@ -615,11 +631,17 @@ def init_distributed_mode(args):
         args.local_rank = 0
         return
 
-    print("world_size:{} rank:{} local_rank:{}".format(args.world_size, args.rank, args.local_rank))
+    print(
+        "world_size:{} rank:{} local_rank:{}".format(
+            args.world_size, args.rank, args.local_rank
+        )
+    )
     args.distributed = True
     torch.cuda.set_device(args.local_rank)
     args.dist_backend = "nccl"
-    print("| distributed init (rank {}): {}".format(args.rank, args.dist_url), flush=True)
+    print(
+        "| distributed init (rank {}): {}".format(args.rank, args.dist_url), flush=True
+    )
 
     torch.distributed.init_process_group(
         backend=args.dist_backend,
@@ -666,7 +688,9 @@ def accuracy_onehot(pred, gt):
     return acc
 
 
-def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
+def interpolate(
+    input, size=None, scale_factor=None, mode="nearest", align_corners=None
+):
     # type: (Tensor, Optional[List[int]], Optional[float], str, Optional[bool]) -> Tensor
     """
     Equivalent to nn.functional.interpolate, but with support for empty batch sizes.
@@ -675,13 +699,17 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
     """
     if __torchvision_need_compat_flag < 0.7:
         if input.numel() > 0:
-            return torch.nn.functional.interpolate(input, size, scale_factor, mode, align_corners)
+            return torch.nn.functional.interpolate(
+                input, size, scale_factor, mode, align_corners
+            )
 
         output_shape = _output_size(2, input, size, scale_factor)
         output_shape = list(input.shape[:-2]) + list(output_shape)
         return _new_empty_tensor(input, output_shape)
     else:
-        return torchvision.ops.misc.interpolate(input, size, scale_factor, mode, align_corners)
+        return torchvision.ops.misc.interpolate(
+            input, size, scale_factor, mode, align_corners
+        )
 
 
 class color_sys:
@@ -693,7 +721,12 @@ class color_sys:
             lightness = (50 + np.random.rand() * 10) / 100.0
             saturation = (90 + np.random.rand() * 10) / 100.0
             colors.append(
-                tuple([int(j * 255) for j in colorsys.hls_to_rgb(hue, lightness, saturation)])
+                tuple(
+                    [
+                        int(j * 255)
+                        for j in colorsys.hls_to_rgb(hue, lightness, saturation)
+                    ]
+                )
             )
         self.colors = colors
 
