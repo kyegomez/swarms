@@ -1,54 +1,48 @@
-from swarms.agents.message import Message
+import inspect
+import math
 import os
 import random
-import torch
-import cv2
 import re
 import uuid
-from PIL import Image, ImageDraw, ImageOps, ImageFont
-import math
-import numpy as np
-import inspect
-from transformers import (
-    pipeline,
-    BlipProcessor,
-    BlipForConditionalGeneration,
-    BlipForQuestionAnswering,
-)
 
+import cv2
+
+# Grounding DINO
+import groundingdino.datasets.transforms as T
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import wget
+from controlnet_aux import HEDdetector, MLSDdetector, OpenposeDetector
 from diffusers import (
-    StableDiffusionPipeline,
+    ControlNetModel,
+    EulerAncestralDiscreteScheduler,
+    StableDiffusionControlNetPipeline,
     StableDiffusionInpaintPipeline,
     StableDiffusionInstructPix2PixPipeline,
-)
-from diffusers import EulerAncestralDiscreteScheduler
-from diffusers import (
-    StableDiffusionControlNetPipeline,
-    ControlNetModel,
+    StableDiffusionPipeline,
     UniPCMultistepScheduler,
 )
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
-
-from controlnet_aux import OpenposeDetector, MLSDdetector, HEDdetector
-
+from groundingdino.models import build_model
+from groundingdino.util.slconfig import SLConfig
+from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
 from langchain.agents.initialize import initialize_agent
 from langchain.agents.tools import Tool
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from langchain.llms.openai import OpenAI
-
-# Grounding DINO
-import groundingdino.datasets.transforms as T
-from groundingdino.models import build_model
-from groundingdino.util.slconfig import SLConfig
-from groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 # segment anything
-from segment_anything import build_sam, SamPredictor, SamAutomaticMaskGenerator
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import wget
+from segment_anything import SamAutomaticMaskGenerator, SamPredictor, build_sam
+from transformers import (
+    BlipForConditionalGeneration,
+    BlipForQuestionAnswering,
+    BlipProcessor,
+    pipeline,
+)
 
+from swarms.agents.message import Message
 
 # prompts
 VISUAL_AGENT_PREFIX = """
