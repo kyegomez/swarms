@@ -108,7 +108,7 @@ class MetaPrompterAgent:
     def get_new_instructions(self, meta_output):
         """Get New Instructions from the meta_output"""
         delimiter = "Instructions: "
-        new_instructions = meta_output[meta_output.find(delimiter) + len(delimiter):]
+        new_instructions = meta_output[meta_output.find(delimiter) + len(delimiter) :]
         return new_instructions
 
     def run(self, task: str):
@@ -121,17 +121,12 @@ class MetaPrompterAgent:
         Returns:
             str: The response from the agent
         """
-        key_phrases = [
-            self.success_phrase,
-            self.failed_phrase
-        ]
+        key_phrases = [self.success_phrase, self.failed_phrase]
 
         for i in range(self.max_meta_iters):
             print(f"[Epsisode: {i+1}/{self.max_meta_iters}]")
 
-            chain = self.chain(
-                memory=None
-            )
+            chain = self.chain(memory=None)
 
             output = chain.predict(human_input=task)
 
@@ -143,9 +138,7 @@ class MetaPrompterAgent:
                 if self.human_input:
                     human_input = input()
 
-                if any(
-                    phrase in human_input.lower() for phrase in key_phrases
-                ):
+                if any(phrase in human_input.lower() for phrase in key_phrases):
                     break
 
                 output = chain.predict(human_input.lower)
@@ -155,7 +148,9 @@ class MetaPrompterAgent:
                 return
 
             meta_chain = self.initialize_meta_chain()
-            meta_output = meta_chain.predict(chat_history=self.get_chat_history(chain.memory))
+            meta_output = meta_chain.predict(
+                chat_history=self.get_chat_history(chain.memory)
+            )
             print(f"Feedback: {meta_output}")
 
             self.instructions = self.get_new_instructions(meta_output)
