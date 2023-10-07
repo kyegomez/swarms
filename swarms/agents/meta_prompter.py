@@ -68,7 +68,7 @@ class MetaPrompterAgent:
             memory = ConversationBufferWindowMemory()
             memory.ai_prefix = "Assistant:"
 
-        self.template = f"""
+        template = f"""
         Instructions: {self.instructions}
         {{{memory.memory_key}}}
         Human: {{human_input}}
