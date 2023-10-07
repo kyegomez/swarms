@@ -24,4 +24,4 @@ jobs:
       - name: Run tests and checks
         run: |
           pytest tests/
-          pylint swarms_torch
+          pylint swarms
