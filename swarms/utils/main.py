@@ -365,7 +365,7 @@ class FileHandler:
         try:
             if url.startswith(os.environ.get("SERVER", "http://localhost:8000")):
                 local_filepath = url[
-                    len(os.environ.get("SERVER", "http://localhost:8000")) + 1:
+                    len(os.environ.get("SERVER", "http://localhost:8000")) + 1 :
                 ]
                 local_filename = Path("file") / local_filepath.split("/")[-1]
                 src = self.path / local_filepath

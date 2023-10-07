@@ -41,7 +41,7 @@ def create_positive_map_from_span(tokenized, token_span, max_text_len=256):
                 positive_map[j, beg_pos] = 1
                 break
             else:
-                positive_map[j, beg_pos: end_pos + 1].fill_(1)
+                positive_map[j, beg_pos : end_pos + 1].fill_(1)
 
     return positive_map / (positive_map.sum(-1)[:, None] + 1e-6)
 
