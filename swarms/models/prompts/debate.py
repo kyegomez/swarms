@@ -38,5 +38,7 @@ def debate_monitor(game_description, word_limit, character_names):
     return prompt
 
 
-def generate_character_header(game_description, topic, character_name, character_description):
+def generate_character_header(
+    game_description, topic, character_name, character_description
+):
     pass

@@ -55,8 +55,6 @@ file_handler = FileHandler(handlers=handlers, path=BASE_DIR)
 
 templates = Jinja2Templates(directory=BASE_DIR / "api" / "templates")
 
-uploader = StaticUploader.from_settings(
- path=BASE_DIR / "static", endpoint="static"
-)
+uploader = StaticUploader.from_settings(path=BASE_DIR / "static", endpoint="static")
 
 reload_dirs = [BASE_DIR / "core", BASE_DIR / "api"]

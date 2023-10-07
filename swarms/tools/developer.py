@@ -1,4 +1,3 @@
-
 import os
 import re
 import signal
@@ -270,8 +269,7 @@ def terminal_execute(self, commands: str, get_session: SessionGetter) -> str:
         output = str(e)
 
     logger.debug(
-        f"\nProcessed Terminal, Input Commands: {commands} "
-        f"Output Answer: {output}"
+        f"\nProcessed Terminal, Input Commands: {commands} " f"Output Answer: {output}"
     )
     return output
 
@@ -308,7 +306,7 @@ class WriteCommand:
     @staticmethod
     def from_str(command: str) -> "WriteCommand":
         filepath = command.split(WriteCommand.separator)[0]
-        return WriteCommand(filepath, command[len(filepath) + 1:])
+        return WriteCommand(filepath, command[len(filepath) + 1 :])
 
 
 class CodeWriter:
@@ -435,7 +433,7 @@ class ReadCommand:
         if self.start == self.end:
             code = code[self.start - 1]
         else:
-            code = "".join(code[self.start - 1: self.end])
+            code = "".join(code[self.start - 1 : self.end])
         return code
 
     @staticmethod
@@ -592,9 +590,9 @@ class PatchCommand:
         lines[self.start.line] = (
             lines[self.start.line][: self.start.col]
             + self.content
-            + lines[self.end.line][self.end.col:]
+            + lines[self.end.line][self.end.col :]
         )
-        lines = lines[: self.start.line + 1] + lines[self.end.line + 1:]
+        lines = lines[: self.start.line + 1] + lines[self.end.line + 1 :]
 
         after = self.write_lines(lines)
 
@@ -784,7 +782,8 @@ class CodeEditor(BaseToolSet):
         )
         return output
 
-#---------------- end
+
+# ---------------- end
 
 
 @tool(
@@ -844,8 +843,7 @@ def code_editor_append(self, inputs: str) -> str:
         output = str(e)
 
     logger.debug(
-        f"\nProcessed CodeEditor.APPEND, Input: {inputs} "
-        f"Output Answer: {output}"
+        f"\nProcessed CodeEditor.APPEND, Input: {inputs} " f"Output Answer: {output}"
     )
     return output
 

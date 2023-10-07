@@ -1,4 +1,4 @@
-PROJECT_MANAGR_PROMPT_TEMPLATE = '''
+PROJECT_MANAGR_PROMPT_TEMPLATE = """
 # Context
 {context}
 
@@ -23,7 +23,7 @@ Attention: Use '##' to split sections, not '#', and '## <SECTION_NAME>' SHOULD W
 
 ## Anything UNCLEAR: Provide as Plain text. Make clear here. For example, don't forget a main entry. don't forget to init 3rd party libs.
 
-'''
+"""
 
 FORMAT_EXAMPLE = '''
 ---

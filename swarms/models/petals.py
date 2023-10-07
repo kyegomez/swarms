@@ -12,7 +12,7 @@ class Petals:
         top_p=0.9,
         top_k=None,
         do_sample=True,
-        max_length=None
+        max_length=None,
     ):
         self.model_name = model_name
         self.temperature = temperature

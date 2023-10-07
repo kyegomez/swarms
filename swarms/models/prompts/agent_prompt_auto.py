@@ -16,14 +16,12 @@ class PromptConstructor:
         self.tools = tools
 
     def construct_full_prompt(self, goals: List[str]) -> str:
-        prompt_start = (
-            """Your decisions must always be made independently
+        prompt_start = """Your decisions must always be made independently
             without seeking user assistance.\n
             Play to your strengths as an LLM and pursue simple
             strategies with no legal complications.\n
             If you have completed all your tasks, make sure to
             use the "finish" command."""
-        )
         # Construct full prompt
         full_prompt = (
             f"You are {self.ai_name}, {self.ai_role}\n{prompt_start}\n\nGOALS:\n\n"
@@ -56,10 +54,12 @@ class MessageFormatter:
     send_token_limit: int = 4196
 
     def format_messages(self, **kwargs: Any) -> List[Message]:
-        prompt_constructor = PromptConstructor(ai_name=kwargs["ai_name"],
-                                               ai_role=kwargs["ai_role"],
-                                               tools=kwargs["tools"])
-        base_prompt = SystemMessage(content=prompt_constructor.construct_full_prompt(kwargs["goals"]))
+        prompt_constructor = PromptConstructor(
+            ai_name=kwargs["ai_name"], ai_role=kwargs["ai_role"], tools=kwargs["tools"]
+        )
+        base_prompt = SystemMessage(
+            content=prompt_constructor.construct_full_prompt(kwargs["goals"])
+        )
         time_prompt = SystemMessage(
             content=f"The current time and date is {time.strftime('%c')}"
         )

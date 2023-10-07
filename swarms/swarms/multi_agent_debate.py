@@ -18,9 +18,7 @@ class MultiAgentDebate:
     """
 
     def __init__(
-        self,
-        agents: List[Worker],
-        selection_func: Callable[[int, List[Worker]], int]
+        self, agents: List[Worker], selection_func: Callable[[int, List[Worker]], int]
     ):
         self.agents = agents
         self.selection_func = selection_func
@@ -39,19 +37,18 @@ class MultiAgentDebate:
             speaker_idx = self.selection_func(i, self.agents)
             speaker = self.agents[speaker_idx]
             response = speaker.run(task)
-            results.append({
-                'agent': speaker.ai_name,
-                'response': response
-            })
+            results.append({"agent": speaker.ai_name, "response": response})
         return results
 
     def update_task(self, task: str):
         self.task = task
 
     def format_results(self, results):
-
         formatted_results = "\n".join(
-            [f"Agent {result['agent']} responded: {result['response']}" for result in results]
+            [
+                f"Agent {result['agent']} responded: {result['response']}"
+                for result in results
+            ]
         )
 
         return formatted_results

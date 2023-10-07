@@ -11,8 +11,15 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from api.olds.container import agent_manager, file_handler, reload_dirs, templates, uploader
+from api.olds.container import (
+    agent_manager,
+    file_handler,
+    reload_dirs,
+    templates,
+    uploader,
+)
 from api.olds.worker import get_task_result, start_worker, task_execute
+
 # from env import settings
 
 app = FastAPI()
