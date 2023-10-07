@@ -24,22 +24,10 @@ jobs:
       run: pip install -r requirements.txt
 
     - name: Run Python unit tests
-      run: python3 -m unittest tests/swarms
+      run: python3 -m unittest tests/
 
     - name: Verify that the Docker image for the action builds
       run: docker build . --file Dockerfile
 
-    - name: Integration test 1
-      uses: ./
-      with:
-        input-one: something
-        input-two: true
-
-    - name: Integration test 2
-      uses: ./
-      with:
-        input-one: something else
-        input-two: false
-
     - name: Verify integration test results
-      run: python3 -m unittest unittesting/swarms
+      run: python3 -m unittest tests/

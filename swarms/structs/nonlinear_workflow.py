@@ -1,6 +1,6 @@
-from typing import List, Dict, Any, Union
-from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from graphlib import TopologicalSorter
+from typing import Dict, List
 
 
 class Task:

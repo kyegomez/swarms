@@ -22,7 +22,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Find Python files
-        run: find swarms -name "*.py" -type f -exec autopep8 --in-place --aggressive --aggressive {} +
+        run: find swarms_torch -name "*.py" -type f -exec autopep8 --in-place --aggressive --aggressive {} +
 
       - name: Push changes
         uses: ad-m/github-push-action@master
