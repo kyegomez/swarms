@@ -2,12 +2,11 @@ import discord
 from discord.ext import commands
 
 import os
-import openai
 import requests
 
-from swarms.agents import Agent
+from swarms.agents import Worker
 from swarms.agents.memory import VectorStoreRetriever
-from swarms.tools.base import BaseTool
+from swarms.tools.autogpt import WebSearchTool
 
 """
 Custom tools for web search and memory retrieval.
@@ -99,8 +98,8 @@ Outputs:
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# OpenAI API setup
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Worker setup
+worker = Worker()
 
 # Memory setup
 vectorstore_client = VectorStoreClient() 
@@ -114,7 +113,7 @@ tools = [web_search, memory]
 # Create the agent
 agent = Agent(
   name="DiscordAssistant",
-  llm=openai,
+  llm=worker,
   memory=retriever,
   tools=tools
 )
