@@ -20,4 +20,5 @@ optimized_prompt = meta_optimizer.run(task)
 #run the optimized prompt with detailed instructions
 result = worker.run(optimized_prompt)
 
+#print
 print(result)
