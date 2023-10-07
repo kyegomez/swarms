@@ -1,3 +1,17 @@
+import interpreter
+from transformers import (
+    BlipForQuestionAnswering,
+    BlipProcessor,
+)
+from PIL import Image
+import torch
+from swarms.utils.logger import logger
+from pydantic import Field
+from langchain.tools.file_management.write import WriteFileTool
+from langchain.tools.file_management.read import ReadFileTool
+from langchain.tools import BaseTool
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains.qa_with_sources.loading import BaseCombineDocumentsChain
 import asyncio
 import os
 
@@ -13,16 +27,6 @@ from langchain.docstore.document import Document
 
 ROOT_DIR = "./data/"
 
-from langchain.chains.qa_with_sources.loading import BaseCombineDocumentsChain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.tools import BaseTool
-from langchain.tools.file_management.read import ReadFileTool
-from langchain.tools.file_management.write import WriteFileTool
-from pydantic import Field
-
-from swarms.utils.logger import logger
-
-
 
 @contextmanager
 def pushd(new_dir):
@@ -33,6 +37,7 @@ def pushd(new_dir):
         yield
     finally:
         os.chdir(prev_dir)
+
 
 @tool
 def process_csv(
@@ -55,7 +60,7 @@ def process_csv(
             return result
         except Exception as e:
             return f"Error: {e}"
-        
+
 
 async def async_load_playwright(url: str) -> str:
     """Load the specified URLs using Playwright and parse using BeautifulSoup."""
@@ -84,9 +89,11 @@ async def async_load_playwright(url: str) -> str:
         await browser.close()
     return results
 
+
 def run_async(coro):
     event_loop = asyncio.get_event_loop()
     return event_loop.run_until_complete(coro)
+
 
 @tool
 def browse_web_page(url: str) -> str:
@@ -97,9 +104,9 @@ def browse_web_page(url: str) -> str:
 def _get_text_splitter():
     return RecursiveCharacterTextSplitter(
         # Set a really small chunk size, just to show.
-        chunk_size = 500,
-        chunk_overlap  = 20,
-        length_function = len,
+        chunk_size=500,
+        chunk_overlap=20,
+        length_function=len,
     )
 
 
@@ -108,7 +115,7 @@ class WebpageQATool(BaseTool):
     description = "Browse a webpage and retrieve the information relevant to the question."
     text_splitter: RecursiveCharacterTextSplitter = Field(default_factory=_get_text_splitter)
     qa_chain: BaseCombineDocumentsChain
-    
+
     def _run(self, url: str, question: str) -> str:
         """Useful for browsing websites and scraping the text information."""
         result = browse_web_page.run(url)
@@ -117,23 +124,21 @@ class WebpageQATool(BaseTool):
         results = []
         # TODO: Handle this with a MapReduceChain
         for i in range(0, len(web_docs), 4):
-            input_docs = web_docs[i:i+4]
+            input_docs = web_docs[i:i + 4]
             window_result = self.qa_chain({"input_documents": input_docs, "question": question}, return_only_outputs=True)
             results.append(f"Response from window {i} - {window_result}")
         results_docs = [Document(page_content="\n".join(results), metadata={"source": url})]
         return self.qa_chain({"input_documents": results_docs, "question": question}, return_only_outputs=True)
-    
+
     async def _arun(self, url: str, question: str) -> str:
         raise NotImplementedError
-
-import interpreter
 
 
 @tool
 def compile(task: str):
     """
-    Open Interpreter lets LLMs run code (Python, Javascript, Shell, and more) locally. 
-    You can chat with Open Interpreter through a ChatGPT-like interface in your terminal 
+    Open Interpreter lets LLMs run code (Python, Javascript, Shell, and more) locally.
+    You can chat with Open Interpreter through a ChatGPT-like interface in your terminal
     by running $ interpreter after installing.
 
     This provides a natural-language interface to your computer's general-purpose capabilities:
@@ -153,16 +158,7 @@ def compile(task: str):
     os.environ["INTERPRETER_CLI_DEBUG"] = True
 
 
-
-
-
 # mm model workers
-import torch
-from PIL import Image
-from transformers import (
-    BlipForQuestionAnswering,
-    BlipProcessor,
-)
 
 
 @tool
@@ -172,7 +168,7 @@ def VQAinference(self, inputs):
     description="useful when you need an answer for a question based on an image. "
     "like: what is the background color of the last image, how many cats in this figure, what is in this figure. "
     "The input to this tool should be a comma separated string of two, representing the image_path and the question",
-    
+
     """
     device = "cuda:0"
     torch_dtype = torch.float16 if "cuda" in device else torch.float32
@@ -195,5 +191,3 @@ def VQAinference(self, inputs):
     )
 
     return answer
-
-

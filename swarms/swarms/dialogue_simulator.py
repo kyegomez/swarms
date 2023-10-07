@@ -1,14 +1,15 @@
 from typing import List
 from swarms.workers.worker import Worker
 
+
 class DialogueSimulator:
     def __init__(self, agents: List[Worker]):
         self.agents = agents
 
     def run(
-        self, 
-        max_iters: int, 
-        name: str = None, 
+        self,
+        max_iters: int,
+        name: str = None,
         message: str = None
     ):
         step = 0

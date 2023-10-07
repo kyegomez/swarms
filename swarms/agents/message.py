@@ -1,9 +1,10 @@
 import datetime
 
+
 class Message:
-    """ 
-    Represents a message with timestamp and optional metadata. 
-    
+    """
+    Represents a message with timestamp and optional metadata.
+
     Usage
     --------------
     mes = Message(
@@ -13,7 +14,7 @@ class Message:
 
     print(mes)
     """
-    
+
     def __init__(self, sender, content, metadata=None):
         self.timestamp = datetime.datetime.now()
         self.sender = sender
@@ -22,6 +23,6 @@ class Message:
 
     def __repr__(self):
         """
-        __repr__ means 
+        __repr__ means
         """
         return f"{self.timestamp} - {self.sender}: {self.content}"

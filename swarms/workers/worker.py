@@ -5,7 +5,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.tools.human.tool import HumanInputRun
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
-
+from typing import Dict, List, Optional, Union
 from swarms.agents.message import Message
 from swarms.tools.autogpt import (
     ReadFileTool,
@@ -17,13 +17,15 @@ from swarms.tools.autogpt import (
 )
 from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
-#cache
+# cache
 ROOT_DIR = "./data/"
 
-#main
+# main
+
+
 class Worker:
     """
-    Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks, 
+    Useful for when you need to spawn an autonomous agent instance as a worker to accomplish complex tasks,
     it can search the internet or spawn child multi-modality models to process and generate images and text or audio and so on
 
     Parameters:
@@ -36,8 +38,8 @@ class Worker:
     - `temperature` (float): The temperature parameter for response generation (default: 0.5).
     - `llm` (ChatOpenAI): Pre-initialized ChatOpenAI model instance (optional).
     - `openai` (bool): If True, use the OpenAI language model; otherwise, use `llm` (default: True).
-    
-    #Usage 
+
+    #Usage
     ```
     from swarms import Worker
 
@@ -54,14 +56,15 @@ class Worker:
     llm + tools + memory
 
     """
+
     def __init__(
-        self, 
+        self,
         ai_name: str = "Autobot Swarm Worker",
         ai_role: str = "Worker in a swarm",
-        external_tools = None,
-        human_in_the_loop = False,
+        external_tools=None,
+        human_in_the_loop=False,
         temperature: float = 0.5,
-        llm = None,
+        llm=None,
         openai_api_key: str = None,
     ):
         self.temperature = temperature
@@ -73,20 +76,20 @@ class Worker:
         self.setup_tools(external_tools)
         self.setup_memory()
         self.setup_agent()
-        
+
     def reset(self):
         """
         Reset the message history.
         """
         self.message_history = ["Here is the conversation so far"]
-    
+
     @property
     def name(self):
         return self.ai_name
-    
+
     def receieve(
-        self, 
-        name: str, 
+        self,
+        name: str,
         message: str
     ) -> None:
         """
@@ -103,7 +106,7 @@ class Worker:
 
     def add(self, task, priority=0):
         self.task_queue.append((priority, task))
-    
+
     def setup_tools(self, external_tools):
         """
         Set up tools for the worker.
@@ -114,12 +117,12 @@ class Worker:
         Example:
         ```
         external_tools = [MyTool1(), MyTool2()]
-        worker = Worker(model_name="gpt-4", 
-                openai_api_key="my_key", 
-                ai_name="My Worker", 
-                ai_role="Worker", 
-                external_tools=external_tools, 
-                human_in_the_loop=False, 
+        worker = Worker(model_name="gpt-4",
+                openai_api_key="my_key",
+                ai_name="My Worker",
+                ai_role="Worker",
+                external_tools=external_tools,
+                human_in_the_loop=False,
                 temperature=0.5)
         ```
         """
@@ -139,7 +142,6 @@ class Worker:
         if external_tools is not None:
             self.tools.extend(external_tools)
 
-
     def setup_memory(self):
         """
         Set up memory for the worker.
@@ -150,20 +152,19 @@ class Worker:
             index = faiss.IndexFlatL2(embedding_size)
 
             self.vectorstore = FAISS(
-                embeddings_model.embed_query, 
-                index, 
+                embeddings_model.embed_query,
+                index,
                 InMemoryDocstore({}), {}
             )
-            
+
         except Exception as error:
             raise RuntimeError(f"Error setting up memory perhaps try try tuning the embedding size: {error}")
-        
-    
+
     def setup_agent(self):
         """
         Set up the autonomous agent.
         """
-        try: 
+        try:
             self.agent = AutoGPT.from_llm_and_tools(
                 ai_name=self.ai_name,
                 ai_role=self.ai_role,
@@ -172,10 +173,10 @@ class Worker:
                 memory=self.vectorstore.as_retriever(search_kwargs={"k": 8}),
                 human_in_the_loop=self.human_in_the_loop
             )
-        
+
         except Exception as error:
             raise RuntimeError(f"Error setting up agent: {error}")
-    
+
     @log_decorator
     @error_decorator
     @timing_decorator
@@ -197,12 +198,12 @@ class Worker:
             return result
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")
-    
+
     @log_decorator
     @error_decorator
     @timing_decorator
     def __call__(
-        self, 
+        self,
         task: str = None
     ):
         """
@@ -233,7 +234,7 @@ class Worker:
     ):
         """
         Run chat
-        
+
         Args:
             msg (str, optional): Message to send to the agent. Defaults to None.
             language (str, optional): Language to use. Defaults to None.
@@ -241,15 +242,15 @@ class Worker:
 
         Returns:
             str: Response from the agent
-        
+
         Usage:
         --------------
         agent = MultiModalAgent()
         agent.chat("Hello")
-        
+
         """
-        
-        #add users message to the history
+
+        # add users message to the history
         self.history.append(
             Message(
                 "User",
@@ -257,11 +258,11 @@ class Worker:
             )
         )
 
-        #process msg
+        # process msg
         try:
             response = self.agent.run(msg)
 
-            #add agent's response to the history
+            # add agent's response to the history
             self.history.append(
                 Message(
                     "Agent",
@@ -269,7 +270,7 @@ class Worker:
                 )
             )
 
-            #if streaming is = True
+            # if streaming is = True
             if streaming:
                 return self._stream_response(response)
             else:
@@ -278,7 +279,7 @@ class Worker:
         except Exception as error:
             error_message = f"Error processing message: {str(error)}"
 
-            #add error to history
+            # add error to history
             self.history.append(
                 Message(
                     "Agent",
@@ -287,19 +288,27 @@ class Worker:
             )
 
             return error_message
-    
+
     def _stream_response(
-        self, 
+        self,
         response: str = None
     ):
         """
         Yield the response token by token (word by word)
-        
+
         Usage:
         --------------
         for token in _stream_response(response):
             print(token)
-        
+
         """
         for token in response.split():
             yield token
+
+    @staticmethod
+    def _message_to_dict(message: Union[Dict, str]):
+        """Convert a message"""
+        if isinstance(message, str):
+            return {"content": message}
+        else:
+            return message

@@ -1,6 +1,7 @@
 from transformers import AutoTokenizer, BertModel, RobertaModel
 import os
 
+
 def get_tokenlizer(text_encoder_type):
     if not isinstance(text_encoder_type, str):
         # print("text_encoder_type is not a str")

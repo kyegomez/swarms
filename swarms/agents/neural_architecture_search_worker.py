@@ -10,5 +10,3 @@ class Replicator:
 
     def run(self, task):
         pass
-
-

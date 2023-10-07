@@ -1,7 +1,7 @@
 def presidential_debate(character_names, topic):
     game_description = f"""Here is the topic for the presidential debate: {topic}.
     The presidential candidates are: {', '.join(character_names)}."""
-    
+
     return game_description
 
 
@@ -21,15 +21,16 @@ def character(character_name, topic, word_limit):
     """
     return prompt
 
+
 def debate_monitor(game_description, word_limit, character_names):
     prompt = f"""
 
     {game_description}
     You are the debate moderator.
-    Please make the debate topic more specific. 
+    Please make the debate topic more specific.
     Frame the debate topic as a problem to be solved.
     Be creative and imaginative.
-    Please reply with the specified topic in {word_limit} words or less. 
+    Please reply with the specified topic in {word_limit} words or less.
     Speak directly to the presidential candidates: {*character_names,}.
     Do not add anything else.
     """

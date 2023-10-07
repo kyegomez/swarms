@@ -183,14 +183,14 @@ class BaseOpenAI(BaseLLM):
     disallowed_special: Union[Literal["all"], Collection[str]] = "all"
     """Set of special tokens that are not allowed。"""
     tiktoken_model_name: Optional[str] = None
-    """The model name to pass to tiktoken when using this class. 
-    Tiktoken is used to count the number of tokens in documents to constrain 
-    them to be under a certain limit. By default, when set to None, this will 
-    be the same as the embedding model name. However, there are some cases 
-    where you may want to use this Embedding class with a model name not 
-    supported by tiktoken. This can include when using Azure embeddings or 
-    when using one of the many model providers that expose an OpenAI-like 
-    API but with different models. In those cases, in order to avoid erroring 
+    """The model name to pass to tiktoken when using this class.
+    Tiktoken is used to count the number of tokens in documents to constrain
+    them to be under a certain limit. By default, when set to None, this will
+    be the same as the embedding model name. However, there are some cases
+    where you may want to use this Embedding class with a model name not
+    supported by tiktoken. This can include when using Azure embeddings or
+    when using one of the many model providers that expose an OpenAI-like
+    API but with different models. In those cases, in order to avoid erroring
     when tiktoken is called, you can specify a model name to use here."""
 
     def __new__(cls, **data: Any) -> Union[OpenAIChat, BaseOpenAI]:  # type: ignore
@@ -458,7 +458,7 @@ class BaseOpenAI(BaseLLM):
                 )
             params["max_tokens"] = self.max_tokens_for_prompt(prompts[0])
         sub_prompts = [
-            prompts[i : i + self.batch_size]
+            prompts[i: i + self.batch_size]
             for i in range(0, len(prompts), self.batch_size)
         ]
         return sub_prompts
@@ -469,7 +469,7 @@ class BaseOpenAI(BaseLLM):
         """Create the LLMResult from the choices and prompts."""
         generations = []
         for i, _ in enumerate(prompts):
-            sub_choices = choices[i * self.n : (i + 1) * self.n]
+            sub_choices = choices[i * self.n: (i + 1) * self.n]
             generations.append(
                 [
                     Generation(
