@@ -27,8 +27,18 @@ class MetaPrompterAgent:
 
     Usage:
     --------------
-    agent = MetaPrompterAgent(llm=OpenAI, instructions="Please tell me the weather in New York")
-    agent.run("What is the weather in New York?")    
+    from swarms.workers import Worker
+    from swarms.agents import MetaPrompterAgent
+    from langchain.llms import OpenAI
+
+    llm = OpenAI()
+
+    task = "Create a feedforward in pytorch"
+    agent = MetaPrompterAgent(llm=llm)
+    optimized_prompt = agent.run(task)    
+    
+    worker = Worker(llm)
+    worker.run(optimized_prompt)
     """
     def __init__(
         self,
@@ -136,6 +146,7 @@ class MetaPrompterAgent:
             meta_chain = self.initialize_meta_chain()
             meta_output = meta_chain.predict(chat_history=self.get_chat_history(chain.memory))
             print(f"Feedback: {meta_output}")
+
             self.instructions = self.get_new_instructions(meta_output)
             print(f"New Instruction: {self.instructions}")
             print("\n" + "#" * 80 + "\n")
