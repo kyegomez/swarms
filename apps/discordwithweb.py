@@ -2,11 +2,10 @@ import discord
 from discord.ext import commands
 
 import os
-import requests
 
 from swarms.agents import Worker
 from swarms.agents.memory import VectorStoreRetriever
-from swarms.tools.autogpt import WebSearchTool
+from swarms.tools.autogpt import WebpageQATool
 
 """
 Custom tools for web search and memory retrieval.
@@ -106,7 +105,7 @@ vectorstore_client = VectorStoreClient()
 retriever = VectorStoreRetriever(vectorstore_client)
 
 # Tools setup
-web_search = WebSearchTool()
+web_search = WebpageQATool()
 memory = MemoryTool(retriever)
 tools = [web_search, memory]
 
@@ -120,7 +119,7 @@ agent = Agent(
 
 @bot.command()
 async def query(ctx, *, input):
-  response = agent.run(input)
+  response = web_search.run(input)
   await ctx.send(response)
 
 bot.run(os.getenv("DISCORD_BOT_TOKEN"))
