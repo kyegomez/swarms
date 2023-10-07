@@ -9,12 +9,6 @@ from swarms.agents import OmniModalAgent
 import gradio_client as grc
 from dspy import Program, Prompt, Finetune, Decompose
 from dspy import Program, Prompt, Finetune, Decompose
-from dspy.retrieval import retrieve
-
-program = Program(
-    Decompose(
-        Prompt("I have 4 shirts that take 5hrs to dry long shoul")
-    )
 
 grc.Client("Wawaa/omni_bot").deploy_discord()
 
@@ -25,19 +19,19 @@ def image_to_base64(image_path):
 
 # Function to get the most recently created image in the directory
 def get_latest_image():
-    list_of_files=glob.glob('./*.png')  # Replace with your image file type
+    list_of_files = glob.glob('./*.png')  # Replace with your image file type
     if not list_of_files:
         return None
-    latest_file=max(list_of_files, key=os.path.getctime)
+    latest_file = max(list_of_files, key=os.path.getctime)
     return latest_file
 
 
 # Initialize your OmniModalAgent
-llm=OpenAIChat(model_name="gpt-4")  # Replace with your actual initialization
-agent=OmniModalAgent(llm)  # Replace with your actual initialization
+llm = OpenAIChat(model_name="gpt-4")  # Replace with your actual initialization
+agent = OmniModalAgent(llm)  # Replace with your actual initialization
 
 # Global variable to store chat history
-chat_history=[]
+chat_history = []
 
 # Function to update chat
 def update_chat(user_input):
@@ -45,39 +39,38 @@ def update_chat(user_input):
     chat_history.append({"type": "user", "content": user_input})
 
     # Get agent response
-    agent_response=agent.run(user_input)
+    agent_response = agent.run(user_input)
 
     # Handle the case where agent_response is not in the expected dictionary format
     if not isinstance(agent_response, dict):
-        agent_response={"type": "text", "content": str(agent_response)}
+        agent_response = {"type": "text", "content": str(agent_response)}
 
     chat_history.append(agent_response)
 
     # Check for the most recently created image and add it to the chat history
-    latest_image=get_latest_image()
+    latest_image = get_latest_image()
     if latest_image:
         chat_history.append({"type": "image", "content": latest_image})
-
     return render_chat(chat_history)
 
 # Function to render chat as HTML
 def render_chat(chat_history):
-    chat_str="<div style='max-height:400px;overflow-y:scroll;'>"
+    chat_str = "<div style='max-height:400px;overflow-y:scroll;'>"
     for message in chat_history:
         if message['type'] == 'user':
             chat_str += f"<p><strong>User:</strong> {message['content']}</p>"
         elif message['type'] == 'text':
             chat_str += f"<p><strong>Agent:</strong> {message['content']}</p>"
         elif message['type'] == 'image':
-            img_path=os.path.join(".", message['content'])
-            base64_img=image_to_base64(img_path)
+            img_path = os.path.join(".", message['content'])
+            base64_img = image_to_base64(img_path)
             chat_str += f"<p><strong>Agent:</strong> <img src='data:image/png;base64,{base64_img}' alt='image' width='200'/></p>"
     chat_str += "</div>"
     return chat_str
 
 
 # Define Gradio interface
-iface=Interface(
+iface = Interface(
     fn=update_chat,
     inputs=Textbox(label="Your Message", type="text"),
     outputs=HTML(label="Chat History"),
