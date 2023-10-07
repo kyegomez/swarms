@@ -11,7 +11,7 @@ class Workflow:
     They string together multiple tasks of varying types, and can use Short-Term Memory
     or pass specific arguments downstream.
 
-    
+
     Usage
     llm = LLM()
     workflow = Workflow(llm)
@@ -47,11 +47,13 @@ class Workflow:
             return response
 
     def __init__(self, agent, parallel: bool = False):
+        """__init__"""
         self.agent = agent
         self.tasks: List[Workflow.Task] = []
         self.parallel = parallel
 
     def add(self, task: str) -> Task:
+        """Add a task"""
         task = self.Task(task)
 
         if self.last_task():
@@ -62,12 +64,15 @@ class Workflow:
         return task
 
     def first_task(self) -> Optional[Task]:
+        """Add first task"""
         return self.tasks[0] if self.tasks else None
 
     def last_task(self) -> Optional[Task]:
+        """Last task"""
         return self.tasks[-1] if self.tasks else None
 
     def run(self, *args) -> Task:
+        """Run tasks"""
         [task.reset() for task in self.tasks]
 
         if self.parallel:
@@ -79,6 +84,7 @@ class Workflow:
         return self.last_task()
 
     def context(self, task: Task) -> Dict[str, Any]:
+        """Context in tasks"""
         return {
             "parent_output": task.parents[0].output
             if task.parents and task.parents[0].output
@@ -88,6 +94,7 @@ class Workflow:
         }
 
     def __run_from_task(self, task: Optional[Task]) -> None:
+        """Run from task"""
         if task is None:
             return
         else:

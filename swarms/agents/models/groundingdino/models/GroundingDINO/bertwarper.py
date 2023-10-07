@@ -221,9 +221,9 @@ def generate_masks_with_special_tokens(tokenized, special_tokens_list, tokenizer
             position_ids[row, col] = 0
         else:
             attention_mask[
-                row, previous_col + 1: col + 1, previous_col + 1: col + 1
+                row, previous_col + 1 : col + 1, previous_col + 1 : col + 1
             ] = True
-            position_ids[row, previous_col + 1: col + 1] = torch.arange(
+            position_ids[row, previous_col + 1 : col + 1] = torch.arange(
                 0, col - previous_col, device=input_ids.device
             )
 
@@ -273,13 +273,13 @@ def generate_masks_with_special_tokens_and_transfer_map(
             position_ids[row, col] = 0
         else:
             attention_mask[
-                row, previous_col + 1: col + 1, previous_col + 1: col + 1
+                row, previous_col + 1 : col + 1, previous_col + 1 : col + 1
             ] = True
-            position_ids[row, previous_col + 1: col + 1] = torch.arange(
+            position_ids[row, previous_col + 1 : col + 1] = torch.arange(
                 0, col - previous_col, device=input_ids.device
             )
             c2t_maski = torch.zeros((num_token), device=input_ids.device).bool()
-            c2t_maski[previous_col + 1: col] = True
+            c2t_maski[previous_col + 1 : col] = True
             cate_to_token_mask_list[row].append(c2t_maski)
         previous_col = col
 

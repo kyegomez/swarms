@@ -1,29 +1,30 @@
+import asyncio
+import os
+from contextlib import contextmanager
+from typing import Optional
+
 import interpreter
+import pandas as pd
+import torch
+from langchain.agents import tool
+from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
+from langchain.chains.qa_with_sources.loading import (
+    BaseCombineDocumentsChain,
+    load_qa_with_sources_chain,
+)
+from langchain.docstore.document import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.tools import BaseTool
+from langchain.tools.file_management.read import ReadFileTool
+from langchain.tools.file_management.write import WriteFileTool
+from PIL import Image
+from pydantic import Field
 from transformers import (
     BlipForQuestionAnswering,
     BlipProcessor,
 )
-from PIL import Image
-import torch
+
 from swarms.utils.logger import logger
-from pydantic import Field
-from langchain.tools.file_management.write import WriteFileTool
-from langchain.tools.file_management.read import ReadFileTool
-from langchain.tools import BaseTool
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains.qa_with_sources.loading import BaseCombineDocumentsChain
-import asyncio
-import os
-
-# Tools
-from contextlib import contextmanager
-from typing import Optional
-
-import pandas as pd
-from langchain.agents import tool
-from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
-from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
-from langchain.docstore.document import Document
 
 ROOT_DIR = "./data/"
 
@@ -128,7 +129,7 @@ class WebpageQATool(BaseTool):
         results = []
         # TODO: Handle this with a MapReduceChain
         for i in range(0, len(web_docs), 4):
-            input_docs = web_docs[i: i + 4]
+            input_docs = web_docs[i : i + 4]
             window_result = self.qa_chain(
                 {"input_documents": input_docs, "question": question},
                 return_only_outputs=True,
