@@ -52,7 +52,8 @@ class GroupChat:
         selector.update_system_message(self.select_speaker_msg())
 
         final, name = selector.run(
-            self.messages + [
+            self.messages
+            + [
                 {
                     "role": "system",
                     "context": f"Read the above conversation. Then select the next role from {self.worker_names} to play. Only return the role.",
@@ -80,20 +81,17 @@ class GroupChatManager(Worker):
         max_consecutive_auto_reply: Optional[int] = sys.maxsize,
         human_input_mode: Optional[str] = "NEVER",
         system_message: Optional[str] = "Group chat manager",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             ai_name=ai_name,
             # max_consecutive_auto_reply=max_consecutive_auto_reply,
             # human_input_mode=human_input_mode,
             # system_message=system_message,
-            **kwargs
+            **kwargs,
         )
         self.register_reply(
-            Worker,
-            GroupChatManager.run,
-            config=groupchat,
-            reset_config=GroupChat.reset
+            Worker, GroupChatManager.run, config=groupchat, reset_config=GroupChat.reset
         )
 
     def run(
@@ -147,11 +145,7 @@ class GroupChatManager(Worker):
                 break
 
             # speaker sends message without requesting a reply
-            speaker.send(
-                reply,
-                self,
-                request_reply=False
-            )
+            speaker.send(reply, self, request_reply=False)
             message = self.last_message(speaker)
             message = self.last_messge(speaker)
         return True, None

@@ -99,7 +99,7 @@ class Orchestrator:
         api_key: str = None,
         model_name: str = None,
         embed_func=None,
-        worker=None
+        worker=None,
     ):
         self.agent = agent
         self.agents = queue.Queue()
@@ -111,9 +111,7 @@ class Orchestrator:
 
         self.chroma_client = chromadb.Client()
 
-        self.collection = self.chroma_client.create_collection(
-            name=collection_name
-        )
+        self.collection = self.chroma_client.create_collection(name=collection_name)
 
         self.current_tasks = {}
 
@@ -125,11 +123,7 @@ class Orchestrator:
 
     # @abstractmethod
 
-    def assign_task(
-        self,
-        agent_id: int,
-        task: Dict[str, Any]
-    ) -> None:
+    def assign_task(self, agent_id: int, task: Dict[str, Any]) -> None:
         """Assign a task to a specific agent"""
 
         while True:
@@ -144,21 +138,23 @@ class Orchestrator:
 
                 # using the embed method to get the vector representation of the result
                 vector_representation = self.embed(
-                    result,
-                    self.api_key,
-                    self.model_name
+                    result, self.api_key, self.model_name
                 )
 
                 self.collection.add(
                     embeddings=[vector_representation],
                     documents=[str(id(task))],
-                    ids=[str(id(task))]
+                    ids=[str(id(task))],
                 )
 
-                logging.info(f"Task {id(str)} has been processed by agent {id(agent)} with")
+                logging.info(
+                    f"Task {id(str)} has been processed by agent {id(agent)} with"
+                )
 
             except Exception as error:
-                logging.error(f"Failed to process task {id(task)} by agent {id(agent)}. Error: {error}")
+                logging.error(
+                    f"Failed to process task {id(task)} by agent {id(agent)}. Error: {error}"
+                )
             finally:
                 with self.condition:
                     self.agents.put(agent)
@@ -166,8 +162,7 @@ class Orchestrator:
 
     def embed(self, input, api_key, model_name):
         openai = embedding_functions.OpenAIEmbeddingFunction(
-            api_key=api_key,
-            model_name=model_name
+            api_key=api_key, model_name=model_name
         )
         embedding = openai(input)
         return embedding
@@ -179,14 +174,13 @@ class Orchestrator:
 
         try:
             # Query the vector database for documents created by the agents
-            results = self.collection.query(
-                query_texts=[str(agent_id)],
-                n_results=10
-            )
+            results = self.collection.query(query_texts=[str(agent_id)], n_results=10)
 
             return results
         except Exception as e:
-            logging.error(f"Failed to retrieve results from agent {agent_id}. Error {e}")
+            logging.error(
+                f"Failed to retrieve results from agent {agent_id}. Error {e}"
+            )
             raise
 
     # @abstractmethod
@@ -197,7 +191,7 @@ class Orchestrator:
             self.collection.add(
                 embeddings=[data["vector"]],
                 documents=[str(data["task_id"])],
-                ids=[str(data["task_id"])]
+                ids=[str(data["task_id"])],
             )
 
         except Exception as e:
@@ -210,17 +204,11 @@ class Orchestrator:
         """Retrieve the vector database"""
         return self.collection
 
-    def append_to_db(
-        self,
-        result: str
-    ):
+    def append_to_db(self, result: str):
         """append the result of the swarm to a specifici collection in the database"""
 
         try:
-            self.collection.add(
-                documents=[result],
-                ids=[str(id(result))]
-            )
+            self.collection.add(documents=[result], ids=[str(id(result))])
 
         except Exception as e:
             logging.error(f"Failed to append the agent output to database. Error: {e}")
@@ -236,13 +224,8 @@ class Orchestrator:
             self.task_queue.append(objective)
 
             results = [
-                self.assign_task(
-                    agent_id, task
-                ) for agent_id, task in zip(
-                    range(
-                        len(self.agents)
-                    ), self.task_queue
-                )
+                self.assign_task(agent_id, task)
+                for agent_id, task in zip(range(len(self.agents)), self.task_queue)
             ]
 
             for result in results:
@@ -254,12 +237,7 @@ class Orchestrator:
             logging.error(f"An error occured in swarm: {e}")
             return None
 
-    def chat(
-        self,
-        sender_id: int,
-        receiver_id: int,
-        message: str
-    ):
+    def chat(self, sender_id: int, receiver_id: int, message: str):
         """
 
         Allows the agents to chat with eachother thrught the vectordatabase
@@ -276,37 +254,24 @@ class Orchestrator:
 
         """
 
-        message_vector = self.embed(
-            message,
-            self.api_key,
-            self.model_name
-        )
+        message_vector = self.embed(message, self.api_key, self.model_name)
 
         # store the mesage in the vector database
         self.collection.add(
             embeddings=[message_vector],
             documents=[message],
-            ids=[f"{sender_id}_to_{receiver_id}"]
+            ids=[f"{sender_id}_to_{receiver_id}"],
         )
 
-        self.run(
-            objective=f"chat with agent {receiver_id} about {message}"
-        )
+        self.run(objective=f"chat with agent {receiver_id} about {message}")
 
-    def add_agents(
-        self,
-        num_agents: int
-    ):
+    def add_agents(self, num_agents: int):
         for _ in range(num_agents):
             self.agents.put(self.agent())
-        self.executor = ThreadPoolExecutor(
-            max_workers=self.agents.qsize()
-        )
+        self.executor = ThreadPoolExecutor(max_workers=self.agents.qsize())
 
     def remove_agents(self, num_agents):
         for _ in range(num_agents):
             if not self.agents.empty():
                 self.agents.get()
-        self.executor = ThreadPoolExecutor(
-            max_workers=self.agents.qsize()
-        )
+        self.executor = ThreadPoolExecutor(max_workers=self.agents.qsize())

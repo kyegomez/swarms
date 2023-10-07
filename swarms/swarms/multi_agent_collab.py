@@ -15,11 +15,7 @@ bid_parser = BidOutputParser(
 )
 
 
-def select_next_speaker(
-        step: int,
-        agents,
-        director
-) -> int:
+def select_next_speaker(step: int, agents, director) -> int:
     # if the step if even => director
     # => director selects next speaker
     if step % 2 == 1:
@@ -50,10 +46,7 @@ class MultiAgentCollaboration:
         self._step += 1
 
     def step(self) -> tuple[str, str]:
-        speaker_idx = self.select_next_speaker(
-            self._step,
-            self.agents
-        )
+        speaker_idx = self.select_next_speaker(self._step, self.agents)
         speaker = self.agents[speaker_idx]
         message = speaker.send()
         message = speaker.send()

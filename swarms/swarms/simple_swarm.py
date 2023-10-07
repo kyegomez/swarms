@@ -44,11 +44,7 @@ class SimpleSwarm:
         self.task_queue = Queue()
         self.priority_queue = PriorityQueue()
 
-    def distribute(
-        self,
-        task: str = None,
-        priority=None
-    ):
+    def distribute(self, task: str = None, priority=None):
         """Distribute a task to the workers"""
         if priority:
             self.priority_queue.put((priority, task))

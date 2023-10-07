@@ -24,7 +24,7 @@ class BaseTask(ABC):
         self.parent_ids: List[str] = []
         self.child_ids: List[str] = []
         self.output: Optional[Union[Artifact, ErrorArtifact]] = None
-        self.structure: Optional['Structure'] = None
+        self.structure: Optional["Structure"] = None
 
     @property
     @abstractmethod
@@ -45,7 +45,7 @@ class BaseTask(ABC):
     def __lshift__(self, child: BaseTask) -> BaseTask:
         return self.add_parent(child)
 
-    def preprocess(self, structure: 'Structure') -> BaseTask:
+    def preprocess(self, structure: "Structure") -> BaseTask:
         self.structure = structure
         return self
 
@@ -117,7 +117,9 @@ class BaseTask(ABC):
             return self.output
 
     def can_execute(self) -> bool:
-        return self.state == self.State.PENDING and all(parent.is_finished() for parent in self.parents)
+        return self.state == self.State.PENDING and all(
+            parent.is_finished() for parent in self.parents
+        )
 
     def reset(self) -> BaseTask:
         self.state = self.State.PENDING
@@ -130,21 +132,13 @@ class BaseTask(ABC):
 
 
 class Task(BaseModel):
-    input: Optional[StrictStr] = Field(
-        None,
-        description="Input prompt for the task"
-    )
+    input: Optional[StrictStr] = Field(None, description="Input prompt for the task")
     additional_input: Optional[Any] = Field(
-        None,
-        description="Input parameters for the task. Any value is allowed"
+        None, description="Input parameters for the task. Any value is allowed"
     )
-    task_id: StrictStr = Field(
-        ...,
-        description="ID of the task"
-    )
+    task_id: StrictStr = Field(..., description="ID of the task")
     artifacts: conlist(Artifact, min_items=1) = Field(
-        ...,
-        description="A list of artifacts that the task has been produced"
+        ..., description="A list of artifacts that the task has been produced"
     )
 
     class Config:
@@ -158,21 +152,26 @@ class Task(BaseModel):
         return json.dumps(self.dict(by_alias=True, exclude_none=True))
 
     @classmethod
-    def from_json(cls, json_str: str) -> 'Task':
+    def from_json(cls, json_str: str) -> "Task":
         return cls.parse_raw(json_str)
 
     def to_dict(self) -> dict:
         _dict = self.dict(by_alias=True, exclude_none=True)
         if self.artifacts:
-            _dict["artifacts"] = [artifact.dict(by_alias=True, exclude_none=True) for artifact in self.artifacts]
+            _dict["artifacts"] = [
+                artifact.dict(by_alias=True, exclude_none=True)
+                for artifact in self.artifacts
+            ]
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> 'Task':
+    def from_dict(cls, obj: dict) -> "Task":
         if obj is None:
             return None
         if not isinstance(obj, dict):
             raise ValueError("Input must be a dictionary.")
-        if 'artifacts' in obj:
-            obj['artifacts'] = [Artifact.parse_obj(artifact) for artifact in obj['artifacts']]
+        if "artifacts" in obj:
+            obj["artifacts"] = [
+                Artifact.parse_obj(artifact) for artifact in obj["artifacts"]
+            ]
         return cls.parse_obj(obj)

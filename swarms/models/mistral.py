@@ -23,7 +23,7 @@ class Mistral:
         use_flash_attention: bool = False,
         temperature: float = 1.0,
         max_length: int = 100,
-        do_sample: bool = True
+        do_sample: bool = True,
     ):
         self.ai_name = ai_name
         self.system_prompt = system_prompt
@@ -52,34 +52,24 @@ class Mistral:
         except Exception as e:
             raise ValueError(f"Error loading the Mistral model: {str(e)}")
 
-    def run(
-        self,
-        task: str
-    ):
+    def run(self, task: str):
         """Run the model on a given task."""
 
         try:
-            model_inputs = self.tokenizer(
-                [task],
-                return_tensors="pt"
-            ).to(self.device)
+            model_inputs = self.tokenizer([task], return_tensors="pt").to(self.device)
             generated_ids = self.model.generate(
                 **model_inputs,
                 max_length=self.max_length,
                 do_sample=self.do_sample,
                 temperature=self.temperature,
-                max_new_tokens=self.max_length
+                max_new_tokens=self.max_length,
             )
             output_text = self.tokenizer.batch_decode(generated_ids)[0]
             return output_text
         except Exception as e:
             raise ValueError(f"Error running the model: {str(e)}")
 
-    def chat(
-        self,
-        msg: str = None,
-        streaming: bool = False
-    ):
+    def chat(self, msg: str = None, streaming: bool = False):
         """
         Run chat
 
@@ -99,24 +89,14 @@ class Mistral:
         """
 
         # add users message to the history
-        self.history.append(
-            Message(
-                "User",
-                msg
-            )
-        )
+        self.history.append(Message("User", msg))
 
         # process msg
         try:
             response = self.agent.run(msg)
 
             # add agent's response to the history
-            self.history.append(
-                Message(
-                    "Agent",
-                    response
-                )
-            )
+            self.history.append(Message("Agent", response))
 
             # if streaming is = True
             if streaming:
@@ -128,19 +108,11 @@ class Mistral:
             error_message = f"Error processing message: {str(error)}"
 
             # add error to history
-            self.history.append(
-                Message(
-                    "Agent",
-                    error_message
-                )
-            )
+            self.history.append(Message("Agent", error_message))
 
             return error_message
 
-    def _stream_response(
-        self,
-        response: str = None
-    ):
+    def _stream_response(self, response: str = None):
         """
         Yield the response token by token (word by word)
 

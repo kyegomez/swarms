@@ -18,7 +18,7 @@ class AbstractAgent:
         self,
         name: str,
         # tools: List[Tool],
-        #memory: Memory
+        # memory: Memory
     ):
         """
         Args:
@@ -51,10 +51,7 @@ class AbstractAgent:
     def chat(self, messages: List[Dict]):
         """Chat with the agent"""
 
-    def _achat(
-        self,
-        messages: List[Dict]
-    ):
+    def _achat(self, messages: List[Dict]):
         """Asynchronous Chat"""
 
     def step(self, message: str):

@@ -26,19 +26,16 @@ class Artifact(BaseModel):
     relative_path: Optional[str] = Field(
         None,
         description="Relative path of the artifact in the agent's workspace",
-        example="python/code/"
+        example="python/code/",
     )
 
 
 class ArtifactUpload(BaseModel):
-    file: bytes = Field(
-        ...,
-        description="File to upload"
-    )
+    file: bytes = Field(..., description="File to upload")
     relative_path: Optional[str] = Field(
         None,
         description="Relative path of the artifact in the agent's workspace",
-        example="python/code/"
+        example="python/code/",
     )
 
 
