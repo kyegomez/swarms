@@ -22,7 +22,7 @@ from swarms.utils.decorators import error_decorator, log_decorator, timing_decor
 ROOT_DIR = "./data/"
 
 # main
-
+openai_api_key = os.environ["OPENAI_API_KEY"]
 
 class Worker:
     """
@@ -71,7 +71,7 @@ class Worker:
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
         self.llm = llm
-        self.openai_api_key = openai_api_key
+        self.openai_api_key = openai_api_key or os.environ["OPENAI_API_KEY"]
         self.ai_name = ai_name
         self.ai_role = ai_role
         self.setup_tools(external_tools)
