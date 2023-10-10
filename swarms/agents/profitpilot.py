@@ -15,7 +15,7 @@ from langchain.schema import AgentAction, AgentFinish
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from pydantic import BaseModel, Field
-from swarms.models.prompts.sales import SALES_AGENT_TOOLS_PROMPT, conversation_stages
+from swarms.prompts.sales import SALES_AGENT_TOOLS_PROMPT, conversation_stages
 from swarms.tools.interpreter_tool import compile
 
 
