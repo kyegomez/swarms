@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from swarms.models.mistral import Mistral
 
+
 def test_mistral_initialization():
     mistral = Mistral(device="cpu")
     assert isinstance(mistral, Mistral)
@@ -14,25 +15,29 @@ def test_mistral_initialization():
     assert mistral.max_length == 100
     assert mistral.history == []
 
-@patch('your_module.AutoModelForCausalLM.from_pretrained')
-@patch('your_module.AutoTokenizer.from_pretrained')
+
+@patch("your_module.AutoModelForCausalLM.from_pretrained")
+@patch("your_module.AutoTokenizer.from_pretrained")
 def test_mistral_load_model(mock_tokenizer, mock_model):
     mistral = Mistral(device="cpu")
     mistral.load_model()
     mock_model.assert_called_once()
     mock_tokenizer.assert_called_once()
 
-@patch('your_module.Mistral.load_model')
+
+@patch("your_module.Mistral.load_model")
 def test_mistral_run(mock_load_model):
     mistral = Mistral(device="cpu")
     mistral.run("What's the weather in miami")
     mock_load_model.assert_called_once()
 
-@patch('your_module.Mistral.run')
+
+@patch("your_module.Mistral.run")
 def test_mistral_chat(mock_run):
     mistral = Mistral(device="cpu")
     mistral.chat("What's the weather in miami")
     mock_run.assert_called_once()
+
 
 def test_mistral__stream_response():
     mistral = Mistral(device="cpu")
