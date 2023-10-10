@@ -18,7 +18,7 @@ from transformers import (
     CLIPSegProcessor,
 )
 
-from swarms.models.prompts.prebuild.multi_modal_prompts import IMAGE_PROMPT
+from swarms.prompts.prebuild.multi_modal_prompts import IMAGE_PROMPT
 from swarms.tools.base import tool
 from swarms.tools.main import BaseToolSet
 from swarms.utils.logger import logger
