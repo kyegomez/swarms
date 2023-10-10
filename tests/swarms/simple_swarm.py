@@ -16,7 +16,7 @@ def test_simpleswarm_distribute():
     simpleswarm.distribute("task2", priority=1)
     assert simpleswarm.priority_queue.qsize() == 1
 
-@patch('swarms.workers.Worker.run')
+@patch('swarms.workers.worker.Worker.run')
 def test_simpleswarm_process_task(mock_run):
     simpleswarm = SimpleSwarm(num_workers=5, openai_api_key="api_key", ai_name="ai_name")
     result = simpleswarm._process_task("task1")
