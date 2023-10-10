@@ -22,9 +22,6 @@ from swarms.utils.decorators import error_decorator, log_decorator, timing_decor
 # cache
 ROOT_DIR = "./data/"
 
-# main
-OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-
 
 class Worker:
     """
@@ -73,7 +70,7 @@ class Worker:
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
         self.llm = llm
-        self.openai_api_key = openai_api_key or OPENAI_API_KEY
+        self.openai_api_key = openai_api_key
         self.ai_name = ai_name
         self.ai_role = ai_role
         self.setup_tools(external_tools)
@@ -145,9 +142,8 @@ class Worker:
         """
         Set up memory for the worker.
         """
-        openai_api_key = OPENAI_API_KEY
         try:
-            embeddings_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
+            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
             embedding_size = 1536
             index = faiss.IndexFlatL2(embedding_size)
 

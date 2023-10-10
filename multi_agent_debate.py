@@ -2,7 +2,7 @@ from swarms.swarms.multi_agent_debate import MultiAgentDebate, select_speaker
 from swarms.workers.worker import Worker
 from langchain.llms import OpenAIChat
 
-llm = OpenAIChat(model_name="gpt-4", openai_api_key="api-key", temperature=0.5)
+llm = OpenAIChat()
 
 worker1 = Worker(
     llm=llm,
