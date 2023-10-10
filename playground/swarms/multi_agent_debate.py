@@ -1,4 +1,5 @@
-from swarms import Worker, MultiAgentDebate, select_speaker
+from swarms.swarms.multi_agent_debate import MultiAgentDebate, select_speaker
+from swarms.workers.worker import Worker
 
 # Initialize agents
 worker1 = Worker(openai_api_key="", ai_name="Optimus Prime")
