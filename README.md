@@ -106,7 +106,7 @@ for result in results:
 
 ```python
 from langchain.llms import ChatOpenAI
-from swarms import Worker
+from swarms.workers import Worker
 
 llm = ChatOpenAI(
     model_name='gpt-4', 
