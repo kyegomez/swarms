@@ -1,5 +1,5 @@
 import pandas as pd
-from swarms.models.prompts.prebuild.multi_modal_prompts import DATAFRAME_PROMPT
+from swarms.prompts.prebuild.multi_modal_prompts import DATAFRAME_PROMPT
 import requests
 from typing import Dict
 from enum import Enum
