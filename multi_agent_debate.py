@@ -29,7 +29,7 @@ worker3 = Worker(
     temperature=0.5,
 )
 
-#init agents
+# init agents
 agents = [worker1, worker2, worker3]
 
 # Initialize multi-agent debate with the selection function
