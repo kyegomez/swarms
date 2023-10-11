@@ -4,7 +4,7 @@ from swarms.workers import Worker
 
 llm = OpenAIChat(
     model_name='gpt-4',
-    openai_api_key="api-key",
+    openai_api_key="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",
     temperature=0.5
 )
 
@@ -57,9 +57,9 @@ group = GroupChat(
 
 manager = GroupChatManager(
     groupchat=group,
-    # max_consecutive_auto_reply=3,
-    # human_input_mode="NEVER",
-    # system_message="Group chat manager"
+    max_consecutive_auto_reply=3,
+    human_input_mode="NEVER",
+    system_message="Group chat manager"
 )
 
 output = group.run(
