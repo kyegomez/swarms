@@ -1,71 +1,105 @@
-# A Comprehensive Guide to Setting Up OmniWorker: Your Passport to Multimodal Tasks**
+# **OmniModalAgent from Swarms: A Comprehensive Starting Guide**
 
-**Introduction**
-- Introduction to OmniWorker
-- Explanation of its use-cases and importance in multimodal tasks
-- Mention of prerequisites: Git, Python 3.x, Terminal or Command Prompt access
+---
 
-**Chapter 1: Cloning the Necessary Repository**
-- Explanation of Git and its use in version control
-- Step-by-step guide on how to clone the OmniWorker repository
-  ```bash
-  !git clone https://github.com/kyegomez/swarms
-  ```
+**Table of Contents**
 
-**Chapter 2: Navigating to the Cloned Directory**
-- Explanation of directory navigation in the terminal
-  ```bash
-  %cd /swarms
-  ```
+1. Introduction: The OmniModal Magic
+2. The Mechanics: Unraveling the Underpinnings
+3. The Installation Adventure: Setting the Stage
+4. Practical Examples: Let’s Get Our Hands Dirty!
+5. Error Handling: Because Bumps on the Road are Inevitable
+6. Dive Deeper: Advanced Features and Usage
+7. Wrapping Up: The Road Ahead
 
-**Chapter 3: Installing the Required Dependencies**
-- Explanation of Python dependencies and the purpose of `requirements.txt` file
-- Step-by-step installation of dependencies
-  ```bash
-  !pip install -r requirements.txt
-  ```
+---
 
-**Chapter 4: Installing Additional Dependencies**
-- Discussion on the additional dependencies and their roles in OmniWorker
-  ```bash
-  !pip install git+https://github.com/IDEA-Research/GroundingDINO.git
-  !pip install git+https://github.com/facebookresearch/segment-anything.git
-  !pip install faiss-gpu
-  !pip install langchain-experimental
-  ```
+**1. Introduction: The OmniModal Magic**
 
-**Chapter 5: Setting Up Your OpenAI API Key**
-- Explanation of OpenAI API and its key
-- Guide on how to obtain and set up the OpenAI API key
-  ```bash
-  !export OPENAI_API_KEY="your-api-key"
-  ```
+Imagine a world where you could communicate seamlessly across any modality, be it text, image, speech, or even video. Now, stop imagining because OmniModalAgent is here to turn that dream into reality. By leveraging advanced architecture and state-of-the-art tools, it can understand and generate any modality you can think of!
 
-**Chapter 6: Running the OmniModal Agent Script**
-- Discussion on the OmniModal Agent script and its functionality
-- Guide on how to run the script
-  ```bash
-  !python3 omnimodal_agent.py
-  ```
+---
 
-**Chapter 7: Importing the Necessary Modules**
-- Discussion on Python modules and their importance
-- Step-by-step guide on importing necessary modules for OmniWorker
-  ```python
-  from langchain.llms import OpenAIChat
-  from swarms.agents import OmniModalAgent
-  ```
+**2. The Mechanics: Unraveling the Underpinnings**
 
-**Chapter 8: Creating and Running OmniModalAgent Instance**
-- Explanation of OmniModalAgent instance and its role
-- Guide on how to create and run OmniModalAgent instance
-  ```python
-  llm = OpenAIChat()
-  agent = OmniModalAgent(llm)
-  agent.run("Create a video of a swarm of fish")
-  ```
+Dive into the world of OmniModalAgent and let’s decipher how it works:
 
-**Conclusion**
-- Recap of the steps taken to set up OmniWorker
-- Encouragement to explore more functionalities and apply OmniWorker to various multimodal tasks
+- **LLM (Language Model)**: It’s the brain behind understanding and generating language-based interactions.
+- **Chat Planner**: Think of it as the strategist. It lays out the plan for the user's input.
+- **Task Executor**: The doer. Once the plan is ready, this component takes charge to execute tasks.
+- **Tools**: A treasure chest full of tools, from image captioning to translation. 
 
+---
+
+**3. The Installation Adventure: Setting the Stage**
+
+Getting OmniModalAgent up and running is as easy as pie. Ready to bake? 
+
+```bash
+pip install swarms
+```
+
+And voilà, your oven (system) is now equipped to bake any modality cake you desire!
+
+---
+
+**4. Practical Examples: Let’s Get Our Hands Dirty!**
+
+Let’s embark on an exciting journey with OmniModalAgent:
+
+**i. Basic Interaction**:
+
+```python
+from swarms import OmniModalAgent, OpenAIChat
+
+llm = OpenAIChat()
+agent = OmniModalAgent(llm)
+response = agent.run("Hello, how are you? Create an image of how you are doing!")
+print(response)
+```
+
+**ii. Dive into a Conversation**:
+
+```python
+agent = OmniModalAgent(llm)
+print(agent.chat("What's the weather like?"))
+```
+
+---
+
+**5. Error Handling: Because Bumps on the Road are Inevitable**
+
+Errors are like rain, unpredictable but inevitable. Luckily, OmniModalAgent comes with an umbrella. If there's a hiccup during message processing, it’s gracious enough to let you know.
+
+For instance, if there's a bump, you’ll receive:
+
+```python
+Error processing message: [Details of the error]
+```
+
+---
+
+**6. Dive Deeper: Advanced Features and Usage**
+
+The power of OmniModalAgent isn’t just limited to basic interactions. Here’s a sneak peek into its advanced capabilities:
+
+**Streaming Responses**:
+
+Imagine receiving responses as a gentle stream rather than a sudden splash. With the `_stream_response` method, you can achieve just that.
+
+```python
+for token in agent._stream_response(response):
+    print(token)
+```
+
+**The Treasure Chest: Tools**:
+
+OmniModalAgent boasts a plethora of tools, from image captioning to speech-to-text. When you initialize the agent, it equips itself with these tools, ready to tackle any challenge you throw its way.
+
+---
+
+**7. Wrapping Up: The Road Ahead**
+
+You've just scratched the surface of what OmniModalAgent can do. As you explore deeper, you'll discover more of its magic. The world of multi-modality is vast, and with OmniModalAgent as your companion, there's no limit to where you can go.
+
+**Happy Exploring and Coding!** 🚀🎉
