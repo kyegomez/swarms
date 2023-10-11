@@ -7,6 +7,7 @@ class Task:
     """
     Task is a unit of work that can be executed by an agent
     """
+
     def __init__(
         self, id: str, parents: List["Task"] = None, children: List["Task"] = None
     ):
