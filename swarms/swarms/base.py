@@ -3,6 +3,10 @@ from typing import Optional, List
 from swarms.workers.base import AbstractWorker
 
 class AbstractSwarm(ABC):
+    """
+    Abstract class for swarm simulation architectures
+
+    """
     # TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI
     # TODO: ADD Universal Communication Layer, a ocean vectorstore instance
     # TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
@@ -63,3 +67,9 @@ class AbstractSwarm(ABC):
     ):
         """Send a direct message to a worker"""
         pass
+    
+    @abstractmethod
+    def autoscaler(self, num_workers: int, worker: ["AbstractWorker"]):
+        """Autoscaler that acts like kubernetes for autonomous agents"""
+        pass
+    
