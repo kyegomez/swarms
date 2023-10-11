@@ -6,18 +6,17 @@ import glob
 import base64
 from langchain.llms import OpenAIChat
 from swarms.agents import OmniModalAgent
-import gradio_client as grc
-from dspy import Program, Prompt, Finetune, Decompose
-from dspy import Program, Prompt, Finetune, Decompose
-
-grc.Client("Wawaa/omni_bot").deploy_discord()
 
 # Function to convert image to base64
+
+
 def image_to_base64(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode()
 
 # Function to get the most recently created image in the directory
+
+
 def get_latest_image():
     list_of_files = glob.glob('./*.png')  # Replace with your image file type
     if not list_of_files:
@@ -27,13 +26,15 @@ def get_latest_image():
 
 
 # Initialize your OmniModalAgent
-llm = OpenAIChat(model_name="gpt-4")  # Replace with your actual initialization
+llm = OpenAIChat(model_name="gpt-4",openai_api_key="OPENAI_API_KEY")  # Replace with your actual initialization
 agent = OmniModalAgent(llm)  # Replace with your actual initialization
 
 # Global variable to store chat history
 chat_history = []
 
 # Function to update chat
+
+
 def update_chat(user_input):
     global chat_history
     chat_history.append({"type": "user", "content": user_input})
@@ -54,6 +55,8 @@ def update_chat(user_input):
     return render_chat(chat_history)
 
 # Function to render chat as HTML
+
+
 def render_chat(chat_history):
     chat_str = "<div style='max-height:400px;overflow-y:scroll;'>"
     for message in chat_history:
@@ -78,6 +81,8 @@ iface = Interface(
 )
 
 # Function to update the chat display
+
+
 def update_display():
     global chat_history
     while True:
