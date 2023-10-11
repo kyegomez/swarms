@@ -25,6 +25,11 @@ class AbstractSwarm(ABC):
         pass
 
     @abstractmethod
+    def arun(self):
+        """Run the swarm Asynchronously"""
+        pass
+
+    @abstractmethod
     def add_worker(self, worker: "AbstractWorker"):
         """Add a worker to the swarm"""
         pass
