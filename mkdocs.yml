@@ -97,6 +97,7 @@ nav:
     - Overview: "examples/index.md"
     - Agents:
       - OmniAgent: "examples/omni_agent.md"
+    - Worker: "examples/worker.md"
 - Applications:
     - CustomerSupport: 
       - Overview: "applications/customer_support.md"

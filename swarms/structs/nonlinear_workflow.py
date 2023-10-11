@@ -4,6 +4,9 @@ from typing import Dict, List
 
 
 class Task:
+    """
+    Task is a unit of work that can be executed by an agent
+    """
     def __init__(
         self, id: str, parents: List["Task"] = None, children: List["Task"] = None
     ):
@@ -12,9 +15,16 @@ class Task:
         self.children = children
 
     def can_execute(self):
+        """
+        can_execute returns True if the task can be executed
+        """
         raise NotImplementedError
 
     def execute(self):
+        """
+        Execute the task
+
+        """
         raise NotImplementedError
 
 
