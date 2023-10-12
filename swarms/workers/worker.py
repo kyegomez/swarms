@@ -30,7 +30,7 @@ class Worker:
 
     Parameters:
     - `model_name` (str): The name of the language model to be used (default: "gpt-4").
-    - `openai_api_key` (str): The OpenAI API key (optional).
+    - `openai_api_key` (str): The OpenvAI API key (optional).
     - `ai_name` (str): The name of the AI worker.
     - `ai_role` (str): The role of the AI worker.
     - `external_tools` (list): List of external tools (optional).
@@ -142,8 +142,9 @@ class Worker:
         """
         Set up memory for the worker.
         """
+        openai_api_key = os.getenv("OPENAI_API_KEY") or self.openai_api_key
         try:
-            embeddings_model = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+            embeddings_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
             embedding_size = 1536
             index = faiss.IndexFlatL2(embedding_size)
 

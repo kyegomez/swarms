@@ -98,8 +98,9 @@ class SpeechToText:
 
         # 2. Align Whisper output 🔍
         model_a, metadata = whisperx.load_align_model(
-            language_code=result["language"], device=device
+            language_code=result["language"], device=self.device
         )
+
         result = whisperx.align(
             result["segments"],
             model_a,
