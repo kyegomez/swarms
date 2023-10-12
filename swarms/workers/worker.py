@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Optional, Union
+from typing import Dict, Union
 
 import faiss
 from langchain.docstore import InMemoryDocstore
