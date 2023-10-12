@@ -1,7 +1,7 @@
 from langchain.llms import OpenAIChat
 from swarms import Worker
 
-llm = OpenAIChat(model_name="gpt-4", openai_api_key="api-key", temperature=0.5)
+llm = OpenAIChat(model_name="gpt-4", openai_api_, temperature=0.5)
 
 node = Worker(
     llm=llm,
