@@ -317,7 +317,7 @@ def find_json(s):
     s = s.replace("'", '"')
     start = s.find("{")
     end = s.rfind("}")
-    res = s[start: end + 1]
+    res = s[start : end + 1]
     res = res.replace("\n", "")
     return res
 
