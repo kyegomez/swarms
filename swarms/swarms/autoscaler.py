@@ -14,13 +14,13 @@ class AutoScaler:
 
 
     Args:
-        
+
         initial_agents (int, optional): Number of initial agents. Defaults to 10.
         scale_up_factor (int, optional): Scale up factor. Defaults to 1.
         idle_threshold (float, optional): Idle threshold. Defaults to 0.2.
         busy_threshold (float, optional): Busy threshold. Defaults to 0.7.
         agent ([type], optional): Agent. Defaults to None.
-    
+
 
     Methods:
         add_task: Add task to queue
@@ -29,7 +29,7 @@ class AutoScaler:
         monitor_and_scale: Monitor and scale
         start: Start scaling
         del_agent: Delete an agent
-    
+
     Usage
     ```
     # usage of usage
