@@ -207,12 +207,12 @@ def blend_gt2pt(old_image, new_image, sigma=0.15, steps=100):
     kernel[steps:-steps, :steps] = left
     kernel[steps:-steps, -steps:] = right
 
-    pt_gt_img = easy_img[pos_h: pos_h + old_size[1], pos_w: pos_w + old_size[0]]
+    pt_gt_img = easy_img[pos_h : pos_h + old_size[1], pos_w : pos_w + old_size[0]]
     gaussian_gt_img = (
         kernel * gt_img_array + (1 - kernel) * pt_gt_img
     )  # gt img with blur img
     gaussian_gt_img = gaussian_gt_img.astype(np.int64)
-    easy_img[pos_h: pos_h + old_size[1], pos_w: pos_w + old_size[0]] = gaussian_gt_img
+    easy_img[pos_h : pos_h + old_size[1], pos_w : pos_w + old_size[0]] = gaussian_gt_img
     gaussian_img = Image.fromarray(easy_img)
     return gaussian_img
 

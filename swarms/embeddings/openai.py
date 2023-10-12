@@ -347,7 +347,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 disallowed_special=self.disallowed_special,
             )
             for j in range(0, len(token), self.embedding_ctx_length):
-                tokens.append(token[j: j + self.embedding_ctx_length])
+                tokens.append(token[j : j + self.embedding_ctx_length])
                 indices.append(i)
 
         batched_embeddings: List[List[float]] = []
@@ -366,7 +366,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         for i in _iter:
             response = embed_with_retry(
                 self,
-                input=tokens[i: i + _chunk_size],
+                input=tokens[i : i + _chunk_size],
                 **self._invocation_params,
             )
             batched_embeddings.extend(r["embedding"] for r in response["data"])
@@ -428,7 +428,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 disallowed_special=self.disallowed_special,
             )
             for j in range(0, len(token), self.embedding_ctx_length):
-                tokens.append(token[j: j + self.embedding_ctx_length])
+                tokens.append(token[j : j + self.embedding_ctx_length])
                 indices.append(i)
 
         batched_embeddings: List[List[float]] = []
@@ -436,7 +436,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         for i in range(0, len(tokens), _chunk_size):
             response = await async_embed_with_retry(
                 self,
-                input=tokens[i: i + _chunk_size],
+                input=tokens[i : i + _chunk_size],
                 **self._invocation_params,
             )
             batched_embeddings.extend(r["embedding"] for r in response["data"])

@@ -76,7 +76,7 @@ def gen_encoder_output_proposals(
     proposals = []
     _cur = 0
     for lvl, (H_, W_) in enumerate(spatial_shapes):
-        mask_flatten_ = memory_padding_mask[:, _cur: (_cur + H_ * W_)].view(
+        mask_flatten_ = memory_padding_mask[:, _cur : (_cur + H_ * W_)].view(
             N_, H_, W_, 1
         )
         valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1)
