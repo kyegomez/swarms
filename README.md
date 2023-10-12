@@ -103,6 +103,8 @@ for result in results:
 
 ### `Worker`
 - The `Worker` is an fully feature complete agent with an llm, tools, and a vectorstore for long term memory!
+- Place your api key as parameters in the llm if you choose!
+- And, then place the openai api key in the Worker for the openai embedding model
 
 ```python
 from langchain.llms import ChatOpenAI
@@ -117,6 +119,8 @@ llm = ChatOpenAI(
 node = Worker(
     llm=llm,
     ai_name="Optimus Prime",
+    #openai key for the embeddings
+    openai_api_key="sk-eee"
     ai_role="Worker in a swarm",
     external_tools = None,
     human_in_the_loop = False,
