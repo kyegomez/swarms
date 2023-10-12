@@ -2,11 +2,13 @@ from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 from swarms.workers.base import AbstractWorker
 
+
 class AbstractSwarm(ABC):
     """
     Abstract class for swarm simulation architectures
 
     """
+
     # TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI
     # TODO: ADD Universal Communication Layer, a ocean vectorstore instance
     # TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
@@ -67,17 +69,17 @@ class AbstractSwarm(ABC):
     ):
         """Send a direct message to a worker"""
         pass
-    
+
     @abstractmethod
     def autoscaler(self, num_workers: int, worker: ["AbstractWorker"]):
         """Autoscaler that acts like kubernetes for autonomous agents"""
         pass
-    
+
     @abstractmethod
     def get_worker_by_id(self, id: str) -> "AbstractWorker":
         """Locate a worker by id"""
         pass
-    
+
     @abstractmethod
     def get_worker_by_name(self, name: str) -> "AbstractWorker":
         """Locate a worker by name"""
@@ -91,7 +93,7 @@ class AbstractSwarm(ABC):
     @abstractmethod
     def get_all_tasks(self, worker: "AbstractWorker", task: Any):
         """Get all tasks"""
-    
+
     @abstractmethod
     def get_finished_tasks(self) -> List[Dict]:
         """Get all finished tasks"""
@@ -156,6 +158,3 @@ class AbstractSwarm(ABC):
     def save_swarm_state(self):
         """Save the swarm state"""
         pass
-
-
-
