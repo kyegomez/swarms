@@ -1,7 +1,7 @@
-from .tool import Tool
+from swarms.tools.tool import tool
 from typing import Dict, Callable, Any, List
 
-ToolBuilder = Callable[[Any], Tool]
+ToolBuilder = Callable[[Any], tool]
 FuncToolBuilder = Callable[[], ToolBuilder]
 
 
@@ -13,9 +13,9 @@ class ToolsRegistry:
         print(f"will register {tool_name}")
         self.tools[tool_name] = tool
 
-    def build(self, tool_name, config) -> Tool:
+    def build(self, tool_name, config):
         ret = self.tools[tool_name]()(config)
-        if isinstance(ret, Tool):
+        if isinstance(ret, tool):
             return ret
         raise ValueError(
             "Tool builder {} did not return a Tool instance".format(tool_name)
@@ -36,7 +36,7 @@ def register(tool_name):
     return decorator
 
 
-def build_tool(tool_name: str, config: Any) -> Tool:
+def build_tool(tool_name: str, config: Any) -> tool:
     print(f"will build {tool_name}")
     return tools_registry.build(tool_name, config)
 
