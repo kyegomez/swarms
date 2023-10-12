@@ -1,11 +1,12 @@
 from langchain.llms import OpenAIChat
 from swarms import Worker
 
-llm = OpenAIChat(model_name="gpt-4", openai_api_, temperature=0.5)
+llm = OpenAIChat(model_name="gpt-4", openai_api_key="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", temperature=0.5)
 
 node = Worker(
     llm=llm,
     ai_name="Optimus Prime",
+    openai_api_key="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",
     ai_role="Worker in a swarm",
     external_tools=None,
     human_in_the_loop=False,
