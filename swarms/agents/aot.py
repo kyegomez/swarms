@@ -2,7 +2,7 @@ import logging
 import os
 import time
 
-import openai
+import openai_model
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -22,7 +22,7 @@ class OpenAI:
         if api_key == "" or api_key is None:
             api_key = os.environ.get("OPENAI_API_KEY", "")
         if api_key != "":
-            openai.api_key = api_key
+            openai_model.api_key = api_key
         else:
             raise Exception("Please provide OpenAI API key")
 
@@ -32,7 +32,7 @@ class OpenAI:
             )  # if not set, use the default base path of "https://api.openai.com/v1"
         if api_base != "":
             # e.g. https://api.openai.com/v1/ or your custom url
-            openai.api_base = api_base
+            openai_model.api_base = api_base
             print(f"Using custom api_base {api_base}")
 
         if api_model == "" or api_model is None:
@@ -52,14 +52,14 @@ class OpenAI:
             try:
                 if self.use_chat_api:
                     messages = [{"role": "user", "content": prompt}]
-                    response = openai.ChatCompletion.create(
+                    response = openai_model.ChatCompletion.create(
                         model=self.api_model,
                         messages=messages,
                         max_tokens=max_tokens,
                         temperature=temperature,
                     )
                 else:
-                    response = openai.Completion.create(
+                    response = openai_model.Completion.create(
                         engine=self.api_model,
                         prompt=prompt,
                         n=k,
@@ -72,7 +72,7 @@ class OpenAI:
                         "\n" + "-----------" + "\n" + "Prompt : " + prompt + "\n"
                     )
                 return response
-            except openai.error.RateLimitError as e:
+            except openai_model.error.RateLimitError as e:
                 sleep_duratoin = os.environ.get("OPENAI_RATE_TIMEOUT", 30)
                 print(
                     f"{str(e)}, sleep for {sleep_duratoin}s, set it by env OPENAI_RATE_TIMEOUT"

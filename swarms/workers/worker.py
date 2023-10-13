@@ -14,7 +14,7 @@ from swarms.tools.autogpt import (
     ReadFileTool,
     WebpageQATool,
     WriteFileTool,
-    compile,
+    # compile,
     load_qa_with_sources_chain,
     process_csv,
 )
@@ -138,7 +138,7 @@ class Worker:
             process_csv,
             query_website_tool,
             HumanInputRun(),
-            compile,
+            # compile,
             # VQAinference,
         ]
         if external_tools is not None:
