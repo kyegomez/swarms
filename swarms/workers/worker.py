@@ -1,3 +1,4 @@
+import random
 import os
 from typing import Dict, Union
 
@@ -73,6 +74,11 @@ class Worker:
         self.openai_api_key = openai_api_key
         self.ai_name = ai_name
         self.ai_role = ai_role
+        self.coordinates = (
+            random.randint(0, 100),
+            random.randint(0, 100),
+        )  # example coordinates for proximity
+
         self.setup_tools(external_tools)
         self.setup_memory()
         self.setup_agent()
@@ -281,3 +287,11 @@ class Worker:
             return {"content": message}
         else:
             return message
+
+    def is_within_proximity(self, other_worker):
+        """Using Euclidean distance for proximity check"""
+        distance = (
+            (self.coordinates[0] - other_worker.coordinates[0]) ** 2
+            + (self.coordinates[1] - other_worker.coordinates[1]) ** 2
+        ) ** 0.5
+        return distance < 10  # threshold for proximity
