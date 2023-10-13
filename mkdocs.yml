@@ -78,6 +78,7 @@ nav:
 - Swarms:
   - Overview: "swarms/index.md"
   - swarms.swarms:
+    - AbstractSwarm: "swarms/swarms/abstractswarm.md"
     - AutoScaler: "swarms/swarms/autoscaler.md"
   - swarms.workers:
     - Overview: "swarms/workers/index.md"
