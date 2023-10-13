@@ -3,6 +3,21 @@ from swarms.workers.worker import Worker
 
 
 class DialogueSimulator:
+    """
+    Dialogue Simulator
+    ------------------
+
+    Args:
+    ------
+
+
+    Usage:
+    --------
+
+
+
+    """
+
     def __init__(self, agents: List[Worker]):
         self.agents = agents
 
