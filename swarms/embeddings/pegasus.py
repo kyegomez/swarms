@@ -1,12 +1,38 @@
 import logging
 from typing import Union
-from pegasus import Pegasus
 
-# import oceandb
-# from oceandb.utils.embedding_functions import MultiModalEmbeddingfunction
+from pegasus import Pegasus
 
 
 class PegasusEmbedding:
+    """
+    Pegasus
+
+    Args:
+        modality (str): Modality to use for embedding
+        multi_process (bool, optional): Whether to use multi-process. Defaults to False.
+        n_processes (int, optional): Number of processes to use. Defaults to 4.
+
+    Usage:
+    --------------
+    pegasus = PegasusEmbedding(modality="text")
+    pegasus.embed("Hello world")
+
+
+    vision
+    --------------
+    pegasus = PegasusEmbedding(modality="vision")
+    pegasus.embed("https://i.imgur.com/1qZ0K8r.jpeg")
+
+    audio
+    --------------
+    pegasus = PegasusEmbedding(modality="audio")
+    pegasus.embed("https://www2.cs.uic.edu/~i101/SoundFiles/StarWars60.wav")
+
+
+
+    """
+
     def __init__(
         self, modality: str, multi_process: bool = False, n_processes: int = 4
     ):
@@ -22,6 +48,7 @@ class PegasusEmbedding:
             raise
 
     def embed(self, data: Union[str, list[str]]):
+        """Embed the data"""
         try:
             return self.pegasus.embed(data)
         except Exception as e:
