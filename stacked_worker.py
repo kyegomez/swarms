@@ -8,7 +8,7 @@ from swarms.models import OpenAIChat
 from swarms.tools.autogpt import tool
 from swarms.workers import Worker
 
-#Initialize API Key
+# Initialize API Key
 api_key = ""
 
 
@@ -19,7 +19,8 @@ llm = OpenAIChat(
     temperature=0.5,
 )
 
-#wrap a function with the tool decorator to make it a tool, then add docstrings for tool documentation
+
+# wrap a function with the tool decorator to make it a tool, then add docstrings for tool documentation
 @tool
 def hf_agent(task: str = None):
     """
@@ -34,7 +35,7 @@ def hf_agent(task: str = None):
     return response
 
 
-#wrap a function with the tool decorator to make it a tool
+# wrap a function with the tool decorator to make it a tool
 @tool
 def omni_agent(task: str = None):
     """
@@ -42,7 +43,7 @@ def omni_agent(task: str = None):
 
     Rules: Don't call this model for simple tasks like generating a summary, only call this tool for multi modal tasks like generating images, videos, speech
     The following tasks are what this tool should be used for:
-    
+
     Tasks omni agent is good for:
     --------------
     document-question-answering
@@ -63,6 +64,7 @@ def omni_agent(task: str = None):
     agent = OmniModalAgent(llm)
     response = agent.run(task)
     return response
+
 
 # Code Interpreter
 @tool
@@ -92,15 +94,10 @@ def compile(task: str):
 
 
 # Append tools to an list
-tools = [
-    hf_agent,
-    omni_agent,
-    compile
-
-]
+tools = [hf_agent, omni_agent, compile]
 
 
-#Initialize a single Worker node with previously defined tools in addition to it's
+# Initialize a single Worker node with previously defined tools in addition to it's
 # predefined tools
 node = Worker(
     llm=llm,
@@ -112,7 +109,7 @@ node = Worker(
     temperature=0.5,
 )
 
-#Specify task
+# Specify task
 task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
 
 # Run the node on the task
