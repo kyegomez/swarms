@@ -101,7 +101,7 @@ nav:
       - OmniAgent: "examples/omni_agent.md"
     - Worker: 
       - Basic: "examples/worker.md"
-      - StackedWorker: "examplses"
+      - StackedWorker: "examples/stacked_worker.md"
     
 - Applications:
     - CustomerSupport: 
