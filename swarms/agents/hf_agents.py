@@ -370,7 +370,7 @@ class Agent:
         return [self.generate_one(prompt, stop) for prompt in prompts]
 
 
-class OpenAIModel(Agent):
+class HFAgent(Agent):
     """
     Agent that uses the openai API to generate code.
 
@@ -401,7 +401,7 @@ class OpenAIModel(Agent):
     Example:
 
     ```py
-    from swarms.models import OpenAI
+    from swarms.agents.hf_agents import HFAgent
 
     agent = OpenAiAgent(model="text-davinci-003", api_key=xxx)
     agent.run("Is the following `text` (in Spanish) positive or negative?", text="¡Este es un API muy agradable!")
