@@ -1,5 +1,5 @@
 from swarms.structs.workflow import Workflow, StringTask
-from langchain.llms import OpenAIChat
+from swarms.models import OpenAIChat
 
 
 llm = OpenAIChat()

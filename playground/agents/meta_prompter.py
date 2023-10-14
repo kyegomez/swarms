@@ -1,6 +1,6 @@
 from swarms.workers import Worker
 from swarms.agents.meta_prompter import MetaPrompterAgent
-from langchain.llms import OpenAI
+from swarms.models import OpenAI
 
 # init llm
 llm = OpenAI()
