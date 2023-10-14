@@ -5,6 +5,8 @@
 # from swarms.agents.aot import AoTAgent
 # from swarms.agents.multi_modal_visual_agent import MultiModalAgent
 from swarms.agents.omni_modal_agent import OmniModalAgent
+from swarms.agents.hf_agents import HFAgent
+
 
 
 # utils
