@@ -1,8 +1,12 @@
-from swarms.models import OpenAIChat
-from swarms.workers import Worker
-from swarms.tools.autogpt import tool
+import os
+
+import interpreter
+
 from swarms.agents.hf_agents import HFAgent
 from swarms.agents.omni_modal_agent import OmniModalAgent
+from swarms.models import OpenAIChat
+from swarms.tools.autogpt import tool
+from swarms.workers import Worker
 
 #Initialize API Key
 api_key = ""
@@ -15,7 +19,7 @@ llm = OpenAIChat(
     temperature=0.5,
 )
 
-#wrap a function with the tool decorator to make it a tool
+#wrap a function with the tool decorator to make it a tool, then add docstrings for tool documentation
 @tool
 def hf_agent(task: str = None):
     """
@@ -60,11 +64,39 @@ def omni_agent(task: str = None):
     response = agent.run(task)
     return response
 
+# Code Interpreter
+@tool
+def compile(task: str):
+    """
+    Open Interpreter lets LLMs run code (Python, Javascript, Shell, and more) locally.
+    You can chat with Open Interpreter through a ChatGPT-like interface in your terminal
+    by running $ interpreter after installing.
+
+    This provides a natural-language interface to your computer's general-purpose capabilities:
+
+    Create and edit photos, videos, PDFs, etc.
+    Control a Chrome browser to perform research
+    Plot, clean, and analyze large datasets
+    ...etc.
+    ⚠️ Note: You'll be asked to approve code before it's run.
+
+    Rules: Only use when given to generate code or an application of some kind
+    """
+    task = interpreter.chat(task, return_messages=True)
+    interpreter.chat()
+    interpreter.reset(task)
+
+    os.environ["INTERPRETER_CLI_AUTO_RUN"] = True
+    os.environ["INTERPRETER_CLI_FAST_MODE"] = True
+    os.environ["INTERPRETER_CLI_DEBUG"] = True
+
+
 # Append tools to an list
 tools = [
     hf_agent,
     omni_agent,
-    
+    compile
+
 ]
 
 
