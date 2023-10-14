@@ -6,9 +6,23 @@ from swarms.agents.message import Message
 
 class Mistral:
     """
-    Mistral
+    Mistral is an all-new llm
+
+    Args:
+        ai_name (str, optional): Name of the AI. Defaults to "Mistral".
+        system_prompt (str, optional): System prompt. Defaults to None.
+        model_name (str, optional): Model name. Defaults to "mistralai/Mistral-7B-v0.1".
+        device (str, optional): Device to use. Defaults to "cuda".
+        use_flash_attention (bool, optional): Whether to use flash attention. Defaults to False.
+        temperature (float, optional): Temperature. Defaults to 1.0.
+        max_length (int, optional): Max length. Defaults to 100.
+        do_sample (bool, optional): Whether to sample. Defaults to True.
+    
+    Usage:
+    from swarms.models import Mistral
 
     model = Mistral(device="cuda", use_flash_attention=True, temperature=0.7, max_length=200)
+    
     task = "My favourite condiment is"
     result = model.run(task)
     print(result)
