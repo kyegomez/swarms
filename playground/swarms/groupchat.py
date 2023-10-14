@@ -1,4 +1,4 @@
-from langchain.llms import OpenAIChat
+from swarms.models import OpenAIChat
 from swarms.swarms import GroupChat, GroupChatManager
 from swarms.workers import Worker
 
