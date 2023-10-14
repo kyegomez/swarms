@@ -1,5 +1,5 @@
 from discord.ext import commands
-from langchain.llms import OpenAIChat
+from swarms.models import OpenAIChat
 from swarms.agents import OmniModalAgent
 
 # Setup

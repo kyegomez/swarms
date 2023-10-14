@@ -1,4 +1,4 @@
-from langchain.llms import OpenAIChat
+from swarms.models import OpenAIChat
 from swarms.agents import OmniModalAgent
 
 

@@ -1,6 +1,6 @@
 from swarms.swarms import DialogueSimulator
 from swarms.workers.worker import Worker
-from langchain.llms import OpenAIChat
+from swarms.models import OpenAIChat
 
 llm = OpenAIChat(model_name="gpt-4", openai_api_key="api-key", temperature=0.5)
 
