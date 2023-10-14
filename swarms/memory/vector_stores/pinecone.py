@@ -93,7 +93,7 @@ class PineconeVectorStoreStore(BaseVector):
     index: pinecone.Index = field(init=False)
 
     def __attrs_post_init__(self) -> None:
-        """ Post init"""
+        """Post init"""
         pinecone.init(
             api_key=self.api_key,
             environment=self.environment,
@@ -122,7 +122,7 @@ class PineconeVectorStoreStore(BaseVector):
     def load_entry(
         self, vector_id: str, namespace: Optional[str] = None
     ) -> Optional[BaseVector.Entry]:
-        """Load entry """
+        """Load entry"""
         result = self.index.fetch(ids=[vector_id], namespace=namespace).to_dict()
         vectors = list(result["vectors"].values())
 
