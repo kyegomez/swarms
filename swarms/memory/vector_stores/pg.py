@@ -81,7 +81,7 @@ class PgVectorVectorStore(BaseVectorStore):
     >>>     namespace="your-namespace"
     >>> )
 
-    
+
     """
 
     connection_string: Optional[str] = field(default=None, kw_only=True)

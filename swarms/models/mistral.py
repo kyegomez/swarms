@@ -17,12 +17,12 @@ class Mistral:
         temperature (float, optional): Temperature. Defaults to 1.0.
         max_length (int, optional): Max length. Defaults to 100.
         do_sample (bool, optional): Whether to sample. Defaults to True.
-    
+
     Usage:
     from swarms.models import Mistral
 
     model = Mistral(device="cuda", use_flash_attention=True, temperature=0.7, max_length=200)
-    
+
     task = "My favourite condiment is"
     result = model.run(task)
     print(result)
