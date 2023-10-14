@@ -50,11 +50,12 @@ Let’s embark on an exciting journey with OmniModalAgent:
 **i. Basic Interaction**:
 
 ```python
-from swarms import OmniModalAgent, OpenAIChat
+from swarms.agents import OmniModalAgent
+from swarms.models import OpenAIChat
 
-llm = OpenAIChat()
+llm = OpenAIChat(openai_api_key="sk-")
 agent = OmniModalAgent(llm)
-response = agent.run("Hello, how are you? Create an image of how you are doing!")
+response = agent.run("Create an video of a swarm of fish concept art, game art") 
 print(response)
 ```
 
