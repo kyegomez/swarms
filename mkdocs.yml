@@ -99,7 +99,10 @@ nav:
     - Overview: "examples/index.md"
     - Agents:
       - OmniAgent: "examples/omni_agent.md"
-    - Worker: "examples/worker.md"
+    - Worker: 
+      - Basic: "examples/worker.md"
+      - StackedWorker: "examplses"
+    
 - Applications:
     - CustomerSupport: 
       - Overview: "applications/customer_support.md"
