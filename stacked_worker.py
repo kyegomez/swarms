@@ -64,6 +64,7 @@ def omni_agent(task: str = None):
 tools = [
     hf_agent,
     omni_agent,
+    
 ]
 
 
