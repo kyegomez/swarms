@@ -16,4 +16,3 @@ class AbstractModel(ABC):
 
     def __call__(self, task):
         pass
-    
