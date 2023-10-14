@@ -12,7 +12,7 @@ from pgvector.sqlalchemy import Vector
 
 
 @define
-class PgVectorVectorStoreDriver(BaseVectorStoreDriver):
+class PgVectorVectorStore(BaseVector):
     """A vector store driver to Postgres using the PGVector extension.
 
     Attributes:
