@@ -13,3 +13,7 @@ class AbstractModel(ABC):
 
     def chat(self, prompt, history):
         pass
+
+    def __call__(self, task):
+        pass
+    
