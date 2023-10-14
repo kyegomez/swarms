@@ -94,7 +94,9 @@ nav:
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"
-    
+  - swarms.memory:
+    - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
+    - PGVectorStore: "swarms/memory/pg.md"
 - Examples:
     - Overview: "examples/index.md"
     - Agents:

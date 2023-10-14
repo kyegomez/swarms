@@ -13,5 +13,5 @@ class MarkdownChunker(BaseChunker):
         ChunkSeparator(". "),
         ChunkSeparator("! "),
         ChunkSeparator("? "),
-        ChunkSeparator(" ")
+        ChunkSeparator(" "),
     ]
