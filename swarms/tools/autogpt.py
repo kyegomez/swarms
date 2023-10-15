@@ -146,7 +146,6 @@ class WebpageQATool(BaseTool):
         raise NotImplementedError
 
 
-
 @tool
 def VQAinference(self, inputs):
     """
