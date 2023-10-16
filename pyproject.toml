@@ -50,7 +50,9 @@ open-interpreter = "*"
 tabulate = "*"
 termcolor = "*"
 black = "*"
-dalle = "*"
+dalle3 = "*"
+torchvision = "*"
+
 
 [tool.poetry.dev-dependencies]
 first_dependency = {git = "https://github.com/IDEA-Research/GroundingDINO.git"}
