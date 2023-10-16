@@ -92,6 +92,7 @@ nav:
     - Overview: "swarms/models/index.md"
     - HuggingFaceLLM: "swarms/models/hf.md"
     - Anthropic: "swarms/models/anthropic.md"
+    - OpenAI: "swarms/modeks/openai.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"
