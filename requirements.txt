@@ -51,6 +51,7 @@ transformers
 webdataset
 yapf
 autopep8
+dalle3
 
 
 mkdocs
