@@ -87,6 +87,7 @@ nav:
   - swarms.agents:
     - AbstractAgent: "swarms/agents/abstract_agent.md"
     - OmniModalAgent: "swarms/agents/omni_agent.md"
+    - Idea2Image: "swarms/agents/idea_to_image.md"
   - swarms.models:
     - Overview: "swarms/models/index.md"
     - HuggingFaceLLM: "swarms/models/hf.md"
