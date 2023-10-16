@@ -108,4 +108,3 @@ class Idea2Image:
 
         # Download the images to your specified folder
         self.dalle.download(urls, self.output_folder)
-
