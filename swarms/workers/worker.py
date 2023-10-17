@@ -40,7 +40,7 @@ class Worker:
     - `llm` (ChatOpenAI): Pre-initialized ChatOpenAI model instance (optional).
     - `openai` (bool): If True, use the OpenAI language model; otherwise, use `llm` (default: True).
 
-    #Usage
+    Usage
     ```
     from swarms import Worker
 
@@ -91,6 +91,7 @@ class Worker:
 
     @property
     def name(self):
+        """Name of the agent"""
         return self.ai_name
 
     def receieve(self, name: str, message: str) -> None:
@@ -104,9 +105,11 @@ class Worker:
         self.message_history.append(f"{name}: {message}")
 
     def send(self) -> str:
+        """Send message history."""
         self.agent.run(task=self.message_history)
 
     def add(self, task, priority=0):
+        """Add a task to the task queue."""
         self.task_queue.append((priority, task))
 
     def setup_tools(self, external_tools):
