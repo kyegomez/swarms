@@ -26,9 +26,6 @@ At Swarms, we're transforming the landscape of AI from siloed AI agents to a uni
 Book a [1-on-1 Session with Kye](https://calendly.com/apacai/agora), the Creator, to discuss any issues, provide feedback, or explore how we can improve Swarms for you.
 
 
-## Hiring
-We're hiring: Engineers, Researchers, Interns And, salesprofessionals to work on democratizing swarms, email me at with your story at `kye@apac.ai`
-
 ----------
 
 ## Installation
@@ -183,10 +180,6 @@ We're always looking for contributors to help us improve and expand this project
 Thank you for being a part of our project!
 
 ---
-# Roadmap
-
-Please checkout our [Roadmap](DOCS/ROADMAP.md) and consider contributing to make the dream of Swarms real to advance Humanity.
-
 ## Optimization Priorities
 
 1. **Reliability**: Increase the reliability of the swarm - obtaining the desired output with a basic and un-detailed input.
@@ -196,24 +189,6 @@ Please checkout our [Roadmap](DOCS/ROADMAP.md) and consider contributing to make
 3. **Scalability**: Ensure that the system is asynchronous, concurrent, and self-healing to support scalability.
 
 Our goal is to continuously improve Swarms by following this roadmap, while also being adaptable to new needs and opportunities as they arise.
-
----
-
-# Bounty Program
-
-Our bounty program is an exciting opportunity for contributors to help us build the future of Swarms. By participating, you can earn rewards while contributing to a project that aims to revolutionize digital activity.
-
-Here's how it works:
-
-1. **Check out our Roadmap**: We've shared our roadmap detailing our short and long-term goals. These are the areas where we're seeking contributions.
-
-2. **Pick a Task**: Choose a task from the roadmap that aligns with your skills and interests. If you're unsure, you can reach out to our team for guidance.
-
-3. **Get to Work**: Once you've chosen a task, start working on it. Remember, quality is key. We're looking for contributions that truly make a difference.
-
-4. **Submit your Contribution**: Once your work is complete, submit it for review. We'll evaluate your contribution based on its quality, relevance, and the value it brings to Swarms.
-
-5. **Earn Rewards**: If your contribution is approved, you'll earn a bounty. The amount of the bounty depends on the complexity of the task, the quality of your work, and the value it brings to Swarms.
 
 ---
 
@@ -232,21 +207,6 @@ Remember, our roadmap is a guide, and we encourage you to bring your own ideas a
 
 <!-- **To participate in our bounty program, visit the [Swarms Bounty Program Page](https://swarms.ai/bounty).** Let's build the future together! -->
 
-
-
----
-
-# EcoSystem
-
-* [The-Compiler, compile natural language into serene, reliable, and secure programs](https://github.com/kyegomez/the-compiler)
-
-*[The Replicator, an autonomous swarm that conducts Multi-Modal AI research by creating new underlying mathematical operations and models](https://github.com/kyegomez/The-Replicator)
-
-* Make a swarm that checks arxviv for papers -> checks if there is a github link -> then implements them and checks them
-
-* [SwarmLogic, where a swarm is your API, database, and backend!](https://github.com/kyegomez/SwarmLogic)
-
----
 
 # Demos
 
