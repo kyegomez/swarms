@@ -162,52 +162,6 @@ For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
 -----
 
-# Docker Setup
-The docker file is located in the docker folder in the `infra` folder, [click here and navigate here in your environment](/infra/Docker)
-
-* Build the Docker image
-
-* You can build the Docker image using the provided Dockerfile. Navigate to the infra/Docker directory where the Dockerfiles are located.
-
-* For the CPU version, use:
-
-```bash
-docker build -t swarms-api:latest -f Dockerfile.cpu .
-```
-For the GPU version, use:
-
-```bash
-docker build -t swarms-api:gpu -f Dockerfile.gpu .
-```
-### Run the Docker container
-
-After building the Docker image, you can run the Swarms API in a Docker container. Replace your_redis_host and your_redis_port with your actual Redis host and port.
-
-For the CPU version:
-
-```bash
-docker run -p 8000:8000 -e REDIS_HOST=your_redis_host -e REDIS_PORT=your_redis_port swarms-api:latest
-```
-
-## For the GPU version:
-```bash
-docker run --gpus all -p 8000:8000 -e REDIS_HOST=your_redis_host -e REDIS_PORT=your_redis_port swarms-api:gpu
-```
-
-## Access the Swarms API
-
-* The Swarms API will be accessible at http://localhost:8000. You can use tools like curl or Postman to send requests to the API.
-
-Here's an example curl command to send a POST request to the /chat endpoint:
-
-```bash
-curl -X POST -H "Content-Type: application/json" -d '{"api_key": "your_openai_api_key", "objective": "your_objective"}' http://localhost:8000/chat
-```
-Replace your_openai_api_key and your_objective with your actual OpenAI API key and objective.
-
-----
-
-
 # ✨ Features
 * Easy to use Base LLMs, `OpenAI` `Palm` `Anthropic` `HuggingFace`
 * Enterprise Grade, Production Ready with robust Error Handling
