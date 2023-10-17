@@ -52,6 +52,7 @@ termcolor = "*"
 black = "*"
 dalle3 = "*"
 torchvision = "*"
+rich = "*"
 
 
 [tool.poetry.dev-dependencies]
