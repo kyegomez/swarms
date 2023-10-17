@@ -53,6 +53,7 @@ yapf
 autopep8
 dalle3
 torchvision
+rich
 
 
 mkdocs
