@@ -180,7 +180,7 @@ class Worker:
         except Exception as error:
             raise RuntimeError(f"Error setting up agent: {error}")
 
-    @log_decorator
+    # @log_decorator
     @error_decorator
     @timing_decorator
     def run(self, task: str = None):
@@ -199,7 +199,7 @@ class Worker:
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")
 
-    @log_decorator
+    # @log_decorator
     @error_decorator
     @timing_decorator
     def __call__(self, task: str = None):
@@ -221,7 +221,7 @@ class Worker:
     def health_check(self):
         pass
 
-    @log_decorator
+    # @log_decorator
     @error_decorator
     @timing_decorator
     def chat(self, msg: str = None, streaming: bool = False):
