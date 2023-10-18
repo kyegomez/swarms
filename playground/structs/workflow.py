@@ -1,4 +1,4 @@
-from swarms.structs.workflow import Workflow, StringTask
+from swarms.structs.workflow import Workflow
 from swarms.models import OpenAIChat
 
 

@@ -1,6 +1,5 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from swarms.swarms.scalable_groupchat import ScalableGroupChat, Worker
+from unittest.mock import patch
+from swarms.swarms.scalable_groupchat import ScalableGroupChat
 
 
 def test_scalablegroupchat_initialization():
@@ -18,7 +17,7 @@ def test_scalablegroupchat_embed(mock_openaiembeddingfunction):
     scalablegroupchat = ScalableGroupChat(
         worker_count=5, collection_name="swarm", api_key="api_key"
     )
-    result = scalablegroupchat.embed("input", "model_name")
+    scalablegroupchat.embed("input", "model_name")
     assert mock_openaiembeddingfunction.call_count == 1
 
 
@@ -27,7 +26,7 @@ def test_scalablegroupchat_retrieve_results(mock_query):
     scalablegroupchat = ScalableGroupChat(
         worker_count=5, collection_name="swarm", api_key="api_key"
     )
-    result = scalablegroupchat.retrieve_results(1)
+    scalablegroupchat.retrieve_results(1)
     assert mock_query.call_count == 1
 
 

@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from swarms.embeddings.pegasus import PegasusEmbedding
 
 
@@ -13,7 +13,7 @@ def test_init():
 def test_init_exception():
     with patch("your_module.Pegasus", side_effect=Exception("Test exception")):
         with pytest.raises(Exception) as e:
-            embedder = PegasusEmbedding(modality="text")
+            PegasusEmbedding(modality="text")
         assert str(e.value) == "Test exception"
 
 

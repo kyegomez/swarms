@@ -15,7 +15,7 @@ def test_init_exception():
     with patch("oceandb.Client") as MockClient:
         MockClient.side_effect = Exception("Client error")
         with pytest.raises(Exception) as e:
-            db = OceanDB(MockClient)
+            OceanDB(MockClient)
         assert str(e.value) == "Client error"
 
 

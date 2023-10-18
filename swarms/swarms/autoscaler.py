@@ -113,5 +113,5 @@ class AutoScaler:
         """Delete an agent"""
         with self.lock:
             if self.agents_pool:
-                agent_to_remove = self.agents_poo.pop()
+                self.agents_poo.pop()
                 del agent_to_remove
