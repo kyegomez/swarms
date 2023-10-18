@@ -7,6 +7,7 @@ from voice import transcribe
 
 dotenv.load_dotenv(".env")
 
+bot_id = os.getenv("BOT_ID")
 bot_token = os.getenv("DISCORD_TOKEN")
 
 interpreter.api_key = os.getenv("API_KEY")
@@ -28,7 +29,8 @@ send_image = False
 @client.event
 async def on_message(message):
     await client.process_commands(message)
-    if ('<@1158923910855798804>' not in message.content) or (message.author == client.user or message.content[0] == '$'):
+    bot_mention = f"<@{bot_id}>"
+    if (bot_mention in message.content) or (message.author == client.user or message.content[0] == '$'):
         return
     response = []
     for chunk in interpreter.chat(message.content, display=False, stream=False):
