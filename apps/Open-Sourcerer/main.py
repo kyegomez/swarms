@@ -4,7 +4,7 @@ from discord.ext import commands
 import interpreter
 import dotenv
 import whisper
-from jarvis import transcribe
+from voice import transcribe
 
 dotenv.load_dotenv(".env")
 
