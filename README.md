@@ -175,9 +175,7 @@ For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 -----
 
 ## Contribute
-We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](DOCS/C0NTRIBUTING.md).
-
-Thank you for being a part of our project!
+We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](C0NTRIBUTING.md).
 
 ---
 ## Optimization Priorities
