@@ -54,9 +54,9 @@ def test_query():
 
 
 def test_create_index():
-    with patch("pinecone.init"), patch(
-        "pinecone.Index"
-    ), patch("pinecone.create_index") as MockCreateIndex:
+    with patch("pinecone.init"), patch("pinecone.Index"), patch(
+        "pinecone.create_index"
+    ) as MockCreateIndex:
         store = PineconeVectorStore(
             api_key=api_key, index_name="test_index", environment="test_env"
         )
