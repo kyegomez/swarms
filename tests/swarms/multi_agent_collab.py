@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from swarms.swarms.multi_agent_collab import (
     MultiAgentCollaboration,
     Worker,
@@ -41,7 +40,7 @@ def test_multiagentcollaboration_step(mock_receive, mock_send):
     multiagentcollaboration = MultiAgentCollaboration(
         agents=[Worker] * 5, selection_function=select_next_speaker
     )
-    result = multiagentcollaboration.step()
+    multiagentcollaboration.step()
     assert multiagentcollaboration._step == 1
     assert mock_send.call_count == 5
     assert mock_receive.call_count == 25

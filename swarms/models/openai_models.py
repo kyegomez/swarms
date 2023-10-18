@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import sys
-import warnings
 from typing import (
     AbstractSet,
     Any,
@@ -209,7 +208,7 @@ class BaseOpenAI(BaseLLM):
 
     def __new__(cls, **data: Any) -> Union[OpenAIChat, BaseOpenAI]:  # type: ignore
         """Initialize the OpenAI object."""
-        model_name = data.get("model_name", "")
+        data.get("model_name", "")
         return super().__new__(cls)
 
     class Config:

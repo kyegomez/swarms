@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 from swarms.structs.workflow import Workflow
 
@@ -9,7 +8,7 @@ def test_workflow_initialization():
     assert isinstance(workflow, Workflow)
     assert workflow.agent == agent
     assert workflow.tasks == []
-    assert workflow.parallel == False
+    assert workflow.parallel is False
 
 
 def test_workflow_add():
@@ -20,14 +19,14 @@ def test_workflow_add():
     assert task.task == "What's the weather in miami"
     assert task.parents == []
     assert task.children == []
-    assert task.output == None
+    assert task.output is None
     assert task.structure == workflow
 
 
 def test_workflow_first_task():
     agent = MagicMock()
     workflow = Workflow(agent)
-    assert workflow.first_task() == None
+    assert workflow.first_task() is None
     workflow.add("What's the weather in miami")
     assert workflow.first_task().task == "What's the weather in miami"
 
@@ -35,7 +34,7 @@ def test_workflow_first_task():
 def test_workflow_last_task():
     agent = MagicMock()
     workflow = Workflow(agent)
-    assert workflow.last_task() == None
+    assert workflow.last_task() is None
     workflow.add("What's the weather in miami")
     assert workflow.last_task().task == "What's the weather in miami"
 

@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from swarms.swarms.multi_agent_debate import MultiAgentDebate, Worker, select_speaker
 
 

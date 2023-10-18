@@ -1,6 +1,5 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from swarms.swarms.simple_swarm import SimpleSwarm, Worker
+from unittest.mock import patch
+from swarms.swarms.simple_swarm import SimpleSwarm
 
 
 def test_simpleswarm_initialization():
@@ -28,7 +27,7 @@ def test_simpleswarm_process_task(mock_run):
     simpleswarm = SimpleSwarm(
         num_workers=5, openai_api_key="api_key", ai_name="ai_name"
     )
-    result = simpleswarm._process_task("task1")
+    simpleswarm._process_task("task1")
     assert mock_run.call_count == 5
 
 
