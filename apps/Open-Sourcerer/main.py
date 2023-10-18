@@ -13,7 +13,7 @@ bot_id = os.getenv("BOT_ID")
 
 # interpreter.api_key = os.getenv("API_KEY")
 # interpreter.api_base = os.getenv("API_BASE")
-# interpreter.auto_run = True
+interpreter.auto_run = True
 
 
 def split_text(text, chunk_size=1500):
