@@ -33,7 +33,7 @@ class Fuyu:
     def __init__(
         self,
         pretrained_path: str = "adept/fuyu-8b",
-        device_map: str = "cuda",
+        device_map: str = "cuda:0",
         max_new_tokens: int = 7,
     ):
         self.pretrained_path = pretrained_path
