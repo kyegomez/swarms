@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from swarms.models.mistral import Mistral
 
 
@@ -7,10 +6,10 @@ def test_mistral_initialization():
     mistral = Mistral(device="cpu")
     assert isinstance(mistral, Mistral)
     assert mistral.ai_name == "Node Model Agent"
-    assert mistral.system_prompt == None
+    assert mistral.system_prompt is None
     assert mistral.model_name == "mistralai/Mistral-7B-v0.1"
     assert mistral.device == "cpu"
-    assert mistral.use_flash_attention == False
+    assert mistral.use_flash_attention is False
     assert mistral.temperature == 1.0
     assert mistral.max_length == 100
     assert mistral.history == []

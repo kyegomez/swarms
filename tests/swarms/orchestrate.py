@@ -1,6 +1,4 @@
 import numpy as np
-import pytest
-from unittest.mock import patch, MagicMock
 from swarms.swarms.orchestrate import Orchestrator, Worker
 import chromadb
 

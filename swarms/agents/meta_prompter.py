@@ -133,7 +133,7 @@ class MetaPrompterAgent:
             for j in range(self.max_iters):
                 print(f"(Step {j+1}/{self.max_iters})")
                 print(f"Assistant: {output}")
-                print(f"Human: ")
+                print("Human: ")
 
                 if self.human_input:
                     human_input = input()
@@ -144,7 +144,7 @@ class MetaPrompterAgent:
                 output = chain.predict(human_input.lower)
 
             if self.success_phrase in human_input.lower():
-                print(f"You succeed! Thanks for using!")
+                print("You succeed! Thanks for using!")
                 return
 
             meta_chain = self.initialize_meta_chain()

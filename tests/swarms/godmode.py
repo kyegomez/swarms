@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from swarms.swarms.god_mode import GodMode, LLM
 
 
