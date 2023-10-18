@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  server-bot:
+    container_name: server-bot
+    image: allenrkeen/server-bot:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock #required
+    environment:
+      - DISCORD_TOKEN=your_token_here #required
+      - DISCORD_CLIENT_ID=your_client_id_here #required
+      - DISCORD_GUILD_ID=your_guild_id_here #optional
