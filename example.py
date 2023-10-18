@@ -2,14 +2,14 @@ from swarms.models import OpenAIChat
 from swarms import Worker
 
 llm = OpenAIChat(
-    openai_api_key="",
+    openai_api_key="Enter in your key",
     temperature=0.5,
 )
 
 node = Worker(
     llm=llm,
     ai_name="Optimus Prime",
-    openai_api_key="",
+    openai_api_key="entter in your key",
     ai_role="Worker in a swarm",
     external_tools=None,
     human_in_the_loop=False,
