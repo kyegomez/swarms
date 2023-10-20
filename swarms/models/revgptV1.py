@@ -40,7 +40,7 @@ from swarms.utils.revutils import create_completer
 from swarms.utils.revutils import create_session
 from swarms.utils.revutils import get_input
 
-BASE_URL = environ.get("CHATGPT_BASE_URL", "http://192.168.250.249:9898/api/")
+# BASE_URL = environ.get("CHATGPT_BASE_URL", "http://192.168.250.249:9898/api/")
 # BASE_URL = os.environ.get("CHATGPT_BASE_URL", "https://ai.fakeopen.com/api/")
 # BASE_URL = environ.get("CHATGPT_BASE_URL", "https://bypass.churchless.tech/")
 
