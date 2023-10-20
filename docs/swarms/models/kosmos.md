@@ -1,4 +1,4 @@
-# Kosmos Documentation
+# `Kosmos` Documentation
 
 ## Introduction
 
