@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from swarms.models.revgpt import RevChatGPTModel
+from swarms.models.revgptV4 import RevChatGPTModel
 from swarms.workers.worker import Worker
 
 load_dotenv()

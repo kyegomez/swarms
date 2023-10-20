@@ -1,7 +1,8 @@
 import os
 import sys
 from dotenv import load_dotenv
-from swarms.models.revgpt import RevChatGPTModel
+from swarms.models.revgptV4 import RevChatGPTModelv4
+from swarms.models.revgptV1 import RevChatGPTModelv1
 
 root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(root_dir)
@@ -17,10 +18,11 @@ config = {
 }
 
 # For v1 model
-# model = RevChatGPTModel(access_token=os.getenv("ACCESS_TOKEN"), **config)
+model = RevChatGPTModelv1(access_token=os.getenv("ACCESS_TOKEN"), **config)
+# model = RevChatGPTModelv4(access_token=os.getenv("ACCESS_TOKEN"), **config)
 
 # For v3 model
-model = RevChatGPTModel(access_token=os.getenv("OPENAI_API_KEY"), **config)
+# model = RevChatGPTModel(access_token=os.getenv("OPENAI_API_KEY"), **config)
 
 task = "Write a cli snake game"
 response = model.run(task)
