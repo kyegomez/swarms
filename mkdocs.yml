@@ -111,6 +111,9 @@ nav:
   - swarms.memory:
     - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
+  - swarms.chunkers: 
+    - BaseChunker: "swarms/chunkers/basechunker.md"
+    - PdfChunker: "swarms/chunkers/pdf_chunker.md"
 - Examples:
     - Overview: "examples/index.md"
     - Agents:
