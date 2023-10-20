@@ -11,6 +11,7 @@ from swarms.models.idefics import Idefics
 from swarms.models.kosmos_two import Kosmos
 from swarms.models.vilt import Vilt
 from swarms.models.nougat import Nougat
+from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
 # from swarms.models.fuyu import Fuyu # Not working, wait until they update
 
 
@@ -26,6 +27,7 @@ __all__ = [
     "Kosmos",
     "Vilt",
     "Nougat",
+    "LayoutLMDocumentQA",
 ]
 
 
