@@ -99,6 +99,7 @@ nav:
     - Vilt: "swarms/models/vilt.md"
     - Idefics: "swarms/models/idefics.md"
     - BingChat: "swarms/models/bingchat.md"
+    - Kosmos: "swarms/models/kosmos.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"
