@@ -576,7 +576,13 @@ class Tool(BaseTool):
             args_schema=args_schema,
             **kwargs,
         )
+        
+class EdgeGPTTool:
+    def __init__(self, model):
+        self.model = model
 
+    def run(self, prompt):
+        return self.model.ask(prompt)
 
 class StructuredTool(BaseTool):
     """Tool that can operate on any number of inputs."""

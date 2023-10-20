@@ -26,7 +26,7 @@ class EdgeGPTModel:
         self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
         self.bot = asyncio.run(Chatbot.create(cookies=self.cookies))
         
-    def __call(self, prompt: str, style: ConversationStyle = ConversationStyle.creative) -> str:
+    def __call__(self, prompt: str, style: ConversationStyle = ConversationStyle.creative) -> str:
         """
         Get a text response using the EdgeGPT model based on the provided prompt.
         """
