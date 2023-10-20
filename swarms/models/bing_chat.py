@@ -1,11 +1,12 @@
 """EdgeGPT model by OpenAI"""
-import asyncio, json
+import asyncio
+import json
 from EdgeGPT.EdgeGPT import Chatbot, ConversationStyle
 from EdgeGPT.EdgeUtils import ImageQuery, Query, Cookie
 from EdgeGPT.ImageGen import ImageGen
 from pathlib import Path
 
-class EdgeGPTModel:
+class BingChat:
     """
     EdgeGPT model by OpenAI
 
@@ -16,9 +17,9 @@ class EdgeGPTModel:
     
     Examples
     --------
-    >>> edgegpt = EdgeGPTModel(cookies_path="./path/to/cookies.json")
-    >>> response = edgegpt.ask("Hello, my name is ChatGPT")
-    >>> image_path = edgegpt.generate_image("Sunset over mountains")
+    >>> edgegpt = BingChat(cookies_path="./path/to/cookies.json")
+    >>> response = edgegpt("Hello, my name is ChatGPT")
+    >>> image_path = edgegpt.create_img("Sunset over mountains")
 
     """
     
@@ -33,7 +34,7 @@ class EdgeGPTModel:
         response = asyncio.run(self.bot.ask(prompt=prompt, conversation_style=style, simplify_response=True))
         return response['text']
 
-    def generate_image(self, prompt: str, output_dir: str = "./output", auth_cookie: str = None) -> str:
+    def create_img(self, prompt: str, output_dir: str = "./output", auth_cookie: str = None) -> str:
         """
         Generate an image based on the provided prompt and save it in the given output directory.
         Returns the path of the generated image.
@@ -53,10 +54,3 @@ class EdgeGPTModel:
         Set the directory path for managing cookies.
         """
         Cookie.dir_path = Path(path)
-
-# Example Usage:
-# edgegpt = EdgeGPTModel(cookies_path="./path/to/cookies.json")
-# text_response = edgegpt.ask("Hello, my name is ChatGPT")
-# image_path = edgegpt.generate_image("Sunset over mountains", auth_cookie="YOUR_AUTH_COOKIE")
-
-
