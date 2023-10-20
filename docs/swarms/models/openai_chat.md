@@ -1,4 +1,4 @@
-# `OpenAIChat`` Documentation
+# `OpenAIChat` Documentation
 
 ## Table of Contents
 
