@@ -101,6 +101,7 @@ nav:
     - BingChat: "swarms/models/bingchat.md"
     - Kosmos: "swarms/models/kosmos.md"
     - Nougat: "swarms/models/nougat.md"
+    - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"
