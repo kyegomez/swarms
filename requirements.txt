@@ -1,5 +1,6 @@
 # faiss-gpu
 transformers
+revChatGPT
 pandas
 langchain
 nest_asyncio
