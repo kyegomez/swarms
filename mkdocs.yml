@@ -96,6 +96,7 @@ nav:
       - Anthropic: "swarms/models/anthropic.md"
       - OpenAI: "swarms/models/openai.md"
       - Zephyr: "swarms/models/zephyr.md"
+      - BioGPT: "swarms/models/biogpt.md"
     - MultiModal:
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"

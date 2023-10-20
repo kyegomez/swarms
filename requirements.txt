@@ -20,6 +20,7 @@ Pillow
 faiss-cpu
 openai
 datasets
+soundfile
 huggingface-hub
 google-generativeai
 sentencepiece
