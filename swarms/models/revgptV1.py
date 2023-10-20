@@ -1,14 +1,15 @@
-#4v image recognition
 """
-Standard ChatGPT 
+Standard ChatGPT
 """
 from __future__ import annotations
+import argparse
 
 import base64
 import binascii
 import contextlib
 import json
 import logging
+import os
 import secrets
 import subprocess
 import sys
@@ -25,7 +26,7 @@ except ImportError:
 from pathlib import Path
 import tempfile
 import random
-import os
+
 # Import function type
 
 import httpx
@@ -34,133 +35,23 @@ from httpx import AsyncClient
 from OpenAIAuth import Auth0 as Authenticator
 from rich.live import Live
 from rich.markdown import Markdown
-
-
-import argparse
-import re
-
-from prompt_toolkit import prompt
-from prompt_toolkit import PromptSession
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.key_binding import KeyBindings
-
-bindings = KeyBindings()
+import schemas.typings as t
+from swarms.utils.revutils import create_completer
+from swarms.utils.revutils import create_session
+from swarms.utils.revutils import get_input
 
 BASE_URL = environ.get("CHATGPT_BASE_URL", "http://192.168.250.249:9898/api/")
+# BASE_URL = os.environ.get("CHATGPT_BASE_URL", "https://ai.fakeopen.com/api/")
+# BASE_URL = environ.get("CHATGPT_BASE_URL", "https://bypass.churchless.tech/")
 
-class Colors:
-    """
-    Colors for printing
-    """
-
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKCYAN = "\033[96m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
-
-    def __init__(self) -> None:
-        if os.getenv("NO_COLOR"):
-            Colors.HEADER = ""
-            Colors.OKBLUE = ""
-            Colors.OKCYAN = ""
-            Colors.OKGREEN = ""
-            Colors.WARNING = ""
-            Colors.FAIL = ""
-            Colors.ENDC = ""
-            Colors.BOLD = ""
-            Colors.UNDERLINE = ""
-
-def create_keybindings(key: str = "c-@") -> KeyBindings:
-    """
-    Create keybindings for prompt_toolkit. Default key is ctrl+space.
-    For possible keybindings, see: https://python-prompt-toolkit.readthedocs.io/en/stable/pages/advanced_topics/key_bindings.html#list-of-special-keys
-    """
-
-    @bindings.add(key)
-    def _(event: dict) -> None:
-        event.app.exit(result=event.app.current_buffer.text)
-
-    return bindings
-
-
-def create_session() -> PromptSession:
-    return PromptSession(history=InMemoryHistory())
-
-
-def create_completer(commands: list, pattern_str: str = "$") -> WordCompleter:
-    return WordCompleter(words=commands, pattern=re.compile(pattern_str))
-
-
-def get_input(
-    session: PromptSession = None,
-    completer: WordCompleter = None,
-    key_bindings: KeyBindings = None,
-) -> str:
-    """
-    Multiline input function.
-    """
-    return (
-        session.prompt(
-            completer=completer,
-            multiline=True,
-            auto_suggest=AutoSuggestFromHistory(),
-            key_bindings=key_bindings,
-        )
-        if session
-        else prompt(multiline=True)
-    )
-
-
-async def get_input_async(
-    session: PromptSession = None,
-    completer: WordCompleter = None,
-) -> str:
-    """
-    Multiline input function.
-    """
-    return (
-        await session.prompt_async(
-            completer=completer,
-            multiline=True,
-            auto_suggest=AutoSuggestFromHistory(),
-        )
-        if session
-        else prompt(multiline=True)
-    )
-
-
-def get_filtered_keys_from_object(obj: object, *keys: str) -> any:
-    """
-    Get filtered list of object variable names.
-    :param keys: List of keys to include. If the first key is "not", the remaining keys will be removed from the class keys.
-    :return: List of class keys.
-    """
-    class_keys = obj.__dict__.keys()
-    if not keys:
-        return set(class_keys)
-
-    # Remove the passed keys from the class keys.
-    if keys[0] == "not":
-        return {key for key in class_keys if key not in keys[1:]}
-    # Check if all passed keys are valid
-    if invalid_keys := set(keys) - class_keys:
-        raise ValueError(
-            f"Invalid keys: {invalid_keys}",
-        )
-    # Only return specified keys that are in class_keys
-    return {key for key in keys if key in class_keys}
+bcolors = t.Colors()
 
 def generate_random_hex(length: int = 17) -> str:
     """Generate a random hex string
+
     Args:
         length (int, optional): Length of the hex string. Defaults to 17.
+
     Returns:
         str: Random hex string
     """
@@ -169,9 +60,11 @@ def generate_random_hex(length: int = 17) -> str:
 
 def random_int(min: int, max: int) -> int:
     """Generate a random integer
+
     Args:
         min (int): Minimum value
         max (int): Maximum value
+
     Returns:
         int: Random integer
     """
@@ -186,15 +79,17 @@ if __name__ == "__main__":
 log = logging.getLogger(__name__)
 
 
-def logger(is_timed: bool):
+def logger(is_timed: bool) -> function:
     """Logger decorator
+
     Args:
         is_timed (bool): Whether to include function running time in exit log
+
     Returns:
         _type_: decorated function
     """
 
-    def decorator(func):
+    def decorator(func: function) -> function:
         wraps(func)
 
         def wrapper(*args, **kwargs):
@@ -223,9 +118,8 @@ def logger(is_timed: bool):
     return decorator
 
 
+BASE_URL = environ.get("CHATGPT_BASE_URL", "http://bypass.bzff.cn:9090/")
 
-
-bcolors = Colors()
 
 
 def captcha_solver(images: list[str], challenge_details: dict) -> int:
@@ -252,9 +146,7 @@ def captcha_solver(images: list[str], challenge_details: dict) -> int:
             "Developer instructions: The captcha images have an index starting from 0 from left to right",
         )
         print("Enter the index of the images that matches the captcha instructions:")
-        index = int(input())
-
-        return index
+        return int(input())
 
 
 CAPTCHA_URL = getenv("CAPTCHA_URL", "https://bypass.churchless.tech/captcha/")
@@ -268,6 +160,7 @@ def get_arkose_token(
     """
     The solver function should take in a list of images in base64 and a dict of challenge details
     and return the index of the image that matches the challenge details
+
     Challenge details:
         game_type: str - Audio or Image
         instructions: str - Instructions for the captcha
@@ -303,7 +196,41 @@ def get_arkose_token(
         if resp.status_code != 200:
             raise Exception("Failed to verify captcha")
         return resp_json.get("token")
-
+    # else:
+        # working_endpoints: list[str] = []
+        # # Check uptime for different endpoints via gatus
+        # resp2: list[dict] = requests.get(
+            # "https://stats.churchless.tech/api/v1/endpoints/statuses?page=1"
+        # ).json()
+        # for endpoint in resp2:
+            # # print(endpoint.get("name"))
+            # if endpoint.get("group") != "Arkose Labs":
+                # continue
+            # # Check the last 5 results
+            # results: list[dict] = endpoint.get("results", [])[-5:-1]
+            # # print(results)
+            # if not results:
+                # print(f"Endpoint {endpoint.get('name')} has no results")
+                # continue
+            # # Check if all the results are up
+            # if all(result.get("success") == True for result in results):
+                # working_endpoints.append(endpoint.get("name"))
+        # if not working_endpoints:
+            # print("No working endpoints found. Please solve the captcha manually.\n找不到工作终结点。请手动解决captcha")
+            # return get_arkose_token(download_images=True, captcha_supported=False)
+        # # Choose a random endpoint
+        # endpoint = random.choice(working_endpoints)
+        # resp: requests.Response = requests.get(endpoint)
+        # if resp.status_code != 200:
+            # if resp.status_code != 511:
+                # raise Exception("Failed to get captcha token")
+            # else:
+                # print("需要验证码，请手动解决captcha.")
+                # return get_arkose_token(download_images=True, captcha_supported=True)
+        # try:
+            # return resp.json().get("token")
+        # except Exception:
+            # return resp.text
 
 
 class Chatbot:
@@ -323,6 +250,7 @@ class Chatbot:
         captcha_download_images: bool = True,
     ) -> None:
         """Initialize a chatbot
+
         Args:
             config (dict[str, str]): Login and proxy info. Example:
                 {
@@ -338,6 +266,7 @@ class Chatbot:
             base_url (str | None, optional): Base URL of the ChatGPT server. Defaults to None.
             captcha_solver (function, optional): Function to solve captcha. Defaults to captcha_solver.
             captcha_download_images (bool, optional): Whether to download captcha images. Defaults to True.
+
         Raises:
             Exception: _description_
         """
@@ -360,7 +289,7 @@ class Chatbot:
                 cached_access_token = self.__get_cached_access_token(
                     self.config.get("email", None),
                 )
-            except Colors.Error as error:
+            except t.Error as error:
                 if error.code == 5:
                     raise
                 cached_access_token = None
@@ -384,8 +313,8 @@ class Chatbot:
             else:
                 self.session.proxies.update(proxies)
 
-        self.conversation_id = conversation_id or config.get("conversation_id", None)
-        self.parent_id = parent_id or config.get("parent_id", None)
+        self.conversation_id = conversation_id or config.get("conversation_id")
+        self.parent_id = parent_id or config.get("parent_id")
         self.conversation_mapping = {}
         self.conversation_id_prev_queue = []
         self.parent_id_prev_queue = []
@@ -423,9 +352,11 @@ class Chatbot:
     @logger(is_timed=True)
     def __check_credentials(self) -> None:
         """Check login info and perform login
+
         Any one of the following is sufficient for login. Multiple login info can be provided at the same time and they will be used in the order listed below.
             - access_token
             - email + password
+
         Raises:
             Exception: _description_
             AuthError: _description_
@@ -433,7 +364,7 @@ class Chatbot:
         if "access_token" in self.config:
             self.set_access_token(self.config["access_token"])
         elif "email" not in self.config or "password" not in self.config:
-            error = Colors.AuthenticationError("Insufficient login details provided!")
+            error = t.AuthenticationError("Insufficient login details provided!")
             raise error
         if "access_token" not in self.config:
             try:
@@ -445,6 +376,7 @@ class Chatbot:
     @logger(is_timed=False)
     def set_access_token(self, access_token: str) -> None:
         """Set access token in request header and self.config, then cache it to file.
+
         Args:
             access_token (str): access_token
         """
@@ -467,12 +399,15 @@ class Chatbot:
     @logger(is_timed=False)
     def __get_cached_access_token(self, email: str | None) -> str | None:
         """Read access token from cache
+
         Args:
             email (str | None): email of the account to get access token
+
         Raises:
             Error: _description_
             Error: _description_
             Error: _description_
+
         Returns:
             str | None: access token string or None if not found
         """
@@ -490,26 +425,40 @@ class Chatbot:
                 d_access_token = base64.b64decode(s_access_token[1])
                 d_access_token = json.loads(d_access_token)
             except binascii.Error:
-                error = Colors.Error(
+                del cache["access_tokens"][email]
+                self.__write_cache(cache)
+                error = t.Error(
                     source="__get_cached_access_token",
                     message="Invalid access token",
-                    code=Colors.ErrorType.INVALID_ACCESS_TOKEN_ERROR,
+                    code=t.ErrorType.INVALID_ACCESS_TOKEN_ERROR,
                 )
+                del cache["access_tokens"][email]
                 raise error from None
             except json.JSONDecodeError:
-                error = Colors.Error(
+                del cache["access_tokens"][email]
+                self.__write_cache(cache)
+                error = t.Error(
                     source="__get_cached_access_token",
                     message="Invalid access token",
-                    code=Colors.ErrorType.INVALID_ACCESS_TOKEN_ERROR,
+                    code=t.ErrorType.INVALID_ACCESS_TOKEN_ERROR,
+                )
+                raise error from None
+            except IndexError:
+                del cache["access_tokens"][email]
+                self.__write_cache(cache)
+                error = t.Error(
+                    source="__get_cached_access_token",
+                    message="Invalid access token",
+                    code=t.ErrorType.INVALID_ACCESS_TOKEN_ERROR,
                 )
                 raise error from None
 
             exp = d_access_token.get("exp", None)
             if exp is not None and exp < time.time():
-                error = Colors.Error(
+                error = t.Error(
                     source="__get_cached_access_token",
                     message="Access token expired",
-                    code=Colors.ErrorType.EXPIRED_ACCESS_TOKEN_ERROR,
+                    code=t.ErrorType.EXPIRED_ACCESS_TOKEN_ERROR,
                 )
                 raise error
 
@@ -518,6 +467,7 @@ class Chatbot:
     @logger(is_timed=False)
     def __cache_access_token(self, email: str, access_token: str) -> None:
         """Write an access token to cache
+
         Args:
             email (str): account email
             access_token (str): account access token
@@ -532,6 +482,7 @@ class Chatbot:
     @logger(is_timed=False)
     def __write_cache(self, info: dict) -> None:
         """Write cache info to file
+
         Args:
             info (dict): cache info, current format
             {
@@ -543,7 +494,7 @@ class Chatbot:
         json.dump(info, open(self.cache_path, "w", encoding="utf-8"), indent=4)
 
     @logger(is_timed=False)
-    def __read_cache(self):
+    def __read_cache(self) -> dict[str, dict[str, str]]:
         try:
             cached = json.load(open(self.cache_path, encoding="utf-8"))
         except (FileNotFoundError, json.decoder.JSONDecodeError):
@@ -555,7 +506,7 @@ class Chatbot:
         """Login to OpenAI by email and password"""
         if not self.config.get("email") and not self.config.get("password"):
             log.error("Insufficient login details provided!")
-            error = Colors.AuthenticationError("Insufficient login details provided!")
+            error = t.AuthenticationError("Insufficient login details provided!")
             raise error
         auth = Authenticator(
             email_address=self.config.get("email"),
@@ -590,7 +541,7 @@ class Chatbot:
                 # print(f"Arkose token obtained: {data['arkose_token']}")
             except Exception as e:
                 print(e)
-                raise e
+                raise
 
         cid, pid = data["conversation_id"], data["parent_message_id"]
         message = ""
@@ -611,10 +562,10 @@ class Chatbot:
             line = str(line)[2:-1]
             if line.lower() == "internal server error":
                 log.error(f"Internal Server Error: {line}")
-                error = Colors.Error(
+                error = t.Error(
                     source="ask",
                     message="Internal Server Error",
-                    code=Colors.ErrorType.SERVER_ERROR,
+                    code=t.ErrorType.SERVER_ERROR,
                 )
                 raise error
             if not line or line is None:
@@ -645,10 +596,12 @@ class Chatbot:
             author = {}
             if line.get("message"):
                 author = metadata.get("author", {}) or line["message"].get("author", {})
-                if line["message"].get("content"):
-                    if line["message"]["content"].get("parts"):
-                        if len(line["message"]["content"]["parts"]) > 0:
-                            message_exists = True
+                if (
+                    line["message"].get("content")
+                    and line["message"]["content"].get("parts")
+                    and len(line["message"]["content"]["parts"]) > 0
+                ):
+                    message_exists = True
             message: str = (
                 line["message"]["content"]["parts"][0] if message_exists else ""
             )
@@ -657,7 +610,7 @@ class Chatbot:
             yield {
                 "author": author,
                 "message": message,
-                "conversation_id": cid+'***************************',
+                "conversation_id": cid,
                 "parent_id": pid,
                 "model": model,
                 "finish_details": finish_details,
@@ -667,7 +620,6 @@ class Chatbot:
             }
 
         self.conversation_mapping[cid] = pid
-        print(self.conversation_mapping)
         if pid is not None:
             self.parent_id = pid
         if cid is not None:
@@ -691,7 +643,7 @@ class Chatbot:
         messages: list[dict],
         conversation_id: str | None = None,
         parent_id: str | None = None,
-        plugin_ids: list = [],
+        plugin_ids: list = None,
         model: str | None = None,
         auto_continue: bool = False,
         timeout: float = 360,
@@ -705,6 +657,7 @@ class Chatbot:
             model (str | None, optional): The model to use. Defaults to None.
             auto_continue (bool, optional): Whether to continue the conversation automatically. Defaults to False.
             timeout (float, optional): Timeout for getting the full response, unit is second. Defaults to 360.
+
         Yields: Generator[dict, None, None] - The response from the chatbot
             dict: {
                 "message": str,
@@ -717,14 +670,15 @@ class Chatbot:
                 "citations": list[dict],
             }
         """
-        print(conversation_id)
+        if plugin_ids is None:
+            plugin_ids = []
         if parent_id and not conversation_id:
-            raise Colors.Error(
+            raise t.Error(
                 source="User",
                 message="conversation_id must be set once parent_id is set",
-                code=Colors.ErrorType.USER_ERROR,
+                code=t.ErrorType.USER_ERROR,
             )
-        print(conversation_id)
+
         if conversation_id and conversation_id != self.conversation_id:
             self.parent_id = None
         conversation_id = conversation_id or self.conversation_id
@@ -732,10 +686,8 @@ class Chatbot:
         if not conversation_id and not parent_id:
             parent_id = str(uuid.uuid4())
 
-
         if conversation_id and not parent_id:
             if conversation_id not in self.conversation_mapping:
-                print(conversation_id)
                 if self.lazy_loading:
                     log.debug(
                         "Conversation ID %s not found in conversation mapping, try to get conversation history for the given ID",
@@ -756,9 +708,7 @@ class Chatbot:
                 print(
                     "Warning: Invalid conversation_id provided, treat as a new conversation",
                 )
-                #conversation_id = None
-                conversation_id =str(uuid.uuid4())
-                print(conversation_id)
+                conversation_id = None
                 parent_id = str(uuid.uuid4())
         model = model or self.config.get("model") or "text-davinci-002-render-sha"
         data = {
@@ -783,11 +733,10 @@ class Chatbot:
     def ask(
         self,
         prompt: str,
-        fileinfo: dict ,
         conversation_id: str | None = None,
         parent_id: str = "",
         model: str = "",
-        plugin_ids: list = [],
+        plugin_ids: list = None,
         auto_continue: bool = False,
         timeout: float = 360,
         **kwargs,
@@ -800,6 +749,7 @@ class Chatbot:
             model (str, optional): The model to use. Defaults to "".
             auto_continue (bool, optional): Whether to continue the conversation automatically. Defaults to False.
             timeout (float, optional): Timeout for getting the full response, unit is second. Defaults to 360.
+
         Yields: The response from the chatbot
             dict: {
                 "message": str,
@@ -811,12 +761,14 @@ class Chatbot:
                 "recipient": str,
             }
         """
+        if plugin_ids is None:
+            plugin_ids = []
         messages = [
             {
                 "id": str(uuid.uuid4()),
                 "role": "user",
                 "author": {"role": "user"},
-                "content": {"content_type": "multimodal_text", "parts": [prompt, fileinfo]},
+                "content": {"content_type": "text", "parts": [prompt]},
             },
         ]
 
@@ -846,6 +798,7 @@ class Chatbot:
             model (str, optional): The model to use. Defaults to None.
             auto_continue (bool, optional): Whether to continue the conversation automatically. Defaults to False.
             timeout (float, optional): Timeout for getting the full response, unit is second. Defaults to 360.
+
         Yields:
             dict: {
                 "message": str,
@@ -858,10 +811,10 @@ class Chatbot:
             }
         """
         if parent_id and not conversation_id:
-            raise Colors.Error(
+            raise t.Error(
                 source="User",
                 message="conversation_id must be set once parent_id is set",
-                code=Colors.ErrorType.USER_ERROR,
+                code=t.ErrorType.USER_ERROR,
             )
 
         if conversation_id and conversation_id != self.conversation_id:
@@ -892,7 +845,6 @@ class Chatbot:
                 parent_id = self.conversation_mapping[conversation_id]
             else:  # invalid conversation_id provided, treat as a new conversation
                 conversation_id = None
-                conversation_id=str(uuid.uuid4())
                 parent_id = str(uuid.uuid4())
         model = model or self.config.get("model") or "text-davinci-002-render-sha"
         data = {
@@ -925,15 +877,17 @@ class Chatbot:
     @logger(is_timed=False)
     def __check_response(self, response: requests.Response) -> None:
         """Make sure response is success
+
         Args:
             response (_type_): _description_
+
         Raises:
             Error: _description_
         """
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as ex:
-            error = Colors.Error(
+            error = t.Error(
                 source="OpenAI",
                 message=response.text,
                 code=response.status_code,
@@ -987,6 +941,7 @@ class Chatbot:
         :param node_id: UUID of node
         :param anonymous: Boolean
         :param title: String
+
         Returns:
             str: A URL to the shared link
         """
@@ -1079,6 +1034,7 @@ class Chatbot:
     def reset_chat(self) -> None:
         """
         Reset the conversation ID and parent ID.
+
         :return: None
         """
         self.conversation_id = None
@@ -1096,7 +1052,12 @@ class Chatbot:
             self.parent_id = self.parent_id_prev_queue.pop()
 
     @logger(is_timed=True)
-    def get_plugins(self, offset: int = 0, limit: int = 250, status: str = "approved"):
+    def get_plugins(
+        self,
+        offset: int = 0,
+        limit: int = 250,
+        status: str = "approved",
+    ) -> dict[str, str]:
         """
         Get plugins
         :param offset: Integer. Offset (Only supports 0)
@@ -1110,7 +1071,7 @@ class Chatbot:
         return json.loads(response.text)
 
     @logger(is_timed=True)
-    def install_plugin(self, plugin_id: str):
+    def install_plugin(self, plugin_id: str) -> None:
         """
         Install plugin by ID
         :param plugin_id: String. ID of plugin
@@ -1185,10 +1146,10 @@ class AsyncChatbot(Chatbot):
             async for line in response.aiter_lines():
                 if line.lower() == "internal server error":
                     log.error(f"Internal Server Error: {line}")
-                    error = Colors.Error(
+                    error = t.Error(
                         source="ask",
                         message="Internal Server Error",
-                        code=Colors.ErrorType.SERVER_ERROR,
+                        code=t.ErrorType.SERVER_ERROR,
                     )
                     raise error
                 if not line or line is None:
@@ -1218,10 +1179,12 @@ class AsyncChatbot(Chatbot):
                         "author",
                         {},
                     )
-                    if line["message"].get("content"):
-                        if line["message"]["content"].get("parts"):
-                            if len(line["message"]["content"]["parts"]) > 0:
-                                message_exists = True
+                    if (
+                        line["message"].get("content")
+                        and line["message"]["content"].get("parts")
+                        and len(line["message"]["content"]["parts"]) > 0
+                    ):
+                        message_exists = True
                 message: str = (
                     line["message"]["content"]["parts"][0] if message_exists else ""
                 )
@@ -1262,13 +1225,14 @@ class AsyncChatbot(Chatbot):
         messages: list[dict],
         conversation_id: str | None = None,
         parent_id: str | None = None,
-        plugin_ids: list = [],
+        plugin_ids: list = None,
         model: str | None = None,
         auto_continue: bool = False,
         timeout: float = 360,
         **kwargs,
     ) -> any:
         """Post messages to the chatbot
+
         Args:
             messages (list[dict]): the messages to post
             conversation_id (str | None, optional): UUID for the conversation to continue on. Defaults to None.
@@ -1276,6 +1240,7 @@ class AsyncChatbot(Chatbot):
             model (str | None, optional): The model to use. Defaults to None.
             auto_continue (bool, optional): Whether to continue the conversation automatically. Defaults to False.
             timeout (float, optional): Timeout for getting the full response, unit is second. Defaults to 360.
+
         Yields:
             AsyncGenerator[dict, None]: The response from the chatbot
             {
@@ -1289,11 +1254,13 @@ class AsyncChatbot(Chatbot):
                 "citations": list[dict],
             }
         """
+        if plugin_ids is None:
+            plugin_ids = []
         if parent_id and not conversation_id:
-            raise Colors.Error(
+            raise t.Error(
                 source="User",
                 message="conversation_id must be set once parent_id is set",
-                code=Colors.ErrorType.USER_ERROR,
+                code=t.ErrorType.USER_ERROR,
             )
 
         if conversation_id and conversation_id != self.conversation_id:
@@ -1325,9 +1292,7 @@ class AsyncChatbot(Chatbot):
                 print(
                     "Warning: Invalid conversation_id provided, treat as a new conversation",
                 )
-                #conversation_id = None
-                conversation_id = str(uuid.uuid4())
-                print(conversation_id)
+                conversation_id = None
                 parent_id = str(uuid.uuid4())
         model = model or self.config.get("model") or "text-davinci-002-render-sha"
         data = {
@@ -1354,12 +1319,13 @@ class AsyncChatbot(Chatbot):
         conversation_id: str | None = None,
         parent_id: str = "",
         model: str = "",
-        plugin_ids: list = [],
+        plugin_ids: list = None,
         auto_continue: bool = False,
         timeout: int = 360,
         **kwargs,
     ) -> any:
         """Ask a question to the chatbot
+
         Args:
             prompt (str): The question to ask
             conversation_id (str | None, optional): UUID for the conversation to continue on. Defaults to None.
@@ -1367,6 +1333,7 @@ class AsyncChatbot(Chatbot):
             model (str, optional): The model to use. Defaults to "".
             auto_continue (bool, optional): Whether to continue the conversation automatically. Defaults to False.
             timeout (float, optional): Timeout for getting the full response, unit is second. Defaults to 360.
+
         Yields:
             AsyncGenerator[dict, None]: The response from the chatbot
             {
@@ -1380,16 +1347,13 @@ class AsyncChatbot(Chatbot):
             }
         """
 
+        if plugin_ids is None:
+            plugin_ids = []
         messages = [
             {
                 "id": str(uuid.uuid4()),
                 "author": {"role": "user"},
-                "content": {"content_type": "multimodal_text", "parts": [prompt,  {
-                        "asset_pointer": "file-service://file-V9IZRkWQnnk1HdHsBKAdoiGf",
-                        "size_bytes": 239505,
-                        "width": 1706,
-                        "height": 1280
-                    }]},
+                "content": {"content_type": "text", "parts": [prompt]},
             },
         ]
 
@@ -1419,6 +1383,8 @@ class AsyncChatbot(Chatbot):
             model (str, optional): Model to use. Defaults to None.
             auto_continue (bool, optional): Whether to continue writing automatically. Defaults to False.
             timeout (float, optional): Timeout for getting the full response, unit is second. Defaults to 360.
+
+
         Yields:
             AsyncGenerator[dict, None]: The response from the chatbot
             {
@@ -1432,10 +1398,10 @@ class AsyncChatbot(Chatbot):
             }
         """
         if parent_id and not conversation_id:
-            error = Colors.Error(
+            error = t.Error(
                 source="User",
                 message="conversation_id must be set once parent_id is set",
-                code=Colors.ErrorType.SERVER_ERROR,
+                code=t.ErrorType.SERVER_ERROR,
             )
             raise error
         if conversation_id and conversation_id != self.conversation_id:
@@ -1514,6 +1480,7 @@ class AsyncChatbot(Chatbot):
         Creates a share link to a conversation
         :param convo_id: UUID of conversation
         :param node_id: UUID of node
+
         Returns:
             str: A URL to the shared link
         """
@@ -1610,7 +1577,7 @@ class AsyncChatbot(Chatbot):
             response.raise_for_status()
         except httpx.HTTPStatusError as ex:
             await response.aread()
-            error = Colors.Error(
+            error = t.Error(
                 source="OpenAI",
                 message=response.text,
                 code=response.status_code,
@@ -1711,7 +1678,7 @@ def main(config: dict) -> any:
         elif command == "!exit":
             if isinstance(chatbot.session, httpx.AsyncClient):
                 chatbot.session.aclose()
-            exit()
+            sys.exit()
         else:
             return False
         return True
@@ -1765,9 +1732,9 @@ def main(config: dict) -> any:
                 print()
 
     except (KeyboardInterrupt, EOFError):
-        exit()
+        sys.exit()
     except Exception as exc:
-        error = Colors.CLIError("command line program unknown error")
+        error = t.CLIError("command line program unknown error")
         raise error from exc
 
 
@@ -1784,7 +1751,7 @@ if __name__ == "__main__":
     )
     main(configure())
 
-class RevChatGPTModel:
+class RevChatGPTModelv1:
     def __init__(self, access_token=None, **kwargs):
         super().__init__()
         self.config = kwargs
@@ -1820,7 +1787,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    model = RevChatGPTModel(access_token=args.access_token)
+    model = RevChatGPTModelv1(access_token=args.access_token)
 
     if args.enable:
         model.enable_plugin(args.enable)
@@ -1828,3 +1795,4 @@ if __name__ == "__main__":
         plugins = model.list_plugins()
         for plugin in plugins:
             print(f"Plugin ID: {plugin['id']}, Name: {plugin['name']}")
+
