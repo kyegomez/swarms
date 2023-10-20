@@ -29,4 +29,5 @@ __all__ = [
     "Vilt",
     "Nougat",
     "LayoutLMDocumentQA",
+    "BioGPT",
 ]
