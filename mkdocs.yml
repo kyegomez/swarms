@@ -95,6 +95,8 @@ nav:
     - Anthropic: "swarms/models/anthropic.md"
     - OpenAI: "swarms/models/openai.md"
     - Fuyu: "swarms/models/fuyu.md"
+    - Zephyr: "swarms/models/zephyr.md"
+    - Vilt: "swarms/models/vilt.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"
