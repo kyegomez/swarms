@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, List, Optional, Union
 
-from pydantic import BaseModel, Field, StrictStr, conlist
+from pydantic import BaseModel, Field, StrictStr
 from swarms.artifacts.main import Artifact
 from swarms.artifacts.error_artifact import ErrorArtifact
 
@@ -137,9 +137,6 @@ class Task(BaseModel):
         None, description="Input parameters for the task. Any value is allowed"
     )
     task_id: StrictStr = Field(..., description="ID of the task")
-    artifacts: conlist(Artifact, min_items=1) = Field(
-        ..., description="A list of artifacts that the task has been produced"
-    )
 
     class Config:
         allow_population_by_field_name = True
