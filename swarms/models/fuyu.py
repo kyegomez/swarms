@@ -50,8 +50,8 @@ class Fuyu:
             pretrained_path, device_map=device_map
         )
 
-    def __call__(self, text, img_path):
-        """Call the model"""
+    def __call__(self, text: str, img_path: str):
+        """Call the model with text and img paths"""
         image_pil = Image.open(img_path)
         model_inputs = self.processor(
             text=text, images=[image_pil], device=self.device_map
