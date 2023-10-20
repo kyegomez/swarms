@@ -6,6 +6,7 @@ from EdgeGPT.EdgeUtils import ImageQuery, Query, Cookie
 from EdgeGPT.ImageGen import ImageGen
 from pathlib import Path
 
+
 class BingChat:
     """
     EdgeGPT model by OpenAI
@@ -14,7 +15,7 @@ class BingChat:
     ----------
     cookies_path : str
         Path to the cookies.json necessary for authenticating with EdgeGPT
-    
+
     Examples
     --------
     >>> edgegpt = BingChat(cookies_path="./path/to/cookies.json")
@@ -22,11 +23,11 @@ class BingChat:
     >>> image_path = edgegpt.create_img("Sunset over mountains")
 
     """
-    
+
     def __init__(self, cookies_path: str):
         self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
         self.bot = asyncio.run(Chatbot.create(cookies=self.cookies))
-        
+
     def __call__(self, prompt: str, style: ConversationStyle = ConversationStyle.creative) -> str:
         """
         Get a text response using the EdgeGPT model based on the provided prompt.
@@ -41,11 +42,11 @@ class BingChat:
         """
         if not auth_cookie:
             raise ValueError("Auth cookie is required for image generation.")
-        
+
         image_generator = ImageGen(auth_cookie, quiet=True)
         images = image_generator.get_images(prompt)
         image_generator.save_images(images, output_dir=output_dir)
-        
+
         return Path(output_dir) / images[0]['path']
 
     @staticmethod
