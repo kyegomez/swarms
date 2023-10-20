@@ -6,6 +6,7 @@ langchain
 nest_asyncio
 pegasusx
 google-generativeai 
+EdgeGPT
 langchain-experimental
 playwright
 wget==3.2
