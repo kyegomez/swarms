@@ -10,3 +10,4 @@ from swarms.models.zephyr import Zephyr
 from swarms.models.idefics import Idefics
 from swarms.models.kosmos_two import Kosmos
 from swarms.models.vilt import Vilt
+# from swarms.models.fuyu import Fuyu

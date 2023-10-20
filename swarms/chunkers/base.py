@@ -3,7 +3,7 @@ from abc import ABC
 from typing import Optional
 from attr import define, field, Factory
 from griptape.artifacts import TextArtifact
-from swarm.chunkers.chunk_seperators import ChunkSeparator
+from swarms.chunkers.chunk_seperators import ChunkSeparator
 from griptape.tokenizers import OpenAiTokenizer
 
 

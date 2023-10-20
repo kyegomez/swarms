@@ -3,7 +3,15 @@ import os
 
 
 class Anthropic:
-    """Anthropic large language models."""
+    """
+    
+    Anthropic large language models.
+    
+    
+    Args:
+    
+    
+    """
 
     def __init__(
         self,
@@ -41,12 +49,12 @@ class Anthropic:
             d["top_p"] = self.top_p
         return d
 
-    def generate(self, prompt, stop=None):
+    def run(self, task: str, stop=None):
         """Call out to Anthropic's completion endpoint."""
         stop = stop or []
         params = self._default_params()
         headers = {"Authorization": f"Bearer {self.anthropic_api_key}"}
-        data = {"prompt": prompt, "stop_sequences": stop, **params}
+        data = {"prompt": task, "stop_sequences": stop, **params}
         response = requests.post(
             f"{self.anthropic_api_url}/completions",
             headers=headers,
@@ -55,12 +63,12 @@ class Anthropic:
         )
         return response.json().get("completion")
 
-    def __call__(self, prompt, stop=None):
+    def __call__(self, task: str, stop=None):
         """Call out to Anthropic's completion endpoint."""
         stop = stop or []
         params = self._default_params()
         headers = {"Authorization": f"Bearer {self.anthropic_api_key}"}
-        data = {"prompt": prompt, "stop_sequences": stop, **params}
+        data = {"prompt": task, "stop_sequences": stop, **params}
         response = requests.post(
             f"{self.anthropic_api_url}/completions",
             headers=headers,
