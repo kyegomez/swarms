@@ -1,14 +1,17 @@
 import time
 from abc import ABC, abstractmethod
 
+
 def count_tokens(text: str) -> int:
     return len(text.split())
+
 
 class AbstractModel(ABC):
     """
     AbstractModel
 
     """
+
     # abstract base class for language models
     def __init__(self):
         self.start_time = None
@@ -41,7 +44,7 @@ class AbstractModel(ABC):
         if elapsed_time == 0:
             return float("inf")
         return self._num_tokens() / elapsed_time
-    
+
     def _num_tokens(self, text: str) -> int:
         """Number of tokens"""
         return count_tokens(text)
@@ -75,3 +78,16 @@ class AbstractModel(ABC):
         if self.start_time and self.end_time:
             return self.end_time - self.start_time
         return 0
+
+    def metrics(self) -> str:
+        _sec_to_first_token = self._sec_to_first_token()
+        _tokens_per_second = self._tokens_per_second()
+        _num_tokens = self._num_tokens(self.history)
+        _time_for_generation = self._time_for_generation(self.history)
+
+        return f"""
+        SEC TO FIRST TOKEN: {_sec_to_first_token}
+        TOKENS/SEC: {_tokens_per_second}
+        TOKENS: {_num_tokens}
+        Tokens/SEC: {_time_for_generation}
+        """

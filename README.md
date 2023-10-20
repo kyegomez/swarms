@@ -23,7 +23,7 @@ At Swarms, we're transforming the landscape of AI from siloed AI agents to a uni
 -----
 
 # 🤝 Schedule a 1-on-1 Session
-Book a [1-on-1 Session with Kye](https://calendly.com/apacai/agora), the Creator, to discuss any issues, provide feedback, or explore how we can improve Swarms for you.
+Book a [1-on-1 Session with Kye](https://calendly.com/swarm-corp/30min), the Creator, to discuss any issues, provide feedback, or explore how we can improve Swarms for you.
 
 
 ----------
