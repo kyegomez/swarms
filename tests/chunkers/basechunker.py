@@ -1,5 +1,11 @@
 import pytest
-from swarms.chunkers.base import BaseChunker, TextArtifact, ChunkSeparator, OpenAiTokenizer  # adjust the import paths accordingly
+from swarms.chunkers.base import (
+    BaseChunker,
+    TextArtifact,
+    ChunkSeparator,
+    OpenAiTokenizer,
+)  # adjust the import paths accordingly
+
 
 # 1. Test Initialization
 def test_chunker_initialization():
@@ -7,13 +13,16 @@ def test_chunker_initialization():
     assert isinstance(chunker, BaseChunker)
     assert chunker.max_tokens == chunker.tokenizer.max_tokens
 
+
 def test_default_separators():
     chunker = BaseChunker()
     assert chunker.separators == BaseChunker.DEFAULT_SEPARATORS
 
+
 def test_default_tokenizer():
     chunker = BaseChunker()
     assert isinstance(chunker.tokenizer, OpenAiTokenizer)
+
 
 # 2. Test Basic Chunking
 @pytest.mark.parametrize(
@@ -29,6 +38,7 @@ def test_basic_chunk(input_text, expected_output):
     result = chunker.chunk(input_text)
     assert result == expected_output
 
+
 # 3. Test Chunking with Different Separators
 def test_custom_separators():
     custom_separator = ChunkSeparator(";")
@@ -37,6 +47,7 @@ def test_custom_separators():
     expected_output = [TextArtifact("Hello;"), TextArtifact("World!")]
     result = chunker.chunk(input_text)
     assert result == expected_output
+
 
 # 4. Test Recursive Chunking
 def test_recursive_chunking():
@@ -47,10 +58,11 @@ def test_recursive_chunking():
         TextArtifact("is a"),
         TextArtifact("more"),
         TextArtifact("complex"),
-        TextArtifact("text.")
+        TextArtifact("text."),
     ]
     result = chunker.chunk(input_text)
     assert result == expected_output
+
 
 # 5. Test Edge Cases and Special Scenarios
 def test_empty_text():
@@ -58,10 +70,12 @@ def test_empty_text():
     result = chunker.chunk("")
     assert result == []
 
+
 def test_whitespace_text():
     chunker = BaseChunker()
     result = chunker.chunk("     ")
     assert result == [TextArtifact("     ")]
+
 
 def test_single_word():
     chunker = BaseChunker()
