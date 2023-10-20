@@ -108,7 +108,7 @@ class MetaPrompterAgent:
     def get_new_instructions(self, meta_output):
         """Get New Instructions from the meta_output"""
         delimiter = "Instructions: "
-        new_instructions = meta_output[meta_output.find(delimiter) + len(delimiter):]
+        new_instructions = meta_output[meta_output.find(delimiter) + len(delimiter) :]
         return new_instructions
 
     def run(self, task: str):
