@@ -142,6 +142,19 @@ class WebpageQATool(BaseTool):
     async def _arun(self, url: str, question: str) -> str:
         raise NotImplementedError
 
+class EdgeGPTTool:
+# Initialize the custom tool
+    def __init__(
+        self,
+        model,
+        name="EdgeGPTTool",
+        description="Tool that uses EdgeGPTModel to generate responses",
+    ):
+        super().__init__(name=name, description=description)
+        self.model = model
+        
+    def _run(self, prompt):
+        return self.model.__call__(prompt)
 
 @tool
 def VQAinference(self, inputs):
