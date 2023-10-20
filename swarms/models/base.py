@@ -84,7 +84,7 @@ class AbstractModel(ABC):
         _tokens_per_second = self._tokens_per_second()
         _num_tokens = self._num_tokens(self.history)
         _time_for_generation = self._time_for_generation(self.history)
-        
+
         return f"""
         SEC TO FIRST TOKEN: {_sec_to_first_token}
         TOKENS/SEC: {_tokens_per_second}
