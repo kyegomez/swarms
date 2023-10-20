@@ -29,7 +29,6 @@ class BingChat:
         self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
         self.bot = asyncio.run(Chatbot.create(cookies=self.cookies))
 
-        print(self.bot.___dict__)
     def __call__(self, prompt: str, style: ConversationStyle = ConversationStyle.creative) -> str:
         """
         Get a text response using the EdgeGPT model based on the provided prompt.
