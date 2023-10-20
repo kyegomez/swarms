@@ -100,6 +100,7 @@ nav:
     - Idefics: "swarms/models/idefics.md"
     - BingChat: "swarms/models/bingchat.md"
     - Kosmos: "swarms/models/kosmos.md"
+    - Nougat: "swarms/models/nougat.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"

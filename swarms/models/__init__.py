@@ -10,4 +10,23 @@ from swarms.models.zephyr import Zephyr
 from swarms.models.idefics import Idefics
 from swarms.models.kosmos_two import Kosmos
 from swarms.models.vilt import Vilt
-# from swarms.models.fuyu import Fuyu
+from swarms.models.nougat import Nougat
+# from swarms.models.fuyu import Fuyu # Not working, wait until they update
+
+
+__all__ = [
+    "Anthropic",
+    "Petals",
+    "Mistral",
+    "OpenAI",
+    "AzureOpenAI",
+    "OpenAIChat",
+    "Zephyr",
+    "Idefics",
+    "Kosmos",
+    "Vilt",
+    "Nougat",
+]
+
+
+
