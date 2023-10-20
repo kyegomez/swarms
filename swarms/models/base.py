@@ -78,3 +78,16 @@ class AbstractModel(ABC):
         if self.start_time and self.end_time:
             return self.end_time - self.start_time
         return 0
+
+    def metrics(self) -> str:
+        _sec_to_first_token = self._sec_to_first_token()
+        _tokens_per_second = self._tokens_per_second()
+        _num_tokens = self._num_tokens(self.history)
+        _time_for_generation = self._time_for_generation(self.history)
+        
+        return f"""
+        SEC TO FIRST TOKEN: {_sec_to_first_token}
+        TOKENS/SEC: {_tokens_per_second}
+        TOKENS: {_num_tokens}
+        Tokens/SEC: {_time_for_generation}
+        """
