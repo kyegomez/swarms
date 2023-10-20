@@ -87,7 +87,8 @@ class Idefics:
             prompts : list
                 A list of prompts. Each prompt is a list of text strings and images.
             batched_mode : bool, optional
-                Whether to process the prompts in batched mode. If True, all prompts are processed together. If False, only the first prompt is processed (default is True).
+                Whether to process the prompts in batched mode. If True, all prompts are 
+                processed together. If False, only the first prompt is processed (default is True).
 
         Returns
         -------
@@ -130,7 +131,9 @@ class Idefics:
             prompts : list
                 A list of prompts. Each prompt is a list of text strings and images.
             batched_mode : bool, optional
-                Whether to process the prompts in batched mode. If True, all prompts are processed together. If False, only the first prompt is processed (default is True).
+                Whether to process the prompts in batched mode. 
+                If True, all prompts are processed together. 
+                If False, only the first prompt is processed (default is True).
 
         Returns
         -------
