@@ -133,7 +133,7 @@ def generate_character_description(character_name):
         player_descriptor_system_message,
         HumanMessage(
             content=f"""{game_description}
-            Please reply with a creative description of the presidential candidate, {character_name}, in {word_limit} words or less, that emphasizes their personalities. 
+            Please reply with a creative description of the presidential candidate, {character_name}, in {word_limit} words or less, that emphasizes their personalities.
             Speak directly to {character_name}.
             Do not add anything else."""
         ),
@@ -250,12 +250,12 @@ topic_specifier_prompt = [
     SystemMessage(content="You can make a task more specific."),
     HumanMessage(
         content=f"""{game_description}
-        
+
         You are the debate moderator.
-        Please make the debate topic more specific. 
+        Please make the debate topic more specific.
         Frame the debate topic as a problem to be solved.
         Be creative and imaginative.
-        Please reply with the specified topic in {word_limit} words or less. 
+        Please reply with the specified topic in {word_limit} words or less.
         Speak directly to the presidential candidates: {*character_names,}.
         Do not add anything else."""
     ),

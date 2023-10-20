@@ -576,13 +576,15 @@ class Tool(BaseTool):
             args_schema=args_schema,
             **kwargs,
         )
-        
+
+
 class EdgeGPTTool:
     def __init__(self, model):
         self.model = model
 
     def run(self, prompt):
         return self.model.ask(prompt)
+
 
 class StructuredTool(BaseTool):
     """Tool that can operate on any number of inputs."""
@@ -850,10 +852,4 @@ def tool(
     else:
         raise ValueError("Too many arguments for tool decorator")
 
-class EdgeGPTTool(BaseTool):
-    def __init__(self, model, name="EdgeGPTTool", description="Tool that uses EdgeGPTModel to generate responses"):
-        super().__init__(name=name, description=description)
-        self.model = model
 
-    def _run(self, prompt):
-        return self.model.__call__(prompt)

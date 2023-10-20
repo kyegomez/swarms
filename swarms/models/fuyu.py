@@ -21,15 +21,16 @@ class Fuyu:
         Device to use for the model
     max_new_tokens : int
         Maximum number of tokens to generate
-    
+
     Examples
     --------
     >>> fuyu = Fuyu()
     >>> fuyu("Hello, my name is", "path/to/image.png")
 
-    
-    
+
+
     """
+
     def __init__(
         self,
         pretrained_path: str = "adept/fuyu-8b",
