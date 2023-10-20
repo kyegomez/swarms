@@ -1,6 +1,6 @@
 from swarms.models.bing_chat import EdgeGPTModel
 from swarms.workers.worker import Worker
-from swarms.tools.tool import EdgeGPTTool 
+from swarms.tools.tool import EdgeGPTTool
 
 # Initialize the EdgeGPTModel
 edgegpt = EdgeGPTModel(cookies_path="./cookies.txt")

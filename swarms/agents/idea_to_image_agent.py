@@ -53,7 +53,7 @@ class Idea2Image:
     def llm_prompt(self):
         LLM_PROMPT = f"""
         Refine the USER prompt to create a more precise image tailored to the user's needs using
-        an image generator like DALLE-3. 
+        an image generator like DALLE-3.
 
         ###### FOLLOW THE GUIDE BELOW TO REFINE THE PROMPT ######
 
@@ -61,7 +61,7 @@ class Idea2Image:
 
         - Frame your photographic prompts like camera position, lighting, film type, year, usage context. This implicitly suggests image qualities.
 
-        - For illustrations, you can borrow photographic terms like "close up" and prompt for media, style, artist, animation style, etc.  
+        - For illustrations, you can borrow photographic terms like "close up" and prompt for media, style, artist, animation style, etc.
 
         - Prompt hack: name a film/TV show genre + year to "steal the look" for costumes, lighting, etc without knowing technical details.
 

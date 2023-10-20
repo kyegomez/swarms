@@ -58,7 +58,7 @@ class BaseChunker(ABC):
             half_token_count = token_count // 2
 
             if current_separator:
-                separators = self.separators[self.separators.index(current_separator) :]
+                separators = self.separators[self.separators.index(current_separator):]
             else:
                 separators = self.separators
 
@@ -84,7 +84,7 @@ class BaseChunker(ABC):
                             subchanks[: balance_index + 1]
                         )
                         second_subchunk = separator.value + separator.value.join(
-                            subchanks[balance_index + 1 :]
+                            subchanks[balance_index + 1:]
                         )
                     else:
                         first_subchunk = (
@@ -92,7 +92,7 @@ class BaseChunker(ABC):
                             + separator.value
                         )
                         second_subchunk = separator.value.join(
-                            subchanks[balance_index + 1 :]
+                            subchanks[balance_index + 1:]
                         )
 
                     first_subchunk_rec = self._chunk_recursively(

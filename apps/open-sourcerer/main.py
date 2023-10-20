@@ -14,9 +14,11 @@ interpreter.api_key = os.getenv("OPENAI_API_KEY")
 # interpreter.api_base = os.getenv("API_BASE")
 # interpreter.auto_run = True
 
+
 def split_text(text, chunk_size=1500):
     #########################################################################
-    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+
 
 # discord initial
 intents = discord.Intents.all()
@@ -27,6 +29,7 @@ message_chunks = []
 send_image = False
 
 model = whisper.load_model("base")
+
 
 def transcribe(audio):
 
@@ -45,12 +48,13 @@ def transcribe(audio):
     result = whisper.decode(model, mel, options)
     return result.text
 
+
 @client.event
 async def on_message(message):
     await client.process_commands(message)
     bot_mention = f"<@{bot_id}>"
     # if ("<@1158923910855798804>" in message.content) or (message.author == client.user or message.content[0] == '$'):
-        # return
+    # return
     response = []
     for chunk in interpreter.chat(message.content, display=False, stream=False):
         # await message.channel.send(chunk)
