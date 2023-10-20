@@ -34,14 +34,12 @@ def get_audio_length(audio_bytes):
 
 def speak(text):
     speaking = True
-    audio = generate(
-        text=text,
-        voice="Daniel"
-    )
+    audio = generate(text=text, voice="Daniel")
     play(audio, notebook=True)
 
     audio_length = get_audio_length(audio)
     time.sleep(audio_length)
+
 
 # @title Text-only JARVIS
 # @markdown Run this cell for a ChatGPT-like interface.
@@ -55,13 +53,11 @@ with gr.Blocks() as demo:
         return "", history + [[user_message, None]]
 
     def bot(history):
-
         user_message = history[-1][0]
         history[-1][1] = ""
         active_block_type = ""
 
         for chunk in interpreter.chat(user_message, stream=True, display=False):
-
             # Message
             if "message" in chunk:
                 if active_block_type != "message":
@@ -96,6 +92,6 @@ with gr.Blocks() as demo:
         bot, chatbot, chatbot
     )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     demo.queue()
     demo.launch(debug=True)

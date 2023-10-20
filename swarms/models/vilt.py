@@ -35,8 +35,6 @@ class Vilt:
 
 
         Args:
-        text: str
-
 
         """
         # Download the image

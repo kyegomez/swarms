@@ -28,14 +28,22 @@ class BingChat:
         self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
         self.bot = asyncio.run(Chatbot.create(cookies=self.cookies))
 
-    def __call__(self, prompt: str, style: ConversationStyle = ConversationStyle.creative) -> str:
+    def __call__(
+        self, prompt: str, style: ConversationStyle = ConversationStyle.creative
+    ) -> str:
         """
         Get a text response using the EdgeGPT model based on the provided prompt.
         """
-        response = asyncio.run(self.bot.ask(prompt=prompt, conversation_style=style, simplify_response=True))
-        return response['text']
+        response = asyncio.run(
+            self.bot.ask(
+                prompt=prompt, conversation_style=style, simplify_response=True
+            )
+        )
+        return response["text"]
 
-    def create_img(self, prompt: str, output_dir: str = "./output", auth_cookie: str = None) -> str:
+    def create_img(
+        self, prompt: str, output_dir: str = "./output", auth_cookie: str = None
+    ) -> str:
         """
         Generate an image based on the provided prompt and save it in the given output directory.
         Returns the path of the generated image.
@@ -47,7 +55,7 @@ class BingChat:
         images = image_generator.get_images(prompt)
         image_generator.save_images(images, output_dir=output_dir)
 
-        return Path(output_dir) / images[0]['path']
+        return Path(output_dir) / images[0]["path"]
 
     @staticmethod
     def set_cookie_dir_path(path: str):
