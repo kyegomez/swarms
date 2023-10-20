@@ -3,15 +3,15 @@ import discord
 from discord.ext import commands
 import interpreter
 import dotenv
-from voice import transcribe
+import whisper
 
 dotenv.load_dotenv(".env")
 
 bot_id = os.getenv("BOT_ID")
 bot_token = os.getenv("DISCORD_TOKEN")
 
-interpreter.api_key = os.getenv("API_KEY")
-interpreter.api_base = os.getenv("API_BASE")
+interpreter.api_key = os.getenv("OPENAI_API_KEY")
+# interpreter.api_base = os.getenv("API_BASE")
 # interpreter.auto_run = True
 
 def split_text(text, chunk_size=1500):
@@ -26,12 +26,31 @@ client = commands.Bot(command_prefix="$", intents=intents)
 message_chunks = []
 send_image = False
 
+model = whisper.load_model("base")
+
+def transcribe(audio):
+
+    # load audio and pad/trim it to fit 30 seconds
+    audio = whisper.load_audio(audio)
+    audio = whisper.pad_or_trim(audio)
+
+    # make log-Mel spectrogram and move to the same device as the model
+    mel = whisper.log_mel_spectrogram(audio).to(model.device)
+
+    # detect the spoken language
+    _, probs = model.detect_language(mel)
+
+    # decode the audio
+    options = whisper.DecodingOptions()
+    result = whisper.decode(model, mel, options)
+    return result.text
+
 @client.event
 async def on_message(message):
     await client.process_commands(message)
     bot_mention = f"<@{bot_id}>"
-    if (bot_mention in message.content) or (message.author == client.user or message.content[0] == '$'):
-        return
+    # if ("<@1158923910855798804>" in message.content) or (message.author == client.user or message.content[0] == '$'):
+        # return
     response = []
     for chunk in interpreter.chat(message.content, display=False, stream=False):
         # await message.channel.send(chunk)

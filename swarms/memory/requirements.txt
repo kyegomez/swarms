@@ -1,0 +1,8 @@
+attrs==21.2.0
+griptape==0.18.2
+oceandb==0.1.0
+pgvector==0.2.3
+pydantic==1.10.8
+SQLAlchemy==1.4.49
+SQLAlchemy==2.0.20
+swarms==1.8.2
