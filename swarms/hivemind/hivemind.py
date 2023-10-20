@@ -7,8 +7,11 @@
 import concurrent.futures
 import logging
 
+import faiss
 
+from swarms.embeddings.openai import OpenAIEmbeddings
 from swarms.swarms.swarms import HierarchicalSwarm
+from swarms.vectorstore.vectorstore import FAISS, InMemoryDocstore
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
