@@ -2,7 +2,6 @@ import os
 import sys
 from dotenv import load_dotenv
 from swarms.models.revgpt import RevChatGPTModel
-from swarms.workers.worker import Worker
 
 root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(root_dir)
