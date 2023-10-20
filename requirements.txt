@@ -25,7 +25,7 @@ chromadb
 open-interpreter
 tabulate 
 colored
-
+griptape
 addict
 albumentations
 basicsr

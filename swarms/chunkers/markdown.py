@@ -1,5 +1,5 @@
 from swarms.chunkers.base import BaseChunker
-from swarms.chunk_seperator import ChunkSeparator
+from swarms.chunkers.chunk_seperator import ChunkSeparator
 
 
 class MarkdownChunker(BaseChunker):
