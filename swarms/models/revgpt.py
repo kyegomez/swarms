@@ -1,3 +1,4 @@
+import argparse
 import os
 import revChatGPT
 from revChatGPT.V1 import Chatbot as RevChatGPTV1, time
@@ -27,3 +28,26 @@ class RevChatGPTModel:
     def generate_summary(self, text: str) -> str:
         # Implement this method based on your requirements
         pass
+
+    def enable_plugin(self, plugin_id: str):
+        self.chatbot.install_plugin(plugin_id=plugin_id)
+
+    def list_plugins(self):
+        return self.chatbot.get_plugins()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Manage RevChatGPT plugins.')
+    parser.add_argument('--enable', metavar='plugin_id', help='the plugin to enable')
+    parser.add_argument('--list', action='store_true', help='list all available plugins')
+    parser.add_argument('--access_token', required=True, help='access token for RevChatGPT')
+
+    args = parser.parse_args()
+
+    model = RevChatGPTModel(access_token=args.access_token)
+
+    if args.enable:
+        model.enable_plugin(args.enable)
+    if args.list:
+        plugins = model.list_plugins()
+        for plugin in plugins:
+            print(f"Plugin ID: {plugin['id']}, Name: {plugin['name']}")
