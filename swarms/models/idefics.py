@@ -39,7 +39,7 @@ class Idefics:
     # Usage
     ```
     from swarms.models import idefics
-    
+
     model = idefics()
 
     user_input = "User: What is in this image? https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"
