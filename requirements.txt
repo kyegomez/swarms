@@ -1,7 +1,6 @@
 # faiss-gpu
 transformers
 pandas
-# langchain==0.0.240
 langchain
 nest_asyncio
 pegasusx
@@ -22,7 +21,6 @@ google-generativeai
 duckduckgo-search
 agent-protocol
 chromadb
-exxa
 open-interpreter
 tabulate 
 colored

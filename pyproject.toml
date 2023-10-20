@@ -53,6 +53,7 @@ black = "*"
 dalle3 = "*"
 torchvision = "*"
 rich = "*"
+EdgeGPT = "*"
 
 
 [tool.poetry.dev-dependencies]
