@@ -10,6 +10,10 @@ class Zephyr:
 
 
     Args:
+        max_new_tokens(int) = Number of max new tokens 
+        temperature(float) = temperature of the LLM
+        top_k(float) = top k of the model set to 50
+        top_p(float) = top_p of the model set to 0.95
 
 
 
