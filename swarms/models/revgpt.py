@@ -1796,7 +1796,7 @@ class RevChatGPTModel:
     def run(self, task: str) -> str:
         self.start_time = time.time()
         prev_text = ""
-        for data in self.chatbot.ask(task):
+        for data in self.chatbot.ask(task, fileinfo=None):
             message = data["message"][len(prev_text):]
             prev_text = data["message"]
         self.end_time = time.time()
