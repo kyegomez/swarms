@@ -29,7 +29,7 @@ Book a [1-on-1 Session with Kye](https://calendly.com/apacai/agora), the Creator
 ----------
 
 ## Installation
-* `pip3 install swarms`
+* `pip3 install --upgrade swarms`
 
 ---
 
