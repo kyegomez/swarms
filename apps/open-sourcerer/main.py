@@ -17,7 +17,7 @@ interpreter.api_key = os.getenv("OPENAI_API_KEY")
 
 def split_text(text, chunk_size=1500):
     #########################################################################
-    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+    return [text[i : i + chunk_size] for i in range(0, len(text), chunk_size)]
 
 
 # discord initial
@@ -32,7 +32,6 @@ model = whisper.load_model("base")
 
 
 def transcribe(audio):
-
     # load audio and pad/trim it to fit 30 seconds
     audio = whisper.load_audio(audio)
     audio = whisper.pad_or_trim(audio)
@@ -58,13 +57,16 @@ async def on_message(message):
     response = []
     for chunk in interpreter.chat(message.content, display=False, stream=False):
         # await message.channel.send(chunk)
-        if 'message' in chunk:
-            response.append(chunk['message'])
+        if "message" in chunk:
+            response.append(chunk["message"])
     last_response = response[-1]
 
     max_message_length = 2000  # Discord's max message length is 2000 characters
     # Splitting the message into chunks of 2000 characters
-    response_chunks = [last_response[i:i + max_message_length] for i in range(0, len(last_response), max_message_length)]
+    response_chunks = [
+        last_response[i : i + max_message_length]
+        for i in range(0, len(last_response), max_message_length)
+    ]
     # Sending each chunk as a separate message
     for chunk in response_chunks:
         await message.channel.send(chunk)
@@ -74,9 +76,9 @@ async def on_message(message):
 async def join(ctx):
     if ctx.author.voice:
         channel = ctx.message.author.voice.channel
-        print('joining..')
+        print("joining..")
         await channel.connect()
-        print('joined.')
+        print("joined.")
     else:
         print("not in a voice channel!")
 
@@ -92,32 +94,32 @@ async def leave(ctx):
 @client.command()
 async def listen(ctx):
     if ctx.voice_client:
-        print('trying to listen..')
+        print("trying to listen..")
         ctx.voice_client.start_recording(discord.sinks.WaveSink(), callback, ctx)
-        print('listening..')
+        print("listening..")
     else:
         print("not in a voice channel!")
 
 
 async def callback(sink: discord.sinks, ctx):
-    print('in callback..')
+    print("in callback..")
     for user_id, audio in sink.audio_data.items():
         if user_id == ctx.author.id:
-            print('saving audio..')
+            print("saving audio..")
             audio: discord.sinks.core.AudioData = audio
             print(user_id)
             filename = "audio.wav"
             with open(filename, "wb") as f:
                 f.write(audio.file.getvalue())
-            print('audio saved.')
+            print("audio saved.")
             transcription = transcribe(filename)
             print(transcription)
             response = []
             for chunk in interpreter.chat(transcription, display=False, stream=True):
                 # await message.channel.send(chunk)
-                if 'message' in chunk:
-                    response.append(chunk['message'])
-            await ctx.message.channel.send(' '.join(response))
+                if "message" in chunk:
+                    response.append(chunk["message"])
+            await ctx.message.channel.send(" ".join(response))
 
 
 @client.command()
@@ -128,5 +130,6 @@ async def stop(ctx):
 @client.event
 async def on_ready():
     print(f"We have logged in as {client.user}")
+
 
 client.run(bot_token)
