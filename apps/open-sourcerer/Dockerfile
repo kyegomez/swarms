@@ -10,20 +10,8 @@ ADD . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Clone the Pycord-Development repository and install it
-RUN git clone https://github.com/Pycord-Development/pycord && \
-    cd pycord && \
-    pip install -U .
-
 # Make port 80 available to the world outside this container
 EXPOSE 80
-
-ENV ELEVEN_LABS_API_KEY="" \
-    OPENAI_API_KEY="" \
-    DISCORD_TOKEN="" \
-    API_KEY="" \
-    API_BASE="" \
-    SYSTEM_MESSAGE=""
 
 # Run DiscordInterpreter.py when the container launches
 CMD ["python", "main.py"]
