@@ -5,6 +5,7 @@ visual question answering on real world docs lik invoice, pdfs, etc
 from transformers import pipeline
 from swarms.models.base import AbstractModel
 
+
 class LayoutLMDocumentQA(AbstractModel):
     """
     LayoutLMDocumentQA for document question answering:
@@ -18,18 +19,16 @@ class LayoutLMDocumentQA(AbstractModel):
     >>> model = LayoutLMDocumentQA()
     >>> out = model("What is the total amount?", "path/to/img.png")
     >>> print(out)
-    
+
     """
+
     def __init__(
-        self, 
+        self,
         model_name: str = "impira/layoutlm-document-qa",
         task: str = "document-question-answering",
     ):
-        self.pipeline = pipeline(
-            self.task,
-            model=self.model_name
-        )
-    
+        self.pipeline = pipeline(self.task, model=self.model_name)
+
     def __call__(self, task: str, img_path: str):
         """Call for model"""
         out = self.pipeline(img_path, task)
