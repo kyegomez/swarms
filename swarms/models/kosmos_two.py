@@ -20,7 +20,7 @@ class Kosmos:
     """
 
     Args:
-
+    
 
 
     # Initialize Kosmos
