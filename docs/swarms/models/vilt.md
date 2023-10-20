@@ -1,4 +1,4 @@
-# Vilt Documentation
+# `Vilt` Documentation
 
 ## Introduction
 

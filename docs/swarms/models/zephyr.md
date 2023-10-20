@@ -1,4 +1,4 @@
-# Zephyr Documentation
+# `Zephyr` Documentation
 
 ## Introduction
 
