@@ -1,11 +1,7 @@
 import os
-import sys
 from dotenv import load_dotenv
 from swarms.models.revgpt import RevChatGPTModel
 from swarms.workers.worker import Worker
-
-root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(root_dir)
 
 load_dotenv()
 
@@ -17,12 +13,13 @@ config = {
     "unverified_plugin_domains": [os.getenv("REVGPT_UNVERIFIED_PLUGIN_DOMAINS")]
 }
 
-# For v1 model
-# model = RevChatGPTModel(access_token=os.getenv("ACCESS_TOKEN"), **config)
+llm = RevChatGPTModel(access_token=os.getenv("ACCESS_TOKEN"), **config)
 
-# For v3 model
-model = RevChatGPTModel(access_token=os.getenv("OPENAI_API_KEY"), **config)
+worker = Worker(
+    ai_name="Optimus Prime",
+    llm=llm
+)
 
-task = "Write a cli snake game"
-response = model.run(task)
+task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+response = worker.run(task)
 print(response)
