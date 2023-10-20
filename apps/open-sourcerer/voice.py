@@ -5,32 +5,13 @@ import gradio as gr
 from pydub import AudioSegment
 import io
 from elevenlabs import generate, play, set_api_key
-import whisper
 import dotenv
 
 dotenv.load_dotenv(".env")
 
 # interpreter.model = "TheBloke/Mistral-7B-OpenOrca-GGUF"
 interpreter.auto_run = True
-model = whisper.load_model("base")
 
-
-def transcribe(audio):
-
-    # load audio and pad/trim it to fit 30 seconds
-    audio = whisper.load_audio(audio)
-    audio = whisper.pad_or_trim(audio)
-
-    # make log-Mel spectrogram and move to the same device as the model
-    mel = whisper.log_mel_spectrogram(audio).to(model.device)
-
-    # detect the spoken language
-    _, probs = model.detect_language(mel)
-
-    # decode the audio
-    options = whisper.DecodingOptions()
-    result = whisper.decode(model, mel, options)
-    return result.text
 
 
 set_api_key("ELEVEN_LABS_API_KEY")

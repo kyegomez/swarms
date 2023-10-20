@@ -1,4 +1,5 @@
 openai-whisper
+py-cord
 discord
 open-interpreter
 elevenlabs
