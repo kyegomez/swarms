@@ -22,7 +22,6 @@ class Kosmos:
     Args:
 
 
-
     # Initialize Kosmos
     kosmos = Kosmos()
 
