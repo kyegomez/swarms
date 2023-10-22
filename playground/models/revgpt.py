@@ -14,7 +14,7 @@ config = {
     "plugin_ids": [os.getenv("REVGPT_PLUGIN_IDS")],
     "disable_history": os.getenv("REVGPT_DISABLE_HISTORY") == "True",
     "PUID": os.getenv("REVGPT_PUID"),
-    "unverified_plugin_domains": [os.getenv("REVGPT_UNVERIFIED_PLUGIN_DOMAINS")]
+    "unverified_plugin_domains": [os.getenv("REVGPT_UNVERIFIED_PLUGIN_DOMAINS")],
 }
 
 # For v1 model

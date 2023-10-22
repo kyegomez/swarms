@@ -2,12 +2,12 @@ import unittest
 from unittest.mock import patch
 from Sswarms.models.revgptv1 import RevChatGPTModelv1
 
-class TestRevChatGPT(unittest.TestCase):
 
+class TestRevChatGPT(unittest.TestCase):
     def setUp(self):
         self.access_token = "<your_access_token>"
         self.model = RevChatGPTModelv1(access_token=self.access_token)
-    
+
     def test_run(self):
         prompt = "What is the capital of France?"
         response = self.model.run(prompt)
@@ -21,7 +21,7 @@ class TestRevChatGPT(unittest.TestCase):
     def test_generate_summary(self):
         text = "This is a sample text to summarize. It has multiple sentences and details. The summary should be concise."
         summary = self.model.generate_summary(text)
-        self.assertLess(len(summary), len(text)/2)
+        self.assertLess(len(summary), len(text) / 2)
 
     def test_enable_plugin(self):
         plugin_id = "some_plugin_id"
@@ -39,9 +39,9 @@ class TestRevChatGPT(unittest.TestCase):
         conversations = self.model.chatbot.get_conversations()
         self.assertIsInstance(conversations, list)
 
-    @patch("RevChatGPTModelv1.Chatbot.get_msg_history")  
+    @patch("RevChatGPTModelv1.Chatbot.get_msg_history")
     def test_get_msg_history(self, mock_get_msg_history):
-        conversation_id = "convo_id" 
+        conversation_id = "convo_id"
         self.model.chatbot.get_msg_history(conversation_id)
         mock_get_msg_history.assert_called_with(conversation_id)
 
@@ -77,6 +77,7 @@ class TestRevChatGPT(unittest.TestCase):
         original_convo_id = self.model.chatbot.conversation_id
         self.model.chatbot.rollback_conversation(1)
         self.assertNotEqual(original_convo_id, self.model.chatbot.conversation_id)
+
 
 if __name__ == "__main__":
     unittest.main()
