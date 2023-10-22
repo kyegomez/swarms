@@ -6,12 +6,11 @@ import torch
 from transformers import BioGptForCausalLM, BioGptTokenizer
 
 
-
 # Fixture for BioGPT instance
 @pytest.fixture
 def biogpt_instance():
     from swarms.models import (
-        BioGPT,  
+        BioGPT,
     )
 
     return BioGPT()

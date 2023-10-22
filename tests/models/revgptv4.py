@@ -2,16 +2,16 @@ import unittest
 from unittest.mock import patch
 from RevChatGPTModelv4 import RevChatGPTModelv4
 
-class TestRevChatGPT(unittest.TestCase):
 
+class TestRevChatGPT(unittest.TestCase):
     def setUp(self):
         self.access_token = "123"
         self.model = RevChatGPTModelv4(access_token=self.access_token)
-    
+
     def test_run(self):
         prompt = "What is the capital of France?"
         self.model.start_time = 10
-        self.model.end_time = 20  
+        self.model.end_time = 20
         response = self.model.run(prompt)
         self.assertEqual(response, "The capital of France is Paris.")
         self.assertEqual(self.model.start_time, 10)
@@ -44,7 +44,7 @@ class TestRevChatGPT(unittest.TestCase):
     @patch("RevChatGPTModelv4.Chatbot.get_msg_history")
     def test_get_msg_history(self, mock_get_msg_history):
         convo_id = "123"
-        self.model.chatbot.get_msg_history(convo_id) 
+        self.model.chatbot.get_msg_history(convo_id)
         mock_get_msg_history.assert_called_with(convo_id)
 
     @patch("RevChatGPTModelv4.Chatbot.share_conversation")
@@ -52,7 +52,7 @@ class TestRevChatGPT(unittest.TestCase):
         self.model.chatbot.share_conversation()
         mock_share_conversation.assert_called()
 
-    @patch("RevChatGPTModelv4.Chatbot.gen_title")  
+    @patch("RevChatGPTModelv4.Chatbot.gen_title")
     def test_gen_title(self, mock_gen_title):
         convo_id = "123"
         message_id = "456"
@@ -77,7 +77,7 @@ class TestRevChatGPT(unittest.TestCase):
         self.model.chatbot.clear_conversations()
         mock_clear_conversations.assert_called()
 
-    @patch("RevChatGPTModelv4.Chatbot.rollback_conversation") 
+    @patch("RevChatGPTModelv4.Chatbot.rollback_conversation")
     def test_rollback_conversation(self, mock_rollback_conversation):
         num = 2
         self.model.chatbot.rollback_conversation(num)
@@ -87,6 +87,7 @@ class TestRevChatGPT(unittest.TestCase):
     def test_reset_chat(self, mock_reset_chat):
         self.model.chatbot.reset_chat()
         mock_reset_chat.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

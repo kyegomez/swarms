@@ -46,6 +46,7 @@ from swarms.utils.revutils import get_input
 
 bcolors = t.Colors()
 
+
 def generate_random_hex(length: int = 17) -> str:
     """Generate a random hex string
 
@@ -119,7 +120,6 @@ def logger(is_timed: bool) -> function:
 
 
 BASE_URL = environ.get("CHATGPT_BASE_URL", "http://bypass.bzff.cn:9090/")
-
 
 
 def captcha_solver(images: list[str], challenge_details: dict) -> int:
@@ -197,40 +197,40 @@ def get_arkose_token(
             raise Exception("Failed to verify captcha")
         return resp_json.get("token")
     # else:
-        # working_endpoints: list[str] = []
-        # # Check uptime for different endpoints via gatus
-        # resp2: list[dict] = requests.get(
-            # "https://stats.churchless.tech/api/v1/endpoints/statuses?page=1"
-        # ).json()
-        # for endpoint in resp2:
-            # # print(endpoint.get("name"))
-            # if endpoint.get("group") != "Arkose Labs":
-                # continue
-            # # Check the last 5 results
-            # results: list[dict] = endpoint.get("results", [])[-5:-1]
-            # # print(results)
-            # if not results:
-                # print(f"Endpoint {endpoint.get('name')} has no results")
-                # continue
-            # # Check if all the results are up
-            # if all(result.get("success") == True for result in results):
-                # working_endpoints.append(endpoint.get("name"))
-        # if not working_endpoints:
-            # print("No working endpoints found. Please solve the captcha manually.\n找不到工作终结点。请手动解决captcha")
-            # return get_arkose_token(download_images=True, captcha_supported=False)
-        # # Choose a random endpoint
-        # endpoint = random.choice(working_endpoints)
-        # resp: requests.Response = requests.get(endpoint)
-        # if resp.status_code != 200:
-            # if resp.status_code != 511:
-                # raise Exception("Failed to get captcha token")
-            # else:
-                # print("需要验证码，请手动解决captcha.")
-                # return get_arkose_token(download_images=True, captcha_supported=True)
-        # try:
-            # return resp.json().get("token")
-        # except Exception:
-            # return resp.text
+    # working_endpoints: list[str] = []
+    # # Check uptime for different endpoints via gatus
+    # resp2: list[dict] = requests.get(
+    # "https://stats.churchless.tech/api/v1/endpoints/statuses?page=1"
+    # ).json()
+    # for endpoint in resp2:
+    # # print(endpoint.get("name"))
+    # if endpoint.get("group") != "Arkose Labs":
+    # continue
+    # # Check the last 5 results
+    # results: list[dict] = endpoint.get("results", [])[-5:-1]
+    # # print(results)
+    # if not results:
+    # print(f"Endpoint {endpoint.get('name')} has no results")
+    # continue
+    # # Check if all the results are up
+    # if all(result.get("success") == True for result in results):
+    # working_endpoints.append(endpoint.get("name"))
+    # if not working_endpoints:
+    # print("No working endpoints found. Please solve the captcha manually.\n找不到工作终结点。请手动解决captcha")
+    # return get_arkose_token(download_images=True, captcha_supported=False)
+    # # Choose a random endpoint
+    # endpoint = random.choice(working_endpoints)
+    # resp: requests.Response = requests.get(endpoint)
+    # if resp.status_code != 200:
+    # if resp.status_code != 511:
+    # raise Exception("Failed to get captcha token")
+    # else:
+    # print("需要验证码，请手动解决captcha.")
+    # return get_arkose_token(download_images=True, captcha_supported=True)
+    # try:
+    # return resp.json().get("token")
+    # except Exception:
+    # return resp.text
 
 
 class Chatbot:
@@ -1751,6 +1751,7 @@ if __name__ == "__main__":
     )
     main(configure())
 
+
 class RevChatGPTModelv1:
     def __init__(self, access_token=None, **kwargs):
         super().__init__()
@@ -1764,7 +1765,7 @@ class RevChatGPTModelv1:
         self.start_time = time.time()
         prev_text = ""
         for data in self.chatbot.ask(task, fileinfo=None):
-            message = data["message"][len(prev_text):]
+            message = data["message"][len(prev_text) :]
             prev_text = data["message"]
         self.end_time = time.time()
         return prev_text
@@ -1779,11 +1780,16 @@ class RevChatGPTModelv1:
     def list_plugins(self):
         return self.chatbot.get_plugins()
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Manage RevChatGPT plugins.')
-    parser.add_argument('--enable', metavar='plugin_id', help='the plugin to enable')
-    parser.add_argument('--list', action='store_true', help='list all available plugins')
-    parser.add_argument('--access_token', required=True, help='access token for RevChatGPT')
+    parser = argparse.ArgumentParser(description="Manage RevChatGPT plugins.")
+    parser.add_argument("--enable", metavar="plugin_id", help="the plugin to enable")
+    parser.add_argument(
+        "--list", action="store_true", help="list all available plugins"
+    )
+    parser.add_argument(
+        "--access_token", required=True, help="access token for RevChatGPT"
+    )
 
     args = parser.parse_args()
 
@@ -1795,4 +1801,3 @@ if __name__ == "__main__":
         plugins = model.list_plugins()
         for plugin in plugins:
             print(f"Plugin ID: {plugin['id']}, Name: {plugin['name']}")
-
