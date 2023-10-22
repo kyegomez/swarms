@@ -1,4 +1,4 @@
-#4v image recognition
+# 4v image recognition
 """
 Standard ChatGPT 
 """
@@ -26,6 +26,7 @@ from pathlib import Path
 import tempfile
 import random
 import os
+
 # Import function type
 
 import httpx
@@ -46,7 +47,7 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyBindings
-from schemas.typings import Colors 
+from schemas.typings import Colors
 
 bindings = KeyBindings()
 
@@ -55,6 +56,7 @@ BASE_URL = environ.get("CHATGPT_BASE_URL", "https://ai.fakeopen.com/api/")
 # BASE_URL = environ.get("CHATGPT_BASE_URL", "https://bypass.churchless.tech/")
 
 bcolors = t.Colors()
+
 
 def create_keybindings(key: str = "c-@") -> KeyBindings:
     """
@@ -136,6 +138,7 @@ def get_filtered_keys_from_object(obj: object, *keys: str) -> any:
     # Only return specified keys that are in class_keys
     return {key for key in keys if key in class_keys}
 
+
 def generate_random_hex(length: int = 17) -> str:
     """Generate a random hex string
     Args:
@@ -200,8 +203,6 @@ def logger(is_timed: bool):
         return wrapper
 
     return decorator
-
-
 
 
 bcolors = Colors()
@@ -282,7 +283,6 @@ def get_arkose_token(
         if resp.status_code != 200:
             raise Exception("Failed to verify captcha")
         return resp_json.get("token")
-
 
 
 class Chatbot:
@@ -636,7 +636,7 @@ class Chatbot:
             yield {
                 "author": author,
                 "message": message,
-                "conversation_id": cid+'***************************',
+                "conversation_id": cid + "***************************",
                 "parent_id": pid,
                 "model": model,
                 "finish_details": finish_details,
@@ -711,7 +711,6 @@ class Chatbot:
         if not conversation_id and not parent_id:
             parent_id = str(uuid.uuid4())
 
-
         if conversation_id and not parent_id:
             if conversation_id not in self.conversation_mapping:
                 print(conversation_id)
@@ -735,8 +734,8 @@ class Chatbot:
                 print(
                     "Warning: Invalid conversation_id provided, treat as a new conversation",
                 )
-                #conversation_id = None
-                conversation_id =str(uuid.uuid4())
+                # conversation_id = None
+                conversation_id = str(uuid.uuid4())
                 print(conversation_id)
                 parent_id = str(uuid.uuid4())
         model = model or self.config.get("model") or "text-davinci-002-render-sha"
@@ -762,7 +761,7 @@ class Chatbot:
     def ask(
         self,
         prompt: str,
-        fileinfo: dict ,
+        fileinfo: dict,
         conversation_id: str | None = None,
         parent_id: str = "",
         model: str = "",
@@ -795,7 +794,10 @@ class Chatbot:
                 "id": str(uuid.uuid4()),
                 "role": "user",
                 "author": {"role": "user"},
-                "content": {"content_type": "multimodal_text", "parts": [prompt, fileinfo]},
+                "content": {
+                    "content_type": "multimodal_text",
+                    "parts": [prompt, fileinfo],
+                },
             },
         ]
 
@@ -871,7 +873,7 @@ class Chatbot:
                 parent_id = self.conversation_mapping[conversation_id]
             else:  # invalid conversation_id provided, treat as a new conversation
                 conversation_id = None
-                conversation_id=str(uuid.uuid4())
+                conversation_id = str(uuid.uuid4())
                 parent_id = str(uuid.uuid4())
         model = model or self.config.get("model") or "text-davinci-002-render-sha"
         data = {
@@ -1304,7 +1306,7 @@ class AsyncChatbot(Chatbot):
                 print(
                     "Warning: Invalid conversation_id provided, treat as a new conversation",
                 )
-                #conversation_id = None
+                # conversation_id = None
                 conversation_id = str(uuid.uuid4())
                 print(conversation_id)
                 parent_id = str(uuid.uuid4())
@@ -1363,12 +1365,18 @@ class AsyncChatbot(Chatbot):
             {
                 "id": str(uuid.uuid4()),
                 "author": {"role": "user"},
-                "content": {"content_type": "multimodal_text", "parts": [prompt,  {
-                        "asset_pointer": "file-service://file-V9IZRkWQnnk1HdHsBKAdoiGf",
-                        "size_bytes": 239505,
-                        "width": 1706,
-                        "height": 1280
-                    }]},
+                "content": {
+                    "content_type": "multimodal_text",
+                    "parts": [
+                        prompt,
+                        {
+                            "asset_pointer": "file-service://file-V9IZRkWQnnk1HdHsBKAdoiGf",
+                            "size_bytes": 239505,
+                            "width": 1706,
+                            "height": 1280,
+                        },
+                    ],
+                },
             },
         ]
 
@@ -1763,6 +1771,7 @@ if __name__ == "__main__":
     )
     main(configure())
 
+
 class RevChatGPTModelv4:
     def __init__(self, access_token=None, **kwargs):
         super().__init__()
@@ -1776,7 +1785,7 @@ class RevChatGPTModelv4:
         self.start_time = time.time()
         prev_text = ""
         for data in self.chatbot.ask(task, fileinfo=None):
-            message = data["message"][len(prev_text):]
+            message = data["message"][len(prev_text) :]
             prev_text = data["message"]
         self.end_time = time.time()
         return prev_text
@@ -1791,11 +1800,16 @@ class RevChatGPTModelv4:
     def list_plugins(self):
         return self.chatbot.get_plugins()
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Manage RevChatGPT plugins.')
-    parser.add_argument('--enable', metavar='plugin_id', help='the plugin to enable')
-    parser.add_argument('--list', action='store_true', help='list all available plugins')
-    parser.add_argument('--access_token', required=True, help='access token for RevChatGPT')
+    parser = argparse.ArgumentParser(description="Manage RevChatGPT plugins.")
+    parser.add_argument("--enable", metavar="plugin_id", help="the plugin to enable")
+    parser.add_argument(
+        "--list", action="store_true", help="list all available plugins"
+    )
+    parser.add_argument(
+        "--access_token", required=True, help="access token for RevChatGPT"
+    )
 
     args = parser.parse_args()
 

@@ -5,12 +5,12 @@ import os
 # Assuming the BingChat class is in a file named "bing_chat.py"
 from bing_chat import BingChat, ConversationStyle
 
-class TestBingChat(unittest.TestCase):
 
+class TestBingChat(unittest.TestCase):
     def setUp(self):
         # Path to a mock cookies file for testing
         self.mock_cookies_path = "./mock_cookies.json"
-        with open(self.mock_cookies_path, 'w') as file:
+        with open(self.mock_cookies_path, "w") as file:
             json.dump({"mock_cookie": "mock_value"}, file)
 
         self.chat = BingChat(cookies_path=self.mock_cookies_path)
@@ -33,10 +33,10 @@ class TestBingChat(unittest.TestCase):
         class MockImageGen:
             def __init__(self, *args, **kwargs):
                 pass
-            
+
             def get_images(self, *args, **kwargs):
                 return [{"path": "mock_image.png"}]
-            
+
             @staticmethod
             def save_images(*args, **kwargs):
                 pass
@@ -53,6 +53,7 @@ class TestBingChat(unittest.TestCase):
         test_path = "./test_path"
         BingChat.set_cookie_dir_path(test_path)
         self.assertEqual(BingChat.Cookie.dir_path, test_path)
+
 
 if __name__ == "__main__":
     unittest.main()

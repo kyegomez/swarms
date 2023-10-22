@@ -11,13 +11,14 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyBindings
-from schemas.typings import Colors 
+from schemas.typings import Colors
 
 bindings = KeyBindings()
 
 # BASE_URL = environ.get("CHATGPT_BASE_URL", "http://192.168.250.249:9898/api/")
 BASE_URL = os.environ.get("CHATGPT_BASE_URL", "https://ai.fakeopen.com/api/")
 # BASE_URL = environ.get("CHATGPT_BASE_URL", "https://bypass.churchless.tech/")
+
 
 def create_keybindings(key: str = "c-@") -> KeyBindings:
     """
@@ -99,6 +100,7 @@ def get_filtered_keys_from_object(obj: object, *keys: str) -> any:
     # Only return specified keys that are in class_keys
     return {key for key in keys if key in class_keys}
 
+
 def generate_random_hex(length: int = 17) -> str:
     """Generate a random hex string
     Args:
@@ -163,4 +165,3 @@ def logger(is_timed: bool):
         return wrapper
 
     return decorator
-
