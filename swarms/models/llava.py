@@ -16,16 +16,17 @@ class MultiModalLlava:
         top_k: The top k value for sampling
         repetition_penalty: The repetition penalty for sampling
         device_map: The device map to use
-    
+
     Methods:
         __call__: Call the model
         chat: Interactive chat in terminal
-    
+
     Example:
         >>> from swarms.models.llava import LlavaModel
         >>> model = LlavaModel(device="cpu")
         >>> model("Hello, I am a robot.")
     """
+
     def __init__(
         self,
         model_name_or_path="TheBloke/llava-v1.5-13B-GPTQ",
@@ -37,7 +38,7 @@ class MultiModalLlava:
         top_p=0.95,
         top_k=40,
         repetition_penalty=1.1,
-        device_map: str = "auto"
+        device_map: str = "auto",
     ):
         self.device = device
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -76,4 +77,3 @@ class MultiModalLlava:
                 break
             response = self(user_input)
             print(f"Model: {response}")
-
