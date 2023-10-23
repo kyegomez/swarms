@@ -183,8 +183,6 @@ For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 ## Contribute
 We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](C0NTRIBUTING.md).
 
-
-
 ### Optimization Priorities
 
 1. **Reliability**: Increase the reliability of the swarm - obtaining the desired output with a basic and un-detailed input.
@@ -195,17 +193,6 @@ We're always looking for contributors to help us improve and expand this project
 
 Our goal is to continuously improve Swarms by following this roadmap, while also being adaptable to new needs and opportunities as they arise.
 
----
-
-# Demos
-
-![Swarms Demo](images/Screenshot_48.png)
-
-## Swarm Video Demo {Click for more}
-
-[![Watch the swarm video](https://img.youtube.com/vi/Br62cDMYXgc/maxresdefault.jpg)](https://youtu.be/Br62cDMYXgc)
-
----
 
 # Contact 
 For enterprise and production ready deployments, allow us to discover more about you and your story, [book a call with us here](https://www.apac.ai/Setup-Call)
