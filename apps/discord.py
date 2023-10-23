@@ -86,14 +86,13 @@ class Bot:
             
         # image_generator.py
         @self.bot.command()
-        async def generate_image(ctx, *, prompt: str):
+        async def generate_image(ctx, *, prompt: str = None, imggen: str = None):
             """generates images based on the provided prompt"""
             await ctx.send(f"generating images for prompt: `{prompt}`...")
             loop = asyncio.get_event_loop()
 
             # initialize a future object for the dalle instance
-            model_instance = dalle3()
-            future = loop.run_in_executor(Executor, model_instance.run, prompt)
+            future = loop.run_in_executor(Executor, imggen, prompt)
 
             try:
                 # wait for the dalle request to complete, with a timeout of 60 seconds
@@ -111,8 +110,8 @@ class Bot:
                 print(f"sending {len(latest_files)} images to discord...")
 
                 # send all the latest images in a single message
-                storage_service = os.environ("STORAGE_SERVICE") # "https://storage.googleapis.com/your-bucket-name/
-                await ctx.send(files=[storage_service.upload(filepath) for filepath in latest_files])
+                # storage_service = os.environ("STORAGE_SERVICE") # "https://storage.googleapis.com/your-bucket-name/
+                # await ctx.send(files=[storage_service.upload(filepath) for filepath in latest_files])
 
             except asyncio.timeouterror:
                 await ctx.send("the request took too long! it might have been censored or you're out of boosts. please try entering the prompt again.")
@@ -125,7 +124,7 @@ class Bot:
             if use_agent:
                 response = self.agent.run(text)
             else:
-                response = self.llm.run(text)
+                response = self.llm.__call__(text)
             await ctx.send(response)
         
         def add_command(self, name, func):
