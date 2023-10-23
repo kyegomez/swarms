@@ -23,5 +23,5 @@ jobs:
 
       - name: Run tests and checks
         run: |
-          pytest tests/
+          find tests/ -name "*.py" | xargs pytest
           pylint swarms
