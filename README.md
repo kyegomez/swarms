@@ -1,4 +1,4 @@
-![Swarming banner icon](swarmslogobanner.png)
+![Swarming banner icon](images/swarmslogobanner.png)
 
 <div align="center">
 
@@ -156,28 +156,10 @@ agent.run("Create a video of a swarm of fish")
 
 ```
 
-- OmniModal Agent has a ui in the root called `python3 omni_ui.py`
-
 ---
 
 # Documentation
 For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
-
------
-
-# ✨ Features
-* Easy to use Base LLMs, `OpenAI` `Palm` `Anthropic` `HuggingFace`
-* Enterprise Grade, Production Ready with robust Error Handling
-* Multi-Modality Native with Multi-Modal LLMs as tools
-* Infinite Memory Processing: Store infinite sequences of infinite Multi-Modal data, text, images, videos, audio
-* Usability: Extreme emphasis on useability, code is at it's theortical minimum simplicity factor to use
-* Reliability: Outputs that accomplish tasks and activities you wish to execute.
-* Fluidity: A seamless all-around experience to build production grade workflows
-* Speed: Lower the time to automate tasks by 90%. 
-* Simplicity: Swarms is extremely simple to use, if not thee simplest agent framework of all time
-* Powerful: Swarms is capable of building entire software apps, to large scale data analysis, and handling chaotic situations
-
-
 -----
 
 ## Contribute
