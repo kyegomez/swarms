@@ -7,10 +7,11 @@ from invoke import Executor
 from dotenv import load_dotenv
 from discord.ext import commands
 
+
 class Bot:
     def __init__(self, agent, llm, command_prefix="!"):
         load_dotenv()
-        
+
         intents = discord.intents.default()
         intents.messages = True
         intents.guilds = True
@@ -20,21 +21,18 @@ class Bot:
         # setup
         self.llm = llm
         self.agent = agent
-        self. bot = commands.bot(command_prefix="!", intents=intents)
+        self.bot = commands.bot(command_prefix="!", intents=intents)
         self.discord_token = os.getenv("DISCORD_TOKEN")
         self.storage_service = os.getenv("STORAGE_SERVICE")
-
 
         @self.bot.event
         async def on_ready():
             print(f"we have logged in as {self.bot.user}")
 
-
         @self.bot.command()
         async def greet(ctx):
             """greets the user."""
             await ctx.send(f"hello, {ctx.author.name}!")
-
 
         @self.bot.command()
         async def help_me(ctx):
@@ -77,13 +75,13 @@ class Bot:
             """starts listening to voice in the voice channel that the bot is in."""
             if ctx.voice_client:
                 # create a wavesink to record the audio
-                sink = discord.sinks.wavesink('audio.wav')
+                sink = discord.sinks.wavesink("audio.wav")
                 # start recording
                 ctx.voice_client.start_recording(sink)
                 await ctx.send("started listening and recording.")
             else:
                 await ctx.send("i am not in a voice channel!")
-            
+
         # image_generator.py
         @self.bot.command()
         async def generate_image(ctx, *, prompt: str):
@@ -101,7 +99,11 @@ class Bot:
                 print("done generating images!")
 
                 # list all files in the save_directory
-                all_files = [os.path.join(root, file) for root, _, files in os.walk(os.environ("SAVE_DIRECTORY")) for file in files]
+                all_files = [
+                    os.path.join(root, file)
+                    for root, _, files in os.walk(os.environ("SAVE_DIRECTORY"))
+                    for file in files
+                ]
 
                 # sort files by their creation time (latest first)
                 sorted_files = sorted(all_files, key=os.path.getctime, reverse=True)
@@ -111,11 +113,19 @@ class Bot:
                 print(f"sending {len(latest_files)} images to discord...")
 
                 # send all the latest images in a single message
-                storage_service = os.environ("STORAGE_SERVICE") # "https://storage.googleapis.com/your-bucket-name/
-                await ctx.send(files=[storage_service.upload(filepath) for filepath in latest_files])
+                storage_service = os.environ(
+                    "STORAGE_SERVICE"
+                )  # "https://storage.googleapis.com/your-bucket-name/
+                await ctx.send(
+                    files=[
+                        storage_service.upload(filepath) for filepath in latest_files
+                    ]
+                )
 
             except asyncio.timeouterror:
-                await ctx.send("the request took too long! it might have been censored or you're out of boosts. please try entering the prompt again.")
+                await ctx.send(
+                    "the request took too long! it might have been censored or you're out of boosts. please try entering the prompt again."
+                )
             except Exception as e:
                 await ctx.send(f"an error occurred: {e}")
 
@@ -127,12 +137,13 @@ class Bot:
             else:
                 response = self.llm.run(text)
             await ctx.send(response)
-        
+
         def add_command(self, name, func):
             @self.bot.command()
             async def command(ctx, *args):
                 reponse = func(*args)
                 await ctx.send(responses)
-                
-def run(self) :
+
+
+def run(self):
     self.bot.run("DISCORD_TOKEN")

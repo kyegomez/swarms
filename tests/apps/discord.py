@@ -1,22 +1,24 @@
 import unittest
 from unittest.mock import patch, Mock, MagicMock
-from apps.discord import Bot  # Replace 'Bot' with the name of the file containing your bot's code.
+from apps.discord import (
+    Bot,
+)  # Replace 'Bot' with the name of the file containing your bot's code.
+
 
 class TestBot(unittest.TestCase):
-
     def setUp(self):
         self.llm_mock = Mock()
         self.agent_mock = Mock()
         self.bot = Bot(agent=self.agent_mock, llm=self.llm_mock)
 
-    @patch('Bot.load_dotenv')  # Mocking the `load_dotenv` function call.
+    @patch("Bot.load_dotenv")  # Mocking the `load_dotenv` function call.
     def test_initialization(self, mock_load_dotenv):
         self.assertIsNotNone(self.bot.bot)
         self.assertEqual(self.bot.agent, self.agent_mock)
         self.assertEqual(self.bot.llm, self.llm_mock)
         mock_load_dotenv.assert_called_once()
 
-    @patch('Bot.commands.bot')
+    @patch("Bot.commands.bot")
     def test_greet(self, mock_bot):
         ctx_mock = Mock()
         ctx_mock.author.name = "TestUser"
@@ -26,7 +28,7 @@ class TestBot(unittest.TestCase):
 
     # Similarly, you can add tests for other commands.
 
-    @patch('Bot.commands.bot')
+    @patch("Bot.commands.bot")
     def test_help_me(self, mock_bot):
         ctx_mock = Mock()
         self.bot.bot.clear()
@@ -34,7 +36,7 @@ class TestBot(unittest.TestCase):
         # Verify the help text was sent. You can check for a substring to make it shorter.
         ctx_mock.send.assert_called()
 
-    @patch('Bot.commands.bot')
+    @patch("Bot.commands.bot")
     def test_on_command_error(self, mock_bot):
         ctx_mock = Mock()
         error_mock = Mock()
@@ -51,6 +53,7 @@ class TestBot(unittest.TestCase):
         # Here, you can further test by triggering the command and checking the response.
 
     # You can add more tests for other commands and functionalities.
+
 
 if __name__ == "__main__":
     unittest.main()
