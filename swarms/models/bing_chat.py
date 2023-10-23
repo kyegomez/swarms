@@ -1,4 +1,4 @@
-"""EdgeGPT model by OpenAI"""
+"""Bing-Chat model by Micorsoft"""
 import asyncio
 import json
 from pathlib import Path
@@ -25,9 +25,11 @@ class BingChat:
 
     """
 
-    def __init__(self, cookies_path: str):
+    def __init__(self, cookies_path: str, bing_cookie: str = None, auth_cookie: str = None):
         self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
         self.bot = asyncio.run(Chatbot.create(cookies=self.cookies))
+        self.auth_cookie = auth_cookie
+        self.auth_cookie_SRCHHPGUSR = bing_cookie
 
     def __call__(
         self, prompt: str, style: ConversationStyle = ConversationStyle.creative
@@ -43,7 +45,7 @@ class BingChat:
         return response["text"]
 
     def create_img(
-        self, prompt: str, output_dir: str = "./output", auth_cookie: str = None
+        self, prompt: str, output_dir: str = "./output", auth_cookie: str = None, auth_cookie_SRCHHPGUSR: str = None
     ) -> str:
         """
         Generate an image based on the provided prompt and save it in the given output directory.
@@ -52,7 +54,7 @@ class BingChat:
         if not auth_cookie:
             raise ValueError("Auth cookie is required for image generation.")
 
-        image_generator = ImageGen(auth_cookie, quiet=True)
+        image_generator = ImageGen(auth_cookie, auth_cookie_SRCHHPGUSR, quiet=True, )
         images = image_generator.get_images(prompt)
         image_generator.save_images(images, output_dir=output_dir)
 
