@@ -1,4 +1,4 @@
-![Swarming banner icon](images/swarmsbanner.png)
+![Swarming banner icon](swarmslogobanner.png)
 
 <div align="center">
 
