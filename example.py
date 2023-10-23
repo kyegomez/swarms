@@ -1,7 +1,8 @@
 from swarms.models import OpenAIChat
 from swarms import Worker
+from swarms.prompts import PRODUCT_AGENT_PROMPT
 
-api_key = ""
+api_key = "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"
 
 llm = OpenAIChat(
     openai_api_key=api_key,
@@ -12,12 +13,12 @@ node = Worker(
     llm=llm,
     ai_name="Optimus Prime",
     openai_api_key=api_key,
-    ai_role="Worker in a swarm",
+    ai_role=PRODUCT_AGENT_PROMPT,
     external_tools=None,
     human_in_the_loop=False,
     temperature=0.5,
 )
 
-task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+task = "Create an entirely new board game around riddles for physics"
 response = node.run(task)
 print(response)
