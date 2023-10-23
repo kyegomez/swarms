@@ -7,8 +7,8 @@ from enum import Enum, auto
 from hashlib import sha256
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, root_validator
 from llama_index.utils import SAMPLE_TEXT, truncate_text
+from pydantic import BaseModel, Field, root_validator
 from typing_extensions import Self
 
 if TYPE_CHECKING:
@@ -533,18 +533,6 @@ class Document(TextNode):
         if name in self._compat_fields:
             name = self._compat_fields[name]
         super().__setattr__(name, value)
-
-    def to_langchain_format(self) -> "LCDocument":
-        """Convert struct to LangChain document format."""
-        from llama_index.bridge.langchain import Document as LCDocument
-
-        metadata = self.metadata or {}
-        return LCDocument(page_content=self.text, metadata=metadata)
-
-    @classmethod
-    def from_langchain_format(cls, doc: "LCDocument") -> "Document":
-        """Convert struct from LangChain document format."""
-        return cls(text=doc.page_content, metadata=doc.metadata)
 
     def to_haystack_format(self) -> "HaystackDocument":
         """Convert struct to Haystack document format."""

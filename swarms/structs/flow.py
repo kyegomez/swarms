@@ -1,9 +1,9 @@
-import time
-from typing import Any, Dict, List, Optional, Union, Callable
-from swarms.models import OpenAIChat
-from typing import Any, Dict, List, Optional, Callable
+import json
 import logging
 import time
+from typing import Any, Callable, Dict, List, Optional, Path, Union
+
+import yaml
 
 
 # Custome stopping condition
@@ -87,7 +87,6 @@ def stop_when_repeats(response: str) -> bool:
 #         return Flow(llm=llm, template=template)
 
 
-
 class Flow:
     def __init__(
         self,
@@ -108,6 +107,7 @@ class Flow:
         self.retry_attempts = retry_attempts
         self.retry_interval = retry_interval
         self.feedback = []
+        self.memory = []
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -175,51 +175,47 @@ class Flow:
             template = f.read()
         return Flow(llm=llm, template=template)
 
+    def save(self, file_path: Union[Path, str]) -> None:
+        """Save the flow.
 
-# # Configure logging
-# logging.basicConfig(level=logging.INFO)
+        Expects `Flow._flow_type` property to be implemented and for memory to be
+            null.
 
-# llm = OpenAIChat(
-#     api_key="YOUR_API_KEY",
-#     max_tokens=1000,
-#     temperature=0.9,
-# )
+        Args:
+            file_path: Path to file to save the flow to.
 
+        Example:
+            .. code-block:: python
 
-# def main():
-#     # Initialize the Flow class with parameters
-#     flow = Flow(
-#         llm=llm,
-#         template="Translate this to backwards: {sentence}",
-#         max_loops=3,
-#         stopping_condition=stop_when_repeats,
-#         loop_interval=2,  # Wait 2 seconds between loops
-#         retry_attempts=2,
-#         retry_interval=1,  # Wait 1 second between retries
-#     )
-
-#     # Predict using the Flow
-#     response = flow.run(sentence="Hello, World!")
-#     print("Response:", response)
-#     time.sleep(1)  # Pause for demonstration purposes
-
-#     # Provide feedback on the result
-#     flow.provide_feedback("The translation was interesting!")
-#     time.sleep(1)  # Pause for demonstration purposes
-
-#     # Bulk run
-#     inputs = [
-#         {"sentence": "This is a test."},
-#         {"sentence": "OpenAI is great."},
-#         {"sentence": "GPT models are powerful."},
-#         {"sentence": "stop and check if our stopping condition works."},
-#     ]
-
-#     responses = flow.bulk_run(inputs=inputs)
-#     for idx, res in enumerate(responses):
-#         print(f"Input: {inputs[idx]['sentence']}, Response: {res}")
-#         time.sleep(1)  # Pause for demonstration purposes
+                flow.save(file_path="path/flow.yaml")
 
 
-# if __name__ == "__main__":
-#     main()
+        TODO: Save memory list and not dict.
+        """
+        if self.memory is not None:
+            raise ValueError("Saving of memory is not yet supported.")
+
+        # Fetch dictionary to save
+        flow_dict = self.dict()
+        if "_type" not in flow_dict:
+            raise NotImplementedError(f"Flow {self} does not support saving.")
+
+        # Convert file to Path object.
+        if isinstance(file_path, str):
+            save_path = Path(file_path)
+        else:
+            save_path = file_path
+
+        directory_path = save_path.parent
+        directory_path.mkdir(parents=True, exist_ok=True)
+
+        if save_path.suffix == ".json":
+            with open(file_path, "w") as f:
+                json.dump(flow_dict, f, indent=4)
+                print(f"Saved Flow to JSON file: {file_path}")
+        elif save_path.suffix == ".yaml":
+            with open(file_path, "w") as f:
+                yaml.dump(flow_dict, f, default_flow_style=False)
+                print(f"Saved flow history to {file_path} as YAML")
+        else:
+            raise ValueError(f"{save_path} must be json or yaml")
