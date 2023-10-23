@@ -30,4 +30,4 @@ jobs:
       run: docker build . --file Dockerfile
 
     - name: Verify integration test results
-      run: python3 -m unittest tests/
+      run: find tests/ -name "*.py" | xargs pytest
