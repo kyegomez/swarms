@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  discord_edgegpt:
+    build: .
+    environment:
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+    volumes:
+      - ./cookies.json:/bot/cookies.json
+      - ./config.yml:/bot/config.yml

@@ -58,7 +58,7 @@ class BingChat:
         images = image_generator.get_images(prompt)
         image_generator.save_images(images, output_dir=output_dir)
 
-        return Path(output_dir) / images[0]["path"]
+        return Path(output_dir) / images[0]
 
     @staticmethod
     def set_cookie_dir_path(path: str):
