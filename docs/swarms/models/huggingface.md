@@ -93,7 +93,7 @@ Here are three ways to use the `HuggingfaceLLM` class:
 #### Example 1: Basic Usage
 
 ```python
-from your_module import HuggingfaceLLM
+from swarms.models import HuggingfaceLLM
 
 # Initialize the HuggingfaceLLM instance with a model ID
 model_id = "gpt2-small"
@@ -108,7 +108,7 @@ print(generated_text)
 #### Example 2: Custom Configuration
 
 ```python
-from your_module import HuggingfaceLLM
+from swarms.models import HuggingfaceLLM
 
 # Initialize with custom configuration
 custom_config = {
@@ -127,7 +127,7 @@ print(generated_text)
 #### Example 3: Distributed Processing
 
 ```python
-from your_module import HuggingfaceLLM
+from swarms.models import HuggingfaceLLM
 
 # Initialize for distributed processing
 inference = HuggingfaceLLM(model_id="gpt2-medium", distributed=True)
