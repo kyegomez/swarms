@@ -25,7 +25,7 @@ class BingChat:
 
     """
 
-    def __init__(self, cookies_path: str, bing_cookie: str = None, auth_cookie: str = None):
+    def __init__(self, cookies_path: str = None, bing_cookie: str = None, auth_cookie: str = None):
         self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
         self.bot = asyncio.run(Chatbot.create(cookies=self.cookies))
         self.auth_cookie = auth_cookie
