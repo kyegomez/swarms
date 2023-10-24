@@ -2,7 +2,7 @@ from swarms.models import OpenAIChat
 from swarms import Worker
 from swarms.prompts import PRODUCT_AGENT_PROMPT
 
-api_key = "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"
+api_key = ""
 
 llm = OpenAIChat(
     openai_api_key=api_key,
