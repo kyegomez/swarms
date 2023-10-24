@@ -35,7 +35,7 @@ class HuggingfaceLLM:
         self,
         model_id: str,
         device: str = None,
-        max_length: int = 20,
+        max_length: int = 500,
         quantize: bool = False,
         quantization_config: dict = None,
         verbose=False,
@@ -83,6 +83,7 @@ class HuggingfaceLLM:
             raise
 
     def load_model(self):
+        """Load the model"""
         if not self.model or not self.tokenizer:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
@@ -103,7 +104,7 @@ class HuggingfaceLLM:
                 self.logger.error(f"Failed to load the model or the tokenizer: {error}")
                 raise
 
-    def run(self, prompt_text: str, max_length: int = None):
+    def run(self, prompt_text: str):
         """
         Generate a response based on the prompt text.
 
@@ -116,7 +117,7 @@ class HuggingfaceLLM:
         """
         self.load_model()
 
-        max_length = max_length if max_length else self.max_length
+        max_length = self.max_length
 
         try:
             inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(
@@ -157,7 +158,7 @@ class HuggingfaceLLM:
             self.logger.error(f"Failed to generate the text: {e}")
             raise
 
-    def __call__(self, prompt_text: str, max_length: int = None):
+    def __call__(self, prompt_text: str):
         """
         Generate a response based on the prompt text.
 
@@ -170,7 +171,7 @@ class HuggingfaceLLM:
         """
         self.load_model()
 
-        max_length = max_length if max_length else self.max_length
+        max_length = self.max_
 
         try:
             inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(

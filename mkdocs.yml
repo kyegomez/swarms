@@ -92,7 +92,7 @@ nav:
   - swarms.models:
     - Language:  
       - Overview: "swarms/models/index.md"
-      - HuggingFaceLLM: "swarms/models/hf.md"
+      - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
       - OpenAI: "swarms/models/openai.md"
       - Zephyr: "swarms/models/zephyr.md"
