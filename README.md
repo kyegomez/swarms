@@ -29,7 +29,7 @@ Book a [1-on-1 Session with Kye](https://calendly.com/swarm-corp/30min), the Cre
 ----------
 
 ## Installation
-* `pip3 install --upgrade swarms`
+`pip3 install --upgrade swarms`
 
 ---
 
@@ -159,6 +159,7 @@ agent.run("Create a video of a swarm of fish")
 ---
 
 # Documentation
+
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 -----
 
@@ -175,3 +176,6 @@ We're always looking for contributors to help us improve and expand this project
 
 Our goal is to continuously improve Swarms by following this roadmap, while also being adaptable to new needs and opportunities as they arise.
 
+
+# License
+MIT
