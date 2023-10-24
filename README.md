@@ -159,7 +159,7 @@ agent.run("Create a video of a swarm of fish")
 ---
 
 # Documentation
-For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
+- For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 -----
 
 ## Contribute
@@ -175,6 +175,3 @@ We're always looking for contributors to help us improve and expand this project
 
 Our goal is to continuously improve Swarms by following this roadmap, while also being adaptable to new needs and opportunities as they arise.
 
-
-# Contact 
-For enterprise and production ready deployments, allow us to discover more about you and your story, [book a call with us here](https://www.apac.ai/Setup-Call)
