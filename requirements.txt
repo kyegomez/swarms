@@ -36,6 +36,7 @@ griptape
 addict
 albumentations
 basicsr
+termcolor
 controlnet-aux
 diffusers
 einops

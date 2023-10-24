@@ -5,7 +5,7 @@ from swarms.models.mistral import Mistral
 from swarms.models.openai_models import OpenAI, AzureOpenAI, OpenAIChat
 from swarms.models.zephyr import Zephyr
 from swarms.models.biogpt import BioGPT
-from swarms.models.huggingface import HuggingFace
+from swarms.models.huggingface import HuggingfaceLLM
 
 
 # MultiModal Models
@@ -36,5 +36,5 @@ __all__ = [
     "Nougat",
     "LayoutLMDocumentQA",
     "BioGPT",
-    "HuggingFace",
+    "HuggingfaceLLM",
 ]

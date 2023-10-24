@@ -1,4 +1,4 @@
-OperationAgentPromot = """
+GROWTH_AGENT_PROMPT = """
 
 **Standard Operating Procedure (SOP) for Autonomous Agents: Mastery in Growth Agent**
 
