@@ -10,9 +10,7 @@ from swarms.models.bing_chat import BingChat
 dotenv.load_dotenv(".env")
 
 # Initialize the EdgeGPTModel
-cookie = os.environ.get("BING_COOKIE")
-auth = os.environ.get("AUTH_COOKIE")
-model = BingChat(cookies_path="./cookies.json", bing_cookie="BING_COOKIE",auth_cookie="AUTH_COOKIE")
+model = BingChat()
 
 response = model("Generate")
 

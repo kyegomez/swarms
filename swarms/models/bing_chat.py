@@ -28,7 +28,7 @@ class BingChat:
 
     def __init__(self, cookies_path: str = None, auth_cookie: str = None, auth_cookie_SRCHHPGUSR: str = None):
         auth_cookie = os.environ("AUTH_COOKIE")
-        auth_cookie_SRCHHPGUSR
+        auth_cookie_SRCHHPGUSR = os.enviro("AUTH_COOKIE_SRCHHPGUSR")
         if cookies_path:
             self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
         elif auth_cookie:
