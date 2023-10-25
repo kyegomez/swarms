@@ -161,21 +161,13 @@ agent.run("Create a video of a swarm of fish")
 # Documentation
 
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
------
+
+
 
 ## Contribute
+
 We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md).
 
-### Optimization Priorities
-
-1. **Reliability**: Increase the reliability of the swarm - obtaining the desired output with a basic and un-detailed input.
-
-2. **Speed**: Reduce the time it takes for the swarm to accomplish tasks by improving the communication layer, critiquing, and self-alignment with meta prompting.
-
-3. **Scalability**: Ensure that the system is asynchronous, concurrent, and self-healing to support scalability.
-
-Our goal is to continuously improve Swarms by following this roadmap, while also being adaptable to new needs and opportunities as they arise.
-
-
 # License
+
 MIT
