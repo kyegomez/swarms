@@ -5,6 +5,8 @@ from swarms.models.mistral import Mistral
 from swarms.models.openai_models import OpenAI, AzureOpenAI, OpenAIChat
 from swarms.models.zephyr import Zephyr
 from swarms.models.biogpt import BioGPT
+from swarms.models.huggingface import HuggingfaceLLM
+
 
 # MultiModal Models
 from swarms.models.idefics import Idefics
@@ -14,6 +16,10 @@ from swarms.models.nougat import Nougat
 from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
 
 # from swarms.models.fuyu import Fuyu # Not working, wait until they update
+import sys
+
+log_file = open("stderr_log.txt", "w")
+sys.stderr = log_file
 
 
 __all__ = [
@@ -30,4 +36,5 @@ __all__ = [
     "Nougat",
     "LayoutLMDocumentQA",
     "BioGPT",
+    "HuggingfaceLLM",
 ]

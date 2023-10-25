@@ -2,9 +2,9 @@ name: Quality
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   lint:
@@ -20,4 +20,4 @@ jobs:
         uses: ./.github/actions/init-environment 
       - name: Run linter
         run: |
-          pylint `git diff --name-only --diff-filter=d origin/main HEAD | grep -E '\.py$' | tr '\n' ' '`
+          pylint `git diff --name-only --diff-filter=d origin/master HEAD | grep -E '\.py$' | tr '\n' ' '`
