@@ -17,7 +17,7 @@ venv
 swarms/agents/.DS_Store
 
 _build
-
+stderr_log.txt
 
 .DS_STORE
 # Byte-compiled / optimized / DLL files
