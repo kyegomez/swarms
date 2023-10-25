@@ -121,7 +121,7 @@ nav:
     - Worker: 
       - Basic: "examples/worker.md"
       - StackedWorker: "examples/stacked_worker.md"
-    
+  
 - Applications:
     - CustomerSupport: 
       - Overview: "applications/customer_support.md"
