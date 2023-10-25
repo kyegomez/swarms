@@ -3,7 +3,7 @@ name: Linting and Formatting
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   lint_and_format:
