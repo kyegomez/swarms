@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  discord_edgegpt:
+  BingBot:
     build: .
     environment:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}

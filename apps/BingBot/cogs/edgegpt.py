@@ -19,6 +19,7 @@ users_chatbot = {}
 users_image_generator = {}
 user_conversation_style = {}
 
+
 async def init_chatbot(user_id):
     with open("./cookies.json", encoding="utf-8") as file:
         cookie_json = json.load(file)
@@ -26,13 +27,14 @@ async def init_chatbot(user_id):
         if cookie.get("name") == "_U":
             auth_cookie = cookie.get("value")
             break
-    
+
     auth_cookie = os.environ.get("AUTH_COOKIE")
     auth_cookie_SRCHHPGUSR = os.environ.get("AUTH_COOKIE_SRCHHPGUSR")
     # auth_cookie_SRCHHPGUSR = os.environ.get("AUTH_COOKIE_SRCHHPGUSR")
     users_chatbot[user_id] = UserChatbot(cookies=cookie_json)
     users_image_generator[user_id] = ImageGenAsync(auth_cookie, quiet=True)
     user_conversation_style[user_id] = "balanced"
+
 
 class UserChatbot:
     def __init__(self, cookies):
@@ -47,6 +49,7 @@ class UserChatbot:
     async def reset(self):
         await self.chatbot.reset()
 
+
 class EdgeGPT(Cog_Extension):
     # Chat with Bing
     @app_commands.command(name="bing", description="Have a chat with Bing")
@@ -57,7 +60,7 @@ class EdgeGPT(Cog_Extension):
             await set_using_send(interaction.user.id, False)
             using = await get_using_send(interaction.user.id)
         if not using:
-            await interaction.response.defer(ephemeral=False, thinking=True) 
+            await interaction.response.defer(ephemeral=False, thinking=True)
             username = str(interaction.user)
             usermessage = message
             channel = str(interaction.channel)
@@ -65,11 +68,17 @@ class EdgeGPT(Cog_Extension):
             if user_id not in users_chatbot:
                 await init_chatbot(interaction.user.id)
             conversation_style = user_conversation_style[user_id]
-            logger.info(f"\x1b[31m{username}\x1b[0m : '{usermessage}' ({channel}) [Style: {conversation_style}]")
-            await users_chatbot[user_id].send_message(interaction, usermessage, conversation_style)
+            logger.info(
+                f"\x1b[31m{username}\x1b[0m : '{usermessage}' ({channel}) [Style: {conversation_style}]"
+            )
+            await users_chatbot[user_id].send_message(
+                interaction, usermessage, conversation_style
+            )
         else:
             await interaction.response.defer(ephemeral=True, thinking=True)
-            await interaction.followup.send("> **Please wait for your last conversation to finish.**")
+            await interaction.followup.send(
+                "> **Please wait for your last conversation to finish.**"
+            )
 
     # Reset Bing conversation
     @app_commands.command(name="reset", description="Reset Bing conversation")
@@ -81,25 +90,49 @@ class EdgeGPT(Cog_Extension):
             await interaction.followup.send("> **Info: Reset finish.**")
             logger.warning("\x1b[31mBing has been successfully reset\x1b[0m")
         except:
-            await interaction.followup.send(f"> **You don't have any conversation yet.**")
+            await interaction.followup.send(
+                f"> **You don't have any conversation yet.**"
+            )
             logger.exception("Bing reset failed.")
 
     # Switch conversation style
     @app_commands.command(name="switch_style", description="Switch conversation style")
-    @app_commands.choices(style=[app_commands.Choice(name="Creative", value="creative"), app_commands.Choice(name="Balanced", value="balanced"), app_commands.Choice(name="Precise", value="precise")])
-    async def switch_style(self, interaction: discord.Interaction, style: app_commands.Choice[str]):
+    @app_commands.choices(
+        style=[
+            app_commands.Choice(name="Creative", value="creative"),
+            app_commands.Choice(name="Balanced", value="balanced"),
+            app_commands.Choice(name="Precise", value="precise"),
+        ]
+    )
+    async def switch_style(
+        self, interaction: discord.Interaction, style: app_commands.Choice[str]
+    ):
         await interaction.response.defer(ephemeral=True, thinking=True)
         user_id = interaction.user.id
         if user_id not in users_chatbot:
             await init_chatbot(user_id)
         user_conversation_style[user_id] = style.value
-        await interaction.followup.send(f"> **Info: successfull switch conversation style to {style.value}.**")
-        logger.warning(f"\x1b[31mConversation style has been successfully switch to {style.value}\x1b[0m")
-    
+        await interaction.followup.send(
+            f"> **Info: successfull switch conversation style to {style.value}.**"
+        )
+        logger.warning(
+            f"\x1b[31mConversation style has been successfully switch to {style.value}\x1b[0m"
+        )
+
     # Set and delete personal Bing Cookies
     @app_commands.command(name="bing_cookies", description="Set or delete Bing Cookies")
-    @app_commands.choices(choice=[app_commands.Choice(name="set", value="set"), app_commands.Choice(name="delete", value="delete")])
-    async def cookies_setting(self, interaction: discord.Interaction, choice: app_commands.Choice[str], cookies_file: Optional[discord.Attachment]=None):
+    @app_commands.choices(
+        choice=[
+            app_commands.Choice(name="set", value="set"),
+            app_commands.Choice(name="delete", value="delete"),
+        ]
+    )
+    async def cookies_setting(
+        self,
+        interaction: discord.Interaction,
+        choice: app_commands.Choice[str],
+        cookies_file: Optional[discord.Attachment] = None,
+    ):
         await interaction.response.defer(ephemeral=True, thinking=True)
         user_id = interaction.user.id
         if choice.value == "set":
@@ -111,11 +144,15 @@ class EdgeGPT(Cog_Extension):
                         break
                 users_image_generator[user_id] = ImageGenAsync(auth_cookie, quiet=True)
                 users_chatbot[user_id] = UserChatbot(cookies=content)
-                user_conversation_style[user_id] = "balanced" 
+                user_conversation_style[user_id] = "balanced"
                 await interaction.followup.send("> **Upload successful!**")
-                logger.warning(f"\x1b[31m{interaction.user} set Bing Cookies successful\x1b[0m")
+                logger.warning(
+                    f"\x1b[31m{interaction.user} set Bing Cookies successful\x1b[0m"
+                )
             except:
-                await interaction.followup.send("> **Please upload your Bing Cookies.**")
+                await interaction.followup.send(
+                    "> **Please upload your Bing Cookies.**"
+                )
         else:
             try:
                 del users_chatbot[user_id]
@@ -124,10 +161,14 @@ class EdgeGPT(Cog_Extension):
                 await interaction.followup.send("> **Delete finish.**")
                 logger.warning(f"\x1b[31m{interaction.user} delete Cookies\x1b[0m")
             except:
-                await interaction.followup.send("> **You don't have any Bing Cookies.**")
+                await interaction.followup.send(
+                    "> **You don't have any Bing Cookies.**"
+                )
 
     # Create images
-    @app_commands.command(name="create_image", description="generate image by Bing image creator")
+    @app_commands.command(
+        name="create_image", description="generate image by Bing image creator"
+    )
     async def create_image(self, interaction: discord.Interaction, *, prompt: str):
         user_id = interaction.user.id
         if interaction.user.id not in users_chatbot:
@@ -137,12 +178,19 @@ class EdgeGPT(Cog_Extension):
         except:
             await set_using_create(user_id, False)
             using = await get_using_create(user_id)
-        if not using: 
-            logger.info(f"\x1b[31m{interaction.user}\x1b[0m : '{prompt}' ({interaction.channel}) [BingImageCreator]")
-            await users_chatbot[user_id].create_image(interaction, prompt, users_image_generator[user_id] )
+        if not using:
+            logger.info(
+                f"\x1b[31m{interaction.user}\x1b[0m : '{prompt}' ({interaction.channel}) [BingImageCreator]"
+            )
+            await users_chatbot[user_id].create_image(
+                interaction, prompt, users_image_generator[user_id]
+            )
         else:
             await interaction.response.defer(ephemeral=True, thinking=True)
-            await interaction.followup.send("> **Please wait for your last image to create finish.**")
+            await interaction.followup.send(
+                "> **Please wait for your last image to create finish.**"
+            )
+
 
 async def setup(bot):
     await bot.add_cog(EdgeGPT(bot))

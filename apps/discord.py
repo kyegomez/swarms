@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from invoke import Executor
 
+
 class BotCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -46,7 +47,7 @@ class BotCommands(commands.Cog):
         """starts listening to voice in the voice channel that the bot is in."""
         if ctx.voice_client:
             # create a wavesink to record the audio
-            sink = discord.sinks.wavesink('audio.wav')
+            sink = discord.sinks.wavesink("audio.wav")
             # start recording
             ctx.voice_client.start_recording(sink)
             await ctx.send("started listening and recording.")
@@ -68,7 +69,11 @@ class BotCommands(commands.Cog):
             print("done generating images!")
 
             # list all files in the save_directory
-            all_files = [os.path.join(root, file) for root, _, files in os.walk(os.environ("SAVE_DIRECTORY")) for file in files]
+            all_files = [
+                os.path.join(root, file)
+                for root, _, files in os.walk(os.environ("SAVE_DIRECTORY"))
+                for file in files
+            ]
 
             # sort files by their creation time (latest first)
             sorted_files = sorted(all_files, key=os.path.getctime, reverse=True)
@@ -82,7 +87,9 @@ class BotCommands(commands.Cog):
             # await ctx.send(files=[storage_service.upload(filepath) for filepath in latest_files])
 
         except asyncio.timeouterror:
-            await ctx.send("the request took too long! it might have been censored or you're out of boosts. please try entering the prompt again.")
+            await ctx.send(
+                "the request took too long! it might have been censored or you're out of boosts. please try entering the prompt again."
+            )
         except Exception as e:
             await ctx.send(f"an error occurred: {e}")
 
@@ -107,10 +114,11 @@ class BotCommands(commands.Cog):
         else:
             await ctx.send(f"an error occurred: {error}")
 
+
 class Bot:
     def __init__(self, llm, command_prefix="!"):
         load_dotenv()
-        
+
         intents = discord.Intents.default()
         intents.messages = True
         intents.guilds = True
