@@ -143,7 +143,7 @@ async def set_chatbot(cookies):
     chatbot = Chatbot(cookies=cookies)
 
 
-async def send_message(chatbot: Chatbot, message, user_message: str):
+async def send_message(chatbot: Chatbot, message, user_message: str, image_file=None):
     async with sem:
         if isinstance(message, discord.message.Message):
             await message.channel.typing()
@@ -155,24 +155,57 @@ async def send_message(chatbot: Chatbot, message, user_message: str):
         try:
             # Change conversation style
             if conversation_style == "creative":
-                reply = await chatbot.ask(
-                    prompt=user_message,
-                    conversation_style=ConversationStyle.creative,
-                    simplify_response=True,
-                )
+                if image_file:
+                    # Download the image from Discord
+                    image_data = await image_file.read()
+                    # Send the image data to the model
+                    reply = await chatbot.ask(
+                        prompt=user_message,
+                        conversation_style=ConversationStyle.creative,
+                        simplify_response=True,
+                        image=image_data,
+                    )
+                else:
+                    reply = await chatbot.ask(
+                        prompt=user_message,
+                        conversation_style=ConversationStyle.creative,
+                        simplify_response=True,
+                    )
             elif conversation_style == "precise":
-                reply = await chatbot.ask(
-                    prompt=user_message,
-                    conversation_style=ConversationStyle.precise,
-                    simplify_response=True,
-                )
+                if image_file:
+                    # Download the image from Discord
+                    image_data = await image_file.read()
+                    # Send the image data to the model
+                    reply = await chatbot.ask(
+                        prompt=user_message,
+                        conversation_style=ConversationStyle.precise,
+                        simplify_response=True,
+                        image=image_data,
+                    )
+                else:
+                    reply = await chatbot.ask(
+                        prompt=user_message,
+                        conversation_style=ConversationStyle.precise,
+                        simplify_response=True,
+                    )
             else:
-                reply = await chatbot.ask(
-                    prompt=user_message,
-                    conversation_style=ConversationStyle.balanced,
-                    simplify_response=True,
-                )
-
+                if image_file:
+                    # Download the image from Discord
+                    image_data = await image_file.read()
+                    # Send the image data to the model
+                    reply = await chatbot.ask(
+                        prompt=user_message,
+                        conversation_style=ConversationStyle.balanced,
+                        simplify_response=True,
+                        image=image_data,
+                    )
+                else:
+                    reply = await chatbot.ask(
+                        prompt=user_message,
+                        conversation_style=ConversationStyle.balanced,
+                        simplify_response=True,
+                    )
+            
             # Get reply text
             text = f"{reply['text']}"
             text = re.sub(r"\[\^(\d+)\^\]", lambda match: "", text)
