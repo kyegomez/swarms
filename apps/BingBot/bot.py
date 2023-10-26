@@ -43,7 +43,7 @@ def check_verion() -> None:
 @bot.event
 async def on_ready():
     bot_status = discord.Status.online
-    # bot_activity = discord.Activity(type=discord.ActivityType.playing, name="bing.com")
+    bot_activity = discord.Activity(type=discord.ActivityType.playing, name="bing.com")
     await bot.change_presence(status=bot_status, activity=bot_activity)
     for Filename in os.listdir("./cogs"):
         if Filename.endswith(".py"):

@@ -29,6 +29,7 @@ async def init_chatbot(user_id):
     
     auth_cookie = os.environ.get("AUTH_COOKIE")
     auth_cookie_SRCHHPGUSR = os.environ.get("AUTH_COOKIE_SRCHHPGUSR")
+    # auth_cookie_SRCHHPGUSR = os.environ.get("AUTH_COOKIE_SRCHHPGUSR")
     users_chatbot[user_id] = UserChatbot(cookies=cookie_json)
     users_image_generator[user_id] = ImageGenAsync(auth_cookie, quiet=True)
     user_conversation_style[user_id] = "balanced"
@@ -37,38 +38,24 @@ class UserChatbot:
     def __init__(self, cookies):
         self.chatbot = Chatbot(cookies=cookies)
 
-    async def send_message(self, interaction, message, conversation_style, image_file=None):
-        if image_file:
-            # Download the image from Discord
-            image_data = await image_file.read()
-            # Send the image data to the Bing model
-            response = await self.chatbot.send_image(image_data)
-            # Send the response from the Bing model to the user
-            await interaction.channel.send(content=response)
-        else:
-            await send_message(self.chatbot, interaction, message, conversation_style)
+    async def send_message(self, interaction, message, conversation_style):
+        await send_message(self.chatbot, interaction, message, conversation_style)
+
+    async def create_image(self, interaction, prompt: str, image_generator):
+        await create_image(interaction, prompt, image_generator)
+
+    async def reset(self):
+        await self.chatbot.reset()
+
 class EdgeGPT(Cog_Extension):
+    # Chat with Bing
     @app_commands.command(name="bing", description="Have a chat with Bing")
     async def bing(self, interaction: discord.Interaction, *, message: str):
-        user_id = interaction.user.id
-        if user_id not in users_chatbot:
-            await init_chatbot(user_id)
-        conversation_style = user_conversation_style[user_id]
-        usermessage = message
-
-        # Check the last 10 messages for attachments
-        image_file = None
-        async for msg in interaction.channel.history(limit=10):
-            if msg.attachments:
-                image_file = msg.attachments[0]
-                break
-
-        # If an attachment was found, send it to the model
-        if image_file:
-            await users_chatbot[user_id].send_message(interaction, usermessage, conversation_style, image_file)
-        else:
-            await users_chatbot[user_id].send_message(interaction, usermessage, conversation_style)
-
+        try:
+            using = await get_using_send(interaction.user.id)
+        except:
+            await set_using_send(interaction.user.id, False)
+            using = await get_using_send(interaction.user.id)
         if not using:
             await interaction.response.defer(ephemeral=False, thinking=True) 
             username = str(interaction.user)
