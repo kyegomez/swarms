@@ -1,7 +1,8 @@
 version: '3'
 
 services:
-  BingBot:
+  spartan:
+    container_name: Spartan
     build: .
     environment:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}

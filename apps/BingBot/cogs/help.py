@@ -8,7 +8,6 @@ class Help(Cog_Extension):
     async def help(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="Help",
-            description="[see more](https://github.com/FuseFairy/DiscordBot-EdgeGPT/blob/main/README.md)\n\n**COMMANDS -**",
         )
         embed.add_field(
             name="/bing_cookies",
