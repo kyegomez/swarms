@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  spartan:
+    container_name: Spartan
+    build: .
+    environment:
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+    volumes:
+      - ./cookies.json:/bot/cookies.json
+      - ./config.yml:/bot/config.yml

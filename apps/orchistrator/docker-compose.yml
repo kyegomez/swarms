@@ -2,8 +2,10 @@ version: '3'
 
 services:
   server-bot:
-    container_name: server-bot
-    image: allenrkeen/server-bot:latest
+    container_name: Leonidas
+    build: 
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock #required
     env_file:
