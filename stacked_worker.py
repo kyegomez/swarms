@@ -7,6 +7,8 @@ from swarms.agents.omni_modal_agent import OmniModalAgent
 from swarms.models import OpenAIChat
 from swarms.tools.autogpt import tool
 from swarms.workers import Worker
+from swarms.prompts.task_assignment_prompt import task_planner_prompt
+
 
 # Initialize API Key
 api_key = ""
@@ -17,6 +19,7 @@ api_key = ""
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
+    max_tokens=200,
 )
 
 
@@ -33,6 +36,17 @@ def hf_agent(task: str = None):
     agent = HFAgent(model="text-davinci-003", api_key=api_key)
     response = agent.run(task, text="¡Este es un API muy agradable!")
     return response
+
+
+@tool
+def task_planner_worker_agent(task: str):
+    """
+    Task planner tool that creates a plan for a given task.
+    Input: an objective to create a todo list for. Output: a todo list for that objective.
+
+    """
+    task = task_planner_prompt(task)
+    return llm(task)
 
 
 # wrap a function with the tool decorator to make it a tool
@@ -94,7 +108,8 @@ def compile(task: str):
 
 
 # Append tools to an list
-tools = [hf_agent, omni_agent, compile]
+# tools = [hf_agent, omni_agent, compile]
+tools = [task_planner_worker_agent]
 
 
 # Initialize a single Worker node with previously defined tools in addition to it's
@@ -110,7 +125,7 @@ node = Worker(
 )
 
 # Specify task
-task = "Create a neural network using the interpreter tool"
+task = "Use the task planner to agent to create a plan to Locate 5 trending topics on healthy living, locate a website like NYTimes, and then generate an image of people doing those topics."
 
 # Run the node on the task
 response = node.run(task)

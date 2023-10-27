@@ -6,6 +6,9 @@ from swarms.models.openai_models import OpenAI, AzureOpenAI, OpenAIChat
 from swarms.models.zephyr import Zephyr
 from swarms.models.biogpt import BioGPT
 from swarms.models.huggingface import HuggingfaceLLM
+from swarms.models.wizard_storyteller import WizardLLMStoryTeller
+from swarms.models.mpt import MPT7B
+
 
 
 # MultiModal Models
@@ -37,4 +40,6 @@ __all__ = [
     "LayoutLMDocumentQA",
     "BioGPT",
     "HuggingfaceLLM",
+    "MPT7B",
+    "WizardLLMStoryTeller",
 ]

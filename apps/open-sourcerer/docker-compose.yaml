@@ -1,8 +1,0 @@
-version: '3'
-services:
-  my-python-app:
-    build: .
-    ports:
-      - "80:80"
-    env_file:
-      - ./.env

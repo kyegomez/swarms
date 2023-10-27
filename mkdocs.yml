@@ -97,6 +97,7 @@ nav:
       - OpenAI: "swarms/models/openai.md"
       - Zephyr: "swarms/models/zephyr.md"
       - BioGPT: "swarms/models/biogpt.md"
+      - MPT7B: "swarms/models/mpt.md"
     - MultiModal:
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"
@@ -121,7 +122,6 @@ nav:
     - Worker: 
       - Basic: "examples/worker.md"
       - StackedWorker: "examples/stacked_worker.md"
-  
 - Applications:
     - CustomerSupport: 
       - Overview: "applications/customer_support.md"
