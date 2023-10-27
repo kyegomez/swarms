@@ -23,7 +23,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-revChatGPT = "*"
 transformers = "*"
 openai = "*"
 langchain = "*"
@@ -62,8 +61,6 @@ dalle3 = "*"
 soundfile = "*"
 torchvision = "*"
 rich = "*"
-EdgeGPT = "*"
-
 
 [tool.poetry.dev-dependencies]
 first_dependency = {git = "https://github.com/IDEA-Research/GroundingDINO.git"}

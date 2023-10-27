@@ -142,3 +142,12 @@ class OceanDB:
         except Exception as e:
             logging.error(f"Failed to query the collection. Error {e}")
             raise
+
+
+# Example
+# ocean = OceanDB()
+# collection = ocean.create_collection("test", "text")
+# ocean.append_document(collection, "hello world", "1")
+# ocean.add_documents(collection, ["hello world", "hello world"], ["2", "3"])
+# results = ocean.query(collection, ["hello world"], 3)
+# print(results)

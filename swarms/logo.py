@@ -3,6 +3,7 @@ from rich.markdown import Markdown
 from rich.rule import Rule
 from termcolor import colored, cprint
 
+
 def display_markdown_message(message):
     """
     Display markdown message. Works with multiline strings with lots of indentation.
@@ -21,7 +22,6 @@ def display_markdown_message(message):
     if "\n" not in message and message.startswith(">"):
         # Aesthetic choice. For these tags, they need a space below them
         print("")
-
 
 
 logo = """
@@ -45,10 +45,11 @@ logo2 = """
 
 
 def print_colored_logo():
-    with open('swarms/logo.txt', 'r') as file:
+    with open("swarms/logo.txt", "r") as file:
         logo = file.read()
-    text = colored(logo, 'red')
+    text = colored(logo, "red")
     print(text)
+
 
 # # Call the function
 # print_colored_logo()

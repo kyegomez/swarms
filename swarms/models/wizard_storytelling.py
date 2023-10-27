@@ -5,7 +5,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 
-class HuggingfaceLLM:
+class WizardLLMStoryTeller:
     """
     A class for running inference on a given model.
 
@@ -33,7 +33,7 @@ class HuggingfaceLLM:
 
     def __init__(
         self,
-        model_id: str,
+        model_id: str = "TheBloke/WizardLM-Uncensored-SuperCOT-StoryTelling-30B-GGUF",
         device: str = None,
         max_length: int = 500,
         quantize: bool = False,
@@ -157,29 +157,6 @@ class HuggingfaceLLM:
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise
-    
-    async def run_async(self, task: str, *args, **kwargs) -> str:
-        """
-        Run the model asynchronously
-
-        Args:
-            task (str): Task to run.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Examples:
-        >>> mpt_instance = MPT('mosaicml/mpt-7b-storywriter', "EleutherAI/gpt-neox-20b", max_tokens=150)
-        >>> mpt_instance("generate", "Once upon a time in a land far, far away...")
-        'Once upon a time in a land far, far away...'
-        >>> mpt_instance.batch_generate(["In the deep jungles,", "At the heart of the city,"], temperature=0.7)
-        ['In the deep jungles,',
-        'At the heart of the city,']
-        >>> mpt_instance.freeze_model()
-        >>> mpt_instance.unfreeze_model()
-
-        """
-        # Wrapping synchronous calls with async
-        return self.run(task, *args, **kwargs)
 
     def __call__(self, prompt_text: str):
         """
@@ -235,23 +212,3 @@ class HuggingfaceLLM:
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise
-    
-    async def __call_async__(self, task: str, *args, **kwargs) -> str:
-        """Call the model asynchronously""" ""
-        return await self.run_async(task, *args, **kwargs)
-
-    def save_model(self, path: str):
-        self.model.save_pretrained(path)
-        self.tokenizer.save_pretrained(path)
-    
-    def gpu_available(self) -> bool:
-        return torch.cuda.is_available()
-
-    def memory_consumption(self) -> dict:
-        if self.gpu_available():
-            torch.cuda.synchronize()
-            allocated = torch.cuda.memory_allocated()
-            reserved = torch.cuda.memory_reserved()
-            return {'allocated': allocated, 'reserved': reserved}
-        else:
-            return {'error': 'GPU not available'}
