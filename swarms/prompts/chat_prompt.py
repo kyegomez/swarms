@@ -27,7 +27,13 @@ class HumanMessage(Message):
     A Message from a human.
     """
 
-    def __init__(self, content: str, role: str = "Human", additional_kwargs: Dict = None, example: bool = False):
+    def __init__(
+        self,
+        content: str,
+        role: str = "Human",
+        additional_kwargs: Dict = None,
+        example: bool = False,
+    ):
         super().__init__(content, role, additional_kwargs)
         self.example = example
 
@@ -40,7 +46,13 @@ class AIMessage(Message):
     A Message from an AI.
     """
 
-    def __init__(self, content: str, role: str = "AI", additional_kwargs: Dict = None, example: bool = False):
+    def __init__(
+        self,
+        content: str,
+        role: str = "AI",
+        additional_kwargs: Dict = None,
+        example: bool = False,
+    ):
         super().__init__(content, role, additional_kwargs)
         self.example = example
 
@@ -54,7 +66,9 @@ class SystemMessage(Message):
     of input messages.
     """
 
-    def __init__(self, content: str, role: str = "System", additional_kwargs: Dict = None):
+    def __init__(
+        self, content: str, role: str = "System", additional_kwargs: Dict = None
+    ):
         super().__init__(content, role, additional_kwargs)
 
     def get_type(self) -> str:
@@ -66,7 +80,13 @@ class FunctionMessage(Message):
     A Message for passing the result of executing a function back to a model.
     """
 
-    def __init__(self, content: str, role: str = "Function", name: str, additional_kwargs: Dict = None):
+    def __init__(
+        self,
+        content: str,
+        role: str = "Function",
+        name: str = None,
+        additional_kwargs: Dict = None,
+    ):
         super().__init__(content, role, additional_kwargs)
         self.name = name
 

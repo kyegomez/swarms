@@ -19,6 +19,6 @@ node = Worker(
     temperature=0.5,
 )
 
-task = "Create an entirely new board game around riddles for physics"
+task = "Locate 5 trending topics on healthy living, locate a website like NYTimes, and then generate an image of people doing those topics."
 response = node.run(task)
 print(response)

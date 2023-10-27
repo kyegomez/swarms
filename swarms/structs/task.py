@@ -24,7 +24,7 @@ class BaseTask(ABC):
         self.parent_ids: List[str] = []
         self.child_ids: List[str] = []
         self.output: Optional[Union[Artifact, ErrorArtifact]] = None
-        self.structure: Optional["Structure"] = None
+        self.structure = None
 
     @property
     @abstractmethod
@@ -45,7 +45,7 @@ class BaseTask(ABC):
     def __lshift__(self, child: BaseTask) -> BaseTask:
         return self.add_parent(child)
 
-    def preprocess(self, structure: "Structure") -> BaseTask:
+    def preprocess(self, structure) -> BaseTask:
         self.structure = structure
         return self
 
