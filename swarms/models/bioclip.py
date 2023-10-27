@@ -75,6 +75,7 @@ class BioClip:
             'adenocarcinoma histopathology',
             'brain MRI',
             'covid line chart',
+            'covid line chart',
             'squamous cell carcinoma histopathology',
             'immunohistochemistry histopathology',
             'bone X-ray',

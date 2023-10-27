@@ -35,13 +35,13 @@ from httpx import AsyncClient
 from OpenAIAuth import Auth0 as Authenticator
 from rich.live import Live
 from rich.markdown import Markdown
-import schemas.typings as t
+import swarms.schemas.typings as t
 from swarms.utils.revutils import create_completer
 from swarms.utils.revutils import create_session
 from swarms.utils.revutils import get_input
 
 # BASE_URL = environ.get("CHATGPT_BASE_URL", "http://192.168.250.249:9898/api/")
-# BASE_URL = os.environ.get("CHATGPT_BASE_URL", "https://ai.fakeopen.com/api/")
+BASE_URL = os.environ.get("CHATGPT_BASE_URL", "https://ai.fakeopen.com/api/")
 # BASE_URL = environ.get("CHATGPT_BASE_URL", "https://bypass.churchless.tech/")
 
 bcolors = t.Colors()

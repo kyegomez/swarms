@@ -40,14 +40,14 @@ from rich.markdown import Markdown
 import argparse
 import re
 
-import schemas.typings as t
+import swarms.schemas.typings as t
 from prompt_toolkit import prompt
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyBindings
-from schemas.typings import Colors
+from swarms.schemas.typings import Colors
 
 bindings = KeyBindings()
 
