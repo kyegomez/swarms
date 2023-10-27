@@ -1,4 +1,5 @@
 """Bing-Chat model by Micorsoft"""
+import os
 import asyncio
 import json
 from pathlib import Path
@@ -25,19 +26,9 @@ class BingChat:
 
     """
 
-
-    def __init__(self, cookies_path: str = None, auth_cookie: str = None, auth_cookie_SRCHHPGUSR: str = None):
-        auth_cookie = os.environ("AUTH_COOKIE")
-        auth_cookie_SRCHHPGUSR = os.enviro("AUTH_COOKIE_SRCHHPGUSR")
-        if cookies_path:
-            self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
-        elif auth_cookie:
-            self.cookies = auth_cookie
-        else:
-            raise ValueError("Either cookies_path or auth_cookie must be provided.")
+    def __init__(self, cookies_path: str = None):
+        self.cookies = json.loads(open(cookies_path, encoding="utf-8").read())
         self.bot = asyncio.run(Chatbot.create(cookies=self.cookies))
-        self.auth_cookie = auth_cookie
-        self.auth_cookie_SRCHHPGUSR = auth_cookie_SRCHHPGUSR
 
     def __call__(
         self, prompt: str, style: ConversationStyle = ConversationStyle.creative
