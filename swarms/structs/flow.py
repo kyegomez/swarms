@@ -44,10 +44,8 @@ flow.save("path/flow.yaml")
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, Union
-from pathlib import Path
-
-import yaml
+from typing import Any, Callable, Dict, List, Optional
+from termcolor import colored
 
 
 # Custome stopping condition
@@ -61,11 +59,12 @@ class Flow:
         self,
         llm: Any,
         # template: str,
-        max_loops: int = 1,
+        max_loops: int = 5,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
         retry_attempts: int = 3,
         retry_interval: int = 1,
+        interactive: bool = False,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -77,6 +76,9 @@ class Flow:
         self.retry_interval = retry_interval
         self.feedback = []
         self.memory = []
+        self.task = None
+        self.stopping_token = "<DONE>"
+        self.interactive = interactive
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -98,28 +100,43 @@ class Flow:
         """Format the template with the provided kwargs using f-string interpolation."""
         return template.format(**kwargs)
 
-    def run(self, task: str):  # formatted_prompts: str) -> str:
+    def run(self, task: str):
         """
-        Generate a result using the lm with optional query loops and stopping conditions.
+        Run the autonomous agent loop
+
+        Args:
+            task (str): The initial task to run
+
+        Flow:
+        1. Generate a response
+        2. Check stopping condition
+        3. If stopping condition is met, stop
+        4. If stopping condition is not met, generate a response
+        5. Repeat until stopping condition is met or max_loops is reached
+
+    
         """
         response = task
         history = [task]
-        for _ in range(self.max_loops):
+        for i in range(self.max_loops):
+            print(colored(f"\nLoop {i+1} of {self.max_loops}", 'blue'))
+            print("\n")
             if self._check_stopping_condition(response):
                 break
             attempt = 0
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(response)
+                    print(f"Next query: {response}")
                     break
                 except Exception as e:
                     logging.error(f"Error generating response: {e}")
                     attempt += 1
                     time.sleep(self.retry_interval)
-            logging.info(f"Generated response: {response}")
             history.append(response)
             time.sleep(self.loop_interval)
-        return response, history
+        self.memory.append(history)
+        return response #, history
 
     def _run(self, **kwargs: Any) -> str:
         """Generate a result using the provided keyword args."""
@@ -145,46 +162,11 @@ class Flow:
         return Flow(llm=llm, template=template)
 
     def save(self, file_path) -> None:
-        """Save the flow.
+        with open(file_path, 'w') as f:
+            json.dump(self.memory, f)
+        print(f"Saved flow history to {file_path}")
 
-        Expects `Flow._flow_type` property to be implemented and for memory to be
-            null.
-
-        Args:
-            file_path: Path to file to save the flow to.
-
-        Example:
-            .. code-block:: python
-
-                flow.save(file_path="path/flow.yaml")
-
-
-        TODO: Save memory list and not dict.
-        """
-        if self.memory is not None:
-            raise ValueError("Saving of memory is not yet supported.")
-
-        # Fetch dictionary to save
-        flow_dict = self.dict()
-        if "_type" not in flow_dict:
-            raise NotImplementedError(f"Flow {self} does not support saving.")
-
-        # Convert file to Path object.
-        if isinstance(file_path, str):
-            save_path = Path(file_path)
-        else:
-            save_path = file_path
-
-        directory_path = save_path.parent
-        directory_path.mkdir(parents=True, exist_ok=True)
-
-        if save_path.suffix == ".json":
-            with open(file_path, "w") as f:
-                json.dump(flow_dict, f, indent=4)
-                print(f"Saved Flow to JSON file: {file_path}")
-        elif save_path.suffix == ".yaml":
-            with open(file_path, "w") as f:
-                yaml.dump(flow_dict, f, default_flow_style=False)
-                print(f"Saved flow history to {file_path} as YAML")
-        else:
-            raise ValueError(f"{save_path} must be json or yaml")
+    def load(self, file_path) -> None:
+        with open(file_path, 'r') as f:
+            self.memory = json.load(f)
+        print(f"Loaded flow history from {file_path}")
