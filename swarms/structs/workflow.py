@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
+from swarms.structs.task import Task
 
 
 class Workflow:
@@ -11,49 +13,27 @@ class Workflow:
     They string together multiple tasks of varying types, and can use Short-Term Memory
     or pass specific arguments downstream.
 
-
     Usage
     llm = LLM()
     workflow = Workflow(llm)
 
     workflow.add("What's the weather in miami")
-    workflow.add("Provide detauls for {{ parent_output }}")
+    workflow.add("Provide details for {{ parent_output }}")
     workflow.add("Summarize the above information: {{ parent_output}})
 
     workflow.run()
 
     """
 
-    class Task:
-        def __init__(self, task: str):
-            self.task = task
-            self.parents = []
-            self.children = []
-            self.output = None
-            self.structure = None
-
-        def add_child(self, child: "Workflow.Task"):
-            self.children.append(child)
-            child.parents.append(self)
-            child.structure = self.structure
-
-        def execute(self) -> Any:
-            prompt = self.task.replace(
-                "{{ parent_input }}", self.parents[0].output if self.parents else ""
-            )
-            response = self.structure.agent.run(prompt)
-            self.output = response
-            return response
-
     def __init__(self, agent, parallel: bool = False):
         """__init__"""
         self.agent = agent
-        self.tasks: List[Workflow.Task] = []
+        self.tasks: List[Task] = []
         self.parallel = parallel
 
     def add(self, task: str) -> Task:
         """Add a task"""
-        task = self.Task(task)
+        task = Task(task_id=uuid.uuid4().hex, input=task)
 
         if self.last_task():
             self.last_task().add_child(task)
@@ -70,9 +50,9 @@ class Workflow:
         """Last task"""
         return self.tasks[-1] if self.tasks else None
 
-    def run(self, *args) -> Task:
+    def run(self, task: str) -> Task:
         """Run tasks"""
-        [task.reset() for task in self.tasks]
+        self.add(task)
 
         if self.parallel:
             with ThreadPoolExecutor() as executor:

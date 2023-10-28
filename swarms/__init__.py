@@ -15,6 +15,3 @@ from swarms.models import *  # import * only works when __all__ = [] is defined 
 from swarms.structs import *
 from swarms.swarms import *
 from swarms.agents import *
-from swarms.logo import print_colored_logo
-
-print_colored_logo()

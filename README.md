@@ -16,6 +16,7 @@ Swarms is a modular framework that enables reliable and useful multi-agent colla
 
 </div>
 
+[![Swarm Fest](images/swarmfest.png)](https://github.com/users/kyegomez/projects/1)
 
 ## Vision
 At Swarms, we're transforming the landscape of AI from siloed AI agents to a unified 'swarm' of intelligence. Through relentless iteration and the power of collective insight from our 1500+ Agora researchers, we're developing a groundbreaking framework for AI collaboration. Our mission is to catalyze a paradigm shift, advancing Humanity with the power of unified autonomous AI agent swarms.
@@ -157,6 +158,36 @@ agent.run("Create a video of a swarm of fish")
 
 ```
 
+
+### `Flow` Example
+- The `Flow` is a superior iteratioin of the `LLMChain` from Langchain, our intent with `Flow` is to create the most reliable loop structure that gives the agents their "autonomy" through 3 main methods of interaction, one through user specified loops, then dynamic where the agent parses a <DONE> token, and or an interactive human input verison, or a mix of all 3. 
+```python
+
+from swarms.models import OpenAIChat
+from swarms.structs import Flow
+
+api_key = ""
+
+
+# Initialize the language model,
+# This model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
+llm = OpenAIChat(
+    openai_api_key=api_key,
+    temperature=0.5,
+)
+
+# Initialize the flow
+flow = Flow(
+    llm=llm,
+    max_loops=5,
+)
+
+out = flow.run("Generate a 10,000 word blog, say Stop when done")
+print(out)
+
+
+```
+
 ---
 
 ## Documentation
@@ -164,6 +195,18 @@ agent.run("Create a video of a swarm of fish")
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
 
+## Focus
+We are radically devoted to creating outcomes that our users want, we believe this is only possible by focusing extensively on reliability, scalability, and agility. 
+
+An Agent's purpose is to satisfy your wants and needs and so this is our only focus, we believe this is only possible by investing impeccable detail into agent structure design in other words gluing together an llm with tools and memory in a way that delights users and executes tasks exactly how users want them to be executed.
+
+The reliability of communication in a swarm is also extremely critical to your success and with this in mind we carefully craft and extensively test our structures.
+
+- Reliability.
+- Scalability.
+- Speed.
+- Power.
+- Agile.
 
 ## Contribute
 

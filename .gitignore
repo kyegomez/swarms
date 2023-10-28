@@ -24,9 +24,14 @@ stderr_log.txt
 __pycache__/
 *.py[cod]
 *$py.class
+error.txt
 
 # C extensions
 *.so
+
+
+errors.txt
+
 
 # Distribution / packaging
 .Python
