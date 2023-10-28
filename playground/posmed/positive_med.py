@@ -69,6 +69,6 @@ def get_review_prompt(article):
 openai = OpenAIChat(openai_api_key="sk-S4xHnFJu7juD33jxjJZfZU1cZYi")
 
 draft = openai(get_draft_prompt("AI in healthcare", "Pyschology"))
-review = openai(get_draft_prompt(draft))
+review = openai(get_review_prompt(draft))
 
 print(review)
