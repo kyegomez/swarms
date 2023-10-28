@@ -1,0 +1,183 @@
+[30;1m2023-10-23 17:42:54[0m [31mERROR   [0m [35m__main__[0m -> discord.py version 2.3.2 is installed but does not match the requirements
+[30;1m2023-10-23 18:56:31[0m [31mERROR   [0m [35m__main__[0m -> discord.py version 2.3.2 is installed but does not match the requirements
+[30;1m2023-10-23 18:59:10[0m [31mERROR   [0m [35m__main__[0m -> discord.py version 2.3.2 is installed but does not match the requirements
+[30;1m2023-10-23 18:59:32[0m [31mERROR   [0m [35m__main__[0m -> python-dotenv version 0.21.1 is installed but does not match the requirements
+[30;1m2023-10-23 18:59:54[0m [31mERROR   [0m [35m__main__[0m -> EdgeGPT version 0.13.2 is installed but does not match the requirements
+[30;1m2023-10-23 19:36:43[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-23 19:47:17[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-23 19:47:39[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'generate swarms of robots harvesting resources from the galaxy' (BingChat-API) [BingImageCreator]
+[30;1m2023-10-23 19:57:20[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-23 20:08:01[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-23 20:08:12[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'What are some ways swarms can be deployed to harvest resources from the galaxy' (BingChat-API) [Style: balanced]
+[30;1m2023-10-23 20:09:48[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'Based on these suggestions create images demontrating the m' (BingChat-API) [Style: balanced]
+[30;1m2023-10-23 20:11:51[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'create images of a dyson swarm' (BingChat-API) [BingImageCreator]
+[30;1m2023-10-23 20:12:12[0m [31mERROR   [0m [35msrc.imageCreate[0m -> Error while create image: object list can't be used in 'await' expression
+[31mTraceback (most recent call last):
+  File "/home/zack/code/swarms/apps/BingBot/src/imageCreate.py", line 20, in create_image
+    images = await image_generator.get_images(prompt)
+TypeError: object list can't be used in 'await' expression[0m
+[30;1m2023-10-23 20:12:52[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-23 20:12:57[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'create images of a dyson swarm' (BingChat-API) [BingImageCreator]
+[30;1m2023-10-24 14:18:56[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-24 14:20:11[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'what is this an image of' (Spartan) [Style: balanced]
+[30;1m2023-10-24 16:48:48[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-25 17:06:19[0m [31mERROR   [0m [35m__main__[0m -> bing-chat version 1.9.3 is installed but does not match the requirements
+[30;1m2023-10-25 17:18:50[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-25 17:21:08[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'what is in this image' (BingChat-API) [Style: balanced]
+[30;1m2023-10-25 17:22:52[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mishaanshri95 set Bing Cookies successful[0m
+[30;1m2023-10-25 17:22:58[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mishaanshri95[0m : 'yo.' (Direct Message with ishaanshri95) [Style: balanced]
+[30;1m2023-10-25 17:24:20[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mishaanshri95 delete Cookies[0m
+[30;1m2023-10-25 17:24:41[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mBing has been successfully reset[0m
+[30;1m2023-10-25 17:25:07[0m [31mERROR   [0m [35mcogs.edgegpt[0m -> Bing reset failed.
+[31mTraceback (most recent call last):
+  File "/home/zack/code/swarms/apps/BingBot/cogs/edgegpt.py", line 80, in reset
+    await users_chatbot[user_id].reset()
+KeyError: 273204171002609664[0m
+[30;1m2023-10-25 17:25:24[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mishaanshri95 set Bing Cookies successful[0m
+[30;1m2023-10-25 17:25:25[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw delete Cookies[0m
+[30;1m2023-10-25 17:25:32[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mishaanshri95[0m : 'how are you today?' (Direct Message with ishaanshri95) [Style: balanced]
+[30;1m2023-10-25 17:25:42[0m [34;1mINFO    [0m [35msrc.response[0m -> [31mishaanshri95[0m : 'Can you tell me a joke?' (Direct Message with ishaanshri95) [Style: balanced] [button]
+[30;1m2023-10-25 17:26:36[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mBing has been successfully reset[0m
+[30;1m2023-10-25 17:43:30[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-25 18:02:42[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-25 18:08:50[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-25 18:52:23[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-25 19:08:52[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mishaanshri95 set Bing Cookies successful[0m
+[30;1m2023-10-25 19:27:15[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-25 20:13:15[0m [31mERROR   [0m [35mcogs.edgegpt[0m -> Bing reset failed.
+[31mTraceback (most recent call last):
+  File "/home/zack/code/swarms/apps/BingBot/cogs/edgegpt.py", line 94, in reset
+    await users_chatbot[user_id].reset()
+AttributeError: 'UserChatbot' object has no attribute 'reset'[0m
+[30;1m2023-10-25 20:13:21[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mishaanshri95 delete Cookies[0m
+[30;1m2023-10-25 23:00:38[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-25 23:05:07[0m [33;1mWARNING [0m [35mcogs.edgegpt[0m -> [31mishaanshri95 set Bing Cookies successful[0m
+[30;1m2023-10-25 23:08:57[0m [31mERROR   [0m [35m__main__[0m -> python-dotenv version 1.0.0 is installed but does not match the requirements
+[30;1m2023-10-25 23:10:55[0m [31mERROR   [0m [35m__main__[0m -> PyYAML version 6.0.1 is installed but does not match the requirements
+[30;1m2023-10-25 23:11:03[0m [31mERROR   [0m [35m__main__[0m -> bing-chat version 1.9.2 is installed but does not match the requirements
+[30;1m2023-10-25 23:11:43[0m [31mERROR   [0m [35m__main__[0m -> bing-chat version 1.9.2 is installed but does not match the requirements
+[30;1m2023-10-25 23:12:20[0m [31mERROR   [0m [35m__main__[0m -> python-dotenv version 0.21.1 is installed but does not match the requirements
+[30;1m2023-10-25 23:12:51[0m [31mERROR   [0m [35m__main__[0m -> PyYAML version 6.0 is installed but does not match the requirements
+[30;1m2023-10-25 23:13:31[0m [31mERROR   [0m [35m__main__[0m -> bing-chat version 1.9.3 is installed but does not match the requirements
+[30;1m2023-10-25 23:13:43[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-26 12:04:05[0m [31mERROR   [0m [35m__main__[0m -> bing-chat version 1.9.2 is installed but does not match the requirements
+[30;1m2023-10-26 12:04:53[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-26 12:07:52[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-26 12:08:10[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'what are the trending topics for health' (BingChat-API) [Style: balanced]
+[30;1m2023-10-26 12:09:19[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'what are the trending topics for health using ai' (BingChat-API) [Style: balanced]
+[30;1m2023-10-26 12:12:04[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'what are the trending topics for health focus on psychology sub topics' (BingChat-API) [Style: balanced]
+[30;1m2023-10-26 12:12:46[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'Create images for theses topics' (BingChat-API) [BingImageCreator]
+[30;1m2023-10-26 12:14:42[0m [31mERROR   [0m [35msrc.imageCreate[0m -> Error while create image: 
+[31mTraceback (most recent call last):
+  File "/home/zack/.local/lib/python3.10/site-packages/anyio/streams/tls.py", line 131, in _call_sslobject_method
+    result = func(*args)
+  File "/usr/lib/python3.10/ssl.py", line 917, in read
+    v = self._sslobj.read(len)
+ssl.SSLWantReadError: The operation did not complete (read) (_ssl.c:2578)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/backends/asyncio.py", line 34, in read
+    return await self._stream.receive(max_bytes=max_bytes)
+  File "/home/zack/.local/lib/python3.10/site-packages/anyio/streams/tls.py", line 196, in receive
+    data = await self._call_sslobject_method(self._ssl_object.read, max_bytes)
+  File "/home/zack/.local/lib/python3.10/site-packages/anyio/streams/tls.py", line 138, in _call_sslobject_method
+    data = await self.transport_stream.receive()
+  File "/home/zack/.local/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 1203, in receive
+    await self._protocol.read_event.wait()
+  File "/usr/lib/python3.10/asyncio/locks.py", line 214, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_exceptions.py", line 10, in map_exceptions
+    yield
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/backends/asyncio.py", line 32, in read
+    with anyio.fail_after(timeout):
+  File "/home/zack/.local/lib/python3.10/site-packages/anyio/_core/_tasks.py", line 119, in __exit__
+    raise TimeoutError
+TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_transports/default.py", line 60, in map_httpcore_exceptions
+    yield
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_transports/default.py", line 353, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 253, in handle_async_request
+    raise exc
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 237, in handle_async_request
+    response = await connection.handle_async_request(request)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_async/connection.py", line 90, in handle_async_request
+    return await self._connection.handle_async_request(request)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 116, in handle_async_request
+    raise exc
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 95, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 159, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 195, in _receive_event
+    data = await self._network_stream.read(
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/backends/asyncio.py", line 31, in read
+    with map_exceptions(exc_map):
+  File "/usr/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc)
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/zack/code/swarms/apps/BingBot/src/imageCreate.py", line 24, in create_image
+    images = await image_generator.get_images(prompt)
+  File "/home/zack/.local/lib/python3.10/site-packages/BingImageCreator.py", line 327, in get_images
+    response = await self.session.get(polling_url)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_client.py", line 1757, in get
+    return await self.request(
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_client.py", line 1530, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_client.py", line 1617, in send
+    response = await self._send_handling_auth(
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_client.py", line 1645, in _send_handling_auth
+    response = await self._send_handling_redirects(
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_client.py", line 1682, in _send_handling_redirects
+    response = await self._send_single_request(request)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_client.py", line 1719, in _send_single_request
+    response = await transport.handle_async_request(request)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_transports/default.py", line 352, in handle_async_request
+    with map_httpcore_exceptions():
+  File "/usr/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/home/zack/.local/lib/python3.10/site-packages/httpx/_transports/default.py", line 77, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout[0m
+[30;1m2023-10-26 12:49:14[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'Based on analitics what are the most popular topics on health right now go into s much detail as possible refer to recent breakthroughs in this field' (BingChat-API) [Style: balanced]
+[30;1m2023-10-26 12:49:40[0m [31mERROR   [0m [35msrc.response[0m -> Error while sending message: embeds has a maximum of 10 elements.
+[31mTraceback (most recent call last):
+  File "/home/zack/code/swarms/apps/BingBot/src/response.py", line 156, in send_message
+    await interaction.followup.send(
+  File "/home/zack/.local/lib/python3.10/site-packages/discord/webhook/async_.py", line 1785, in send
+    with handle_message_parameters(
+  File "/home/zack/.local/lib/python3.10/site-packages/discord/http.py", line 171, in handle_message_parameters
+    raise ValueError('embeds has a maximum of 10 elements.')
+ValueError: embeds has a maximum of 10 elements.[0m
+[30;1m2023-10-26 13:08:10[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-26 13:27:35[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!
+[30;1m2023-10-26 13:29:46[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : '/bin  generate topics for PositiveMed.com, an LLM should:  1. **Monitor Health Trends**: Scan Google Alerts, authoritative health websites, and social media for emerging health, wellness, and medical discussions. 2. **Keyword Research**: Utilize tools like SEMrush to identify keywords with moderate to high search volume and low competition. Focus on long-tail, conversational keywords. 3. **Analyze Site Data**: Review PositiveMed's analytics to pinpoint popular articles and areas lacking recent content. 4. **Crowdsourcing**: Gather topic suggestions from the brand's audience and internal team, ensuring alignment with PositiveMed's mission. 5. **Topic Evaluation**: Assess topics for audience relevance, uniqueness, brand fit, current relevance, and SEO potential. 6. **Tone and Style**: Ensure topics can be approached with an educational, empowering, and ethical tone, in line with the brand's voice.  Use this framework to generate a list of potential topics that cater to PositiveMed's audience while staying true to its brand ethos.  Find trending topics for slowing and reversing aging think step by step and o into as much detail as possible' (BingChat-API) [Style: balanced]
+[30;1m2023-10-26 13:34:05[0m [34;1mINFO    [0m [35mcogs.edgegpt[0m -> [31mzackbradshaw[0m : 'Give me links to papers on the cutting edge of this research' (BingChat-API) [Style: balanced]
+[30;1m2023-10-26 13:35:13[0m [34;1mINFO    [0m [35msrc.response[0m -> [31mzackbradshaw[0m : 'Can you recommend any books on anti-aging research?' (BingChat-API) [Style: balanced] [button]
+[30;1m2023-10-26 13:35:17[0m [31mERROR   [0m [35msrc.response[0m -> Error while sending message: 'adaptiveCards'
+[31mTraceback (most recent call last):
+  File "/home/zack/code/swarms/apps/BingBot/src/response.py", line 102, in send_message
+    reply = await chatbot.ask(
+  File "/home/zack/.local/lib/python3.10/site-packages/EdgeGPT/EdgeGPT.py", line 119, in ask
+    async for final, response in self.chat_hub.ask_stream(
+  File "/home/zack/.local/lib/python3.10/site-packages/EdgeGPT/chathub.py", line 187, in ask_stream
+    resp_txt = result_text + response["arguments"][0][
+KeyError: 'adaptiveCards'[0m
+[30;1m2023-10-26 14:53:27[0m [34;1mINFO    [0m [35m__main__[0m -> Spartan#5507 is now running!

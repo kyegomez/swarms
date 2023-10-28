@@ -1,0 +1,34 @@
+Traceback (most recent call last):
+  File "/home/zack/code/swarms/bingchat.py", line 1, in <module>
+    from swarms.models.bing_chat import BingChat
+  File "/home/zack/code/swarms/swarms/__init__.py", line 12, in <module>
+    from swarms.workers import *
+  File "/home/zack/code/swarms/swarms/workers/__init__.py", line 1, in <module>
+    from swarms.workers.worker import Worker
+  File "/home/zack/code/swarms/swarms/workers/worker.py", line 6, in <module>
+    from langchain.chains.qa_with_sources.loading import (
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/__init__.py", line 6, in <module>
+    from langchain.agents import MRKLChain, ReActChain, SelfAskWithSearchChain
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/agents/__init__.py", line 2, in <module>
+    from langchain.agents.agent import (
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/agents/agent.py", line 16, in <module>
+    from langchain.agents.tools import InvalidTool
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/agents/tools.py", line 4, in <module>
+    from langchain.callbacks.manager import (
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/callbacks/__init__.py", line 3, in <module>
+    from langchain.callbacks.aim_callback import AimCallbackHandler
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/callbacks/aim_callback.py", line 4, in <module>
+    from langchain.callbacks.base import BaseCallbackHandler
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/callbacks/base.py", line 7, in <module>
+    from langchain.schema import (
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/schema.py", line 147, in <module>
+    class ChatGeneration(Generation):
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/langchain/schema.py", line 154, in ChatGeneration
+    def set_text(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/pydantic/deprecated/class_validators.py", line 222, in root_validator
+    return root_validator()(*__args)  # type: ignore
+  File "/home/zack/miniconda3/lib/python3.9/site-packages/pydantic/deprecated/class_validators.py", line 228, in root_validator
+    raise PydanticUserError(
+pydantic.errors.PydanticUserError: If you use `@root_validator` with pre=False (the default) you MUST specify `skip_on_failure=True`. Note that `@root_validator` is deprecated and should be replaced with `@model_validator`.
+
+For further information visit https://errors.pydantic.dev/2.4/u/root-validator-pre-skip
