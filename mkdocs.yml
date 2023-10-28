@@ -109,6 +109,7 @@ nav:
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"
+    - Flow: "swarms/structs/flow.md"
   - swarms.memory:
     - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
