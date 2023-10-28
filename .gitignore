@@ -29,6 +29,10 @@ error.txt
 # C extensions
 *.so
 
+
+errors.txt
+
+
 # Distribution / packaging
 .Python
 build/
