@@ -158,6 +158,36 @@ agent.run("Create a video of a swarm of fish")
 
 ```
 
+
+### `Flow` Example
+- The `Flow` is a superior iteratioin of the `LLMChain` from Langchain, our intent with `Flow` is to create the most reliable loop structure that gives the agents their "autonomy" through 3 main methods of interaction, one through user specified loops, then dynamic where the agent parses a <DONE> token, and or an interactive human input verison, or a mix of all 3. 
+```python
+
+from swarms.models import OpenAIChat
+from swarms.structs import Flow
+
+api_key = ""
+
+
+# Initialize the language model,
+# This model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
+llm = OpenAIChat(
+    openai_api_key=api_key,
+    temperature=0.5,
+)
+
+# Initialize the flow
+flow = Flow(
+    llm=llm,
+    max_loops=5,
+)
+
+out = flow.run("Generate a 10,000 word blog, say Stop when done")
+print(out)
+
+
+```
+
 ---
 
 ## Documentation
