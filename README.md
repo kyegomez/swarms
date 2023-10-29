@@ -195,19 +195,6 @@ print(out)
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
 
-## Focus
-We are radically devoted to creating outcomes that our users want, we believe this is only possible by focusing extensively on reliability, scalability, and agility. 
-
-An Agent's purpose is to satisfy your wants and needs and so this is our only focus, we believe this is only possible by investing impeccable detail into agent structure design in other words gluing together an llm with tools and memory in a way that delights users and executes tasks exactly how users want them to be executed.
-
-The reliability of communication in a swarm is also extremely critical to your success and with this in mind we carefully craft and extensively test our structures.
-
-- Reliability.
-- Scalability.
-- Speed.
-- Power.
-- Agile.
-
 ## Contribute
 
 We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md).
