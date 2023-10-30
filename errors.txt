@@ -1,15 +1,21 @@
 message='Request to OpenAI API' method=post path=https://api.openai.com/v1/chat/completions
-api_version=None data='{"messages": [{"role": "user", "content": "Generate a 10,000 word blog on health and wellness."}], "model": "gpt-3.5-turbo"}' message='Post details'
+api_version=None data='{"messages": [{"role": "user", "content": "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."}], "model": "gpt-3.5-turbo", "temperature": 0.5}' message='Post details'
+Converted retries value: 2 -> Retry(total=2, connect=None, read=None, redirect=None, status=None)
+Starting new HTTPS connection (1): api.openai.com:443
+https://api.openai.com:443 "POST /v1/chat/completions HTTP/1.1" 200 None
+message='OpenAI API response' path=https://api.openai.com/v1/chat/completions processing_ms=4814 request_id=0efbc1770444395852146ea38fbb074f response_code=200
 message='Request to OpenAI API' method=post path=https://api.openai.com/v1/chat/completions
-Converted retries value: 2 -> Retry(total=2, connect=None, read=None, redirect=None, status=None)
-api_version=None data='{"messages": [{"role": "user", "content": "Generate a 10,000 word blog on health and wellness."}], "model": "gpt-3.5-turbo"}' message='Post details'
+api_version=None data='{"messages": [{"role": "user", "content": "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."}], "model": "gpt-3.5-turbo", "temperature": 0.5}' message='Post details'
+https://api.openai.com:443 "POST /v1/chat/completions HTTP/1.1" 200 None
+message='OpenAI API response' path=https://api.openai.com/v1/chat/completions processing_ms=3094 request_id=f791336dd4b081e0b13bdf54bf00471a response_code=200
 message='Request to OpenAI API' method=post path=https://api.openai.com/v1/chat/completions
-Converted retries value: 2 -> Retry(total=2, connect=None, read=None, redirect=None, status=None)
-api_version=None data='{"messages": [{"role": "user", "content": "Generate a 10,000 word blog on health and wellness."}], "model": "gpt-3.5-turbo"}' message='Post details'
-Converted retries value: 2 -> Retry(total=2, connect=None, read=None, redirect=None, status=None)
-Starting new HTTPS connection (1): api.openai.com:443
-Starting new HTTPS connection (1): api.openai.com:443
-Starting new HTTPS connection (1): api.openai.com:443
+api_version=None data='{"messages": [{"role": "user", "content": "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."}], "model": "gpt-3.5-turbo", "temperature": 0.5}' message='Post details'
+https://api.openai.com:443 "POST /v1/chat/completions HTTP/1.1" 200 None
+message='OpenAI API response' path=https://api.openai.com/v1/chat/completions processing_ms=3317 request_id=5aa8194828ba49ae72ab024d29180b1a response_code=200
+message='Request to OpenAI API' method=post path=https://api.openai.com/v1/chat/completions
+api_version=None data='{"messages": [{"role": "user", "content": "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."}], "model": "gpt-3.5-turbo", "temperature": 0.5}' message='Post details'
+https://api.openai.com:443 "POST /v1/chat/completions HTTP/1.1" 200 None
+message='OpenAI API response' path=https://api.openai.com/v1/chat/completions processing_ms=4528 request_id=85b6182749870200b317958cd97c7206 response_code=200
 Error in sys.excepthook:
 Traceback (most recent call last):
   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/humbug/report.py", line 505, in _hook
@@ -20,30 +26,7 @@ TypeError: format_exception() got an unexpected keyword argument 'etype'
 
 Original exception was:
 Traceback (most recent call last):
-  File "/Users/defalt/Desktop/Athena/research/swarms/godmode.py", line 21, in <module>
-    out = god_mode.run(task)
-          ^^^^^^^^^^^^^^^^^^
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/swarms/god_mode.py", line 40, in run
-    with ThreadPoolExecutor() as executor:
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 647, in __exit__
-    self.shutdown(wait=True)
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/thread.py", line 235, in shutdown
-    t.join()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/threading.py", line 1112, in join
-    self._wait_for_tstate_lock()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/threading.py", line 1132, in _wait_for_tstate_lock
-    if lock.acquire(block, timeout):
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-KeyboardInterrupt
-Exception ignored in: <module 'threading' from '/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/threading.py'>
-Traceback (most recent call last):
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/threading.py", line 1553, in _shutdown
-    atexit_call()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/thread.py", line 31, in _python_exit
-    t.join()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/threading.py", line 1112, in join
-    self._wait_for_tstate_lock()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/threading.py", line 1132, in _wait_for_tstate_lock
-    if lock.acquire(block, timeout):
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-KeyboardInterrupt: 
+  File "/Users/defalt/Desktop/Athena/research/swarms/multi_agent_debate.py", line 27, in <module>
+    print(f"Agent {result['agent']} responded: {result['response']}")
+                   ~~~~~~^^^^^^^^^
+KeyError: 'agent'
