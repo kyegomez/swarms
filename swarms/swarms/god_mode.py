@@ -35,7 +35,8 @@ class GodMode:
         self.last_responses = None
         self.task_history = []
 
-    def run(self, task):
+    def run(self, task: str):
+        """Run the task string"""
         with ThreadPoolExecutor() as executor:
             responses = executor.map(lambda llm: llm(task), self.llms)
         return list(responses)

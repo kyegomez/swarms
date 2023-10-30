@@ -1,20 +1,22 @@
-from swarms.workers.worker import Worker
 from queue import Queue, PriorityQueue
 
 
 class SimpleSwarm:
     def __init__(
         self,
-        num_workers: int = None,
+        llm,
+        num_agents: int = None,
         openai_api_key: str = None,
         ai_name: str = None,
         rounds: int = 1,
+        *args,
+        **kwargs,
     ):
         """
 
         Usage:
-        # Initialize the swarm with 5 workers, an API key, and a name for the AI model
-        swarm = SimpleSwarm(num_workers=5, openai_api_key="YOUR_OPENAI_API_KEY", ai_name="Optimus Prime")
+        # Initialize the swarm with 5 agents, an API key, and a name for the AI model
+        swarm = SimpleSwarm(num_agents=5, openai_api_key="YOUR_OPENAI_API_KEY", ai_name="Optimus Prime")
 
         # Normal task without priority
         normal_task = "Describe the process of photosynthesis in simple terms."
@@ -38,14 +40,15 @@ class SimpleSwarm:
         swarm.health_check()
 
         """
-        self.workers = [
-            Worker(ai_name, ai_name, openai_api_key) for _ in range(num_workers)
+        self.llm = llm
+        self.agents = [
+            self.llm for _ in range(num_agents)
         ]
         self.task_queue = Queue()
         self.priority_queue = PriorityQueue()
 
     def distribute(self, task: str = None, priority=None):
-        """Distribute a task to the workers"""
+        """Distribute a task to the agents"""
         if priority:
             self.priority_queue.put((priority, task))
         else:
@@ -53,7 +56,7 @@ class SimpleSwarm:
 
     def _process_task(self, task):
         # TODO, Implement load balancing, fallback mechanism
-        for worker in self.workers:
+        for worker in self.agents:
             response = worker.run(task)
             if response:
                 return response
@@ -79,7 +82,7 @@ class SimpleSwarm:
     def run_old(self, task):
         responses = []
 
-        for worker in self.workers:
+        for worker in self.agents:
             response = worker.run(task)
             responses.append(response)
 

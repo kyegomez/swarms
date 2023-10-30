@@ -1,7 +1,7 @@
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
 
-api_key = "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"
+api_key = ""
 
 
 # Initialize the language model,

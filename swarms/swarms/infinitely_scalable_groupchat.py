@@ -1,6 +1,4 @@
-from swarms.embeddings.simple_ada import get_ada_embeddings
 import chromadb
-from swarms.models.openai_models import OpenAIChat
 
 # Vectordb
 client = chromadb.Client()

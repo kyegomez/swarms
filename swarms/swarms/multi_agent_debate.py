@@ -18,7 +18,7 @@ class MultiAgentDebate:
     """
 
     def __init__(
-        self, agents: List[Worker], selection_func: Callable[[int, List[Worker]], int]
+        self, agents, selection_func: Callable[[int, List[Worker]], int]
     ):
         self.agents = agents
         self.selection_func = selection_func
@@ -27,7 +27,7 @@ class MultiAgentDebate:
         for agent in self.agents:
             agent.reset()
 
-    def inject_agent(self, agent: Worker):
+    def inject_agent(self, agent):
         self.agents.append(agent)
 
     def run(self, task: str, max_iters: int = None):
