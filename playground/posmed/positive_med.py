@@ -1,7 +1,7 @@
 from swarms import OpenAIChat
 
 DRAFT_PROMPT = """# MISSION
-Write a 100% unique, creative and in human-like style article of a minimum of 2000 words using headings and sub-headings.
+Write a 100% unique, creative and in human-like style article of a minimum of 5,000 words using headings and sub-headings.
 Ensure your tone is Professional and casual while focusing on presenting information and analysis without excessive embellishment.
 
 The topic is: {{TOPIC}}
