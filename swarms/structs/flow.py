@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Generator
 from termcolor import colored
 
 # Custome stopping condition
@@ -114,7 +114,6 @@ class Flow:
         4. If stopping condition is not met, generate a response
         5. Repeat until stopping condition is met or max_loops is reached
 
-    
         """
         response = task
         history = [task]
@@ -333,3 +332,27 @@ class Flow:
             print(token, end="", flush=True)
         print()
         return response
+
+    def streamed_token_generation(
+        self,
+        prompt: str 
+    ) -> Generator[str, None, None]:
+        """
+        Generate tokens in real-time for a given prompt.
+
+        This method simulates the real-time generation of each token. 
+        For simplicity, we treat each character of the input as a token 
+        and yield them with a slight delay. In a real-world scenario, 
+        this would involve using the LLM's internal methods to generate 
+        the response token by token.
+
+        Args:
+            prompt (str): The input prompt for which the tokens should be generated.
+
+        Yields:
+            str: The next token (character) from the generated response.
+        """
+        tokens = list(prompt)
+        for token in tokens:
+            time.sleep(0.1)
+            yield token
