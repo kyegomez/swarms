@@ -3,7 +3,7 @@ from swarms.structs import Workflow
 
 
 llm = OpenAIChat(
-    openai_api_key="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"
+    openai_api_key=""
 )
 
 workflow = Workflow(llm)
