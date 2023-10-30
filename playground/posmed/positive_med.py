@@ -18,7 +18,8 @@ Write at least one paragraph with the heading {{TOPIC}}.
 Try not to change the original {{TOPIC}} while writing the Title.
 Try to mention "{{TOPIC}}" 2-3 times in the article.
 Write content that can easily pass the AI detection tools test.
-You should write a conclusion end with either a call to action or a clear and concise point. What is the key takeaway?"""
+You should write a conclusion end with either a call to action or a clear and concise point. What is the key takeaway?
+"""
 
 
 REVIEW_PROMPT = """# MISSION
