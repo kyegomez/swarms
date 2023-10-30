@@ -104,39 +104,32 @@ for result in results:
     print(f"Agent {result['agent']} responded: {result['response']}")
 ```
 
-----
-
-### `Worker`
-- The `Worker` is an fully feature complete agent with an llm, tools, and a vectorstore for long term memory!
-- Place your api key as parameters in the llm if you choose!
-- And, then place the openai api key in the Worker for the openai embedding model
+## Usage
+- A powerful tool for concurrent execution of tasks using multiple Language Model (LLM) instances.
 
 ```python
+from swarms.swarms import GodMode
 from swarms.models import OpenAIChat
-from swarms import Worker
 
 api_key = ""
 
 llm = OpenAIChat(
-    openai_api_key=api_key,
-    temperature=0.5,
+    openai_api_key=api_key
 )
 
-node = Worker(
-    llm=llm,
-    ai_name="Optimus Prime",
-    openai_api_key=api_key,
-    ai_role="Worker in a swarm",
-    external_tools=None,
-    human_in_the_loop=False,
-    temperature=0.5,
-)
 
-task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
-response = node.run(task)
-print(response)
+llms = [
+    llm,
+    llm,
+    llm
+]
 
+god_mode = GodMode(llms)
 
+task = 'Generate a 10,000 word blog on health and wellness.'
+
+out = god_mode.run(task)
+god_mode.print_responses(task)
 ```
 
 ------
