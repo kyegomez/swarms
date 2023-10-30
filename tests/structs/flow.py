@@ -1,12 +1,12 @@
-import pytest
 import json
-from unittest.mock import MagicMock
-
-from unittest.mock import patch
 import os
-from swarms.structs.flow import Flow, stop_when_repeats
-from swarms.models import OpenAIChat
+from unittest.mock import MagicMock, patch
+
+import pytest
 from dotenv import load_dotenv
+
+from swarms.models import OpenAIChat
+from swarms.structs.flow import Flow, stop_when_repeats
 
 load_dotenv()
 
@@ -89,7 +89,8 @@ def test_env_variable_handling(monkeypatch):
 
 # Test initializing the flow with different stopping conditions
 def test_flow_with_custom_stopping_condition(mocked_llm):
-    stopping_condition = lambda x: "terminate" in x.lower()
+    def stopping_condition(x):
+        return "terminate" in x.lower()
     flow = Flow(llm=mocked_llm, max_loops=5, stopping_condition=stopping_condition)
     assert flow.stopping_condition("Please terminate now")
     assert not flow.stopping_condition("Continue the process")
@@ -165,7 +166,7 @@ def test_mocked_openai_chat(MockedOpenAIChat):
     llm = MockedOpenAIChat(openai_api_key=openai_api_key)
     llm.return_value = MagicMock()
     flow = Flow(llm=llm, max_loops=5)
-    response = flow.run("Mocked run")
+    flow.run("Mocked run")
     assert MockedOpenAIChat.called
 
 # Test retry attempts
