@@ -120,6 +120,33 @@ class Flow:
         """
         response = task
         history = [task]
+
+        dashboard = print(colored(f"""
+
+        Flow Dashboard
+        --------------------------------------------
+
+        Flow loop is initializing for {self.max_loops} with the following configuration:
+
+        Model Configuration:
+            Model Temperature: 
+            Model Max Tokens: 
+        ----------------------------------------
+
+        Flow Configuration:
+            Task: {task}
+            Max Loops: {self.max_loops}
+            Stopping Condition: {self.stopping_condition}
+            Loop Interval: {self.loop_interval}
+            Retry Attempts: {self.retry_attempts}
+            Retry Interval: {self.retry_interval}
+            Interactive: {self.interactive}
+
+        ----------------------------------------""", "green"))
+
+
+        print(dashboard)
+
         for i in range(self.max_loops):
             print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
             print("\n")

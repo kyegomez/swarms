@@ -23,7 +23,7 @@ from langchain.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
-from swarms.models.base import BaseLLM, create_base_retry_decorator
+from langchain.llms.base import BaseLLM, create_base_retry_decorator
 from langchain.pydantic_v1 import Field, root_validator
 from langchain.schema import Generation, LLMResult
 from langchain.schema.output import GenerationChunk
