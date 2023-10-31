@@ -91,5 +91,3 @@ class AbstractModel(ABC):
         TOKENS: {_num_tokens}
         Tokens/SEC: {_time_for_generation}
         """
-
-

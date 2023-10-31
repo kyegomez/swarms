@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Generator
 from termcolor import colored
 import inspect
 
+
 # Custome stopping condition
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
@@ -40,6 +41,7 @@ class Flow:
         retry_attempts (int): The number of retry attempts
         retry_interval (int): The interval between retry attempts
         interactive (bool): Whether or not to run in interactive mode
+        dashboard (bool): Whether or not to print the dashboard
         **kwargs (Any): Any additional keyword arguments
 
     Example:
@@ -68,6 +70,8 @@ class Flow:
         retry_attempts: int = 3,
         retry_interval: int = 1,
         interactive: bool = False,
+        dashboard: bool = False,
+        dynamic_temperature: bool = False,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -82,6 +86,9 @@ class Flow:
         self.task = None
         self.stopping_token = "<DONE>"
         self.interactive = interactive
+        self.dashboard = dashboard
+        self.dynamic_temperature = dynamic_temperature
+
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -99,6 +106,16 @@ class Flow:
         response = self.llm(prompt, **kwargs)
         return response
 
+    def dynamic_temperature(self):
+        """
+        1. Check the self.llm object for the temperature
+        2. If the temperature is not present, then use the default temperature
+        3. If the temperature is present, then dynamically change the temperature
+        4. for every loop you can randomly change the temperature on a scale from 0.0 to 1.0
+        """
+        pass
+
+
     def format_prompt(self, template, **kwargs: Any) -> str:
         """Format the template with the provided kwargs using f-string interpolation."""
         return template.format(**kwargs)
@@ -108,20 +125,20 @@ class Flow:
         init_signature = inspect.signature(self.llm.__init__)
         params = init_signature.parameters
         params_str_list = []
-            
+
         for name, param in params.items():
-            if name == 'self':
+            if name == "self":
                 continue
             if hasattr(self.llm, name):
                 value = getattr(self.llm, name)
             else:
-                value = self.llm.__dict__.get(name, 'Unknown')
-            
-            params_str_list.append(f"    {name.capitalize().replace('_', ' ')}: {value}")
-        
-        return '\n'.join(params_str_list)
+                value = self.llm.__dict__.get(name, "Unknown")
 
+            params_str_list.append(
+                f"    {name.capitalize().replace('_', ' ')}: {value}"
+            )
 
+        return "\n".join(params_str_list)
 
     def run(self, task: str):
         """
@@ -143,29 +160,35 @@ class Flow:
 
         model_config = self.get_llm_init_params()
 
-        dashboard = print(colored(f"""
+        # If dashboard = True then print the dashboard
+        if self.dashboard:
+            dashboard = print(
+                colored(
+                    f"""
 
-        Flow Dashboard
-        --------------------------------------------
+            Flow Dashboard
+            --------------------------------------------
 
-        Flow loop is initializing for {self.max_loops} with the following configuration:
+            Flow loop is initializing for {self.max_loops} with the following configuration:
 
-        {model_config}
-        ----------------------------------------
+            {model_config}
+            ----------------------------------------
 
-        Flow Configuration:
-            Task: {task}
-            Max Loops: {self.max_loops}
-            Stopping Condition: {self.stopping_condition}
-            Loop Interval: {self.loop_interval}
-            Retry Attempts: {self.retry_attempts}
-            Retry Interval: {self.retry_interval}
-            Interactive: {self.interactive}
+            Flow Configuration:
+                Task: {task}
+                Max Loops: {self.max_loops}
+                Stopping Condition: {self.stopping_condition}
+                Loop Interval: {self.loop_interval}
+                Retry Attempts: {self.retry_attempts}
+                Retry Interval: {self.retry_interval}
+                Interactive: {self.interactive}
 
-        ----------------------------------------""", "green"))
+            ----------------------------------------""",
+                    "green",
+                )
+            )
 
-
-        print(dashboard)
+            print(dashboard)
 
         for i in range(self.max_loops):
             print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
