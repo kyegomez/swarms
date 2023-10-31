@@ -3,9 +3,11 @@ api_version=None data='{"messages": [{"role": "user", "content": "Generate a 10,
 Converted retries value: 2 -> Retry(total=2, connect=None, read=None, redirect=None, status=None)
 Starting new HTTPS connection (1): api.openai.com:443
 https://api.openai.com:443 "POST /v1/chat/completions HTTP/1.1" 200 None
-message='OpenAI API response' path=https://api.openai.com/v1/chat/completions processing_ms=15325 request_id=0f0244a70fe0d6dc3008761f9f2f8f82 response_code=200
+message='OpenAI API response' path=https://api.openai.com/v1/chat/completions processing_ms=13345 request_id=ad9fa4aaf27128538fdb603e44576e17 response_code=200
 message='Request to OpenAI API' method=post path=https://api.openai.com/v1/chat/completions
-api_version=None data='{"messages": [{"role": "user", "content": "Title: \\"Achieving Optimal Health and Wellness: A Comprehensive Guide to Transform Your Life\\"\\n\\nIntroduction (Word Count: 500)\\n\\nWelcome to our extensive guide on health and wellness, where we delve into the various aspects that contribute to a balanced and fulfilling life. In today\'s fast-paced world, it has become increasingly important to prioritize our well-being, both physically and mentally. This blog aims to provide you with valuable insights, practical tips, and evidence-based information to help you embark on a journey towards optimal health and wellness.\\n\\nTable of Contents:\\n\\n1. The Importance of Health and Wellness (Word Count: 800)\\n   1.1 Defining Health and Wellness\\n   1.2 Understanding the Mind-Body Connection\\n   1.3 The Benefits of Prioritizing Health and Wellness\\n\\n2. Nutrition and Diet (Word Count: 1,500)\\n   2.1 The Fundamentals of a Balanced Diet\\n   2.2 Exploring Macro and Micronutrients\\n   2.3 Superfoods: Unleashing the Power of Nutrient-Dense Foods\\n   2.4 Debunking Diet Myths\\n   2.5 The Role of Hydration in Overall Health\\n\\n3. Physical Fitness and Exercise (Word Count: 1,500)\\n   3.1 The Importance of Regular Physical Activity\\n   3.2 Different Types of Exercise and Their Benefits\\n   3.3 Creating an Effective Workout Routine\\n   3.4 Overcoming Barriers to Exercise\\n   3.5 The Role of Rest and Recovery in Fitness\\n\\n4. Mental Health and Well-being (Word Count: 1,500)\\n   4.1 Understanding Mental Health\\n   4.2 Strategies for Stress Management\\n   4.3 Promoting Emotional Well-being\\n   4.4 The Power of Mindfulness and Meditation\\n   4.5 Seeking Professional Help: Therapy and Counseling\\n\\n5. Sleep and its Impact on Health (Word Count: 1,200)\\n   5.1 The Science of Sleep\\n   5.2 Establishing Healthy Sleep Habits\\n   5.3 Tips for Better Sleep Quality\\n   5.4 Addressing Common Sleep Disorders\\n   5.5 The Link Between Sleep and Mental Health\\n\\n6. Building Healthy Relationships (Word Count: 1,200)\\n   6.1 The Importance of Social Connections\\n   6.2 Nurturing Meaningful Relationships\\n   6.3 Effective Communication Skills\\n   6.4 Setting Boundaries for Healthy Relationships\\n   6.5 Cultivating a Supportive Network\\n\\n7. Holistic Approaches to Health and Wellness (Word Count: 1,200)\\n   7.1 Exploring Alternative Therapies\\n   7.2 Integrating Traditional Medicine with Complementary Practices\\n   7.3 The Benefits of Yoga and Tai Chi\\n   7.4 Harnessing the Power of Aromatherapy and Essential Oils\\n   7.5 Embracing Nature: Ecotherapy and Outdoor Activities\\n\\n8. Preventive Health Measures (Word Count: 1,000)\\n   8.1 Regular Health Check-ups and Screenings\\n   8.2 Vaccinations and Immunizations\\n   8.3 Preventing Chronic Diseases through Lifestyle Changes\\n   8.4 Understanding the Importance of Hygiene\\n   8.5 Promoting Workplace Health and Safety\\n\\nConclusion (Word Count: 300)\\n\\nIn conclusion, achieving optimal health and wellness is a lifelong journey that requires commitment, self-awareness, and continuous learning. By incorporating the principles discussed in this comprehensive guide into your daily life, you can take significant strides towards enhancing your well-being, finding balance, and living a more fulfilled life. Remember, small steps can lead to significant transformations, and prioritizing your health is an investment that yields lifelong rewards."}], "model": "gpt-3.5-turbo", "temperature": 0.5}' message='Post details'
+api_version=None data='{"messages": [{"role": "user", "content": "Title: Achieving Optimal Health and Wellness: A Comprehensive Guide\\n\\nIntroduction:\\n\\nIn today\'s fast-paced world, maintaining good health and wellness has become a paramount concern for many individuals. The pursuit of a healthy lifestyle encompasses various aspects of our lives, including physical, mental, and emotional well-being. This blog aims to provide a comprehensive guide to achieving optimal health and wellness, offering valuable insights, practical tips, and evidence-based information to support your journey towards a healthier and happier life.\\n\\nTable of Contents:\\n\\n1. Understanding Health and Wellness\\n   a. Definitions and distinctions\\n   b. The importance of a holistic approach\\n\\n2. Physical Health\\n   a. The significance of regular exercise\\n   b. Balanced nutrition and healthy eating habits\\n   c. Importance of adequate sleep and rest\\n   d. Maintaining a healthy weight\\n   e. Preventive measures and screenings\\n\\n3. Mental Health\\n   a. Recognizing and managing stress\\n   b. Building resilience and coping mechanisms\\n   c. Strategies for improving focus and concentration\\n   d. Promoting positive self-esteem and body image\\n   e. Seeking professional help when needed\\n\\n4. Emotional Well-being\\n   a. Nurturing healthy relationships\\n   b. Techniques for managing emotions effectively\\n   c. Practicing gratitude and mindfulness\\n   d. Engaging in activities that bring joy and fulfillment\\n   e. Cultivating emotional intelligence\\n\\n5. Spiritual Wellness\\n   a. Exploring different spiritual practices\\n   b. Finding meaning and purpose in life\\n   c. Meditation and mindfulness techniques\\n   d. Connecting with nature and the universe\\n   e. Embracing personal beliefs and values\\n\\n6. Social Wellness\\n   a. The importance of social connections\\n   b. Building a support network\\n   c. Effective communication skills\\n   d. Active involvement in the community\\n   e. Balancing social interactions and alone time\\n\\n7. Environmental Wellness\\n   a. Promoting a clean and sustainable environment\\n   b. Reducing exposure to toxins and pollutants\\n   c. Creating a calming and organized living space\\n   d. Incorporating nature into everyday life\\n   e. Adopting eco-friendly practices\\n\\n8. Occupational Wellness\\n   a. Finding fulfillment in your career\\n   b. Achieving work-life balance\\n   c. Setting realistic goals and managing time effectively\\n   d. Developing skills and continuous learning\\n   e. Embracing creativity and innovation\\n\\n9. Financial Wellness\\n   a. Creating a budget and managing finances\\n   b. Saving and investing for the future\\n   c. Reducing debt and financial stress\\n   d. Seeking professional advice for financial planning\\n   e. Balancing material and non-material aspirations\\n\\n10. Integrating Health and Wellness into Daily Life\\n    a. Setting goals and creating a personalized plan\\n    b. Overcoming obstacles and maintaining motivation\\n    c. Building healthy habits and routines\\n    d. Tracking progress and celebrating achievements\\n    e. Embracing a lifelong commitment to health and wellness\\n\\nConclusion:\\n\\nAchieving optimal health and wellness is a lifelong journey that requires dedication, self-awareness, and continuous effort. By adopting a holistic approach and addressing various dimensions of well-being, we can enhance our quality of life and experience a profound sense of fulfillment. Remember, small changes can make a big difference, so start implementing the tips and strategies shared in this blog to embark on your path towards a healthier, happier you."}], "model": "gpt-3.5-turbo", "temperature": 0.5}' message='Post details'
+https://api.openai.com:443 "POST /v1/chat/completions HTTP/1.1" 200 None
+message='OpenAI API response' path=https://api.openai.com/v1/chat/completions processing_ms=1528 request_id=f0c0b4c521f98a3031aeea3e6b099810 response_code=200
 Error in sys.excepthook:
 Traceback (most recent call last):
   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/humbug/report.py", line 505, in _hook
@@ -16,95 +18,9 @@ TypeError: format_exception() got an unexpected keyword argument 'etype'
 
 Original exception was:
 Traceback (most recent call last):
-  File "/Users/defalt/Desktop/Athena/research/swarms/simple_agent.py", line 24, in <module>
-    out = agent.run("Generate a 10,000 word blog on health and wellness.")
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/agents/simple_agent.py", line 18, in run
-    response = self.flow.run(task)
-               ^^^^^^^^^^^^^^^^^^^
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/structs/flow.py", line 158, in run
-    response = self.llm(response)
-               ^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/langchain/llms/base.py", line 802, in __call__
-    self.generate(
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/langchain/llms/base.py", line 598, in generate
-    output = self._generate_helper(
-             ^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/langchain/llms/base.py", line 504, in _generate_helper
-    raise e
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/langchain/llms/base.py", line 491, in _generate_helper
-    self._generate(
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/models/openai_models.py", line 882, in _generate
-    full_response = completion_with_retry(
-                    ^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/models/openai_models.py", line 114, in completion_with_retry
-    return _completion_with_retry(**kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/tenacity/__init__.py", line 289, in wrapped_f
-    return self(f, *args, **kw)
-           ^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/tenacity/__init__.py", line 379, in __call__
-    do = self.iter(retry_state=retry_state)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/tenacity/__init__.py", line 314, in iter
-    return fut.result()
-           ^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result
-    return self.__get_result()
-           ^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
-    raise self._exception
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/tenacity/__init__.py", line 382, in __call__
-    result = fn(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/models/openai_models.py", line 112, in _completion_with_retry
-    return llm.client.create(**kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/openai/api_resources/chat_completion.py", line 25, in create
-    return super().create(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/openai/api_resources/abstract/engine_api_resource.py", line 153, in create
-    response, _, api_key = requestor.request(
-                           ^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/openai/api_requestor.py", line 288, in request
-    result = self.request_raw(
-             ^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/openai/api_requestor.py", line 596, in request_raw
-    result = _thread_context.session.request(
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
-    resp = self.send(prep, **send_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
-    r = adapter.send(request, **kwargs)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/requests/adapters.py", line 486, in send
-    resp = conn.urlopen(
-           ^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/urllib3/connectionpool.py", line 703, in urlopen
-    httplib_response = self._make_request(
-                       ^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/urllib3/connectionpool.py", line 449, in _make_request
-    six.raise_from(e, None)
-  File "<string>", line 3, in raise_from
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/urllib3/connectionpool.py", line 444, in _make_request
-    httplib_response = conn.getresponse()
-                       ^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/http/client.py", line 1374, in getresponse
-    response.begin()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/http/client.py", line 318, in begin
-    version, status, reason = self._read_status()
-                              ^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/http/client.py", line 279, in _read_status
-    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/socket.py", line 705, in readinto
-    return self._sock.recv_into(b)
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/ssl.py", line 1278, in recv_into
-    return self.read(nbytes, buffer)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/ssl.py", line 1134, in read
-    return self._sslobj.read(len, buffer)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/defalt/Desktop/Athena/research/swarms/flow.py", line 20, in <module>
+    out = flow.run("Generate a 10,000 word blog on health and wellness.")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/structs/flow.py", line 185, in run
+    time.sleep(self.loop_interval)
 KeyboardInterrupt
