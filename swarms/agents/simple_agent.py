@@ -13,10 +13,11 @@ class SimpleAgent:
     >>> from swarms.agents.simple_agent import SimpleAgent
     >>> from swarms.structs import Flow
     >>> from swarms.models import OpenAIChat
-    >>> api_key = "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"
+    >>> api_key = ""
     >>> llm = OpenAIChat()
 
     """
+
     def __init__(
         self,
         name: str,
