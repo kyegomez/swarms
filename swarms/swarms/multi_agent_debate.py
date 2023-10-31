@@ -1,5 +1,6 @@
 from typing import List, Callable
 
+
 # Define a selection function
 def select_speaker(step: int, agents) -> int:
     # This function selects the speaker in a round-robin fashion
@@ -16,7 +17,9 @@ class MultiAgentDebate:
     """
 
     def __init__(
-        self, agents, selection_func,
+        self,
+        agents,
+        selection_func,
     ):
         self.agents = agents
         self.selection_func = selection_func
@@ -43,10 +46,7 @@ class MultiAgentDebate:
 
     def format_results(self, results):
         formatted_results = "\n".join(
-            [
-                f"Agent responded: {result['response']}"
-                for result in results
-            ]
+            [f"Agent responded: {result['response']}" for result in results]
         )
 
         return formatted_results
