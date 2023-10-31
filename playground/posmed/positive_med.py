@@ -58,16 +58,18 @@ Your role involves content analysis, editorial precision, expert validation, leg
 Re-Write the article, taking into account all review instructions and standards
 """
 
+
 def get_draft_prompt(topic, theme):
     prompt = DRAFT_PROMPT.replace("{{TOPIC}}", topic).replace("{{THEME}}", theme)
     return prompt
+
 
 def get_review_prompt(article):
     prompt = REVIEW_PROMPT.replace("{{ARTICLE}}", article)
     return prompt
 
 
-openai = OpenAIChat(openai_api_key="sk-S4xHnFJu7juD33jxjJZfZU1cZYi")
+openai = OpenAIChat(openai_api_key="S4xHnFJu7juD33jxjJZfZU1cZYi")
 
 draft = openai(get_draft_prompt("AI in healthcare", "Pyschology"))
 review = openai(get_review_prompt(draft))

@@ -23,7 +23,7 @@ from langchain.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
-from langchain.llms.base import BaseLLM, create_base_retry_decorator
+from swarms.models.base import BaseLLM, create_base_retry_decorator
 from langchain.pydantic_v1 import Field, root_validator
 from langchain.schema import Generation, LLMResult
 from langchain.schema.output import GenerationChunk
@@ -628,13 +628,14 @@ class OpenAI(BaseOpenAI):
     environment variable ``OPENAI_API_KEY`` set with your API key.
 
     Any parameters that are valid to be passed to the openai.create call can be passed
-    in, even if not explicitly saved on this class.
+    in, even if not explicitly saved on this class..,
 
     Example:
         .. code-block:: python
 
-            from langchain.llms import OpenAI
+            from swarms.models import OpenAI
             openai = OpenAI(model_name="text-davinci-003")
+            openai("What is the report on the 2022 oympian games?")
     """
 
     @property
@@ -654,7 +655,7 @@ class AzureOpenAI(BaseOpenAI):
     Example:
         .. code-block:: python
 
-            from langchain.llms import AzureOpenAI
+            from swarms.models import AzureOpenAI
             openai = AzureOpenAI(model_name="text-davinci-003")
     """
 
@@ -716,7 +717,7 @@ class OpenAIChat(BaseLLM):
     Example:
         .. code-block:: python
 
-            from langchain.llms import OpenAIChat
+            from swarms.models import OpenAIChat
             openaichat = OpenAIChat(model_name="gpt-3.5-turbo")
     """
 

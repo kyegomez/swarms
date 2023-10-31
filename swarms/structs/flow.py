@@ -4,10 +4,12 @@ import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Generator
 from termcolor import colored
 
+
 # Custome stopping condition
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
     return "Stop" in response.lower()
+
 
 def parse_done_token(response: str) -> bool:
     """Parse the response to see if the done token is present"""
@@ -29,7 +31,7 @@ class Flow:
     * Ability to provide a stopping condition
     * Ability to provide a retry mechanism
     * Ability to provide a loop interval
-    
+
     Args:
         llm (Any): The language model to use
         max_loops (int): The maximum number of loops to run
@@ -55,6 +57,7 @@ class Flow:
     >>> flow.run("Generate a 10,000 word blog")
     >>> flow.save("path/flow.yaml")
     """
+
     def __init__(
         self,
         llm: Any,
@@ -118,7 +121,7 @@ class Flow:
         response = task
         history = [task]
         for i in range(self.max_loops):
-            print(colored(f"\nLoop {i+1} of {self.max_loops}", 'blue'))
+            print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
             print("\n")
             if self._check_stopping_condition(response):
                 break
@@ -135,7 +138,7 @@ class Flow:
             history.append(response)
             time.sleep(self.loop_interval)
         self.memory.append(history)
-        return response #, history
+        return response  # , history
 
     def _run(self, **kwargs: Any) -> str:
         """Generate a result using the provided keyword args."""
@@ -147,12 +150,8 @@ class Flow:
     def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
         """Generate responses for multiple input sets."""
         return [self.run(**input_data) for input_data in inputs]
-    
-    def run_dynamically(
-        self,
-        task: str,
-        max_loops: Optional[int] = None
-    ):
+
+    def run_dynamically(self, task: str, max_loops: Optional[int] = None):
         """
         Run the autonomous agent loop dynamically based on the <DONE>
 
@@ -171,7 +170,7 @@ class Flow:
         """
         if "<DONE>" in task:
             self.stopping_condition = parse_done_token
-        self.max_loops = max_loops or float('inf')
+        self.max_loops = max_loops or float("inf")
         response = self.run(task)
         return response
 
@@ -188,15 +187,15 @@ class Flow:
         return Flow(llm=llm, template=template)
 
     def save(self, file_path) -> None:
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(self.memory, f)
         print(f"Saved flow history to {file_path}")
 
     def load(self, file_path) -> None:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             self.memory = json.load(f)
         print(f"Loaded flow history from {file_path}")
-    
+
     def validate_response(self, response: str) -> bool:
         """Validate the response based on certain criteria"""
         if len(response) < 5:
@@ -204,28 +203,21 @@ class Flow:
             return False
         return True
 
-    def run_with_timeout(
-        self,
-        task: str,
-        timeout: int = 60
-    ) -> str:
+    def run_with_timeout(self, task: str, timeout: int = 60) -> str:
         """Run the loop but stop if it takes longer than the timeout"""
         start_time = time.time()
         response = self.run(task)
         end_time = time.time()
         if end_time - start_time > timeout:
             print("Operaiton timed out")
-            return 'Timeout'
+            return "Timeout"
         return response
-    
-    def backup_memory_to_s3(
-        self,
-        bucket_name: str,
-        object_name: str
-    ):
+
+    def backup_memory_to_s3(self, bucket_name: str, object_name: str):
         """Backup the memory to S3"""
         import boto3
-        s3 = boto3.client('s3')
+
+        s3 = boto3.client("s3")
         s3.put_object(Bucket=bucket_name, Key=object_name, Body=json.dumps(self.memory))
         print(f"Backed up memory to S3: {bucket_name}/{object_name}")
 
@@ -249,7 +241,7 @@ class Flow:
         print(f"Response: {response}")
         previous_state, message = flow.undo_last()
         print(message)
-                
+
         """
         if len(self.memory) < 2:
             return None, None
@@ -260,7 +252,7 @@ class Flow:
         # Get the previous state
         previous_state = self.memory[-1][-1]
         return previous_state, f"Restored to {previous_state}"
-    
+
     # Response Filtering
     def add_response_filter(self, filter_word: str) -> None:
         """
@@ -270,15 +262,15 @@ class Flow:
         flow.add_response_filter("Trump")
         flow.run("Generate a report on Trump")
 
-        
+
         """
         self.reponse_filters.append(filter_word)
-    
+
     def apply_reponse_filters(self, response: str) -> str:
         """
         Apply the response filters to the response
 
-        
+
         """
         for word in self.response_filters:
             response = response.replace(word, "[FILTERED]")
@@ -293,11 +285,8 @@ class Flow:
         """
         raw_response = self.run(task)
         return self.apply_response_filters(raw_response)
-    
-    def interactive_run(
-        self,
-        max_loops: int = 5
-    ) -> None:
+
+    def interactive_run(self, max_loops: int = 5) -> None:
         """Interactive run mode"""
         response = input("Start the cnversation")
 
@@ -307,22 +296,19 @@ class Flow:
 
             # Get user input
             response = input("You: ")
-    
-    def streamed_generation(
-        self,
-        prompt: str
-    ) -> str:
+
+    def streamed_generation(self, prompt: str) -> str:
         """
         Stream the generation of the response
-        
+
         Args:
             prompt (str): The prompt to use
-        
+
         Example:
         # Feature 4: Streamed generation
         response = flow.streamed_generation("Generate a report on finance")
         print(response)
-        
+
         """
         tokens = list(prompt)
         response = ""
@@ -333,17 +319,14 @@ class Flow:
         print()
         return response
 
-    def streamed_token_generation(
-        self,
-        prompt: str 
-    ) -> Generator[str, None, None]:
+    def streamed_token_generation(self, prompt: str) -> Generator[str, None, None]:
         """
         Generate tokens in real-time for a given prompt.
 
-        This method simulates the real-time generation of each token. 
-        For simplicity, we treat each character of the input as a token 
-        and yield them with a slight delay. In a real-world scenario, 
-        this would involve using the LLM's internal methods to generate 
+        This method simulates the real-time generation of each token.
+        For simplicity, we treat each character of the input as a token
+        and yield them with a slight delay. In a real-world scenario,
+        this would involve using the LLM's internal methods to generate
         the response token by token.
 
         Args:

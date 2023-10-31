@@ -157,7 +157,7 @@ class HuggingfaceLLM:
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise
-    
+
     async def run_async(self, task: str, *args, **kwargs) -> str:
         """
         Run the model asynchronously
@@ -235,7 +235,7 @@ class HuggingfaceLLM:
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise
-    
+
     async def __call_async__(self, task: str, *args, **kwargs) -> str:
         """Call the model asynchronously""" ""
         return await self.run_async(task, *args, **kwargs)
@@ -243,7 +243,7 @@ class HuggingfaceLLM:
     def save_model(self, path: str):
         self.model.save_pretrained(path)
         self.tokenizer.save_pretrained(path)
-    
+
     def gpu_available(self) -> bool:
         return torch.cuda.is_available()
 
@@ -252,6 +252,6 @@ class HuggingfaceLLM:
             torch.cuda.synchronize()
             allocated = torch.cuda.memory_allocated()
             reserved = torch.cuda.memory_reserved()
-            return {'allocated': allocated, 'reserved': reserved}
+            return {"allocated": allocated, "reserved": reserved}
         else:
-            return {'error': 'GPU not available'}
+            return {"error": "GPU not available"}
