@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Generator
 from termcolor import colored
-
+import inspect
 
 # Custome stopping condition
 def stop_when_repeats(response: str) -> bool:
@@ -103,6 +103,26 @@ class Flow:
         """Format the template with the provided kwargs using f-string interpolation."""
         return template.format(**kwargs)
 
+    def get_llm_init_params(self) -> str:
+        """Get LLM init params"""
+        init_signature = inspect.signature(self.llm.__init__)
+        params = init_signature.parameters
+        params_str_list = []
+            
+        for name, param in params.items():
+            if name == 'self':
+                continue
+            if hasattr(self.llm, name):
+                value = getattr(self.llm, name)
+            else:
+                value = self.llm.__dict__.get(name, 'Unknown')
+            
+            params_str_list.append(f"    {name.capitalize().replace('_', ' ')}: {value}")
+        
+        return '\n'.join(params_str_list)
+
+
+
     def run(self, task: str):
         """
         Run the autonomous agent loop
@@ -121,6 +141,8 @@ class Flow:
         response = task
         history = [task]
 
+        model_config = self.get_llm_init_params()
+
         dashboard = print(colored(f"""
 
         Flow Dashboard
@@ -128,9 +150,7 @@ class Flow:
 
         Flow loop is initializing for {self.max_loops} with the following configuration:
 
-        Model Configuration:
-            Model Temperature: 
-            Model Max Tokens: 
+        {model_config}
         ----------------------------------------
 
         Flow Configuration:
