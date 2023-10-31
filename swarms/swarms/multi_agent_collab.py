@@ -2,6 +2,7 @@ import random
 import tenacity
 from langchain.output_parsers import RegexParser
 
+
 # utils
 class BidOutputParser(RegexParser):
     def get_format_instructions(self) -> str:

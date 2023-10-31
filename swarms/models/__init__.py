@@ -10,7 +10,6 @@ from swarms.models.wizard_storytelling import WizardLLMStoryTeller
 from swarms.models.mpt import MPT7B
 
 
-
 # MultiModal Models
 from swarms.models.idefics import Idefics
 from swarms.models.kosmos_two import Kosmos

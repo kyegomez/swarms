@@ -41,9 +41,7 @@ class SimpleSwarm:
 
         """
         self.llm = llm
-        self.agents = [
-            self.llm for _ in range(num_agents)
-        ]
+        self.agents = [self.llm for _ in range(num_agents)]
         self.task_queue = Queue()
         self.priority_queue = PriorityQueue()
 
