@@ -1,3 +1,7 @@
+message='Request to OpenAI API' method=post path=https://api.openai.com/v1/chat/completions
+api_version=None data='{"messages": [{"role": "user", "content": "Your System Instructions: \\n\\nFirst search for a list of topics on the web based their relevance to Positive Med\'s long term vision then rank than based on the goals this month, then output a single headline title for a blog for the next autonomous agent to write the blog, utilize the SOP below to help you strategically select topics. Output a single topic that will be the foundation for a blog.\\n\\nVISION: Emphasis on exotic healthcare for improved health using Taoism, Ayurveda, and other ancient practices.\\n\\nGOALS THIS MONTH: Clicks and engagement\\n\\n\\nRank the topics and then return the most likely topic to satisfy the goals this month.\\n\\n\\n###########\\nStandard Operating Procedure for Topic Selection for PositiveMed.com\\n\\nObjective: \\nThe goal of this SOP is to provide clear guidelines and best practices for selecting high-quality, engaging, and SEO-friendly topics to create content for PositiveMed.com. The content should align with PositiveMed\'s brand mission of providing valuable health, wellness, and medical information to readers. \\n\\nOverview:\\nTopic selection is a crucial first step in creating content for PositiveMed. Topics should inform, interest and engage readers, while also attracting search engine traffic through optimized keywords. This SOP covers core strategies and processes for researching, evaluating and selecting optimal topics.\\n\\nRoles & Responsibilities:\\nThe content team, consisting of writers, editors and content strategists, own the topic selection process.\\n\\nThe content team is responsible for:\\n- Monitoring health, medical, wellness trends and current events\\n- Conducting keyword research \\n- Assessing site analytics and reader feedback\\n- Crowdsourcing topic ideas from internal team and external contributors\\n- Maintaining editorial calendar with upcoming topics\\n- Pitching and selecting topics for content approval\\n\\nThe editorial team is responsible for:\\n- Providing final approval on topics based on brand suitability, reader interest, and potential traffic/engagement \\n- Ensuring selected topics are differentiated and not duplicative of existing content\\n- Reviewing and updating keyword opportunities tied to topics\\n\\nTopic Sourcing\\nA strong content calendar begins with investing time into researching and generating promising topics. Here are key tactics and guidelines for sourcing topics:\\n\\nMonitor Trends:\\n- Set Google Alerts for relevant keywords like \\"health news,\\" \\"fitness trends,\\" \\"nutrition research\\" etc. to receive daily updates.\\n- Subscribe to email newsletters, RSS feeds from authoritative sites like CDC, NIH, Mayo Clinic etc. \\n- Follow social media accounts of health organizations and influencers to stay on top of latest discussions.\\n- Check online communities like Reddit, Quora, Facebook Groups for emerging topics.\\n- Look for real-world events, awareness months, holidays that tie into health observances.\\n\\nPerform Keyword Research:  \\n- Use keyword research tools such as Google Keyword Planner, SEMrush, Moz Keyword Explorer etc.\\n- Target keywords with moderate-high search volume and low competition for the best opportunity.\\n- Look for conversational long-tail keywords that are more conversational and closely tied to topic themes. \\n- Ensure keywords have not been over-optimized by competitors to avoid saturation.\\n- Aim for topics that offerClusters of interconnected keywords around related sub-topics. This allows targeting several keywords with one piece of content.\\n\\nAnalyze Site Analytics:\\n- Review Google Analytics data to identify:\\n- Most-read articles - Consider follow-up content or additional installments.\\n- Highest-traffic landing pages - Expand on topics driving site visitors.\\n- Top-performing categories - Prioritize related subjects that attract readers.\\n- Look for content gaps - Assess which categories have not been recently updated and need fresh content.\\n\\nCrowdsource Topic Ideas:\\n- Ask readers to suggest topics through surveys, emails, social media, comments etc. \\n- Review discussions in online communities to find topics readers are interested in.\\n- Collaborate with guest contributors who may pitch relevant ideas and angles. \\n- Solicit insights from internal team members who interact closely with readers.\\n\\nMap Editorial Calendar:\\n- Maintain a content calendar that maps topics over weeks and months. \\n- Ensure a healthy mix of evergreen and trending topics across categories. \\n- Balance informational articles with more entertaining listicles or quizzes.\\n- Schedule both individual articles and content series around specific themes.  \\n- Revisit calendar routinely to incorporate new topics as they emerge.\\n\\nEvaluate Ideas\\nWith a robust list of prospective topics, the next step is determining which ideas are worth pursuing. Use these criteria when assessing the merit of topics:\\n\\nReader Interest:\\n- Would the topic pique the curiosity of PositiveMed\'s target audience?\\n- Does it address questions readers may be asking about health, medicine, nutrition?\\n- Will it appeal to readers\' needs for wellness tips, self-improvement advice?\\n- Does it present an interesting angle on a known subject versus just reporting basic facts?\\n\\nDifferentiation:\\n- Has this specific topic been recently covered on PositiveMed or similar sites? \\n- If covered before, does the pitch offer a novel spin - new research, fresh data, contrarian view?\\n- Will the content provide value-add beyond what readers can easily find through a Google search?\\n\\nBrand Suitability:  \\n- Does the topic match the tone and mission of the PositiveMed brand?\\n- Will the content uphold PositiveMed\'s standards for accuracy, credibility and ethics?\\n- Could the topic be construed as promoting unproven advice or \\"pseudoscience\\"?\\n\\nPositioning:\\n- What unique perspective can PositiveMed bring that differs from mainstream health sites?\\n- Does the topic lend itself to an uplifting, empowering message aligned with the brand?\\n- Can the material be framed in a way that resonates with PositiveMed\'s niche audience? \\n\\nActionability: \\n- Will readers come away with new knowledge they can apply in their daily lives?\\n- Can the content offer clear steps, takeaways for improving health and wellbeing?\\n- Does the topic present opportunities to include tips, product recommendations etc.?\\n\\nTimeliness:\\n- Is this tied to a recent news event or emerging trend that warrants timely coverage?\\n- For evergreen topics, are there new studies, pop culture references etc. that can make it timely?\\n- Does the angle offer a way to make an old topic feel fresh and relevant?\\n\\nCompetition:\\n- How saturated is the topic market? Who has top-ranking content on this topic?\\n- Does PositiveMed have a strong opportunity to own the conversation with a unique take?\\n- What value can be added versus competitor content on this subject?\\n\\nCommercial Viability: \\n- Does the topic allow integrating affiliate links, product recommendations, lead generation offers etc.?\\n- Can it support the development of related products or paid offerings in the future?\\n- Will it attract engagement and social shares to increase traffic?\\n\\nKeyword Integration \\n\\nWith promising topics identified, the next step is integrating keywords into content plans and outlines. \\n\\nConduct Keyword Research:\\n- Identify primary target keyword for topic that has:\\n- Moderate-to-high search volume \\n- Low-to-medium competition\\n- Relevance to topic and PositiveMed\'s niche\\n\\nFind Supporting Keywords:  \\n- Build a cluster of 3-5 secondary keywords around topic including:\\n- Related searches and questions\\n- Semantically connected words/phrases  \\n- Keyword variations (long tail, alternate wording etc.)\\n- Stay within minimum monthly search volumes\\n\\nMap Out Keywords:\\n- Determine optimal keyword placement for outlined sections e.g.:\\n- Primary KW in title, H1, intro, conclusion\\n- Supporting KWs in H2s, first sentence of paras etc.\\n- Include keywords naturally - no over-optimization\\n\\nCheck Cannibalization:  \\n- Compare suggested keywords against existing content to avoid targeting same terms.\\n- Modify keywords if needed to differentiate and drive incremental traffic.\\n\\nReview Opportunities:\\n- Cross-check keywords in planning tools to confirm search volume and competition.\\n- Align keywords with buyer intent and top of funnel to mid funnel searches.\\n- Ensure keywords are entered into analytics to track conversions.\\n\\nStyle and Tone Guidelines\\n\\nIn line with PositiveMed\'s brand voice, content should adopt an:\\n\\nEducational yet conversational tone:\\n- Explain health topics, science and research simply without over-simplifying complex issues. \\n- Present insightful information in a way that is accessible and engaging for a layperson audience.\\n\\nEmpowering and motivational style:\\n- Frame content with an uplifting, inspirational tone versus fear-mongering or alarming portrayal of health risks.\\n- Provide encouraging advice to inspire readers to take charge of their wellbeing.\\n\\nTrustworthy and ethical approach:\\n- Uphold highest standards of accuracy, credibility and reliability.\\n- Cite legitimate sources. Avoid promoting unverified claims or exaggerated benefits.\\n- Disclose risks, drawbacks and limitations of health approaches covered.\\n\\nInclusive and compassionate voice:  \\n- Reflect diversity and sensitivity towards people of different backgrounds, conditions and needs.  \\n- Consider circumstances like financial constraints, disabilities, cultural values etc. that impact health choices.\\n\\nHopeful outlook grounded in facts:\\n- Focus on solutions and a positive outlook while still being realistic.\\n- Counter misinformation; clarify myths vs facts.\\n, Your current task: Generate 10 topics on gaining mental clarity using Taosim and Christian meditation"}], "model": "gpt-3.5-turbo"}' message='Post details'
+Converted retries value: 2 -> Retry(total=2, connect=None, read=None, redirect=None, status=None)
+Starting new HTTPS connection (1): api.openai.com:443
 Error in sys.excepthook:
 Traceback (most recent call last):
   File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/humbug/report.py", line 505, in _hook
@@ -8,16 +12,89 @@ TypeError: format_exception() got an unexpected keyword argument 'etype'
 
 Original exception was:
 Traceback (most recent call last):
-  File "/Users/defalt/Desktop/Athena/research/swarms/groupchat.py", line 23, in <module>
-    response = chat.run("Captain Price", "Hello, how are you John?")
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/swarms/groupchat.py", line 60, in run
-    responses[agent_name] = agent.run(message)
-                            ^^^^^^^^^^^^^^^^^^
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/agents/simple_agent.py", line 35, in run
-    response = self.flow.run(task)
-               ^^^^^^^^^^^^^^^^^^^
-  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/structs/flow.py", line 151, in run
-    if self.dashboard:
-       ^^^^^^^^^^^^^^
-AttributeError: 'Flow' object has no attribute 'dashboard'
+  File "/Users/defalt/Desktop/Athena/research/swarms/positive_med.py", line 283, in <module>
+    topic_selection_agent = llm(
+                            ^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/langchain/llms/base.py", line 802, in __call__
+    self.generate(
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/langchain/llms/base.py", line 598, in generate
+    output = self._generate_helper(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/langchain/llms/base.py", line 504, in _generate_helper
+    raise e
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/langchain/llms/base.py", line 491, in _generate_helper
+    self._generate(
+  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/models/openai_models.py", line 882, in _generate
+    full_response = completion_with_retry(
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/models/openai_models.py", line 114, in completion_with_retry
+    return _completion_with_retry(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/tenacity/__init__.py", line 289, in wrapped_f
+    return self(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/tenacity/__init__.py", line 379, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/tenacity/__init__.py", line 314, in iter
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/tenacity/__init__.py", line 382, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/defalt/Desktop/Athena/research/swarms/swarms/models/openai_models.py", line 112, in _completion_with_retry
+    return llm.client.create(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/openai/api_resources/chat_completion.py", line 25, in create
+    return super().create(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/openai/api_resources/abstract/engine_api_resource.py", line 153, in create
+    response, _, api_key = requestor.request(
+                           ^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/openai/api_requestor.py", line 288, in request
+    result = self.request_raw(
+             ^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/openai/api_requestor.py", line 596, in request_raw
+    result = _thread_context.session.request(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/requests/adapters.py", line 486, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/urllib3/connectionpool.py", line 703, in urlopen
+    httplib_response = self._make_request(
+                       ^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/urllib3/connectionpool.py", line 449, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 3, in raise_from
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/urllib3/connectionpool.py", line 444, in _make_request
+    httplib_response = conn.getresponse()
+                       ^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/http/client.py", line 1374, in getresponse
+    response.begin()
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/http/client.py", line 318, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/http/client.py", line 279, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/socket.py", line 705, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/ssl.py", line 1278, in recv_into
+    return self.read(nbytes, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/ssl.py", line 1134, in read
+    return self._sslobj.read(len, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

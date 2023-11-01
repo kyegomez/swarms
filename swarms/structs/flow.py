@@ -1,9 +1,29 @@
+"""
+TODO:
+- Add a retry mechanism
+- Add prompt injection letting the agent know it's in a flow, Flow prompt
+- Dynamic temperature handling
+- Add 
+
+"""
+
 import json
 import logging
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Generator
 from termcolor import colored
 import inspect
+import random
+
+
+# Constants
+FLOW_SYSTEM_PROMPT = """
+You are a language model operating within a flow class.
+Your role is to engage in multi-step conversations with your self or the user, 
+generate long-form content like blogs, screenplays, or SOPs, 
+and accomplish tasks. You can have internal dialogues with yourself or can interact with the user 
+to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
+"""
 
 
 # Custome stopping condition
@@ -42,6 +62,7 @@ class Flow:
         retry_interval (int): The interval between retry attempts
         interactive (bool): Whether or not to run in interactive mode
         dashboard (bool): Whether or not to print the dashboard
+        dynamic_temperature(bool): Dynamical temperature handling
         **kwargs (Any): Any additional keyword arguments
 
     Example:
@@ -89,7 +110,6 @@ class Flow:
         self.dashboard = dashboard
         self.dynamic_temperature = dynamic_temperature
 
-
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
         self.feedback.append(feedback)
@@ -113,8 +133,12 @@ class Flow:
         3. If the temperature is present, then dynamically change the temperature
         4. for every loop you can randomly change the temperature on a scale from 0.0 to 1.0
         """
-        pass
-
+        if hasattr(self.llm, "temperature"):
+            # Randomly change the temperature attribute of self.llm object
+            self.llm.temperature = random.uniform(0.0, 1.0)
+        else:
+            # Use a default temperature
+            self.llm.temperature = 0.7
 
     def format_prompt(self, template, **kwargs: Any) -> str:
         """Format the template with the provided kwargs using f-string interpolation."""
@@ -140,6 +164,38 @@ class Flow:
 
         return "\n".join(params_str_list)
 
+    def print_dashboard(self, task: str):
+        """Print dashboard"""
+        model_config = self.get_llm_init_params()
+
+        dashboard = print(
+            colored(
+                f"""
+                Flow Dashboard
+                --------------------------------------------
+
+                Flow loop is initializing for {self.max_loops} with the following configuration:
+
+                Model Configuration: {model_config}
+                ----------------------------------------
+
+                Flow Configuration:
+                    Task: {task}
+                    Max Loops: {self.max_loops}
+                    Stopping Condition: {self.stopping_condition}
+                    Loop Interval: {self.loop_interval}
+                    Retry Attempts: {self.retry_attempts}
+                    Retry Interval: {self.retry_interval}
+                    Interactive: {self.interactive}
+
+                ----------------------------------------
+                """,
+                "green",
+            )
+        )
+
+        print(dashboard)
+
     def run(self, task: str):
         """
         Run the autonomous agent loop
@@ -158,43 +214,20 @@ class Flow:
         response = task
         history = [task]
 
-        model_config = self.get_llm_init_params()
-
         # If dashboard = True then print the dashboard
         if self.dashboard:
-            dashboard = print(
-                colored(
-                    f"""
-
-            Flow Dashboard
-            --------------------------------------------
-
-            Flow loop is initializing for {self.max_loops} with the following configuration:
-
-            {model_config}
-            ----------------------------------------
-
-            Flow Configuration:
-                Task: {task}
-                Max Loops: {self.max_loops}
-                Stopping Condition: {self.stopping_condition}
-                Loop Interval: {self.loop_interval}
-                Retry Attempts: {self.retry_attempts}
-                Retry Interval: {self.retry_interval}
-                Interactive: {self.interactive}
-
-            ----------------------------------------""",
-                    "green",
-                )
-            )
-
-            print(dashboard)
+            self.print_dashboard(task)
 
         for i in range(self.max_loops):
             print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
             print("\n")
             if self._check_stopping_condition(response):
                 break
+
+            # Adjust temperature, comment if no work
+            if self.dynamic_temperature:
+                self.dynamic_temperature()
+
             attempt = 0
             while attempt < self.retry_attempts:
                 try:
