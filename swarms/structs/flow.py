@@ -212,7 +212,7 @@ class Flow:
 
         """
         response = task
-        history = [task]
+        history = [f"Human: {task}"]
 
         # If dashboard = True then print the dashboard
         if self.dashboard:
@@ -232,7 +232,18 @@ class Flow:
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(response)
-                    print(f"Next query: {response}")
+                    # print(f"Next query: {response}")
+                    # break
+
+                    if self.interactive:
+                        print(f"AI: {response}")
+                        history.append(f"AI: {response}")
+                        response = input("You: ")
+                        history.append(f"Human: {response}")
+                    else:
+                        print(f"AI: {response}")
+                        history.append(f"AI: {response}")
+                        print(response)
                     break
                 except Exception as e:
                     logging.error(f"Error generating response: {e}")

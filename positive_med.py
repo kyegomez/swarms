@@ -281,7 +281,7 @@ def social_media_prompt(article: str, goal: str = "Clicks and engagement"):
 
 # Agent that generates topics
 topic_selection_task = (
-    "Generate 10 topics on gaining mental clarity using ancient Taosim practices"
+    "Generate 10 topics on gaining mental clarity using ancient practices"
 )
 topics = llm(
     f"Your System Instructions: {TOPIC_GENERATOR}, Your current task: {topic_selection_task}"

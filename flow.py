@@ -1,7 +1,7 @@
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
 
-api_key = "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"
+api_key = ""
 
 
 # Initialize the language model,
@@ -16,4 +16,5 @@ llm = OpenAIChat(
 flow = Flow(llm=llm, max_loops=5, dashboard=True)
 
 out = flow.run("Generate a 10,000 word blog on health and wellness.")
+
 print(out)
