@@ -10,6 +10,7 @@ if __name__ == "__main__":
     print("Final chosen output:")
     print(final_output)
 
+
 class MultiTempAgent:
     def __init__(self, api_key, default_temp=0.5, alt_temps=[0.2, 0.7, 0.9]):
         self.api_key = api_key
@@ -19,7 +20,7 @@ class MultiTempAgent:
     def ask_user_feedback(self, text):
         print(f"Generated text: {text}")
         feedback = input("Are you satisfied with this output? (yes/no): ")
-        return feedback.lower() == 'yes'
+        return feedback.lower() == "yes"
 
     def present_options_to_user(self, outputs):
         print("Alternative outputs:")
@@ -44,7 +45,9 @@ class MultiTempAgent:
             outputs = {}
             for temp in self.alt_temps:
                 try:
-                    llm = OpenAIChat(openai_api_key=self.api_key, temperature=temp)  # Re-initializing
+                    llm = OpenAIChat(
+                        openai_api_key=self.api_key, temperature=temp
+                    )  # Re-initializing
                     outputs[temp] = llm(prompt)  # Using llm as a callable
                 except Exception as e:
                     print(f"Error generating text at temperature {temp}: {e}")

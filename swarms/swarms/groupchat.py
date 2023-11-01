@@ -1,6 +1,7 @@
 from swarms.agents import SimpleAgent
 from termcolor import colored
 
+
 class GroupChat:
     """
     Groupchat
@@ -24,9 +25,10 @@ class GroupChat:
     >>> response = chat.run("Captain Price", "Hello, how are you John?")
     >>> print(response)
 
-    
-    
+
+
     """
+
     def __init__(self, agents, dashboard: bool = False):
         # Ensure that all provided agents are instances of simpleagents
         if not all(isinstance(agent, SimpleAgent) for agent in agents):
