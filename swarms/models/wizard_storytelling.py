@@ -22,7 +22,7 @@ class WizardLLMStoryTeller:
     ```
     from finetuning_suite import Inference
 
-    model_id = "gpt2-small"
+    model_id = "TheBloke/WizardLM-Uncensored-SuperCOT-StoryTelling-30B-GGUF"
     inference = Inference(model_id=model_id)
 
     prompt_text = "Once upon a time"
