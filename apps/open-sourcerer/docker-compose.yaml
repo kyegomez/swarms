@@ -1,9 +1,0 @@
-version: '3'
-services:
-  my-python-app:
-    container_name: Open-Soucerer
-    build: .
-    ports:
-      - "80:80"
-    env_file:
-      - ./.env
