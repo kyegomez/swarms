@@ -1,4 +1,3 @@
-
 import os
 from typing import Optional
 import json
@@ -64,7 +63,6 @@ def record(agent_name: str, autotab_ext_path: Optional[str] = None):
 
 if __name__ == "__main__":
     record("agent")
-    
 
 
 def extract_domain_from_url(url: str):
@@ -76,8 +74,6 @@ def extract_domain_from_url(url: str):
     if hostname.startswith("www."):
         hostname = hostname[4:]
     return hostname
-
-
 
 
 class AutotabChromeDriver(uc.Chrome):
@@ -170,7 +166,6 @@ def get_driver(
         open_plugin_and_login(driver)
 
     return driver
-
 
 
 class SiteCredentials(BaseModel):
@@ -458,10 +453,6 @@ def load_extension():
 if __name__ == "__main__":
     print("should update:", should_update())
     update()
-
-
-
-
 
 
 def play(agent_name: Optional[str] = None):
