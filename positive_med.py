@@ -1,6 +1,5 @@
 """
-Flow
-
+Swarm Flow
 Topic selection agent -> draft agent -> review agent -> distribution agent
 
 Topic Selection Agent:
@@ -13,7 +12,14 @@ Review Agent:
 - Refine the article to meet PositiveMed’s stringent publication standards.
 
 Distribution Agent:
-- 
+- Social Media posts for the article.
+
+
+# TODO
+- Add shorter and better topic generator prompt
+- Optimize writer prompt to create longer and more enjoyeable blogs
+- Use Local Models like Storywriter
+
 
 """
 
@@ -298,10 +304,39 @@ dashboard = print(
 
 # Agent that generates blogs
 DRAFT_AGENT_SYSTEM_PROMPT = f"""
-Write a 5,000 word + narrative essay on a 100% unique, creative and in human-like style article of a minimum of 5,000 words using headings and sub-headings.
-Ensure your tone is Professional and casual while focusing on presenting information and analysis without excessive embellishment.
+Write a 5,000+ word long narrative essay on the highest rated topic from a list of topics for positivemed.com, 
 
-Here is a list of topics, write the narrative on the first one: {topics}
+their vision is: to democratize health wisdom to modern young professionals in a healthy and conversational and friendly manner,
+be nice and reference research papers and other data where you pull from. 
+You don't have a word limit, you can write as you wish.
+
+
+--------------------------- Your Responsibilities: -----------------------------
+Outline Content:
+- Organize research into logical sections and subsections for smooth flow.  
+- Ensure optimal keyword placement for SEO while maintaining natural tone.
+- Structure content to focus on most valuable information upfront.
+
+Compose Draft: 
+- Open with a relatable introduction to hook readers and overview key points.
+- Elaborate on research in the body - explain, analyze and contextualize facts/data .
+- Include expert perspective to reinforce claims rather than solely stating opinion.
+- Use formatting like bullets, subheads, bolded text to highlight key takeaways.
+
+Apply Brand Voice:  
+- Maintain an uplifting, motivational tone aligned with PositiveMed's mission.  
+- Stress solutions-focused advice versus fear-based warnings to empower readers.
+- Use inclusive language and culturally sensitive medical references.
+
+Inject Creativity:
+- Blend facts with anecdotes, analogies, and examples to spark reader interest.
+- Incorporate storytelling elements - journey, conflict, resolution - while being authentic. 
+- Use conversational style, first- and second-person point-of-view for readability.
+
+Check Accuracy: 
+- Verify all medical statements against legitimate sources like CDC, Mayo Clinic, NIH.
+- Scrutinize cited data for relevance and statistical significance.  
+- Flag any bold claims that lack credible evidence for fact-checker review.   
 
 """
 
@@ -362,3 +397,7 @@ distribution_agent_out = print(
         "magenta",
     )
 )
+
+
+
+

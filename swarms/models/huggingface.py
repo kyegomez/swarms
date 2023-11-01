@@ -241,13 +241,16 @@ class HuggingfaceLLM:
         return await self.run_async(task, *args, **kwargs)
 
     def save_model(self, path: str):
+        """Save the model to a given path"""
         self.model.save_pretrained(path)
         self.tokenizer.save_pretrained(path)
 
     def gpu_available(self) -> bool:
+        """Check if GPU is available"""
         return torch.cuda.is_available()
 
     def memory_consumption(self) -> dict:
+        """Get the memory consumption of the GPU"""
         if self.gpu_available():
             torch.cuda.synchronize()
             allocated = torch.cuda.memory_allocated()
