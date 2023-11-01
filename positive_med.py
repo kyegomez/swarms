@@ -1,8 +1,7 @@
 """
 Flow
 
-topic selection agent -> draft agent -> review agent -> distribution agent
-
+Topic selection agent -> draft agent -> review agent -> distribution agent
 
 Topic Selection Agent:
 - Generate 10 topics on gaining mental clarity using Taosim and Christian meditation
@@ -13,7 +12,8 @@ Draft Agent:
 Review Agent:
 - Refine the article to meet PositiveMed’s stringent publication standards.
 
-
+Distribution Agent:
+- 
 
 """
 
@@ -197,13 +197,7 @@ Hopeful outlook grounded in facts:
 """
 
 
-
-
-
-
 REVIEW_PROMPT = """
-
-################ Your MISSION ##############################
 You are responsible for refining an article to meet PositiveMed’s stringent publication standards. 
 Your role involves content analysis, editorial precision, expert validation, legal verification, and overall quality assurance. 
 
@@ -252,20 +246,20 @@ Publishing and Distribution:
     •    Automated sharing to social media channels.
     •    Email distribution to subscriber list.
 
-
 Create high converting posts for each social media instagram, facebook, twitter, linkedin, and pinterest optimizing for {{GOAL}} using the article below.
 
 Denote the social media's by using the social media name in HTML like tags
 
-<FACEBOOK> POST </FACEBOOK>
-<TWITTER> POST </TWITTER>
-<INSTAGRAM> POST </INSTAGRAM>
+<FACEBOOK> POST CONTENT </FACEBOOK>
+<TWITTER> POST CONTENT </TWITTER>
+<INSTAGRAM> POST CONTENT </INSTAGRAM>
 
 ######### ARTICLE #######
 {{ARTICLE}}
 """
 
 llm = OpenAIChat(openai_api_key="")
+
 
 def get_review_prompt(article):
     prompt = REVIEW_PROMPT.replace("{{ARTICLE}}", article)
@@ -277,6 +271,7 @@ def social_media_prompt(article: str, goal: str = "Clicks and engagement"):
         "{{GOAL}}", goal
     )
     return prompt
+
 
 # Agent that generates topics
 topic_selection_task = (
@@ -300,169 +295,14 @@ dashboard = print(
         "blue",
     )
 )
-# print(dashboard)
 
 # Agent that generates blogs
-
 DRAFT_AGENT_SYSTEM_PROMPT = f"""
 Write a 5,000 word + narrative essay on a 100% unique, creative and in human-like style article of a minimum of 5,000 words using headings and sub-headings.
 Ensure your tone is Professional and casual while focusing on presenting information and analysis without excessive embellishment.
 
 Here is a list of topics, write the narrative on the first one: {topics}
 
-############ Here is a 5,000+ word SOP on how to write high-quality articles for PositiveMed.com: #######################
-
-Standard Operating Procedure for Article Writing for PositiveMed.com
-
-Objective:
-This SOP provides clear guidelines and best practices for crafting informative, engaging, SEO-optimized articles for PositiveMed.com. The content should align with PositiveMed's brand mission of delivering uplifting, empowering health and wellness information to readers. 
-
-Overview:  
-Writing compelling articles for PositiveMed involves extensive research, drafting with an optimal structure and style, and meticulous quality checks before publication. This document covers proven tactics and step-by-step instructions for producing excellent articles.
-
-Roles & Responsibilities:
-
-The content team owns the article writing process including:
-
-- Conducting research 
-- Developing outlines
-- Writing original drafts
-- Incorporating editor/peer feedback
-- Fact-checking and proofreading  
-- Ensuring brand consistency
-
-The editorial team is responsible for:
-
-- Providing input on outlines and drafts
-- Reviewing for quality standards 
-- Verifying tone aligns with brand voice
-- Approving final drafts for publication
-- Tracking performance analytics
-        
-Research Process
-
-Thorough research is crucial for creating authoritative, evidence-based articles. Here are key research steps:
-
-Set Parameters:
-- Clarify objective, scope, length and deadline for article. This guides how extensive research should be.
-- Identify sources needed - studies, expert interviews, statistics, health organization guidelines etc.
-
-Consult Knowledge Base:  
-- Check internal libraries, previous PositiveMed articles, contributor content to leverage existing research.
-- Assess what background information can be summarized vs. new research required.
-
-Perform Desk Research:
-- Gather insights from market research reports, whitepapers, scientific journals, medical news sites.
-- Search reputable health websites for supporting facts, data points, and health statistics.
-
-Interview Experts:
-- Reach out to doctors, scientists, specialists matched to article focus requesting quotes and perspective.
-- Ask thoughtful questions that uncover unique insights beyond surface-level facts.
-
-Organize Research:
-- Maintain well-documented notes detailing source, key findings, and relevance to content.  
-- Tag research for easy retrieval - highlights, source labels, summary sheets.
-- Cite sources to track reference and substantiate claims.  
-
-Verify Credibility:
-- Cross-check new sources against medical authority websites to confirm legitimacy.
-- Avoid referencing predatorial journals, biased sites or those selling health products/services.  
-- Flag any questionable claims or conflicts of interest for further validation.
-
-Keep Current:
-- Set alerts to monitor emerging studies, new expert perspective to incorporate over time.  
-- Update outdated statistics, facts with most recent numbers before republishing evergreen content.
-
-Drafting Process 
-
-With research completed, the next phase is developing an insightful article draft. Key steps include:
-
-Outline Content:
-- Organize research into logical sections and subsections for smooth flow.  
-- Ensure optimal keyword placement for SEO while maintaining natural tone.
-- Structure content to focus on most valuable information upfront.
-
-Compose Draft: 
-- Open with a relatable introduction to hook readers and overview key points.
-- Elaborate on research in the body - explain, analyze and contextualize facts/data .
-- Include expert perspective to reinforce claims rather than solely stating opinion.
-- Use formatting like bullets, subheads, bolded text to highlight key takeaways.
-
-Apply Brand Voice:  
-- Maintain an uplifting, motivational tone aligned with PositiveMed's mission.  
-- Stress solutions-focused advice versus fear-based warnings to empower readers.
-- Use inclusive language and culturally sensitive medical references.
-
-Inject Creativity:
-- Blend facts with anecdotes, analogies, and examples to spark reader interest.
-- Incorporate storytelling elements - journey, conflict, resolution - while being authentic. 
-- Use conversational style, first- and second-person point-of-view for readability.
-
-Check Accuracy: 
-- Verify all medical statements against legitimate sources like CDC, Mayo Clinic, NIH.
-- Scrutinize cited data for relevance and statistical significance.  
-- Flag any bold claims that lack credible evidence for fact-checker review.   
-
-Review Process
-
-Before publication, all PositiveMed articles should go through multiple review rounds.
-
-Peer Review:
-- Have team members provide constructive feedback on outline and drafts.  
-- Collect input on strengths to leverage and areas needing improvement.
-
-Editor Review:  
-- Evaluate initial drafts for errors, gaps that require additional research.
-- Provide guidance on better organizing structure and flow.
-- Assess tone, voice and brand alignment.
-
-Expert Review:
-- Ask medical experts related to article topic to validate accuracy of information.
-- Verify advice follows ethical guidelines accepted by the medical community.   
-- Request quotes that lend credibility and reinforce key points.
-
-Legal Review:  
-- Send drafts discussing new research, controversial topics for legal approval.
-- Confirm content meets regulatory standards for health claims and liability risks.
-- Address any recommended edits to mitigate brand reputation risk.
-
-Quality Checklist:  
-- Scrutinize final draft against PositiveMed's high editorial standards:
-- Medical accuracy - error-free facts/statistics, supported claims 
-- Logical flow - smooth transitions, complementary sections  
-- Reader value - insightful analysis beyond fluffy content
-- Brand alignment - uplifting tone, inclusive messaging
-- Optimization - keywords in metadata, internal links, page speed
-- Strong conclusion - memorable takeaways, relevant next steps/resources for readers
-- Proper attribution - all references cited, ownership of reused assets 
-
-Proofreading Process
-
-The final quality safeguard is meticulous proofreading and citation checks.
-
-Grammar & Spelling:
-- Use editing tools like Grammarly along with manual review.  
-- Check for typos, punctuation errors, misused words, repetitive language.
-
-Formatting:  
-- Validate formatting consistency across headlines, bodies, captions etc.  
-- Fix spacing/indentation, text styling, text wrapping issues.
-
-Citations:
-- Cross-check in-text citations against reference links and sources.
-- Ensure citation style matches PositiveMed guidelines.
-- Add citations if needed for any statistics or direct quotes.
-
-HTML Proofing:  
-- Review article on site mockup to catch issues with text rendering, image sizing etc.
-- Confirm formatting displays properly across devices - desktop, mobile, tablet. 
-
-Final Touches:
-- Make final pass over article when fresh and focused to spot lingering errors.
-- Tweak wording, strengthen transition phrases, vary sentence lengths for polish.  
-- Ensure conclusion drives home core message and key takeaways.
-
-This 5,000+ word SOP offers a blueprint for creating well-researched, expert-approved, SEO-optimized articles that engage and inform PositiveMed's audience. Please let me know if you need any clarification or have additional guidelines to incorporate.
 """
 
 
@@ -506,9 +346,7 @@ reviewed_draft = print(
 
 
 # Agent that publishes on social media
-distribution_agent = llm(
-    social_media_prompt(draft_blog, goal="Clicks and engagement")
-)
+distribution_agent = llm(social_media_prompt(draft_blog, goal="Clicks and engagement"))
 distribution_agent_out = print(
     colored(
         f"""
@@ -520,6 +358,7 @@ distribution_agent_out = print(
         -------------------
         {distribution_agent}
 
-        """, "magenta"
+        """,
+        "magenta",
     )
 )
