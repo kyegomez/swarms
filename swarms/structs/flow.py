@@ -8,15 +8,12 @@ TODO:
 
 import json
 import logging
-import re
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Generator
 from termcolor import colored
 import inspect
 import random
 from swarms.tools.tool import BaseTool
-
-from swarms.models.openai_models import OpenAIChat
 
 
 # Constants
@@ -97,8 +94,8 @@ class Flow:
 
     def __init__(
         self,
-        llm: Any,
         # template: str,
+        llm: Any,
         max_loops: int = 5,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
@@ -111,11 +108,6 @@ class Flow:
         **kwargs: Any,
     ):
         # self.template = template
-        self.processors = {
-            'text': self.process_text,
-            'image': self.process_image,
-            'audio': self.process_audio,
-        }
         self.llm = llm
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
@@ -129,45 +121,22 @@ class Flow:
         self.interactive = interactive
         self.dashboard = dashboard
         self.dynamic_temperature = dynamic_temperature
-        self.tools = tools
+        self.tools = tools or []
+    
+    def run(self, task: str, **kwargs):
+        for i in range(self.max_loops):
+            for tool in self.tools:
+                tool_prompt = f"\n\nTool: {tool.__name__}\n{tool.__doc__}"
+                reponse = self.llm(
+                        f"""
+                    {FLOW_SYSTEM_PROMPT}
+                    {tool_prompt}
 
-    def __call__(self, task, **kwargs):
-        """Invoke the flow by providing a template and its variables."""
-        subtasks = self.break_down_task(task)
-        responses = []
-        for subtask in subtasks:
-            mode = self.determine_mode(subtask)
-            processor = self.processors.get(mode)
-            if processor:
-                refined_prompt = self.text_model(f"Define the task '{subtask}' as it relates to the original task '{task}'.")
-                response = processor(refined_prompt, task)
-                responses.append(response)
-            else:
-                    raise ValueError(f'Invalid mode: {mode}')
-            return responses
+                    History: {reponse}
 
-    def break_down_task(self, task):
-        # Break down the task into subtasks
-        subtasks = re.split(r' with | and ', task)
-        return subtasks
+                    """, **kwargs
+                )
 
-    def determine_mode(self, subtask):
-        result = self.classifier(subtask, candidate_labels=['text', 'image', 'audio', 'video'])
-        return result['labels'][0]
-
-    def process_image(self, image_description):
-        response = self.image_model(image_description)
-        return response
-
-    def process_audio(self, audio_description):
-        response = self.audio_model(audio_description)
-        return response
-
-    def process_video(self, video_description):
-        response = self.video_model(video_description)
-        return response
-        
-        return "Video generated from description: " + video_description
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
         self.feedback.append(feedback)
@@ -178,6 +147,11 @@ class Flow:
         if self.stopping_condition:
             return self.stopping_condition(response)
         return False
+
+    def __call__(self, prompt, **kwargs) -> str:
+        """Invoke the flow by providing a template and its variables."""
+        response = self.llm(prompt, **kwargs)
+        return response
 
     def dynamic_temperature(self):
         """

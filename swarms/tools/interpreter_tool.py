@@ -1,7 +1,9 @@
 import os
+from swarms.tools import tool
 import interpreter
 
 
+@tool
 def compile(task: str):
     """
     Open Interpreter lets LLMs run code (Python, Javascript, Shell, and more) locally. You can chat with Open Interpreter through a ChatGPT-like interface in your terminal by running $ interpreter after installing.

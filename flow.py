@@ -1,5 +1,6 @@
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
+from swarms.tools.interpreter_tool import compile
 
 api_key = ""
 
@@ -11,21 +12,21 @@ llm = OpenAIChat(
 )
 
 # Initialize the flow
-flow = Flow(llm=llm, max_loops=5, dashboard=True,)
+flow = Flow(llm=llm, max_loops=5, dashboard=True, tools=[compile])
 
-flow = Flow(
-    llm=llm,
-    max_loops=5,
-    dashboard=True,
-    # stopping_condition=None,  # You can define a stopping condition as needed.
-    # loop_interval=1,
-    # retry_attempts=3,
-    # retry_interval=1,
-    # interactive=False,  # Set to 'True' for interactive mode.
-    # dynamic_temperature=False,  # Set to 'True' for dynamic temperature handling.
-)
+# flow = Flow(
+#     llm=llm,
+#     max_loops=5,
+#     dashboard=True,
+#     # stopping_condition=None,  # You can define a stopping condition as needed.
+#     # loop_interval=1,
+#     # retry_attempts=3,
+#     # retry_interval=1,
+#     # interactive=False,  # Set to 'True' for interactive mode.
+#     # dynamic_temperature=False,  # Set to 'True' for dynamic temperature handling.
+# )
 
 
-out = flow.run("Generate a 10,000 word blog on health and wellness.")
+out = flow.run("Use your open interpreter tool to print hello world to the terminal")
 
 print(out)
