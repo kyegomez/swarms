@@ -116,7 +116,7 @@ nav:
   - swarms.chunkers: 
     - BaseChunker: "swarms/chunkers/basechunker.md"
     - PdfChunker: "swarms/chunkers/pdf_chunker.md"
-- Examples:
+- Walkthroughs:
     - Overview: "examples/index.md"
     - Flow: "examples/flow.md"
     - Agents:
