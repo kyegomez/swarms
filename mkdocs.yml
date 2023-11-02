@@ -118,7 +118,8 @@ nav:
     - PdfChunker: "swarms/chunkers/pdf_chunker.md"
 - Walkthroughs:
     - Overview: "examples/index.md"
-    - Flow: "examples/flow.md"
+    - Structs:
+      - Flow: "examples/flow.md"
     - Agents:
       - OmniAgent: "examples/omni_agent.md"
     - Worker: 
