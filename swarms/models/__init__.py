@@ -20,6 +20,8 @@ from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
 # from swarms.models.fuyu import Fuyu # Not working, wait until they update
 import sys
 
+# log_file = open("stderr_log.txt", "w")
+# sys.stderr = log_file
 log_file = open("errors.txt", "w")
 sys.stderr = log_file
 

@@ -67,11 +67,13 @@ class Worker:
         temperature: float = 0.5,
         llm=None,
         openai_api_key: str = None,
+        use_openai: bool = True,
     ):
         self.temperature = temperature
         self.human_in_the_loop = human_in_the_loop
         self.llm = llm
         self.openai_api_key = openai_api_key
+        self.use_openai = use_openai
         self.ai_name = ai_name
         self.ai_role = ai_role
         self.coordinates = (
@@ -148,24 +150,25 @@ class Worker:
             self.tools.extend(external_tools)
 
     def setup_memory(self):
-        """
-        Set up memory for the worker.
-        """
-        openai_api_key = os.getenv("OPENAI_API_KEY") or self.openai_api_key
-        try:
-            embeddings_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
-            embedding_size = 1536
-            index = faiss.IndexFlatL2(embedding_size)
+            """
+            Set up memory for the worker.
+            """
+            if self.use_openai:  # Only use OpenAI if use_openai is True
+                openai_api_key = os.getenv("OPENAI_API_KEY") or self.openai_api_key
+                try:
+                    embeddings_model = OpenAIEmbeddings(openai_api_key=openai_api_key)
+                    embedding_size = 1536
+                    index = faiss.IndexFlatL2(embedding_size)
 
-            self.vectorstore = FAISS(
-                embeddings_model.embed_query, index, InMemoryDocstore({}), {}
-            )
+                    self.vectorstore = FAISS(
+                        embeddings_model.embed_query, index, InMemoryDocstore({}), {}
+                    )
 
-        except Exception as error:
-            raise RuntimeError(
-                f"Error setting up memory perhaps try try tuning the embedding size: {error}"
-            )
-
+                except Exception as error:
+                    raise RuntimeError(
+                        f"Error setting up memory perhaps try try tuning the embedding size: {error}"
+                    )
+                    
     def setup_agent(self):
         """
         Set up the autonomous agent.
