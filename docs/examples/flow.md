@@ -16,7 +16,7 @@ Welcome to the walkthrough guide for beginners on using the "Flow" feature withi
 
    - 2.1 Prerequisites
 
-   - 2.2 Installing Required Libraries
+   - 2.2 Installing Required Librarie
 
 3\. **Creating a Flow Instance**
 
