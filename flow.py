@@ -9,13 +9,12 @@ api_key = ""
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
+    max_tokens=3000,
 )
 
 # Initialize the flow
-flow = Flow(
-    llm=llm,
-    max_loops=5,
-)
+flow = Flow(llm=llm, max_loops=5, dashboard=True)
 
-out = flow.run("Generate a 10,000 word blog, say Stop when done")
+out = flow.run("Generate a 10,000 word blog on health and wellness.")
+
 print(out)

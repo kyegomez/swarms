@@ -38,127 +38,6 @@ Book a [1-on-1 Session with Kye](https://calendly.com/swarm-corp/30min), the Cre
 ## Usage
 We have a small gallery of examples to run here, [for more check out the docs to build your own agent and or swarms!](https://docs.apac.ai)
 
-### `MultiAgentDebate`
-
-- `MultiAgentDebate` is a simple class that enables multi agent collaboration.
-
-```python
-from swarms.workers import Worker
-from swarms.swarms import MultiAgentDebate, select_speaker
-from swarms.models import OpenAIChat
-
-
-api_key = "sk-"
-
-llm = OpenAIChat(
-    model_name='gpt-4', 
-    openai_api_key=api_key, 
-    temperature=0.5
-)
-
-node = Worker(
-    llm=llm,
-    openai_api_key=api_key,
-    ai_name="Optimus Prime",
-    ai_role="Worker in a swarm",
-    external_tools = None,
-    human_in_the_loop = False,
-    temperature = 0.5,
-)
-
-node2 = Worker(
-    llm=llm,
-    openai_api_key=api_key,
-    ai_name="Bumble Bee",
-    ai_role="Worker in a swarm",
-    external_tools = None,
-    human_in_the_loop = False,
-    temperature = 0.5,
-)
-
-node3 = Worker(
-    llm=llm,
-    openai_api_key=api_key,
-    ai_name="Bumble Bee",
-    ai_role="Worker in a swarm",
-    external_tools = None,
-    human_in_the_loop = False,
-    temperature = 0.5,
-)
-
-agents = [
-    node,
-    node2,
-    node3
-]
-
-# Initialize multi-agent debate with the selection function
-debate = MultiAgentDebate(agents, select_speaker)
-
-# Run task
-task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
-results = debate.run(task, max_iters=4)
-
-# Print results
-for result in results:
-    print(f"Agent {result['agent']} responded: {result['response']}")
-```
-
-----
-
-### `Worker`
-- The `Worker` is an fully feature complete agent with an llm, tools, and a vectorstore for long term memory!
-- Place your api key as parameters in the llm if you choose!
-- And, then place the openai api key in the Worker for the openai embedding model
-
-```python
-from swarms.models import OpenAIChat
-from swarms import Worker
-
-api_key = ""
-
-llm = OpenAIChat(
-    openai_api_key=api_key,
-    temperature=0.5,
-)
-
-node = Worker(
-    llm=llm,
-    ai_name="Optimus Prime",
-    openai_api_key=api_key,
-    ai_role="Worker in a swarm",
-    external_tools=None,
-    human_in_the_loop=False,
-    temperature=0.5,
-)
-
-task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
-response = node.run(task)
-print(response)
-
-
-```
-
-------
-
-### `OmniModalAgent`
-- OmniModal Agent is an LLM that access to 10+ multi-modal encoders and diffusers! It can generate images, videos, speech, music and so much more, get started with:
-
-```python
-from swarms.models import OpenAIChat
-from swarms.agents import OmniModalAgent
-
-api_key = "SK-"
-
-llm = OpenAIChat(model_name="gpt-4", openai_api_key=api_key)
-
-agent = OmniModalAgent(llm)
-
-agent.run("Create a video of a swarm of fish")
-
-```
-
-
 ### `Flow` Example
 - The `Flow` is a superior iteratioin of the `LLMChain` from Langchain, our intent with `Flow` is to create the most reliable loop structure that gives the agents their "autonomy" through 3 main methods of interaction, one through user specified loops, then dynamic where the agent parses a <DONE> token, and or an interactive human input verison, or a mix of all 3. 
 ```python
@@ -188,25 +67,60 @@ print(out)
 
 ```
 
+
+## `GodMode`
+- A powerful tool for concurrent execution of tasks using multiple Language Model (LLM) instances.
+
+```python
+from swarms.swarms import GodMode
+from swarms.models import OpenAIChat
+
+api_key = ""
+
+llm = OpenAIChat(
+    openai_api_key=api_key
+)
+
+
+llms = [
+    llm,
+    llm,
+    llm
+]
+
+god_mode = GodMode(llms)
+
+task = 'Generate a 10,000 word blog on health and wellness.'
+
+out = god_mode.run(task)
+god_mode.print_responses(task)
+```
+
+------
+
+### `OmniModalAgent`
+- OmniModal Agent is an LLM that access to 10+ multi-modal encoders and diffusers! It can generate images, videos, speech, music and so much more, get started with:
+
+```python
+from swarms.models import OpenAIChat
+from swarms.agents import OmniModalAgent
+
+api_key = "SK-"
+
+llm = OpenAIChat(model_name="gpt-4", openai_api_key=api_key)
+
+agent = OmniModalAgent(llm)
+
+agent.run("Create a video of a swarm of fish")
+
+```
+
 ---
 
 ## Documentation
 
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
-
-## Focus
-We are radically devoted to creating outcomes that our users want, we believe this is only possible by focusing extensively on reliability, scalability, and agility. 
-
-An Agent's purpose is to satisfy your wants and needs and so this is our only focus, we believe this is only possible by investing impeccable detail into agent structure design in other words gluing together an llm with tools and memory in a way that delights users and executes tasks exactly how users want them to be executed.
-
-The reliability of communication in a swarm is also extremely critical to your success and with this in mind we carefully craft and extensively test our structures.
-
-- Reliability.
-- Scalability.
-- Speed.
-- Power.
-- Agile.
 
 ## Contribute
 

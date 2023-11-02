@@ -1,5 +1,4 @@
 from typing import List
-from swarms.workers.worker import Worker
 
 
 class DialogueSimulator:
@@ -11,14 +10,11 @@ class DialogueSimulator:
     ------
 
 
-    Usage:
-    --------
-
 
 
     """
 
-    def __init__(self, agents: List[Worker]):
+    def __init__(self, agents):
         self.agents = agents
 
     def run(self, max_iters: int, name: str = None, message: str = None):

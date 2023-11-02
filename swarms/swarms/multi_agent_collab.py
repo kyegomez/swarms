@@ -2,9 +2,8 @@ import random
 import tenacity
 from langchain.output_parsers import RegexParser
 
+
 # utils
-
-
 class BidOutputParser(RegexParser):
     def get_format_instructions(self) -> str:
         return "Your response should be an integrater delimited by angled brackets like this: <int>"

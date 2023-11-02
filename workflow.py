@@ -2,9 +2,7 @@ from swarms.models import OpenAIChat
 from swarms.structs import Workflow
 
 
-llm = OpenAIChat(
-    openai_api_key=""
-)
+llm = OpenAIChat(openai_api_key="")
 
 workflow = Workflow(llm)
 

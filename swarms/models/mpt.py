@@ -22,7 +22,7 @@ class MPT7B:
 
 
     Examples:
-    >>> 
+    >>>
 
     """
 

@@ -57,7 +57,7 @@ from swarms.structs import Flow
 flow = Flow(llm=my_language_model, max_loops=5)
 
 # Define a starting task or message
-initial_task = "Hello, can you provide me with some information?"
+initial_task = "Generate a 10,000 word blog on health and wellness."
 
 # Run the conversation loop
 final_response = flow.run(initial_task)
@@ -68,7 +68,7 @@ final_response = flow.run(initial_task)
 You can collect feedback during the conversation using the `provide_feedback` method:
 
 ```python
-flow.provide_feedback("The response was not accurate.")
+flow.provide_feedback("Generate an SOP for new sales employees on the best cold sales practices")
 ```
 
 ### Stopping Condition
@@ -112,7 +112,7 @@ from swarms.structs import Flow
 flow = Flow(llm=my_language_model, max_loops=5)
 
 # Define a starting task or message
-initial_task = "Hello, can you provide me with some information?"
+initial_task = "Generate an long form analysis on the transformer model architecture."
 
 # Run the conversation loop
 final_response = flow.run(initial_task)
@@ -137,7 +137,7 @@ from swarms.structs import Flow
 flow = Flow(llm=my_language_model, max_loops=5, interactive=True)
 
 # Provide initial task
-initial_task = "Hello, can you tell me a joke?"
+initial_task = "Rank and prioritize the following financial documents and cut out 30% of our expenses"
 
 # Run the conversation loop
 final_response = flow.run(initial_task)

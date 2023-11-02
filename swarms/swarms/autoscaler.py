@@ -109,9 +109,9 @@ class AutoScaler:
                 if available_agent:
                     available_agent.run(task)
 
-    def del_agent(self):
-        """Delete an agent"""
-        with self.lock:
-            if self.agents_pool:
-                self.agents_poo.pop()
-                del agent_to_remove
+    # def del_agent(self):
+    #     """Delete an agent"""
+    #     with self.lock:
+    #         if self.agents_pool:
+    #             self.agents_poo.pop()
+    #             del agent_to_remove
