@@ -4,10 +4,6 @@
 
 Welcome to the walkthrough guide for beginners on using the "Flow" feature within the Swarms module. This guide is designed to help you understand and utilize the capabilities of the Flow class for seamless interactions with AI language models.
 
-**Target Audience:**
-
-- This guide is primarily intended for beginners who want to learn how to use the Flow feature in the Swarms module to interact with AI language models effectively.
-
 ## Table of Contents
 
 1\. **Understanding the Flow Feature**
@@ -21,8 +17,6 @@ Welcome to the walkthrough guide for beginners on using the "Flow" feature withi
    - 2.1 Prerequisites
 
    - 2.2 Installing Required Libraries
-
-   - 2.3 Importing Necessary Modules
 
 3\. **Creating a Flow Instance**
 
@@ -118,47 +112,7 @@ Before you begin, ensure that you have the following prerequisites in place:
 
 ### 2.2 Installing Required Libraries
 
-To use the Flow feature, you'll need to install the required libraries. Make sure you have these libraries installed:
-
-- `termcolor`: For colorful console output.
-
-- `inspects`: For introspecting the language model.
-
-- `random`: For handling dynamic temperature.
-
-- Other dependencies as needed for your specific environment.
-
-You can install these libraries using pip:
-
-```bash
-
-pip install termcolor inspects
-
-```
-
-### 2.3 Importing Necessary Modules
-
-In your Python script or environment, import the necessary modules from the Swarms framework:
-
-```python
-
-import json
-
-import logging
-
-import time
-
-from typing import Any, Callable, Dict, List, Optional, Tuple, Generator
-
-from termcolor import colored
-
-import inspect
-
-import random
-
-```
-
-Ensure that you have these modules imported to proceed with the guide.
+`pip3 install --upgrade swarms`
 
 ## 3. Creating a Flow Instance
 
