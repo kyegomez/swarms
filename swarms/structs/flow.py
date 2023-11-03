@@ -94,8 +94,8 @@ class Flow:
 
     def __init__(
         self,
-        llm: Any,
         # template: str,
+        llm: Any,
         max_loops: int = 5,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
@@ -107,8 +107,8 @@ class Flow:
         dynamic_temperature: bool = False,
         **kwargs: Any,
     ):
-        self.llm = llm
         # self.template = template
+        self.llm = llm
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
@@ -121,7 +121,21 @@ class Flow:
         self.interactive = interactive
         self.dashboard = dashboard
         self.dynamic_temperature = dynamic_temperature
-        self.tools = tools
+        self.tools = tools or []
+    
+    def load_tools(self, task: str, **kwargs):
+        for i in range(self.max_loops):
+            for tool in self.tools:
+                tool_prompt = f"\n\nTool: {tool.__name__}\n{tool.__doc__}"
+                reponse = self.llm(
+                        f"""
+                    {FLOW_SYSTEM_PROMPT}
+                    {tool_prompt}
+
+                    History: {reponse}
+
+                    """, **kwargs
+                )
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""

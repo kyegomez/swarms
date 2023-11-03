@@ -1,0 +1,8 @@
+{
+    "name": "Swarms Project",
+    "dockerFile": "Dockerfile",
+    "forwardPorts": [
+        8000
+    ],
+    "postCreateCommand": "pip install -r requirements.txt"
+}
