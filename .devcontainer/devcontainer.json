@@ -2,7 +2,7 @@
     "name": "Swarms Project",
     "dockerComposeFile": "docker-compose.yml",
     "service": "app",
-    "workspaceFolder": "/app",
+    "workspaceFolder": "/home/zack/code/swarms/*",
     "forwardPorts": [
         8000
     ],
