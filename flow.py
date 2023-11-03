@@ -11,7 +11,11 @@ llm = OpenAIChat(
 )
 
 # Initialize the flow
-flow = Flow(llm=llm, max_loops=5, dashboard=True,)
+flow = Flow(
+    llm=llm,
+    max_loops=5,
+    dashboard=True,
+)
 
 flow = Flow(
     llm=llm,

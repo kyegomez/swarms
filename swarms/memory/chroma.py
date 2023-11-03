@@ -17,7 +17,7 @@ from typing import (
 import numpy as np
 
 from swarms.structs.document import Document
-from swarms.embeddings.base import Embeddings
+from swarms.models.embeddings_base import Embeddings
 from langchain.schema.vectorstore import VectorStore
 from langchain.utils import xor_args
 from langchain.vectorstores.utils import maximal_marginal_relevance

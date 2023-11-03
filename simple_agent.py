@@ -19,6 +19,7 @@ flow = Flow(
 agent = SimpleAgent(
     name="Optimus Prime",
     flow=flow,
+    # Memory
 )
 
 out = agent.run("Generate a 10,000 word blog on health and wellness.")
