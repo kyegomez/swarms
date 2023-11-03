@@ -1,11 +1,10 @@
 FROM python:3.8-slim-buster
 
-WORKDIR /app
+WORKDIR /home/zack/code/
 
-ADD . /app
+ADD . /home/zack/code/
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
 
-CMD ["python", "example.py"]

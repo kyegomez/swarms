@@ -1,10 +1,10 @@
 version: '3'
 services:
   app:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - .:/app
+      - .:/home/zack/code/
     ports:
       - 8000:8000
