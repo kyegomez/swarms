@@ -87,7 +87,7 @@ class GroupChatManager:
 
 
 
-    def run_chat(self, task: str):
+    def __call__(self, task: str):
         self.groupchat.messages.append({'role':self.selector.name, 'content': task})
         for i in range(self.groupchat.max_round):
             speaker = self.groupchat.select_speaker(last_speaker=self.selector, selector=self.selector)
@@ -101,7 +101,7 @@ class GroupChatManager:
 
 
 llm = OpenAI(
-    openai_api_key="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",
+    openai_api_key="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",
     temperature=0.5,
     max_tokens=3000,
 )
@@ -140,6 +140,6 @@ manager = Flow(
 # Example usage:
 agents = [flow1, flow2, flow3]
 
-group_chat = GroupChat(agents=agents, messages=[], max_round=5)
+group_chat = GroupChat(agents=agents, messages=[], max_round=10)
 chat_manager = GroupChatManager(groupchat=group_chat, selector = manager)
-chat_history = chat_manager.run_chat("Write me a riddle and answer it")
+chat_history = chat_manager("Write me a riddle")
