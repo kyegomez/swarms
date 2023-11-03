@@ -294,3 +294,23 @@ class HuggingfaceLLM:
         )
 
         print(dashboard)
+    
+    def set_device(self, device):
+        """
+        Changes the device used for inference.
+
+        Parameters
+        ----------
+            device : str
+                The new device to use for inference.
+        """
+        self.device = device
+        self.model.to(self.device)
+
+    def set_max_length(self, max_length):
+        """Set max_length"""
+        self.max_length = max_length
+
+    def clear_chat_history(self):
+        """Clear chat history"""
+        self.chat_history = []
