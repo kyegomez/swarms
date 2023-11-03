@@ -35,7 +35,7 @@ class Petals:
             "max_length": self.max_length,
         }
 
-    def generate(self, prompt):
+    def __call__(self, prompt):
         """Generate text using the Petals API."""
         params = self._default_params()
         inputs = self.tokenizer(prompt, return_tensors="pt")["input_ids"]
