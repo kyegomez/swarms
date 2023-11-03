@@ -42,7 +42,6 @@ Please refer to the corresponding paper, "Large-Scale Domain-Specific Pretrainin
 """
 
 import open_clip
-import glob
 import torch
 from PIL import Image
 import matplotlib.pyplot as plt

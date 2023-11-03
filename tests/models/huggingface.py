@@ -1,7 +1,11 @@
-import torch
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from swarms.models.huggingface import HuggingfaceLLM  # Replace with the actual import path
+import torch
+
+from swarms.models.huggingface import (
+    HuggingfaceLLM,  # Replace with the actual import path
+)
 
 
 # Fixture for the class instance
