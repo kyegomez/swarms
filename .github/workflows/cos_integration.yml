@@ -39,4 +39,4 @@ jobs:
         run: sphinx-build -b linkcheck docs build/docs
 
       - name: Run performance tests
-        run: pytest tests/performance
+        run: find ./tests -name '*.py' -exec pytest {} \;

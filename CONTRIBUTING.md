@@ -97,8 +97,8 @@ To run the documentation, install the project requirements with `poetry install 
 You can learn more about mkdocs on the [mkdocs website](https://www.mkdocs.org/).
 
 ## 🧪 tests
-
-[`pytests`](https://docs.pytest.org/en/7.1.x/) is used to run our tests.
+- Run all the tests in the tests folder
+`find ./tests -name '*.py' -exec pytest {} \;`
 
 ## 📄 license
 
