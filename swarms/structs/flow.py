@@ -121,7 +121,25 @@ class Flow:
         self.interactive = interactive
         self.dashboard = dashboard
         self.dynamic_temperature = dynamic_temperature
+<<<<<<< HEAD
         # self.tools = tools
+=======
+        self.tools = tools or []
+    
+    def load_tools(self, task: str, **kwargs):
+        for i in range(self.max_loops):
+            for tool in self.tools:
+                tool_prompt = f"\n\nTool: {tool.__name__}\n{tool.__doc__}"
+                reponse = self.llm(
+                        f"""
+                    {FLOW_SYSTEM_PROMPT}
+                    {tool_prompt}
+
+                    History: {reponse}
+
+                    """, **kwargs
+                )
+>>>>>>> 56fcab5 (feat: Setup dev env)
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
