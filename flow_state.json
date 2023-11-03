@@ -1,0 +1,14 @@
+{
+    "memory": [
+        [
+            "Human: Generate a 10,000 word blog on health and wellness."
+        ]
+    ],
+    "llm_params": {},
+    "loop_interval": 1,
+    "retry_attempts": 3,
+    "retry_interval": 1,
+    "interactive": false,
+    "dashboard": true,
+    "dynamic_temperature": false
+}
