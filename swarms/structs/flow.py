@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Generator
 from termcolor import colored
 import inspect
 import random
-from swarms.tools.tool import BaseTool
+# from swarms.tools.tool import BaseTool
 
 
 # Constants
@@ -103,7 +103,7 @@ class Flow:
         retry_interval: int = 1,
         interactive: bool = False,
         dashboard: bool = False,
-        tools: List[BaseTool] = None,
+        # tools: List[BaseTool] = None,
         dynamic_temperature: bool = False,
         **kwargs: Any,
     ):
@@ -121,7 +121,7 @@ class Flow:
         self.interactive = interactive
         self.dashboard = dashboard
         self.dynamic_temperature = dynamic_temperature
-        self.tools = tools
+        # self.tools = tools
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
