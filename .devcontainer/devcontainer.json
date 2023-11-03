@@ -1,6 +1,8 @@
 {
     "name": "Swarms Project",
-    "dockerFile": "Dockerfile",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/app",
     "forwardPorts": [
         8000
     ],
