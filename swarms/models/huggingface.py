@@ -294,7 +294,7 @@ class HuggingfaceLLM:
         )
 
         print(dashboard)
-    
+
     def set_device(self, device):
         """
         Changes the device used for inference.
