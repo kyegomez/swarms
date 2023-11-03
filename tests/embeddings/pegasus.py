@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from swarms.embeddings.pegasus import PegasusEmbedding
+from swarms.models.pegasus import PegasusEmbedding
 
 
 def test_init():

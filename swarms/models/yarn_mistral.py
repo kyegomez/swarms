@@ -3,10 +3,9 @@ import logging
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from termcolor import colored
 
 
-class HuggingfaceLLM:
+class YarnMistral128:
     """
     A class for running inference on a given model.
 
@@ -21,20 +20,20 @@ class HuggingfaceLLM:
 
     # Usage
     ```
-    from swarms.models import HuggingfaceLLM
+    from finetuning_suite import Inference
 
     model_id = "gpt2-small"
-    inference = HuggingfaceLLM(model_id=model_id)
+    inference = Inference(model_id=model_id)
 
-    task = "Once upon a time"
-    generated_text = inference(task)
+    prompt_text = "Once upon a time"
+    generated_text = inference(prompt_text)
     print(generated_text)
     ```
     """
 
     def __init__(
         self,
-        model_id: str,
+        model_id: str = "NousResearch/Yarn-Mistral-7b-128k",
         device: str = None,
         max_length: int = 500,
         quantize: bool = False,
@@ -43,8 +42,6 @@ class HuggingfaceLLM:
         # logger=None,
         distributed=False,
         decoding=False,
-        *args,
-        **kwargs,
     ):
         self.logger = logging.getLogger(__name__)
         self.device = (
@@ -56,6 +53,7 @@ class HuggingfaceLLM:
         self.distributed = distributed
         self.decoding = decoding
         self.model, self.tokenizer = None, None
+        # self.log = Logging()
 
         if self.distributed:
             assert (
@@ -76,7 +74,12 @@ class HuggingfaceLLM:
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id, quantization_config=bnb_config
+                self.model_id,
+                quantization_config=bnb_config,
+                use_flash_attention_2=True,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+                trust_remote_code=True,
             )
 
             self.model  # .to(self.device)
@@ -106,12 +109,12 @@ class HuggingfaceLLM:
                 self.logger.error(f"Failed to load the model or the tokenizer: {error}")
                 raise
 
-    def run(self, task: str):
+    def run(self, prompt_text: str):
         """
         Generate a response based on the prompt text.
 
         Args:
-        - task (str): Text to prompt the model.
+        - prompt_text (str): Text to prompt the model.
         - max_length (int): Maximum length of the response.
 
         Returns:
@@ -121,10 +124,10 @@ class HuggingfaceLLM:
 
         max_length = self.max_length
 
-        self.print_dashboard(task)
-
         try:
-            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(
+                self.device
+            )
 
             # self.log.start()
 
@@ -183,12 +186,12 @@ class HuggingfaceLLM:
         # Wrapping synchronous calls with async
         return self.run(task, *args, **kwargs)
 
-    def __call__(self, task: str):
+    def __call__(self, prompt_text: str):
         """
         Generate a response based on the prompt text.
 
         Args:
-        - task (str): Text to prompt the model.
+        - prompt_text (str): Text to prompt the model.
         - max_length (int): Maximum length of the response.
 
         Returns:
@@ -196,12 +199,12 @@ class HuggingfaceLLM:
         """
         self.load_model()
 
-        max_length = self.max_length
-
-        self.print_dashboard(task)
+        max_length = self.max_
 
         try:
-            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(
+                self.device
+            )
 
             # self.log.start()
 
@@ -260,37 +263,3 @@ class HuggingfaceLLM:
             return {"allocated": allocated, "reserved": reserved}
         else:
             return {"error": "GPU not available"}
-
-    def print_dashboard(self, task: str):
-        """Print dashboard"""
-
-        dashboard = print(
-            colored(
-                f"""
-                HuggingfaceLLM Dashboard
-                --------------------------------------------
-                Model Name: {self.model_id}
-                Tokenizer: {self.tokenizer}
-                Model MaxLength: {self.max_length}
-                Model Device: {self.device}
-                Model Quantization: {self.quantize}
-                Model Quantization Config: {self.quantization_config}
-                Model Verbose: {self.verbose}
-                Model Distributed: {self.distributed}
-                Model Decoding: {self.decoding}
-
-                ----------------------------------------
-                Metadata:
-                    Task Memory Consumption: {self.memory_consumption()}
-                    GPU Available: {self.gpu_available()}
-                ----------------------------------------
-
-                Task Environment:
-                    Task: {task}
-            
-                """,
-                "red",
-            )
-        )
-
-        print(dashboard)

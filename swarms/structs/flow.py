@@ -1,9 +1,9 @@
 """
 TODO:
-- Add a retry mechanism
-- Add prompt injection letting the agent know it's in a flow, Flow prompt
-- Dynamic temperature handling
-
+- Add tools
+- Add open interpreter style conversation
+- Add configurable save and restore so the user can restore from previus flows
+- Add memory vector database retrieval
 """
 
 import json
@@ -252,7 +252,8 @@ class Flow:
 
                     History: {response}
                     
-                    """, **kwargs
+                    """,
+                        **kwargs,
                     )
                     # print(f"Next query: {response}")
                     # break
