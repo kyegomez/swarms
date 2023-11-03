@@ -118,14 +118,13 @@ agent.run("Create a video of a swarm of fish")
 ---
 
 ## Documentation
-
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
 
 ## Contribute
 
-We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md).
+We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1)
+
 
 # License
-
 MIT
