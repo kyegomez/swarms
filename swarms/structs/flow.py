@@ -1,10 +1,9 @@
 """
 TODO:
-- Add a retry mechanism
-- Add prompt injection letting the agent know it's in a flow, Flow prompt
-- Dynamic temperature handling
-- Add 
-
+- Add tools
+- Add open interpreter style conversation
+- Add configurable save and restore so the user can restore from previus flows
+- Add memory vector database retrieval
 """
 import asyncio
 import copy
@@ -16,15 +15,27 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Generator, Union
 from termcolor import colored
 import inspect
 import random
+# from swarms.tools.tool import BaseTool
 
 
 # Constants
 FLOW_SYSTEM_PROMPT = """
-You are a language model operating within a flow class.
+You are an autonomous agent granted autonomy from a Flow structure.
 Your role is to engage in multi-step conversations with your self or the user, 
 generate long-form content like blogs, screenplays, or SOPs, 
 and accomplish tasks. You can have internal dialogues with yourself or can interact with the user 
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
+
+
+When you have finished the task, and you feel as if you are done: output a special token: <DONE>
+This will enable you to leave the flow loop.
+
+"""
+
+
+DYNAMIC_STOP_PROMPT = """
+When you have finished the task, and you feel as if you are done: output a special token: <DONE>
+This will enable you to leave the flow loop.
 """
 
 
@@ -203,7 +214,7 @@ class Flow:
 
         print(dashboard)
 
-    def run(self, task: str):
+    def run(self, task: str, **kwargs):
         """
         Run the autonomous agent loop
 
@@ -228,7 +239,7 @@ class Flow:
         for i in range(self.max_loops):
             print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
             print("\n")
-            if self._check_stopping_condition(response):
+            if self._check_stopping_condition(response) or parse_done_token(response):
                 break
 
             # Adjust temperature, comment if no work
@@ -238,7 +249,17 @@ class Flow:
             attempt = 0
             while attempt < self.retry_attempts:
                 try:
-                    response = self.llm(response)
+                    response = self.llm(
+                        f"""
+                    SYSTEM_PROMPT: 
+                    {FLOW_SYSTEM_PROMPT}
+
+
+                    History: {response}
+                    
+                    """,
+                        **kwargs,
+                    )
                     # print(f"Next query: {response}")
                     # break
 

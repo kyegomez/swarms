@@ -1,9 +1,8 @@
 import openai
 from dotenv import load_dotenv
+from os import getenv
 
 load_dotenv()
-
-from os import getenv
 
 
 def get_ada_embeddings(text: str, model: str = "text-embedding-ada-002"):

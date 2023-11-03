@@ -25,7 +25,7 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-from swarms.embeddings.base import Embeddings
+from swarms.models.embeddings_base import Embeddings
 
 
 def get_from_dict_or_env(
