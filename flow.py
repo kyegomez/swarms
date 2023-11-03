@@ -10,16 +10,10 @@ llm = OpenAIChat(
     max_tokens=3000,
 )
 
-# Initialize the flow
+## Initialize the workflow
 flow = Flow(
     llm=llm,
-    max_loops=5,
-    dashboard=True,
-)
-
-flow = Flow(
-    llm=llm,
-    max_loops=5,
+    max_loops=1,
     dashboard=True,
     # stopping_condition=None,  # You can define a stopping condition as needed.
     # loop_interval=1,
