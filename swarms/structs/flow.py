@@ -106,7 +106,7 @@ class Flow:
         interactive: bool = False,
         dashboard: bool = False,
         name: str = "flow-agent",
-        system_message: str = "system",
+        system_message: str = FLOW_SYSTEM_PROMPT,
         dynamic_temperature: bool = False,
         **kwargs: Any,
     ):
@@ -125,8 +125,7 @@ class Flow:
         self.dashboard = dashboard
         self.dynamic_temperature = dynamic_temperature
         self.system_message = system_message
-        self._oai_messages = defaultdict(list)
-        self._oai_system_message = [{"content": system_message, "role": "system"}]
+        self.name = name
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -482,86 +481,19 @@ class Flow:
             time.sleep(0.1)
             yield token
 
-    def generate_reply(
-        self,
-        messages: Optional[List[Dict]] = None,
-        sender: Optional['Flow'] = None,
-        exclude: Optional[List[Callable]] = None,
-    ) -> Union[str, Dict, None]:
-        """Reply based on the conversation history and the sender.
+    def generate_reply(self, history:str, **kwargs) -> str:
         """
-        assert messages is not None or sender is not None, "Either messages or sender must be provided."
-        if messages is None:
-            messages = self._oai_messages[sender]
-
-        for reply_func_tuple in self._reply_func_list:
-            reply_func = reply_func_tuple["reply_func"]
-            if exclude and reply_func in exclude:
-                continue
-            if asyncio.coroutines.iscoroutinefunction(reply_func):
-                continue
-            if self._match_trigger(reply_func_tuple["trigger"], sender):
-                final, reply = reply_func(self, messages=messages, sender=sender, config=reply_func_tuple["config"])
-                if final:
-                    return reply
-        return self._default_auto_reply
-
-    def generate_oai_reply(
-        self,
-        messages: Optional[List[Dict]] = None,
-        sender: Optional['Flow'] = None,
-        config: Optional[Any] = None,
-    ) -> Tuple[bool, Union[str, Dict, None]]:
-        """Generate a reply using autogen.oai."""
-        llm_config = self.llm_config if config is None else config
-        if llm_config is False:
-            return False, None
-        if messages is None:
-            messages = self._oai_messages[sender]
-
-        # TODO: #1143 handle token limit exceeded error
-        response = oai.ChatCompletion.create(
-            context=messages[-1].pop("context", None), messages=self._oai_system_message + messages, **llm_config
-        )
-        return True, oai.ChatCompletion.extract_text_or_function_call(response)[0]
-
-    def send(
-        self,
-        message: Union[Dict, str],
-        recipient: 'Flow',
-        request_reply: Optional[bool] = None,
-        silent: Optional[bool] = False,
-    ) -> bool:
-        """Send a message to another agent.
+        Generate a response based on the initial task.
         """
-        # When the agent composes and sends the message, the role of the message is "assistant"
-        # unless it's "function".
-        valid = self._append_oai_message(message, "assistant", recipient)
-        if valid:
-            recipient.receive(message, self, request_reply, silent)
-        else:
-            raise ValueError(
-                "Message can't be converted into a valid ChatCompletion message. Either content or function_call must be provided."
-            )
+        prompt = f"""SYSTEM_PROMPT:{self.system_message}
+History:
+{history}
+Your response:"""
+        response = self.llm(prompt, **kwargs)
+        return {"role": self.name, "content": response}
 
 
-    def last_message(self, agent: Optional['Flow'] = None) -> Dict:
-        """The last message exchanged with the agent.
-
-        Args:
-            agent (Agent): The agent in the conversation.
-                If None and more than one agent's conversations are found, an error will be raised.
-                If None and only one conversation is found, the last message of the only conversation will be returned.
-
-        Returns:
-            The last message exchanged with the agent.
+    def update_system_message(self, system_message: str):
+        """Update the system message.
         """
-        if agent is None:
-            n_conversations = len(self._oai_messages)
-            if n_conversations == 0:
-                return None
-            if n_conversations == 1:
-                for conversation in self._oai_messages.values():
-                    return conversation[-1]
-            raise ValueError("More than one conversation is found. Please specify the sender to get the last message.")
-        return self._oai_messages[agent][-1]
+        self.system_message = system_message

@@ -3,7 +3,7 @@ import sys
 from typing import Dict, List, Optional, Union
 import logging
 
-from .. import Flow
+from swarms import Flow, OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,11 @@ class GroupChat:
         self.messages.clear()
 
     def agent_by_name(self, name: str) -> Flow:
-        """Find the next speaker based on the message."""
-        return self.agents[self.agent_names.index(name)]
+        """Find an agent whose name is contained within the given 'name' string."""
+        for agent in self.agents:
+            if agent.name in name:
+                return agent
+        raise ValueError(f"No agent found with a name contained in '{name}'.")
 
     def next_agent(self, agent: Flow) -> Flow:
         """Return the next agent in the list."""
@@ -53,94 +56,90 @@ Then select the next role from {self.agent_names} to play. Only return the role.
                 f"GroupChat is underpopulated with {n_agents} agents. Direct communication would be more efficient."
             )
 
-        final, name = selector.generate_oai_reply(
-            self.messages
-            + [
+        name = selector.generate_reply(
+            self.format_history(self.messages
+                                + [
                 {
                     "role": "system",
-                    "content": f"Read the above conversation. Then select the next role from {self.agent_names} to play. Only return the role.",
+                    "content": f"Read the above conversation. Then select the next most suitable role from {self.agent_names} to play. Only return the role.",
                 }
-            ]
+            ])
         )
-        if not final:
-            # i = self._random.randint(0, len(self._agent_names) - 1)  # randomly pick an id
-            return self.next_agent(last_speaker)
         try:
-            return self.agent_by_name(name)
+            return self.agent_by_name(name['content'])
         except ValueError:
             return self.next_agent(last_speaker)
 
     def _participant_roles(self):
         return "\n".join([f"{agent.name}: {agent.system_message}" for agent in self.agents])
 
+    def format_history(self, messages: List[Dict]) -> str:
+        formatted_messages = []
+        for message in messages:
+            formatted_message = f"'{message['role']}:{message['content']}"
+            formatted_messages.append(formatted_message)
+        return '\n'.join(formatted_messages)
 
-class GroupChatManager(Flow):
-    """(In preview) A chat manager agent that can manage a group chat of multiple agents."""
+class GroupChatManager:
+    def __init__(self, groupchat: GroupChat, selector: Flow):
+        self.groupchat = groupchat
+        self.selector = selector
 
-    def __init__(
-        self,
-        groupchat: GroupChat,
-        name: Optional[str] = "chat_manager",
-        # unlimited consecutive auto reply by default
-        max_consecutive_auto_reply: Optional[int] = sys.maxsize,
-        human_input_mode: Optional[str] = "NEVER",
-        system_message: Optional[str] = "Group chat manager.",
-        # seed: Optional[int] = 4,
-        **kwargs,
-    ):
-        super().__init__(
-            name=name,
-            max_consecutive_auto_reply=max_consecutive_auto_reply,
-            human_input_mode=human_input_mode,
-            system_message=system_message,
-            **kwargs,
-        )
-        self.register_reply(Flow, GroupChatManager.run_chat, config=groupchat, reset_config=GroupChat.reset)
-        # self._random = random.Random(seed)
 
-    def run_chat(
-        self,
-        messages: Optional[List[Dict]] = None,
-        sender: Optional[Flow] = None,
-        config: Optional[GroupChat] = None,
-    ) -> Union[str, Dict, None]:
-        """Run a group chat."""
-        if messages is None:
-            messages = self._oai_messages[sender]
-        message = messages[-1]
-        speaker = sender
-        groupchat = config
-        for i in range(groupchat.max_round):
-            # set the name to speaker's name if the role is not function
-            if message["role"] != "function":
-                message["name"] = speaker.name
-            groupchat.messages.append(message)
-            # broadcast the message to all agents except the speaker
-            for agent in groupchat.agents:
-                if agent != speaker:
-                    self.send(message, agent, request_reply=False, silent=True)
-            if i == groupchat.max_round - 1:
-                # the last round
+
+    def run_chat(self, task: str):
+        self.groupchat.messages.append({'role':self.selector.name, 'content': task})
+        for i in range(self.groupchat.max_round):
+            speaker = self.groupchat.select_speaker(last_speaker=self.selector, selector=self.selector)
+            reply = speaker.generate_reply(self.groupchat.format_history(self.groupchat.messages))
+            self.groupchat.messages.append(reply)
+            print(reply)
+            if i == self.groupchat.max_round - 1:
                 break
-            try:
-                # select the next speaker
-                speaker = groupchat.select_speaker(speaker, self)
-                # let the speaker speak
-                reply = speaker.generate_reply(sender=self)
-            except KeyboardInterrupt:
-                # let the admin agent speak if interrupted
-                if groupchat.admin_name in groupchat.agent_names:
-                    # admin agent is one of the participants
-                    speaker = groupchat.agent_by_name(groupchat.admin_name)
-                    reply = speaker.generate_reply(sender=self)
-                else:
-                    # admin agent is not found in the participants
-                    raise
-            if reply is None:
-                break
-            # The speaker sends the message without requesting a reply
-            speaker.send(reply, self, request_reply=False)
-            message = self.last_message(speaker)
-        return True, None
+
+        return reply
 
 
+llm = OpenAI(
+    openai_api_key="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",
+    temperature=0.5,
+    max_tokens=3000,
+)
+
+# Initialize the flow
+flow1 = Flow(
+    llm=llm,
+    max_loops=1,
+    system_message="YOU ARE SILLY, YOU OFFER NOTHING OF VALUE",
+    name='silly',
+    dashboard=True,
+)
+flow2 = Flow(
+    llm=llm,
+    max_loops=1,
+    system_message="YOU ARE VERY SMART AND ANSWER RIDDLES",
+    name='detective',
+    dashboard=True,
+)
+flow3 = Flow(
+    llm=llm,
+    max_loops=1,
+    system_message="YOU MAKE RIDDLES",
+    name='riddler',
+    dashboard=True,
+)
+manager = Flow(
+    llm=llm,
+    max_loops=1,
+    system_message="YOU ARE A GROUP CHAT MANAGER",
+    name='manager',
+    dashboard=True,
+)
+
+
+# Example usage:
+agents = [flow1, flow2, flow3]
+
+group_chat = GroupChat(agents=agents, messages=[], max_round=5)
+chat_manager = GroupChatManager(groupchat=group_chat, selector = manager)
+chat_history = chat_manager.run_chat("Write me a riddle and answer it")
