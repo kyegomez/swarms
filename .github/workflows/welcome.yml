@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     name: 👋 Welcome
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
       - uses: actions/first-interaction@v1.2.0
