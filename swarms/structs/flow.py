@@ -34,6 +34,7 @@ When you have finished the task, and you feel as if you are done: output a speci
 This will enable you to leave the flow loop.
 """
 
+
 # Custome stopping condition
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
@@ -100,6 +101,8 @@ class Flow:
         retry_interval: int = 1,
         interactive: bool = False,
         dashboard: bool = False,
+        name: str = "Flow agent",
+        system_message: str = FLOW_SYSTEM_PROMPT,
         # tools: List[BaseTool] = None,
         dynamic_temperature: bool = False,
         **kwargs: Any,
@@ -119,6 +122,8 @@ class Flow:
         self.dashboard = dashboard
         self.dynamic_temperature = dynamic_temperature
         # self.tools = tools
+        self.system_message = system_message
+        self.name = name
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -130,11 +135,6 @@ class Flow:
         if self.stopping_condition:
             return self.stopping_condition(response)
         return False
-
-    def __call__(self, prompt, **kwargs) -> str:
-        """Invoke the flow by providing a template and its variables."""
-        response = self.llm(prompt, **kwargs)
-        return response
 
     def dynamic_temperature(self):
         """
@@ -282,6 +282,82 @@ class Flow:
 
         return response  # , history
 
+    def __call__(self, task: str, save: bool = True, **kwargs):
+        """
+        Run the autonomous agent loop
+
+        Args:
+            task (str): The initial task to run
+
+        Flow:
+        1. Generate a response
+        2. Check stopping condition
+        3. If stopping condition is met, stop
+        4. If stopping condition is not met, generate a response
+        5. Repeat until stopping condition is met or max_loops is reached
+
+        Example:
+        >>> out = flow.run("Generate a 10,000 word blog on health and wellness.")
+
+        """
+        # Start with a new history or continue from the last saved state
+        if not self.memory or not self.memory[-1]:
+            history = [f"Human: {task}"]
+        else:
+            history = self.memory[-1]
+
+        response = task
+        history = [f"Human: {task}"]
+
+        # If dashboard = True then print the dashboard
+        if self.dashboard:
+            self.print_dashboard(task)
+
+        # Start or continue the loop process
+        for i in range(len(history), self.max_loops):
+            print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
+            print("\n")
+            response = history[-1].split(": ", 1)[-1]  # Get the last response
+
+            if self._check_stopping_condition(response) or parse_done_token(response):
+                break
+
+            # Adjust temperature, comment if no work
+            if self.dynamic_temperature:
+                self.dynamic_temperature()
+
+            attempt = 0
+            while attempt < self.retry_attempts:
+                try:
+                    response = self.llm(
+                        self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
+                        ** kwargs,
+                    )
+                    # print(f"Next query: {response}")
+                    # break
+                    if self.interactive:
+                        print(f"AI: {response}")
+                        history.append(f"AI: {response}")
+                        response = input("You: ")
+                        history.append(f"Human: {response}")
+                    else:
+                        print(f"AI: {response}")
+                        history.append(f"AI: {response}")
+                        print(response)
+                    break
+                except Exception as e:
+                    logging.error(f"Error generating response: {e}")
+                    attempt += 1
+                    time.sleep(self.retry_interval)
+            history.append(response)
+            time.sleep(self.loop_interval)
+        self.memory.append(history)
+
+        if save:
+            self.save_state("flow_history.json")
+
+        return response  # , history
+
     def _run(self, **kwargs: Any) -> str:
         """Generate a result using the provided keyword args."""
         task = self.format_prompt(**kwargs)
@@ -304,6 +380,7 @@ class Flow:
         Returns:
             str: The agent history prompt
         """
+        system_prompt = system_prompt or self.system_message
         agent_history_prompt = f"""
             SYSTEM_PROMPT: {system_prompt}
 
@@ -608,3 +685,22 @@ class Flow:
                 attempt += 1
                 time.sleep(retry_delay)
         raise Exception("All retry attempts failed")
+
+    def generate_reply(self, history: str, **kwargs) -> str:
+        """
+        Generate a response based on initial or task
+        """
+        prompt = f"""
+
+        SYSTEM_PROMPT: {self.system_message}
+
+        History: {history}
+
+        Your response:
+        """
+        response = self.llm(prompt, **kwargs)
+        return {"role": self.name, "content": response}
+
+    def update_system_message(self, system_message: str):
+        """Upddate the system message"""
+        self.system_message = system_message
