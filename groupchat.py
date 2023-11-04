@@ -15,28 +15,28 @@ flow1 = Flow(
     llm=llm,
     max_loops=1,
     system_message="YOU ARE SILLY, YOU OFFER NOTHING OF VALUE",
-    name='silly',
+    name="silly",
     dashboard=True,
 )
 flow2 = Flow(
     llm=llm,
     max_loops=1,
     system_message="YOU ARE VERY SMART AND ANSWER RIDDLES",
-    name='detective',
+    name="detective",
     dashboard=True,
 )
 flow3 = Flow(
     llm=llm,
     max_loops=1,
     system_message="YOU MAKE RIDDLES",
-    name='riddler',
+    name="riddler",
     dashboard=True,
 )
 manager = Flow(
     llm=llm,
     max_loops=1,
     system_message="YOU ARE A GROUP CHAT MANAGER",
-    name='manager',
+    name="manager",
     dashboard=True,
 )
 
@@ -45,5 +45,5 @@ manager = Flow(
 agents = [flow1, flow2, flow3]
 
 group_chat = GroupChat(agents=agents, messages=[], max_round=10)
-chat_manager = GroupChatManager(groupchat=group_chat, selector = manager)
+chat_manager = GroupChatManager(groupchat=group_chat, selector=manager)
 chat_history = chat_manager("Write me a riddle")
