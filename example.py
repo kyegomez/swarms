@@ -1,24 +1,35 @@
 from swarms.models import OpenAIChat
-from swarms import Worker
-from swarms.prompts import PRODUCT_AGENT_PROMPT
+from swarms.structs import Flow
 
 api_key = ""
 
+# Initialize the language model, this model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
 llm = OpenAIChat(
+    # model_name="gpt-4"
     openai_api_key=api_key,
     temperature=0.5,
+    #max_tokens=100,
 )
 
-node = Worker(
+## Initialize the workflow
+flow = Flow(
     llm=llm,
-    ai_name="Optimus Prime",
-    openai_api_key=api_key,
-    ai_role=PRODUCT_AGENT_PROMPT,
-    external_tools=None,
-    human_in_the_loop=False,
-    temperature=0.5,
+    max_loops=1,
+    dashboard=True,
+    # stopping_condition=None,  # You can define a stopping condition as needed.
+    # loop_interval=1,
+    # retry_attempts=3,
+    # retry_interval=1,
+    # interactive=False,  # Set to 'True' for interactive mode.
+    # dynamic_temperature=False,  # Set to 'True' for dynamic temperature handling.
 )
 
-task = "Locate 5 trending topics on healthy living, locate a website like NYTimes, and then generate an image of people doing those topics."
-response = node.run(task)
-print(response)
+# out = flow.load_state("flow_state.json")
+# temp = flow.dynamic_temperature()
+# filter = flow.add_response_filter("Trump")
+out = flow.run("Generate a 10,000 word blog on health and wellness.")
+# out = flow.validate_response(out)
+# out = flow.analyze_feedback(out)
+# out = flow.print_history_and_memory()
+# out = flow.save_state("flow_state.json")
+print(out)
