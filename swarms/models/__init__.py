@@ -16,6 +16,7 @@ from swarms.models.kosmos_two import Kosmos
 from swarms.models.vilt import Vilt
 from swarms.models.nougat import Nougat
 from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
+# from swarms.models.distilled_whisperx import DistilWhisperModel
 
 # from swarms.models.fuyu import Fuyu # Not working, wait until they update
 import sys
