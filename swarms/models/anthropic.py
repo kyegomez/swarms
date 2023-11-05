@@ -7,9 +7,31 @@ class Anthropic:
 
     Anthropic large language models.
 
-
     Args:
+        model: The model to use. Defaults to "claude-2".
+        max_tokens_to_sample: The maximum number of tokens to sample.
+        temperature: The temperature to use for sampling.
+        top_k: The top_k to use for sampling.
+        top_p: The top_p to use for sampling.
+        streaming: Whether to stream the response or not.
+        default_request_timeout: The default request timeout to use.
 
+
+    Attributes:
+        model: The model to use.
+        max_tokens_to_sample: The maximum number of tokens to sample.
+        temperature: The temperature to use for sampling.
+        top_k: The top_k to use for sampling.
+        top_p: The top_p to use for sampling.
+        streaming: Whether to stream the response or not.
+        default_request_timeout: The default request timeout to use.
+        anthropic_api_url: The API URL to use.
+        anthropic_api_key: The API key to use.
+
+    Usage:
+        model_wrapper = Anthropic()
+        completion = model_wrapper("Hello, my name is")
+        print(completion)
 
     """
 
