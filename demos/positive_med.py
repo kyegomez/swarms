@@ -23,7 +23,7 @@ Distribution Agent:
 
 """
 
-from swarms import OpenAIChat
+from swarms.models import OpenAIChat
 from termcolor import colored
 
 TOPIC_GENERATOR = f"""
@@ -264,7 +264,7 @@ Denote the social media's by using the social media name in HTML like tags
 {{ARTICLE}}
 """
 
-llm = OpenAIChat(openai_api_key="")
+llm = OpenAIChat(openai_api_key="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")
 
 
 def get_review_prompt(article):

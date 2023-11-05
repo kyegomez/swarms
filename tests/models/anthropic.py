@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import Mock, patch
 from swarms.models.anthropic import Anthropic
 
+
 @pytest.fixture
 def mock_anthropic_env():
     os.environ["ANTHROPIC_API_URL"] = "https://test.anthropic.com"
@@ -11,14 +12,17 @@ def mock_anthropic_env():
     del os.environ["ANTHROPIC_API_URL"]
     del os.environ["ANTHROPIC_API_KEY"]
 
+
 @pytest.fixture
 def mock_requests_post():
     with patch("requests.post") as mock_post:
         yield mock_post
 
+
 @pytest.fixture
 def anthropic_instance():
     return Anthropic(model="test-model")
+
 
 def test_anthropic_init_default_values(anthropic_instance):
     assert anthropic_instance.model == "test-model"
@@ -30,6 +34,7 @@ def test_anthropic_init_default_values(anthropic_instance):
     assert anthropic_instance.default_request_timeout == 600
     assert anthropic_instance.anthropic_api_url == "https://test.anthropic.com"
     assert anthropic_instance.anthropic_api_key == "test_api_key"
+
 
 def test_anthropic_init_custom_values():
     anthropic_instance = Anthropic(
@@ -49,12 +54,14 @@ def test_anthropic_init_custom_values():
     assert anthropic_instance.streaming is True
     assert anthropic_instance.default_request_timeout == 300
 
+
 def test_anthropic_default_params(anthropic_instance):
     default_params = anthropic_instance._default_params()
     assert default_params == {
         "max_tokens_to_sample": 256,
         "model": "test-model",
     }
+
 
 def test_anthropic_run(mock_anthropic_env, mock_requests_post, anthropic_instance):
     mock_response = Mock()
@@ -79,6 +86,7 @@ def test_anthropic_run(mock_anthropic_env, mock_requests_post, anthropic_instanc
         timeout=600,
     )
 
+
 def test_anthropic_call(mock_anthropic_env, mock_requests_post, anthropic_instance):
     mock_response = Mock()
     mock_response.json.return_value = {"completion": "Generated text"}
@@ -102,7 +110,10 @@ def test_anthropic_call(mock_anthropic_env, mock_requests_post, anthropic_instan
         timeout=600,
     )
 
-def test_anthropic_exception_handling(mock_anthropic_env, mock_requests_post, anthropic_instance):
+
+def test_anthropic_exception_handling(
+    mock_anthropic_env, mock_requests_post, anthropic_instance
+):
     mock_response = Mock()
     mock_response.json.return_value = {"error": "An error occurred"}
     mock_requests_post.return_value = mock_response
