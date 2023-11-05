@@ -60,7 +60,5 @@ class Fuyu:
         for k, v in model_inputs.items():
             model_inputs[k] = v.to(self.device_map)
 
-        output = self.model.generate(
-            **model_inputs, max_new_tokens=self.max_new_tokens
-        )
+        output = self.model.generate(**model_inputs, max_new_tokens=self.max_new_tokens)
         text = self.processor.batch_decode(output[:, -7:], skip_special_tokens=True)

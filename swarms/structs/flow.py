@@ -105,6 +105,8 @@ class Flow:
         system_message: str = FLOW_SYSTEM_PROMPT,
         # tools: List[BaseTool] = None,
         dynamic_temperature: bool = False,
+        saved_state: Optional[str] = None,
+        autosave: bool = False,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -124,6 +126,9 @@ class Flow:
         # self.tools = tools
         self.system_message = system_message
         self.name = name
+        self.saved_state = saved_state
+        self.autosave = autosave
+        self.response_filters = []
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -206,7 +211,7 @@ class Flow:
 
         print(dashboard)
 
-    def run(self, task: str, save: bool = True, **kwargs):
+    def run(self, task: str, **kwargs):
         """
         Run the autonomous agent loop
 
@@ -220,15 +225,15 @@ class Flow:
         4. If stopping condition is not met, generate a response
         5. Repeat until stopping condition is met or max_loops is reached
 
-        Example:
-        >>> out = flow.run("Generate a 10,000 word blog on health and wellness.")
-
         """
-        # Start with a new history or continue from the last saved state
-        if not self.memory or not self.memory[-1]:
-            history = [f"Human: {task}"]
-        else:
-            history = self.memory[-1]
+        # Restore from saved state if provided, ortherwise start with a new history
+        # if self.saved_state:
+        #     self.load_state(self.saved_state)
+        #     history = self.memory[-1]
+        #     print(f"Loaded state from {self.saved_state}")
+        # else:
+        #     history = [f"Human: {task}"]
+        #     self.memory.append(history)
 
         response = task
         history = [f"Human: {task}"]
@@ -237,12 +242,9 @@ class Flow:
         if self.dashboard:
             self.print_dashboard(task)
 
-        # Start or continue the loop process
-        for i in range(len(history), self.max_loops):
+        for i in range(self.max_loops):
             print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
             print("\n")
-            response = history[-1].split(": ", 1)[-1]  # Get the last response
-
             if self._check_stopping_condition(response) or parse_done_token(response):
                 break
 
@@ -254,8 +256,8 @@ class Flow:
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(
-                        self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
-                        ** kwargs,
+                        self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response),
+                        **kwargs,
                     )
                     # print(f"Next query: {response}")
                     # break
@@ -277,8 +279,8 @@ class Flow:
             time.sleep(self.loop_interval)
         self.memory.append(history)
 
-        if save:
-            self.save("flow_history.json")
+        # if self.autosave:
+        #     self.save_state("flow_state.json")
 
         return response  # , history
 
@@ -353,8 +355,8 @@ class Flow:
             time.sleep(self.loop_interval)
         self.memory.append(history)
 
-        if save:
-            self.save_state("flow_history.json")
+        # if save:
+        #     self.save_state("flow_history.json")
 
         return response  # , history
 
@@ -409,7 +411,13 @@ class Flow:
             json.dump(self.memory, f)
         print(f"Saved flow history to {file_path}")
 
-    def load(self, file_path) -> None:
+    def load(self, file_path: str):
+        """
+        Load the flow history from a file.
+
+        Args:
+            file_path (str): The path to the file containing the saved flow history.
+        """
         with open(file_path, "r") as f:
             self.memory = json.load(f)
         print(f"Loaded flow history from {file_path}")
@@ -659,10 +667,6 @@ class Flow:
         """
         with open(file_path, "r") as f:
             state = json.load(f)
-
-        # Assuming 'llm_class' is a class reference to the language
-        # llm_params = state.get("llm_params", {})
-        # self.llm = self.llm(**llm_params)
 
         # Restore other saved attributes
         self.memory = state.get("memory", [])
