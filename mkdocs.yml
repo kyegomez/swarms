@@ -106,6 +106,7 @@ nav:
       - Kosmos: "swarms/models/kosmos.md"
       - Nougat: "swarms/models/nougat.md"
       - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
+      - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"
