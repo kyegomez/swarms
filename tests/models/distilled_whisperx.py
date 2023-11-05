@@ -117,4 +117,3 @@ async def test_async_transcribe_with_mocked_model(mocked_model, audio_file_path)
     model_wrapper = DistilWhisperModel()
     transcription = await model_wrapper.async_transcribe(audio_file_path)
     assert transcription == "mocked transcription"
-

@@ -1,7 +1,7 @@
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
 
-api_key = ""
+api_key = "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"
 
 # Initialize the language model, this model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
 llm = OpenAIChat(
@@ -14,7 +14,7 @@ llm = OpenAIChat(
 ## Initialize the workflow
 flow = Flow(
     llm=llm,
-    max_loops=1,
+    max_loops=2,
     dashboard=True,
     # stopping_condition=None,  # You can define a stopping condition as needed.
     # loop_interval=1,
@@ -31,5 +31,5 @@ out = flow.run("Generate a 10,000 word blog on health and wellness.")
 # out = flow.validate_response(out)
 # out = flow.analyze_feedback(out)
 # out = flow.print_history_and_memory()
-# out = flow.save_state("flow_state.json")
-print(out)
+# # out = flow.save_state("flow_state.json")
+# print(out)
