@@ -42,13 +42,6 @@ from swarms.models import Fuyu
 fuyu = Fuyu()
 ```
 
-### Example 1 - Initialization
-
-```python
-from swarms.models import Fuyu
-
-fuyu = Fuyu()
-```
 
 2. Generate Text with Fuyu:
 
