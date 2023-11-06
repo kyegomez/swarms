@@ -16,8 +16,8 @@ TODO:
 import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Union
+
 from termcolor import colored
-from pydantic import BaseModel, validator
 
 from swarms.structs.flow import Flow
 
@@ -217,9 +217,9 @@ class SequentialWorkflow:
             json.dump(state, f, indent=4)
 
     def workflow_bootup(self, **kwargs) -> None:
-        bootup = print(
+        print(
             colored(
-                f"""
+                """
                 Sequential Workflow Initializing...""",
                 "green",
                 attrs=["bold", "underline"],
@@ -243,7 +243,7 @@ class SequentialWorkflow:
         >>> workflow.workflow_dashboard()
 
         """
-        dashboard = print(
+        print(
             colored(
                 f"""
                 Sequential Workflow Dashboard
