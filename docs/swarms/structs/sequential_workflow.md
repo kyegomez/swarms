@@ -575,3 +575,40 @@ The Sequential Workflow module is a valuable tool for AI engineers working on au
 As the field of AI continues to evolve, the demand for efficient workflow management tools will only increase. The Sequential Workflow module is a step towards meeting these demands and empowering AI engineers to create more reliable and capable autonomous agents. With future enhancements and features, it has the potential to become an indispensable asset in the AI engineer's toolkit.
 
 In summary, the Sequential Workflow module provides a foundation for orchestrating complex tasks and workflows, enabling AI engineers to focus on designing intelligent agents that can perform tasks with precision and reliability.
+
+
+## Frequently Asked Questions (FAQs)
+
+### Q1: What is the difference between a task and a flow in Sequential Workflows?
+
+**A1:** In Sequential Workflows, a **task** refers to a specific unit of work that needs to be executed. It can be implemented as a callable object, such as a Python function, and is the fundamental building block of a workflow.
+
+A **flow**, on the other hand, is an encapsulation of a task within the workflow. Flows define the order in which tasks are executed and can be thought of as task containers. They allow you to specify dependencies, error handling, and other workflow-related configurations.
+
+### Q2: Can I run tasks in parallel within a Sequential Workflow?
+
+**A2:** Yes, you can run tasks in parallel within a Sequential Workflow by using parallel execution techniques. This advanced feature allows you to execute multiple tasks concurrently, improving performance and efficiency. You can explore this feature further in the guide's section on "Parallel Execution."
+
+### Q3: How do I handle errors within Sequential Workflows?
+
+**A3:** Error handling within Sequential Workflows can be implemented by adding error-handling logic within your task functions. You can catch exceptions and handle errors gracefully, ensuring that your workflow can recover from unexpected scenarios. The guide also covers more advanced error handling strategies, such as retrying failed tasks and handling specific error types.
+
+### Q4: What are some real-world use cases for Sequential Workflows?
+
+**A4:** Sequential Workflows can be applied to a wide range of real-world use cases, including:
+
+- **Data ETL (Extract, Transform, Load) Processes:** Automating data pipelines that involve data extraction, transformation, and loading into databases or data warehouses.
+
+- **Batch Processing:** Running batch jobs that process large volumes of data or perform data analysis.
+
+- **Automation of DevOps Tasks:** Streamlining DevOps processes such as deployment, provisioning, and monitoring.
+
+- **Cross-system Integrations:** Automating interactions between different systems, services, or APIs.
+
+- **Report Generation:** Generating reports and documents automatically based on data inputs.
+
+- **Workflow Orchestration:** Orchestrating complex workflows involving multiple steps and dependencies.
+
+- **Resource Provisioning:** Automatically provisioning and managing cloud resources.
+
+These are just a few examples, and Sequential Workflows can be tailored to various automation needs across industries.

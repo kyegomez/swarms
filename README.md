@@ -98,6 +98,51 @@ god_mode.print_responses(task)
 
 ------
 
+### `SequentialWorkflow`
+- Execute tasks step by step by passing in an LLM and the task description!
+- Pass in flows with various LLMs
+- Save and restore Workflow states!
+```python
+from swarms.models import OpenAIChat
+from swarms.structs import Flow
+from swarms.structs.sequential_workflow import SequentialWorkflow
+
+# Example usage
+api_key = (
+    ""  # Your actual API key here
+)
+
+# Initialize the language flow
+llm = OpenAIChat(
+    openai_api_key=api_key,
+    temperature=0.5,
+    max_tokens=3000,
+)
+
+# Initialize the Flow with the language flow
+flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
+
+# Create another Flow for a different task
+flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+
+# Create the workflow
+workflow = SequentialWorkflow(max_loops=1)
+
+# Add tasks to the workflow
+workflow.add("Generate a 10,000 word blog on health and wellness.", flow1)
+
+# Suppose the next task takes the output of the first task as input
+workflow.add("Summarize the generated blog", flow2)
+
+# Run the workflow
+workflow.run()
+
+# Output the results
+for task in workflow.tasks:
+    print(f"Task: {task.description}, Result: {task.result}")
+
+```
+
 ### `OmniModalAgent`
 - OmniModal Agent is an LLM that access to 10+ multi-modal encoders and diffusers! It can generate images, videos, speech, music and so much more, get started with:
 
