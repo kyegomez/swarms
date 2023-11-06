@@ -16,6 +16,8 @@ from swarms.models.kosmos_two import Kosmos
 from swarms.models.vilt import Vilt
 from swarms.models.nougat import Nougat
 from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
+from swarms.models.gpt4v import GPT4Vision
+from swarms.models.dalle3 import Dalle3
 
 # from swarms.models.distilled_whisperx import DistilWhisperModel
 
@@ -43,4 +45,6 @@ __all__ = [
     "HuggingfaceLLM",
     "MPT7B",
     "WizardLLMStoryTeller",
+    "GPT4Vision",
+    "Dalle3",
 ]
