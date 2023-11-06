@@ -114,6 +114,11 @@ nav:
     - Worker: 
       - Basic: "examples/worker.md"
       - StackedWorker: "examples/stacked_worker.md"
+- Applications:
+    - CustomerSupport: 
+      - Overview: "applications/customer_support.md"
+    - Marketing: 
+      - Overview: "applications/marketing_agencies.md" 
 - Corporate:
     - FAQ: "faq.md"
     - Purpose: "purpose.md"
@@ -129,8 +134,3 @@ nav:
     - Architecture: "architecture.md"
     - Checklist: "checklist.md"
     - Hiring: "hiring.md"
-- Applications:
-    - CustomerSupport: 
-      - Overview: "applications/customer_support.md"
-    - Marketing: 
-      - Overview: "applications/marketing_agencies.md" 
