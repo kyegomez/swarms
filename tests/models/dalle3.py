@@ -6,7 +6,7 @@ from openai import OpenAIError
 from PIL import Image
 from termcolor import colored
 
-from dalle3 import Dalle3
+from playground.models.dalle3 import Dalle3
 
 
 # Mocking the OpenAI client to avoid making actual API calls during testing

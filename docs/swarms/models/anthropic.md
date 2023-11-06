@@ -70,17 +70,18 @@ class Anthropic:
 ```python
 # Import necessary modules and classes
 from swarms.models import Anthropic
-import torch
 
 # Initialize an instance of the Anthropic class
-anthropic_instance = Anthropic()
+model = Anthropic(
+    anthropic_api_key="sk-"
+)
 
-# Using the generate method
-completion_1 = anthropic_instance.generate("What is the capital of France?")
+# Using the run method
+completion_1 = model.run("What is the capital of France?")
 print(completion_1)
 
 # Using the __call__ method
-completion_2 = anthropic_instance("How far is the moon from the earth?", stop=["miles", "km"])
+completion_2 = model("How far is the moon from the earth?", stop=["miles", "km"])
 print(completion_2)
 ```
 
