@@ -12,7 +12,7 @@ from termcolor import colored
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API_KEY")
+# api_key = os.getenv("OPENAI_API_KEY")
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +49,7 @@ class Dalle3:
     size: str = "1024x1024"
     max_retries: int = 3
     quality: str = "standard"
+    api_key: str = None
     n: int = 4
     client = OpenAI(
         api_key=api_key,

@@ -217,7 +217,7 @@ class Flow:
                     Dashboard: {self.dashboard}
                     Dynamic Temperature: {self.dynamic_temperature}
                     Autosave: {self.autosave}
-                    Saved State: {self.saved_state}
+                    Saved State: {self.saved_state_path}
                     
                 ----------------------------------------
                 """,
