@@ -78,8 +78,6 @@ class AbstractSwarm(ABC):
         Scale down the number of workers
 
 
-
-
     """
 
     # TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI

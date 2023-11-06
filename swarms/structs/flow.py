@@ -111,10 +111,10 @@ class Flow:
         interactive: bool = False,
         dashboard: bool = False,
         name: str = "Flow agent",
-        system_message: str = FLOW_SYSTEM_PROMPT,
+        system_prompt: str = FLOW_SYSTEM_PROMPT,
         # tools: List[BaseTool] = None,
         dynamic_temperature: bool = False,
-        saved_state: Optional[str] = None,
+        saved_state_path: Optional[str] = "flow_state.json",
         autosave: bool = False,
         **kwargs: Any,
     ):
@@ -133,9 +133,9 @@ class Flow:
         self.dashboard = dashboard
         self.dynamic_temperature = dynamic_temperature
         # self.tools = tools
-        self.system_message = system_message
+        self.system_prompt = system_prompt
         self.name = name
-        self.saved_state = saved_state
+        self.saved_state_path = saved_state_path
         self.autosave = autosave
         self.response_filters = []
 
@@ -206,7 +206,7 @@ class Flow:
 
                 Flow Configuration:
                     Name: {self.name}
-                    System Prompt: {self.system_message}
+                    System Prompt: {self.system_prompt}
                     Task: {task}
                     Max Loops: {self.max_loops}
                     Stopping Condition: {self.stopping_condition}
@@ -317,8 +317,10 @@ class Flow:
             time.sleep(self.loop_interval)
         self.memory.append(history)
 
-        # if self.autosave:
-        #     self.save_state("flow_state.json")
+        if self.autosave:
+            save_path = self.saved_state_path or "flow_state.json"
+            print(colored(f"Autosaving flow state to {save_path}", "green"))
+            self.save_state(save_path)
 
         return response  # , history
 
@@ -422,7 +424,7 @@ class Flow:
         Returns:
             str: The agent history prompt
         """
-        system_prompt = system_prompt or self.system_message
+        system_prompt = system_prompt or self.system_prompt
         agent_history_prompt = f"""
             SYSTEM_PROMPT: {system_prompt}
 
@@ -736,7 +738,7 @@ class Flow:
         """
         prompt = f"""
 
-        SYSTEM_PROMPT: {self.system_message}
+        SYSTEM_PROMPT: {self.system_prompt}
 
         History: {history}
 
@@ -745,6 +747,6 @@ class Flow:
         response = self.llm(prompt, **kwargs)
         return {"role": self.name, "content": response}
 
-    def update_system_message(self, system_message: str):
+    def update_system_prompt(self, system_prompt: str):
         """Upddate the system message"""
-        self.system_message = system_message
+        self.system_prompt = system_prompt
