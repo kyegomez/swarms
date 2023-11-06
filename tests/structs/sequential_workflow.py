@@ -12,7 +12,6 @@ from swarms.structs.sequential_workflow import SequentialWorkflow, Task
 os.environ["OPENAI_API_KEY"] = "mocked_api_key"
 
 
-
 # Mock OpenAIChat class for testing
 class MockOpenAIChat:
     def __init__(self, *args, **kwargs):
@@ -21,6 +20,7 @@ class MockOpenAIChat:
     def run(self, *args, **kwargs):
         return "Mocked result"
 
+
 # Mock Flow class for testing
 class MockFlow:
     def __init__(self, *args, **kwargs):
@@ -28,6 +28,7 @@ class MockFlow:
 
     def run(self, *args, **kwargs):
         return "Mocked result"
+
 
 # Mock SequentialWorkflow class for testing
 class MockSequentialWorkflow:
@@ -40,6 +41,7 @@ class MockSequentialWorkflow:
     def run(self):
         pass
 
+
 # Test Task class
 def test_task_initialization():
     description = "Sample Task"
@@ -48,12 +50,14 @@ def test_task_initialization():
     assert task.description == description
     assert task.flow == flow
 
+
 def test_task_execute():
     description = "Sample Task"
     flow = MockOpenAIChat()
     task = Task(description=description, flow=flow)
     task.execute()
     assert task.result == "Mocked result"
+
 
 # Test SequentialWorkflow class
 def test_sequential_workflow_initialization():
@@ -66,6 +70,7 @@ def test_sequential_workflow_initialization():
     assert workflow.restore_state_filepath == None
     assert workflow.dashboard == False
 
+
 def test_sequential_workflow_add_task():
     workflow = SequentialWorkflow()
     task_description = "Sample Task"
@@ -75,6 +80,7 @@ def test_sequential_workflow_add_task():
     assert workflow.tasks[0].description == task_description
     assert workflow.tasks[0].flow == task_flow
 
+
 def test_sequential_workflow_reset_workflow():
     workflow = SequentialWorkflow()
     task_description = "Sample Task"
@@ -82,6 +88,7 @@ def test_sequential_workflow_reset_workflow():
     workflow.add(task_description, task_flow)
     workflow.reset_workflow()
     assert workflow.tasks[0].result == None
+
 
 def test_sequential_workflow_get_task_results():
     workflow = SequentialWorkflow()
@@ -93,6 +100,7 @@ def test_sequential_workflow_get_task_results():
     assert len(results) == 1
     assert task_description in results
     assert results[task_description] == "Mocked result"
+
 
 def test_sequential_workflow_remove_task():
     workflow = SequentialWorkflow()
@@ -106,6 +114,7 @@ def test_sequential_workflow_remove_task():
     assert len(workflow.tasks) == 1
     assert workflow.tasks[0].description == task2_description
 
+
 def test_sequential_workflow_update_task():
     workflow = SequentialWorkflow()
     task_description = "Sample Task"
@@ -113,6 +122,7 @@ def test_sequential_workflow_update_task():
     workflow.add(task_description, task_flow)
     workflow.update_task(task_description, max_tokens=1000)
     assert workflow.tasks[0].kwargs["max_tokens"] == 1000
+
 
 def test_sequential_workflow_save_workflow_state():
     workflow = SequentialWorkflow()
@@ -122,6 +132,7 @@ def test_sequential_workflow_save_workflow_state():
     workflow.save_workflow_state("test_state.json")
     assert os.path.exists("test_state.json")
     os.remove("test_state.json")
+
 
 def test_sequential_workflow_load_workflow_state():
     workflow = SequentialWorkflow()
@@ -134,6 +145,7 @@ def test_sequential_workflow_load_workflow_state():
     assert workflow.tasks[0].description == task_description
     os.remove("test_state.json")
 
+
 def test_sequential_workflow_run():
     workflow = SequentialWorkflow()
     task_description = "Sample Task"
@@ -142,17 +154,20 @@ def test_sequential_workflow_run():
     workflow.run()
     assert workflow.tasks[0].result == "Mocked result"
 
+
 def test_sequential_workflow_workflow_bootup(capfd):
     workflow = SequentialWorkflow()
     workflow.workflow_bootup()
     out, _ = capfd.readouterr()
     assert "Sequential Workflow Initializing..." in out
 
+
 def test_sequential_workflow_workflow_dashboard(capfd):
     workflow = SequentialWorkflow()
     workflow.workflow_dashboard()
     out, _ = capfd.readouterr()
     assert "Sequential Workflow Dashboard" in out
+
 
 # Mock Flow class for async testing
 class MockAsyncFlow:
@@ -161,6 +176,7 @@ class MockAsyncFlow:
 
     async def arun(self, *args, **kwargs):
         return "Mocked result"
+
 
 # Test async execution in SequentialWorkflow
 @pytest.mark.asyncio
@@ -173,22 +189,23 @@ async def test_sequential_workflow_arun():
     assert workflow.tasks[0].result == "Mocked result"
 
 
-
-
 def test_real_world_usage_with_openai_key():
     # Initialize the language model
     llm = OpenAIChat()
     assert isinstance(llm, OpenAIChat)
+
 
 def test_real_world_usage_with_flow_and_openai_key():
     # Initialize a flow with the language model
     flow = Flow(llm=OpenAIChat())
     assert isinstance(flow, Flow)
 
+
 def test_real_world_usage_with_sequential_workflow():
     # Initialize a sequential workflow
     workflow = SequentialWorkflow()
     assert isinstance(workflow, SequentialWorkflow)
+
 
 def test_real_world_usage_add_tasks():
     # Create a sequential workflow and add tasks
@@ -203,6 +220,7 @@ def test_real_world_usage_add_tasks():
     assert workflow.tasks[0].description == task1_description
     assert workflow.tasks[1].description == task2_description
 
+
 def test_real_world_usage_run_workflow():
     # Create a sequential workflow, add a task, and run the workflow
     workflow = SequentialWorkflow()
@@ -211,6 +229,7 @@ def test_real_world_usage_run_workflow():
     workflow.add(task_description, task_flow)
     workflow.run()
     assert workflow.tasks[0].result is not None
+
 
 def test_real_world_usage_dashboard_display():
     # Create a sequential workflow, add tasks, and display the dashboard
@@ -225,6 +244,7 @@ def test_real_world_usage_dashboard_display():
         workflow.workflow_dashboard()
         mock_print.assert_called()
 
+
 def test_real_world_usage_async_execution():
     # Create a sequential workflow, add an async task, and run the workflow asynchronously
     workflow = SequentialWorkflow()
@@ -238,6 +258,7 @@ def test_real_world_usage_async_execution():
     asyncio.run(async_run_workflow())
     assert workflow.tasks[0].result is not None
 
+
 def test_real_world_usage_multiple_loops():
     # Create a sequential workflow with multiple loops, add a task, and run the workflow
     workflow = SequentialWorkflow(max_loops=3)
@@ -246,6 +267,7 @@ def test_real_world_usage_multiple_loops():
     workflow.add(task_description, task_flow)
     workflow.run()
     assert workflow.tasks[0].result is not None
+
 
 def test_real_world_usage_autosave_state():
     # Create a sequential workflow with autosave, add a task, run the workflow, and check if state is saved
@@ -257,6 +279,7 @@ def test_real_world_usage_autosave_state():
     assert workflow.tasks[0].result is not None
     assert os.path.exists("sequential_workflow_state.json")
     os.remove("sequential_workflow_state.json")
+
 
 def test_real_world_usage_load_state():
     # Create a sequential workflow, add a task, save state, load state, and run the workflow
@@ -271,6 +294,7 @@ def test_real_world_usage_load_state():
     assert workflow.tasks[0].result is not None
     os.remove("test_state.json")
 
+
 def test_real_world_usage_update_task_args():
     # Create a sequential workflow, add a task, and update task arguments
     workflow = SequentialWorkflow()
@@ -279,6 +303,7 @@ def test_real_world_usage_update_task_args():
     workflow.add(task_description, task_flow)
     workflow.update_task(task_description, max_tokens=1000)
     assert workflow.tasks[0].kwargs["max_tokens"] == 1000
+
 
 def test_real_world_usage_remove_task():
     # Create a sequential workflow, add tasks, remove a task, and run the workflow
@@ -294,11 +319,13 @@ def test_real_world_usage_remove_task():
     assert len(workflow.tasks) == 1
     assert workflow.tasks[0].description == task2_description
 
+
 def test_real_world_usage_with_environment_variables():
     # Ensure that the OpenAI API key is set using environment variables
     assert "OPENAI_API_KEY" in os.environ
     assert os.environ["OPENAI_API_KEY"] == "mocked_api_key"
     del os.environ["OPENAI_API_KEY"]  # Clean up after the test
+
 
 def test_real_world_usage_no_openai_key():
     # Ensure that an exception is raised when the OpenAI API key is not set
