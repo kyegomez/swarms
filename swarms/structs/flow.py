@@ -1,8 +1,14 @@
 """
 TODO:
+- add a method that scrapes all the methods from the llm object and outputs them as a string
 - Add tools
 - Add open interpreter style conversation
 - Add memory vector database retrieval
+- add batch processing
+- add async processing for run and batch run
+- add plan module
+- concurrent
+- 
 """
 
 import json
@@ -14,8 +20,15 @@ import inspect
 import random
 
 
+# Prompts
+DYNAMIC_STOP_PROMPT = """
+When you have finished the task from the Human, output a special token: <DONE>
+This will enable you to leave the autonomous loop.
+"""
+
+
 # Constants
-FLOW_SYSTEM_PROMPT = """
+FLOW_SYSTEM_PROMPT = f"""
 You are an autonomous agent granted autonomy from a Flow structure.
 Your role is to engage in multi-step conversations with your self or the user, 
 generate long-form content like blogs, screenplays, or SOPs, 
@@ -23,19 +36,15 @@ and accomplish tasks. You can have internal dialogues with yourself or can inter
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
 
 
-When you have finished the task, and you feel as if you are done: output a special token: <DONE>
-This will enable you to leave the flow loop.
+{DYNAMIC_STOP_PROMPT}
 
 """
 
 
-DYNAMIC_STOP_PROMPT = """
-When you have finished the task, and you feel as if you are done: output a special token: <DONE>
-This will enable you to leave the flow loop.
-"""
+# Utility functions
 
 
-# Custome stopping condition
+# Custom stopping condition
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
     return "Stop" in response.lower()
@@ -182,6 +191,7 @@ class Flow:
     def print_dashboard(self, task: str):
         """Print dashboard"""
         model_config = self.get_llm_init_params()
+        print(colored("Initializing Agent Dashboard...", "yellow"))
 
         dashboard = print(
             colored(
@@ -195,6 +205,8 @@ class Flow:
                 ----------------------------------------
 
                 Flow Configuration:
+                    Name: {self.name}
+                    System Prompt: {self.system_message}
                     Task: {task}
                     Max Loops: {self.max_loops}
                     Stopping Condition: {self.stopping_condition}
@@ -202,14 +214,35 @@ class Flow:
                     Retry Attempts: {self.retry_attempts}
                     Retry Interval: {self.retry_interval}
                     Interactive: {self.interactive}
-
+                    Dashboard: {self.dashboard}
+                    Dynamic Temperature: {self.dynamic_temperature}
+                    Autosave: {self.autosave}
+                    Saved State: {self.saved_state}
+                    
                 ----------------------------------------
                 """,
                 "green",
             )
         )
 
-        print(dashboard)
+        # print(dashboard)
+
+    def activate_autonomous_agent(self):
+        """Print the autonomous agent activation message"""
+        try:
+            print(colored("Initializing Autonomous Agent...", "yellow"))
+            # print(colored("Loading modules...", "yellow"))
+            # print(colored("Modules loaded successfully.", "green"))
+            print(colored("Autonomous Agent Activated.", "cyan", attrs=["bold"]))
+            print(colored("All systems operational. Executing task...", "green"))
+        except Exception as error:
+            print(
+                colored(
+                    "Error activating autonomous agent. Try optimizing your parameters...",
+                    "red",
+                )
+            )
+            print(error)
 
     def run(self, task: str, **kwargs):
         """
@@ -234,6 +267,11 @@ class Flow:
         # else:
         #     history = [f"Human: {task}"]
         #     self.memory.append(history)
+
+        # print(colored(">>> Autonomous Agent Activated", "cyan", attrs=["bold"]))
+        self.activate_autonomous_agent()
+
+        # if self.autosave:
 
         response = task
         history = [f"Human: {task}"]
@@ -284,7 +322,10 @@ class Flow:
 
         return response  # , history
 
-    def __call__(self, task: str, save: bool = True, **kwargs):
+    async def arun(self, task: str, **kwargs):
+        """Async run"""
+        pass
+
         """
         Run the autonomous agent loop
 
@@ -298,15 +339,17 @@ class Flow:
         4. If stopping condition is not met, generate a response
         5. Repeat until stopping condition is met or max_loops is reached
 
-        Example:
-        >>> out = flow.run("Generate a 10,000 word blog on health and wellness.")
-
         """
-        # Start with a new history or continue from the last saved state
-        if not self.memory or not self.memory[-1]:
-            history = [f"Human: {task}"]
-        else:
-            history = self.memory[-1]
+        # Restore from saved state if provided, ortherwise start with a new history
+        # if self.saved_state:
+        #     self.load_state(self.saved_state)
+        #     history = self.memory[-1]
+        #     print(f"Loaded state from {self.saved_state}")
+        # else:
+        #     history = [f"Human: {task}"]
+        #     self.memory.append(history)
+
+        print(colored(">>> Autonomous Agent Activated", "cyan", attrs=["bold"]))
 
         response = task
         history = [f"Human: {task}"]
@@ -315,12 +358,9 @@ class Flow:
         if self.dashboard:
             self.print_dashboard(task)
 
-        # Start or continue the loop process
-        for i in range(len(history), self.max_loops):
+        for i in range(self.max_loops):
             print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
             print("\n")
-            response = history[-1].split(": ", 1)[-1]  # Get the last response
-
             if self._check_stopping_condition(response) or parse_done_token(response):
                 break
 
@@ -332,8 +372,8 @@ class Flow:
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(
-                        self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
-                        ** kwargs,
+                        self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response),
+                        **kwargs,
                     )
                     # print(f"Next query: {response}")
                     # break
@@ -355,8 +395,8 @@ class Flow:
             time.sleep(self.loop_interval)
         self.memory.append(history)
 
-        # if save:
-        #     self.save_state("flow_history.json")
+        # if self.autosave:
+        #     self.save_state("flow_state.json")
 
         return response  # , history
 

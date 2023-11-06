@@ -264,7 +264,7 @@ Denote the social media's by using the social media name in HTML like tags
 {{ARTICLE}}
 """
 
-llm = OpenAIChat(openai_api_key="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")
+llm = OpenAIChat(openai_api_key="")
 
 
 def get_review_prompt(article):
