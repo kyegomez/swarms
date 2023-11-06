@@ -108,8 +108,13 @@ Here are three usage examples:
 
 ```python
 from swarms.structs import Flow
+# Select any Language model from the models folder
+from swarms.models import Mistral, OpenAIChat
 
-flow = Flow(llm=my_language_model, max_loops=5)
+llm = Mistral()
+# llm = OpenAIChat()
+
+flow = Flow(llm=llm, max_loops=5)
 
 # Define a starting task or message
 initial_task = "Generate an long form analysis on the transformer model architecture."
@@ -126,7 +131,7 @@ from swarms.structs import Flow
 def stop_when_repeats(response: str) -> bool:
     return "Stop" in response.lower()
 
-flow = Flow(llm=my_language_model, max_loops=5, stopping_condition=stop_when_repeats)
+flow = Flow(llm=llm, max_loops=5, stopping_condition=stop_when_repeats)
 ```
 
 ### Example 3: Interactive Conversation
@@ -134,7 +139,7 @@ flow = Flow(llm=my_language_model, max_loops=5, stopping_condition=stop_when_rep
 ```python
 from swarms.structs import Flow
 
-flow = Flow(llm=my_language_model, max_loops=5, interactive=True)
+flow = Flow(llm=llm, max_loops=5, interactive=True)
 
 # Provide initial task
 initial_task = "Rank and prioritize the following financial documents and cut out 30% of our expenses"

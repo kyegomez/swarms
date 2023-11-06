@@ -1,39 +1,16 @@
+from swarms.swarms import GodMode
 from swarms.models import OpenAIChat
 
-from swarms.swarms import GodMode
-from swarms.workers.worker import Worker
+api_key = ""
 
-llm = OpenAIChat(model_name="gpt-4", openai_api_key="api-key", temperature=0.5)
+llm = OpenAIChat(openai_api_key=api_key)
 
-worker1 = Worker(
-    llm=llm,
-    ai_name="Bumble Bee",
-    ai_role="Worker in a swarm",
-    external_tools=None,
-    human_in_the_loop=False,
-    temperature=0.5,
-)
-worker2 = Worker(
-    llm=llm,
-    ai_name="Optimus Prime",
-    ai_role="Worker in a swarm",
-    external_tools=None,
-    human_in_the_loop=False,
-    temperature=0.5,
-)
-worker3 = Worker(
-    llm=llm,
-    ai_name="Megatron",
-    ai_role="Worker in a swarm",
-    external_tools=None,
-    human_in_the_loop=False,
-    temperature=0.5,
-)
-# Usage
-agents = [worker1, worker2, worker3]
 
-god_mode = GodMode(agents)
+llms = [llm, llm, llm]
 
-task = "What are the biggest risks facing humanity?"
+god_mode = GodMode(llms)
 
+task = "Generate a 10,000 word blog on health and wellness."
+
+out = god_mode.run(task)
 god_mode.print_responses(task)
