@@ -92,6 +92,8 @@ nav:
       - BingChat: "swarms/models/bingchat.md"
       - Kosmos: "swarms/models/kosmos.md"
       - Nougat: "swarms/models/nougat.md"
+      - Dalle3: "swarms/models/dalle3.md"
+      - GPT4V: "swarms/models/gpt4v.md"
       - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
       - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
   - swarms.structs:
