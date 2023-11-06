@@ -1,4 +1,4 @@
-# GPT4Vision Documentation
+# `GPT4Vision` Documentation
 
 ## Table of Contents
 - [Overview](#overview)
