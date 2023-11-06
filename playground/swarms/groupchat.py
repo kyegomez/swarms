@@ -1,61 +1,49 @@
-from swarms.models import OpenAIChat
-from swarms.swarms import GroupChat, GroupChatManager
-from swarms.workers import Worker
+from swarms import OpenAI, Flow
+from swarms.swarms.groupchat import GroupChatManager, GroupChat
 
-llm = OpenAIChat(model_name="gpt-4", openai_api_key="api-key", temperature=0.5)
 
-node = Worker(
-    llm=llm,
-    ai_name="Optimus Prime",
-    ai_role="Worker in a swarm",
-    external_tools=None,
-    human_in_the_loop=False,
+api_key = ""
+
+llm = OpenAI(
+    openai_api_key=api_key,
     temperature=0.5,
+    max_tokens=3000,
 )
 
-node2 = Worker(
+# Initialize the flow
+flow1 = Flow(
     llm=llm,
-    ai_name="Optimus Prime",
-    ai_role="Worker in a swarm",
-    external_tools=None,
-    human_in_the_loop=False,
-    temperature=0.5,
+    max_loops=1,
+    system_message="YOU ARE SILLY, YOU OFFER NOTHING OF VALUE",
+    name="silly",
+    dashboard=True,
 )
-
-node3 = Worker(
+flow2 = Flow(
     llm=llm,
-    ai_name="Optimus Prime",
-    ai_role="Worker in a swarm",
-    external_tools=None,
-    human_in_the_loop=False,
-    temperature=0.5,
+    max_loops=1,
+    system_message="YOU ARE VERY SMART AND ANSWER RIDDLES",
+    name="detective",
+    dashboard=True,
+)
+flow3 = Flow(
+    llm=llm,
+    max_loops=1,
+    system_message="YOU MAKE RIDDLES",
+    name="riddler",
+    dashboard=True,
+)
+manager = Flow(
+    llm=llm,
+    max_loops=1,
+    system_message="YOU ARE A GROUP CHAT MANAGER",
+    name="manager",
+    dashboard=True,
 )
 
-nodes = [node, node2, node3]
 
-messages = [
-    {
-        "role": "system",
-        "context": "Create an a small feedforward in pytorch",
-    }
-]
+# Example usage:
+agents = [flow1, flow2, flow3]
 
-group = GroupChat(
-    workers=nodes,
-    messages=messages,
-    max_rounds=3,
-)
-
-
-manager = GroupChatManager(
-    groupchat=group,
-    max_consecutive_auto_reply=3,
-)
-
-output = group.run(
-    messages,
-    sender=node,
-    config=group,
-)
-
-print(output)
+group_chat = GroupChat(agents=agents, messages=[], max_round=10)
+chat_manager = GroupChatManager(groupchat=group_chat, selector=manager)
+chat_history = chat_manager("Write me a riddle")
