@@ -1,15 +1,14 @@
-import openai
 import logging
 import os
 from dataclasses import dataclass
-from functools import lru_cache
-from termcolor import colored
-from openai import OpenAI
-from dotenv import load_dotenv
-from pydantic import BaseModel, validator
-from PIL import Image
 from io import BytesIO
 
+import openai
+from dotenv import load_dotenv
+from openai import OpenAI
+from PIL import Image
+from pydantic import validator
+from termcolor import colored
 
 load_dotenv()
 
@@ -111,10 +110,10 @@ class Dalle3:
         try:
             # Making a call to the the Dalle3 API
             response = self.client.images.generate(
-                # model=self.model,
+                model=self.model,
                 prompt=task,
-                # size=self.size,
-                # quality=self.quality,
+                size=self.size,
+                quality=self.quality,
                 n=self.n,
             )
             # Extracting the image url from the response
