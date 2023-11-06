@@ -23,10 +23,10 @@ The Dalle3 library is a Python module that provides an easy-to-use interface for
 
 ## Installation<a name="installation"></a>
 
-To install the Dalle3 library, you can use pip:
+To use the Dalle3 model, you must first install swarms:
 
 ```bash
-pip install dalle3
+pip install swarms
 ```
 
 ---
