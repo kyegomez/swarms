@@ -24,7 +24,7 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
     """
     SubprocessCodeinterpreter is a base class for code interpreters that run code in a subprocess.
 
-    
+
     Attributes:
         start_cmd (str): The command to start the subprocess. Should be a string that can be split by spaces.
         process (subprocess.Popen): The subprocess that is running the code.
