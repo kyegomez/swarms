@@ -44,7 +44,7 @@ class Anthropic:
         top_p=None,
         streaming=False,
         default_request_timeout=None,
-        api_key: str = None
+        api_key: str = None,
     ):
         self.model = model
         self.max_tokens_to_sample = max_tokens_to_sample
