@@ -1,5 +1,5 @@
 from swarms import Workflow
-from swarms.tools.autogpt import ChatOpenAI
+from swarms.models import ChatOpenAI
 
 workflow = Workflow(ChatOpenAI)
 

@@ -105,12 +105,14 @@ class BioGPT:
         generator = pipeline(
             "text-generation", model=self.model, tokenizer=self.tokenizer
         )
-        return generator(
+        out = generator(
             text,
             max_length=self.max_length,
             num_return_sequences=self.num_return_sequences,
             do_sample=self.do_sample,
         )
+        
+        return out[0]['generated_text']
 
     def get_features(self, text):
         """
