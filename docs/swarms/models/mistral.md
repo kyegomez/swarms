@@ -1,4 +1,4 @@
-# Swarms Documentation
+# `Mistral` Documentation
 
 ## Table of Contents
 
@@ -133,9 +133,7 @@ Mistral provides two methods for running the model:
 The `run` method is used to generate text-based responses to a given task or input. It takes a single string parameter, `task`, and returns the generated text as a string.
 
 ```python
-def run
-
-(self, task: str) -> str:
+def run(self, task: str) -> str:
     """
     Run the model on a given task.
 
@@ -236,6 +234,8 @@ In this section, we provide practical examples to illustrate how to use Mistral 
 In this example, we initialize the Mistral AI agent with custom settings:
 
 ```python
+from swarms.models import Mistral
+
 model = Mistral(
     ai_name="My AI Assistant",
     device="cpu",
