@@ -53,7 +53,7 @@ The `BaseChunker` class is the core component of the `BaseChunker` module. It is
 
 #### Parameters:
 - `separators` (list[ChunkSeparator]): Specifies a list of `ChunkSeparator` objects used to split the text into chunks.
-- `tokenizer` (OpenAiTokenizer): Defines the tokenizer to be used for counting tokens in the text.
+- `tokenizer` (OpenAITokenizer): Defines the tokenizer to be used for counting tokens in the text.
 - `max_tokens` (int): Sets the maximum token limit for each chunk.
 
 ### 4.2. Examples <a name="examples"></a>

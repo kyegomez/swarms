@@ -116,6 +116,7 @@ class Flow:
         dynamic_temperature: bool = False,
         saved_state_path: Optional[str] = "flow_state.json",
         autosave: bool = False,
+        context_length: int = 8192,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -187,6 +188,26 @@ class Flow:
             )
 
         return "\n".join(params_str_list)
+
+    def truncate_history(self):
+        """
+        Take the history and truncate it to fit into the model context length
+        """
+        truncated_history = self.memory[-1][-self.context_length :]
+        self.memory[-1] = truncated_history
+
+    def add_task_to_memory(self, task: str):
+        """Add the task to the memory"""
+        self.memory.append([f"Human: {task}"])
+
+    def add_message_to_memory(self, message: str):
+        """Add the message to the memory"""
+        self.memory[-1].append(message)
+
+    def add_message_to_memory_and_truncate(self, message: str):
+        """Add the message to the memory and truncate"""
+        self.memory[-1].append(message)
+        self.truncate_history()
 
     def print_dashboard(self, task: str):
         """Print dashboard"""

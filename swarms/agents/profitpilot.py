@@ -16,7 +16,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from pydantic import BaseModel, Field
 from swarms.prompts.sales import SALES_AGENT_TOOLS_PROMPT, conversation_stages
-from swarms.tools.interpreter_tool import compile
 
 
 # classes
@@ -166,12 +165,7 @@ def get_tools(product_catalog):
             func=knowledge_base.run,
             description="useful for when you need to answer questions about product information",
         ),
-        # Interpreter
-        Tool(
-            name="Code Interepeter",
-            func=compile,
-            description="Useful when you need to run code locally, such as Python, Javascript, Shell, and more.",
-        )
+
         # omnimodal agent
     ]
 

@@ -29,6 +29,7 @@ sentencepiece
 duckduckgo-search
 agent-protocol
 chromadb
+tiktoken
 open-interpreter
 tabulate 
 colored
