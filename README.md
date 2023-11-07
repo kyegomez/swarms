@@ -83,35 +83,6 @@ out = flow.run("Generate a 10,000 word blog on health and wellness.")
 
 ```
 
-
-## `GodMode`
-- A powerful tool for concurrent execution of tasks using multiple Language Model (LLM) instances.
-
-```python
-from swarms.swarms import GodMode
-from swarms.models import OpenAIChat
-
-api_key = ""
-
-llm = OpenAIChat(
-    openai_api_key=api_key
-)
-
-
-llms = [
-    llm,
-    llm,
-    llm
-]
-
-god_mode = GodMode(llms)
-
-task = 'Generate a 10,000 word blog on health and wellness.'
-
-out = god_mode.run(task)
-god_mode.print_responses(task)
-```
-
 ------
 
 ### `SequentialWorkflow`
@@ -159,22 +130,6 @@ for task in workflow.tasks:
 
 ```
 
-### `OmniModalAgent`
-- OmniModal Agent is an LLM that access to 10+ multi-modal encoders and diffusers! It can generate images, videos, speech, music and so much more, get started with:
-
-```python
-from swarms.models import OpenAIChat
-from swarms.agents import OmniModalAgent
-
-api_key = "SK-"
-
-llm = OpenAIChat(model_name="gpt-4", openai_api_key=api_key)
-
-agent = OmniModalAgent(llm)
-
-agent.run("Create a video of a swarm of fish")
-
-```
 
 ---
 
@@ -183,8 +138,7 @@ agent.run("Create a video of a swarm of fish")
 
 
 ## Contribute
-
-We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1)
+- We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1)
 
 
 # License
