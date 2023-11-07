@@ -39,7 +39,7 @@ class Zephyr:
         self.pipe = pipeline(
             "text-generation",
             model="HuggingFaceH4/zephyr-7b-alpha",
-            torch_dtype=torch.bfloa16,
+            torch_dtype=torch.bfloat16,
             device_map="auto",
         )
         self.messages = [
