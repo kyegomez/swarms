@@ -73,7 +73,7 @@ from swarms.models import Anthropic
 
 # Initialize an instance of the Anthropic class
 model = Anthropic(
-    anthropic_api_key="sk-"
+    anthropic_api_key=""
 )
 
 # Using the run method
