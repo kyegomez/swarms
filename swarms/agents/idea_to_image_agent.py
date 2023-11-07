@@ -1,7 +1,7 @@
 import os
 import logging
 from dataclasses import dataclass
-from playground.models.dalle3 import Dalle
+from swarms.models.dalle3 import Dalle
 from swarms.models import OpenAIChat
 
 
