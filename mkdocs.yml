@@ -69,13 +69,11 @@ nav:
     - GodMode: "swarms/swarms/godmode.md"
     - Groupchat: "swarms/swarms/groupchat.md"
   - swarms.workers:
-    - AbstractWorker: "swarms/workers/base.md"
     - Overview: "swarms/workers/index.md"
     - AbstractWorker: "swarms/workers/abstract_worker.md"
   - swarms.agents:
     - AbstractAgent: "swarms/agents/abstract_agent.md"
     - OmniModalAgent: "swarms/agents/omni_agent.md"
-    - Idea2Image: "swarms/agents/idea_to_image.md"
   - swarms.models:
     - Language:  
       - Overview: "swarms/models/index.md"
@@ -85,6 +83,7 @@ nav:
       - Zephyr: "swarms/models/zephyr.md"
       - BioGPT: "swarms/models/biogpt.md"
       - MPT7B: "swarms/models/mpt.md"
+      - Mistral: "swarms/models/mistral.md"
     - MultiModal:
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"
