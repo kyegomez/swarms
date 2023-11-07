@@ -15,3 +15,10 @@ class MarkdownChunker(BaseChunker):
         ChunkSeparator("? "),
         ChunkSeparator(" "),
     ]
+
+
+# # Example using chunker to chunk a markdown file
+# file = open("README.md", "r")
+# text = file.read()
+# chunker = MarkdownChunker()
+# chunks = chunker.chunk(text)

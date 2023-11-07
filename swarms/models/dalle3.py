@@ -129,7 +129,7 @@ class Dalle3:
                 )
             )
             raise error
-    
+
     def create_variations(self, img: str):
         """
         Create variations of an image using the Dalle3 API
@@ -151,14 +151,11 @@ class Dalle3:
         >>> img = dalle3.create_variations(img)
         >>> print(img)
 
-        
+
         """
         try:
-
             response = self.client.images.create_variation(
-                img = open(img, "rb"),
-                n=self.n,
-                size=self.size
+                img=open(img, "rb"), n=self.n, size=self.size
             )
             img = response.data[0].url
 

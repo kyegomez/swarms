@@ -10,3 +10,10 @@ class PdfChunker(BaseChunker):
         ChunkSeparator("? "),
         ChunkSeparator(" "),
     ]
+
+
+# # Example
+# pdf = "swarmdeck.pdf"
+# chunker = PdfChunker()
+# chunks = chunker.chunk(pdf)
+# print(chunks)

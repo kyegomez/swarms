@@ -3,7 +3,7 @@ from swarms.chunkers.base import (
     BaseChunker,
     TextArtifact,
     ChunkSeparator,
-    OpenAiTokenizer,
+    OpenAITokenizer,
 )  # adjust the import paths accordingly
 
 
@@ -21,7 +21,7 @@ def test_default_separators():
 
 def test_default_tokenizer():
     chunker = BaseChunker()
-    assert isinstance(chunker.tokenizer, OpenAiTokenizer)
+    assert isinstance(chunker.tokenizer, OpenAITokenizer)
 
 
 # 2. Test Basic Chunking

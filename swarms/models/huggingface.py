@@ -74,7 +74,9 @@ class HuggingfaceLLM:
             bnb_config = BitsAndBytesConfig(**quantization_config)
 
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, *args, **kwargs)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_id, *args, **kwargs
+            )
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id, quantization_config=bnb_config, *args, **kwargs
             )
@@ -162,7 +164,12 @@ class HuggingfaceLLM:
             del inputs
             return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         except Exception as e:
-            print(colored(f"HuggingfaceLLM could not generate text because of error: {e}, try optimizing your arguments", "red"))
+            print(
+                colored(
+                    f"HuggingfaceLLM could not generate text because of error: {e}, try optimizing your arguments",
+                    "red",
+                )
+            )
             raise
 
     async def run_async(self, task: str, *args, **kwargs) -> str:

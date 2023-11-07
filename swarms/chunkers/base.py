@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 from abc import ABC
 from typing import Optional
-from attr import define, field, Factory
+
+from attr import Factory, define, field
 from griptape.artifacts import TextArtifact
-from swarms.chunkers.chunk_seperators import ChunkSeparator
-from griptape.tokenizers import OpenAiTokenizer
+
+from swarms.chunkers.chunk_seperator import ChunkSeparator
+from swarms.models.openai_tokenizer import OpenAITokenizer
 
 
 @define
@@ -16,6 +19,24 @@ class BaseChunker(ABC):
 
     Usage:
     --------------
+    from swarms.chunkers.base import BaseChunker
+    from swarms.chunkers.chunk_seperator import ChunkSeparator
+
+    class PdfChunker(BaseChunker):
+        DEFAULT_SEPARATORS = [
+            ChunkSeparator("\n\n"),
+            ChunkSeparator(". "),
+            ChunkSeparator("! "),
+            ChunkSeparator("? "),
+            ChunkSeparator(" "),
+        ]
+
+    # Example
+    pdf = "swarmdeck.pdf"
+    chunker = PdfChunker()
+    chunks = chunker.chunk(pdf)
+    print(chunks)
+
 
 
     """
@@ -26,10 +47,10 @@ class BaseChunker(ABC):
         default=Factory(lambda self: self.DEFAULT_SEPARATORS, takes_self=True),
         kw_only=True,
     )
-    tokenizer: OpenAiTokenizer = field(
+    tokenizer: OpenAITokenizer = field(
         default=Factory(
-            lambda: OpenAiTokenizer(
-                model=OpenAiTokenizer.DEFAULT_OPENAI_GPT_3_CHAT_MODEL
+            lambda: OpenAITokenizer(
+                model=OpenAITokenizer.DEFAULT_OPENAI_GPT_3_CHAT_MODEL
             )
         ),
         kw_only=True,
@@ -47,7 +68,7 @@ class BaseChunker(ABC):
     def _chunk_recursively(
         self, chunk: str, current_separator: Optional[ChunkSeparator] = None
     ) -> list[str]:
-        token_count = self.tokenizer.token_count(chunk)
+        token_count = self.tokenizer.count_tokens(chunk)
 
         if token_count <= self.max_tokens:
             return [chunk]
