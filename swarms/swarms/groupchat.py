@@ -47,7 +47,7 @@ Then select the next role from {self.agent_names} to play. Only return the role.
 
     def select_speaker(self, last_speaker: Flow, selector: Flow):
         """Select the next speaker."""
-        selector.update_system_message(self.select_speaker_msg())
+        selector.update_system_prompt(self.select_speaker_msg())
 
         # Warn if GroupChat is underpopulated, without established changing behavior
         n_agents = len(self.agent_names)
@@ -71,7 +71,7 @@ Then select the next role from {self.agent_names} to play. Only return the role.
             return self.next_agent(last_speaker)
 
     def _participant_roles(self):
-        return "\n".join([f"{agent.name}: {agent.system_message}" for agent in self.agents])
+        return "\n".join([f"{agent.name}: {agent.system_prompt}" for agent in self.agents])
 
     def format_history(self, messages: List[Dict]) -> str:
         formatted_messages = []

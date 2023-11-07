@@ -110,7 +110,7 @@ class Flow:
         retry_interval: int = 1,
         interactive: bool = False,
         dashboard: bool = False,
-        name: str = "Flow agent",
+        name: str = "Flow-agent",
         system_prompt: str = FLOW_SYSTEM_PROMPT,
         # tools: List[BaseTool] = None,
         dynamic_temperature: bool = False,
@@ -757,11 +757,10 @@ class Flow:
         """
         Generate a response based on initial or task
         """
-        prompt = f"""
+        prompt = f"""SYSTEM_PROMPT: {self.system_prompt}
 
-        SYSTEM_PROMPT: {self.system_prompt}
-
-        History: {history}
+        History: 
+        {history}
 
         Your response:
         """

@@ -6,7 +6,6 @@ from typing import Optional
 import pandas as pd
 import torch
 from langchain.agents import tool
-from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
 from langchain.chains.qa_with_sources.loading import (
     BaseCombineDocumentsChain,
 )
@@ -44,19 +43,7 @@ def process_csv(
  Only use this after writing data to disk as a csv file.\
  Any figures must be saved to disk to be viewed by the human.\
  Instructions should be written in natural language, not code. Assume the dataframe is already loaded."""
-    with pushd(ROOT_DIR):
-        try:
-            df = pd.read_csv(csv_file_path)
-        except Exception as e:
-            return f"Error: {e}"
-        agent = create_pandas_dataframe_agent(llm, df, max_iterations=30, verbose=False)
-        if output_path is not None:
-            instructions += f" Save output to disk at {output_path}"
-        try:
-            result = agent.run(instructions)
-            return result
-        except Exception as e:
-            return f"Error: {e}"
+    return 0
 
 
 async def async_load_playwright(url: str) -> str:

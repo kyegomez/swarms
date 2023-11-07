@@ -1,167 +1,135 @@
-# Swarms Framework Documentation
+# Group Chat Module Documentation
+
+## Introduction
+
+The Swarms library is designed to orchestrate conversational agents powered by machine learning models, particularly large language models (LLMs) like the ones provided by OpenAI. These agents can engage in various types of interactions such as casual dialogues, problem-solving, and creative tasks like riddle generation. This documentation covers the `Flow` and `GroupChat` modules, which are fundamental parts of the Swarms library, allowing users to create and manage the flow of conversations between multiple agents and end-users.
+
+The `Flow` class serves as a wrapper around the OpenAI's LLM, adding additional context and control to the interaction process. On the other hand, the `GroupChat` and `GroupChatManager` classes are responsible for managing a multi-agent conversation environment where each agent can contribute to the discussion based on its specialized role or functionality.
 
 ---
 
-## Overview
+## Module Overview
 
-The Swarms framework is a Python library designed to facilitate the creation and management of a simulated group chat environment. This environment can be used for a variety of purposes, such as training conversational agents, role-playing games, or simulating dialogues for machine learning purposes. The core functionality revolves around managing the flow of messages between different agents within the chat, as well as handling the selection and responses of these agents based on the conversation's context.
 
-### Purpose
+### GroupChat Class
 
-The purpose of the Swarms framework, and specifically the `GroupChat` and `GroupChatManager` classes, is to simulate a dynamic and interactive conversation between multiple agents. This simulates a real-time chat environment where each participant is represented by an agent with a specific role and behavioral patterns. These agents interact within the rules of the group chat, controlled by the `GroupChatManager`.
+The `GroupChat` class orchestrates a conversation involving multiple agents. It allows for the aggregation of messages from different agents and manages the conversational rounds.
 
-### Key Features
+#### Parameters for GroupChat
 
-- **Agent Interaction**: Allows multiple agents to communicate within a group chat scenario.
-- **Message Management**: Handles the storage and flow of messages within the group chat.
-- **Role Play**: Enables agents to assume specific roles and interact accordingly.
-- **Conversation Context**: Maintains the context of the conversation for appropriate responses by agents.
-
----
-
-## GroupChat Class
-
-The `GroupChat` class is the backbone of the Swarms framework's chat simulation. It maintains the list of agents participating in the chat, the messages that have been exchanged, and the logic to reset the chat and determine the next speaker.
-
-### Class Definition
-
-#### Parameters
-
-| Parameter  | Type                | Description                                                  | Default Value |
-|------------|---------------------|--------------------------------------------------------------|---------------|
-| agents     | List[Flow]          | List of agent flows participating in the group chat.         | None          |
-| messages   | List[Dict]          | List of message dictionaries exchanged in the group chat.    | None          |
-| max_round  | int                 | Maximum number of rounds/messages allowed in the group chat. | 10            |
-| admin_name | str                 | The name of the admin agent in the group chat.               | "Admin"       |
-
-#### Class Properties and Methods
-
-- `agent_names`: Returns a list of the names of the agents in the group chat.
-- `reset()`: Clears all messages from the group chat.
-- `agent_by_name(name: str) -> Flow`: Finds and returns an agent by name.
-- `next_agent(agent: Flow) -> Flow`: Returns the next agent in the list.
-- `select_speaker_msg() -> str`: Returns the message for selecting the next speaker.
-- `select_speaker(last_speaker: Flow, selector: Flow) -> Flow`: Logic to select the next speaker based on the last speaker and the selector agent.
-- `_participant_roles() -> str`: Returns a string listing all participant roles.
-- `format_history(messages: List[Dict]) -> str`: Formats the history of messages for display or processing.
-
-### Usage Examples
-
-#### Example 1: Initializing a GroupChat
-
-```python
-from swarms.structs.flow import Flow
-from swarms.groupchat import GroupChat
-
-# Assuming Flow objects (flow1, flow2, flow3) are initialized and configured
-agents = [flow1, flow2, flow3]
-group_chat = GroupChat(agents=agents, messages=[], max_round=10)
-```
-
-#### Example 2: Resetting a GroupChat
-
-```python
-group_chat.reset()
-```
-
-#### Example 3: Selecting a Speaker
-
-```python
-last_speaker = agents[0]  # Assuming this is a Flow object representing the last speaker
-selector = agents[1]  # Assuming this is a Flow object with the selector role
-
-next_speaker = group_chat.select_speaker(last_speaker, selector)
-```
+| Parameter   | Type          | Description                                         | Default Value |
+|-------------|---------------|-----------------------------------------------------|---------------|
+| agents      | list of Flow  | A list of `Flow` instances participating in the chat.| Required      |
+| messages    | list of str   | A list of pre-existing messages in the conversation.| []            |
+| max_round   | int           | The maximum number of rounds in the group chat.     | 10            |
 
 ---
 
-## GroupChatManager Class
+### GroupChatManager Class
 
-The `GroupChatManager` class acts as a controller for the `GroupChat` instance. It orchestrates the interaction between agents, prompts for tasks, and manages the rounds of conversation.
+The `GroupChatManager` handles the interaction between the group chat and an external agent, in this case, a manager. It determines which agent should respond in the group chat.
 
-### Class Definition
+#### Parameters for GroupChatManager
 
-#### Constructor Parameters
+| Parameter   | Type          | Description                                         | Default Value |
+|-------------|---------------|-----------------------------------------------------|---------------|
+| groupchat   | GroupChat     | An instance of the `GroupChat` class to be managed. | Required      |
+| selector    | Flow          | The manager agent that oversees the group chat.     | Required      |
 
-| Parameter  | Type        | Description                                          |
-|------------|-------------|------------------------------------------------------|
-| groupchat  | GroupChat   | The GroupChat instance that the manager will handle. |
-| selector   | Flow        | The Flow object that selects the next speaker.       |
+---
 
-#### Methods
+## Detailed Functionality and Usage
 
-- `__call__(task: str)`: Invokes the GroupChatManager with a given task string to start the conversation.
+### Flow Class Functionality
 
-### Usage Examples
+The `Flow` class encapsulates the behavior of a single conversational agent. It interfaces with an OpenAI LLM to generate responses based on the `system_message` which sets the context, personality, or role for the agent. The `max_loops` parameter limits the number of times the agent will interact within a single conversational instance. The `name` parameter serves as an identifier, and the `dashboard` parameter allows for monitoring the conversation flow visually when set to `True`.
 
-#### Example 1: Initializing GroupChatManager
+#### Usage Example for Flow
 
 ```python
-from swarms.groupchat import GroupChat, GroupChatManager
-from swarms.structs.flow import Flow
+from swarms import Flow, OpenAI
 
-# Initialize your agents and group chat as shown in previous examples
-chat_manager = GroupChatManager(groupchat=group_chat, selector=manager)
+# Initialize the OpenAI instance with the required API key and parameters
+llm = OpenAI(
+    openai_api_key="your-api-key",
+    temperature=0.5,
+    max_tokens=3000,
+)
+
+# Create a Flow instance representing a "silly" character
+silly_flow = Flow(
+    llm=llm,
+    max_loops=1,
+    system_message="YOU ARE SILLY, YOU OFFER NOTHING OF VALUE",
+    name='silly',
+    dashboard=True,
+)
+
+# Use the Flow instance to get a response
+response = silly_flow("Tell me a joke")
+print(response)
 ```
 
-#### Example 2: Starting a Conversation
+### GroupChat Class Functionality
+
+The `GroupChat` class manages a collection of `Flow` instances representing different agents. It orchestrates the conversation flow, ensuring each agent contributes to the conversation based on the `max_round` limit. The `messages` parameter can hold a historical list of all messages that have been part of the group chat conversation.
+
+#### Usage Example for GroupChat
 
 ```python
-# Start the group chat with a task
-chat_history = chat_manager("Start a conversation about space exploration.")
+from swarms import Flow, OpenAI
+from swarms.swarms.groupchat import GroupChat
+
+# Assuming llm and Flow instances have been initialized as shown above
+
+# Initialize the group chat
+
+ with multiple agents
+group_chat = GroupChat(agents=[silly_flow, detective_flow, riddler_flow], messages=[], max_round=10)
+
+# Simulate a round of conversation
+for _ in range(10):
+    message = input("User: ")
+    response = group_chat.respond(message)
+    print(f"Group Chat: {response}")
 ```
 
-#### Example 3: Using the Call Method
+### GroupChatManager Class Functionality
+
+The `GroupChatManager` class takes a `GroupChat` instance and a managing `Flow` instance (selector) and controls the selection process of which agent should respond at each step of the group chat conversation.
+
+#### Usage Example for GroupChatManager
 
 ```python
-# The call method is the same as starting a conversation
-chat_history = chat_manager.__call__("Discuss recent advances in AI.")
+from swarms import Flow, OpenAI
+from swarms.swarms.groupchat import GroupChat, GroupChatManager
+
+# Initialize the llm, Flow, and GroupChat instances as previously described
+
+# Create the GroupChatManager instance
+chat_manager = GroupChatManager(groupchat=group_chat, selector=manager_flow)
+
+# Start the group chat managed conversation
+chat_history = chat_manager.start_conversation("Write me a riddle")
+print(chat_history)
 ```
 
 ---
 
-## Conclusion
+## Additional Information and Tips
 
-In summary, the Swarms framework offers a unique and effective solution for simulating group chat environments. Its `GroupChat` and `GroupChatManager` classes provide the necessary infrastructure to create dynamic conversations between agents, manage messages, and maintain the context of the dialogue. This framework can be instrumental in developing more sophisticated conversational agents, experimenting with social dynamics in chat environments, and providing a rich dataset for machine learning applications.
-
-By leveraging the framework's features, users can create complex interaction scenarios that closely mimic real-world group communication. This can prove to be a valuable asset in the fields of artificial intelligence, computational social science, and beyond.
+- When creating `Flow` instances, make sure the `system_message` aligns with the intended behavior or personality of the agent to ensure consistent interactions.
+- The `max_loops` parameter in `Flow` and `max_round` in `GroupChat` are critical for controlling the length of interactions and should be set according to the expected conversation complexity.
+- The `dashboard` parameter in `Flow` is useful for debugging and visualizing the agent's behavior during development but might not be needed in a production environment.
+- Keep the `openai_api_key` secure and do not expose it in publicly accessible code.
 
 ---
 
-### Frequently Asked Questions (FAQ)
+## References and Further Reading
 
-**Q: Can the Swarms framework handle real-time interactions between agents?**
+- OpenAI API documentation: [OpenAI API](https://beta.openai.com/docs/)
+- PyTorch documentation for modules and classes: [PyTorch Docs](https://pytorch.org/docs/stable/index.html)
 
-A: The Swarms framework is designed to simulate group chat environments. While it does not handle real-time interactions as they would occur on a network, it can simulate the flow of conversation in a way that mimics real-time communication.
+---
 
-**Q: Is the Swarms framework capable of natural language processing?**
-
-A: The framework itself is focused on the structure and management of group chats. It does not inherently include natural language processing (NLP) capabilities. However, it can be integrated with NLP tools to enhance the simulation with language understanding and generation features.
-
-**Q: Can I customize the roles and behaviors of agents within the framework?**
-
-A: Yes, the framework is designed to be flexible. You can define custom roles and behaviors for agents to fit the specific requirements of your simulation scenario.
-
-**Q: What are the limitations of the Swarms framework?**
-
-A: The framework is constrained by its design to simulate text-based group chats. It is not suitable for voice or video communication simulations. Additionally, its effectiveness depends on the sophistication of the agents’ decision-making logic, which is outside the framework itself.
-
-**Q: Is it possible to integrate the Swarms framework with other chat services?**
-
-A: The framework is can be integrated with any chat services. However, it could potentially be adapted to work with chat service APIs, where the agents could be used to simulate user behavior within a real chat application.
-
-**Q: How does the `GroupChatManager` select the next speaker?**
-
-A: The `GroupChatManager` uses a selection mechanism, which is typically based on the conversation's context and the roles of the agents, to determine the next speaker. The specifics of this mechanism can be customized to match the desired flow of the conversation.
-
-**Q: Can I contribute to the Swarms framework or suggest features?**
-
-A: As with many open-source projects, contributions and feature suggestions can usually be made through the project's repository on platforms like GitHub. It's best to check with the maintainers of the Swarms framework for their contribution guidelines.
-
-**Q: Are there any tutorials or community support for new users of the Swarms framework?**
-
-A: Documentation and usage examples are provided with the framework. Community support may be available through forums, chat groups, or the platform where the framework is hosted. Tutorials may also be available from third-party educators or in official documentation.
-
-**Q: What programming skills do I need to use the Swarms framework effectively?**
-
-A: You should have a good understanding of Python programming, including experience with classes and methods. Familiarity with the principles of agent-based modeling and conversational AI would also be beneficial.
+Please note that the given examples are simplified and the actual implementation details like error handling, API request management, and concurrency considerations need to be addressed in production code. The provided API key should be kept confidential and used in accordance with the terms of service of the API provider.
