@@ -44,6 +44,7 @@ class Anthropic:
         top_p=None,
         streaming=False,
         default_request_timeout=None,
+        api_key: str = None
     ):
         self.model = model
         self.max_tokens_to_sample = max_tokens_to_sample
@@ -56,6 +57,7 @@ class Anthropic:
             "ANTHROPIC_API_URL", "https://api.anthropic.com"
         )
         self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        self.api_key = api_key
 
     def _default_params(self):
         """Get the default parameters for calling Anthropic API."""
@@ -73,9 +75,10 @@ class Anthropic:
 
     def run(self, task: str, stop=None):
         """Call out to Anthropic's completion endpoint."""
+        api_key = self.api_key or self.anthropic_api_key
         stop = stop or []
         params = self._default_params()
-        headers = {"Authorization": f"Bearer {self.anthropic_api_key}"}
+        headers = {"Authorization": f"Bearer {api_key}"}
         data = {"prompt": task, "stop_sequences": stop, **params}
         response = requests.post(
             f"{self.anthropic_api_url}/completions",
