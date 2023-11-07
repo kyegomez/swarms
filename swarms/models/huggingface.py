@@ -23,7 +23,7 @@ class HuggingfaceLLM:
     ```
     from swarms.models import HuggingfaceLLM
 
-    model_id = "gpt2-small"
+    model_id = "NousResearch/Yarn-Mistral-7b-128k"
     inference = HuggingfaceLLM(model_id=model_id)
 
     task = "Once upon a time"
@@ -74,15 +74,22 @@ class HuggingfaceLLM:
             bnb_config = BitsAndBytesConfig(**quantization_config)
 
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_id, *args, **kwargs
+            )
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id, quantization_config=bnb_config
+                self.model_id, quantization_config=bnb_config, *args, **kwargs
             )
 
             self.model  # .to(self.device)
         except Exception as e:
-            self.logger.error(f"Failed to load the model or the tokenizer: {e}")
-            raise
+            # self.logger.error(f"Failed to load the model or the tokenizer: {e}")
+            # raise
+            print(colored(f"Failed to load the model and or the tokenizer: {e}", "red"))
+
+    def print_error(self, error: str):
+        """Print error"""
+        print(colored(f"Error: {error}", "red"))
 
     def load_model(self):
         """Load the model"""
@@ -157,7 +164,12 @@ class HuggingfaceLLM:
             del inputs
             return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         except Exception as e:
-            self.logger.error(f"Failed to generate the text: {e}")
+            print(
+                colored(
+                    f"HuggingfaceLLM could not generate text because of error: {e}, try optimizing your arguments",
+                    "red",
+                )
+            )
             raise
 
     async def run_async(self, task: str, *args, **kwargs) -> str:
@@ -294,7 +306,7 @@ class HuggingfaceLLM:
         )
 
         print(dashboard)
-    
+
     def set_device(self, device):
         """
         Changes the device used for inference.

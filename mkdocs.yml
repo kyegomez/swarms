@@ -61,26 +61,13 @@ nav:
 - Home:
     - Overview: "index.md"
     - Contributing: "contributing.md"
-    - FAQ: "faq.md"
-    - Purpose: "purpose.md"
-    - Roadmap: "roadmap.md"
-    - Weaknesses: "failures.md"
-    - Design: "design.md"
-    - Flywheel: "flywheel.md"
-    - Bounties: "bounties.md"
-    - Metric: "metric.md"
-    - Distribution: "distribution"
-    - Research: "research.md"
-    - Demos: "demos.md"
-    - Architecture: "architecture.md"
-    - Checklist: "checklist.md"
-    - Hiring: "hiring.md"
 - Swarms:
   - Overview: "swarms/index.md"
   - swarms.swarms:
     - AbstractSwarm: "swarms/swarms/abstractswarm.md"
     - AutoScaler: "swarms/swarms/autoscaler.md"
     - GodMode: "swarms/swarms/godmode.md"
+    - Groupchat: "swarms/swarms/groupchat.md"
   - swarms.workers:
     - AbstractWorker: "swarms/workers/base.md"
     - Overview: "swarms/workers/index.md"
@@ -105,28 +92,45 @@ nav:
       - BingChat: "swarms/models/bingchat.md"
       - Kosmos: "swarms/models/kosmos.md"
       - Nougat: "swarms/models/nougat.md"
+      - Dalle3: "swarms/models/dalle3.md"
+      - GPT4V: "swarms/models/gpt4v.md"
       - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
+      - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - Workflow: "swarms/structs/workflow.md"
     - Flow: "swarms/structs/flow.md"
+    - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
   - swarms.memory:
     - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
   - swarms.chunkers: 
     - BaseChunker: "swarms/chunkers/basechunker.md"
     - PdfChunker: "swarms/chunkers/pdf_chunker.md"
-- Walkthroughs:
+- Guides:
     - Overview: "examples/index.md"
-    - Structs:
-      - Flow: "examples/flow.md"
     - Agents:
+      - Flow: "examples/flow.md"
+      - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
       - OmniAgent: "examples/omni_agent.md"
-    - Worker: 
-      - Basic: "examples/worker.md"
-      - StackedWorker: "examples/stacked_worker.md"
+    - 2O+ Autonomous Agent Blogs: "examples/ideas.md"
 - Applications:
     - CustomerSupport: 
       - Overview: "applications/customer_support.md"
     - Marketing: 
       - Overview: "applications/marketing_agencies.md" 
+- Corporate:
+    - FAQ: "corporate/faq.md"
+    - Purpose: "corporate/purpose.md"
+    - Roadmap: "corporate/roadmap.md"
+    - Weaknesses: "corporate/failures.md"
+    - Design: "corporate/design.md"
+    - Flywheel: "corporate/flywheel.md"
+    - Bounties: "corporate/bounties.md"
+    - Metric: "corporate/metric.md"
+    - Distribution: "corporate/distribution"
+    - Research: "corporate/research.md"
+    - Demos: "corporate/demos.md"
+    - Architecture: "corporate/architecture.md"
+    - Checklist: "corporate/checklist.md"
+    - Hiring: "corporate/hiring.md"

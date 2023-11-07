@@ -52,7 +52,7 @@ The `PdfChunker` class is the core component of the `PdfChunker` module. It is u
 
 #### Parameters:
 - `separators` (list[ChunkSeparator]): Specifies a list of `ChunkSeparator` objects used to split the PDF text content into chunks.
-- `tokenizer` (OpenAiTokenizer): Defines the tokenizer used for counting tokens in the text.
+- `tokenizer` (OpenAITokenizer): Defines the tokenizer used for counting tokens in the text.
 - `max_tokens` (int): Sets the maximum token limit for each chunk.
 
 ### 4.2. Examples <a name="examples"></a>

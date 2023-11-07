@@ -17,6 +17,11 @@ from swarms.models.vilt import Vilt
 from swarms.models.nougat import Nougat
 from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
 
+# from swarms.models.gpt4v import GPT4Vision
+# from swarms.models.dalle3 import Dalle3
+
+# from swarms.models.distilled_whisperx import DistilWhisperModel
+
 # from swarms.models.fuyu import Fuyu # Not working, wait until they update
 import sys
 
@@ -41,4 +46,6 @@ __all__ = [
     "HuggingfaceLLM",
     "MPT7B",
     "WizardLLMStoryTeller",
+    # "GPT4Vision",
+    # "Dalle3",
 ]

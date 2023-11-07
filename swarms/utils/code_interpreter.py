@@ -25,6 +25,15 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
     SubprocessCodeinterpreter is a base class for code interpreters that run code in a subprocess.
 
 
+    Attributes:
+        start_cmd (str): The command to start the subprocess. Should be a string that can be split by spaces.
+        process (subprocess.Popen): The subprocess that is running the code.
+        debug_mode (bool): Whether to print debug statements.
+        output_queue (queue.Queue): A queue that is filled with output from the subprocess.
+        done (threading.Event): An event that is set when the subprocess is done running code.
+
+    Example:
+    >>> from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 
     """
 
