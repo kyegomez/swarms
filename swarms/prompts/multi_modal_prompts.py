@@ -1,4 +1,7 @@
-ERROR_PROMPT = "An error has occurred for the following text: \n{promptedQuery} Please explain this error.\n {e}"
+ERROR_PROMPT = (
+    "An error has occurred for the following text: \n{promptedQuery} Please explain"
+    " this error.\n {e}"
+)
 
 IMAGE_PROMPT = """
 provide a figure named {filename}. The description is: {description}.

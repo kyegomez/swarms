@@ -181,8 +181,8 @@ def VQAinference(self, inputs):
     answer = processor.decode(out[0], skip_special_tokens=True)
 
     logger.debug(
-        f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input Question: {question}, "
-        f"Output Answer: {answer}"
+        f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input"
+        f" Question: {question}, Output Answer: {answer}"
     )
 
     return answer

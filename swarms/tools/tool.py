@@ -121,10 +121,10 @@ class ChildTool(BaseTool):
                 name = cls.__name__
                 raise SchemaAnnotationError(
                     f"Tool definition for {name} must include valid type annotations"
-                    f" for argument 'args_schema' to behave as expected.\n"
-                    f"Expected annotation of 'Type[BaseModel]'"
+                    " for argument 'args_schema' to behave as expected.\n"
+                    "Expected annotation of 'Type[BaseModel]'"
                     f" but got '{args_schema_type}'.\n"
-                    f"Expected class looks like:\n"
+                    "Expected class looks like:\n"
                     f"{typehint_mandate}"
                 )
 
@@ -353,7 +353,7 @@ class ChildTool(BaseTool):
                 observation = self.handle_tool_error(e)
             else:
                 raise ValueError(
-                    f"Got unexpected type of `handle_tool_error`. Expected bool, str "
+                    "Got unexpected type of `handle_tool_error`. Expected bool, str "
                     f"or callable. Received: {self.handle_tool_error}"
                 )
             run_manager.on_tool_end(
@@ -428,7 +428,7 @@ class ChildTool(BaseTool):
                 observation = self.handle_tool_error(e)
             else:
                 raise ValueError(
-                    f"Got unexpected type of `handle_tool_error`. Expected bool, str "
+                    "Got unexpected type of `handle_tool_error`. Expected bool, str "
                     f"or callable. Received: {self.handle_tool_error}"
                 )
             await run_manager.on_tool_end(
@@ -492,8 +492,7 @@ class Tool(BaseTool):
         all_args = list(args) + list(kwargs.values())
         if len(all_args) != 1:
             raise ToolException(
-                f"Too many arguments to single-input tool {self.name}."
-                f" Args: {all_args}"
+                f"Too many arguments to single-input tool {self.name}. Args: {all_args}"
             )
         return tuple(all_args), {}
 

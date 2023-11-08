@@ -75,7 +75,8 @@ class OpenAI:
             except openai_model.error.RateLimitError as e:
                 sleep_duratoin = os.environ.get("OPENAI_RATE_TIMEOUT", 30)
                 print(
-                    f"{str(e)}, sleep for {sleep_duratoin}s, set it by env OPENAI_RATE_TIMEOUT"
+                    f"{str(e)}, sleep for {sleep_duratoin}s, set it by env"
+                    " OPENAI_RATE_TIMEOUT"
                 )
                 time.sleep(sleep_duratoin)
 

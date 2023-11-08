@@ -19,7 +19,8 @@ class Registry(BaseModel):
     def build(self, type: str, **kwargs):
         if type not in self.entries:
             raise ValueError(
-                f'{type} is not registered. Please register with the .register("{type}") method provided in {self.name} registry'
+                f"{type} is not registered. Please register with the"
+                f' .register("{type}") method provided in {self.name} registry'
             )
         return self.entries[type](**kwargs)
 
