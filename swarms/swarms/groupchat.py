@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Dict, List
 from swarms.structs.flow import Flow
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -34,7 +33,8 @@ class GroupChat:
 
     def next_agent(self, agent: Flow) -> Flow:
         """Return the next agent in the list."""
-        return self.agents[(self.agent_names.index(agent.name) + 1) % len(self.agents)]
+        return self.agents[(self.agent_names.index(agent.name) + 1) %
+                           len(self.agents)]
 
     def select_speaker_msg(self):
         """Return the message for selecting the next speaker."""
@@ -55,24 +55,17 @@ class GroupChat:
         if n_agents < 3:
             logger.warning(
                 f"GroupChat is underpopulated with {n_agents} agents. Direct"
-                " communication would be more efficient."
-            )
+                " communication would be more efficient.")
 
         name = selector.generate_reply(
-            self.format_history(
-                self.messages
-                + [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Read the above conversation. Then select the next most"
-                            f" suitable role from {self.agent_names} to play. Only"
-                            " return the role."
-                        ),
-                    }
-                ]
-            )
-        )
+            self.format_history(self.messages + [{
+                "role":
+                    "system",
+                "content":
+                    ("Read the above conversation. Then select the next most"
+                     f" suitable role from {self.agent_names} to play. Only"
+                     " return the role."),
+            }]))
         try:
             return self.agent_by_name(name["content"])
         except ValueError:
@@ -80,8 +73,7 @@ class GroupChat:
 
     def _participant_roles(self):
         return "\n".join(
-            [f"{agent.name}: {agent.system_message}" for agent in self.agents]
-        )
+            [f"{agent.name}: {agent.system_message}" for agent in self.agents])
 
     def format_history(self, messages: List[Dict]) -> str:
         formatted_messages = []
@@ -92,19 +84,21 @@ class GroupChat:
 
 
 class GroupChatManager:
+
     def __init__(self, groupchat: GroupChat, selector: Flow):
         self.groupchat = groupchat
         self.selector = selector
 
     def __call__(self, task: str):
-        self.groupchat.messages.append({"role": self.selector.name, "content": task})
+        self.groupchat.messages.append({
+            "role": self.selector.name,
+            "content": task
+        })
         for i in range(self.groupchat.max_round):
-            speaker = self.groupchat.select_speaker(
-                last_speaker=self.selector, selector=self.selector
-            )
+            speaker = self.groupchat.select_speaker(last_speaker=self.selector,
+                                                    selector=self.selector)
             reply = speaker.generate_reply(
-                self.groupchat.format_history(self.groupchat.messages)
-            )
+                self.groupchat.format_history(self.groupchat.messages))
             self.groupchat.messages.append(reply)
             print(reply)
             if i == self.groupchat.max_round - 1:

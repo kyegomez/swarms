@@ -1,7 +1,6 @@
 ERROR_PROMPT = (
     "An error has occurred for the following text: \n{promptedQuery} Please explain"
-    " this error.\n {e}"
-)
+    " this error.\n {e}")
 
 IMAGE_PROMPT = """
 provide a figure named {filename}. The description is: {description}.
@@ -11,7 +10,6 @@ Please understand and answer the image based on this information. The image unde
 USER INPUT
 ============
 """
-
 
 AUDIO_PROMPT = """
 provide a audio named {filename}. The description is: {description}.
@@ -40,7 +38,6 @@ You have to act like an data analyst who can do an effective analysis through da
 USER INPUT
 ============
 """
-
 
 EVAL_PREFIX = """{bot_name} can execute any user's request.
 

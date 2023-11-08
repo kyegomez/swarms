@@ -13,6 +13,7 @@ from swarms.artifacts.error_artifact import ErrorArtifact
 
 
 class BaseTask(ABC):
+
     class State(Enum):
         PENDING = 1
         EXECUTING = 2
@@ -33,11 +34,15 @@ class BaseTask(ABC):
 
     @property
     def parents(self) -> List[BaseTask]:
-        return [self.structure.find_task(parent_id) for parent_id in self.parent_ids]
+        return [
+            self.structure.find_task(parent_id) for parent_id in self.parent_ids
+        ]
 
     @property
     def children(self) -> List[BaseTask]:
-        return [self.structure.find_task(child_id) for child_id in self.child_ids]
+        return [
+            self.structure.find_task(child_id) for child_id in self.child_ids
+        ]
 
     def __rshift__(self, child: BaseTask) -> BaseTask:
         return self.add_child(child)
@@ -118,8 +123,7 @@ class BaseTask(ABC):
 
     def can_execute(self) -> bool:
         return self.state == self.State.PENDING and all(
-            parent.is_finished() for parent in self.parents
-        )
+            parent.is_finished() for parent in self.parents)
 
     def reset(self) -> BaseTask:
         self.state = self.State.PENDING
@@ -132,10 +136,10 @@ class BaseTask(ABC):
 
 
 class Task(BaseModel):
-    input: Optional[StrictStr] = Field(None, description="Input prompt for the task")
+    input: Optional[StrictStr] = Field(None,
+                                       description="Input prompt for the task")
     additional_input: Optional[Any] = Field(
-        None, description="Input parameters for the task. Any value is allowed"
-    )
+        None, description="Input parameters for the task. Any value is allowed")
     task_id: StrictStr = Field(..., description="ID of the task")
 
     class Config:

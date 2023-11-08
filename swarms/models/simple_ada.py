@@ -21,6 +21,4 @@ def get_ada_embeddings(text: str, model: str = "text-embedding-ada-002"):
     return openai.Embedding.create(
         input=[text],
         model=model,
-    )["data"][
-        0
-    ]["embedding"]
+    )["data"][0]["embedding"]

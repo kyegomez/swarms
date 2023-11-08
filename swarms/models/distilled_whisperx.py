@@ -18,6 +18,7 @@ def async_retry(max_retries=3, exceptions=(Exception,), delay=1):
     """
 
     def decorator(func):
+
         @wraps(func)
         async def wrapper(*args, **kwargs):
             retries = max_retries
@@ -28,7 +29,9 @@ def async_retry(max_retries=3, exceptions=(Exception,), delay=1):
                     retries -= 1
                     if retries <= 0:
                         raise
-                    print(f"Retry after exception: {e}, Attempts remaining: {retries}")
+                    print(
+                        f"Retry after exception: {e}, Attempts remaining: {retries}"
+                    )
                     await asyncio.sleep(delay)
 
         return wrapper
@@ -62,7 +65,8 @@ class DistilWhisperModel:
 
     def __init__(self, model_id="distil-whisper/distil-large-v2"):
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        self.torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+        self.torch_dtype = torch.float16 if torch.cuda.is_available(
+        ) else torch.float32
         self.model_id = model_id
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_id,
@@ -119,14 +123,14 @@ class DistilWhisperModel:
         try:
             with torch.no_grad():
                 # Load the whole audio file, but process and transcribe it in chunks
-                audio_input = self.processor.audio_file_to_array(audio_file_path)
+                audio_input = self.processor.audio_file_to_array(
+                    audio_file_path)
                 sample_rate = audio_input.sampling_rate
                 total_duration = len(audio_input.array) / sample_rate
                 chunks = [
-                    audio_input.array[i : i + sample_rate * chunk_duration]
-                    for i in range(
-                        0, len(audio_input.array), sample_rate * chunk_duration
-                    )
+                    audio_input.array[i:i + sample_rate * chunk_duration]
+                    for i in range(0, len(audio_input.array), sample_rate *
+                                   chunk_duration)
                 ]
 
                 print(colored("Starting real-time transcription...", "green"))
@@ -139,22 +143,22 @@ class DistilWhisperModel:
                         return_tensors="pt",
                         padding=True,
                     )
-                    processed_inputs = processed_inputs.input_values.to(self.device)
+                    processed_inputs = processed_inputs.input_values.to(
+                        self.device)
 
                     # Generate transcription for the chunk
                     logits = self.model.generate(processed_inputs)
                     transcription = self.processor.batch_decode(
-                        logits, skip_special_tokens=True
-                    )[0]
+                        logits, skip_special_tokens=True)[0]
 
                     # Print the chunk's transcription
                     print(
-                        colored(f"Chunk {i+1}/{len(chunks)}: ", "yellow")
-                        + transcription
-                    )
+                        colored(f"Chunk {i+1}/{len(chunks)}: ", "yellow") +
+                        transcription)
 
                     # Wait for the chunk's duration to simulate real-time processing
                     time.sleep(chunk_duration)
 
         except Exception as e:
-            print(colored(f"An error occurred during transcription: {e}", "red"))
+            print(colored(f"An error occurred during transcription: {e}",
+                          "red"))

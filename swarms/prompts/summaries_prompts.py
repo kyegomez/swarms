@@ -10,7 +10,6 @@ summary. Pick a suitable emoji for every bullet point. Your response should be i
 a YouTube video, use the following text: {{CONTENT}}.
 """
 
-
 SUMMARIZE_PROMPT_2 = """
 Provide a very short summary, no more than three sentences, for the following article:
 
@@ -25,7 +24,6 @@ Summary:
 
 """
 
-
 SUMMARIZE_PROMPT_3 = """
 Provide a TL;DR for the following article:
 
@@ -38,7 +36,6 @@ Instead of computing on the individual qubits themselves, we will then compute o
 
 TL;DR:
 """
-
 
 SUMMARIZE_PROMPT_4 = """
 Provide a very short summary in four bullet points for the following article:
@@ -53,7 +50,6 @@ Instead of computing on the individual qubits themselves, we will then compute o
 Bulletpoints:
 
 """
-
 
 SUMMARIZE_PROMPT_5 = """
 Please generate a summary of the following conversation and at the end summarize the to-do's for the support Agent:

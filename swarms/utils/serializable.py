@@ -106,21 +106,22 @@ class Serializable(BaseModel, ABC):
                 lc_kwargs.update({key: secret_value})
 
         return {
-            "lc": 1,
-            "type": "constructor",
+            "lc":
+                1,
+            "type":
+                "constructor",
             "id": [*self.lc_namespace, self.__class__.__name__],
-            "kwargs": lc_kwargs
-            if not secrets
-            else _replace_secrets(lc_kwargs, secrets),
+            "kwargs":
+                lc_kwargs if not secrets else _replace_secrets(
+                    lc_kwargs, secrets),
         }
 
     def to_json_not_implemented(self) -> SerializedNotImplemented:
         return to_json_not_implemented(self)
 
 
-def _replace_secrets(
-    root: Dict[Any, Any], secrets_map: Dict[str, str]
-) -> Dict[Any, Any]:
+def _replace_secrets(root: Dict[Any, Any],
+                     secrets_map: Dict[str, str]) -> Dict[Any, Any]:
     result = root.copy()
     for path, secret_id in secrets_map.items():
         [*parts, last] = path.split(".")

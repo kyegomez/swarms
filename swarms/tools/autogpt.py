@@ -8,8 +8,7 @@ import torch
 from langchain.agents import tool
 from langchain.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
 from langchain.chains.qa_with_sources.loading import (
-    BaseCombineDocumentsChain,
-)
+    BaseCombineDocumentsChain,)
 from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.tools import BaseTool
@@ -37,9 +36,10 @@ def pushd(new_dir):
 
 
 @tool
-def process_csv(
-    llm, csv_file_path: str, instructions: str, output_path: Optional[str] = None
-) -> str:
+def process_csv(llm,
+                csv_file_path: str,
+                instructions: str,
+                output_path: Optional[str] = None) -> str:
     """Process a CSV by with pandas in a limited REPL.\
  Only use this after writing data to disk as a csv file.\
  Any figures must be saved to disk to be viewed by the human.\
@@ -49,7 +49,10 @@ def process_csv(
             df = pd.read_csv(csv_file_path)
         except Exception as e:
             return f"Error: {e}"
-        agent = create_pandas_dataframe_agent(llm, df, max_iterations=30, verbose=False)
+        agent = create_pandas_dataframe_agent(llm,
+                                              df,
+                                              max_iterations=30,
+                                              verbose=False)
         if output_path is not None:
             instructions += f" Save output to disk at {output_path}"
         try:
@@ -79,7 +82,8 @@ async def async_load_playwright(url: str) -> str:
 
             text = soup.get_text()
             lines = (line.strip() for line in text.splitlines())
-            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            chunks = (
+                phrase.strip() for line in lines for phrase in line.split("  "))
             results = "\n".join(chunk for chunk in chunks if chunk)
         except Exception as e:
             results = f"Error: {e}"
@@ -113,8 +117,7 @@ class WebpageQATool(BaseTool):
         "Browse a webpage and retrieve the information relevant to the question."
     )
     text_splitter: RecursiveCharacterTextSplitter = Field(
-        default_factory=_get_text_splitter
-    )
+        default_factory=_get_text_splitter)
     qa_chain: BaseCombineDocumentsChain
 
     def _run(self, url: str, question: str) -> str:
@@ -125,9 +128,12 @@ class WebpageQATool(BaseTool):
         results = []
         # TODO: Handle this with a MapReduceChain
         for i in range(0, len(web_docs), 4):
-            input_docs = web_docs[i : i + 4]
+            input_docs = web_docs[i:i + 4]
             window_result = self.qa_chain(
-                {"input_documents": input_docs, "question": question},
+                {
+                    "input_documents": input_docs,
+                    "question": question
+                },
                 return_only_outputs=True,
             )
             results.append(f"Response from window {i} - {window_result}")
@@ -135,7 +141,10 @@ class WebpageQATool(BaseTool):
             Document(page_content="\n".join(results), metadata={"source": url})
         ]
         return self.qa_chain(
-            {"input_documents": results_docs, "question": question},
+            {
+                "input_documents": results_docs,
+                "question": question
+            },
             return_only_outputs=True,
         )
 
@@ -171,18 +180,17 @@ def VQAinference(self, inputs):
     torch_dtype = torch.float16 if "cuda" in device else torch.float32
     processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
     model = BlipForQuestionAnswering.from_pretrained(
-        "Salesforce/blip-vqa-base", torch_dtype=torch_dtype
-    ).to(device)
+        "Salesforce/blip-vqa-base", torch_dtype=torch_dtype).to(device)
 
     image_path, question = inputs.split(",")
     raw_image = Image.open(image_path).convert("RGB")
-    inputs = processor(raw_image, question, return_tensors="pt").to(device, torch_dtype)
+    inputs = processor(raw_image, question,
+                       return_tensors="pt").to(device, torch_dtype)
     out = model.generate(**inputs)
     answer = processor.decode(out[0], skip_special_tokens=True)
 
     logger.debug(
         f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input"
-        f" Question: {question}, Output Answer: {answer}"
-    )
+        f" Question: {question}, Output Answer: {answer}")
 
     return answer
