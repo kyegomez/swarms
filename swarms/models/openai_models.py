@@ -593,7 +593,8 @@ class BaseOpenAI(BaseLLM):
         if context_size is None:
             raise ValueError(
                 f"Unknown model: {modelname}. Please provide a valid OpenAI model name."
-                "Known models are: " + ", ".join(model_token_mapping.keys())
+                "Known models are: "
+                + ", ".join(model_token_mapping.keys())
             )
 
         return context_size
