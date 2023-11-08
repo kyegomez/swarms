@@ -117,7 +117,9 @@ class AbstractSwarm(ABC):
         pass
 
     @abstractmethod
-    def broadcast(self, message: str, sender: Optional["AbstractWorker"] = None):
+    def broadcast(self,
+                  message: str,
+                  sender: Optional["AbstractWorker"] = None):
         """Broadcast a message to all workers"""
         pass
 

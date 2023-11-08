@@ -8,9 +8,10 @@ class Task:
     Task is a unit of work that can be executed by an agent
     """
 
-    def __init__(
-        self, id: str, parents: List["Task"] = None, children: List["Task"] = None
-    ):
+    def __init__(self,
+                 id: str,
+                 parents: List["Task"] = None,
+                 children: List["Task"] = None):
         self.id = id
         self.parents = parents
         self.children = children
@@ -79,7 +80,8 @@ class NonLinearWorkflow:
 
             for task in ordered_tasks:
                 if task.can_execute:
-                    future = self.executor.submit(self.agents.run, task.task_string)
+                    future = self.executor.submit(self.agents.run,
+                                                  task.task_string)
                     futures_list[future] = task
 
             for future in as_completed(futures_list):
@@ -95,7 +97,8 @@ class NonLinearWorkflow:
     def to_graph(self) -> Dict[str, set[str]]:
         """Convert the workflow to a graph"""
         graph = {
-            task.id: set(child.id for child in task.children) for task in self.tasks
+            task.id: set(child.id for child in task.children)
+            for task in self.tasks
         }
         return graph
 

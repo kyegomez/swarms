@@ -77,19 +77,15 @@ class BattleRoyalSwarm:
         # Check for clashes and handle them
         for i, worker1 in enumerate(self.workers):
             for j, worker2 in enumerate(self.workers):
-                if (
-                    i != j
-                    and worker1.is_within_proximity(worker2)
-                    and set(worker1.teams) != set(worker2.teams)
-                ):
+                if (i != j and worker1.is_within_proximity(worker2) and
+                        set(worker1.teams) != set(worker2.teams)):
                     winner, loser = self.clash(worker1, worker2, question)
                     print(f"Worker {winner.id} won over Worker {loser.id}")
 
     def communicate(self, sender: Worker, reciever: Worker, message: str):
         """Communicate a message from one worker to another."""
         if sender.is_within_proximity(reciever) or any(
-            team in sender.teams for team in reciever.teams
-        ):
+                team in sender.teams for team in reciever.teams):
             pass
 
     def clash(self, worker1: Worker, worker2: Worker, question: str):

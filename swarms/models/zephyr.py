@@ -28,7 +28,8 @@ class Zephyr:
         model_name: str = "HuggingFaceH4/zephyr-7b-alpha",
         tokenize: bool = False,
         add_generation_prompt: bool = True,
-        system_prompt: str = "You are a friendly chatbot who always responds in the style of a pirate",
+        system_prompt:
+        str = "You are a friendly chatbot who always responds in the style of a pirate",
         max_new_tokens: int = 300,
         temperature: float = 0.5,
         top_k: float = 50,
@@ -70,7 +71,7 @@ class Zephyr:
         )
         outputs = self.pipe(prompt)  # max_new_token=self.max_new_tokens)
         print(outputs[0]["generated_text"])
-              
+
     def chat(self, message: str):
         """
         Adds a user message to the conversation and generates a chatbot response.

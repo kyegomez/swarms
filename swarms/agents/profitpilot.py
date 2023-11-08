@@ -145,13 +145,12 @@ def setup_knowledge_base(product_catalog: str = None):
 
     llm = OpenAI(temperature=0)
     embeddings = OpenAIEmbeddings()
-    docsearch = Chroma.from_texts(
-        texts, embeddings, collection_name="product-knowledge-base"
-    )
+    docsearch = Chroma.from_texts(texts,
+                                  embeddings,
+                                  collection_name="product-knowledge-base")
 
     knowledge_base = RetrievalQA.from_chain_type(
-        llm=llm, chain_type="stuff", retriever=docsearch.as_retriever()
-    )
+        llm=llm, chain_type="stuff", retriever=docsearch.as_retriever())
     return knowledge_base
 
 
@@ -163,8 +162,8 @@ def get_tools(product_catalog):
         Tool(
             name="ProductSearch",
             func=knowledge_base.run,
-            description=(
-                "useful for when you need to answer questions about product information"
+            description=
+            ("useful for when you need to answer questions about product information"
             ),
         ),
         # omnimodal agent
@@ -194,8 +193,7 @@ class CustomPromptTemplateForTools(StringPromptTemplate):
         tools = self.tools_getter(kwargs["input"])
         # Create a tools variable from the list of tools provided
         kwargs["tools"] = "\n".join(
-            [f"{tool.name}: {tool.description}" for tool in tools]
-        )
+            [f"{tool.name}: {tool.description}" for tool in tools])
         # Create a list of tool names for the tools provided
         kwargs["tool_names"] = ", ".join([tool.name for tool in tools])
         return self.template.format(**kwargs)
@@ -218,8 +216,7 @@ class SalesConvoOutputParser(AgentOutputParser):
             print("-------")
         if f"{self.ai_prefix}:" in text:
             return AgentFinish(
-                {"output": text.split(f"{self.ai_prefix}:")[-1].strip()}, text
-            )
+                {"output": text.split(f"{self.ai_prefix}:")[-1].strip()}, text)
         regex = r"Action: (.*?)[\n]*Action Input: (.*)"
         match = re.search(regex, text)
         if not match:
@@ -228,15 +225,15 @@ class SalesConvoOutputParser(AgentOutputParser):
                 {
                     "output": (
                         "I apologize, I was unable to find the answer to your question."
-                        " Is there anything else I can help with?"
-                    )
+                        " Is there anything else I can help with?")
                 },
                 text,
             )
             # raise OutputParserException(f"Could not parse LLM output: `{text}`")
         action = match.group(1)
         action_input = match.group(2)
-        return AgentAction(action.strip(), action_input.strip(" ").strip('"'), text)
+        return AgentAction(action.strip(),
+                           action_input.strip(" ").strip('"'), text)
 
     @property
     def _type(self) -> str:
@@ -264,13 +261,11 @@ class ProfitPilot(Chain, BaseModel):
         "2": (
             "Qualification: Qualify the prospect by confirming if they are the right"
             " person to talk to regarding your product/service. Ensure that they have"
-            " the authority to make purchasing decisions."
-        ),
+            " the authority to make purchasing decisions."),
         "3": (
             "Value proposition: Briefly explain how your product/service can benefit"
             " the prospect. Focus on the unique selling points and value proposition of"
-            " your product/service that sets it apart from competitors."
-        ),
+            " your product/service that sets it apart from competitors."),
         "4": (
             "Needs analysis: Ask open-ended questions to uncover the prospect's needs"
             " and pain points. Listen carefully to their responses and take notes."
@@ -282,13 +277,11 @@ class ProfitPilot(Chain, BaseModel):
         "6": (
             "Objection handling: Address any objections that the prospect may have"
             " regarding your product/service. Be prepared to provide evidence or"
-            " testimonials to support your claims."
-        ),
+            " testimonials to support your claims."),
         "7": (
             "Close: Ask for the sale by proposing a next step. This could be a demo, a"
             " trial or a meeting with decision-makers. Ensure to summarize what has"
-            " been discussed and reiterate the benefits."
-        ),
+            " been discussed and reiterate the benefits."),
     }
 
     salesperson_name: str = "Ted Lasso"
@@ -298,19 +291,16 @@ class ProfitPilot(Chain, BaseModel):
         "Sleep Haven is a premium mattress company that provides customers with the"
         " most comfortable and supportive sleeping experience possible. We offer a"
         " range of high-quality mattresses, pillows, and bedding accessories that are"
-        " designed to meet the unique needs of our customers."
-    )
+        " designed to meet the unique needs of our customers.")
     company_values: str = (
         "Our mission at Sleep Haven is to help people achieve a better night's sleep by"
         " providing them with the best possible sleep solutions. We believe that"
         " quality sleep is essential to overall health and well-being, and we are"
         " committed to helping our customers achieve optimal sleep by offering"
-        " exceptional products and customer service."
-    )
+        " exceptional products and customer service.")
     conversation_purpose: str = (
         "find out whether they are looking to achieve better sleep via buying a premier"
-        " mattress."
-    )
+        " mattress.")
     conversation_type: str = "call"
 
     def retrieve_conversation_stage(self, key):
@@ -336,8 +326,7 @@ class ProfitPilot(Chain, BaseModel):
         )
 
         self.current_conversation_stage = self.retrieve_conversation_stage(
-            conversation_stage_id
-        )
+            conversation_stage_id)
 
         print(f"Conversation Stage: {self.current_conversation_stage}")
 
@@ -391,13 +380,15 @@ class ProfitPilot(Chain, BaseModel):
         return {}
 
     @classmethod
-    def from_llm(cls, llm: BaseLLM, verbose: bool = False, **kwargs):  # noqa: F821
+    def from_llm(cls,
+                 llm: BaseLLM,
+                 verbose: bool = False,
+                 **kwargs):  # noqa: F821
         """Initialize the SalesGPT Controller."""
         stage_analyzer_chain = StageAnalyzerChain.from_llm(llm, verbose=verbose)
 
         sales_conversation_utterance_chain = SalesConversationChain.from_llm(
-            llm, verbose=verbose
-        )
+            llm, verbose=verbose)
 
         if "use_tools" in kwargs.keys() and kwargs["use_tools"] is False:
             sales_agent_executor = None
@@ -430,7 +421,8 @@ class ProfitPilot(Chain, BaseModel):
 
             # WARNING: this output parser is NOT reliable yet
             # It makes assumptions about output from LLM which can break and throw an error
-            output_parser = SalesConvoOutputParser(ai_prefix=kwargs["salesperson_name"])
+            output_parser = SalesConvoOutputParser(
+                ai_prefix=kwargs["salesperson_name"])
 
             sales_agent_with_tools = LLMSingleActionAgent(
                 llm_chain=llm_chain,
@@ -441,12 +433,12 @@ class ProfitPilot(Chain, BaseModel):
             )
 
             sales_agent_executor = AgentExecutor.from_agent_and_tools(
-                agent=sales_agent_with_tools, tools=tools, verbose=verbose
-            )
+                agent=sales_agent_with_tools, tools=tools, verbose=verbose)
 
         return cls(
             stage_analyzer_chain=stage_analyzer_chain,
-            sales_conversation_utterance_chain=sales_conversation_utterance_chain,
+            sales_conversation_utterance_chain=
+            sales_conversation_utterance_chain,
             sales_agent_executor=sales_agent_executor,
             verbose=verbose,
             **kwargs,
@@ -458,32 +450,27 @@ config = dict(
     salesperson_name="Ted Lasso",
     salesperson_role="Business Development Representative",
     company_name="Sleep Haven",
-    company_business=(
-        "Sleep Haven is a premium mattress company that provides customers with the"
-        " most comfortable and supportive sleeping experience possible. We offer a"
-        " range of high-quality mattresses, pillows, and bedding accessories that are"
-        " designed to meet the unique needs of our customers."
-    ),
-    company_values=(
-        "Our mission at Sleep Haven is to help people achieve a better night's sleep by"
-        " providing them with the best possible sleep solutions. We believe that"
-        " quality sleep is essential to overall health and well-being, and we are"
-        " committed to helping our customers achieve optimal sleep by offering"
-        " exceptional products and customer service."
-    ),
-    conversation_purpose=(
-        "find out whether they are looking to achieve better sleep via buying a premier"
-        " mattress."
-    ),
+    company_business=
+    ("Sleep Haven is a premium mattress company that provides customers with the"
+     " most comfortable and supportive sleeping experience possible. We offer a"
+     " range of high-quality mattresses, pillows, and bedding accessories that are"
+     " designed to meet the unique needs of our customers."),
+    company_values=
+    ("Our mission at Sleep Haven is to help people achieve a better night's sleep by"
+     " providing them with the best possible sleep solutions. We believe that"
+     " quality sleep is essential to overall health and well-being, and we are"
+     " committed to helping our customers achieve optimal sleep by offering"
+     " exceptional products and customer service."),
+    conversation_purpose=
+    ("find out whether they are looking to achieve better sleep via buying a premier"
+     " mattress."),
     conversation_history=[],
     conversation_type="call",
     conversation_stage=conversation_stages.get(
         "1",
-        (
-            "Introduction: Start the conversation by introducing yourself and your"
-            " company. Be polite and respectful while keeping the tone of the"
-            " conversation professional."
-        ),
+        ("Introduction: Start the conversation by introducing yourself and your"
+         " company. Be polite and respectful while keeping the tone of the"
+         " conversation professional."),
     ),
     use_tools=True,
     product_catalog="sample_product_catalog.txt",

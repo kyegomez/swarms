@@ -130,19 +130,23 @@ class GPT4Vision:
         }
 
         # Image content
-        image_content = [
-            {"type": "imavge_url", "image_url": img}
-            if img.startswith("http")
-            else {"type": "image", "data": img}
-            for img in img
-        ]
+        image_content = [{
+            "type": "imavge_url",
+            "image_url": img
+        } if img.startswith("http") else {
+            "type": "image",
+            "data": img
+        } for img in img]
 
-        messages = [
-            {
-                "role": "user",
-                "content": image_content + [{"type": "text", "text": q} for q in tasks],
-            }
-        ]
+        messages = [{
+            "role":
+                "user",
+            "content":
+                image_content + [{
+                    "type": "text",
+                    "text": q
+                } for q in tasks],
+        }]
 
         payload = {
             "model": "gpt-4-vision-preview",
@@ -160,7 +164,8 @@ class GPT4Vision:
                     timeout=self.timeout_seconds,
                 )
                 response.raise_for_status()
-                answer = response.json()["choices"][0]["message"]["content"]["text"]
+                answer = response.json(
+                )["choices"][0]["message"]["content"]["text"]
                 return GPT4VisionResponse(answer=answer)
             except requests.exceptions.HTTPError as error:
                 self.logger.error(
@@ -179,8 +184,7 @@ class GPT4Vision:
             except Exception as error:
                 self.logger.error(
                     f"Unexpected Error: {error} try optimizing your api key and try"
-                    " again"
-                )
+                    " again")
                 raise error from None
 
         raise TimeoutError("API Request timed out after multiple retries")
@@ -212,18 +216,20 @@ class GPT4Vision:
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": f"{task}"},
-                            {
-                                "type": "image_url",
-                                "image_url": f"{img}",
-                            },
-                        ],
-                    }
-                ],
+                messages=[{
+                    "role":
+                        "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"{task}"
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": f"{img}",
+                        },
+                    ],
+                }],
                 max_tokens=self.max_tokens,
             )
 
@@ -232,13 +238,10 @@ class GPT4Vision:
         except Exception as error:
             print(
                 colored(
-                    (
-                        f"Error when calling GPT4Vision, Error: {error} Try optimizing"
-                        " your key, and try again"
-                    ),
+                    (f"Error when calling GPT4Vision, Error: {error} Try optimizing"
+                     " your key, and try again"),
                     "red",
-                )
-            )
+                ))
 
     async def arun(self, task: str, img: str) -> str:
         """
@@ -267,18 +270,20 @@ class GPT4Vision:
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": f"{task}"},
-                            {
-                                "type": "image_url",
-                                "image_url": f"{img}",
-                            },
-                        ],
-                    }
-                ],
+                messages=[{
+                    "role":
+                        "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"{task}"
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": f"{img}",
+                        },
+                    ],
+                }],
                 max_tokens=self.max_tokens,
             )
             out = response.choices[0].text
@@ -286,10 +291,7 @@ class GPT4Vision:
         except Exception as error:
             print(
                 colored(
-                    (
-                        f"Error when calling GPT4Vision, Error: {error} Try optimizing"
-                        " your key, and try again"
-                    ),
+                    (f"Error when calling GPT4Vision, Error: {error} Try optimizing"
+                     " your key, and try again"),
                     "red",
-                )
-            )
+                ))
