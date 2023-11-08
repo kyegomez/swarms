@@ -165,7 +165,6 @@ def get_tools(product_catalog):
             func=knowledge_base.run,
             description="useful for when you need to answer questions about product information",
         ),
-
         # omnimodal agent
     ]
 
