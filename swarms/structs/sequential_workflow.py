@@ -257,9 +257,9 @@ class SequentialWorkflow:
                 Metadata:
                 kwargs: {kwargs}
 
-    
-                    
-                    
+
+
+
                 """,
                 "cyan",
                 attrs=["bold", "underline"],
@@ -348,7 +348,8 @@ class SequentialWorkflow:
                             # Ensure that 'task' is provided in the kwargs
                             if "task" not in task.kwargs:
                                 raise ValueError(
-                                    f"The 'task' argument is required for the Flow flow execution in '{task.description}'"
+                                    "The 'task' argument is required for the Flow flow"
+                                    f" execution in '{task.description}'"
                                 )
                             # Separate the 'task' argument from other kwargs
                             flow_task_arg = task.kwargs.pop("task")
@@ -376,7 +377,11 @@ class SequentialWorkflow:
         except Exception as e:
             print(
                 colored(
-                    f"Error initializing the Sequential workflow: {e} try optimizing your inputs like the flow class and task description",
+                    (
+                        f"Error initializing the Sequential workflow: {e} try"
+                        " optimizing your inputs like the flow class and task"
+                        " description"
+                    ),
                     "red",
                     attrs=["bold", "underline"],
                 )
@@ -399,7 +404,8 @@ class SequentialWorkflow:
                         # Ensure that 'task' is provided in the kwargs
                         if "task" not in task.kwargs:
                             raise ValueError(
-                                f"The 'task' argument is required for the Flow flow execution in '{task.description}'"
+                                "The 'task' argument is required for the Flow flow"
+                                f" execution in '{task.description}'"
                             )
                         # Separate the 'task' argument from other kwargs
                         flow_task_arg = task.kwargs.pop("task")

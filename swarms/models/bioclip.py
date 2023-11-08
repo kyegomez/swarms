@@ -3,7 +3,7 @@
 
 BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
 https://huggingface.co/microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
-BiomedCLIP is a biomedical vision-language foundation model that is pretrained on PMC-15M, 
+BiomedCLIP is a biomedical vision-language foundation model that is pretrained on PMC-15M,
 a dataset of 15 million figure-caption pairs extracted from biomedical research articles in PubMed Central, using contrastive learning. It uses PubMedBERT as the text encoder and Vision Transformer as the image encoder, with domain-specific adaptations. It can perform various vision-language processing (VLP) tasks such as cross-modal retrieval, image classification, and visual question answering. BiomedCLIP establishes new state of the art in a wide range of standard datasets, and substantially outperforms prior VLP approaches:
 
 

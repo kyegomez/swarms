@@ -153,7 +153,8 @@ class Orchestrator:
 
             except Exception as error:
                 logging.error(
-                    f"Failed to process task {id(task)} by agent {id(agent)}. Error: {error}"
+                    f"Failed to process task {id(task)} by agent {id(agent)}. Error:"
+                    f" {error}"
                 )
             finally:
                 with self.condition:

@@ -54,7 +54,8 @@ class GroupChat:
         n_agents = len(self.agent_names)
         if n_agents < 3:
             logger.warning(
-                f"GroupChat is underpopulated with {n_agents} agents. Direct communication would be more efficient."
+                f"GroupChat is underpopulated with {n_agents} agents. Direct"
+                " communication would be more efficient."
             )
 
         name = selector.generate_reply(
@@ -63,7 +64,11 @@ class GroupChat:
                 + [
                     {
                         "role": "system",
-                        "content": f"Read the above conversation. Then select the next most suitable role from {self.agent_names} to play. Only return the role.",
+                        "content": (
+                            "Read the above conversation. Then select the next most"
+                            f" suitable role from {self.agent_names} to play. Only"
+                            " return the role."
+                        ),
                     }
                 ]
             )
