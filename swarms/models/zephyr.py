@@ -55,7 +55,7 @@ class Zephyr:
         self.messages = [
             {
                 "role": "system",
-                "content": f"{self.systen_prompt}\n\nUser:",
+                "content": f"{self.system_prompt}\n\nUser:",
             },
             {
                 "role": "user",
@@ -71,8 +71,8 @@ class Zephyr:
             add_generation_prompt=self.add_generation_prompt,
         )
         outputs = self.pipe(prompt)  # max_new_token=self.max_new_tokens)
-        print(outputs[0])["generated_text"]
-
+        print(outputs[0]["generated_text"])
+              
     def chat(self, message: str):
         """
         Adds a user message to the conversation and generates a chatbot response.
