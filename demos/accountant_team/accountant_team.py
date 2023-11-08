@@ -1,7 +1,6 @@
 # !pip install --upgrade swarms==2.0.6
 
 
-
 from swarms.models import OpenAIChat
 from swarms.models.nougat import Nougat
 from swarms.structs import Flow
@@ -11,7 +10,10 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 IMAGE_OF_FINANCIAL_DOC_URL = "bank_statement_2.jpg"
 
 # Example usage
-api_key = "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"  # Your actual API key here
+api_key = (
+    "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"  # Your actual API key here
+)
+
 
 # Initialize the OCR model
 def ocr_model(img: str):
@@ -19,11 +21,13 @@ def ocr_model(img: str):
     analyze_finance_docs = ocr(img)
     return str(analyze_finance_docs)
 
+
 # Initialize the language flow
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
 )
+
 
 # Create a prompt for the language model
 def summary_agent_prompt(analyzed_doc: str):
@@ -35,6 +39,7 @@ def summary_agent_prompt(analyzed_doc: str):
     ---
     {analyzed_doc}
     """
+
 
 # Initialize the Flow with the language flow
 flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
@@ -49,7 +54,10 @@ workflow = SequentialWorkflow(max_loops=1)
 workflow.add(summary_agent_prompt(IMAGE_OF_FINANCIAL_DOC_URL), flow1)
 
 # Suppose the next task takes the output of the first task as input
-workflow.add("Provide an actionable step by step plan on how to cut costs from the analyzed financial document.", flow2)
+workflow.add(
+    "Provide an actionable step by step plan on how to cut costs from the analyzed financial document.",
+    flow2,
+)
 
 # Run the workflow
 workflow.run()
