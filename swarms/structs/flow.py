@@ -19,13 +19,11 @@ from termcolor import colored
 import inspect
 import random
 
-
 # Prompts
 DYNAMIC_STOP_PROMPT = """
 When you have finished the task from the Human, output a special token: <DONE>
 This will enable you to leave the autonomous loop.
 """
-
 
 # Constants
 FLOW_SYSTEM_PROMPT = f"""
@@ -39,7 +37,6 @@ to aid in these complex tasks. Your responses should be coherent, contextually r
 {DYNAMIC_STOP_PROMPT}
 
 """
-
 
 # Utility functions
 
@@ -184,8 +181,7 @@ class Flow:
                 value = self.llm.__dict__.get(name, "Unknown")
 
             params_str_list.append(
-                f"    {name.capitalize().replace('_', ' ')}: {value}"
-            )
+                f"    {name.capitalize().replace('_', ' ')}: {value}")
 
         return "\n".join(params_str_list)
 
@@ -193,7 +189,7 @@ class Flow:
         """
         Take the history and truncate it to fit into the model context length
         """
-        truncated_history = self.memory[-1][-self.context_length :]
+        truncated_history = self.memory[-1][-self.context_length:]
         self.memory[-1] = truncated_history
 
     def add_task_to_memory(self, task: str):
@@ -243,8 +239,7 @@ class Flow:
                 ----------------------------------------
                 """,
                 "green",
-            )
-        )
+            ))
 
         # print(dashboard)
 
@@ -254,18 +249,17 @@ class Flow:
             print(colored("Initializing Autonomous Agent...", "yellow"))
             # print(colored("Loading modules...", "yellow"))
             # print(colored("Modules loaded successfully.", "green"))
-            print(colored("Autonomous Agent Activated.", "cyan", attrs=["bold"]))
-            print(colored("All systems operational. Executing task...", "green"))
+            print(colored("Autonomous Agent Activated.", "cyan",
+                          attrs=["bold"]))
+            print(colored("All systems operational. Executing task...",
+                          "green"))
         except Exception as error:
             print(
                 colored(
-                    (
-                        "Error activating autonomous agent. Try optimizing your"
-                        " parameters..."
-                    ),
+                    ("Error activating autonomous agent. Try optimizing your"
+                     " parameters..."),
                     "red",
-                )
-            )
+                ))
             print(error)
 
     def run(self, task: str, **kwargs):
@@ -307,7 +301,8 @@ class Flow:
         for i in range(self.max_loops):
             print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
             print("\n")
-            if self._check_stopping_condition(response) or parse_done_token(response):
+            if self._check_stopping_condition(response) or parse_done_token(
+                    response):
                 break
 
             # Adjust temperature, comment if no work
@@ -351,7 +346,6 @@ class Flow:
     async def arun(self, task: str, **kwargs):
         """Async run"""
         pass
-
         """
         Run the autonomous agent loop
 
@@ -387,7 +381,8 @@ class Flow:
         for i in range(self.max_loops):
             print(colored(f"\nLoop {i+1} of {self.max_loops}", "blue"))
             print("\n")
-            if self._check_stopping_condition(response) or parse_done_token(response):
+            if self._check_stopping_condition(response) or parse_done_token(
+                    response):
                 break
 
             # Adjust temperature, comment if no work
@@ -565,7 +560,9 @@ class Flow:
         import boto3
 
         s3 = boto3.client("s3")
-        s3.put_object(Bucket=bucket_name, Key=object_name, Body=json.dumps(self.memory))
+        s3.put_object(Bucket=bucket_name,
+                      Key=object_name,
+                      Body=json.dumps(self.memory))
         print(f"Backed up memory to S3: {bucket_name}/{object_name}")
 
     def analyze_feedback(self):
@@ -684,8 +681,8 @@ class Flow:
             if hasattr(self.llm, name):
                 value = getattr(self.llm, name)
                 if isinstance(
-                    value, (str, int, float, bool, list, dict, tuple, type(None))
-                ):
+                        value,
+                    (str, int, float, bool, list, dict, tuple, type(None))):
                     llm_params[name] = value
                 else:
                     llm_params[name] = str(
@@ -745,7 +742,10 @@ class Flow:
 
         print(f"Flow state loaded from {file_path}")
 
-    def retry_on_failure(self, function, retries: int = 3, retry_delay: int = 1):
+    def retry_on_failure(self,
+                         function,
+                         retries: int = 3,
+                         retry_delay: int = 1):
         """Retry wrapper for LLM calls."""
         attempt = 0
         while attempt < retries:

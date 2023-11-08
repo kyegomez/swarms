@@ -3,23 +3,20 @@ from typing import Dict, List
 from langchain.base_language import BaseLanguageModel
 from langchain.tools.base import BaseTool
 from langchain_experimental.autonomous_agents.hugginggpt.repsonse_generator import (
-    load_response_generator,
-)
+    load_response_generator,)
 from langchain_experimental.autonomous_agents.hugginggpt.task_executor import (
-    TaskExecutor,
-)
+    TaskExecutor,)
 from langchain_experimental.autonomous_agents.hugginggpt.task_planner import (
-    load_chat_planner,
-)
+    load_chat_planner,)
 from transformers import load_tool
 
 from swarms.agents.message import Message
 
 
 class Step:
-    def __init__(
-        self, task: str, id: int, dep: List[int], args: Dict[str, str], tool: BaseTool
-    ):
+
+    def __init__(self, task: str, id: int, dep: List[int], args: Dict[str, str],
+                 tool: BaseTool):
         self.task = task
         self.id = id
         self.dep = dep
@@ -28,6 +25,7 @@ class Step:
 
 
 class Plan:
+
     def __init__(self, steps: List[Step]):
         self.steps = steps
 
@@ -73,8 +71,7 @@ class OmniModalAgent:
 
         print("Loading tools...")
         self.tools = [
-            load_tool(tool_name)
-            for tool_name in [
+            load_tool(tool_name) for tool_name in [
                 "document-question-answering",
                 "image-captioning",
                 "image-question-answering",
@@ -99,18 +96,15 @@ class OmniModalAgent:
 
     def run(self, input: str) -> str:
         """Run the OmniAgent"""
-        plan = self.chat_planner.plan(
-            inputs={
-                "input": input,
-                "hf_tools": self.tools,
-            }
-        )
+        plan = self.chat_planner.plan(inputs={
+            "input": input,
+            "hf_tools": self.tools,
+        })
         self.task_executor = TaskExecutor(plan)
         self.task_executor.run()
 
         response = self.response_generator.generate(
-            {"task_execution": self.task_executor}
-        )
+            {"task_execution": self.task_executor})
 
         return response
 

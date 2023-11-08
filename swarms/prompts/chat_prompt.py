@@ -66,9 +66,10 @@ class SystemMessage(Message):
     of input messages.
     """
 
-    def __init__(
-        self, content: str, role: str = "System", additional_kwargs: Dict = None
-    ):
+    def __init__(self,
+                 content: str,
+                 role: str = "System",
+                 additional_kwargs: Dict = None):
         super().__init__(content, role, additional_kwargs)
 
     def get_type(self) -> str:
@@ -106,9 +107,9 @@ class ChatMessage(Message):
         return "chat"
 
 
-def get_buffer_string(
-    messages: Sequence[Message], human_prefix: str = "Human", ai_prefix: str = "AI"
-) -> str:
+def get_buffer_string(messages: Sequence[Message],
+                      human_prefix: str = "Human",
+                      ai_prefix: str = "AI") -> str:
     string_messages = []
     for m in messages:
         message = f"{m.role}: {m.content}"

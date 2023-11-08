@@ -4,13 +4,13 @@ import time
 
 import openai_model
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 class OpenAI:
+
     def __init__(
         self,
         api_key,
@@ -68,16 +68,13 @@ class OpenAI:
                         temperature=temperature,
                     )
                 with open("openai.logs", "a") as log_file:
-                    log_file.write(
-                        "\n" + "-----------" + "\n" + "Prompt : " + prompt + "\n"
-                    )
+                    log_file.write("\n" + "-----------" + "\n" + "Prompt : " +
+                                   prompt + "\n")
                 return response
             except openai_model.error.RateLimitError as e:
                 sleep_duratoin = os.environ.get("OPENAI_RATE_TIMEOUT", 30)
-                print(
-                    f"{str(e)}, sleep for {sleep_duratoin}s, set it by env"
-                    " OPENAI_RATE_TIMEOUT"
-                )
+                print(f"{str(e)}, sleep for {sleep_duratoin}s, set it by env"
+                      " OPENAI_RATE_TIMEOUT")
                 time.sleep(sleep_duratoin)
 
     def openai_choice2text_handler(self, choice):
@@ -100,11 +97,16 @@ class OpenAI:
         else:
             response = self.run(prompt, 300, 0.5, k)
             thoughts = [
-                self.openai_choice2text_handler(choice) for choice in response.choices
+                self.openai_choice2text_handler(choice)
+                for choice in response.choices
             ]
             return thoughts
 
-    def generate_thoughts(self, state, k, initial_prompt, rejected_solutions=None):
+    def generate_thoughts(self,
+                          state,
+                          k,
+                          initial_prompt,
+                          rejected_solutions=None):
         if isinstance(state, str):
             pass
         else:
@@ -177,7 +179,8 @@ class OpenAI:
                 """
                 response = self.run(prompt, 10, 1)
                 try:
-                    value_text = self.openai_choice2text_handler(response.choices[0])
+                    value_text = self.openai_choice2text_handler(
+                        response.choices[0])
                     # print(f'state: {value_text}')
                     value = float(value_text)
                     print(f"Evaluated Thought Value: {value}")
@@ -187,10 +190,12 @@ class OpenAI:
             return state_values
 
         else:
-            raise ValueError("Invalid evaluation strategy. Choose 'value' or 'vote'.")
+            raise ValueError(
+                "Invalid evaluation strategy. Choose 'value' or 'vote'.")
 
 
 class AoTAgent:
+
     def __init__(
         self,
         num_thoughts: int = None,
@@ -222,7 +227,8 @@ class AoTAgent:
                 return None
 
             best_state, _ = max(self.output, key=lambda x: x[1])
-            solution = self.model.generate_solution(self.initial_prompt, best_state)
+            solution = self.model.generate_solution(self.initial_prompt,
+                                                    best_state)
             print(f"Solution is {solution}")
             return solution if solution else best_state
         except Exception as error:
@@ -239,11 +245,8 @@ class AoTAgent:
         for next_state in thoughts:
             state_value = self.evaluated_thoughts[next_state]
             if state_value > self.value_threshold:
-                child = (
-                    (state, next_state)
-                    if isinstance(state, str)
-                    else (*state, next_state)
-                )
+                child = ((state, next_state) if isinstance(state, str) else
+                         (*state, next_state))
                 self.dfs(child, step + 1)
 
                 # backtracking
@@ -253,17 +256,14 @@ class AoTAgent:
                     continue
 
     def generate_and_filter_thoughts(self, state):
-        thoughts = self.model.generate_thoughts(
-            state, self.num_thoughts, self.initial_prompt
-        )
+        thoughts = self.model.generate_thoughts(state, self.num_thoughts,
+                                                self.initial_prompt)
 
         self.evaluated_thoughts = self.model.evaluate_states(
-            thoughts, self.initial_prompt
-        )
+            thoughts, self.initial_prompt)
 
         filtered_thoughts = [
-            thought
-            for thought in thoughts
+            thought for thought in thoughts
             if self.evaluated_thoughts[thought] >= self.pruning_threshold
         ]
         print(f"filtered_thoughts: {filtered_thoughts}")

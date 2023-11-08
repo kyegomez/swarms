@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from haystack.schema import Document as HaystackDocument
     from semantic_kernel.memory.memory_record import MemoryRecord
 
-
 ####
 DEFAULT_TEXT_NODE_TMPL = "{metadata_str}\n\n{content}"
 DEFAULT_METADATA_TMPL = "{key}: {value}"
@@ -48,7 +47,8 @@ class BaseComponent(BaseModel):
 
     # TODO: return type here not supported by current mypy version
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], **kwargs: Any) -> Self:  # type: ignore
+    def from_dict(cls, data: Dict[str, Any],
+                  **kwargs: Any) -> Self:  # type: ignore
         if isinstance(kwargs, dict):
             data.update(kwargs)
 
@@ -119,13 +119,10 @@ class BaseNode(BaseComponent):
     class Config:
         allow_population_by_field_name = True
 
-    id_: str = Field(
-        default_factory=lambda: str(uuid.uuid4()), description="Unique ID of the node."
-    )
+    id_: str = Field(default_factory=lambda: str(uuid.uuid4()),
+                     description="Unique ID of the node.")
     embedding: Optional[List[float]] = Field(
-        default=None, description="Embedding of the node."
-    )
-
+        default=None, description="Embedding of the node.")
     """"
     metadata fields
     - injected as part of the text shown to LLMs as context
@@ -140,7 +137,8 @@ class BaseNode(BaseComponent):
     )
     excluded_embed_metadata_keys: List[str] = Field(
         default_factory=list,
-        description="Metadata keys that are excluded from text for the embed model.",
+        description=
+        "Metadata keys that are excluded from text for the embed model.",
     )
     excluded_llm_metadata_keys: List[str] = Field(
         default_factory=list,
@@ -158,7 +156,8 @@ class BaseNode(BaseComponent):
         """Get Object type."""
 
     @abstractmethod
-    def get_content(self, metadata_mode: MetadataMode = MetadataMode.ALL) -> str:
+    def get_content(self,
+                    metadata_mode: MetadataMode = MetadataMode.ALL) -> str:
         """Get object content."""
 
     @abstractmethod
@@ -189,7 +188,8 @@ class BaseNode(BaseComponent):
 
         relation = self.relationships[NodeRelationship.SOURCE]
         if isinstance(relation, list):
-            raise ValueError("Source object must be a single RelatedNodeInfo object")
+            raise ValueError(
+                "Source object must be a single RelatedNodeInfo object")
         return relation
 
     @property
@@ -200,7 +200,8 @@ class BaseNode(BaseComponent):
 
         relation = self.relationships[NodeRelationship.PREVIOUS]
         if not isinstance(relation, RelatedNodeInfo):
-            raise ValueError("Previous object must be a single RelatedNodeInfo object")
+            raise ValueError(
+                "Previous object must be a single RelatedNodeInfo object")
         return relation
 
     @property
@@ -211,7 +212,8 @@ class BaseNode(BaseComponent):
 
         relation = self.relationships[NodeRelationship.NEXT]
         if not isinstance(relation, RelatedNodeInfo):
-            raise ValueError("Next object must be a single RelatedNodeInfo object")
+            raise ValueError(
+                "Next object must be a single RelatedNodeInfo object")
         return relation
 
     @property
@@ -222,7 +224,8 @@ class BaseNode(BaseComponent):
 
         relation = self.relationships[NodeRelationship.PARENT]
         if not isinstance(relation, RelatedNodeInfo):
-            raise ValueError("Parent object must be a single RelatedNodeInfo object")
+            raise ValueError(
+                "Parent object must be a single RelatedNodeInfo object")
         return relation
 
     @property
@@ -233,7 +236,8 @@ class BaseNode(BaseComponent):
 
         relation = self.relationships[NodeRelationship.CHILD]
         if not isinstance(relation, list):
-            raise ValueError("Child objects must be a list of RelatedNodeInfo objects.")
+            raise ValueError(
+                "Child objects must be a list of RelatedNodeInfo objects.")
         return relation
 
     @property
@@ -250,12 +254,10 @@ class BaseNode(BaseComponent):
         return self.metadata
 
     def __str__(self) -> str:
-        source_text_truncated = truncate_text(
-            self.get_content().strip(), TRUNCATE_LENGTH
-        )
-        source_text_wrapped = textwrap.fill(
-            f"Text: {source_text_truncated}\n", width=WRAP_WIDTH
-        )
+        source_text_truncated = truncate_text(self.get_content().strip(),
+                                              TRUNCATE_LENGTH)
+        source_text_wrapped = textwrap.fill(f"Text: {source_text_truncated}\n",
+                                            width=WRAP_WIDTH)
         return f"Node ID: {self.node_id}\n{source_text_wrapped}"
 
     def get_embedding(self) -> List[float]:
@@ -281,28 +283,23 @@ class BaseNode(BaseComponent):
 class TextNode(BaseNode):
     text: str = Field(default="", description="Text content of the node.")
     start_char_idx: Optional[int] = Field(
-        default=None, description="Start char index of the node."
-    )
+        default=None, description="Start char index of the node.")
     end_char_idx: Optional[int] = Field(
-        default=None, description="End char index of the node."
-    )
+        default=None, description="End char index of the node.")
     text_template: str = Field(
         default=DEFAULT_TEXT_NODE_TMPL,
-        description=(
-            "Template for how text is formatted, with {content} and "
-            "{metadata_str} placeholders."
-        ),
+        description=("Template for how text is formatted, with {content} and "
+                     "{metadata_str} placeholders."),
     )
     metadata_template: str = Field(
         default=DEFAULT_METADATA_TMPL,
-        description=(
-            "Template for how metadata is formatted, with {key} and "
-            "{value} placeholders."
-        ),
+        description=("Template for how metadata is formatted, with {key} and "
+                     "{value} placeholders."),
     )
     metadata_seperator: str = Field(
         default="\n",
-        description="Separator between metadata fields when converting to string.",
+        description=
+        "Separator between metadata fields when converting to string.",
     )
 
     @classmethod
@@ -316,8 +313,7 @@ class TextNode(BaseNode):
         metadata = values.get("metadata", {})
         doc_identity = str(text) + str(metadata)
         values["hash"] = str(
-            sha256(doc_identity.encode("utf-8", "surrogatepass")).hexdigest()
-        )
+            sha256(doc_identity.encode("utf-8", "surrogatepass")).hexdigest())
         return values
 
     @classmethod
@@ -325,15 +321,15 @@ class TextNode(BaseNode):
         """Get Object type."""
         return ObjectType.TEXT
 
-    def get_content(self, metadata_mode: MetadataMode = MetadataMode.NONE) -> str:
+    def get_content(self,
+                    metadata_mode: MetadataMode = MetadataMode.NONE) -> str:
         """Get object content."""
         metadata_str = self.get_metadata_str(mode=metadata_mode).strip()
         if not metadata_str:
             return self.text
 
-        return self.text_template.format(
-            content=self.text, metadata_str=metadata_str
-        ).strip()
+        return self.text_template.format(content=self.text,
+                                         metadata_str=metadata_str).strip()
 
     def get_metadata_str(self, mode: MetadataMode = MetadataMode.ALL) -> str:
         """Metadata info string."""
@@ -350,13 +346,11 @@ class TextNode(BaseNode):
                 if key in usable_metadata_keys:
                     usable_metadata_keys.remove(key)
 
-        return self.metadata_seperator.join(
-            [
-                self.metadata_template.format(key=key, value=str(value))
-                for key, value in self.metadata.items()
-                if key in usable_metadata_keys
-            ]
-        )
+        return self.metadata_seperator.join([
+            self.metadata_template.format(key=key, value=str(value))
+            for key, value in self.metadata.items()
+            if key in usable_metadata_keys
+        ])
 
     def set_content(self, value: str) -> None:
         """Set the content of the node."""
@@ -480,7 +474,8 @@ class NodeWithScore(BaseComponent):
         else:
             raise ValueError("Node must be a TextNode to get text.")
 
-    def get_content(self, metadata_mode: MetadataMode = MetadataMode.NONE) -> str:
+    def get_content(self,
+                    metadata_mode: MetadataMode = MetadataMode.NONE) -> str:
         return self.node.get_content(metadata_mode=metadata_mode)
 
     def get_embedding(self) -> List[float]:
@@ -517,12 +512,10 @@ class Document(TextNode):
         return self.id_
 
     def __str__(self) -> str:
-        source_text_truncated = truncate_text(
-            self.get_content().strip(), TRUNCATE_LENGTH
-        )
-        source_text_wrapped = textwrap.fill(
-            f"Text: {source_text_truncated}\n", width=WRAP_WIDTH
-        )
+        source_text_truncated = truncate_text(self.get_content().strip(),
+                                              TRUNCATE_LENGTH)
+        source_text_wrapped = textwrap.fill(f"Text: {source_text_truncated}\n",
+                                            width=WRAP_WIDTH)
         return f"Doc ID: {self.doc_id}\n{source_text_wrapped}"
 
     def get_doc_id(self) -> str:
@@ -538,22 +531,27 @@ class Document(TextNode):
         """Convert struct to Haystack document format."""
         from haystack.schema import Document as HaystackDocument
 
-        return HaystackDocument(
-            content=self.text, meta=self.metadata, embedding=self.embedding, id=self.id_
-        )
+        return HaystackDocument(content=self.text,
+                                meta=self.metadata,
+                                embedding=self.embedding,
+                                id=self.id_)
 
     @classmethod
     def from_haystack_format(cls, doc: "HaystackDocument") -> "Document":
         """Convert struct from Haystack document format."""
-        return cls(
-            text=doc.content, metadata=doc.meta, embedding=doc.embedding, id_=doc.id
-        )
+        return cls(text=doc.content,
+                   metadata=doc.meta,
+                   embedding=doc.embedding,
+                   id_=doc.id)
 
     def to_embedchain_format(self) -> Dict[str, Any]:
         """Convert struct to EmbedChain document format."""
         return {
             "doc_id": self.id_,
-            "data": {"content": self.text, "meta_data": self.metadata},
+            "data": {
+                "content": self.text,
+                "meta_data": self.metadata
+            },
         }
 
     @classmethod
@@ -583,7 +581,8 @@ class Document(TextNode):
         return cls(
             text=doc._text,
             metadata={"additional_metadata": doc._additional_metadata},
-            embedding=doc._embedding.tolist() if doc._embedding is not None else None,
+            embedding=doc._embedding.tolist()
+            if doc._embedding is not None else None,
             id_=doc._id,
         )
 
@@ -591,7 +590,10 @@ class Document(TextNode):
     def example(cls) -> "Document":
         return Document(
             text=SAMPLE_TEXT,
-            metadata={"filename": "README.md", "category": "codebase"},
+            metadata={
+                "filename": "README.md",
+                "category": "codebase"
+            },
         )
 
     @classmethod

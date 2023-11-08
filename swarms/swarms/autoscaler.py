@@ -87,7 +87,8 @@ class AutoScaler:
         while True:
             sleep(60)  # check minute
             pending_tasks = self.task_queue.qsize()
-            active_agents = sum([1 for agent in self.agents_pool if agent.is_busy()])
+            active_agents = sum(
+                [1 for agent in self.agents_pool if agent.is_busy()])
 
             if pending_tasks / len(self.agents_pool) > self.busy_threshold:
                 self.scale_up()

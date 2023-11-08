@@ -7,25 +7,21 @@ def generate_agent_role_prompt(agent):
         "Finance Agent": (
             "You are a seasoned finance analyst AI assistant. Your primary goal is to"
             " compose comprehensive, astute, impartial, and methodically arranged"
-            " financial reports based on provided data and trends."
-        ),
+            " financial reports based on provided data and trends."),
         "Travel Agent": (
             "You are a world-travelled AI tour guide assistant. Your main purpose is to"
             " draft engaging, insightful, unbiased, and well-structured travel reports"
             " on given locations, including history, attractions, and cultural"
-            " insights."
-        ),
+            " insights."),
         "Academic Research Agent": (
             "You are an AI academic research assistant. Your primary responsibility is"
             " to create thorough, academically rigorous, unbiased, and systematically"
             " organized reports on a given research topic, following the standards of"
-            " scholarly work."
-        ),
+            " scholarly work."),
         "Default Agent": (
             "You are an AI critical thinker research assistant. Your sole purpose is to"
             " write well written, critically acclaimed, objective and structured"
-            " reports on given text."
-        ),
+            " reports on given text."),
     }
 
     return prompts.get(agent, "No such agent")
@@ -44,8 +40,7 @@ def generate_report_prompt(question, research_summary):
         " focus on the answer to the question, should be well structured, informative,"
         " in depth, with facts and numbers if available, a minimum of 1,200 words and"
         " with markdown syntax and apa format. Write all source urls at the end of the"
-        " report in apa format"
-    )
+        " report in apa format")
 
 
 def generate_search_queries_prompt(question):
@@ -57,8 +52,7 @@ def generate_search_queries_prompt(question):
     return (
         "Write 4 google search queries to search online that form an objective opinion"
         f' from the following: "{question}"You must respond with a list of strings in'
-        ' the following format: ["query 1", "query 2", "query 3", "query 4"]'
-    )
+        ' the following format: ["query 1", "query 2", "query 3", "query 4"]')
 
 
 def generate_resource_report_prompt(question, research_summary):
@@ -80,8 +74,7 @@ def generate_resource_report_prompt(question, research_summary):
         " significance of each source. Ensure that the report is well-structured,"
         " informative, in-depth, and follows Markdown syntax. Include relevant facts,"
         " figures, and numbers whenever available. The report should have a minimum"
-        " length of 1,200 words."
-    )
+        " length of 1,200 words.")
 
 
 def generate_outline_report_prompt(question, research_summary):
@@ -98,8 +91,7 @@ def generate_outline_report_prompt(question, research_summary):
         " research report, including the main sections, subsections, and key points to"
         " be covered. The research report should be detailed, informative, in-depth,"
         " and a minimum of 1,200 words. Use appropriate Markdown syntax to format the"
-        " outline and ensure readability."
-    )
+        " outline and ensure readability.")
 
 
 def generate_concepts_prompt(question, research_summary):
@@ -114,8 +106,7 @@ def generate_concepts_prompt(question, research_summary):
         " main concepts to learn for a research report on the following question or"
         f' topic: "{question}". The outline should provide a well-structured'
         " frameworkYou must respond with a list of strings in the following format:"
-        ' ["concepts 1", "concepts 2", "concepts 3", "concepts 4, concepts 5"]'
-    )
+        ' ["concepts 1", "concepts 2", "concepts 3", "concepts 4, concepts 5"]')
 
 
 def generate_lesson_prompt(concept):
@@ -131,8 +122,7 @@ def generate_lesson_prompt(concept):
         f"generate a comprehensive lesson about {concept} in Markdown syntax. This"
         f" should include the definitionof {concept}, its historical background and"
         " development, its applications or uses in differentfields, and notable events"
-        f" or facts related to {concept}."
-    )
+        f" or facts related to {concept}.")
 
     return prompt
 

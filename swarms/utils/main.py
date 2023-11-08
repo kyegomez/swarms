@@ -51,16 +51,16 @@ def get_new_image_name(org_img_name, func_name="update"):
     if len(name_split) == 1:
         most_org_file_name = name_split[0]
         recent_prev_file_name = name_split[0]
-        new_file_name = "{}_{}_{}_{}.png".format(
-            this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
-        )
+        new_file_name = "{}_{}_{}_{}.png".format(this_new_uuid, func_name,
+                                                 recent_prev_file_name,
+                                                 most_org_file_name)
     else:
         assert len(name_split) == 4
         most_org_file_name = name_split[3]
         recent_prev_file_name = name_split[0]
-        new_file_name = "{}_{}_{}_{}.png".format(
-            this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
-        )
+        new_file_name = "{}_{}_{}_{}.png".format(this_new_uuid, func_name,
+                                                 recent_prev_file_name,
+                                                 most_org_file_name)
     return os.path.join(head, new_file_name)
 
 
@@ -73,26 +73,26 @@ def get_new_dataframe_name(org_img_name, func_name="update"):
     if len(name_split) == 1:
         most_org_file_name = name_split[0]
         recent_prev_file_name = name_split[0]
-        new_file_name = "{}_{}_{}_{}.csv".format(
-            this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
-        )
+        new_file_name = "{}_{}_{}_{}.csv".format(this_new_uuid, func_name,
+                                                 recent_prev_file_name,
+                                                 most_org_file_name)
     else:
         assert len(name_split) == 4
         most_org_file_name = name_split[3]
         recent_prev_file_name = name_split[0]
-        new_file_name = "{}_{}_{}_{}.csv".format(
-            this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
-        )
+        new_file_name = "{}_{}_{}_{}.csv".format(this_new_uuid, func_name,
+                                                 recent_prev_file_name,
+                                                 most_org_file_name)
     return os.path.join(head, new_file_name)
 
 
 # =======================> utils end
 
-
 # =======================> ANSI BEGINNING
 
 
 class Code:
+
     def __init__(self, value: int):
         self.value = value
 
@@ -101,6 +101,7 @@ class Code:
 
 
 class Color(Code):
+
     def bg(self) -> "Color":
         self.value += 10
         return self
@@ -147,6 +148,7 @@ class Color(Code):
 
 
 class Style(Code):
+
     @staticmethod
     def reset() -> "Style":
         return Style(0)
@@ -203,19 +205,19 @@ def dim_multiline(message: str) -> str:
     lines = message.split("\n")
     if len(lines) <= 1:
         return lines[0]
-    return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(Color.black().bright())
+    return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(
+        Color.black().bright())
 
 
 # +=============================> ANSI Ending
 
-
 # ================================> upload base
-
 
 STATIC_DIR = "static"
 
 
 class AbstractUploader(ABC):
+
     @abstractmethod
     def upload(self, filepath: str) -> str:
         pass
@@ -227,12 +229,13 @@ class AbstractUploader(ABC):
 
 # ================================> upload end
 
-
 # ========================= upload s3
 
 
 class S3Uploader(AbstractUploader):
-    def __init__(self, accessKey: str, secretKey: str, region: str, bucket: str):
+
+    def __init__(self, accessKey: str, secretKey: str, region: str,
+                 bucket: str):
         self.accessKey = accessKey
         self.secretKey = secretKey
         self.region = region
@@ -263,11 +266,11 @@ class S3Uploader(AbstractUploader):
 
 # ========================= upload s3
 
-
 # ========================> upload/static
 
 
 class StaticUploader(AbstractUploader):
+
     def __init__(self, server: str, path: Path, endpoint: str):
         self.server = server
         self.path = path
@@ -291,7 +294,6 @@ class StaticUploader(AbstractUploader):
 
 
 # ========================> handlers/base
-
 
 # from env import settings
 
@@ -336,16 +338,19 @@ class FileType(Enum):
 
 
 class BaseHandler:
+
     def handle(self, filename: str) -> str:
         raise NotImplementedError
 
 
 class FileHandler:
+
     def __init__(self, handlers: Dict[FileType, BaseHandler], path: Path):
         self.handlers = handlers
         self.path = path
 
-    def register(self, filetype: FileType, handler: BaseHandler) -> "FileHandler":
+    def register(self, filetype: FileType,
+                 handler: BaseHandler) -> "FileHandler":
         self.handlers[filetype] = handler
         return self
 
@@ -353,8 +358,8 @@ class FileHandler:
         filetype = FileType.from_url(url)
         data = requests.get(url).content
         local_filename = os.path.join(
-            "file", str(uuid.uuid4())[0:8] + filetype.to_extension()
-        )
+            "file",
+            str(uuid.uuid4())[0:8] + filetype.to_extension())
         os.makedirs(os.path.dirname(local_filename), exist_ok=True)
         with open(local_filename, "wb") as f:
             size = f.write(data)
@@ -363,17 +368,15 @@ class FileHandler:
 
     def handle(self, url: str) -> str:
         try:
-            if url.startswith(os.environ.get("SERVER", "http://localhost:8000")):
+            if url.startswith(os.environ.get("SERVER",
+                                             "http://localhost:8000")):
                 local_filepath = url[
-                    len(os.environ.get("SERVER", "http://localhost:8000")) + 1 :
-                ]
+                    len(os.environ.get("SERVER", "http://localhost:8000")) + 1:]
                 local_filename = Path("file") / local_filepath.split("/")[-1]
                 src = self.path / local_filepath
-                dst = (
-                    self.path
-                    / os.environ.get("PLAYGROUND_DIR", "./playground")
-                    / local_filename
-                )
+                dst = (self.path /
+                       os.environ.get("PLAYGROUND_DIR", "./playground") /
+                       local_filename)
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy(src, dst)
             else:
@@ -383,8 +386,7 @@ class FileHandler:
                 if FileType.from_url(url) == FileType.IMAGE:
                     raise Exception(
                         f"No handler for {FileType.from_url(url)}. "
-                        "Please set USE_GPU to True in env/settings.py"
-                    )
+                        "Please set USE_GPU to True in env/settings.py")
                 else:
                     raise Exception(f"No handler for {FileType.from_url(url)}")
             return handler.handle(local_filename)
@@ -394,22 +396,21 @@ class FileHandler:
 
 # =>  base end
 
-
 # ===========================>
 
 
 class CsvToDataframe(BaseHandler):
+
     def handle(self, filename: str):
         df = pd.read_csv(filename)
         description = (
             f"Dataframe with {len(df)} rows and {len(df.columns)} columns. "
             "Columns are: "
-            f"{', '.join(df.columns)}"
-        )
+            f"{', '.join(df.columns)}")
 
         print(
             f"\nProcessed CsvToDataframe, Input CSV: {filename}, Output Description:"
-            f" {description}"
-        )
+            f" {description}")
 
-        return DATAFRAME_PROMPT.format(filename=filename, description=description)
+        return DATAFRAME_PROMPT.format(filename=filename,
+                                       description=description)
