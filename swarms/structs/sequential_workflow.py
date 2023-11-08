@@ -265,6 +265,32 @@ class SequentialWorkflow:
                 attrs=["bold", "underline"],
             )
         )
+    
+    def workflow_shutdown(self, **kwargs) -> None:
+        print(
+            colored(
+                """
+                Sequential Workflow Shutdown...""",
+                "red",
+                attrs=["bold", "underline"],
+            )
+        )
+
+    def add_objective_to_workflow(self, task: str, **kwargs) -> None:
+        print(
+            colored(
+                """
+                Adding Objective to Workflow...""",
+                "green",
+                attrs=["bold", "underline"],
+            )
+        )
+
+        task = Task(description=task, flow=kwargs["flow"], args=list(kwargs["args"]), kwargs=kwargs["kwargs"])
+        self.tasks.append(task)
+        
+
+
 
     def load_workflow_state(self, filepath: str = None, **kwargs) -> None:
         """
