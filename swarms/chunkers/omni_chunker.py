@@ -20,20 +20,14 @@ import os
 import sys
 
 
-
-
 @dataclass
 class OmniChunker:
-    """
-    
-    
-    """
+    """ """
+
     chunk_size: int = 1000
     beautify: bool = False
     use_tokenizer: bool = False
     tokenizer: Optional[Callable[[str], List[str]]] = None
-
-
 
     def __call__(self, file_path: str) -> List[str]:
         """
@@ -121,4 +115,3 @@ class OmniChunker:
                 "cyan",
             )
         )
-

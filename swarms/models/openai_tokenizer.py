@@ -80,9 +80,7 @@ class OpenAITokenizer(BaseTokenizer):
 
         return (tokens if tokens else self.DEFAULT_MAX_TOKENS) - offset
 
-    def count_tokens(
-        self, text: str | list, model: Optional[str] = None
-    ) -> int:
+    def count_tokens(self, text: str | list, model: Optional[str] = None) -> int:
         """
         Handles the special case of ChatML. Implementation adopted from the official OpenAI notebook:
         https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
@@ -144,7 +142,5 @@ class OpenAITokenizer(BaseTokenizer):
             return num_tokens
         else:
             return len(
-                self.encoding.encode(
-                    text, allowed_special=set(self.stop_sequences)
-                )
+                self.encoding.encode(text, allowed_special=set(self.stop_sequences))
             )
