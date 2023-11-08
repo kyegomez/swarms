@@ -265,7 +265,7 @@ class SequentialWorkflow:
                 attrs=["bold", "underline"],
             )
         )
-    
+
     def workflow_shutdown(self, **kwargs) -> None:
         print(
             colored(
@@ -286,11 +286,13 @@ class SequentialWorkflow:
             )
         )
 
-        task = Task(description=task, flow=kwargs["flow"], args=list(kwargs["args"]), kwargs=kwargs["kwargs"])
+        task = Task(
+            description=task,
+            flow=kwargs["flow"],
+            args=list(kwargs["args"]),
+            kwargs=kwargs["kwargs"],
+        )
         self.tasks.append(task)
-        
-
-
 
     def load_workflow_state(self, filepath: str = None, **kwargs) -> None:
         """
