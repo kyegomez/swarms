@@ -55,9 +55,9 @@ class OpenAIAssistant:
         return thread
 
     def add_message_to_thread(self, thread_id: str, message: str):
-        message = self.client.beta.threads.add_message(
-            thread_id=thread_id, role=self.user, content=message
-        )
+        message = self.client.beta.threads.add_message(thread_id=thread_id,
+                                                       role=self.user,
+                                                       content=message)
         return message
 
     def run(self, task: str):
@@ -67,8 +67,7 @@ class OpenAIAssistant:
             instructions=self.instructions,
         )
 
-        out = self.client.beta.threads.runs.retrieve(
-            thread_id=run.thread_id, run_id=run.id
-        )
+        out = self.client.beta.threads.runs.retrieve(thread_id=run.thread_id,
+                                                     run_id=run.id)
 
         return out

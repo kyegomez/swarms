@@ -9,7 +9,6 @@ from swarms.models.huggingface import HuggingfaceLLM
 from swarms.models.wizard_storytelling import WizardLLMStoryTeller
 from swarms.models.mpt import MPT7B
 
-
 # MultiModal Models
 from swarms.models.idefics import Idefics
 from swarms.models.kosmos_two import Kosmos
@@ -26,7 +25,6 @@ import sys
 
 log_file = open("errors.txt", "w")
 sys.stderr = log_file
-
 
 __all__ = [
     "Anthropic",

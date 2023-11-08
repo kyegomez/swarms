@@ -6,6 +6,7 @@ FuncToolBuilder = Callable[[], ToolBuilder]
 
 
 class ToolsRegistry:
+
     def __init__(self) -> None:
         self.tools: Dict[str, FuncToolBuilder] = {}
 
@@ -18,8 +19,7 @@ class ToolsRegistry:
         if isinstance(ret, tool):
             return ret
         raise ValueError(
-            "Tool builder {} did not return a Tool instance".format(tool_name)
-        )
+            "Tool builder {} did not return a Tool instance".format(tool_name))
 
     def list_tools(self) -> List[str]:
         return list(self.tools.keys())
@@ -29,6 +29,7 @@ tools_registry = ToolsRegistry()
 
 
 def register(tool_name):
+
     def decorator(tool: FuncToolBuilder):
         tools_registry.register(tool_name, tool)
         return tool

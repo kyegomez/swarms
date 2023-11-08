@@ -43,9 +43,8 @@ def maximal_marginal_relevance(
             if i in idxs:
                 continue
             redundant_score = max(similarity_to_selected[i])
-            equation_score = (
-                lambda_mult * query_score - (1 - lambda_mult) * redundant_score
-            )
+            equation_score = (lambda_mult * query_score -
+                              (1 - lambda_mult) * redundant_score)
             if equation_score > best_score:
                 best_score = equation_score
                 idx_to_add = i
@@ -57,8 +56,8 @@ def maximal_marginal_relevance(
 def filter_complex_metadata(
     documents: List[Document],
     *,
-    allowed_types: Tuple[Type, ...] = (str, bool, int, float)
-) -> List[Document]:
+    allowed_types: Tuple[Type,
+                         ...] = (str, bool, int, float)) -> List[Document]:
     """Filter out metadata types that are not supported for a vector store."""
     updated_documents = []
     for document in documents:

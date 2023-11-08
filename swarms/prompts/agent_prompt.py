@@ -13,13 +13,23 @@ class PromptGenerator:
         self.performance_evaluation: List[str] = []
         self.response_format = {
             "thoughts": {
-                "text": "thought",
-                "reasoning": "reasoning",
-                "plan": "- short bulleted\n- list that conveys\n- long-term plan",
-                "criticism": "constructive self-criticism",
-                "speak": "thoughts summary to say to user",
+                "text":
+                    "thought",
+                "reasoning":
+                    "reasoning",
+                "plan":
+                    "- short bulleted\n- list that conveys\n- long-term plan",
+                "criticism":
+                    "constructive self-criticism",
+                "speak":
+                    "thoughts summary to say to user",
             },
-            "command": {"name": "command name", "args": {"arg name": "value"}},
+            "command": {
+                "name": "command name",
+                "args": {
+                    "arg name": "value"
+                }
+            },
         }
 
     def add_constraint(self, constraint: str) -> None:
@@ -72,7 +82,6 @@ class PromptGenerator:
             f"Performance Evaluation:\n{''.join(self.performance_evaluation)}\n\n"
             "You should only respond in JSON format as described below "
             f"\nResponse Format: \n{formatted_response_format} "
-            "\nEnsure the response can be parsed by Python json.loads"
-        )
+            "\nEnsure the response can be parsed by Python json.loads")
 
         return prompt_string

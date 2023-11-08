@@ -28,9 +28,10 @@ from tenacity import (
 from swarms.models.embeddings_base import Embeddings
 
 
-def get_from_dict_or_env(
-    values: dict, key: str, env_key: str, default: Any = None
-) -> Any:
+def get_from_dict_or_env(values: dict,
+                         key: str,
+                         env_key: str,
+                         default: Any = None) -> Any:
     import os
 
     return values.get(key) or os.getenv(env_key) or default
@@ -43,7 +44,8 @@ def get_pydantic_field_names(cls: Any) -> Set[str]:
 logger = logging.getLogger(__name__)
 
 
-def _create_retry_decorator(embeddings: OpenAIEmbeddings) -> Callable[[Any], Any]:
+def _create_retry_decorator(
+        embeddings: OpenAIEmbeddings) -> Callable[[Any], Any]:
     import llm
 
     min_seconds = 4
@@ -54,13 +56,11 @@ def _create_retry_decorator(embeddings: OpenAIEmbeddings) -> Callable[[Any], Any
         reraise=True,
         stop=stop_after_attempt(embeddings.max_retries),
         wait=wait_exponential(multiplier=1, min=min_seconds, max=max_seconds),
-        retry=(
-            retry_if_exception_type(llm.error.Timeout)
-            | retry_if_exception_type(llm.error.APIError)
-            | retry_if_exception_type(llm.error.APIConnectionError)
-            | retry_if_exception_type(llm.error.RateLimitError)
-            | retry_if_exception_type(llm.error.ServiceUnavailableError)
-        ),
+        retry=(retry_if_exception_type(llm.error.Timeout) |
+               retry_if_exception_type(llm.error.APIError) |
+               retry_if_exception_type(llm.error.APIConnectionError) |
+               retry_if_exception_type(llm.error.RateLimitError) |
+               retry_if_exception_type(llm.error.ServiceUnavailableError)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
 
@@ -76,17 +76,16 @@ def _async_retry_decorator(embeddings: OpenAIEmbeddings) -> Any:
         reraise=True,
         stop=stop_after_attempt(embeddings.max_retries),
         wait=wait_exponential(multiplier=1, min=min_seconds, max=max_seconds),
-        retry=(
-            retry_if_exception_type(llm.error.Timeout)
-            | retry_if_exception_type(llm.error.APIError)
-            | retry_if_exception_type(llm.error.APIConnectionError)
-            | retry_if_exception_type(llm.error.RateLimitError)
-            | retry_if_exception_type(llm.error.ServiceUnavailableError)
-        ),
+        retry=(retry_if_exception_type(llm.error.Timeout) |
+               retry_if_exception_type(llm.error.APIError) |
+               retry_if_exception_type(llm.error.APIConnectionError) |
+               retry_if_exception_type(llm.error.RateLimitError) |
+               retry_if_exception_type(llm.error.ServiceUnavailableError)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
 
     def wrap(func: Callable) -> Callable:
+
         async def wrapped_f(*args: Any, **kwargs: Any) -> Callable:
             async for _ in async_retrying:
                 return await func(*args, **kwargs)
@@ -118,7 +117,8 @@ def embed_with_retry(embeddings: OpenAIEmbeddings, **kwargs: Any) -> Any:
     return _embed_with_retry(**kwargs)
 
 
-async def async_embed_with_retry(embeddings: OpenAIEmbeddings, **kwargs: Any) -> Any:
+async def async_embed_with_retry(embeddings: OpenAIEmbeddings,
+                                 **kwargs: Any) -> Any:
     """Use tenacity to retry the embedding call."""
 
     @_async_retry_decorator(embeddings)
@@ -225,11 +225,11 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 warnings.warn(
                     f"""WARNING! {field_name} is not default parameter.
                     {field_name} was transferred to model_kwargs.
-                    Please confirm that {field_name} is what you intended."""
-                )
+                    Please confirm that {field_name} is what you intended.""")
                 extra[field_name] = values.pop(field_name)
 
-        invalid_model_kwargs = all_required_field_names.intersection(extra.keys())
+        invalid_model_kwargs = all_required_field_names.intersection(
+            extra.keys())
         if invalid_model_kwargs:
             raise ValueError(
                 f"Parameters {invalid_model_kwargs} should be specified explicitly. "
@@ -242,9 +242,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     @root_validator()
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
-        values["openai_api_key"] = get_from_dict_or_env(
-            values, "openai_api_key", "OPENAI_API_KEY"
-        )
+        values["openai_api_key"] = get_from_dict_or_env(values,
+                                                        "openai_api_key",
+                                                        "OPENAI_API_KEY")
         values["openai_api_base"] = get_from_dict_or_env(
             values,
             "openai_api_base",
@@ -284,10 +284,8 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
 
             values["client"] = llm.Embedding
         except ImportError:
-            raise ImportError(
-                "Could not import openai python package. "
-                "Please install it with `pip install openai`."
-            )
+            raise ImportError("Could not import openai python package. "
+                              "Please install it with `pip install openai`.")
         return values
 
     @property
@@ -315,8 +313,11 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         return openai_args
 
     def _get_len_safe_embeddings(
-        self, texts: List[str], *, engine: str, chunk_size: Optional[int] = None
-    ) -> List[List[float]]:
+            self,
+            texts: List[str],
+            *,
+            engine: str,
+            chunk_size: Optional[int] = None) -> List[List[float]]:
         embeddings: List[List[float]] = [[] for _ in range(len(texts))]
         try:
             import tiktoken
@@ -324,8 +325,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             raise ImportError(
                 "Could not import tiktoken python package. "
                 "This is needed in order to for OpenAIEmbeddings. "
-                "Please install it with `pip install tiktoken`."
-            )
+                "Please install it with `pip install tiktoken`.")
 
         tokens = []
         indices = []
@@ -333,7 +333,8 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         try:
             encoding = tiktoken.encoding_for_model(model_name)
         except KeyError:
-            logger.warning("Warning: model not found. Using cl100k_base encoding.")
+            logger.warning(
+                "Warning: model not found. Using cl100k_base encoding.")
             model = "cl100k_base"
             encoding = tiktoken.get_encoding(model)
         for i, text in enumerate(texts):
@@ -347,7 +348,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 disallowed_special=self.disallowed_special,
             )
             for j in range(0, len(token), self.embedding_ctx_length):
-                tokens.append(token[j : j + self.embedding_ctx_length])
+                tokens.append(token[j:j + self.embedding_ctx_length])
                 indices.append(i)
 
         batched_embeddings: List[List[float]] = []
@@ -366,7 +367,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         for i in _iter:
             response = embed_with_retry(
                 self,
-                input=tokens[i : i + _chunk_size],
+                input=tokens[i:i + _chunk_size],
                 **self._invocation_params,
             )
             batched_embeddings.extend(r["embedding"] for r in response["data"])
@@ -384,11 +385,11 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                     self,
                     input="",
                     **self._invocation_params,
-                )[
-                    "data"
-                ][0]["embedding"]
+                )["data"][0]["embedding"]
             else:
-                average = np.average(_result, axis=0, weights=num_tokens_in_batch[i])
+                average = np.average(_result,
+                                     axis=0,
+                                     weights=num_tokens_in_batch[i])
             embeddings[i] = (average / np.linalg.norm(average)).tolist()
 
         return embeddings
@@ -396,8 +397,11 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     # please refer to
     # https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb
     async def _aget_len_safe_embeddings(
-        self, texts: List[str], *, engine: str, chunk_size: Optional[int] = None
-    ) -> List[List[float]]:
+            self,
+            texts: List[str],
+            *,
+            engine: str,
+            chunk_size: Optional[int] = None) -> List[List[float]]:
         embeddings: List[List[float]] = [[] for _ in range(len(texts))]
         try:
             import tiktoken
@@ -405,8 +409,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             raise ImportError(
                 "Could not import tiktoken python package. "
                 "This is needed in order to for OpenAIEmbeddings. "
-                "Please install it with `pip install tiktoken`."
-            )
+                "Please install it with `pip install tiktoken`.")
 
         tokens = []
         indices = []
@@ -414,7 +417,8 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         try:
             encoding = tiktoken.encoding_for_model(model_name)
         except KeyError:
-            logger.warning("Warning: model not found. Using cl100k_base encoding.")
+            logger.warning(
+                "Warning: model not found. Using cl100k_base encoding.")
             model = "cl100k_base"
             encoding = tiktoken.get_encoding(model)
         for i, text in enumerate(texts):
@@ -428,7 +432,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 disallowed_special=self.disallowed_special,
             )
             for j in range(0, len(token), self.embedding_ctx_length):
-                tokens.append(token[j : j + self.embedding_ctx_length])
+                tokens.append(token[j:j + self.embedding_ctx_length])
                 indices.append(i)
 
         batched_embeddings: List[List[float]] = []
@@ -436,7 +440,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         for i in range(0, len(tokens), _chunk_size):
             response = await async_embed_with_retry(
                 self,
-                input=tokens[i : i + _chunk_size],
+                input=tokens[i:i + _chunk_size],
                 **self._invocation_params,
             )
             batched_embeddings.extend(r["embedding"] for r in response["data"])
@@ -450,22 +454,22 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         for i in range(len(texts)):
             _result = results[i]
             if len(_result) == 0:
-                average = (
-                    await async_embed_with_retry(
-                        self,
-                        input="",
-                        **self._invocation_params,
-                    )
-                )["data"][0]["embedding"]
+                average = (await async_embed_with_retry(
+                    self,
+                    input="",
+                    **self._invocation_params,
+                ))["data"][0]["embedding"]
             else:
-                average = np.average(_result, axis=0, weights=num_tokens_in_batch[i])
+                average = np.average(_result,
+                                     axis=0,
+                                     weights=num_tokens_in_batch[i])
             embeddings[i] = (average / np.linalg.norm(average)).tolist()
 
         return embeddings
 
-    def embed_documents(
-        self, texts: List[str], chunk_size: Optional[int] = 0
-    ) -> List[List[float]]:
+    def embed_documents(self,
+                        texts: List[str],
+                        chunk_size: Optional[int] = 0) -> List[List[float]]:
         """Call out to OpenAI's embedding endpoint for embedding search docs.
 
         Args:
@@ -481,8 +485,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         return self._get_len_safe_embeddings(texts, engine=self.deployment)
 
     async def aembed_documents(
-        self, texts: List[str], chunk_size: Optional[int] = 0
-    ) -> List[List[float]]:
+            self,
+            texts: List[str],
+            chunk_size: Optional[int] = 0) -> List[List[float]]:
         """Call out to OpenAI's embedding endpoint async for embedding search docs.
 
         Args:
@@ -495,7 +500,8 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         """
         # NOTE: to keep things simple, we assume the list may contain texts longer
         #       than the maximum context and use length-safe embedding function.
-        return await self._aget_len_safe_embeddings(texts, engine=self.deployment)
+        return await self._aget_len_safe_embeddings(texts,
+                                                    engine=self.deployment)
 
     def embed_query(self, text: str) -> List[float]:
         """Call out to OpenAI's embedding endpoint for embedding query text.

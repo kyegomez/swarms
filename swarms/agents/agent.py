@@ -8,8 +8,7 @@ from langchain.chains.llm import LLMChain
 from langchain.chat_models.base import BaseChatModel
 from langchain.memory import ChatMessageHistory
 from langchain.prompts.chat import (
-    BaseChatPromptTemplate,
-)
+    BaseChatPromptTemplate,)
 from langchain.schema import (
     BaseChatMessageHistory,
     Document,
@@ -33,7 +32,6 @@ from langchain_experimental.autonomous_agents.autogpt.prompt_generator import (
     get_prompt,
 )
 from langchain_experimental.pydantic_v1 import BaseModel, ValidationError
-
 
 # PROMPT
 FINISH_NAME = "finish"
@@ -72,14 +70,12 @@ class AutoGPTPrompt(BaseChatPromptTemplate, BaseModel):  # type: ignore[misc]
     send_token_limit: int = 4196
 
     def construct_full_prompt(self, goals: List[str]) -> str:
-        prompt_start = (
-            "Your decisions must always be made independently "
-            "without seeking user assistance.\n"
-            "Play to your strengths as an LLM and pursue simple "
-            "strategies with no legal complications.\n"
-            "If you have completed all your tasks, make sure to "
-            'use the "finish" command.'
-        )
+        prompt_start = ("Your decisions must always be made independently "
+                        "without seeking user assistance.\n"
+                        "Play to your strengths as an LLM and pursue simple "
+                        "strategies with no legal complications.\n"
+                        "If you have completed all your tasks, make sure to "
+                        'use the "finish" command.')
         # Construct full prompt
         full_prompt = (
             f"You are {self.ai_name}, {self.ai_role}\n{prompt_start}\n\nGOALS:\n\n"
@@ -91,25 +87,23 @@ class AutoGPTPrompt(BaseChatPromptTemplate, BaseModel):  # type: ignore[misc]
         return full_prompt
 
     def format_messages(self, **kwargs: Any) -> List[BaseMessage]:
-        base_prompt = SystemMessage(content=self.construct_full_prompt(kwargs["goals"]))
+        base_prompt = SystemMessage(
+            content=self.construct_full_prompt(kwargs["goals"]))
         time_prompt = SystemMessage(
-            content=f"The current time and date is {time.strftime('%c')}"
-        )
-        used_tokens = self.token_counter(base_prompt.content) + self.token_counter(
-            time_prompt.content
-        )
+            content=f"The current time and date is {time.strftime('%c')}")
+        used_tokens = self.token_counter(
+            base_prompt.content) + self.token_counter(time_prompt.content)
         memory: VectorStoreRetriever = kwargs["memory"]
         previous_messages = kwargs["messages"]
-        relevant_docs = memory.get_relevant_documents(str(previous_messages[-10:]))
+        relevant_docs = memory.get_relevant_documents(
+            str(previous_messages[-10:]))
         relevant_memory = [d.page_content for d in relevant_docs]
         relevant_memory_tokens = sum(
-            [self.token_counter(doc) for doc in relevant_memory]
-        )
+            [self.token_counter(doc) for doc in relevant_memory])
         while used_tokens + relevant_memory_tokens > 2500:
             relevant_memory = relevant_memory[:-1]
             relevant_memory_tokens = sum(
-                [self.token_counter(doc) for doc in relevant_memory]
-            )
+                [self.token_counter(doc) for doc in relevant_memory])
         content_format = (
             f"This reminds you of these events from your past:\n{relevant_memory}\n\n"
         )
@@ -147,13 +141,23 @@ class PromptGenerator:
         self.performance_evaluation: List[str] = []
         self.response_format = {
             "thoughts": {
-                "text": "thought",
-                "reasoning": "reasoning",
-                "plan": "- short bulleted\n- list that conveys\n- long-term plan",
-                "criticism": "constructive self-criticism",
-                "speak": "thoughts summary to say to user",
+                "text":
+                    "thought",
+                "reasoning":
+                    "reasoning",
+                "plan":
+                    "- short bulleted\n- list that conveys\n- long-term plan",
+                "criticism":
+                    "constructive self-criticism",
+                "speak":
+                    "thoughts summary to say to user",
             },
-            "command": {"name": "command name", "args": {"arg name": "value"}},
+            "command": {
+                "name": "command name",
+                "args": {
+                    "arg name": "value"
+                }
+            },
         }
 
     def add_constraint(self, constraint: str) -> None:
@@ -191,7 +195,9 @@ class PromptGenerator:
         """
         self.performance_evaluation.append(evaluation)
 
-    def _generate_numbered_list(self, items: list, item_type: str = "list") -> str:
+    def _generate_numbered_list(self,
+                                items: list,
+                                item_type: str = "list") -> str:
         """
         Generate a numbered list from given items based on the item_type.
 
@@ -209,16 +215,11 @@ class PromptGenerator:
                 for i, item in enumerate(items)
             ]
             finish_description = (
-                "use this to signal that you have finished all your objectives"
-            )
-            finish_args = (
-                '"response": "final response to let '
-                'people know you have finished your objectives"'
-            )
-            finish_string = (
-                f"{len(items) + 1}. {FINISH_NAME}: "
-                f"{finish_description}, args: {finish_args}"
-            )
+                "use this to signal that you have finished all your objectives")
+            finish_args = ('"response": "final response to let '
+                           'people know you have finished your objectives"')
+            finish_string = (f"{len(items) + 1}. {FINISH_NAME}: "
+                             f"{finish_description}, args: {finish_args}")
             return "\n".join(command_strings + [finish_string])
         else:
             return "\n".join(f"{i+1}. {item}" for i, item in enumerate(items))
@@ -239,8 +240,7 @@ class PromptGenerator:
             f"{self._generate_numbered_list(self.performance_evaluation)}\n\n"
             "You should only respond in JSON format as described below "
             f"\nResponse Format: \n{formatted_response_format} "
-            "\nEnsure the response can be parsed by Python json.loads"
-        )
+            "\nEnsure the response can be parsed by Python json.loads")
 
         return prompt_string
 
@@ -261,13 +261,11 @@ def get_prompt(tools: List[BaseTool]) -> str:
     prompt_generator.add_constraint(
         "~16000 word limit for short term memory. "
         "Your short term memory is short, "
-        "so immediately save important information to files."
-    )
+        "so immediately save important information to files.")
     prompt_generator.add_constraint(
         "If you are unsure how you previously did something "
         "or want to recall past events, "
-        "thinking about similar events will help you remember."
-    )
+        "thinking about similar events will help you remember.")
     prompt_generator.add_constraint("No user assistance")
     prompt_generator.add_constraint(
         'Exclusively use the commands listed in double quotes e.g. "command name"'
@@ -279,29 +277,23 @@ def get_prompt(tools: List[BaseTool]) -> str:
 
     # Add resources to the PromptGenerator object
     prompt_generator.add_resource(
-        "Internet access for searches and information gathering."
-    )
+        "Internet access for searches and information gathering.")
     prompt_generator.add_resource("Long Term memory management.")
     prompt_generator.add_resource(
-        "GPT-3.5 powered Agents for delegation of simple tasks."
-    )
+        "GPT-3.5 powered Agents for delegation of simple tasks.")
     prompt_generator.add_resource("File output.")
 
     # Add performance evaluations to the PromptGenerator object
     prompt_generator.add_performance_evaluation(
         "Continuously review and analyze your actions "
-        "to ensure you are performing to the best of your abilities."
-    )
+        "to ensure you are performing to the best of your abilities.")
     prompt_generator.add_performance_evaluation(
-        "Constructively self-criticize your big-picture behavior constantly."
-    )
+        "Constructively self-criticize your big-picture behavior constantly.")
     prompt_generator.add_performance_evaluation(
-        "Reflect on past decisions and strategies to refine your approach."
-    )
+        "Reflect on past decisions and strategies to refine your approach.")
     prompt_generator.add_performance_evaluation(
         "Every command has a cost, so be smart and efficient. "
-        "Aim to complete tasks in the least number of steps."
-    )
+        "Aim to complete tasks in the least number of steps.")
 
     # Generate the prompt string
     prompt_string = prompt_generator.generate_prompt_string()
@@ -372,10 +364,8 @@ class AutoGPT:
         )
 
     def run(self, goals: List[str]) -> str:
-        user_input = (
-            "Determine which next command to use, "
-            "and respond using the format specified above:"
-        )
+        user_input = ("Determine which next command to use, "
+                      "and respond using the format specified above:")
         # Interaction Loop
         loop_count = 0
         while True:
@@ -392,8 +382,10 @@ class AutoGPT:
 
             # Print Assistant thoughts
             print(assistant_reply)
-            self.chat_history_memory.add_message(HumanMessage(content=user_input))
-            self.chat_history_memory.add_message(AIMessage(content=assistant_reply))
+            self.chat_history_memory.add_message(
+                HumanMessage(content=user_input))
+            self.chat_history_memory.add_message(
+                AIMessage(content=assistant_reply))
 
             # Get command name and arguments
             action = self.output_parser.parse(assistant_reply)
@@ -419,8 +411,7 @@ class AutoGPT:
                 result = (
                     f"Unknown command '{action.name}'. "
                     "Please refer to the 'COMMANDS' list for available "
-                    "commands and only respond in the specified JSON format."
-                )
+                    "commands and only respond in the specified JSON format.")
 
             memory_to_add = f"Assistant Reply: {assistant_reply} \nResult: {result} "
             if self.feedback_tool is not None:

@@ -80,10 +80,8 @@ class Chroma(VectorStore):
             import chromadb
             import chromadb.config
         except ImportError:
-            raise ImportError(
-                "Could not import chromadb python package. "
-                "Please install it with `pip install chromadb`."
-            )
+            raise ImportError("Could not import chromadb python package. "
+                              "Please install it with `pip install chromadb`.")
 
         if client is not None:
             self._client_settings = client_settings
@@ -94,8 +92,7 @@ class Chroma(VectorStore):
                 # If client_settings is provided with persist_directory specified,
                 # then it is "in-memory and persisting to disk" mode.
                 client_settings.persist_directory = (
-                    persist_directory or client_settings.persist_directory
-                )
+                    persist_directory or client_settings.persist_directory)
                 if client_settings.persist_directory is not None:
                     # Maintain backwards compatibility with chromadb < 0.4.0
                     major, minor, _ = chromadb.__version__.split(".")
@@ -108,25 +105,23 @@ class Chroma(VectorStore):
                 major, minor, _ = chromadb.__version__.split(".")
                 if int(major) == 0 and int(minor) < 4:
                     _client_settings = chromadb.config.Settings(
-                        chroma_db_impl="duckdb+parquet",
-                    )
+                        chroma_db_impl="duckdb+parquet",)
                 else:
-                    _client_settings = chromadb.config.Settings(is_persistent=True)
+                    _client_settings = chromadb.config.Settings(
+                        is_persistent=True)
                 _client_settings.persist_directory = persist_directory
             else:
                 _client_settings = chromadb.config.Settings()
             self._client_settings = _client_settings
             self._client = chromadb.Client(_client_settings)
-            self._persist_directory = (
-                _client_settings.persist_directory or persist_directory
-            )
+            self._persist_directory = (_client_settings.persist_directory or
+                                       persist_directory)
 
         self._embedding_function = embedding_function
         self._collection = self._client.get_or_create_collection(
             name=collection_name,
             embedding_function=self._embedding_function.embed_documents
-            if self._embedding_function is not None
-            else None,
+            if self._embedding_function is not None else None,
             metadata=collection_metadata,
         )
         self.override_relevance_score_fn = relevance_score_fn
@@ -149,10 +144,8 @@ class Chroma(VectorStore):
         try:
             import chromadb  # noqa: F401
         except ImportError:
-            raise ValueError(
-                "Could not import chromadb python package. "
-                "Please install it with `pip install chromadb`."
-            )
+            raise ValueError("Could not import chromadb python package. "
+                             "Please install it with `pip install chromadb`.")
         return self._collection.query(
             query_texts=query_texts,
             query_embeddings=query_embeddings,
@@ -202,9 +195,9 @@ class Chroma(VectorStore):
             if non_empty_ids:
                 metadatas = [metadatas[idx] for idx in non_empty_ids]
                 texts_with_metadatas = [texts[idx] for idx in non_empty_ids]
-                embeddings_with_metadatas = (
-                    [embeddings[idx] for idx in non_empty_ids] if embeddings else None
-                )
+                embeddings_with_metadatas = ([
+                    embeddings[idx] for idx in non_empty_ids
+                ] if embeddings else None)
                 ids_with_metadata = [ids[idx] for idx in non_empty_ids]
                 try:
                     self._collection.upsert(
@@ -225,8 +218,7 @@ class Chroma(VectorStore):
             if empty_ids:
                 texts_without_metadatas = [texts[j] for j in empty_ids]
                 embeddings_without_metadatas = (
-                    [embeddings[j] for j in empty_ids] if embeddings else None
-                )
+                    [embeddings[j] for j in empty_ids] if embeddings else None)
                 ids_without_metadatas = [ids[j] for j in empty_ids]
                 self._collection.upsert(
                     embeddings=embeddings_without_metadatas,
@@ -258,7 +250,9 @@ class Chroma(VectorStore):
         Returns:
             List[Document]: List of documents most similar to the query text.
         """
-        docs_and_scores = self.similarity_search_with_score(query, k, filter=filter)
+        docs_and_scores = self.similarity_search_with_score(query,
+                                                            k,
+                                                            filter=filter)
         return [doc for doc, _ in docs_and_scores]
 
     def similarity_search_by_vector(
@@ -381,8 +375,7 @@ class Chroma(VectorStore):
             raise ValueError(
                 "No supported normalization function"
                 f" for distance metric of type: {distance}."
-                "Consider providing relevance_score_fn to Chroma constructor."
-            )
+                "Consider providing relevance_score_fn to Chroma constructor.")
 
     def max_marginal_relevance_search_by_vector(
         self,
@@ -428,7 +421,9 @@ class Chroma(VectorStore):
 
         candidates = _results_to_docs(results)
 
-        selected_results = [r for i, r in enumerate(candidates) if i in mmr_selected]
+        selected_results = [
+            r for i, r in enumerate(candidates) if i in mmr_selected
+        ]
         return selected_results
 
     def max_marginal_relevance_search(
@@ -523,10 +518,8 @@ class Chroma(VectorStore):
         It will also be called automatically when the object is destroyed.
         """
         if self._persist_directory is None:
-            raise ValueError(
-                "You must specify a persist_directory on"
-                "creation to persist the collection."
-            )
+            raise ValueError("You must specify a persist_directory on"
+                             "creation to persist the collection.")
         import chromadb
 
         # Maintain backwards compatibility with chromadb < 0.4.0
@@ -543,7 +536,8 @@ class Chroma(VectorStore):
         """
         return self.update_documents([document_id], [document])
 
-    def update_documents(self, ids: List[str], documents: List[Document]) -> None:
+    def update_documents(self, ids: List[str],
+                         documents: List[Document]) -> None:
         """Update a document in the collection.
 
         Args:
@@ -558,17 +552,16 @@ class Chroma(VectorStore):
             )
         embeddings = self._embedding_function.embed_documents(text)
 
-        if hasattr(
-            self._collection._client, "max_batch_size"
-        ):  # for Chroma 0.4.10 and above
+        if hasattr(self._collection._client,
+                   "max_batch_size"):  # for Chroma 0.4.10 and above
             from chromadb.utils.batch_utils import create_batches
 
             for batch in create_batches(
-                api=self._collection._client,
-                ids=ids,
-                metadatas=metadata,
-                documents=text,
-                embeddings=embeddings,
+                    api=self._collection._client,
+                    ids=ids,
+                    metadatas=metadata,
+                    documents=text,
+                    embeddings=embeddings,
             ):
                 self._collection.update(
                     ids=batch[0],
@@ -628,16 +621,15 @@ class Chroma(VectorStore):
         )
         if ids is None:
             ids = [str(uuid.uuid1()) for _ in texts]
-        if hasattr(
-            chroma_collection._client, "max_batch_size"
-        ):  # for Chroma 0.4.10 and above
+        if hasattr(chroma_collection._client,
+                   "max_batch_size"):  # for Chroma 0.4.10 and above
             from chromadb.utils.batch_utils import create_batches
 
             for batch in create_batches(
-                api=chroma_collection._client,
-                ids=ids,
-                metadatas=metadatas,
-                documents=texts,
+                    api=chroma_collection._client,
+                    ids=ids,
+                    metadatas=metadatas,
+                    documents=texts,
             ):
                 chroma_collection.add_texts(
                     texts=batch[3] if batch[3] else [],
@@ -645,7 +637,9 @@ class Chroma(VectorStore):
                     ids=batch[0],
                 )
         else:
-            chroma_collection.add_texts(texts=texts, metadatas=metadatas, ids=ids)
+            chroma_collection.add_texts(texts=texts,
+                                        metadatas=metadatas,
+                                        ids=ids)
         return chroma_collection
 
     @classmethod

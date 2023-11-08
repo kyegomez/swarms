@@ -49,16 +49,12 @@ def get_input(
     """
     Multiline input function.
     """
-    return (
-        session.prompt(
-            completer=completer,
-            multiline=True,
-            auto_suggest=AutoSuggestFromHistory(),
-            key_bindings=key_bindings,
-        )
-        if session
-        else prompt(multiline=True)
-    )
+    return (session.prompt(
+        completer=completer,
+        multiline=True,
+        auto_suggest=AutoSuggestFromHistory(),
+        key_bindings=key_bindings,
+    ) if session else prompt(multiline=True))
 
 
 async def get_input_async(
@@ -68,15 +64,11 @@ async def get_input_async(
     """
     Multiline input function.
     """
-    return (
-        await session.prompt_async(
-            completer=completer,
-            multiline=True,
-            auto_suggest=AutoSuggestFromHistory(),
-        )
-        if session
-        else prompt(multiline=True)
-    )
+    return (await session.prompt_async(
+        completer=completer,
+        multiline=True,
+        auto_suggest=AutoSuggestFromHistory(),
+    ) if session else prompt(multiline=True))
 
 
 def get_filtered_keys_from_object(obj: object, *keys: str) -> any:
@@ -94,9 +86,7 @@ def get_filtered_keys_from_object(obj: object, *keys: str) -> any:
         return {key for key in class_keys if key not in keys[1:]}
     # Check if all passed keys are valid
     if invalid_keys := set(keys) - class_keys:
-        raise ValueError(
-            f"Invalid keys: {invalid_keys}",
-        )
+        raise ValueError(f"Invalid keys: {invalid_keys}",)
     # Only return specified keys that are in class_keys
     return {key for key in keys if key in class_keys}
 
@@ -124,8 +114,8 @@ def random_int(min: int, max: int) -> int:
 
 if __name__ == "__main__":
     logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s",
-    )
+        format=
+        "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s",)
 
 log = logging.getLogger(__name__)
 
