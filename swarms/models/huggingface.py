@@ -166,7 +166,10 @@ class HuggingfaceLLM:
         except Exception as e:
             print(
                 colored(
-                    f"HuggingfaceLLM could not generate text because of error: {e}, try optimizing your arguments",
+                    (
+                        f"HuggingfaceLLM could not generate text because of error: {e},"
+                        " try optimizing your arguments"
+                    ),
                     "red",
                 )
             )
@@ -299,7 +302,7 @@ class HuggingfaceLLM:
 
                 Task Environment:
                     Task: {task}
-            
+
                 """,
                 "red",
             )

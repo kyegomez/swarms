@@ -98,7 +98,7 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
             code = self.preprocess_code(code)
             if not self.process:
                 self.start_process()
-        except:
+        except BaseException:
             yield {"output": traceback.format_exc()}
             return
 
@@ -112,7 +112,7 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
                 self.process.stdin.write(code + "\n")
                 self.process.stdin.flush()
                 break
-            except:
+            except BaseException:
                 if retry_count != 0:
                     # For UX, I like to hide this if it happens once. Obviously feels better to not see errors
                     # Most of the time it doesn't matter, but we should figure out why it happens frequently with:

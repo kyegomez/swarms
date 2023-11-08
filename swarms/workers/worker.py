@@ -163,7 +163,8 @@ class Worker:
 
         except Exception as error:
             raise RuntimeError(
-                f"Error setting up memory perhaps try try tuning the embedding size: {error}"
+                "Error setting up memory perhaps try try tuning the embedding size:"
+                f" {error}"
             )
 
     def setup_agent(self):

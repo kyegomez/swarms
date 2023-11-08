@@ -75,10 +75,12 @@ class ImageEditing:
 
     @tool(
         name="Remove Something From The Photo",
-        description="useful when you want to remove and object or something from the photo "
-        "from its description or location. "
-        "The input to this tool should be a comma separated string of two, "
-        "representing the image_path and the object need to be removed. ",
+        description=(
+            "useful when you want to remove and object or something from the photo "
+            "from its description or location. "
+            "The input to this tool should be a comma separated string of two, "
+            "representing the image_path and the object need to be removed. "
+        ),
     )
     def inference_remove(self, inputs):
         image_path, to_be_removed_txt = inputs.split(",")
@@ -86,10 +88,12 @@ class ImageEditing:
 
     @tool(
         name="Replace Something From The Photo",
-        description="useful when you want to replace an object from the object description or "
-        "location with another object from its description. "
-        "The input to this tool should be a comma separated string of three, "
-        "representing the image_path, the object to be replaced, the object to be replaced with ",
+        description=(
+            "useful when you want to replace an object from the object description or"
+            " location with another object from its description. The input to this tool"
+            " should be a comma separated string of three, representing the image_path,"
+            " the object to be replaced, the object to be replaced with "
+        ),
     )
     def inference_replace(self, inputs):
         image_path, to_be_replaced_txt, replace_with_txt = inputs.split(",")
@@ -108,8 +112,9 @@ class ImageEditing:
         updated_image.save(updated_image_path)
 
         logger.debug(
-            f"\nProcessed ImageEditing, Input Image: {image_path}, Replace {to_be_replaced_txt} to {replace_with_txt}, "
-            f"Output Image: {updated_image_path}"
+            f"\nProcessed ImageEditing, Input Image: {image_path}, Replace"
+            f" {to_be_replaced_txt} to {replace_with_txt}, Output Image:"
+            f" {updated_image_path}"
         )
 
         return updated_image_path
@@ -131,10 +136,12 @@ class InstructPix2Pix:
 
     @tool(
         name="Instruct Image Using Text",
-        description="useful when you want to the style of the image to be like the text. "
-        "like: make it look like a painting. or make it like a robot. "
-        "The input to this tool should be a comma separated string of two, "
-        "representing the image_path and the text. ",
+        description=(
+            "useful when you want to the style of the image to be like the text. "
+            "like: make it look like a painting. or make it like a robot. "
+            "The input to this tool should be a comma separated string of two, "
+            "representing the image_path and the text. "
+        ),
     )
     def inference(self, inputs):
         """Change style of image."""
@@ -148,8 +155,8 @@ class InstructPix2Pix:
         image.save(updated_image_path)
 
         logger.debug(
-            f"\nProcessed InstructPix2Pix, Input Image: {image_path}, Instruct Text: {text}, "
-            f"Output Image: {updated_image_path}"
+            f"\nProcessed InstructPix2Pix, Input Image: {image_path}, Instruct Text:"
+            f" {text}, Output Image: {updated_image_path}"
         )
 
         return updated_image_path
@@ -172,9 +179,12 @@ class Text2Image:
 
     @tool(
         name="Generate Image From User Input Text",
-        description="useful when you want to generate an image from a user input text and save it to a file. "
-        "like: generate an image of an object or something, or generate an image that includes some objects. "
-        "The input to this tool should be a string, representing the text used to generate image. ",
+        description=(
+            "useful when you want to generate an image from a user input text and save"
+            " it to a file. like: generate an image of an object or something, or"
+            " generate an image that includes some objects. The input to this tool"
+            " should be a string, representing the text used to generate image. "
+        ),
     )
     def inference(self, text):
         image_filename = os.path.join("image", str(uuid.uuid4())[0:8] + ".png")
@@ -183,7 +193,8 @@ class Text2Image:
         image.save(image_filename)
 
         logger.debug(
-            f"\nProcessed Text2Image, Input Text: {text}, Output Image: {image_filename}"
+            f"\nProcessed Text2Image, Input Text: {text}, Output Image:"
+            f" {image_filename}"
         )
 
         return image_filename
@@ -201,9 +212,12 @@ class VisualQuestionAnswering:
 
     @tool(
         name="Answer Question About The Image",
-        description="useful when you need an answer for a question based on an image. "
-        "like: what is the background color of the last image, how many cats in this figure, what is in this figure. "
-        "The input to this tool should be a comma separated string of two, representing the image_path and the question",
+        description=(
+            "useful when you need an answer for a question based on an image. like:"
+            " what is the background color of the last image, how many cats in this"
+            " figure, what is in this figure. The input to this tool should be a comma"
+            " separated string of two, representing the image_path and the question"
+        ),
     )
     def inference(self, inputs):
         image_path, question = inputs.split(",")
@@ -215,8 +229,8 @@ class VisualQuestionAnswering:
         answer = self.processor.decode(out[0], skip_special_tokens=True)
 
         logger.debug(
-            f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input Question: {question}, "
-            f"Output Answer: {answer}"
+            f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input"
+            f" Question: {question}, Output Answer: {answer}"
         )
 
         return answer
@@ -250,7 +264,8 @@ class ImageCaptioning(BaseHandler):
         out = self.model.generate(**inputs)
         description = self.processor.decode(out[0], skip_special_tokens=True)
         print(
-            f"\nProcessed ImageCaptioning, Input Image: {filename}, Output Text: {description}"
+            f"\nProcessed ImageCaptioning, Input Image: {filename}, Output Text:"
+            f" {description}"
         )
 
         return IMAGE_PROMPT.format(filename=filename, description=description)

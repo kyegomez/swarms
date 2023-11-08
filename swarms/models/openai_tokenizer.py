@@ -112,18 +112,20 @@ class OpenAITokenizer(BaseTokenizer):
                 tokens_per_name = -1
             elif "gpt-3.5-turbo" in model or "gpt-35-turbo" in model:
                 logging.info(
-                    "gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0613."
+                    "gpt-3.5-turbo may update over time. Returning num tokens assuming"
+                    " gpt-3.5-turbo-0613."
                 )
                 return self.count_tokens(text, model="gpt-3.5-turbo-0613")
             elif "gpt-4" in model:
                 logging.info(
-                    "gpt-4 may update over time. Returning num tokens assuming gpt-4-0613."
+                    "gpt-4 may update over time. Returning num tokens assuming"
+                    " gpt-4-0613."
                 )
                 return self.count_tokens(text, model="gpt-4-0613")
             else:
                 raise NotImplementedError(
-                    f"""token_count() is not implemented for model {model}. 
-                    See https://github.com/openai/openai-python/blob/main/chatml.md for 
+                    f"""token_count() is not implemented for model {model}.
+                    See https://github.com/openai/openai-python/blob/main/chatml.md for
                     information on how messages are converted to tokens."""
                 )
 
