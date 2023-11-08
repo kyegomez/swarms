@@ -76,8 +76,7 @@ class OmniChunker:
                 colored(
                     f"Could not decode file with extension {file_extension}: {e}",
                     "yellow",
-                )
-            )
+                ))
             return ""
 
     def chunk_content(self, content: str) -> List[str]:
@@ -91,7 +90,7 @@ class OmniChunker:
             List[str]: The list of chunks.
         """
         return [
-            content[i : i + self.chunk_size]
+            content[i:i + self.chunk_size]
             for i in range(0, len(content), self.chunk_size)
         ]
 
@@ -113,5 +112,4 @@ class OmniChunker:
             {self.metrics()}
             """,
                 "cyan",
-            )
-        )
+            ))

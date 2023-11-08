@@ -111,7 +111,8 @@ class Orchestrator:
 
         self.chroma_client = chromadb.Client()
 
-        self.collection = self.chroma_client.create_collection(name=collection_name)
+        self.collection = self.chroma_client.create_collection(
+            name=collection_name)
 
         self.current_tasks = {}
 
@@ -137,9 +138,8 @@ class Orchestrator:
                 result = self.worker.run(task["content"])
 
                 # using the embed method to get the vector representation of the result
-                vector_representation = self.embed(
-                    result, self.api_key, self.model_name
-                )
+                vector_representation = self.embed(result, self.api_key,
+                                                   self.model_name)
 
                 self.collection.add(
                     embeddings=[vector_representation],
@@ -154,8 +154,7 @@ class Orchestrator:
             except Exception as error:
                 logging.error(
                     f"Failed to process task {id(task)} by agent {id(agent)}. Error:"
-                    f" {error}"
-                )
+                    f" {error}")
             finally:
                 with self.condition:
                     self.agents.put(agent)
@@ -163,8 +162,7 @@ class Orchestrator:
 
     def embed(self, input, api_key, model_name):
         openai = embedding_functions.OpenAIEmbeddingFunction(
-            api_key=api_key, model_name=model_name
-        )
+            api_key=api_key, model_name=model_name)
         embedding = openai(input)
         return embedding
 
@@ -175,13 +173,13 @@ class Orchestrator:
 
         try:
             # Query the vector database for documents created by the agents
-            results = self.collection.query(query_texts=[str(agent_id)], n_results=10)
+            results = self.collection.query(query_texts=[str(agent_id)],
+                                            n_results=10)
 
             return results
         except Exception as e:
             logging.error(
-                f"Failed to retrieve results from agent {agent_id}. Error {e}"
-            )
+                f"Failed to retrieve results from agent {agent_id}. Error {e}")
             raise
 
     # @abstractmethod
@@ -212,7 +210,8 @@ class Orchestrator:
             self.collection.add(documents=[result], ids=[str(id(result))])
 
         except Exception as e:
-            logging.error(f"Failed to append the agent output to database. Error: {e}")
+            logging.error(
+                f"Failed to append the agent output to database. Error: {e}")
             raise
 
     def run(self, objective: str):
@@ -225,8 +224,8 @@ class Orchestrator:
             self.task_queue.append(objective)
 
             results = [
-                self.assign_task(agent_id, task)
-                for agent_id, task in zip(range(len(self.agents)), self.task_queue)
+                self.assign_task(agent_id, task) for agent_id, task in zip(
+                    range(len(self.agents)), self.task_queue)
             ]
 
             for result in results:

@@ -20,9 +20,9 @@ class Artifact(BaseModel):
         description="Id of the artifact",
         example="b225e278-8b4c-4f99-a696-8facf19f0e56",
     )
-    file_name: str = Field(
-        ..., description="Filename of the artifact", example="main.py"
-    )
+    file_name: str = Field(...,
+                           description="Filename of the artifact",
+                           example="main.py")
     relative_path: Optional[str] = Field(
         None,
         description="Relative path of the artifact in the agent's workspace",
@@ -50,7 +50,8 @@ class StepInput(BaseModel):
 class StepOutput(BaseModel):
     __root__: Any = Field(
         ...,
-        description="Output that the task step has produced. Any value is allowed.",
+        description=
+        "Output that the task step has produced. Any value is allowed.",
         example='{\n"tokens": 7894,\n"estimated_cost": "0,24$"\n}',
     )
 
@@ -81,9 +82,9 @@ class Task(TaskRequestBody):
 
 
 class StepRequestBody(BaseModel):
-    input: Optional[str] = Field(
-        None, description="Input prompt for the step.", example="Washington"
-    )
+    input: Optional[str] = Field(None,
+                                 description="Input prompt for the step.",
+                                 example="Washington")
     additional_input: Optional[StepInput] = None
 
 
@@ -104,22 +105,19 @@ class Step(StepRequestBody):
         description="The ID of the task step.",
         example="6bb1801a-fd80-45e8-899a-4dd723cc602e",
     )
-    name: Optional[str] = Field(
-        None, description="The name of the task step.", example="Write to file"
-    )
+    name: Optional[str] = Field(None,
+                                description="The name of the task step.",
+                                example="Write to file")
     status: Status = Field(..., description="The status of the task step.")
     output: Optional[str] = Field(
         None,
         description="Output of the task step.",
-        example=(
-            "I am going to use the write_to_file command and write Washington to a file"
-            " called output.txt <write_to_file('output.txt', 'Washington')"
-        ),
+        example=
+        ("I am going to use the write_to_file command and write Washington to a file"
+         " called output.txt <write_to_file('output.txt', 'Washington')"),
     )
     additional_output: Optional[StepOutput] = None
     artifacts: List[Artifact] = Field(
-        [], description="A list of artifacts that the step has produced."
-    )
+        [], description="A list of artifacts that the step has produced.")
     is_last: Optional[bool] = Field(
-        False, description="Whether this is the last step in the task."
-    )
+        False, description="Whether this is the last step in the task.")

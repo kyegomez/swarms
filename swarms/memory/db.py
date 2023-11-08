@@ -27,6 +27,7 @@ class NotFoundException(Exception):
 
 
 class TaskDB(ABC):
+
     async def create_task(
         self,
         input: Optional[str],
@@ -67,9 +68,9 @@ class TaskDB(ABC):
     async def list_tasks(self) -> List[Task]:
         raise NotImplementedError
 
-    async def list_steps(
-        self, task_id: str, status: Optional[Status] = None
-    ) -> List[Step]:
+    async def list_steps(self,
+                         task_id: str,
+                         status: Optional[Status] = None) -> List[Step]:
         raise NotImplementedError
 
 
@@ -136,8 +137,8 @@ class InMemoryTaskDB(TaskDB):
     async def get_artifact(self, task_id: str, artifact_id: str) -> Artifact:
         task = await self.get_task(task_id)
         artifact = next(
-            filter(lambda a: a.artifact_id == artifact_id, task.artifacts), None
-        )
+            filter(lambda a: a.artifact_id == artifact_id, task.artifacts),
+            None)
         if not artifact:
             raise NotFoundException("Artifact", artifact_id)
         return artifact
@@ -150,9 +151,9 @@ class InMemoryTaskDB(TaskDB):
         step_id: Optional[str] = None,
     ) -> Artifact:
         artifact_id = str(uuid.uuid4())
-        artifact = Artifact(
-            artifact_id=artifact_id, file_name=file_name, relative_path=relative_path
-        )
+        artifact = Artifact(artifact_id=artifact_id,
+                            file_name=file_name,
+                            relative_path=relative_path)
         task = await self.get_task(task_id)
         task.artifacts.append(artifact)
 
@@ -165,9 +166,9 @@ class InMemoryTaskDB(TaskDB):
     async def list_tasks(self) -> List[Task]:
         return [task for task in self._tasks.values()]
 
-    async def list_steps(
-        self, task_id: str, status: Optional[Status] = None
-    ) -> List[Step]:
+    async def list_steps(self,
+                         task_id: str,
+                         status: Optional[Status] = None) -> List[Step]:
         task = await self.get_task(task_id)
         steps = task.steps
         if status:
