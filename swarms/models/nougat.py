@@ -61,9 +61,10 @@ class Nougat:
             pixel_values.to(self.device),
             min_length=self.min_length,
             max_new_tokens=self.max_new_tokens,
-            bad_words_ids=[[self.processor.unk_token - id]],
         )
 
         sequence = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
         sequence = self.processor.post_process_generation(sequence, fix_markdown=False)
-        return sequence
+
+        out = print(repr(sequence))
+        return out
