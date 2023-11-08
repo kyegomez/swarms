@@ -1,8 +1,8 @@
 """Fuyu model by Kye"""
 from transformers import (
+    FuyuProcessor,
     FuyuForCausalLM,
     AutoTokenizer,
-    FuyuProcessor,
     FuyuImageProcessor,
 )
 from PIL import Image
@@ -50,9 +50,9 @@ class Fuyu:
             pretrained_path, device_map=device_map
         )
 
-    def __call__(self, text: str, img_path: str):
+    def __call__(self, text: str, img: str):
         """Call the model with text and img paths"""
-        image_pil = Image.open(img_path)
+        image_pil = Image.open(img)
         model_inputs = self.processor(
             text=text, images=[image_pil], device=self.device_map
         )
@@ -62,3 +62,4 @@ class Fuyu:
 
         output = self.model.generate(**model_inputs, max_new_tokens=self.max_new_tokens)
         text = self.processor.batch_decode(output[:, -7:], skip_special_tokens=True)
+        return print(str(text))

@@ -43,8 +43,9 @@ class FastViT:
 
 
     To use, create a json file called: fast_vit_classes.json
-    
+
     """
+
     def __init__(self):
         self.model = timm.create_model(
             "hf_hub:timm/fastvit_s12.apple_in1k", pretrained=True
