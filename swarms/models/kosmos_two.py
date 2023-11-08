@@ -106,7 +106,10 @@ class Kosmos:
         self.run(prompt, image_url)
 
     def referring_expression_generation(self, phrase, image_url):
-        prompt = "<grounding><phrase> It</phrase><object><patch_index_0044><patch_index_0863></object> is"
+        prompt = (
+            "<grounding><phrase>"
+            " It</phrase><object><patch_index_0044><patch_index_0863></object> is"
+        )
         self.run(prompt, image_url)
 
     def grounded_vqa(self, question, image_url):

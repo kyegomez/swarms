@@ -53,10 +53,12 @@ def record(agent_name: str, autotab_ext_path: Optional[str] = None):
         file.write(data)
 
     print(
-        "\033[34mYou have the Python debugger open, you can run commands in it like you would in a normal Python shell.\033[0m"
+        "\033[34mYou have the Python debugger open, you can run commands in it like you"
+        " would in a normal Python shell.\033[0m"
     )
     print(
-        "\033[34mTo exit, type 'q' and press enter. For a list of commands type '?' and press enter.\033[0m"
+        "\033[34mTo exit, type 'q' and press enter. For a list of commands type '?' and"
+        " press enter.\033[0m"
     )
     breakpoint()
 
@@ -116,7 +118,8 @@ def open_plugin_and_login(driver: AutotabChromeDriver):
                 raise Exception("Invalid API key")
             else:
                 raise Exception(
-                    f"Error {response.status_code} from backend while logging you in with your API key: {response.text}"
+                    f"Error {response.status_code} from backend while logging you in"
+                    f" with your API key: {response.text}"
                 )
         cookie["name"] = cookie["key"]
         del cookie["key"]
@@ -144,7 +147,8 @@ def get_driver(
     options = webdriver.ChromeOptions()
     options.add_argument("--no-sandbox")  # Necessary for running
     options.add_argument(
-        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        " (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
     )
     options.add_argument("--enable-webgl")
     options.add_argument("--enable-3d-apis")
@@ -371,7 +375,10 @@ def _login_with_google(driver, url: str, google_credentials: SiteCredentials):
     )
 
     main_window = driver.current_window_handle
-    xpath = "//*[contains(text(), 'Continue with Google') or contains(text(), 'Sign in with Google') or contains(@title, 'Sign in with Google')]"
+    xpath = (
+        "//*[contains(text(), 'Continue with Google') or contains(text(), 'Sign in with"
+        " Google') or contains(@title, 'Sign in with Google')]"
+    )
 
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
     driver.find_element(
@@ -496,17 +503,17 @@ google_credentials:
   # Optional, specify alternative accounts to use with Google login on a per-service basis
   - email: you@gmail.com # Credentials without a name use email as key
     password: ...
-    
+
 credentials:
-  notion.so: 
+  notion.so:
     alts:
     - notion.com
     login_with_google_account: default
-    
+
   figma.com:
     email: ...
     password: ...
-  
+
   airtable.com:
     login_with_google_account: you@gmail.com
 """

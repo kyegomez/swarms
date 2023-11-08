@@ -8,7 +8,7 @@ TODO:
 - add async processing for run and batch run
 - add plan module
 - concurrent
-- 
+-
 """
 
 import json
@@ -30,9 +30,9 @@ This will enable you to leave the autonomous loop.
 # Constants
 FLOW_SYSTEM_PROMPT = f"""
 You are an autonomous agent granted autonomy from a Flow structure.
-Your role is to engage in multi-step conversations with your self or the user, 
-generate long-form content like blogs, screenplays, or SOPs, 
-and accomplish tasks. You can have internal dialogues with yourself or can interact with the user 
+Your role is to engage in multi-step conversations with your self or the user,
+generate long-form content like blogs, screenplays, or SOPs,
+and accomplish tasks. You can have internal dialogues with yourself or can interact with the user
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
 
 
@@ -239,7 +239,7 @@ class Flow:
                     Dynamic Temperature: {self.dynamic_temperature}
                     Autosave: {self.autosave}
                     Saved State: {self.saved_state_path}
-                    
+
                 ----------------------------------------
                 """,
                 "green",
@@ -259,7 +259,10 @@ class Flow:
         except Exception as error:
             print(
                 colored(
-                    "Error activating autonomous agent. Try optimizing your parameters...",
+                    (
+                        "Error activating autonomous agent. Try optimizing your"
+                        " parameters..."
+                    ),
                     "red",
                 )
             )

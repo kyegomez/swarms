@@ -229,12 +229,14 @@ class Agent:
             if len(replacements) > 1:
                 names = "\n".join([f"- {n}: {t}" for n, t in replacements.items()])
                 logger.warning(
-                    f"The following tools have been replaced by the ones provided in `additional_tools`:\n{names}."
+                    "The following tools have been replaced by the ones provided in"
+                    f" `additional_tools`:\n{names}."
                 )
             elif len(replacements) == 1:
                 name = list(replacements.keys())[0]
                 logger.warning(
-                    f"{name} has been replaced by {replacements[name]} as provided in `additional_tools`."
+                    f"{name} has been replaced by {replacements[name]} as provided in"
+                    " `additional_tools`."
                 )
 
         self.prepare_for_new_chat()
@@ -425,9 +427,9 @@ class HFAgent(Agent):
             api_key = os.environ.get("OPENAI_API_KEY", None)
         if api_key is None:
             raise ValueError(
-                "You need an openai key to use `OpenAIAgent`. You can get one here: Get one here "
-                "https://openai.com/api/`. If you have one, set it in your env with `os.environ['OPENAI_API_KEY'] = "
-                "xxx."
+                "You need an openai key to use `OpenAIAgent`. You can get one here: Get"
+                " one here https://openai.com/api/`. If you have one, set it in your"
+                " env with `os.environ['OPENAI_API_KEY'] = xxx."
             )
         else:
             openai.api_key = api_key
@@ -540,8 +542,9 @@ class AzureOpenAI(Agent):
             api_key = os.environ.get("AZURE_OPENAI_API_KEY", None)
         if api_key is None:
             raise ValueError(
-                "You need an Azure openAI key to use `AzureOpenAIAgent`. If you have one, set it in your env with "
-                "`os.environ['AZURE_OPENAI_API_KEY'] = xxx."
+                "You need an Azure openAI key to use `AzureOpenAIAgent`. If you have"
+                " one, set it in your env with `os.environ['AZURE_OPENAI_API_KEY'] ="
+                " xxx."
             )
         else:
             openai.api_key = api_key
@@ -549,8 +552,9 @@ class AzureOpenAI(Agent):
             resource_name = os.environ.get("AZURE_OPENAI_RESOURCE_NAME", None)
         if resource_name is None:
             raise ValueError(
-                "You need a resource_name to use `AzureOpenAIAgent`. If you have one, set it in your env with "
-                "`os.environ['AZURE_OPENAI_RESOURCE_NAME'] = xxx."
+                "You need a resource_name to use `AzureOpenAIAgent`. If you have one,"
+                " set it in your env with `os.environ['AZURE_OPENAI_RESOURCE_NAME'] ="
+                " xxx."
             )
         else:
             openai.api_base = f"https://{resource_name}.openai.azure.com"

@@ -178,7 +178,8 @@ class GPT4Vision:
                 time.sleep(self.backoff_factor**attempt)
             except Exception as error:
                 self.logger.error(
-                    f"Unexpected Error: {error} try optimizing your api key and try again"
+                    f"Unexpected Error: {error} try optimizing your api key and try"
+                    " again"
                 )
                 raise error from None
 
@@ -231,7 +232,10 @@ class GPT4Vision:
         except Exception as error:
             print(
                 colored(
-                    f"Error when calling GPT4Vision, Error: {error} Try optimizing your key, and try again",
+                    (
+                        f"Error when calling GPT4Vision, Error: {error} Try optimizing"
+                        " your key, and try again"
+                    ),
                     "red",
                 )
             )
@@ -282,7 +286,10 @@ class GPT4Vision:
         except Exception as error:
             print(
                 colored(
-                    f"Error when calling GPT4Vision, Error: {error} Try optimizing your key, and try again",
+                    (
+                        f"Error when calling GPT4Vision, Error: {error} Try optimizing"
+                        " your key, and try again"
+                    ),
                     "red",
                 )
             )

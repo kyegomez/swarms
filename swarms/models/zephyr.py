@@ -33,6 +33,7 @@ class Zephyr:
         temperature: float = 0.5,
         top_k: float = 50,
         top_p: float = 0.95,
+        do_sample: bool = True,
         *args,
         **kwargs,
     ):
@@ -45,6 +46,7 @@ class Zephyr:
         self.temperature = temperature
         self.top_k = top_k
         self.top_p = top_p
+        self.do_sample = do_sample
 
         self.pipe = pipeline(
             "text-generation",
@@ -56,10 +58,6 @@ class Zephyr:
             {
                 "role": "system",
                 "content": f"{self.system_prompt}\n\nUser:",
-            },
-            {
-                "role": "user",
-                "content": "How many helicopters can a human eat in one sitting?",
             },
         ]
 
@@ -82,14 +80,16 @@ class Zephyr:
 
         # Apply the chat template to format the messages
         prompt = self.pipe.tokenizer.apply_chat_template(
-            self.messages, tokenize=False, add_generation_prompt=True
+            self.messages,
+            tokenize=self.tokenize,
+            add_generation_prompt=self.add_generation_prompt,
         )
 
         # Generate a response
         outputs = self.pipe(
             prompt,
             max_new_tokens=self.max_new_tokens,
-            do_sample=True,
+            do_sample=self.do_sample,
             temperature=self.temperature,
             top_k=self.top_k,
             top_p=self.top_p,
@@ -101,5 +101,4 @@ class Zephyr:
         # Optionally, you could also add the chatbot's response to the messages list
         # However, the below line should be adjusted to extract the chatbot's response only
         # self.messages.append({"role": "bot", "content": generated_text})
-
         return generated_text
