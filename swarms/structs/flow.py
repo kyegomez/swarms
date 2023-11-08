@@ -544,6 +544,7 @@ class Flow:
 
     def graceful_shutdown(self):
         """Gracefully shutdown the system saving the state"""
+        print(colored("Shutting down the system...", "red"))
         return self.save_state("flow_state.json")
 
     def run_with_timeout(self, task: str, timeout: int = 60) -> str:

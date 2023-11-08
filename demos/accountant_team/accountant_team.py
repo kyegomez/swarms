@@ -11,7 +11,7 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 IMAGE_OF_FINANCIAL_DOC_URL = "bank_statement_2.jpg"
 
 # Example usage
-api_key = ""  # Your actual API key here
+api_key = "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"  # Your actual API key here
 
 # Initialize the OCR model
 def ocr_model(img: str):
@@ -21,10 +21,8 @@ def ocr_model(img: str):
 
 # Initialize the language flow
 llm = OpenAIChat(
-    model_name="gpt-4-turbo",
     openai_api_key=api_key,
     temperature=0.5,
-    max_tokens=3000,
 )
 
 # Create a prompt for the language model
