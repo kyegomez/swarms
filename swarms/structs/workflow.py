@@ -65,13 +65,11 @@ class Workflow:
     def context(self, task: Task) -> Dict[str, Any]:
         """Context in tasks"""
         return {
-            "parent_output":
-                task.parents[0].output
-                if task.parents and task.parents[0].output else None,
-            "parent":
-                task.parents[0] if task.parents else None,
-            "child":
-                task.children[0] if task.children else None,
+            "parent_output": task.parents[0].output
+            if task.parents and task.parents[0].output
+            else None,
+            "parent": task.parents[0] if task.parents else None,
+            "child": task.children[0] if task.children else None,
         }
 
     def __run_from_task(self, task: Optional[Task]) -> None:

@@ -10,7 +10,6 @@ class Registry(BaseModel):
     entries: Dict = {}
 
     def register(self, key: str):
-
         def decorator(class_builder):
             self.entries[key] = class_builder
             return class_builder
@@ -21,7 +20,8 @@ class Registry(BaseModel):
         if type not in self.entries:
             raise ValueError(
                 f"{type} is not registered. Please register with the"
-                f' .register("{type}") method provided in {self.name} registry')
+                f' .register("{type}") method provided in {self.name} registry'
+            )
         return self.entries[type](**kwargs)
 
     def get_all_entries(self):

@@ -15,7 +15,8 @@ class Artifact(BaseModel):
     artifact_id: StrictStr = Field(..., description="ID of the artifact")
     file_name: StrictStr = Field(..., description="Filename of the artifact")
     relative_path: Optional[StrictStr] = Field(
-        None, description="Relative path of the artifact")
+        None, description="Relative path of the artifact"
+    )
     __properties = ["artifact_id", "file_name", "relative_path"]
 
     class Config:
@@ -48,10 +49,12 @@ class Artifact(BaseModel):
         if not isinstance(obj, dict):
             return Artifact.parse_obj(obj)
 
-        _obj = Artifact.parse_obj({
-            "artifact_id": obj.get("artifact_id"),
-            "file_name": obj.get("file_name"),
-            "relative_path": obj.get("relative_path"),
-        })
+        _obj = Artifact.parse_obj(
+            {
+                "artifact_id": obj.get("artifact_id"),
+                "file_name": obj.get("file_name"),
+                "relative_path": obj.get("relative_path"),
+            }
+        )
 
         return _obj

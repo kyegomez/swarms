@@ -100,7 +100,7 @@ class Flow:
         self,
         llm: Any,
         # template: str,
-        max_loops = 5,
+        max_loops=5,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
         retry_attempts: int = 3,
@@ -188,7 +188,8 @@ class Flow:
                 value = self.llm.__dict__.get(name, "Unknown")
 
             params_str_list.append(
-                f"    {name.capitalize().replace('_', ' ')}: {value}")
+                f"    {name.capitalize().replace('_', ' ')}: {value}"
+            )
 
         return "\n".join(params_str_list)
 
@@ -196,7 +197,7 @@ class Flow:
         """
         Take the history and truncate it to fit into the model context length
         """
-        truncated_history = self.memory[-1][-self.context_length:]
+        truncated_history = self.memory[-1][-self.context_length :]
         self.memory[-1] = truncated_history
 
     def add_task_to_memory(self, task: str):
@@ -246,7 +247,8 @@ class Flow:
                 ----------------------------------------
                 """,
                 "green",
-            ))
+            )
+        )
 
         # print(dashboard)
 
@@ -256,17 +258,18 @@ class Flow:
             print(colored("Initializing Autonomous Agent...", "yellow"))
             # print(colored("Loading modules...", "yellow"))
             # print(colored("Modules loaded successfully.", "green"))
-            print(colored("Autonomous Agent Activated.", "cyan",
-                          attrs=["bold"]))
-            print(colored("All systems operational. Executing task...",
-                          "green"))
+            print(colored("Autonomous Agent Activated.", "cyan", attrs=["bold"]))
+            print(colored("All systems operational. Executing task...", "green"))
         except Exception as error:
             print(
                 colored(
-                    ("Error activating autonomous agent. Try optimizing your"
-                     " parameters..."),
+                    (
+                        "Error activating autonomous agent. Try optimizing your"
+                        " parameters..."
+                    ),
                     "red",
-                ))
+                )
+            )
             print(error)
 
     def run(self, task: str, **kwargs):
@@ -296,7 +299,7 @@ class Flow:
 
         loop_count = 0
         # for i in range(self.max_loops):
-        while self.max_loops == 'auto' or loop_count < self.max_loops:
+        while self.max_loops == "auto" or loop_count < self.max_loops:
             loop_count += 1
             print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
             print("\n")
@@ -315,8 +318,7 @@ class Flow:
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(
-                        task
-                        **kwargs,
+                        task**kwargs,
                     )
                     if self.interactive:
                         print(f"AI: {response}")
@@ -344,7 +346,7 @@ class Flow:
         if self.return_history:
             return response, history
 
-        return response  
+        return response
 
     async def arun(self, task: str, **kwargs):
         """
@@ -373,7 +375,7 @@ class Flow:
 
         loop_count = 0
         # for i in range(self.max_loops):
-        while self.max_loops == 'auto' or loop_count < self.max_loops:
+        while self.max_loops == "auto" or loop_count < self.max_loops:
             loop_count += 1
             print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
             print("\n")
@@ -392,8 +394,7 @@ class Flow:
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(
-                        task
-                        **kwargs,
+                        task**kwargs,
                     )
                     if self.interactive:
                         print(f"AI: {response}")
@@ -421,7 +422,7 @@ class Flow:
         if self.return_history:
             return response, history
 
-        return response  
+        return response
 
     def _run(self, **kwargs: Any) -> str:
         """Generate a result using the provided keyword args."""
@@ -460,9 +461,7 @@ class Flow:
         Args:
             tasks (List[str]): A list of tasks to run.
         """
-        task_coroutines = [
-            self.run_async(task, **kwargs) for task in tasks
-        ]
+        task_coroutines = [self.run_async(task, **kwargs) for task in tasks]
         completed_tasks = await asyncio.gather(*task_coroutines)
         return completed_tasks
 
@@ -575,9 +574,7 @@ class Flow:
         import boto3
 
         s3 = boto3.client("s3")
-        s3.put_object(Bucket=bucket_name,
-                      Key=object_name,
-                      Body=json.dumps(self.memory))
+        s3.put_object(Bucket=bucket_name, Key=object_name, Body=json.dumps(self.memory))
         print(f"Backed up memory to S3: {bucket_name}/{object_name}")
 
     def analyze_feedback(self):
@@ -681,7 +678,7 @@ class Flow:
     def get_llm_params(self):
         """
         Extracts and returns the parameters of the llm object for serialization.
-        It assumes that the llm object has an __init__ method 
+        It assumes that the llm object has an __init__ method
         with parameters that can be used to recreate it.
         """
         if not hasattr(self.llm, "__init__"):
@@ -697,8 +694,8 @@ class Flow:
             if hasattr(self.llm, name):
                 value = getattr(self.llm, name)
                 if isinstance(
-                        value,
-                    (str, int, float, bool, list, dict, tuple, type(None))):
+                    value, (str, int, float, bool, list, dict, tuple, type(None))
+                ):
                     llm_params[name] = value
                 else:
                     llm_params[name] = str(
@@ -758,10 +755,7 @@ class Flow:
 
         print(f"Flow state loaded from {file_path}")
 
-    def retry_on_failure(self,
-                         function,
-                         retries: int = 3,
-                         retry_delay: int = 1):
+    def retry_on_failure(self, function, retries: int = 3, retry_delay: int = 1):
         """Retry wrapper for LLM calls."""
         attempt = 0
         while attempt < retries:

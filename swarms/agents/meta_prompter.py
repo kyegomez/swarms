@@ -88,8 +88,9 @@ class MetaPrompterAgent:
         Assistant:
         """
 
-        prompt = PromptTemplate(input_variables=["history", "human_input"],
-                                template=template)
+        prompt = PromptTemplate(
+            input_variables=["history", "human_input"], template=template
+        )
 
         self.chain = LLMChain(
             llm=self.llm(),
@@ -101,15 +102,13 @@ class MetaPrompterAgent:
     def get_chat_history(self, chain_memory):
         """Get Chat History from the memory"""
         memory_key = chain_memory.memory_key
-        chat_history = chain_memory.load_memory_variables(
-            memory_key)[memory_key]
+        chat_history = chain_memory.load_memory_variables(memory_key)[memory_key]
         return chat_history
 
     def get_new_instructions(self, meta_output):
         """Get New Instructions from the meta_output"""
         delimiter = "Instructions: "
-        new_instructions = meta_output[meta_output.find(delimiter) +
-                                       len(delimiter):]
+        new_instructions = meta_output[meta_output.find(delimiter) + len(delimiter) :]
         return new_instructions
 
     def run(self, task: str):
@@ -150,7 +149,8 @@ class MetaPrompterAgent:
 
             meta_chain = self.initialize_meta_chain()
             meta_output = meta_chain.predict(
-                chat_history=self.get_chat_history(chain.memory))
+                chat_history=self.get_chat_history(chain.memory)
+            )
             print(f"Feedback: {meta_output}")
 
             self.instructions = self.get_new_instructions(meta_output)

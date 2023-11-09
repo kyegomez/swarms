@@ -5,16 +5,16 @@ from langchain.output_parsers import RegexParser
 
 # utils
 class BidOutputParser(RegexParser):
-
     def get_format_instructions(self) -> str:
         return (
             "Your response should be an integrater delimited by angled brackets like"
-            " this: <int>")
+            " this: <int>"
+        )
 
 
-bid_parser = BidOutputParser(regex=r"<(\d+)>",
-                             output_keys=["bid"],
-                             default_output_key="bid")
+bid_parser = BidOutputParser(
+    regex=r"<(\d+)>", output_keys=["bid"], default_output_key="bid"
+)
 
 
 def select_next_speaker(step: int, agents, director) -> int:
@@ -29,7 +29,6 @@ def select_next_speaker(step: int, agents, director) -> int:
 
 # main
 class MultiAgentCollaboration:
-
     def __init__(
         self,
         agents,

@@ -53,8 +53,9 @@ class JinaEmbeddings:
         **kwargs,
     ):
         self.logger = logging.getLogger(__name__)
-        self.device = (device if device else
-                       ("cuda" if torch.cuda.is_available() else "cpu"))
+        self.device = (
+            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        )
         self.model_id = model_id
         self.max_length = max_length
         self.verbose = verbose
@@ -65,8 +66,9 @@ class JinaEmbeddings:
         self.cos_sim = cos_sim
 
         if self.distributed:
-            assert (torch.cuda.device_count() >
-                    1), "You need more than 1 gpu for distributed processing"
+            assert (
+                torch.cuda.device_count() > 1
+            ), "You need more than 1 gpu for distributed processing"
 
         bnb_config = None
         if quantize:
@@ -81,9 +83,8 @@ class JinaEmbeddings:
 
         try:
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id,
-                quantization_config=bnb_config,
-                trust_remote_code=True)
+                self.model_id, quantization_config=bnb_config, trust_remote_code=True
+            )
 
             self.model  # .to(self.device)
         except Exception as e:
@@ -96,8 +97,11 @@ class JinaEmbeddings:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
 
-                bnb_config = (BitsAndBytesConfig(**self.quantization_config)
-                              if self.quantization_config else None)
+                bnb_config = (
+                    BitsAndBytesConfig(**self.quantization_config)
+                    if self.quantization_config
+                    else None
+                )
 
                 self.model = AutoModelForCausalLM.from_pretrained(
                     self.model_id,
@@ -108,8 +112,7 @@ class JinaEmbeddings:
                 if self.distributed:
                     self.model = DDP(self.model)
             except Exception as error:
-                self.logger.error(
-                    f"Failed to load the model or the tokenizer: {error}")
+                self.logger.error(f"Failed to load the model or the tokenizer: {error}")
                 raise
 
     def run(self, task: str):
