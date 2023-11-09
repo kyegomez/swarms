@@ -75,13 +75,17 @@ class Nougat:
 
     def clean_nougat_output(raw_output):
         # Define the pattern to extract the relevant data
-        daily_balance_pattern = r"\*\*(\d{2}/\d{2}/\d{4})\*\*\n\n\*\*([\d,]+\.\d{2})\*\*"
-        
+        daily_balance_pattern = (
+            r"\*\*(\d{2}/\d{2}/\d{4})\*\*\n\n\*\*([\d,]+\.\d{2})\*\*")
+
         # Find all matches of the pattern
         matches = re.findall(daily_balance_pattern, raw_output)
-        
+
         # Convert the matches to a readable format
-        cleaned_data = ["Date: {}, Amount: {}".format(date, amount.replace(',', '')) for date, amount in matches]
-        
+        cleaned_data = [
+            "Date: {}, Amount: {}".format(date, amount.replace(",", ""))
+            for date, amount in matches
+        ]
+
         # Join the cleaned data with new lines for readability
-        return '\n'.join(cleaned_data)
+        return "\n".join(cleaned_data)

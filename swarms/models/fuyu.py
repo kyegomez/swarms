@@ -29,7 +29,6 @@ class Fuyu:
     >>> fuyu = Fuyu()
     >>> fuyu("Hello, my name is", "path/to/image.png")
 
-
     """
 
     def __init__(

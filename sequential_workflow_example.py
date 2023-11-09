@@ -3,7 +3,7 @@ from swarms.structs import Flow
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
-api_key = ""  
+api_key = ""
 
 # Initialize the language flow
 llm = OpenAIChat(

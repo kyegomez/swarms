@@ -493,7 +493,7 @@ class BaseOpenAI(BaseLLM):
 
             openai.proxy = {
                 "http": self.openai_proxy,
-                "https": self.openai_proxy
+                "https": self.openai_proxy,
             }  # type: ignore[assignment]  # noqa: E501
         return {**openai_creds, **self._default_params}
 
@@ -783,7 +783,7 @@ class OpenAIChat(BaseLLM):
             if openai_proxy:
                 openai.proxy = {
                     "http": openai_proxy,
-                    "https": openai_proxy
+                    "https": openai_proxy,
                 }  # type: ignore[assignment]  # noqa: E501
         except ImportError:
             raise ImportError("Could not import openai python package. "
