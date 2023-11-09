@@ -111,7 +111,7 @@ You can learn more about mkdocs on the [mkdocs website](https://www.mkdocs.org/)
 
 3. Make sure the script has execute permissions:
    ```sh
-   chmod +x quality.sh
+   chmod +x code_quality.sh
    ```
 
 4. Run the script:

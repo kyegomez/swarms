@@ -28,6 +28,7 @@ error.txt
 
 # C extensions
 *.so
+.ruff_cache
 
 
 errors.txt
