@@ -10,8 +10,9 @@ from marshmallow.exceptions import RegistryError
 @define
 class BaseArtifact(ABC):
     id: str = field(default=Factory(lambda: uuid.uuid4().hex), kw_only=True)
-    name: str = field(default=Factory(lambda self: self.id, takes_self=True),
-                      kw_only=True)
+    name: str = field(
+        default=Factory(lambda self: self.id, takes_self=True), kw_only=True
+    )
     value: any = field()
     type: str = field(
         default=Factory(lambda self: self.__class__.__name__, takes_self=True),
@@ -53,8 +54,7 @@ class BaseArtifact(ABC):
         class_registry.register("ListArtifact", ListArtifactSchema)
 
         try:
-            return class_registry.get_class(
-                artifact_dict["type"])().load(artifact_dict)
+            return class_registry.get_class(artifact_dict["type"])().load(artifact_dict)
         except RegistryError:
             raise ValueError("Unsupported artifact type")
 

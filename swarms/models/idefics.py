@@ -65,8 +65,9 @@ class Idefics:
         torch_dtype=torch.bfloat16,
         max_length=100,
     ):
-        self.device = (device if device else
-                       ("cuda" if torch.cuda.is_available() else "cpu"))
+        self.device = (
+            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        )
         self.model = IdeficsForVisionText2Text.from_pretrained(
             checkpoint,
             torch_dtype=torch_dtype,
@@ -95,17 +96,21 @@ class Idefics:
             list
                 A list of generated text strings.
         """
-        inputs = (self.processor(
-            prompts, add_end_of_utterance_token=False, return_tensors="pt").to(
-                self.device) if batched_mode else self.processor(
-                    prompts[0], return_tensors="pt").to(self.device))
+        inputs = (
+            self.processor(
+                prompts, add_end_of_utterance_token=False, return_tensors="pt"
+            ).to(self.device)
+            if batched_mode
+            else self.processor(prompts[0], return_tensors="pt").to(self.device)
+        )
 
         exit_condition = self.processor.tokenizer(
-            "<end_of_utterance>", add_special_tokens=False).input_ids
+            "<end_of_utterance>", add_special_tokens=False
+        ).input_ids
 
         bad_words_ids = self.processor.tokenizer(
-            ["<image>", "<fake_token_around_image"],
-            add_special_tokens=False).input_ids
+            ["<image>", "<fake_token_around_image"], add_special_tokens=False
+        ).input_ids
 
         generated_ids = self.model.generate(
             **inputs,
@@ -113,8 +118,9 @@ class Idefics:
             bad_words_ids=bad_words_ids,
             max_length=self.max_length,
         )
-        generated_text = self.processor.batch_decode(generated_ids,
-                                                     skip_special_tokens=True)
+        generated_text = self.processor.batch_decode(
+            generated_ids, skip_special_tokens=True
+        )
         return generated_text
 
     def __call__(self, prompts, batched_mode=True):
@@ -135,17 +141,21 @@ class Idefics:
             list
                 A list of generated text strings.
         """
-        inputs = (self.processor(
-            prompts, add_end_of_utterance_token=False, return_tensors="pt").to(
-                self.device) if batched_mode else self.processor(
-                    prompts[0], return_tensors="pt").to(self.device))
+        inputs = (
+            self.processor(
+                prompts, add_end_of_utterance_token=False, return_tensors="pt"
+            ).to(self.device)
+            if batched_mode
+            else self.processor(prompts[0], return_tensors="pt").to(self.device)
+        )
 
         exit_condition = self.processor.tokenizer(
-            "<end_of_utterance>", add_special_tokens=False).input_ids
+            "<end_of_utterance>", add_special_tokens=False
+        ).input_ids
 
         bad_words_ids = self.processor.tokenizer(
-            ["<image>", "<fake_token_around_image"],
-            add_special_tokens=False).input_ids
+            ["<image>", "<fake_token_around_image"], add_special_tokens=False
+        ).input_ids
 
         generated_ids = self.model.generate(
             **inputs,
@@ -153,8 +163,9 @@ class Idefics:
             bad_words_ids=bad_words_ids,
             max_length=self.max_length,
         )
-        generated_text = self.processor.batch_decode(generated_ids,
-                                                     skip_special_tokens=True)
+        generated_text = self.processor.batch_decode(
+            generated_ids, skip_special_tokens=True
+        )
         return generated_text
 
     def chat(self, user_input):
@@ -191,7 +202,8 @@ class Idefics:
                 The name of the new pre-trained model checkpoint.
         """
         self.model = IdeficsForVisionText2Text.from_pretrained(
-            checkpoint, torch_dtype=torch.bfloat16).to(self.device)
+            checkpoint, torch_dtype=torch.bfloat16
+        ).to(self.device)
         self.processor = AutoProcessor.from_pretrained(checkpoint)
 
     def set_device(self, device):

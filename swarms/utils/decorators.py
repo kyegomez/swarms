@@ -6,7 +6,6 @@ import warnings
 
 
 def log_decorator(func):
-
     def wrapper(*args, **kwargs):
         logging.info(f"Entering {func.__name__}")
         result = func(*args, **kwargs)
@@ -17,7 +16,6 @@ def log_decorator(func):
 
 
 def error_decorator(func):
-
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -29,22 +27,18 @@ def error_decorator(func):
 
 
 def timing_decorator(func):
-
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        logging.info(
-            f"{func.__name__} executed in {end_time - start_time} seconds")
+        logging.info(f"{func.__name__} executed in {end_time - start_time} seconds")
         return result
 
     return wrapper
 
 
 def retry_decorator(max_retries=5):
-
     def decorator(func):
-
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             for _ in range(max_retries):
@@ -83,20 +77,16 @@ def synchronized_decorator(func):
 
 
 def deprecated_decorator(func):
-
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        warnings.warn(f"{func.__name__} is deprecated",
-                      category=DeprecationWarning)
+        warnings.warn(f"{func.__name__} is deprecated", category=DeprecationWarning)
         return func(*args, **kwargs)
 
     return wrapper
 
 
 def validate_inputs_decorator(validator):
-
     def decorator(func):
-
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not validator(*args, **kwargs):

@@ -29,8 +29,7 @@ class SimpleAgent:
 
     def run(self, task: str) -> str:
         """Run method"""
-        metrics = print(
-            colored(f"Agent {self.name} is running task: {task}", "red"))
+        metrics = print(colored(f"Agent {self.name} is running task: {task}", "red"))
         print(metrics)
 
         response = self.flow.run(task)
