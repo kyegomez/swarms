@@ -39,7 +39,9 @@ Book a [1-on-1 Session with Kye](https://calendly.com/swarm-corp/30min), the Cre
 We have a small gallery of examples to run here, [for more check out the docs to build your own agent and or swarms!](https://docs.apac.ai)
 
 ### `Flow` Example
-- The `Flow` is a superior iteratioin of the `LLMChain` from Langchain, our intent with `Flow` is to create the most reliable loop structure that gives the agents their "autonomy" through 3 main methods of interaction, one through user specified loops, then dynamic where the agent parses a <DONE> token, and or an interactive human input verison, or a mix of all 3. 
+- Reliable Structure that provides LLMS autonomy
+- Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
+- Enterprise Grade + Production Grade: `Flow` is designed and optimized for automating real-world tasks at scale!
 
 ```python
 
@@ -86,9 +88,10 @@ out = flow.run("Generate a 10,000 word blog on health and wellness.")
 ------
 
 ### `SequentialWorkflow`
-- Execute tasks step by step by passing in an LLM and the task description!
-- Pass in flows with various LLMs
-- Save and restore Workflow states!
+- A Sequential swarm of autonomous agents where each agent's outputs are fed into the next agent
+- Save and Restore Workflow states!
+- Integrate Flow's with various LLMs and Multi-Modality Models
+
 ```python
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
@@ -130,7 +133,6 @@ for task in workflow.tasks:
 
 ```
 
-
 ---
 
 ## Documentation
@@ -139,6 +141,9 @@ for task in workflow.tasks:
 
 ## Contribute
 - We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1)
+
+## Community
+- [Join the Swarms community here on Discord!](https://discord.gg/AJazBmhKnr)
 
 
 # License
