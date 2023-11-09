@@ -1,0 +1,20 @@
+{
+    "examples": [
+        {
+            "role": "user",
+            "content": "\"question\": \"What is the OSM tag or key of family medicine?\",\"background\": \" {\"OSM TAG\": \"P1282\",\"family madicine\": \"Q3505712\"}\" \"query\": \"SELECT ?osm WHERE {\n  wd:Q3505712 wdt:P1282 ?osm.\n}\""
+        },
+        {
+            "role": "user",
+            "content": "\"question\": \"Who was nominated for Academy Award for Best Supporting Actor for A History of Violence?\",\"background\": \" {\"A History of Violence\": \"Q300439\", \"nominated for\": \"P1411\", \"Academy Award for Best Supporting Actor\": \"Q106291\", \"cast member\": \"P161\"}\" \"query\": \"SELECT ?actor WHERE{\n  wd:Q300439 wdt:P161 ?actor.\n  ?actor wdt:P1411 wd:Q106291.\n}\""
+        },
+        {
+            "role": "user",
+            "content": "\"question\": \"Which person who weighs less than 75 kilograms has the sport number 99?\",\"background\": \" {\"sports number\": \"P1618\", \"mass\": \"P2067\"}\" \"query\": \"SELECT ?person ?personLabel WHERE{\n  ?person wdt:P2067 ?weight.\n  ?person wdt:P1618 \"99\".\n  FILTER(?weight < 75).\n  SERVICE wikibase:label { bd:serviceParam wikibase:language \"[AUTO_LANGUAGE], en\". }\n}\""
+        },
+        {
+            "role": "user",
+            "content": "\"question\": \"How many Alabama counties have the captital of Huntsville and have the licence plate code of 39?\",\"background\": \" {\"Alabama\": \"Q173\", \"Huntsville\": \"Q79860\", \"contains the administrative territorial entity\": \"P150\", \"licence plate code\": \"P395\", \"capital of\": \"P1376\"}\" \"query\": \"SELECT ?county_sentence\nWHERE {\n  wd:Q173 pq:P150 ?county_sentence.\n  ?county_sentence pq:P395 \"39\".\n  wd:Q79860 pq:P1376 ?county_sentence.\n}\n}\""
+        }
+    ]
+}
