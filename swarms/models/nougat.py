@@ -41,10 +41,8 @@ class Nougat:
         self.min_length = min_length
         self.max_new_tokens = max_new_tokens
 
-        self.processor = NougatProcessor.from_pretrained(
-            self.model_name_or_path)
-        self.model = VisionEncoderDecoderModel.from_pretrained(
-            self.model_name_or_path)
+        self.processor = NougatProcessor.from_pretrained(self.model_name_or_path)
+        self.model = VisionEncoderDecoderModel.from_pretrained(self.model_name_or_path)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(self.device)
 
@@ -65,10 +63,8 @@ class Nougat:
             max_new_tokens=self.max_new_tokens,
         )
 
-        sequence = self.processor.batch_decode(outputs,
-                                               skip_special_tokens=True)[0]
-        sequence = self.processor.post_process_generation(sequence,
-                                                          fix_markdown=False)
+        sequence = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
+        sequence = self.processor.post_process_generation(sequence, fix_markdown=False)
 
         out = print(sequence)
         return out
@@ -76,7 +72,8 @@ class Nougat:
     def clean_nougat_output(raw_output):
         # Define the pattern to extract the relevant data
         daily_balance_pattern = (
-            r"\*\*(\d{2}/\d{2}/\d{4})\*\*\n\n\*\*([\d,]+\.\d{2})\*\*")
+            r"\*\*(\d{2}/\d{2}/\d{4})\*\*\n\n\*\*([\d,]+\.\d{2})\*\*"
+        )
 
         # Find all matches of the pattern
         matches = re.findall(daily_balance_pattern, raw_output)

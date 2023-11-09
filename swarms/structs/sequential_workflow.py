@@ -61,12 +61,13 @@ class Task:
         if isinstance(self.flow, Flow):
             # Add a prompt to notify the Flow of the sequential workflow
             if "prompt" in self.kwargs:
-                self.kwargs["prompt"] += (f"\n\nPrevious output: {self.result}"
-                                          if self.result else "")
+                self.kwargs["prompt"] += (
+                    f"\n\nPrevious output: {self.result}" if self.result else ""
+                )
             else:
                 self.kwargs["prompt"] = f"Main task: {self.description}" + (
-                    f"\n\nPrevious output: {self.result}"
-                    if self.result else "")
+                    f"\n\nPrevious output: {self.result}" if self.result else ""
+                )
             self.result = self.flow.run(*self.args, **self.kwargs)
         else:
             self.result = self.flow(*self.args, **self.kwargs)
@@ -110,8 +111,7 @@ class SequentialWorkflow:
     restore_state_filepath: Optional[str] = None
     dashboard: bool = False
 
-    def add(self, task: str, flow: Union[Callable, Flow], *args,
-            **kwargs) -> None:
+    def add(self, task: str, flow: Union[Callable, Flow], *args, **kwargs) -> None:
         """
         Add a task to the workflow.
 
@@ -127,7 +127,8 @@ class SequentialWorkflow:
 
         # Append the task to the tasks list
         self.tasks.append(
-            Task(description=task, flow=flow, args=list(args), kwargs=kwargs))
+            Task(description=task, flow=flow, args=list(args), kwargs=kwargs)
+        )
 
     def reset_workflow(self) -> None:
         """Resets the workflow by clearing the results of each task."""
@@ -179,9 +180,8 @@ class SequentialWorkflow:
             raise ValueError(f"Task {task_description} not found in workflow.")
 
     def save_workflow_state(
-            self,
-            filepath: Optional[str] = "sequential_workflow_state.json",
-            **kwargs) -> None:
+        self, filepath: Optional[str] = "sequential_workflow_state.json", **kwargs
+    ) -> None:
         """
         Saves the workflow state to a json file.
 
@@ -202,13 +202,16 @@ class SequentialWorkflow:
         with open(filepath, "w") as f:
             # Saving the state as a json for simplicuty
             state = {
-                "tasks": [{
-                    "description": task.description,
-                    "args": task.args,
-                    "kwargs": task.kwargs,
-                    "result": task.result,
-                    "history": task.history,
-                } for task in self.tasks],
+                "tasks": [
+                    {
+                        "description": task.description,
+                        "args": task.args,
+                        "kwargs": task.kwargs,
+                        "result": task.result,
+                        "history": task.history,
+                    }
+                    for task in self.tasks
+                ],
                 "max_loops": self.max_loops,
             }
             json.dump(state, f, indent=4)
@@ -220,7 +223,8 @@ class SequentialWorkflow:
                 Sequential Workflow Initializing...""",
                 "green",
                 attrs=["bold", "underline"],
-            ))
+            )
+        )
 
     def workflow_dashboard(self, **kwargs) -> None:
         """
@@ -259,7 +263,8 @@ class SequentialWorkflow:
                 """,
                 "cyan",
                 attrs=["bold", "underline"],
-            ))
+            )
+        )
 
     def workflow_shutdown(self, **kwargs) -> None:
         print(
@@ -268,7 +273,8 @@ class SequentialWorkflow:
                 Sequential Workflow Shutdown...""",
                 "red",
                 attrs=["bold", "underline"],
-            ))
+            )
+        )
 
     def add_objective_to_workflow(self, task: str, **kwargs) -> None:
         print(
@@ -277,7 +283,8 @@ class SequentialWorkflow:
                 Adding Objective to Workflow...""",
                 "green",
                 attrs=["bold", "underline"],
-            ))
+            )
+        )
 
         task = Task(
             description=task,
@@ -342,12 +349,13 @@ class SequentialWorkflow:
                             if "task" not in task.kwargs:
                                 raise ValueError(
                                     "The 'task' argument is required for the Flow flow"
-                                    f" execution in '{task.description}'")
+                                    f" execution in '{task.description}'"
+                                )
                             # Separate the 'task' argument from other kwargs
                             flow_task_arg = task.kwargs.pop("task")
-                            task.result = task.flow.run(flow_task_arg,
-                                                        *task.args,
-                                                        **task.kwargs)
+                            task.result = task.flow.run(
+                                flow_task_arg, *task.args, **task.kwargs
+                            )
                         else:
                             # If it's not a Flow instance, call the flow directly
                             task.result = task.flow(*task.args, **task.kwargs)
@@ -365,17 +373,19 @@ class SequentialWorkflow:
 
                         # Autosave the workflow state
                         if self.autosave:
-                            self.save_workflow_state(
-                                "sequential_workflow_state.json")
+                            self.save_workflow_state("sequential_workflow_state.json")
         except Exception as e:
             print(
                 colored(
-                    (f"Error initializing the Sequential workflow: {e} try"
-                     " optimizing your inputs like the flow class and task"
-                     " description"),
+                    (
+                        f"Error initializing the Sequential workflow: {e} try"
+                        " optimizing your inputs like the flow class and task"
+                        " description"
+                    ),
                     "red",
                     attrs=["bold", "underline"],
-                ))
+                )
+            )
 
     async def arun(self) -> None:
         """
@@ -395,11 +405,13 @@ class SequentialWorkflow:
                         if "task" not in task.kwargs:
                             raise ValueError(
                                 "The 'task' argument is required for the Flow flow"
-                                f" execution in '{task.description}'")
+                                f" execution in '{task.description}'"
+                            )
                         # Separate the 'task' argument from other kwargs
                         flow_task_arg = task.kwargs.pop("task")
                         task.result = await task.flow.arun(
-                            flow_task_arg, *task.args, **task.kwargs)
+                            flow_task_arg, *task.args, **task.kwargs
+                        )
                     else:
                         # If it's not a Flow instance, call the flow directly
                         task.result = await task.flow(*task.args, **task.kwargs)
@@ -417,5 +429,4 @@ class SequentialWorkflow:
 
                     # Autosave the workflow state
                     if self.autosave:
-                        self.save_workflow_state(
-                            "sequential_workflow_state.json")
+                        self.save_workflow_state("sequential_workflow_state.json")

@@ -56,24 +56,23 @@ HUGGINGFACE_DEFAULT_TOOLS_FROM_HUB = [
 
 def get_remote_tools(organization="huggingface-tools"):
     if is_offline_mode():
-        logger.info(
-            "You are in offline mode, so remote tools are not available.")
+        logger.info("You are in offline mode, so remote tools are not available.")
         return {}
 
     spaces = list_spaces(author=organization)
     tools = {}
     for space_info in spaces:
         repo_id = space_info.id
-        resolved_config_file = hf_hub_download(repo_id,
-                                               TOOL_CONFIG_FILE,
-                                               repo_type="space")
+        resolved_config_file = hf_hub_download(
+            repo_id, TOOL_CONFIG_FILE, repo_type="space"
+        )
         with open(resolved_config_file, encoding="utf-8") as reader:
             config = json.load(reader)
 
         task = repo_id.split("/")[-1]
-        tools[config["name"]] = PreTool(task=task,
-                                        description=config["description"],
-                                        repo_id=repo_id)
+        tools[config["name"]] = PreTool(
+            task=task, description=config["description"], repo_id=repo_id
+        )
 
     return tools
 
@@ -93,7 +92,8 @@ def _setup_default_tools():
         tool_class = getattr(tools_module, tool_class_name)
         description = tool_class.description
         HUGGINGFACE_DEFAULT_TOOLS[tool_class.name] = PreTool(
-            task=task_name, description=description, repo_id=None)
+            task=task_name, description=description, repo_id=None
+        )
 
     if not is_offline_mode():
         for task_name in HUGGINGFACE_DEFAULT_TOOLS_FROM_HUB:
@@ -197,19 +197,18 @@ class Agent:
             one of the default tools, that default tool will be overridden.
     """
 
-    def __init__(self,
-                 chat_prompt_template=None,
-                 run_prompt_template=None,
-                 additional_tools=None):
+    def __init__(
+        self, chat_prompt_template=None, run_prompt_template=None, additional_tools=None
+    ):
         _setup_default_tools()
 
         agent_name = self.__class__.__name__
-        self.chat_prompt_template = download_prompt(chat_prompt_template,
-                                                    agent_name,
-                                                    mode="chat")
-        self.run_prompt_template = download_prompt(run_prompt_template,
-                                                   agent_name,
-                                                   mode="run")
+        self.chat_prompt_template = download_prompt(
+            chat_prompt_template, agent_name, mode="chat"
+        )
+        self.run_prompt_template = download_prompt(
+            run_prompt_template, agent_name, mode="run"
+        )
         self._toolbox = HUGGINGFACE_DEFAULT_TOOLS.copy()
         self.log = print
         if additional_tools is not None:
@@ -225,16 +224,17 @@ class Agent:
             }
             self._toolbox.update(additional_tools)
             if len(replacements) > 1:
-                names = "\n".join(
-                    [f"- {n}: {t}" for n, t in replacements.items()])
+                names = "\n".join([f"- {n}: {t}" for n, t in replacements.items()])
                 logger.warning(
                     "The following tools have been replaced by the ones provided in"
-                    f" `additional_tools`:\n{names}.")
+                    f" `additional_tools`:\n{names}."
+                )
             elif len(replacements) == 1:
                 name = list(replacements.keys())[0]
                 logger.warning(
                     f"{name} has been replaced by {replacements[name]} as provided in"
-                    " `additional_tools`.")
+                    " `additional_tools`."
+                )
 
         self.prepare_for_new_chat()
 
@@ -244,20 +244,17 @@ class Agent:
         return self._toolbox
 
     def format_prompt(self, task, chat_mode=False):
-        description = "\n".join([
-            f"- {name}: {tool.description}"
-            for name, tool in self.toolbox.items()
-        ])
+        description = "\n".join(
+            [f"- {name}: {tool.description}" for name, tool in self.toolbox.items()]
+        )
         if chat_mode:
             if self.chat_history is None:
-                prompt = self.chat_prompt_template.replace(
-                    "<<all_tools>>", description)
+                prompt = self.chat_prompt_template.replace("<<all_tools>>", description)
             else:
                 prompt = self.chat_history
             prompt += CHAT_MESSAGE_PROMPT.replace("<<task>>", task)
         else:
-            prompt = self.run_prompt_template.replace("<<all_tools>>",
-                                                      description)
+            prompt = self.run_prompt_template.replace("<<all_tools>>", description)
             prompt = prompt.replace("<<prompt>>", task)
         return prompt
 
@@ -306,19 +303,14 @@ class Agent:
             if not return_code:
                 self.log("\n\n==Result==")
                 self.cached_tools = resolve_tools(
-                    code,
-                    self.toolbox,
-                    remote=remote,
-                    cached_tools=self.cached_tools)
+                    code, self.toolbox, remote=remote, cached_tools=self.cached_tools
+                )
                 self.chat_state.update(kwargs)
-                return evaluate(code,
-                                self.cached_tools,
-                                self.chat_state,
-                                chat_mode=True)
+                return evaluate(
+                    code, self.cached_tools, self.chat_state, chat_mode=True
+                )
             else:
-                tool_code = get_tool_creation_code(code,
-                                                   self.toolbox,
-                                                   remote=remote)
+                tool_code = get_tool_creation_code(code, self.toolbox, remote=remote)
                 return f"{tool_code}\n{code}"
 
     def prepare_for_new_chat(self):
@@ -360,15 +352,12 @@ class Agent:
         self.log(f"\n\n==Code generated by the agent==\n{code}")
         if not return_code:
             self.log("\n\n==Result==")
-            self.cached_tools = resolve_tools(code,
-                                              self.toolbox,
-                                              remote=remote,
-                                              cached_tools=self.cached_tools)
+            self.cached_tools = resolve_tools(
+                code, self.toolbox, remote=remote, cached_tools=self.cached_tools
+            )
             return evaluate(code, self.cached_tools, state=kwargs.copy())
         else:
-            tool_code = get_tool_creation_code(code,
-                                               self.toolbox,
-                                               remote=remote)
+            tool_code = get_tool_creation_code(code, self.toolbox, remote=remote)
             return f"{tool_code}\n{code}"
 
     def generate_one(self, prompt, stop):
@@ -428,7 +417,8 @@ class HFAgent(Agent):
     ):
         if not is_openai_available():
             raise ImportError(
-                "Using `OpenAiAgent` requires `openai`: `pip install openai`.")
+                "Using `OpenAiAgent` requires `openai`: `pip install openai`."
+            )
 
         if api_key is None:
             api_key = os.environ.get("OPENAI_API_KEY", None)
@@ -436,7 +426,8 @@ class HFAgent(Agent):
             raise ValueError(
                 "You need an openai key to use `OpenAIAgent`. You can get one here: Get"
                 " one here https://openai.com/api/`. If you have one, set it in your"
-                " env with `os.environ['OPENAI_API_KEY'] = xxx.")
+                " env with `os.environ['OPENAI_API_KEY'] = xxx."
+            )
         else:
             openai.api_key = api_key
         self.model = model
@@ -461,10 +452,7 @@ class HFAgent(Agent):
     def _chat_generate(self, prompt, stop):
         result = openai.ChatCompletion.create(
             model=self.model,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }],
+            messages=[{"role": "user", "content": prompt}],
             temperature=0,
             stop=stop,
         )
@@ -542,7 +530,8 @@ class AzureOpenAI(Agent):
     ):
         if not is_openai_available():
             raise ImportError(
-                "Using `OpenAiAgent` requires `openai`: `pip install openai`.")
+                "Using `OpenAiAgent` requires `openai`: `pip install openai`."
+            )
 
         self.deployment_id = deployment_id
         openai.api_type = "azure"
@@ -552,7 +541,8 @@ class AzureOpenAI(Agent):
             raise ValueError(
                 "You need an Azure openAI key to use `AzureOpenAIAgent`. If you have"
                 " one, set it in your env with `os.environ['AZURE_OPENAI_API_KEY'] ="
-                " xxx.")
+                " xxx."
+            )
         else:
             openai.api_key = api_key
         if resource_name is None:
@@ -561,7 +551,8 @@ class AzureOpenAI(Agent):
             raise ValueError(
                 "You need a resource_name to use `AzureOpenAIAgent`. If you have one,"
                 " set it in your env with `os.environ['AZURE_OPENAI_RESOURCE_NAME'] ="
-                " xxx.")
+                " xxx."
+            )
         else:
             openai.api_base = f"https://{resource_name}.openai.azure.com"
         openai.api_version = api_version
@@ -591,10 +582,7 @@ class AzureOpenAI(Agent):
     def _chat_generate(self, prompt, stop):
         result = openai.ChatCompletion.create(
             engine=self.deployment_id,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }],
+            messages=[{"role": "user", "content": prompt}],
             temperature=0,
             stop=stop,
         )

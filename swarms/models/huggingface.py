@@ -47,8 +47,9 @@ class HuggingfaceLLM:
         **kwargs,
     ):
         self.logger = logging.getLogger(__name__)
-        self.device = (device if device else
-                       ("cuda" if torch.cuda.is_available() else "cpu"))
+        self.device = (
+            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        )
         self.model_id = model_id
         self.max_length = max_length
         self.verbose = verbose
@@ -57,8 +58,9 @@ class HuggingfaceLLM:
         self.model, self.tokenizer = None, None
 
         if self.distributed:
-            assert (torch.cuda.device_count() >
-                    1), "You need more than 1 gpu for distributed processing"
+            assert (
+                torch.cuda.device_count() > 1
+            ), "You need more than 1 gpu for distributed processing"
 
         bnb_config = None
         if quantize:
@@ -73,17 +75,17 @@ class HuggingfaceLLM:
 
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_id, *args, **kwargs)
+                self.model_id, *args, **kwargs
+            )
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id, quantization_config=bnb_config, *args, **kwargs)
+                self.model_id, quantization_config=bnb_config, *args, **kwargs
+            )
 
             self.model  # .to(self.device)
         except Exception as e:
             # self.logger.error(f"Failed to load the model or the tokenizer: {e}")
             # raise
-            print(
-                colored(f"Failed to load the model and or the tokenizer: {e}",
-                        "red"))
+            print(colored(f"Failed to load the model and or the tokenizer: {e}", "red"))
 
     def print_error(self, error: str):
         """Print error"""
@@ -95,18 +97,20 @@ class HuggingfaceLLM:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
 
-                bnb_config = (BitsAndBytesConfig(**self.quantization_config)
-                              if self.quantization_config else None)
+                bnb_config = (
+                    BitsAndBytesConfig(**self.quantization_config)
+                    if self.quantization_config
+                    else None
+                )
 
                 self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_id,
-                    quantization_config=bnb_config).to(self.device)
+                    self.model_id, quantization_config=bnb_config
+                ).to(self.device)
 
                 if self.distributed:
                     self.model = DDP(self.model)
             except Exception as error:
-                self.logger.error(
-                    f"Failed to load the model or the tokenizer: {error}")
+                self.logger.error(f"Failed to load the model or the tokenizer: {error}")
                 raise
 
     def run(self, task: str):
@@ -127,8 +131,7 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(task,
-                                           return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
 
             # self.log.start()
 
@@ -137,36 +140,39 @@ class HuggingfaceLLM:
                     for _ in range(max_length):
                         output_sequence = []
 
-                        outputs = self.model.generate(inputs,
-                                                      max_length=len(inputs) +
-                                                      1,
-                                                      do_sample=True)
+                        outputs = self.model.generate(
+                            inputs, max_length=len(inputs) + 1, do_sample=True
+                        )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
 
                         # print token in real-time
                         print(
-                            self.tokenizer.decode([output_tokens],
-                                                  skip_special_tokens=True),
+                            self.tokenizer.decode(
+                                [output_tokens], skip_special_tokens=True
+                            ),
                             end="",
                             flush=True,
                         )
                         inputs = outputs
             else:
                 with torch.no_grad():
-                    outputs = self.model.generate(inputs,
-                                                  max_length=max_length,
-                                                  do_sample=True)
+                    outputs = self.model.generate(
+                        inputs, max_length=max_length, do_sample=True
+                    )
 
             del inputs
             return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         except Exception as e:
             print(
                 colored(
-                    (f"HuggingfaceLLM could not generate text because of error: {e},"
-                     " try optimizing your arguments"),
+                    (
+                        f"HuggingfaceLLM could not generate text because of error: {e},"
+                        " try optimizing your arguments"
+                    ),
                     "red",
-                ))
+                )
+            )
             raise
 
     async def run_async(self, task: str, *args, **kwargs) -> str:
@@ -210,8 +216,7 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(task,
-                                           return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
 
             # self.log.start()
 
@@ -220,26 +225,26 @@ class HuggingfaceLLM:
                     for _ in range(max_length):
                         output_sequence = []
 
-                        outputs = self.model.generate(inputs,
-                                                      max_length=len(inputs) +
-                                                      1,
-                                                      do_sample=True)
+                        outputs = self.model.generate(
+                            inputs, max_length=len(inputs) + 1, do_sample=True
+                        )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
 
                         # print token in real-time
                         print(
-                            self.tokenizer.decode([output_tokens],
-                                                  skip_special_tokens=True),
+                            self.tokenizer.decode(
+                                [output_tokens], skip_special_tokens=True
+                            ),
                             end="",
                             flush=True,
                         )
                         inputs = outputs
             else:
                 with torch.no_grad():
-                    outputs = self.model.generate(inputs,
-                                                  max_length=max_length,
-                                                  do_sample=True)
+                    outputs = self.model.generate(
+                        inputs, max_length=max_length, do_sample=True
+                    )
 
             del inputs
 
@@ -300,7 +305,8 @@ class HuggingfaceLLM:
 
                 """,
                 "red",
-            ))
+            )
+        )
 
         print(dashboard)
 

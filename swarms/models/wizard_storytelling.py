@@ -33,8 +33,7 @@ class WizardLLMStoryTeller:
 
     def __init__(
         self,
-        model_id:
-        str = "TheBloke/WizardLM-Uncensored-SuperCOT-StoryTelling-30B-GGUF",
+        model_id: str = "TheBloke/WizardLM-Uncensored-SuperCOT-StoryTelling-30B-GGUF",
         device: str = None,
         max_length: int = 500,
         quantize: bool = False,
@@ -45,8 +44,9 @@ class WizardLLMStoryTeller:
         decoding=False,
     ):
         self.logger = logging.getLogger(__name__)
-        self.device = (device if device else
-                       ("cuda" if torch.cuda.is_available() else "cpu"))
+        self.device = (
+            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        )
         self.model_id = model_id
         self.max_length = max_length
         self.verbose = verbose
@@ -56,8 +56,9 @@ class WizardLLMStoryTeller:
         # self.log = Logging()
 
         if self.distributed:
-            assert (torch.cuda.device_count() >
-                    1), "You need more than 1 gpu for distributed processing"
+            assert (
+                torch.cuda.device_count() > 1
+            ), "You need more than 1 gpu for distributed processing"
 
         bnb_config = None
         if quantize:
@@ -73,7 +74,8 @@ class WizardLLMStoryTeller:
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id, quantization_config=bnb_config)
+                self.model_id, quantization_config=bnb_config
+            )
 
             self.model  # .to(self.device)
         except Exception as e:
@@ -86,18 +88,20 @@ class WizardLLMStoryTeller:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
 
-                bnb_config = (BitsAndBytesConfig(**self.quantization_config)
-                              if self.quantization_config else None)
+                bnb_config = (
+                    BitsAndBytesConfig(**self.quantization_config)
+                    if self.quantization_config
+                    else None
+                )
 
                 self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_id,
-                    quantization_config=bnb_config).to(self.device)
+                    self.model_id, quantization_config=bnb_config
+                ).to(self.device)
 
                 if self.distributed:
                     self.model = DDP(self.model)
             except Exception as error:
-                self.logger.error(
-                    f"Failed to load the model or the tokenizer: {error}")
+                self.logger.error(f"Failed to load the model or the tokenizer: {error}")
                 raise
 
     def run(self, prompt_text: str):
@@ -116,8 +120,9 @@ class WizardLLMStoryTeller:
         max_length = self.max_length
 
         try:
-            inputs = self.tokenizer.encode(prompt_text,
-                                           return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(
+                self.device
+            )
 
             # self.log.start()
 
@@ -126,26 +131,26 @@ class WizardLLMStoryTeller:
                     for _ in range(max_length):
                         output_sequence = []
 
-                        outputs = self.model.generate(inputs,
-                                                      max_length=len(inputs) +
-                                                      1,
-                                                      do_sample=True)
+                        outputs = self.model.generate(
+                            inputs, max_length=len(inputs) + 1, do_sample=True
+                        )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
 
                         # print token in real-time
                         print(
-                            self.tokenizer.decode([output_tokens],
-                                                  skip_special_tokens=True),
+                            self.tokenizer.decode(
+                                [output_tokens], skip_special_tokens=True
+                            ),
                             end="",
                             flush=True,
                         )
                         inputs = outputs
             else:
                 with torch.no_grad():
-                    outputs = self.model.generate(inputs,
-                                                  max_length=max_length,
-                                                  do_sample=True)
+                    outputs = self.model.generate(
+                        inputs, max_length=max_length, do_sample=True
+                    )
 
             del inputs
             return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -169,8 +174,9 @@ class WizardLLMStoryTeller:
         max_length = self.max_
 
         try:
-            inputs = self.tokenizer.encode(prompt_text,
-                                           return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(
+                self.device
+            )
 
             # self.log.start()
 
@@ -179,26 +185,26 @@ class WizardLLMStoryTeller:
                     for _ in range(max_length):
                         output_sequence = []
 
-                        outputs = self.model.generate(inputs,
-                                                      max_length=len(inputs) +
-                                                      1,
-                                                      do_sample=True)
+                        outputs = self.model.generate(
+                            inputs, max_length=len(inputs) + 1, do_sample=True
+                        )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
 
                         # print token in real-time
                         print(
-                            self.tokenizer.decode([output_tokens],
-                                                  skip_special_tokens=True),
+                            self.tokenizer.decode(
+                                [output_tokens], skip_special_tokens=True
+                            ),
                             end="",
                             flush=True,
                         )
                         inputs = outputs
             else:
                 with torch.no_grad():
-                    outputs = self.model.generate(inputs,
-                                                  max_length=max_length,
-                                                  do_sample=True)
+                    outputs = self.model.generate(
+                        inputs, max_length=max_length, do_sample=True
+                    )
 
             del inputs
 

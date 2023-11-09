@@ -9,6 +9,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 from swarms.agents import *
 from swarms.swarms import *
 from swarms.structs import *
-from swarms.models import *  
+from swarms.models import *
 from swarms.chunkers import *
 from swarms.workers import *

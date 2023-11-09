@@ -49,8 +49,9 @@ class GodMode:
             table.append([f"LLM {i+1}", response])
         print(
             colored(
-                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
-                "cyan"))
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"
+            )
+        )
 
     def run_all(self, task):
         """Run the task on all LLMs"""
@@ -73,15 +74,18 @@ class GodMode:
             table.append([f"LLM {i+1}", response])
         print(
             colored(
-                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
-                "cyan"))
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"
+            )
+        )
 
     # New Features
     def save_responses_to_file(self, filename):
         """Save responses to file"""
         with open(filename, "w") as file:
-            table = [[f"LLM {i+1}", response]
-                     for i, response in enumerate(self.last_responses)]
+            table = [
+                [f"LLM {i+1}", response]
+                for i, response in enumerate(self.last_responses)
+            ]
             file.write(tabulate(table, headers=["LLM", "Response"]))
 
     @classmethod
@@ -101,9 +105,11 @@ class GodMode:
         for i, task in enumerate(self.task_history):
             print(f"{i + 1}. {task}")
         print("\nLast Responses:")
-        table = [[f"LLM {i+1}", response]
-                 for i, response in enumerate(self.last_responses)]
+        table = [
+            [f"LLM {i+1}", response] for i, response in enumerate(self.last_responses)
+        ]
         print(
             colored(
-                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
-                "cyan"))
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"
+            )
+        )

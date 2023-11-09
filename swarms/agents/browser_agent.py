@@ -38,8 +38,7 @@ def record(agent_name: str, autotab_ext_path: Optional[str] = None):
     if not os.path.exists("agents"):
         os.makedirs("agents")
 
-    if os.path.exists(
-            f"agents/{agent_name}.py") and config.environment != "local":
+    if os.path.exists(f"agents/{agent_name}.py") and config.environment != "local":
         if not _is_blank_agent(agent_name=agent_name):
             raise Exception(f"Agent with name {agent_name} already exists")
     driver = get_driver(  # noqa: F841
@@ -55,10 +54,12 @@ def record(agent_name: str, autotab_ext_path: Optional[str] = None):
 
     print(
         "\033[34mYou have the Python debugger open, you can run commands in it like you"
-        " would in a normal Python shell.\033[0m")
+        " would in a normal Python shell.\033[0m"
+    )
     print(
         "\033[34mTo exit, type 'q' and press enter. For a list of commands type '?' and"
-        " press enter.\033[0m")
+        " press enter.\033[0m"
+    )
     breakpoint()
 
 
@@ -78,13 +79,12 @@ def extract_domain_from_url(url: str):
 
 
 class AutotabChromeDriver(uc.Chrome):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def find_element_with_retry(self,
-                                by=By.ID,
-                                value: Optional[str] = None) -> WebElement:
+    def find_element_with_retry(
+        self, by=By.ID, value: Optional[str] = None
+    ) -> WebElement:
         try:
             return super().find_element(by, value)
         except Exception as e:
@@ -102,8 +102,11 @@ def open_plugin(driver: AutotabChromeDriver):
 
 def open_plugin_and_login(driver: AutotabChromeDriver):
     if config.autotab_api_key is not None:
-        backend_url = ("http://localhost:8000" if config.environment == "local"
-                       else "https://api.autotab.com")
+        backend_url = (
+            "http://localhost:8000"
+            if config.environment == "local"
+            else "https://api.autotab.com"
+        )
         driver.get(f"{backend_url}/auth/signin-api-key-page")
         response = requests.post(
             f"{backend_url}/auth/signin-api-key",
@@ -116,7 +119,8 @@ def open_plugin_and_login(driver: AutotabChromeDriver):
             else:
                 raise Exception(
                     f"Error {response.status_code} from backend while logging you in"
-                    f" with your API key: {response.text}")
+                    f" with your API key: {response.text}"
+                )
         cookie["name"] = cookie["key"]
         del cookie["key"]
         driver.add_cookie(cookie)
@@ -126,21 +130,26 @@ def open_plugin_and_login(driver: AutotabChromeDriver):
     else:
         print("No autotab API key found, heading to autotab.com to sign up")
 
-        url = ("http://localhost:3000/dashboard" if config.environment
-               == "local" else "https://autotab.com/dashboard")
+        url = (
+            "http://localhost:3000/dashboard"
+            if config.environment == "local"
+            else "https://autotab.com/dashboard"
+        )
         driver.get(url)
         time.sleep(0.5)
 
         open_plugin(driver)
 
 
-def get_driver(autotab_ext_path: Optional[str] = None,
-               record_mode: bool = False) -> AutotabChromeDriver:
+def get_driver(
+    autotab_ext_path: Optional[str] = None, record_mode: bool = False
+) -> AutotabChromeDriver:
     options = webdriver.ChromeOptions()
     options.add_argument("--no-sandbox")  # Necessary for running
     options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        " (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+        " (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+    )
     options.add_argument("--enable-webgl")
     options.add_argument("--enable-3d-apis")
     options.add_argument("--enable-clipboard-read-write")
@@ -229,8 +238,7 @@ class Config(BaseModel):
             return cls(
                 autotab_api_key=autotab_api_key,
                 credentials=_credentials,
-                google_credentials=GoogleCredentials(
-                    credentials=google_credentials),
+                google_credentials=GoogleCredentials(credentials=google_credentials),
                 chrome_binary_location=config.get("chrome_binary_location"),
                 environment=config.get("environment", "prod"),
             )
@@ -248,9 +256,9 @@ def is_signed_in_to_google(driver):
     return len([c for c in cookies if c["name"] == "SAPISID"]) != 0
 
 
-def google_login(driver,
-                 credentials: Optional[SiteCredentials] = None,
-                 navigate: bool = True):
+def google_login(
+    driver, credentials: Optional[SiteCredentials] = None, navigate: bool = True
+):
     print("Logging in to Google")
     if navigate:
         driver.get("https://accounts.google.com/")
@@ -282,7 +290,8 @@ def google_login(driver,
     email_input.send_keys(credentials.email)
     email_input.send_keys(Keys.ENTER)
     WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, "[type='password']")))
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "[type='password']"))
+    )
 
     password_input = driver.find_element(By.CSS_SELECTOR, "[type='password']")
     password_input.send_keys(credentials.password)
@@ -305,20 +314,21 @@ def google_login(driver,
         cookies = driver.get_cookies()
         cookie_names = ["__Host-GAPS", "SMSV", "NID", "ACCOUNT_CHOOSER"]
         google_cookies = [
-            cookie for cookie in cookies
-            if cookie["domain"] in [".google.com", "accounts.google.com"] and
-            cookie["name"] in cookie_names
+            cookie
+            for cookie in cookies
+            if cookie["domain"] in [".google.com", "accounts.google.com"]
+            and cookie["name"] in cookie_names
         ]
         with open("google_cookies.json", "w") as f:
             json.dump(google_cookies, f)
 
         # Log back in
         login_button = driver.find_element(
-            By.CSS_SELECTOR, f"[data-identifier='{credentials.email}']")
+            By.CSS_SELECTOR, f"[data-identifier='{credentials.email}']"
+        )
         login_button.click()
         time.sleep(1)
-        password_input = driver.find_element(By.CSS_SELECTOR,
-                                             "[type='password']")
+        password_input = driver.find_element(By.CSS_SELECTOR, "[type='password']")
         password_input.send_keys(credentials.password)
         password_input.send_keys(Keys.ENTER)
 
@@ -333,7 +343,8 @@ def login(driver, url: str):
     login_url = credentials.login_url
     if credentials.login_with_google_account:
         google_credentials = config.google_credentials.credentials[
-            credentials.login_with_google_account]
+            credentials.login_with_google_account
+        ]
         _login_with_google(driver, login_url, google_credentials)
     else:
         _login(driver, login_url, credentials=credentials)
@@ -360,15 +371,16 @@ def _login_with_google(driver, url: str, google_credentials: SiteCredentials):
 
     driver.get(url)
     WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.TAG_NAME, "body")))
+        EC.presence_of_element_located((By.TAG_NAME, "body"))
+    )
 
     main_window = driver.current_window_handle
     xpath = (
         "//*[contains(text(), 'Continue with Google') or contains(text(), 'Sign in with"
-        " Google') or contains(@title, 'Sign in with Google')]")
+        " Google') or contains(@title, 'Sign in with Google')]"
+    )
 
-    WebDriverWait(driver,
-                  10).until(EC.presence_of_element_located((By.XPATH, xpath)))
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
     driver.find_element(
         By.XPATH,
         xpath,
@@ -376,8 +388,8 @@ def _login_with_google(driver, url: str, google_credentials: SiteCredentials):
 
     driver.switch_to.window(driver.window_handles[-1])
     driver.find_element(
-        By.XPATH,
-        f"//*[contains(text(), '{google_credentials.email}')]").click()
+        By.XPATH, f"//*[contains(text(), '{google_credentials.email}')]"
+    ).click()
 
     driver.switch_to.window(main_window)
 
@@ -430,11 +442,8 @@ def should_update():
 
     # Parse the XML file
     root = ET.fromstring(xml_content)
-    namespaces = {
-        "ns": "http://www.google.com/update2/response"
-    }  # add namespaces
-    xml_version = root.find(".//ns:app/ns:updatecheck",
-                            namespaces).get("version")
+    namespaces = {"ns": "http://www.google.com/update2/response"}  # add namespaces
+    xml_version = root.find(".//ns:app/ns:updatecheck", namespaces).get("version")
 
     # Load the local JSON file
     with open("src/extension/autotab/manifest.json", "r") as f:
