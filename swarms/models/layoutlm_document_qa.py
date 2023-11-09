@@ -3,10 +3,8 @@ LayoutLMDocumentQA is a multimodal good for
 visual question answering on real world docs lik invoice, pdfs, etc
 """
 from transformers import pipeline
-from swarms.models.base import AbstractModel
 
-
-class LayoutLMDocumentQA(AbstractModel):
+class LayoutLMDocumentQA:
     """
     LayoutLMDocumentQA for document question answering:
 
