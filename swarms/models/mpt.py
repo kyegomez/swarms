@@ -26,10 +26,7 @@ class MPT7B:
 
     """
 
-    def __init__(self,
-                 model_name: str,
-                 tokenizer_name: str,
-                 max_tokens: int = 100):
+    def __init__(self, model_name: str, tokenizer_name: str, max_tokens: int = 100):
         # Loading model and tokenizer details
         self.model_name = model_name
         self.tokenizer_name = tokenizer_name
@@ -40,9 +37,11 @@ class MPT7B:
         self.logger = logging.getLogger(__name__)
 
         config = AutoModelForCausalLM.from_pretrained(
-            model_name, trust_remote_code=True).config
+            model_name, trust_remote_code=True
+        ).config
         self.model = AutoModelForCausalLM.from_pretrained(
-            model_name, config=config, trust_remote_code=True)
+            model_name, config=config, trust_remote_code=True
+        )
 
         # Initializing a text-generation pipeline
         self.pipe = pipeline(
@@ -115,10 +114,9 @@ class MPT7B:
 
         """
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            return self.pipe(prompt,
-                             max_new_tokens=self.max_tokens,
-                             do_sample=True,
-                             use_cache=True)[0]["generated_text"]
+            return self.pipe(
+                prompt, max_new_tokens=self.max_tokens, do_sample=True, use_cache=True
+            )[0]["generated_text"]
 
     async def generate_async(self, prompt: str) -> str:
         """Generate Async"""

@@ -11,9 +11,9 @@ if TYPE_CHECKING:
     from langchain.prompts.chat import ChatPromptTemplate
 
 
-def get_buffer_string(messages: Sequence[BaseMessage],
-                      human_prefix: str = "Human",
-                      ai_prefix: str = "AI") -> str:
+def get_buffer_string(
+    messages: Sequence[BaseMessage], human_prefix: str = "Human", ai_prefix: str = "AI"
+) -> str:
     """Convert sequence of Messages to strings and concatenate them into one string.
 
     Args:
@@ -88,9 +88,9 @@ class BaseMessage(Serializable):
 
 
 class BaseMessageChunk(BaseMessage):
-
-    def _merge_kwargs_dict(self, left: Dict[str, Any],
-                           right: Dict[str, Any]) -> Dict[str, Any]:
+    def _merge_kwargs_dict(
+        self, left: Dict[str, Any], right: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Merge additional_kwargs from another BaseMessageChunk into this one."""
         merged = left.copy()
         for k, v in right.items():
@@ -99,7 +99,8 @@ class BaseMessageChunk(BaseMessage):
             elif not isinstance(merged[k], type(v)):
                 raise ValueError(
                     f'additional_kwargs["{k}"] already exists in this message,'
-                    " but with a different type.")
+                    " but with a different type."
+                )
             elif isinstance(merged[k], str):
                 merged[k] += v
             elif isinstance(merged[k], dict):
@@ -118,12 +119,15 @@ class BaseMessageChunk(BaseMessage):
             return self.__class__(
                 content=self.content + other.content,
                 additional_kwargs=self._merge_kwargs_dict(
-                    self.additional_kwargs, other.additional_kwargs),
+                    self.additional_kwargs, other.additional_kwargs
+                ),
             )
         else:
-            raise TypeError('unsupported operand type(s) for +: "'
-                            f"{self.__class__.__name__}"
-                            f'" and "{other.__class__.__name__}"')
+            raise TypeError(
+                'unsupported operand type(s) for +: "'
+                f"{self.__class__.__name__}"
+                f'" and "{other.__class__.__name__}"'
+            )
 
 
 class HumanMessage(BaseMessage):

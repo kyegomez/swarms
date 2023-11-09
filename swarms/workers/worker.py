@@ -4,7 +4,8 @@ from typing import Dict, Union
 
 import faiss
 from langchain.chains.qa_with_sources.loading import (
-    load_qa_with_sources_chain,)
+    load_qa_with_sources_chain,
+)
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.tools import ReadFileTool, WriteFileTool
@@ -131,7 +132,8 @@ class Worker:
         ```
         """
         query_website_tool = WebpageQATool(
-            qa_chain=load_qa_with_sources_chain(self.llm))
+            qa_chain=load_qa_with_sources_chain(self.llm)
+        )
 
         self.tools = [
             WriteFileTool(root_dir=ROOT_DIR),
@@ -155,13 +157,15 @@ class Worker:
             embedding_size = 1536
             index = faiss.IndexFlatL2(embedding_size)
 
-            self.vectorstore = FAISS(embeddings_model.embed_query, index,
-                                     InMemoryDocstore({}), {})
+            self.vectorstore = FAISS(
+                embeddings_model.embed_query, index, InMemoryDocstore({}), {}
+            )
 
         except Exception as error:
             raise RuntimeError(
                 "Error setting up memory perhaps try try tuning the embedding size:"
-                f" {error}")
+                f" {error}"
+            )
 
     def setup_agent(self):
         """
@@ -290,6 +294,8 @@ class Worker:
 
     def is_within_proximity(self, other_worker):
         """Using Euclidean distance for proximity check"""
-        distance = ((self.coordinates[0] - other_worker.coordinates[0])**2 +
-                    (self.coordinates[1] - other_worker.coordinates[1])**2)**0.5
+        distance = (
+            (self.coordinates[0] - other_worker.coordinates[0]) ** 2
+            + (self.coordinates[1] - other_worker.coordinates[1]) ** 2
+        ) ** 0.5
         return distance < 10  # threshold for proximity
