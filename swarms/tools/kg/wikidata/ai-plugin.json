@@ -1,0 +1,20 @@
+{
+    "schema_version": "v1",
+    "name_for_model": "Search in Wikidata",
+    "name_for_human": "Search in Wikidata",
+    "description_for_model": "Plugin for answering factual questions in wikidata.",
+    "description_for_human": "answering factual questions in wikidata.",
+    "auth": {
+      "type": "user_http",
+      "authorization_type": "bearer"
+    },
+    "api": {
+      "type": "local",
+      "url": "https://your-app-url.com/.well-known/openapi.yaml",
+      "has_user_authentication": false
+    },
+    "author_github": "",
+    "logo_url": "https://your-app-url.com/.well-known/logo.png",
+    "contact_email": "hello@contact.com", 
+    "legal_info_url": "hello@legal.com"
+  }

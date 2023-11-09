@@ -1,13 +1,13 @@
-"""Base implementation for tools or skills."""
-from __future__ import annotations
+import fastapi
+from typing import Optional
+import copy
 
-import asyncio
-import inspect
-import warnings
-from abc import abstractmethod
-from functools import partial
-from inspect import signature
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Type, Union
+class Tool(fastapi.FastAPI):
+    r""" Tool is inherited from FastAPI class, thus:
+        - It can act as a server
+        - It has get method, you can use Tool.get method to bind a function to an url
+        - It can be easily mounted to another server
+        - It has a list of sub-routes, each route is a function
 
 from langchain.callbacks.base import BaseCallbackManager
 from langchain.callbacks.manager import (
@@ -68,32 +68,17 @@ def create_schema_from_function(
 ) -> Type[BaseModel]:
     """Create a pydantic schema from a function's signature.
     Args:
-        model_name: Name to assign to the generated pydandic schema
-        func: Function to generate the schema from
-    Returns:
-        A pydantic model with the same arguments as the function
-    """
-    # https://docs.pydantic.dev/latest/usage/validation_decorator/
-    validated = validate_arguments(func, config=_SchemaConfig)  # type: ignore
-    inferred_model = validated.model  # type: ignore
-    if "run_manager" in inferred_model.__fields__:
-        del inferred_model.__fields__["run_manager"]
-    if "callbacks" in inferred_model.__fields__:
-        del inferred_model.__fields__["callbacks"]
-    # Pydantic adds placeholder virtual fields we need to strip
-    valid_properties = _get_filtered_args(inferred_model, func)
-    return _create_subset_model(
-        f"{model_name}Schema", inferred_model, list(valid_properties)
-    )
-
-
-class ToolException(Exception):
-    """An optional exception that tool throws when execution error occurs.
-
-    When this exception is thrown, the agent will not stop working,
-    but will handle the exception according to the handle_tool_error
-    variable of the tool, and the processing result will be returned
-    to the agent as observation, and printed in red on the console.
+        - tool_name (str): The name of the tool.
+        - description (str): The description of the tool.
+        - name_for_human (str, optional): The name of the tool for humans. Defaults to None.
+        - name_for_model (str, optional): The name of the tool for models. Defaults to None.
+        - description_for_human (str, optional): The description of the tool for humans. Defaults to None.
+        - description_for_model (str, optional): The description of the tool for models. Defaults to None.
+        - logo_url (str, optional): The URL of the tool's logo. Defaults to None.
+        - author_github (str, optional): The GitHub URL of the author. Defaults to None.
+        - contact_email (str, optional): The contact email for the tool. Defaults to "".
+        - legal_info_url (str, optional): The URL for legal information. Defaults to "".
+        - version (str, optional): The version of the tool. Defaults to "0.1.0".
     """
 
     pass
@@ -694,149 +679,55 @@ class StructuredTool(BaseTool):
                 tool = StructuredTool.from_function(add)
                 tool.run(1, 2) # 3
         """
-
-        if func is not None:
-            source_function = func
-        elif coroutine is not None:
-            source_function = coroutine
-        else:
-            raise ValueError("Function and/or coroutine must be provided")
-        name = name or source_function.__name__
-        description = description or source_function.__doc__
-        if description is None:
-            raise ValueError(
-                "Function must have a docstring if description not provided."
-            )
-
-        # Description example:
-        # search_api(query: str) - Searches the API for the query.
-        sig = signature(source_function)
-        description = f"{name}{sig} - {description.strip()}"
-        _args_schema = args_schema
-        if _args_schema is None and infer_schema:
-            _args_schema = create_schema_from_function(f"{name}Schema", source_function)
-        return cls(
-            name=name,
-            func=func,
-            coroutine=coroutine,
-            args_schema=_args_schema,
+        Diagram:
+            Root API server (ToolServer object)
+            │     
+            ├───── "./weather": Tool object
+            │        ├── "./get_weather_today": function_get_weather(location: str) -> str
+            │        ├── "./get_weather_forecast": function_get_weather_forcast(location: str, day_offset: int) -> str
+            │        └── "...more routes"
+            ├───── "./wikidata": Tool object
+            │        ├── "... more routes"
+            └───── "... more routes"
+        """
+        super().__init__(
+            title=tool_name,
             description=description,
-            return_direct=return_direct,
-            **kwargs,
+            version=version,
         )
 
+        if name_for_human is None:
+            name_for_human = tool_name
+        if name_for_model is None:
+            name_for_model = name_for_human
+        if description_for_human is None:
+            description_for_human = description
+        if description_for_model is None:
+            description_for_model = description_for_human
+        
+        self.api_info = {
+            "schema_version": "v1",
+            "name_for_human": name_for_human,
+            "name_for_model": name_for_model,
+            "description_for_human": description_for_human,
+            "description_for_model": description_for_model,
+            "auth": {
+                "type": "none",
+            },
+            "api": {
+                "type": "openapi",
+                "url": "/openapi.json",
+                "is_user_authenticated": False,
+            },
+            "author_github": author_github,
+            "logo_url": logo_url,
+            "contact_email": contact_email,
+            "legal_info_url": legal_info_url,
+        }
 
-def tool(
-    *args: Union[str, Callable, Runnable],
-    return_direct: bool = False,
-    args_schema: Optional[Type[BaseModel]] = None,
-    infer_schema: bool = True,
-) -> Callable:
-    """Make tools out of functions, can be used with or without arguments.
-
-    Args:
-        *args: The arguments to the tool.
-        return_direct: Whether to return directly from the tool rather
-            than continuing the agent loop.
-        args_schema: optional argument schema for user to specify
-        infer_schema: Whether to infer the schema of the arguments from
-            the function's signature. This also makes the resultant tool
-            accept a dictionary input to its `run()` function.
-
-    Requires:
-        - Function must be of type (str) -> str
-        - Function must have a docstring
-
-    Examples:
-        .. code-block:: python
-
-            @tool
-            def search_api(query: str) -> str:
-                # Searches the API for the query.
-                return
-
-            @tool("search", return_direct=True)
-            def search_api(query: str) -> str:
-                # Searches the API for the query.
-                return
-    """
-
-    def _make_with_name(tool_name: str) -> Callable:
-        def _make_tool(dec_func: Union[Callable, Runnable]) -> BaseTool:
-            if isinstance(dec_func, Runnable):
-                runnable = dec_func
-
-                if runnable.input_schema.schema().get("type") != "object":
-                    raise ValueError("Runnable must have an object schema.")
-
-                async def ainvoke_wrapper(
-                    callbacks: Optional[Callbacks] = None, **kwargs: Any
-                ) -> Any:
-                    return await runnable.ainvoke(kwargs, {"callbacks": callbacks})
-
-                def invoke_wrapper(
-                    callbacks: Optional[Callbacks] = None, **kwargs: Any
-                ) -> Any:
-                    return runnable.invoke(kwargs, {"callbacks": callbacks})
-
-                coroutine = ainvoke_wrapper
-                func = invoke_wrapper
-                schema: Optional[Type[BaseModel]] = runnable.input_schema
-                description = repr(runnable)
-            elif inspect.iscoroutinefunction(dec_func):
-                coroutine = dec_func
-                func = None
-                schema = args_schema
-                description = None
-            else:
-                coroutine = None
-                func = dec_func
-                schema = args_schema
-                description = None
-
-            if infer_schema or args_schema is not None:
-                return StructuredTool.from_function(
-                    func,
-                    coroutine,
-                    name=tool_name,
-                    description=description,
-                    return_direct=return_direct,
-                    args_schema=schema,
-                    infer_schema=infer_schema,
-                )
-            # If someone doesn't want a schema applied, we must treat it as
-            # a simple string->string function
-            if func.__doc__ is None:
-                raise ValueError(
-                    "Function must have a docstring if "
-                    "description not provided and infer_schema is False."
-                )
-            return Tool(
-                name=tool_name,
-                func=func,
-                description=f"{tool_name} tool",
-                return_direct=return_direct,
-                coroutine=coroutine,
-            )
-
-        return _make_tool
-
-    if len(args) == 2 and isinstance(args[0], str) and isinstance(args[1], Runnable):
-        return _make_with_name(args[0])(args[1])
-    elif len(args) == 1 and isinstance(args[0], str):
-        # if the argument is a string, then we use the string as the tool name
-        # Example usage: @tool("search", return_direct=True)
-        return _make_with_name(args[0])
-    elif len(args) == 1 and callable(args[0]):
-        # if the argument is a function, then we use the function name as the tool name
-        # Example usage: @tool
-        return _make_with_name(args[0].__name__)(args[0])
-    elif len(args) == 0:
-        # if there are no arguments, then we use the function name as the tool name
-        # Example usage: @tool(return_direct=True)
-        def _partial(func: Callable[[str], str]) -> BaseTool:
-            return _make_with_name(func.__name__)(func)
-
-        return _partial
-    else:
-        raise ValueError("Too many arguments for tool decorator")
+        @self.get("/.well-known/ai-plugin.json", include_in_schema=False)
+        def get_api_info(request : fastapi.Request):
+            openapi_path =  str(request.url).replace("/.well-known/ai-plugin.json", "/openapi.json")
+            info = copy.deepcopy(self.api_info)
+            info["api"]["url"] = str(openapi_path)
+            return info

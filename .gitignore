@@ -155,6 +155,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+secret_keys.sh
 
 # Spyder project settings
 .spyderproject
