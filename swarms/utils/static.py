@@ -8,7 +8,6 @@ from swarms.utils.main import AbstractUploader
 
 
 class StaticUploader(AbstractUploader):
-
     def __init__(self, server: str, path: Path, endpoint: str):
         self.server = server
         self.path = path

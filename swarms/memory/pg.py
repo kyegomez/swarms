@@ -88,12 +88,12 @@ class PgVectorVectorStore(BaseVectorStore):
     create_engine_params: dict = field(factory=dict, kw_only=True)
     engine: Optional[Engine] = field(default=None, kw_only=True)
     table_name: str = field(kw_only=True)
-    _model: any = field(default=Factory(
-        lambda self: self.default_vector_model(), takes_self=True))
+    _model: any = field(
+        default=Factory(lambda self: self.default_vector_model(), takes_self=True)
+    )
 
     @connection_string.validator
-    def validate_connection_string(self, _,
-                                   connection_string: Optional[str]) -> None:
+    def validate_connection_string(self, _, connection_string: Optional[str]) -> None:
         # If an engine is provided, the connection string is not used.
         if self.engine is not None:
             return
@@ -122,8 +122,9 @@ class PgVectorVectorStore(BaseVectorStore):
         If not, a connection string is used to create a new database connection here.
         """
         if self.engine is None:
-            self.engine = create_engine(self.connection_string,
-                                        **self.create_engine_params)
+            self.engine = create_engine(
+                self.connection_string, **self.create_engine_params
+            )
 
     def setup(
         self,
@@ -141,12 +142,14 @@ class PgVectorVectorStore(BaseVectorStore):
         if create_schema:
             self._model.metadata.create_all(self.engine)
 
-    def upsert_vector(self,
-                      vector: list[float],
-                      vector_id: Optional[str] = None,
-                      namespace: Optional[str] = None,
-                      meta: Optional[dict] = None,
-                      **kwargs) -> str:
+    def upsert_vector(
+        self,
+        vector: list[float],
+        vector_id: Optional[str] = None,
+        namespace: Optional[str] = None,
+        meta: Optional[dict] = None,
+        **kwargs
+    ) -> str:
         """Inserts or updates a vector in the collection."""
         with Session(self.engine) as session:
             obj = self._model(
@@ -161,9 +164,9 @@ class PgVectorVectorStore(BaseVectorStore):
 
             return str(obj.id)
 
-    def load_entry(self,
-                   vector_id: str,
-                   namespace: Optional[str] = None) -> BaseVectorStore.Entry:
+    def load_entry(
+        self, vector_id: str, namespace: Optional[str] = None
+    ) -> BaseVectorStore.Entry:
         """Retrieves a specific vector entry from the collection based on its identifier and optional namespace."""
         with Session(self.engine) as session:
             result = session.get(self._model, vector_id)
@@ -176,8 +179,8 @@ class PgVectorVectorStore(BaseVectorStore):
             )
 
     def load_entries(
-            self,
-            namespace: Optional[str] = None) -> list[BaseVectorStore.Entry]:
+        self, namespace: Optional[str] = None
+    ) -> list[BaseVectorStore.Entry]:
         """Retrieves all vector entries from the collection, optionally filtering to only
         those that match the provided namespace.
         """
@@ -194,16 +197,19 @@ class PgVectorVectorStore(BaseVectorStore):
                     vector=result.vector,
                     namespace=result.namespace,
                     meta=result.meta,
-                ) for result in results
+                )
+                for result in results
             ]
 
-    def query(self,
-              query: str,
-              count: Optional[int] = BaseVectorStore.DEFAULT_QUERY_COUNT,
-              namespace: Optional[str] = None,
-              include_vectors: bool = False,
-              distance_metric: str = "cosine_distance",
-              **kwargs) -> list[BaseVectorStore.QueryResult]:
+    def query(
+        self,
+        query: str,
+        count: Optional[int] = BaseVectorStore.DEFAULT_QUERY_COUNT,
+        namespace: Optional[str] = None,
+        include_vectors: bool = False,
+        distance_metric: str = "cosine_distance",
+        **kwargs
+    ) -> list[BaseVectorStore.QueryResult]:
         """Performs a search on the collection to find vectors similar to the provided input vector,
         optionally filtering to only those that match the provided namespace.
         """
@@ -239,7 +245,8 @@ class PgVectorVectorStore(BaseVectorStore):
                     score=result[1],
                     meta=result[0].meta,
                     namespace=result[0].namespace,
-                ) for result in results
+                )
+                for result in results
             ]
 
     def default_vector_model(self) -> any:

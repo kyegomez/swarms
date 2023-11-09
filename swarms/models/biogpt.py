@@ -102,9 +102,9 @@ class BioGPT:
             list[dict]: A list of generated texts.
         """
         set_seed(42)
-        generator = pipeline("text-generation",
-                             model=self.model,
-                             tokenizer=self.tokenizer)
+        generator = pipeline(
+            "text-generation", model=self.model, tokenizer=self.tokenizer
+        )
         out = generator(
             text,
             max_length=self.max_length,
@@ -149,11 +149,13 @@ class BioGPT:
         inputs = self.tokenizer(sentence, return_tensors="pt")
         set_seed(42)
         with torch.no_grad():
-            beam_output = self.model.generate(**inputs,
-                                              min_length=self.min_length,
-                                              max_length=self.max_length,
-                                              num_beams=num_beams,
-                                              early_stopping=early_stopping)
+            beam_output = self.model.generate(
+                **inputs,
+                min_length=self.min_length,
+                max_length=self.max_length,
+                num_beams=num_beams,
+                early_stopping=early_stopping
+            )
         return self.tokenizer.decode(beam_output[0], skip_special_tokens=True)
 
     # Feature 1: Set a new tokenizer and model

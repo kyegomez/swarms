@@ -69,7 +69,9 @@ class GPT4Vision:
     quality: str = "low"
     # Max tokens to use for the API request, the maximum might be 3,000 but we don't know
     max_tokens: int = 200
-    client = OpenAI(api_key=openai_api_key,)
+    client = OpenAI(
+        api_key=openai_api_key,
+    )
     dashboard: bool = True
     call_limit: int = 1
     period_seconds: int = 60
@@ -88,8 +90,9 @@ class GPT4Vision:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     @sleep_and_retry
-    @limits(calls=call_limit,
-            period=period_seconds)  # Rate limit of 10 calls per minute
+    @limits(
+        calls=call_limit, period=period_seconds
+    )  # Rate limit of 10 calls per minute
     def run(self, task: str, img: str):
         """
         Run the GPT-4 Vision model
@@ -105,22 +108,20 @@ class GPT4Vision:
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4-vision-preview",
-                messages=[{
-                    "role":
-                        "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": task
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": str(img),
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": task},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": str(img),
+                                },
                             },
-                        },
-                    ],
-                }],
+                        ],
+                    }
+                ],
                 max_tokens=self.max_tokens,
             )
 
@@ -160,22 +161,20 @@ class GPT4Vision:
         try:
             response = await self.client.chat.completions.create(
                 model="gpt-4-vision-preview",
-                messages=[{
-                    "role":
-                        "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": task
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": img,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": task},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": img,
+                                },
                             },
-                        },
-                    ],
-                }],
+                        ],
+                    }
+                ],
                 max_tokens=self.max_tokens,
             )
 
@@ -190,14 +189,12 @@ class GPT4Vision:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self.run, task, img)
-                for task, img in tasks_images
+                executor.submit(self.run, task, img) for task, img in tasks_images
             ]
             results = [future.result() for future in futures]
         return results
 
-    async def run_batch_async(self,
-                              tasks_images: List[Tuple[str, str]]) -> List[str]:
+    async def run_batch_async(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
         """Process a batch of tasks and images asynchronously"""
         loop = asyncio.get_event_loop()
         futures = [
@@ -207,7 +204,8 @@ class GPT4Vision:
         return await asyncio.gather(*futures)
 
     async def run_batch_async_with_retries(
-            self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images asynchronously with retries"""
         loop = asyncio.get_event_loop()
         futures = [
@@ -231,7 +229,8 @@ class GPT4Vision:
 
             """,
                 "green",
-            ))
+            )
+        )
         return dashboard
 
     def health_check(self):

@@ -48,8 +48,9 @@ class MultiModalLlava:
             revision=revision,
         ).to(self.device)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path,
-                                                       use_fast=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, use_fast=True
+        )
         self.pipe = pipeline(
             "text-generation",
             model=self.model,

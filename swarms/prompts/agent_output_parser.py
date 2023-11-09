@@ -24,8 +24,9 @@ class AgentOutputParser(BaseAgentOutputParser):
 
     @staticmethod
     def _preprocess_json_input(input_str: str) -> str:
-        corrected_str = re.sub(r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})',
-                               r"\\\\", input_str)
+        corrected_str = re.sub(
+            r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r"\\\\", input_str
+        )
         return corrected_str
 
     def _parse_json(self, text: str) -> dict:

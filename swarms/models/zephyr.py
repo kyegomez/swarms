@@ -28,8 +28,7 @@ class Zephyr:
         model_name: str = "HuggingFaceH4/zephyr-7b-alpha",
         tokenize: bool = False,
         add_generation_prompt: bool = True,
-        system_prompt:
-        str = "You are a friendly chatbot who always responds in the style of a pirate",
+        system_prompt: str = "You are a friendly chatbot who always responds in the style of a pirate",
         max_new_tokens: int = 300,
         temperature: float = 0.5,
         top_k: float = 50,

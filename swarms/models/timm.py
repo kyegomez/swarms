@@ -50,8 +50,9 @@ class TimmModel:
             in_chans=model_info.in_chans,
         )
 
-    def __call__(self, model_info: TimmModelInfo,
-                 input_tensor: torch.Tensor) -> torch.Size:
+    def __call__(
+        self, model_info: TimmModelInfo, input_tensor: torch.Tensor
+    ) -> torch.Size:
         """
         Create and run a model specified by `model_info` on `input_tensor`.
 

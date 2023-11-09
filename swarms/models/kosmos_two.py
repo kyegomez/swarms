@@ -46,9 +46,11 @@ class Kosmos:
         model_name="ydshieh/kosmos-2-patch14-224",
     ):
         self.model = AutoModelForVision2Seq.from_pretrained(
-            model_name, trust_remote_code=True)
-        self.processor = AutoProcessor.from_pretrained(model_name,
-                                                       trust_remote_code=True)
+            model_name, trust_remote_code=True
+        )
+        self.processor = AutoProcessor.from_pretrained(
+            model_name, trust_remote_code=True
+        )
 
     def get_image(self, url):
         """Image"""
@@ -71,7 +73,8 @@ class Kosmos:
             skip_special_tokens=True,
         )[0]
         processed_text, entities = self.processor.post_process_generation(
-            generated_texts)
+            generated_texts
+        )
 
     def __call__(self, prompt, image):
         """Run call"""
@@ -90,7 +93,8 @@ class Kosmos:
             skip_special_tokens=True,
         )[0]
         processed_text, entities = self.processor.post_process_generation(
-            generated_texts)
+            generated_texts
+        )
 
     # tasks
     def multimodal_grounding(self, phrase, image_url):
@@ -141,10 +145,12 @@ class Kosmos:
         elif isinstance(image, torch.Tensor):
             # pdb.set_trace()
             image_tensor = image.cpu()
-            reverse_norm_mean = torch.tensor(
-                [0.48145466, 0.4578275, 0.40821073])[:, None, None]
-            reverse_norm_std = torch.tensor(
-                [0.26862954, 0.26130258, 0.27577711])[:, None, None]
+            reverse_norm_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073])[
+                :, None, None
+            ]
+            reverse_norm_std = torch.tensor([0.26862954, 0.26130258, 0.27577711])[
+                :, None, None
+            ]
             image_tensor = image_tensor * reverse_norm_std + reverse_norm_mean
             pil_img = T.ToPILImage()(image_tensor)
             image_h = pil_img.height
@@ -163,9 +169,9 @@ class Kosmos:
         # thickness of text
         text_line = 1  # int(max(1 * min(image_h, image_w) / 512, 1))
         box_line = 3
-        (c_width, text_height), _ = cv2.getTextSize("F",
-                                                    cv2.FONT_HERSHEY_COMPLEX,
-                                                    text_size, text_line)
+        (c_width, text_height), _ = cv2.getTextSize(
+            "F", cv2.FONT_HERSHEY_COMPLEX, text_size, text_line
+        )
         base_height = int(text_height * 0.675)
         text_offset_original = text_height - base_height
         text_spaces = 3
@@ -181,8 +187,9 @@ class Kosmos:
                 # draw bbox
                 # random color
                 color = tuple(np.random.randint(0, 255, size=3).tolist())
-                new_image = cv2.rectangle(new_image, (orig_x1, orig_y1),
-                                          (orig_x2, orig_y2), color, box_line)
+                new_image = cv2.rectangle(
+                    new_image, (orig_x1, orig_y1), (orig_x2, orig_y2), color, box_line
+                )
 
                 l_o, r_o = (
                     box_line // 2 + box_line % 2,
@@ -193,15 +200,19 @@ class Kosmos:
                 y1 = orig_y1 - l_o
 
                 if y1 < text_height + text_offset_original + 2 * text_spaces:
-                    y1 = (orig_y1 + r_o + text_height + text_offset_original +
-                          2 * text_spaces)
+                    y1 = (
+                        orig_y1
+                        + r_o
+                        + text_height
+                        + text_offset_original
+                        + 2 * text_spaces
+                    )
                     x1 = orig_x1 + r_o
 
                 # add text background
-                (text_width,
-                 text_height), _ = cv2.getTextSize(f"  {entity_name}",
-                                                   cv2.FONT_HERSHEY_COMPLEX,
-                                                   text_size, text_line)
+                (text_width, text_height), _ = cv2.getTextSize(
+                    f"  {entity_name}", cv2.FONT_HERSHEY_COMPLEX, text_size, text_line
+                )
                 text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2 = (
                     x1,
                     y1 - (text_height + text_offset_original + 2 * text_spaces),
@@ -211,19 +222,23 @@ class Kosmos:
 
                 for prev_bbox in previous_bboxes:
                     while is_overlapping(
-                        (text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2),
-                            prev_bbox):
-                        text_bg_y1 += (text_height + text_offset_original +
-                                       2 * text_spaces)
-                        text_bg_y2 += (text_height + text_offset_original +
-                                       2 * text_spaces)
+                        (text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2), prev_bbox
+                    ):
+                        text_bg_y1 += (
+                            text_height + text_offset_original + 2 * text_spaces
+                        )
+                        text_bg_y2 += (
+                            text_height + text_offset_original + 2 * text_spaces
+                        )
                         y1 += text_height + text_offset_original + 2 * text_spaces
 
                         if text_bg_y2 >= image_h:
                             text_bg_y1 = max(
                                 0,
-                                image_h - (text_height + text_offset_original +
-                                           2 * text_spaces),
+                                image_h
+                                - (
+                                    text_height + text_offset_original + 2 * text_spaces
+                                ),
                             )
                             text_bg_y2 = image_h
                             y1 = image_h
@@ -240,9 +255,9 @@ class Kosmos:
                                 # white
                                 bg_color = [255, 255, 255]
                             new_image[i, j] = (
-                                alpha * new_image[i, j] +
-                                (1 - alpha) * np.array(bg_color)).astype(
-                                    np.uint8)
+                                alpha * new_image[i, j]
+                                + (1 - alpha) * np.array(bg_color)
+                            ).astype(np.uint8)
 
                 cv2.putText(
                     new_image,
@@ -255,8 +270,7 @@ class Kosmos:
                     cv2.LINE_AA,
                 )
                 # previous_locations.append((x1, y1))
-                previous_bboxes.append(
-                    (text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2))
+                previous_bboxes.append((text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2))
 
         pil_image = Image.fromarray(new_image[:, :, [2, 1, 0]])
         if save_path:

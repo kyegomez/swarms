@@ -23,9 +23,11 @@ class Vilt:
 
     def __init__(self):
         self.processor = ViltProcessor.from_pretrained(
-            "dandelin/vilt-b32-finetuned-vqa")
+            "dandelin/vilt-b32-finetuned-vqa"
+        )
         self.model = ViltForQuestionAnswering.from_pretrained(
-            "dandelin/vilt-b32-finetuned-vqa")
+            "dandelin/vilt-b32-finetuned-vqa"
+        )
 
     def __call__(self, text: str, image_url: str):
         """

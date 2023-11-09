@@ -2,7 +2,6 @@ from queue import Queue, PriorityQueue
 
 
 class SimpleSwarm:
-
     def __init__(
         self,
         llm,
