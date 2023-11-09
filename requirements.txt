@@ -36,6 +36,7 @@ tabulate
 colored
 griptape
 addict
+ratelimit
 albumentations
 basicsr
 termcolor
