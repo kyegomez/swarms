@@ -31,7 +31,6 @@ agent-protocol
 accelerate
 chromadb
 tiktoken
-open-interpreter
 tabulate 
 colored
 griptape

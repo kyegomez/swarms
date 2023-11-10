@@ -46,7 +46,6 @@ tiktoken = "*"
 attrs = "*"
 ggl = "*"
 ratelimit = "*"
-
 beautifulsoup4 = "*"
 huggingface-hub = "*"
 pydantic = "*"
