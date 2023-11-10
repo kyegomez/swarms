@@ -19,6 +19,3 @@ tasks = ["A painting of a dog", "A painting of a cat"]
 results = dalle3.process_batch_concurrently(tasks)
 
 # print(results)
-
-
-

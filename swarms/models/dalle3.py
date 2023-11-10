@@ -25,14 +25,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-
 def handle_errors(self, function):
     def wrapper(*args, **kwargs):
         try:
             return function(*args, **kwargs)
         except Exception as error:
             logger.error(error)
-            raise 
+            raise
+
     return wrapper
 
 
@@ -115,7 +115,7 @@ class Dalle3:
         img.save(byte_stream, format=format)
         byte_array = byte_stream.getvalue()
         return byte_array
-    
+
     @backoff.on_exception(backoff.expo, Exception, max_time=max_time_seconds)
     def __call__(self, task: str):
         """
@@ -162,7 +162,7 @@ class Dalle3:
 
             img_path = os.path.join(self.save_path, filename)
             self.cache[task] = img_path
-            
+
             return img_path
         except openai.OpenAIError as error:
             # Handling exceptions and printing the errors details
@@ -195,7 +195,7 @@ class Dalle3:
         full_path = os.path.join(self.save_path, filename)
         response = requests.get(img_url)
         if response.status_code == 200:
-            with open(full_path, 'wb') as file:
+            with open(full_path, "wb") as file:
                 file.write(response.content)
         else:
             raise ValueError(f"Failed to download image from {img_url}")
@@ -244,9 +244,7 @@ class Dalle3:
             print(colored(f"Error running Dalle3: {error.error}", "red"))
             raise error
 
-    def print_dashboard(
-        self
-    ):
+    def print_dashboard(self):
         """Print the Dalle3 dashboard"""
         print(
             colored(
@@ -273,15 +271,11 @@ class Dalle3:
             )
         )
 
-    def process_batch_concurrently(
-        self,
-        tasks: List[str],
-        max_workers: int = 5
-    ):
+    def process_batch_concurrently(self, tasks: List[str], max_workers: int = 5):
         """
-        
+
         Process a batch of tasks concurrently
-        
+
         Args:
         tasks (List[str]): A list of tasks to be processed
         max_workers (int): The maximum number of workers to use for the concurrent processing
@@ -297,11 +291,9 @@ class Dalle3:
         >>> results = dalle3.process_batch_concurrently(tasks)
         >>> print(results)
         ['https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png',
-        
+
         """
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers
-        ) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_task = {executor.submit(self, task): task for task in tasks}
             results = []
             for future in concurrent.futures.as_completed(future_to_task):
@@ -324,6 +316,7 @@ class Dalle3:
                     print(colored(f"Error running Dalle3: {error.http_status}", "red"))
                     print(colored(f"Error running Dalle3: {error.error}", "red"))
                     raise error
+
     def _generate_uuid(self):
         """Generate a uuid"""
         return str(uuid.uuid4())
@@ -331,11 +324,11 @@ class Dalle3:
     def __repr__(self):
         """Repr method for the Dalle3 class"""
         return f"Dalle3(image_url={self.image_url})"
-    
+
     def __str__(self):
         """Str method for the Dalle3 class"""
         return f"Dalle3(image_url={self.image_url})"
-    
+
     @backoff.on_exception(backoff.expo, Exception, max_tries=max_retries)
     def rate_limited_call(self, task: str):
         """Rate limited call to the Dalle3 API"""
