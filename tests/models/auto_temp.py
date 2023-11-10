@@ -11,6 +11,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 load_dotenv()
 
+
 @pytest.fixture
 def auto_temp_agent():
     return AutoTempAgent(api_key=api_key)
@@ -47,7 +48,9 @@ def test_run_no_scores(auto_temp_agent):
     task = "Invalid task."
     temperature_string = "0.4,0.6,0.8,1.0,1.2,1.4"
     with ThreadPoolExecutor(max_workers=auto_temp_agent.max_workers) as executor:
-        with patch.object(executor, "submit", side_effect=[None, None, None, None, None, None]):
+        with patch.object(
+            executor, "submit", side_effect=[None, None, None, None, None, None]
+        ):
             result = auto_temp_agent.run(task, temperature_string)
             assert result == "No valid outputs generated."
 
