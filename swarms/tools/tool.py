@@ -19,7 +19,7 @@ from langchain.callbacks.manager import (
 )
 
 from langchain.load.serializable import Serializable
-from langchain.pydantic_v1 import (
+from pydantic import (
     BaseModel,
     Extra,
     Field,
@@ -28,7 +28,6 @@ from langchain.pydantic_v1 import (
     validate_arguments,
 )
 from langchain.schema.runnable import Runnable, RunnableConfig, RunnableSerializable
-
 
 class SchemaAnnotationError(TypeError):
     """Raised when 'args_schema' is missing or has an incorrect type annotation."""
