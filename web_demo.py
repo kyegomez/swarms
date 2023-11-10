@@ -83,6 +83,7 @@ def answer_by_tools(question, tools_chosen, model_chosen):
 
     global chat_history
     chat_history += "Question: " + question + "\n"
+    print(chat_history)
     question = chat_history
     for inter in agent_executor(question):
         if isinstance(inter, AgentFinish): continue
@@ -139,7 +140,7 @@ with gr.Blocks() as demo:
         with gr.Column(scale=14):
             gr.Markdown("<h1 align='left'> Swarm Tools </h1>")
         with gr.Column(scale=1):
-            gr.Image('../../images/swarmslogobanner.png', show_download_button=False, show_label=False )
+            gr.Image('images/swarmslogobanner.png', show_download_button=False, show_label=False )
             # gr.Markdown('<img src="../../images/swarmslogobanner.png" alt="swarms">')
     with gr.Row():
         with gr.Column(scale=4):
