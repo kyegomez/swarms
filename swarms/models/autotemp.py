@@ -2,6 +2,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from swarms.models.auto_temp import OpenAIChat
 
+
 class AutoTempAgent:
     """
     AutoTemp is a tool for automatically selecting the best temperature setting for a given task.
@@ -31,6 +32,7 @@ class AutoTempAgent:
         Generate a 10,000 word blog on mental clarity and the benefits of meditation.
 
     """
+
     def __init__(
         self,
         temperature: float = 0.5,

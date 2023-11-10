@@ -35,6 +35,7 @@ tabulate
 colored
 griptape
 addict
+backoff
 ratelimit
 albumentations
 basicsr
