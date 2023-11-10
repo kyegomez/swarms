@@ -6,10 +6,11 @@ import json
 import os
 import requests
 import yaml
-from .apitool import Tool
-from .singletool import STQuestionAnswerer
-from .executor import Executor, AgentExecutorWithTranslation
-from swarms.utils import get_logger
+from bmtools.agent.apitool import Tool
+from bmtools.agent.singletool import STQuestionAnswerer
+from bmtools.agent.executor import Executor, AgentExecutorWithTranslation
+from bmtools import get_logger
+from bmtools.models.customllm import CustomLLM
 
 logger = get_logger(__name__)
 
@@ -80,8 +81,7 @@ class MTQuestionAnswerer:
         index = faiss.IndexFlatL2(embedding_size)
         vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
         
-        # TODO refactor to use the flow 
-        from swarms.tools.agent.autogptmulti.agent import AutoGPT
+        from .autogptmulti.agent import AutoGPT
         from langchain.chat_models import ChatOpenAI
         agent_executor = AutoGPT.from_llm_and_tools(
             ai_name="Tom",
@@ -91,7 +91,7 @@ class MTQuestionAnswerer:
             memory=vectorstore.as_retriever()
         )
         '''
-        # You can modify the prompt to improve the model's performance, or modify the tool's doc
+        # 可以修改prompt来让模型表现更好，也可以修改tool的doc
         prefix = """Answer the following questions as best you can. In this level, you are calling the tools in natural language format, since the tools are actually an intelligent agent like you, but they expert only in one area. Several things to remember. (1) Remember to follow the format of passing natural language as the Action Input. (2) DO NOT use your imagination, only use concrete information given by the tools. (3) If the observation contains images or urls which has useful information, YOU MUST INCLUDE ALL USEFUL IMAGES and links in your Answer and Final Answers using format ![img](url). BUT DO NOT provide any imaginary links. (4) The information in your Final Answer should include ALL the informations returned by the tools. (5) If a user's query is a language other than English, please translate it to English without tools, and translate it back to the source language in Final Answer. You have access to the following tools (Only use these tools we provide you):"""
         suffix = """\nBegin! Remember to . \nQuestion: {input}\n{agent_scratchpad}"""
 

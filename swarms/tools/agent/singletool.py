@@ -6,11 +6,11 @@ import json
 import os
 import requests
 import yaml
-from .apitool import RequestTool
-from .executor import Executor, AgentExecutorWithTranslation
-from swarms.utils import get_logger
-from .BabyagiTools import BabyAGI
-# from .models.customllm import CustomLLM
+from bmtools.agent.apitool import RequestTool
+from bmtools.agent.executor import Executor, AgentExecutorWithTranslation
+from bmtools import get_logger
+from bmtools.agent.BabyagiTools import BabyAGI
+# from bmtools.models.customllm import CustomLLM
 
 
 logger = get_logger(__name__)
@@ -165,8 +165,7 @@ class STQuestionAnswerer:
             index = faiss.IndexFlatL2(embedding_size)
             vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
 
-            #TODO refactor to use the flow class
-            from swarms.tools.agent.autogpt.agent import AutoGPT
+            from .autogpt.agent import AutoGPT
             from langchain.chat_models import ChatOpenAI
             from langchain.schema import (
                 AIMessage,
