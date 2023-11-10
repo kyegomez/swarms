@@ -23,7 +23,7 @@ Distribution Agent:
 
 """
 
-from swarms import OpenAIChat
+from swarms.models import OpenAIChat
 from termcolor import colored
 
 TOPIC_GENERATOR = f"""

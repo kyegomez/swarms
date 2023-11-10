@@ -100,6 +100,35 @@ You can learn more about mkdocs on the [mkdocs website](https://www.mkdocs.org/)
 - Run all the tests in the tests folder
 `find ./tests -name '*.py' -exec pytest {} \;`
 
+## Code Quality
+`quality.sh` runs 4 different code formatters for ultra reliable code cleanup using Autopep8, Black, Ruff, YAPF
+1. Open your terminal.
+
+2. Change directory to where `quality.sh` is located using `cd` command:
+   ```sh
+   cd /path/to/directory
+   ```
+
+3. Make sure the script has execute permissions:
+   ```sh
+   chmod +x code_quality.sh
+   ```
+
+4. Run the script:
+   ```sh
+   ./quality.sh
+   ```
+   
+If the script requires administrative privileges, you might need to run it with `sudo`:
+```sh
+sudo ./quality.sh
+```
+
+Please replace `/path/to/directory` with the actual path where the `quality.sh` script is located on your system.
+
+If you're asking for a specific content or functionality inside `quality.sh` related to YAPF or other code quality tools, you would need to edit the `quality.sh` script to include the desired commands, such as running YAPF on a directory. The contents of `quality.sh` would dictate exactly what happens when you run it.
+
+
 ## 📄 license
 
 By contributing, you agree that your contributions will be licensed under an [MIT license](https://github.com/kyegomez/swarms/blob/develop/LICENSE.md).

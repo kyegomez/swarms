@@ -8,7 +8,7 @@ format
 - Extracting metadata from pdfs
 
 """
-
+import re
 import torch
 from PIL import Image
 from transformers import NougatProcessor, VisionEncoderDecoderModel
@@ -61,9 +61,28 @@ class Nougat:
             pixel_values.to(self.device),
             min_length=self.min_length,
             max_new_tokens=self.max_new_tokens,
-            bad_words_ids=[[self.processor.unk_token - id]],
         )
 
         sequence = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
         sequence = self.processor.post_process_generation(sequence, fix_markdown=False)
-        return sequence
+
+        out = print(sequence)
+        return out
+
+    def clean_nougat_output(raw_output):
+        # Define the pattern to extract the relevant data
+        daily_balance_pattern = (
+            r"\*\*(\d{2}/\d{2}/\d{4})\*\*\n\n\*\*([\d,]+\.\d{2})\*\*"
+        )
+
+        # Find all matches of the pattern
+        matches = re.findall(daily_balance_pattern, raw_output)
+
+        # Convert the matches to a readable format
+        cleaned_data = [
+            "Date: {}, Amount: {}".format(date, amount.replace(",", ""))
+            for date, amount in matches
+        ]
+
+        # Join the cleaned data with new lines for readability
+        return "\n".join(cleaned_data)

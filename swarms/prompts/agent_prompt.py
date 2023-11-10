@@ -70,9 +70,9 @@ class PromptGenerator:
             f"Commands:\n{''.join(self.commands)}\n\n"
             f"Resources:\n{''.join(self.resources)}\n\n"
             f"Performance Evaluation:\n{''.join(self.performance_evaluation)}\n\n"
-            f"You should only respond in JSON format as described below "
+            "You should only respond in JSON format as described below "
             f"\nResponse Format: \n{formatted_response_format} "
-            f"\nEnsure the response can be parsed by Python json.loads"
+            "\nEnsure the response can be parsed by Python json.loads"
         )
 
         return prompt_string

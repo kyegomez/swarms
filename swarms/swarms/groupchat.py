@@ -1,89 +1,112 @@
-from swarms.agents import SimpleAgent
-from termcolor import colored
+import logging
+from dataclasses import dataclass
+from typing import Dict, List
+from swarms.structs.flow import Flow
+
+logger = logging.getLogger(__name__)
 
 
+@dataclass
 class GroupChat:
-    """
-    Groupchat
+    """A group chat class that contains a list of agents and the maximum number of rounds."""
 
-    Args:
-        agents (list): List of agents
-        dashboard (bool): Whether to print a dashboard or not
+    agents: List[Flow]
+    messages: List[Dict]
+    max_round: int = 10
+    admin_name: str = "Admin"  # the name of the admin agent
 
-    Example:
-    >>> from swarms.structs import Flow
-    >>> from swarms.models import OpenAIChat
-    >>> from swarms.swarms.groupchat import GroupChat
-    >>> from swarms.agents import SimpleAgent
-    >>> api_key = ""
-    >>> llm = OpenAIChat()
-    >>> agent1 = SimpleAgent("Captain Price", Flow(llm=llm, max_loops=4))
-    >>> agent2 = SimpleAgent("John Mactavis", Flow(llm=llm, max_loops=4))
-    >>> chat = GroupChat([agent1, agent2])
-    >>> chat.assign_duty(agent1.name, "Buy the groceries")
-    >>> chat.assign_duty(agent2.name, "Clean the house")
-    >>> response = chat.run("Captain Price", "Hello, how are you John?")
-    >>> print(response)
+    @property
+    def agent_names(self) -> List[str]:
+        """Return the names of the agents in the group chat."""
+        return [agent.name for agent in self.agents]
 
+    def reset(self):
+        """Reset the group chat."""
+        self.messages.clear()
 
+    def agent_by_name(self, name: str) -> Flow:
+        """Find an agent whose name is contained within the given 'name' string."""
+        for agent in self.agents:
+            if agent.name in name:
+                return agent
+        raise ValueError(f"No agent found with a name contained in '{name}'.")
 
-    """
+    def next_agent(self, agent: Flow) -> Flow:
+        """Return the next agent in the list."""
+        return self.agents[(self.agent_names.index(agent.name) + 1) % len(self.agents)]
 
-    def __init__(self, agents, dashboard: bool = False):
-        # Ensure that all provided agents are instances of simpleagents
-        if not all(isinstance(agent, SimpleAgent) for agent in agents):
-            raise ValueError("All agents must be instances of SimpleAgent")
-        self.agents = {agent.name: agent for agent in agents}
+    def select_speaker_msg(self):
+        """Return the message for selecting the next speaker."""
+        return f"""
+        You are in a role play game. The following roles are available:
+        {self._participant_roles()}.
 
-        # Dictionary to store duties for each agent
-        self.duties = {}
+        Read the following conversation.
+        Then select the next role from {self.agent_names} to play. Only return the role.
+        """
 
-        # Dictionary to store roles for each agent
-        self.roles = {}
+    def select_speaker(self, last_speaker: Flow, selector: Flow):
+        """Select the next speaker."""
+        selector.update_system_message(self.select_speaker_msg())
 
-        self.dashboard = dashboard
-
-    def assign_duty(self, agent_name, duty):
-        """Assigns duty to the agent"""
-        if agent_name not in self.agents:
-            raise ValueError(f"No agent named {agent_name} found.")
-
-    def assign_role(self, agent_name, role):
-        """Assigns a role to the specified agent"""
-        if agent_name not in self.agents:
-            raise ValueError(f"No agent named {agent_name} found")
-
-        self.roles[agent_name] = role
-
-    def run(self, sender_name: str, message: str):
-        """Runs the groupchat"""
-        if self.dashboard:
-            metrics = print(
-                colored(
-                    f"""
-            
-            Groupchat Configuration:
-            ------------------------
-                                    
-            Agents: {self.agents}
-            Message: {message}
-            Sender: {sender_name}
-            """,
-                    "red",
-                )
+        # Warn if GroupChat is underpopulated, without established changing behavior
+        n_agents = len(self.agent_names)
+        if n_agents < 3:
+            logger.warning(
+                f"GroupChat is underpopulated with {n_agents} agents. Direct"
+                " communication would be more efficient."
             )
 
-            print(metrics)
+        name = selector.generate_reply(
+            self.format_history(
+                self.messages
+                + [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Read the above conversation. Then select the next most"
+                            f" suitable role from {self.agent_names} to play. Only"
+                            " return the role."
+                        ),
+                    }
+                ]
+            )
+        )
+        try:
+            return self.agent_by_name(name["content"])
+        except ValueError:
+            return self.next_agent(last_speaker)
 
-        responses = {}
-        for agent_name, agent in self.agents.items():
-            if agent_name != sender_name:
-                if agent_name in self.duties:
-                    message += f"Your duty is {self.duties[agent_name]}"
-                if agent_name in self.roles:
-                    message += (
-                        f"You are the {self.roles[agent_name]} in this conversation"
-                    )
+    def _participant_roles(self):
+        return "\n".join(
+            [f"{agent.name}: {agent.system_message}" for agent in self.agents]
+        )
 
-                responses[agent_name] = agent.run(message)
-        return responses
+    def format_history(self, messages: List[Dict]) -> str:
+        formatted_messages = []
+        for message in messages:
+            formatted_message = f"'{message['role']}:{message['content']}"
+            formatted_messages.append(formatted_message)
+        return "\n".join(formatted_messages)
+
+
+class GroupChatManager:
+    def __init__(self, groupchat: GroupChat, selector: Flow):
+        self.groupchat = groupchat
+        self.selector = selector
+
+    def __call__(self, task: str):
+        self.groupchat.messages.append({"role": self.selector.name, "content": task})
+        for i in range(self.groupchat.max_round):
+            speaker = self.groupchat.select_speaker(
+                last_speaker=self.selector, selector=self.selector
+            )
+            reply = speaker.generate_reply(
+                self.groupchat.format_history(self.groupchat.messages)
+            )
+            self.groupchat.messages.append(reply)
+            print(reply)
+            if i == self.groupchat.max_round - 1:
+                break
+
+        return reply

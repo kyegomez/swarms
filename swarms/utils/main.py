@@ -88,7 +88,6 @@ def get_new_dataframe_name(org_img_name, func_name="update"):
 
 # =======================> utils end
 
-
 # =======================> ANSI BEGINNING
 
 
@@ -208,9 +207,7 @@ def dim_multiline(message: str) -> str:
 
 # +=============================> ANSI Ending
 
-
 # ================================> upload base
-
 
 STATIC_DIR = "static"
 
@@ -226,7 +223,6 @@ class AbstractUploader(ABC):
 
 
 # ================================> upload end
-
 
 # ========================= upload s3
 
@@ -263,7 +259,6 @@ class S3Uploader(AbstractUploader):
 
 # ========================= upload s3
 
-
 # ========================> upload/static
 
 
@@ -291,7 +286,6 @@ class StaticUploader(AbstractUploader):
 
 
 # ========================> handlers/base
-
 
 # from env import settings
 
@@ -383,7 +377,7 @@ class FileHandler:
                 if FileType.from_url(url) == FileType.IMAGE:
                     raise Exception(
                         f"No handler for {FileType.from_url(url)}. "
-                        f"Please set USE_GPU to True in env/settings.py"
+                        "Please set USE_GPU to True in env/settings.py"
                     )
                 else:
                     raise Exception(f"No handler for {FileType.from_url(url)}")
@@ -393,7 +387,6 @@ class FileHandler:
 
 
 # =>  base end
-
 
 # ===========================>
 
@@ -408,7 +401,8 @@ class CsvToDataframe(BaseHandler):
         )
 
         print(
-            f"\nProcessed CsvToDataframe, Input CSV: {filename}, Output Description: {description}"
+            f"\nProcessed CsvToDataframe, Input CSV: {filename}, Output Description:"
+            f" {description}"
         )
 
         return DATAFRAME_PROMPT.format(filename=filename, description=description)

@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from haystack.schema import Document as HaystackDocument
     from semantic_kernel.memory.memory_record import MemoryRecord
 
-
 ####
 DEFAULT_TEXT_NODE_TMPL = "{metadata_str}\n\n{content}"
 DEFAULT_METADATA_TMPL = "{key}: {value}"
@@ -125,7 +124,6 @@ class BaseNode(BaseComponent):
     embedding: Optional[List[float]] = Field(
         default=None, description="Embedding of the node."
     )
-
     """"
     metadata fields
     - injected as part of the text shown to LLMs as context

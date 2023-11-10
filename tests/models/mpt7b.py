@@ -1,5 +1,6 @@
 import pytest
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from swarms.models.mpt import MPT7B
 
 

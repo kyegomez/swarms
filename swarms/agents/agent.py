@@ -34,7 +34,6 @@ from langchain_experimental.autonomous_agents.autogpt.prompt_generator import (
 )
 from langchain_experimental.pydantic_v1 import BaseModel, ValidationError
 
-
 # PROMPT
 FINISH_NAME = "finish"
 
@@ -111,8 +110,7 @@ class AutoGPTPrompt(BaseChatPromptTemplate, BaseModel):  # type: ignore[misc]
                 [self.token_counter(doc) for doc in relevant_memory]
             )
         content_format = (
-            f"This reminds you of these events "
-            f"from your past:\n{relevant_memory}\n\n"
+            f"This reminds you of these events from your past:\n{relevant_memory}\n\n"
         )
         memory_message = SystemMessage(content=content_format)
         used_tokens += self.token_counter(memory_message.content)
@@ -233,14 +231,14 @@ class PromptGenerator:
         formatted_response_format = json.dumps(self.response_format, indent=4)
         prompt_string = (
             f"Constraints:\n{self._generate_numbered_list(self.constraints)}\n\n"
-            f"Commands:\n"
+            "Commands:\n"
             f"{self._generate_numbered_list(self.commands, item_type='command')}\n\n"
             f"Resources:\n{self._generate_numbered_list(self.resources)}\n\n"
-            f"Performance Evaluation:\n"
+            "Performance Evaluation:\n"
             f"{self._generate_numbered_list(self.performance_evaluation)}\n\n"
-            f"You should only respond in JSON format as described below "
+            "You should only respond in JSON format as described below "
             f"\nResponse Format: \n{formatted_response_format} "
-            f"\nEnsure the response can be parsed by Python json.loads"
+            "\nEnsure the response can be parsed by Python json.loads"
         )
 
         return prompt_string
@@ -419,13 +417,11 @@ class AutoGPT:
             else:
                 result = (
                     f"Unknown command '{action.name}'. "
-                    f"Please refer to the 'COMMANDS' list for available "
-                    f"commands and only respond in the specified JSON format."
+                    "Please refer to the 'COMMANDS' list for available "
+                    "commands and only respond in the specified JSON format."
                 )
 
-            memory_to_add = (
-                f"Assistant Reply: {assistant_reply} " f"\nResult: {result} "
-            )
+            memory_to_add = f"Assistant Reply: {assistant_reply} \nResult: {result} "
             if self.feedback_tool is not None:
                 feedback = f"\n{self.feedback_tool.run('Input: ')}"
                 if feedback in {"q", "stop"}:

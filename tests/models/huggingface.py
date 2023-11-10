@@ -70,11 +70,14 @@ def test_llm_memory_consumption(llm_instance):
 
 
 # Test different initialization parameters
-@pytest.mark.parametrize("model_id, max_length", [
-    ("gpt2-small", 100),
-    ("gpt2-medium", 200),
-    ("gpt2-large", None)  # None to check default behavior
-])
+@pytest.mark.parametrize(
+    "model_id, max_length",
+    [
+        ("gpt2-small", 100),
+        ("gpt2-medium", 200),
+        ("gpt2-large", None),  # None to check default behavior
+    ],
+)
 def test_llm_initialization_params(model_id, max_length):
     if max_length:
         instance = HuggingfaceLLM(model_id=model_id, max_length=max_length)
@@ -161,7 +164,9 @@ def test_llm_response_time(mock_run, llm_instance):
     start_time = time.time()
     llm_instance.run("test task for response time")
     end_time = time.time()
-    assert end_time - start_time < 1  # Assuming the response should be faster than 1 second
+    assert (
+        end_time - start_time < 1
+    )  # Assuming the response should be faster than 1 second
 
 
 # Test the logging of a warning for long inputs
@@ -173,7 +178,9 @@ def test_llm_long_input_warning(mock_warning, llm_instance):
 
 
 # Test for run method behavior when model raises an exception
-@patch("swarms.models.huggingface.HuggingfaceLLM._model.generate", side_effect=RuntimeError)
+@patch(
+    "swarms.models.huggingface.HuggingfaceLLM._model.generate", side_effect=RuntimeError
+)
 def test_llm_run_model_exception(mock_generate, llm_instance):
     with pytest.raises(RuntimeError):
         llm_instance.run("test task when model fails")

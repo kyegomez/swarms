@@ -3,10 +3,9 @@ LayoutLMDocumentQA is a multimodal good for
 visual question answering on real world docs lik invoice, pdfs, etc
 """
 from transformers import pipeline
-from swarms.models.base import AbstractModel
 
 
-class LayoutLMDocumentQA(AbstractModel):
+class LayoutLMDocumentQA:
     """
     LayoutLMDocumentQA for document question answering:
 
@@ -25,9 +24,9 @@ class LayoutLMDocumentQA(AbstractModel):
     def __init__(
         self,
         model_name: str = "impira/layoutlm-document-qa",
-        task: str = "document-question-answering",
+        task_type: str = "document-question-answering",
     ):
-        self.pipeline = pipeline(self.task, model=self.model_name)
+        self.pipeline = pipeline(self.task_type, model=self.model_name)
 
     def __call__(self, task: str, img_path: str):
         """Call for model"""

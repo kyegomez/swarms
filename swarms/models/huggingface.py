@@ -4,6 +4,7 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from termcolor import colored
+from termcolor import colored
 
 
 class HuggingfaceLLM:
@@ -23,7 +24,7 @@ class HuggingfaceLLM:
     ```
     from swarms.models import HuggingfaceLLM
 
-    model_id = "gpt2-small"
+    model_id = "NousResearch/Yarn-Mistral-7b-128k"
     inference = HuggingfaceLLM(model_id=model_id)
 
     task = "Once upon a time"
@@ -43,6 +44,8 @@ class HuggingfaceLLM:
         # logger=None,
         distributed=False,
         decoding=False,
+        *args,
+        **kwargs,
         *args,
         **kwargs,
     ):
@@ -74,15 +77,22 @@ class HuggingfaceLLM:
             bnb_config = BitsAndBytesConfig(**quantization_config)
 
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_id, *args, **kwargs
+            )
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id, quantization_config=bnb_config
+                self.model_id, quantization_config=bnb_config, *args, **kwargs
             )
 
             self.model  # .to(self.device)
         except Exception as e:
-            self.logger.error(f"Failed to load the model or the tokenizer: {e}")
-            raise
+            # self.logger.error(f"Failed to load the model or the tokenizer: {e}")
+            # raise
+            print(colored(f"Failed to load the model and or the tokenizer: {e}", "red"))
+
+    def print_error(self, error: str):
+        """Print error"""
+        print(colored(f"Error: {error}", "red"))
 
     def load_model(self):
         """Load the model"""
@@ -107,10 +117,12 @@ class HuggingfaceLLM:
                 raise
 
     def run(self, task: str):
+    def run(self, task: str):
         """
         Generate a response based on the prompt text.
 
         Args:
+        - task (str): Text to prompt the model.
         - task (str): Text to prompt the model.
         - max_length (int): Maximum length of the response.
 
@@ -123,7 +135,10 @@ class HuggingfaceLLM:
 
         self.print_dashboard(task)
 
+        self.print_dashboard(task)
+
         try:
+            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
             inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
 
             # self.log.start()
@@ -157,7 +172,15 @@ class HuggingfaceLLM:
             del inputs
             return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         except Exception as e:
-            self.logger.error(f"Failed to generate the text: {e}")
+            print(
+                colored(
+                    (
+                        f"HuggingfaceLLM could not generate text because of error: {e},"
+                        " try optimizing your arguments"
+                    ),
+                    "red",
+                )
+            )
             raise
 
     async def run_async(self, task: str, *args, **kwargs) -> str:
@@ -184,10 +207,12 @@ class HuggingfaceLLM:
         return self.run(task, *args, **kwargs)
 
     def __call__(self, task: str):
+    def __call__(self, task: str):
         """
         Generate a response based on the prompt text.
 
         Args:
+        - task (str): Text to prompt the model.
         - task (str): Text to prompt the model.
         - max_length (int): Maximum length of the response.
 
@@ -199,8 +224,12 @@ class HuggingfaceLLM:
         max_length = self.max_length
 
         self.print_dashboard(task)
+        max_length = self.max_length
+
+        self.print_dashboard(task)
 
         try:
+            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
             inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
 
             # self.log.start()
@@ -295,6 +324,60 @@ class HuggingfaceLLM:
 
         print(dashboard)
     
+    def set_device(self, device):
+        """
+        Changes the device used for inference.
+
+        Parameters
+        ----------
+            device : str
+                The new device to use for inference.
+        """
+        self.device = device
+        self.model.to(self.device)
+
+    def set_max_length(self, max_length):
+        """Set max_length"""
+        self.max_length = max_length
+
+    def clear_chat_history(self):
+        """Clear chat history"""
+        self.chat_history = []
+
+    def print_dashboard(self, task: str):
+        """Print dashboard"""
+
+        dashboard = print(
+            colored(
+                f"""
+                HuggingfaceLLM Dashboard
+                --------------------------------------------
+                Model Name: {self.model_id}
+                Tokenizer: {self.tokenizer}
+                Model MaxLength: {self.max_length}
+                Model Device: {self.device}
+                Model Quantization: {self.quantize}
+                Model Quantization Config: {self.quantization_config}
+                Model Verbose: {self.verbose}
+                Model Distributed: {self.distributed}
+                Model Decoding: {self.decoding}
+
+                ----------------------------------------
+                Metadata:
+                    Task Memory Consumption: {self.memory_consumption()}
+                    GPU Available: {self.gpu_available()}
+                ----------------------------------------
+
+                Task Environment:
+                    Task: {task}
+
+                """,
+                "red",
+            )
+        )
+
+        print(dashboard)
+
     def set_device(self, device):
         """
         Changes the device used for inference.
