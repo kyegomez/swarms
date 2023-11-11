@@ -214,7 +214,7 @@ class OpenAIChat(BaseChatModel):
     # Check for classes that derive from this class (as some of them
     # may assume openai_api_key is a str)
     # openai_api_key: Optional[str] = Field(default=None, alias="api_key")
-    openai_api_key = "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"
+    openai_api_key: Optional[str] = Field(default=None, alias="api_key")
     """Automatically inferred from env var `OPENAI_API_KEY` if not provided."""
     openai_api_base: Optional[str] = Field(default=None, alias="base_url")
     """Base URL path for API requests, leave blank if not using a proxy or service 
