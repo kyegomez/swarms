@@ -500,10 +500,10 @@ class BaseOpenAI(BaseLLM):
         if self.openai_proxy:
             import openai
 
-            raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy={
+            openai.proxy = {
                 "http": self.openai_proxy,
                 "https": self.openai_proxy,
-            })'")  # type: ignore[assignment]  # noqa: E501
+            }  # type: ignore[assignment]  # noqa: E501
         return {**openai_creds, **self._default_params}
 
     @property
