@@ -75,6 +75,13 @@ class Fuyu:
 
     def get_img_from_web(self, img_url: str):
         """Get the image from the web"""
-        response = requests.get(img_url)
-        image_pil = Image.open(BytesIO(response.content))
-        return image_pil
+        try:        
+            response = requests.get(img_url)
+            response.raise_for_status()
+            image_pil = Image.open(BytesIO(response.content))
+            return image_pil
+        except requests.RequestException as error:
+            print(f"Error fetching image from {img_url} and error: {error}")
+            return None
+            
+        
