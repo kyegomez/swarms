@@ -2,12 +2,11 @@ import json
 import os
 import requests
 import numpy as np
-import paramiko
 
+import nltk
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet, stopwords
 from nltk.tokenize import word_tokenize 
-import nltk
 
 from swarms.tools.database.utils.db_parser import get_conf
 from swarms.tools.database.utils.database import DBArgs, Database
