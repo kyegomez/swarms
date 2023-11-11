@@ -8,6 +8,7 @@ from swarms.swarms.flow import GroupChat, GroupChatManager
 llm = OpenAIChat()
 llm2 = Anthropic()
 
+
 # Mock the OpenAI class for testing
 class MockOpenAI:
     def __init__(self, *args, **kwargs):
@@ -125,6 +126,7 @@ def test_groupchat_manager_initialization(agent1, agent2):
     manager = GroupChatManager(groupchat, selector)
     assert manager.groupchat == groupchat
     assert manager.selector == selector
+
 
 # Test case to ensure GroupChatManager generates a reply from an agent
 def test_groupchat_manager_generate_reply():
