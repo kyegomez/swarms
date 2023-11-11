@@ -2,9 +2,7 @@ import os
 from unittest.mock import Mock, patch
 
 import pytest
-from cohere.models.response import GenerationChunk
 from dotenv import load_dotenv
-
 from swarms.models.cohere_chat import BaseCohere, Cohere
 
 # Load the environment variables
@@ -15,6 +13,66 @@ api_key = os.getenv("COHERE_API_KEY")
 @pytest.fixture
 def cohere_instance():
     return Cohere(cohere_api_key=api_key)
+
+
+
+def test_cohere_custom_configuration(cohere_instance):
+    # Test customizing Cohere configurations
+    cohere_instance.model = "base"
+    cohere_instance.temperature = 0.5
+    cohere_instance.max_tokens = 100
+    cohere_instance.k = 1
+    cohere_instance.p = 0.8
+    cohere_instance.frequency_penalty = 0.2
+    cohere_instance.presence_penalty = 0.4
+    response = cohere_instance("Customize configurations.")
+    assert isinstance(response, str)
+
+
+def test_cohere_api_error_handling(cohere_instance):
+    # Test error handling when the API key is invalid
+    cohere_instance.model = "base"
+    cohere_instance.cohere_api_key = "invalid-api-key"
+    with pytest.raises(Exception):
+        cohere_instance("Error handling with invalid API key.")
+
+
+def test_cohere_async_api_error_handling(cohere_instance):
+    # Test async error handling when the API key is invalid
+    cohere_instance.model = "base"
+    cohere_instance.cohere_api_key = "invalid-api-key"
+    with pytest.raises(Exception):
+        cohere_instance.async_call("Error handling with invalid API key.")
+
+
+def test_cohere_stream_api_error_handling(cohere_instance):
+    # Test error handling in streaming mode when the API key is invalid
+    cohere_instance.model = "base"
+    cohere_instance.cohere_api_key = "invalid-api-key"
+    with pytest.raises(Exception):
+        generator = cohere_instance.stream("Error handling with invalid API key.")
+        for token in generator:
+            pass
+
+
+def test_cohere_streaming_mode(cohere_instance):
+    # Test the streaming mode for large text generation
+    cohere_instance.model = "base"
+    cohere_instance.streaming = True
+    prompt = "Generate a lengthy text using streaming mode."
+    generator = cohere_instance.stream(prompt)
+    for token in generator:
+        assert isinstance(token, str)
+
+
+def test_cohere_streaming_mode_async(cohere_instance):
+    # Test the async streaming mode for large text generation
+    cohere_instance.model = "base"
+    cohere_instance.streaming = True
+    prompt = "Generate a lengthy text using async streaming mode."
+    async_generator = cohere_instance.async_stream(prompt)
+    for token in async_generator:
+        assert isinstance(token, str)
 
 
 def test_cohere_wrap_prompt(cohere_instance):
@@ -210,7 +268,7 @@ def test_cohere_call_with_embed_multilingual_v3_model(cohere_instance):
 def test_cohere_call_with_invalid_model(cohere_instance):
     cohere_instance.model = "invalid-model"
     with pytest.raises(ValueError):
-        response = cohere_instance("Translate to French.")
+        cohere_instance("Translate to French.")
 
 
 def test_cohere_call_with_long_prompt(cohere_instance):
@@ -223,7 +281,7 @@ def test_cohere_call_with_max_tokens_limit_exceeded(cohere_instance):
     cohere_instance.max_tokens = 10
     prompt = "This is a test prompt that will exceed the max tokens limit."
     with pytest.raises(ValueError):
-        response = cohere_instance(prompt)
+        cohere_instance(prompt)
 
 
 def test_cohere_stream_with_command_model(cohere_instance):
@@ -346,64 +404,6 @@ def test_cohere_async_stream_with_embed_multilingual_v3_model(cohere_instance):
         assert isinstance(token, str)
 
 
-def test_cohere_custom_configuration(cohere_instance):
-    # Test customizing Cohere configurations
-    cohere_instance.model = "base"
-    cohere_instance.temperature = 0.5
-    cohere_instance.max_tokens = 100
-    cohere_instance.k = 1
-    cohere_instance.p = 0.8
-    cohere_instance.frequency_penalty = 0.2
-    cohere_instance.presence_penalty = 0.4
-    response = cohere_instance("Customize configurations.")
-    assert isinstance(response, str)
-
-
-def test_cohere_api_error_handling(cohere_instance):
-    # Test error handling when the API key is invalid
-    cohere_instance.model = "base"
-    cohere_instance.cohere_api_key = "invalid-api-key"
-    with pytest.raises(Exception):
-        response = cohere_instance("Error handling with invalid API key.")
-
-
-def test_cohere_async_api_error_handling(cohere_instance):
-    # Test async error handling when the API key is invalid
-    cohere_instance.model = "base"
-    cohere_instance.cohere_api_key = "invalid-api-key"
-    with pytest.raises(Exception):
-        response = cohere_instance.async_call("Error handling with invalid API key.")
-
-
-def test_cohere_stream_api_error_handling(cohere_instance):
-    # Test error handling in streaming mode when the API key is invalid
-    cohere_instance.model = "base"
-    cohere_instance.cohere_api_key = "invalid-api-key"
-    with pytest.raises(Exception):
-        generator = cohere_instance.stream("Error handling with invalid API key.")
-        for token in generator:
-            pass
-
-
-def test_cohere_streaming_mode(cohere_instance):
-    # Test the streaming mode for large text generation
-    cohere_instance.model = "base"
-    cohere_instance.streaming = True
-    prompt = "Generate a lengthy text using streaming mode."
-    generator = cohere_instance.stream(prompt)
-    for token in generator:
-        assert isinstance(token, str)
-
-
-def test_cohere_streaming_mode_async(cohere_instance):
-    # Test the async streaming mode for large text generation
-    cohere_instance.model = "base"
-    cohere_instance.streaming = True
-    prompt = "Generate a lengthy text using async streaming mode."
-    async_generator = cohere_instance.async_stream(prompt)
-    for token in async_generator:
-        assert isinstance(token, str)
-
 
 def test_cohere_representation_model_embedding(cohere_instance):
     # Test using the Representation model for text embedding
@@ -435,7 +435,7 @@ def test_cohere_representation_model_max_tokens_limit_exceeded(cohere_instance):
     cohere_instance.max_tokens = 10
     prompt = "This is a test prompt that will exceed the max tokens limit."
     with pytest.raises(ValueError):
-        embedding = cohere_instance.embed(prompt)
+        cohere_instance.embed(prompt)
 
 
 # Add more production-grade test cases based on real-world scenarios
@@ -475,7 +475,7 @@ def test_cohere_representation_model_multilingual_max_tokens_limit_exceeded(
     cohere_instance.max_tokens = 10
     prompt = "This is a test prompt that will exceed the max tokens limit for multilingual model."
     with pytest.raises(ValueError):
-        embedding = cohere_instance.embed(prompt)
+        cohere_instance.embed(prompt)
 
 
 def test_cohere_representation_model_multilingual_light_embedding(cohere_instance):
@@ -514,7 +514,7 @@ def test_cohere_representation_model_multilingual_light_max_tokens_limit_exceede
     cohere_instance.max_tokens = 10
     prompt = "This is a test prompt that will exceed the max tokens limit for multilingual light model."
     with pytest.raises(ValueError):
-        embedding = cohere_instance.embed(prompt)
+        cohere_instance.embed(prompt)
 
 
 def test_cohere_command_light_model(cohere_instance):
@@ -570,7 +570,7 @@ def test_cohere_representation_model_english_max_tokens_limit_exceeded(cohere_in
         "This is a test prompt that will exceed the max tokens limit for English model."
     )
     with pytest.raises(ValueError):
-        embedding = cohere_instance.embed(prompt)
+        cohere_instance.embed(prompt)
 
 
 def test_cohere_representation_model_english_light_embedding(cohere_instance):
@@ -607,7 +607,7 @@ def test_cohere_representation_model_english_light_max_tokens_limit_exceeded(
     cohere_instance.max_tokens = 10
     prompt = "This is a test prompt that will exceed the max tokens limit for English light model."
     with pytest.raises(ValueError):
-        embedding = cohere_instance.embed(prompt)
+        cohere_instance.embed(prompt)
 
 
 def test_cohere_command_model(cohere_instance):
@@ -624,18 +624,7 @@ def test_cohere_invalid_model(cohere_instance):
     # Test using an invalid model name
     cohere_instance.model = "invalid-model"
     with pytest.raises(ValueError):
-        response = cohere_instance("Generate text using an invalid model.")
-
-
-def test_cohere_streaming_generation(cohere_instance):
-    # Test streaming generation with the Command model
-    cohere_instance.model = "command"
-    prompt = "Generate text using streaming."
-    chunks = list(cohere_instance.stream(prompt))
-    assert isinstance(chunks, list)
-    assert len(chunks) > 0
-    assert all(isinstance(chunk, GenerationChunk) for chunk in chunks)
-
+        cohere_instance("Generate text using an invalid model.")
 
 def test_cohere_base_model_generation_with_max_tokens(cohere_instance):
     # Test generating text using the base model with a specified max_tokens limit

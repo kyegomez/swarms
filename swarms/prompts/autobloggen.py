@@ -1,4 +1,4 @@
-AUTOBLOG_GEN_GENERATOR = f"""
+AUTOBLOG_GEN_GENERATOR = """
 
 First search for a list of topics on the web based their relevance to Positive Med's long term vision then rank than based on the goals this month, then output a single headline title for a blog for the next autonomous agent to write the blog, utilize the SOP below to help you strategically select topics. Output a single topic that will be the foundation for a blog.
 
@@ -238,7 +238,7 @@ Denote the social media's by using the social media name in HTML like tags
 
 
 # Agent that generates blogs
-DRAFT_AGENT_SYSTEM_PROMPT = f"""
+DRAFT_AGENT_SYSTEM_PROMPT = """
 Write a 5,000+ word long narrative essay on the highest rated topic from a list of topics for positivemed.com, 
 
 their vision is: to democratize health wisdom to modern young professionals in a healthy and conversational and friendly manner,
