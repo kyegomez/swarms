@@ -102,7 +102,7 @@ def _create_retry_decorator(
 
     errors = [
         openai.Timeout,
-        openai.error.APIError,
+        openai.APIError,
         openai.error.APIConnectionError,
         openai.error.RateLimitError,
         openai.error.ServiceUnavailableError,
