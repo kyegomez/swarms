@@ -1,7 +1,7 @@
 import pytest
 from langchain.base_language import BaseLanguageModel
 
-from swarms.agents import (
+from swarms.agents.omni_modal_agent import (
     OmniModalAgent,  # Replace `your_module_name` with the appropriate module name
 )
 
