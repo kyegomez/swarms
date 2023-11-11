@@ -25,7 +25,7 @@ class AutoBlogGenSwarm:
 
     Topic Selection Agent:
     - Generate 10 topics on gaining mental clarity using Taosim and Christian meditation
-    
+
     Draft Agent:
     - Write a 100% unique, creative and in human-like style article of a minimum of 5,000 words using headings and sub-headings.
 
@@ -42,8 +42,9 @@ class AutoBlogGenSwarm:
     swarm.run()
     ```
 
-    
+
     """
+
     def __init__(
         self,
         llm,
@@ -61,7 +62,6 @@ class AutoBlogGenSwarm:
         self.iterations = iterations
         self.max_retries = max_retries
         self.retry_attempts = retry_attempts
-
 
     def print_beautifully(self, subheader: str, text: str):
         """Prints the text beautifully"""
@@ -81,16 +81,15 @@ class AutoBlogGenSwarm:
 
     def social_media_prompt(self, article: str):
         """Gets the social media prompt"""
-        prompt = SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT.replace("{{ARTICLE}}", article).replace(
-            "{{GOAL}}", self.objective
-        )
+        prompt = SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT.replace(
+            "{{ARTICLE}}", article
+        ).replace("{{GOAL}}", self.objective)
         return prompt
 
     def get_review_prompt(self, article: str):
         """Gets the review prompt"""
         prompt = REVIEW_PROMPT.replace("{{ARTICLE}}", article)
         return prompt
-
 
     def step(self):
         """Steps through the task"""
@@ -107,16 +106,14 @@ class AutoBlogGenSwarm:
         review_agent = self.print_beautifully("Review Agent", review_agent)
 
         # Agent that publishes on social media
-        distribution_agent = self.llm(
-            self.social_media_prompt(article=review_agent)
-        )
+        distribution_agent = self.llm(self.social_media_prompt(article=review_agent))
         distribution_agent = self.print_beautifully(
             "Distribution Agent", distribution_agent
         )
 
     def run(self):
         """Runs the swarm"""
-        for attempt in range(self.retry_attempts):    
+        for attempt in range(self.retry_attempts):
             try:
                 for i in range(self.iterations):
                     self.step()
@@ -124,13 +121,13 @@ class AutoBlogGenSwarm:
                 print(colored(f"Error while running AutoBlogGenSwarm {error}", "red"))
                 if attempt == self.retry_attempts - 1:
                     raise
-    
+
     def update_task(self, new_task: str):
         """
         Updates the task of the swarm
 
         Args:
             new_task (str): New task to be performed by the swarm
-        
+
         """
         self.topic_selection_agent = new_task
