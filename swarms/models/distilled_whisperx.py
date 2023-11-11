@@ -121,7 +121,7 @@ class DistilWhisperModel:
                 # Load the whole audio file, but process and transcribe it in chunks
                 audio_input = self.processor.audio_file_to_array(audio_file_path)
                 sample_rate = audio_input.sampling_rate
-                total_duration = len(audio_input.array) / sample_rate
+                len(audio_input.array) / sample_rate
                 chunks = [
                     audio_input.array[i : i + sample_rate * chunk_duration]
                     for i in range(

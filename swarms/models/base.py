@@ -52,7 +52,7 @@ class AbstractModel(ABC):
     def _time_for_generation(self, task: str) -> float:
         """Time for Generation"""
         self.start_time = time.time()
-        output = self.run(task)
+        self.run(task)
         self.end_time = time.time()
         return self.end_time - self.start_time
 

@@ -17,7 +17,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Callable
 from termcolor import colored
 import os
-import sys
 
 
 @dataclass
