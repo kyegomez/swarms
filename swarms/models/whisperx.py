@@ -21,7 +21,7 @@ class WhisperX:
         """
         # Example usage
         video_url = "url"
-        speech_to_text = SpeechToText(video_url)
+        speech_to_text = WhisperX(video_url)
         transcription = speech_to_text.transcribe_youtube_video()
         print(transcription)
 
