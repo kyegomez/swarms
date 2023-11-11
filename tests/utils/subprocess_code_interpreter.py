@@ -1,7 +1,9 @@
-import time
-import threading
-import pytest
 import subprocess
+import threading
+import time
+
+import pytest
+
 from swarms.utils.code_interpreter import BaseCodeInterpreter, SubprocessCodeInterpreter
 
 
@@ -141,7 +143,7 @@ def test_subprocess_code_interpreter_run_debug_mode(
 ):
     subprocess_code_interpreter.debug_mode = True
     code = 'print("Hello, World!")'
-    result = list(subprocess_code_interpreter.run(code))
+    list(subprocess_code_interpreter.run(code))
     captured = capsys.readouterr()
     assert "Running code:\n" in captured.out
     assert "Received output line:\n" in captured.out
@@ -152,7 +154,7 @@ def test_subprocess_code_interpreter_run_no_debug_mode(
 ):
     subprocess_code_interpreter.debug_mode = False
     code = 'print("Hello, World!")'
-    result = list(subprocess_code_interpreter.run(code))
+    list(subprocess_code_interpreter.run(code))
     captured = capsys.readouterr()
     assert "Running code:\n" not in captured.out
     assert "Received output line:\n" not in captured.out

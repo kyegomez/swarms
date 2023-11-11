@@ -22,10 +22,10 @@ def mock_image_request():
 
 # Test utility function
 def test_is_overlapping():
-    assert is_overlapping((1, 1, 3, 3), (2, 2, 4, 4)) == True
-    assert is_overlapping((1, 1, 2, 2), (3, 3, 4, 4)) == False
-    assert is_overlapping((0, 0, 1, 1), (1, 1, 2, 2)) == False
-    assert is_overlapping((0, 0, 2, 2), (1, 1, 2, 2)) == True
+    assert is_overlapping((1, 1, 3, 3), (2, 2, 4, 4)) is True
+    assert is_overlapping((1, 1, 2, 2), (3, 3, 4, 4)) is False
+    assert is_overlapping((0, 0, 1, 1), (1, 1, 2, 2)) is False
+    assert is_overlapping((0, 0, 2, 2), (1, 1, 2, 2)) is True
 
 
 # Test model initialization
