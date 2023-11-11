@@ -788,10 +788,10 @@ class OpenAIChat(BaseLLM):
             if openai_organization:
                 raise Exception("The 'openai.organization' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(organization=openai_organization)'")
             if openai_proxy:
-                raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy={
+                openai.proxy = {
                     "http": openai_proxy,
                     "https": openai_proxy,
-                })'")  # type: ignore[assignment]  # noqa: E501
+                }  # type: ignore[assignment]  # noqa: E501
         except ImportError:
             raise ImportError(
                 "Could not import openai python package. "
