@@ -29,6 +29,7 @@ from pydantic import (
 )
 from langchain.schema.runnable import Runnable, RunnableConfig, RunnableSerializable
 
+
 class SchemaAnnotationError(TypeError):
     """Raised when 'args_schema' is missing or has an incorrect type annotation."""
 

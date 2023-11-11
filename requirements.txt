@@ -44,6 +44,7 @@ controlnet-aux
 diffusers
 einops
 imageio
+opencv-python-headless
 imageio-ffmpeg
 invisible-watermark
 kornia

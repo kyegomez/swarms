@@ -11,6 +11,7 @@ TODO:
 - Add batched inputs
 """
 import asyncio
+import re
 import json
 import logging
 import time
@@ -18,6 +19,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from termcolor import colored
 import inspect
 import random
+from swarms.tools.tool import BaseTool
 
 # Prompts
 DYNAMIC_STOP_PROMPT = """
@@ -32,13 +34,25 @@ Your role is to engage in multi-step conversations with your self or the user,
 generate long-form content like blogs, screenplays, or SOPs,
 and accomplish tasks. You can have internal dialogues with yourself or can interact with the user
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
-
-
 {DYNAMIC_STOP_PROMPT}
-
 """
 
-# Utility functions
+# Make it able to handle multi input tools
+DYNAMICAL_TOOL_USAGE = """
+You have access to the following tools:
+Output a JSON object with the following structure to use the tools
+commands: {
+    "tools": {
+        tool1: "tool_name",
+        "params": {
+            "tool1": "inputs",
+            "tool1": "inputs"
+        }
+    }
+}
+
+{tools}
+"""
 
 
 # Custom stopping condition
@@ -137,7 +151,7 @@ class Flow:
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
-        # self.tools = tools
+        # self.tools = tools or []
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.saved_state_path = saved_state_path
@@ -192,6 +206,73 @@ class Flow:
             )
 
         return "\n".join(params_str_list)
+
+    def parse_tool_command(self, text: str):
+        # Parse the text for tool usage
+        pass
+
+    def get_tool_description(self):
+        """Get the tool description"""
+        tool_descriptions = []
+        for tool in self.tools:
+            description = f"{tool.name}: {tool.description}"
+            tool_descriptions.append(description)
+        return "\n".join(tool_descriptions)
+
+    def find_tool_by_name(self, name: str):
+        """Find a tool by name"""
+        for tool in self.tools:
+            if tool.name == name:
+                return tool
+        return None
+
+    def construct_dynamic_prompt(self):
+        """Construct the dynamic prompt"""
+        tools_description = self.get_tool_description()
+        return DYNAMICAL_TOOL_USAGE.format(tools=tools_description)
+
+    def extract_tool_commands(self, text: str):
+        """
+        Extract the tool commands from the text
+
+        Example:
+        ```json
+        {
+            "tool": "tool_name",
+            "params": {
+                "tool1": "inputs",
+                "param2": "value2"
+            }
+        }
+        ```
+
+        """
+        # Regex to find JSON like strings
+        pattern = r"```json(.+?)```"
+        matches = re.findall(pattern, text, re.DOTALL)
+        json_commands = []
+        for match in matches:
+            try:
+                json_commands = json.loads(match)
+                json_commands.append(json_commands)
+            except Exception as error:
+                print(f"Error parsing JSON command: {error}")
+
+    def parse_and_execute_tools(self, response):
+        """Parse and execute the tools"""
+        json_commands = self.extract_tool_commands(response)
+        for command in json_commands:
+            tool_name = command.get("tool")
+            params = command.get("parmas", {})
+            self.execute_tool(tool_name, params)
+
+    def execute_tools(self, tool_name, params):
+        """Execute the tool with the provided params"""
+        tool = self.tool_find_by_name(tool_name)
+        if tool:
+            # Execute the tool with the provided parameters
+            tool_result = tool.run(**params)
+            print(tool_result)
 
     def truncate_history(self):
         """
@@ -287,10 +368,13 @@ class Flow:
         5. Repeat until stopping condition is met or max_loops is reached
 
         """
+        dynamic_prompt = self.construct_dynamic_prompt()
+        combined_prompt = f"{dynamic_prompt}\n{task}"
+
         # Activate Autonomous agent message
         self.activate_autonomous_agent()
 
-        response = task
+        response = combined_prompt  # or task
         history = [f"{self.user_name}: {task}"]
 
         # If dashboard = True then print the dashboard
@@ -318,8 +402,13 @@ class Flow:
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(
-                        task**kwargs,
+                        task,
+                        **kwargs,
                     )
+                    # If there are any tools then parse and execute them
+                    # if self.tools:
+                    #     self.parse_and_execute_tools(response)
+
                     if self.interactive:
                         print(f"AI: {response}")
                         history.append(f"AI: {response}")
