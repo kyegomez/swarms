@@ -124,7 +124,7 @@ class Flow:
         dashboard: bool = False,
         agent_name: str = "Flow agent",
         system_prompt: str = FLOW_SYSTEM_PROMPT,
-        # tools: List[BaseTool] = None,
+        tools: List[Any] = None,
         dynamic_temperature: bool = False,
         saved_state_path: Optional[str] = "flow_state.json",
         autosave: bool = False,
@@ -150,7 +150,7 @@ class Flow:
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
-        # self.tools = tools or []
+        self.tools = tools or []
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.saved_state_path = saved_state_path
