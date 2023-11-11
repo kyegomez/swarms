@@ -3,7 +3,7 @@ import json
 import os
 
 # Assuming the BingChat class is in a file named "bing_chat.py"
-from bing_chat import BingChat, ConversationStyle
+from bing_chat import BingChat
 
 
 class TestBingChat(unittest.TestCase):

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 from apps.discord import (
     Bot,
 )  # Replace 'Bot' with the name of the file containing your bot's code.
