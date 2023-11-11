@@ -6,11 +6,12 @@ import json
 import os
 import requests
 import yaml
-from bmtools.agent.apitool import RequestTool
-from bmtools.agent.executor import Executor, AgentExecutorWithTranslation
-from bmtools import get_logger
-from bmtools.agent.BabyagiTools import BabyAGI
-# from bmtools.models.customllm import CustomLLM
+from swarms.tools.agent.apitool import RequestTool
+from swarms.tools.agent.executor import Executor, AgentExecutorWithTranslation
+from swarms.tools import get_logger
+from swarms.tools.agent.BabyagiTools import BabyAGI
+# from swarms.tools
+#.models.customllm import CustomLLM
 
 
 logger = get_logger(__name__)
