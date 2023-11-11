@@ -101,7 +101,7 @@ def _create_retry_decorator(
     import openai
 
     errors = [
-        openai.error.Timeout,
+        openai.Timeout,
         openai.error.APIError,
         openai.error.APIConnectionError,
         openai.error.RateLimitError,
@@ -547,7 +547,7 @@ class OpenAIChat(BaseChatModel):
         if self.openai_proxy:
             import openai
 
-            openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
+            raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy={"http": self.openai_proxy, "https": self.openai_proxy})'")  # type: ignore[assignment]  # noqa: E501
         return {**self._default_params, **openai_creds}
 
     def _get_invocation_params(
