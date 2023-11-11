@@ -24,7 +24,7 @@ def test_texts():
 
 # Basic Test
 def test_get_ada_embeddings_basic(test_texts):
-    with patch("openai.Embedding.create") as mock_create:
+    with patch("openai.resources.Embeddings.create") as mock_create:
         # Mocking the OpenAI API call
         mock_create.return_value = {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
 
@@ -49,7 +49,7 @@ def test_get_ada_embeddings_basic(test_texts):
     ],
 )
 def test_get_ada_embeddings_models(text, model, expected_call_model):
-    with patch("openai.Embedding.create") as mock_create:
+    with patch("openai.resources.Embeddings.create") as mock_create:
         mock_create.return_value = {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
 
         _ = get_ada_embeddings(text, model=model)
@@ -58,16 +58,16 @@ def test_get_ada_embeddings_models(text, model, expected_call_model):
 
 # Exception Test
 def test_get_ada_embeddings_exception():
-    with patch("openai.Embedding.create") as mock_create:
-        mock_create.side_effect = openai.error.OpenAIError("Test error")
-        with pytest.raises(openai.error.OpenAIError):
+    with patch("openai.resources.Embeddings.create") as mock_create:
+        mock_create.side_effect = openai.OpenAIError("Test error")
+        with pytest.raises(openai.OpenAIError):
             get_ada_embeddings("Some text")
 
 
 # Tests for environment variable loading
 def test_env_var_loading(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "testkey123")
-    with patch("openai.Embedding.create"):
+    with patch("openai.resources.Embeddings.create"):
         assert (
             getenv("OPENAI_API_KEY") == "testkey123"
         ), "Environment variable for API key is not set correctly"
