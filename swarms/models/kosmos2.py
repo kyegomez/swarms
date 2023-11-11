@@ -1,6 +1,5 @@
 from typing import List, Tuple
 
-import numpy as np
 from PIL import Image
 from pydantic import BaseModel, root_validator, validator
 from transformers import AutoModelForVision2Seq, AutoProcessor

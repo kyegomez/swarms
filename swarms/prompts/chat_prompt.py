@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Dict, List, Sequence
+from typing import Dict, List, Sequence
 
-from pydantic import Field
 
 
 class Message:

@@ -1,5 +1,3 @@
-import concurrent.futures
-import os
 
 from termcolor import colored
 
