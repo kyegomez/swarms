@@ -1,3 +1,8 @@
+import sys
+
+log_file = open("errors.txt", "w")
+sys.stderr = log_file
+
 # LLMs
 from swarms.models.anthropic import Anthropic
 from swarms.models.petals import Petals
@@ -18,12 +23,6 @@ from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
 from swarms.models.gpt4v import GPT4Vision
 from swarms.models.dalle3 import Dalle3
 from swarms.models.distilled_whisperx import DistilWhisperModel
-# from swarms.models.fuyu import Fuyu  # Not working, wait until they update
-
-import sys
-
-log_file = open("errors.txt", "w")
-sys.stderr = log_file
 
 __all__ = [
     "Anthropic",
@@ -44,5 +43,4 @@ __all__ = [
     "WizardLLMStoryTeller",
     "GPT4Vision",
     "Dalle3",
-    # "Fuyu",
 ]
