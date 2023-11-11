@@ -1,7 +1,18 @@
 import os
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
+
 from swarms.models.anthropic import Anthropic
+
+
+# Mock the Anthropic API client for testing
+class MockAnthropicClient:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def completions_create(self, prompt, stop_sequences, stream, **kwargs):
+        return MockAnthropicResponse()
 
 
 @pytest.fixture
@@ -125,3 +136,88 @@ def test_anthropic_exception_handling(
         anthropic_instance(task, stop)
 
     assert "An error occurred" in str(excinfo.value)
+
+
+class MockAnthropicResponse:
+    def __init__(self):
+        self.completion = "Mocked Response from Anthropic"
+
+def test_anthropic_instance_creation(anthropic_instance):
+    assert isinstance(anthropic_instance, Anthropic)
+
+def test_anthropic_call_method(anthropic_instance):
+    response = anthropic_instance("What is the meaning of life?")
+    assert response == "Mocked Response from Anthropic"
+
+def test_anthropic_stream_method(anthropic_instance):
+    generator = anthropic_instance.stream("Write a story.")
+    for token in generator:
+        assert isinstance(token, str)
+
+def test_anthropic_async_call_method(anthropic_instance):
+    response = anthropic_instance.async_call("Tell me a joke.")
+    assert response == "Mocked Response from Anthropic"
+
+def test_anthropic_async_stream_method(anthropic_instance):
+    async_generator = anthropic_instance.async_stream("Translate to French.")
+    for token in async_generator:
+        assert isinstance(token, str)
+
+def test_anthropic_get_num_tokens(anthropic_instance):
+    text = "This is a test sentence."
+    num_tokens = anthropic_instance.get_num_tokens(text)
+    assert num_tokens > 0
+
+# Add more test cases to cover other functionalities and edge cases of the Anthropic class
+
+
+def test_anthropic_wrap_prompt(anthropic_instance):
+    prompt = "What is the meaning of life?"
+    wrapped_prompt = anthropic_instance._wrap_prompt(prompt)
+    assert wrapped_prompt.startswith(anthropic_instance.HUMAN_PROMPT)
+    assert wrapped_prompt.endswith(anthropic_instance.AI_PROMPT)
+
+def test_anthropic_convert_prompt(anthropic_instance):
+    prompt = "What is the meaning of life?"
+    converted_prompt = anthropic_instance.convert_prompt(prompt)
+    assert converted_prompt.startswith(anthropic_instance.HUMAN_PROMPT)
+    assert converted_prompt.endswith(anthropic_instance.AI_PROMPT)
+
+def test_anthropic_call_with_stop(anthropic_instance):
+    response = anthropic_instance("Translate to French.", stop=["stop1", "stop2"])
+    assert response == "Mocked Response from Anthropic"
+
+def test_anthropic_stream_with_stop(anthropic_instance):
+    generator = anthropic_instance.stream("Write a story.", stop=["stop1", "stop2"])
+    for token in generator:
+        assert isinstance(token, str)
+
+def test_anthropic_async_call_with_stop(anthropic_instance):
+    response = anthropic_instance.async_call("Tell me a joke.", stop=["stop1", "stop2"])
+    assert response == "Mocked Response from Anthropic"
+
+def test_anthropic_async_stream_with_stop(anthropic_instance):
+    async_generator = anthropic_instance.async_stream("Translate to French.", stop=["stop1", "stop2"])
+    for token in async_generator:
+        assert isinstance(token, str)
+
+def test_anthropic_get_num_tokens_with_count_tokens(anthropic_instance):
+    anthropic_instance.count_tokens = Mock(return_value=10)
+    text = "This is a test sentence."
+    num_tokens = anthropic_instance.get_num_tokens(text)
+    assert num_tokens == 10
+
+def test_anthropic_get_num_tokens_without_count_tokens(anthropic_instance):
+    del anthropic_instance.count_tokens
+    with pytest.raises(NameError):
+        text = "This is a test sentence."
+        anthropic_instance.get_num_tokens(text)
+
+def test_anthropic_wrap_prompt_without_human_ai_prompt(anthropic_instance):
+    del anthropic_instance.HUMAN_PROMPT
+    del anthropic_instance.AI_PROMPT
+    prompt = "What is the meaning of life?"
+    with pytest.raises(NameError):
+        anthropic_instance._wrap_prompt(prompt)
+
+

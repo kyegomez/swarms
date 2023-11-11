@@ -15,7 +15,7 @@ class TestRevChatGPT(unittest.TestCase):
 
     def test_run_time(self):
         prompt = "Generate a 300 word essay about technology."
-        response = self.model.run(prompt)
+        self.model.run(prompt)
         self.assertLess(self.model.end_time - self.model.start_time, 60)
 
     def test_generate_summary(self):
