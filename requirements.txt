@@ -64,6 +64,7 @@ webdataset
 yapf
 autopep8
 dalle3
+cohere
 torchvision
 rich
 

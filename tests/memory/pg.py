@@ -9,6 +9,7 @@ load_dotenv()
 
 PSG_CONNECTION_STRING = os.getenv("PSG_CONNECTION_STRING")
 
+
 def test_init():
     with patch("sqlalchemy.create_engine") as MockEngine:
         store = PgVectorVectorStore(
