@@ -4,9 +4,6 @@ TROCR for Multi-Modal OCR tasks
 
 
 """
-from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-from PIL import Image
-import requests
 
 
 class TrOCR:

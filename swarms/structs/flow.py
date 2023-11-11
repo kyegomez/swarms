@@ -19,7 +19,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from termcolor import colored
 import inspect
 import random
-from swarms.tools.tool import BaseTool
 
 # Prompts
 DYNAMIC_STOP_PROMPT = """
@@ -299,7 +298,7 @@ class Flow:
         model_config = self.get_llm_init_params()
         print(colored("Initializing Agent Dashboard...", "yellow"))
 
-        dashboard = print(
+        print(
             colored(
                 f"""
                 Flow Dashboard
