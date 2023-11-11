@@ -4,12 +4,12 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "2.1.7"
+version = "2.1.8"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
 homepage = "https://github.com/kyegomez/swarms"
-documentation = ""  # Add this if you have documentation.
+documentation = "https://swarms.apac.ai"  # Add this if you have documentation.
 readme = "README.md"  # Assuming you have a README.md
 repository = "https://github.com/kyegomez/swarms"
 keywords = ["artificial intelligence", "deep learning", "optimizers", "Prompt Engineering"]
@@ -30,7 +30,7 @@ asyncio = "*"
 nest_asyncio = "*"
 einops = "*"
 google-generativeai = "*"
-torch = "2.1.0"
+torch = "*"
 langchain-experimental = "*"
 playwright = "*"
 duckduckgo-search = "*"
@@ -62,10 +62,6 @@ dalle3 = "*"
 soundfile = "*"
 torchvision = "*"
 rich = "*"
-
-[tool.poetry.dev-dependencies]
-first_dependency = {git = "https://github.com/IDEA-Research/GroundingDINO.git"}
-second_dependency = {git = "https://github.com/facebookresearch/segment-anything.git"}
 
 [tool.poetry.group.lint.dependencies]
 ruff = "^0.0.249"
