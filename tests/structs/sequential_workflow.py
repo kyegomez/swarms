@@ -65,10 +65,10 @@ def test_sequential_workflow_initialization():
     assert isinstance(workflow, SequentialWorkflow)
     assert len(workflow.tasks) == 0
     assert workflow.max_loops == 1
-    assert workflow.autosave == False
+    assert workflow.autosave is False
     assert workflow.saved_state_filepath == "sequential_workflow_state.json"
-    assert workflow.restore_state_filepath == None
-    assert workflow.dashboard == False
+    assert workflow.restore_state_filepath is None
+    assert workflow.dashboard is False
 
 
 def test_sequential_workflow_add_task():
@@ -87,7 +87,7 @@ def test_sequential_workflow_reset_workflow():
     task_flow = MockOpenAIChat()
     workflow.add(task_description, task_flow)
     workflow.reset_workflow()
-    assert workflow.tasks[0].result == None
+    assert workflow.tasks[0].result is None
 
 
 def test_sequential_workflow_get_task_results():
@@ -330,4 +330,4 @@ def test_real_world_usage_with_environment_variables():
 def test_real_world_usage_no_openai_key():
     # Ensure that an exception is raised when the OpenAI API key is not set
     with pytest.raises(ValueError):
-        llm = OpenAIChat()  # API key not provided, should raise an exception
+        OpenAIChat()  # API key not provided, should raise an exception
