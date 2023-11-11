@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple, Union
 from langchain.agents import AgentExecutor
 from langchain.input import get_color_mapping
 from langchain.schema import AgentAction, AgentFinish
-from bmtools.agent.translator import Translator
+from .translator import Translator
 
 class AgentExecutorWithTranslation(AgentExecutor):
 

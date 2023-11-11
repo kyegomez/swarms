@@ -1,4 +1,4 @@
-from bmtools.agent.singletool import load_single_tools, STQuestionAnswerer
+from swarms.tools.singletool import load_single_tools, STQuestionAnswerer
 
 # Langchain
 tool_name, tool_url = 'weather',  "http://127.0.0.1:8079/tools/weather/"
