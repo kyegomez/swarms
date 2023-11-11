@@ -66,7 +66,7 @@ Let's explore how to use the `BioGPT` class with different scenarios and applica
 #### Example 1: Generating Biomedical Text
 
 ```python
-from biogpt import BioGPT
+from swarms.models import BioGPT
 
 # Initialize the BioGPT model
 biogpt = BioGPT()
@@ -81,7 +81,8 @@ print(generated_text)
 #### Example 2: Extracting Features
 
 ```python
-from biogpt import BioGPT
+from swarms.models import BioGPT
+
 
 # Initialize the BioGPT model
 biogpt = BioGPT()
@@ -96,7 +97,8 @@ print(features)
 #### Example 3: Using Beam Search Decoding
 
 ```python
-from biogpt import BioGPT
+from swarms.models import BioGPT
+
 
 # Initialize the BioGPT model
 biogpt = BioGPT()
