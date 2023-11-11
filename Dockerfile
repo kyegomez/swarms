@@ -8,24 +8,12 @@ WORKDIR /app
 # Add the current directory contents into the container at /app
 ADD . /app
 
-RUN apt update && apt install -y libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libgl1-mesa-glx
+RUN apt update && apt install -y 
 
 # Install Python and other dependencies
-RUN apt-get update && apt-get install libgl1 \
-    apt-get update && apt-get install -y opencv-python-headless \
-    apt-get install ffmpeg libsm6 libxext6  -y \
-    pip3 install python3-opencv \
-    apt-get -y install mesa-glx\
-    pip install opencv-python-headless \
-    apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y \
     python3-pip \
-    libgl1-mesa-glx \
-    && rm -rf /var/lib/apt/lists/* \
-    find /usr -name libGL.so.1 \
-    ln -s /usr/lib/x86_64-linux-gnu/mesa/libGL.so.1 /usr/lib/libGL.so.1
-
-# Upgrade pip
-RUN pip3 install --upgrade pip
+    pip3 install --upgrade pip
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt supervisor
