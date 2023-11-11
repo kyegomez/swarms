@@ -26,10 +26,10 @@ RUN pip install --no-cache-dir -r requirements.txt supervisor
 RUN mkdir -p /etc/supervisor/conf.d && \
     echo "[supervisord] \n\
     nodaemon=true \n\
-    [program:web_demo] \n\
-    command=python3 web_demo.py \n\
-    [program:host_local_tools] \n\
-    command=python3 host_local_tools.py \n\
+    [program:app.py] \n\
+    command=python3 app.py \n\
+    [program:tool_server] \n\
+    command=python3 tool_server.py \n\
     " > /etc/supervisor/conf.d/supervisord.conf
 # Make port 80 available to the world outside this container
 EXPOSE 80
