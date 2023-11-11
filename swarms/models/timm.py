@@ -2,7 +2,7 @@ from typing import List
 
 import timm
 import torch
-from pydantic import BaseModel, conlist
+from pydantic import BaseModel
 
 
 class TimmModelInfo(BaseModel):

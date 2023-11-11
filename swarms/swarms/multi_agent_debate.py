@@ -1,4 +1,3 @@
-from typing import List, Callable
 
 
 # Define a selection function
