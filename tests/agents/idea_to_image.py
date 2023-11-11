@@ -1,7 +1,7 @@
 import pytest
 import os
 import shutil
-from swarms.idea2image import Idea2Image
+from swarms.agents.idea_to_image_agent import Idea2Image
 
 openai_key = os.getenv("OPENAI_API_KEY")
 dalle_cookie = os.getenv("BING_COOKIE")

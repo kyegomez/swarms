@@ -1,12 +1,18 @@
 import pytest
 from unittest.mock import patch
 from swarms.memory import PgVectorVectorStore
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+
+
+PSG_CONNECTION_STRING = os.getenv("PSG_CONNECTION_STRING")
 
 def test_init():
     with patch("sqlalchemy.create_engine") as MockEngine:
         store = PgVectorVectorStore(
-            connection_string="postgresql://postgres:password@localhost:5432/postgres",
+            connection_string=PSG_CONNECTION_STRING,
             table_name="test",
         )
         MockEngine.assert_called_once()
@@ -24,7 +30,7 @@ def test_init_exception():
 def test_setup():
     with patch("sqlalchemy.create_engine") as MockEngine:
         store = PgVectorVectorStore(
-            connection_string="postgresql://postgres:password@localhost:5432/postgres",
+            connection_string=PSG_CONNECTION_STRING,
             table_name="test",
         )
         store.setup()
@@ -36,7 +42,7 @@ def test_upsert_vector():
         "sqlalchemy.orm.Session"
     ) as MockSession:
         store = PgVectorVectorStore(
-            connection_string="postgresql://postgres:password@localhost:5432/postgres",
+            connection_string=PSG_CONNECTION_STRING,
             table_name="test",
         )
         store.upsert_vector(
@@ -52,7 +58,7 @@ def test_load_entry():
         "sqlalchemy.orm.Session"
     ) as MockSession:
         store = PgVectorVectorStore(
-            connection_string="postgresql://postgres:password@localhost:5432/postgres",
+            connection_string=PSG_CONNECTION_STRING,
             table_name="test",
         )
         store.load_entry("test_id", "test_namespace")
@@ -65,7 +71,7 @@ def test_load_entries():
         "sqlalchemy.orm.Session"
     ) as MockSession:
         store = PgVectorVectorStore(
-            connection_string="postgresql://postgres:password@localhost:5432/postgres",
+            connection_string=PSG_CONNECTION_STRING,
             table_name="test",
         )
         store.load_entries("test_namespace")
@@ -80,7 +86,7 @@ def test_query():
         "sqlalchemy.orm.Session"
     ) as MockSession:
         store = PgVectorVectorStore(
-            connection_string="postgresql://postgres:password@localhost:5432/postgres",
+            connection_string=PSG_CONNECTION_STRING,
             table_name="test",
         )
         store.query("test_query", 10, "test_namespace")
