@@ -1,4 +1,5 @@
 # faiss-gpu
+griptape
 transformers
 revChatGPT
 pandas
@@ -33,7 +34,6 @@ chromadb
 tiktoken
 tabulate 
 colored
-griptape
 addict
 backoff
 ratelimit
@@ -52,7 +52,6 @@ numpy
 omegaconf
 open_clip_torch
 openai
-opencv-python
 prettytable
 safetensors
 streamlit
