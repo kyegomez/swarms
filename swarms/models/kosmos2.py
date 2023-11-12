@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 from PIL import Image
-from pydantic import BaseModel, root_validator, validator
+from pydantic import BaseModel, model_validator, validator
 from transformers import AutoModelForVision2Seq, AutoProcessor
 
 
@@ -11,7 +11,7 @@ class Detections(BaseModel):
     class_id: List[int]
     confidence: List[float]
 
-    @root_validator
+    @model_validator
     def check_length(cls, values):
         assert (
             len(values.get("xyxy"))
