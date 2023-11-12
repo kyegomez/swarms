@@ -10,7 +10,7 @@ import aiohttp
 import http.client
 http.client._MAXLINE = 655360
 
-from swarms.utils import get_logger
+from swarms.utils.tool_logging import get_logger
 
 logger = get_logger(__name__)
 

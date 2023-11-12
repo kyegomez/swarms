@@ -1,7 +1,5 @@
 import sys
 
-log_file = open("errors.txt", "w")
-sys.stderr = log_file
 
 # LLMs
 from swarms.models.anthropic import Anthropic
@@ -19,6 +17,10 @@ from swarms.models.idefics import Idefics
 from swarms.models.vilt import Vilt
 from swarms.models.nougat import Nougat
 from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
+from swarms.models.gpt4v import GPT4Vision
+from swarms.models.dalle3 import Dalle3
+from swarms.models.distilled_whisperx import DistilWhisperModel
+
 
 # from swarms.models.gpt4v import GPT4Vision
 # from swarms.models.dalle3 import Dalle3
@@ -41,6 +43,7 @@ __all__ = [
     "OpenAIChat",
     "Zephyr",
     "Idefics",
+    # "Kosmos",
     "Vilt",
     "Nougat",
     "LayoutLMDocumentQA",
