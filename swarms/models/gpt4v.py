@@ -1,3 +1,4 @@
+import os
 import asyncio
 import base64
 import concurrent.futures
@@ -64,7 +65,7 @@ class GPT4Vision:
     model: str = "gpt-4-vision-preview"
     backoff_factor: float = 2.0
     timeout_seconds: int = 10
-    openai_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None or os.getenv("OPENAI_API_KEY")
     # 'Low' or 'High' for respesctively fast or high quality, but high more token usage
     quality: str = "low"
     # Max tokens to use for the API request, the maximum might be 3,000 but we don't know
