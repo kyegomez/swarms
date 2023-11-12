@@ -1,3 +1,4 @@
+
 import concurrent.futures
 import logging
 import os
@@ -5,7 +6,6 @@ import uuid
 from dataclasses import dataclass
 from io import BytesIO
 from typing import List
-
 import backoff
 import openai
 import requests
@@ -66,7 +66,7 @@ class Dalle3:
     size: str = "1024x1024"
     max_retries: int = 3
     quality: str = "standard"
-    openai_api_key: str = None
+    openai_api_key: str = None or os.getenv("OPENAI_API_KEY")
     n: int = 1
     save_path: str = "images"
     max_time_seconds: int = 60
