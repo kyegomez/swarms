@@ -24,7 +24,7 @@ from langchain.callbacks.manager import (
     CallbackManagerForLLMRun,
 )
 from langchain.llms.base import LLM
-from langchain.pydantic_v1 import Field, SecretStr, root_validator
+from pydantic import Field, SecretStr, root_validator
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.schema.output import GenerationChunk
 from langchain.schema.prompt import PromptValue
