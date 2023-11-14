@@ -1,10 +1,7 @@
 from openai import OpenAI
 
-client = OpenAI(api_key=getenv("OPENAI_API_KEY"))
-from dotenv import load_dotenv
-from os import getenv
+client = OpenAI()
 
-load_dotenv()
 
 
 def get_ada_embeddings(text: str, model: str = "text-embedding-ada-002"):
