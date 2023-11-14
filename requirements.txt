@@ -48,6 +48,7 @@ opencv-python-headless
 imageio-ffmpeg
 invisible-watermark
 kornia
+safetensors
 numpy
 omegaconf
 open_clip_torch

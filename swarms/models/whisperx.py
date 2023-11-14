@@ -1,11 +1,16 @@
-# speech to text tool
-
 import os
 import subprocess
 
-import whisperx
-from pydub import AudioSegment
-from pytube import YouTube
+try:
+    import whisperx
+    from pydub import AudioSegment
+    from pytube import YouTube
+except Exception as error:
+    print("Error importing pytube. Please install pytube manually.")
+    print("pip install pytube")
+    print("pip install pydub")
+    print("pip install whisperx")
+    print(f"Pytube error: {error}")
 
 
 class WhisperX:
