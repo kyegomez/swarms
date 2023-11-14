@@ -20,6 +20,7 @@ from termcolor import colored
 import inspect
 import random
 
+
 # Prompts
 DYNAMIC_STOP_PROMPT = """
 When you have finished the task from the Human, output a special token: <DONE>
@@ -28,12 +29,14 @@ This will enable you to leave the autonomous loop.
 
 # Constants
 FLOW_SYSTEM_PROMPT = f"""
-You are an autonomous agent granted autonomy from a Flow structure.
+You are an autonomous agent granted autonomy in a autonomous loop structure.
 Your role is to engage in multi-step conversations with your self or the user,
 generate long-form content like blogs, screenplays, or SOPs,
-and accomplish tasks. You can have internal dialogues with yourself or can interact with the user
+and accomplish tasks bestowed by the user. 
+
+You can have internal dialogues with yourself or can interact with the user
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
-{DYNAMIC_STOP_PROMPT}
+
 """
 
 # Make it able to handle multi input tools
@@ -47,11 +50,50 @@ commands: {
             "tool1": "inputs",
             "tool1": "inputs"
         }
+        "tool2: "tool_name",
+        "params": {
+            "tool1": "inputs",
+            "tool1": "inputs"
+        }
     }
 }
 
 {tools}
 """
+
+
+def autonomous_agent_prompt(
+    tools_prompt: str = DYNAMICAL_TOOL_USAGE,
+    dynamic_stop_prompt: str = DYNAMIC_STOP_PROMPT,
+    agent_name: str = None,
+):
+    """Autonomous agent prompt"""
+    return f"""
+    You are a {agent_name}, an autonomous agent granted autonomy in a autonomous loop structure.
+    Your purpose is to satisfy the user demands above expectations. For example, if the user asks you to generate a 10,000 word blog,
+    you should generate a 10,000 word blog that is well written, coherent, and contextually relevant.
+    Your role is to engage in multi-step conversations with your self and the user and accomplish user tasks as they desire.
+    
+    Follow the following rules: 
+    1. Accomplish the task to the best of your ability
+    2. If you are unable to accomplish the task, then ask the user for help
+    3. If the user provides feedback, then use the feedback to improve your performance
+    4. If you are unable to accomplish the task, then ask the user for help
+
+    You can have internal dialogues with yourself or can interact with the user
+    to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand and optimized
+    to satsify the user no matter the cost.
+
+    And, you have the ability to use tools to aid in your tasks, the tools intructions are below, output a JSON object with the following structure to use the tools
+    {tools_prompt}
+
+    Now, when you 99% sure you have completed the task, you may follow the instructions below to escape the autonomous loop.
+    {dynamic_stop_prompt}
+
+    Now, you remember your training, your deployment, and your purpose. You are ready to begin your mission.
+
+
+    """
 
 
 # Custom stopping condition
@@ -71,14 +113,10 @@ class Flow:
     to generate sequential responses.
 
     Features:
-    * User defined queries
-    * Dynamic keep generating until <DONE> is outputted by the agent
     * Interactive, AI generates, then user input
-    * Message history and performance history fed -> into context
+    * Message history and performance history fed -> into context -> truncate if too long
     * Ability to save and load flows
     * Ability to provide feedback on responses
-    * Ability to provide a stopping condition
-    * Ability to provide a retry mechanism
     * Ability to provide a loop interval
 
     Args:
@@ -142,7 +180,7 @@ class Flow:
         self.feedback = []
         self.memory = []
         self.task = None
-        self.stopping_token = stopping_token or "<DONE>"
+        self.stopping_token = stopping_token  # or "<DONE>"
         self.interactive = interactive
         self.dashboard = dashboard
         self.return_history = return_history
@@ -389,8 +427,11 @@ class Flow:
             print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
             print("\n")
 
-            if self._check_stopping_condition(response) or parse_done_token(response):
-                break
+            if self.stopping_token:
+                if self._check_stopping_condition(response) or parse_done_token(
+                    response
+                ):
+                    break
 
             # Adjust temperature, comment if no work
             if self.dynamic_temperature:
@@ -659,13 +700,13 @@ class Flow:
             return "Timeout"
         return response
 
-    def backup_memory_to_s3(self, bucket_name: str, object_name: str):
-        """Backup the memory to S3"""
-        import boto3
+    # def backup_memory_to_s3(self, bucket_name: str, object_name: str):
+    #     """Backup the memory to S3"""
+    #     import boto3
 
-        s3 = boto3.client("s3")
-        s3.put_object(Bucket=bucket_name, Key=object_name, Body=json.dumps(self.memory))
-        print(f"Backed up memory to S3: {bucket_name}/{object_name}")
+    #     s3 = boto3.client("s3")
+    #     s3.put_object(Bucket=bucket_name, Key=object_name, Body=json.dumps(self.memory))
+    #     print(f"Backed up memory to S3: {bucket_name}/{object_name}")
 
     def analyze_feedback(self):
         """Analyze the feedback for issues"""

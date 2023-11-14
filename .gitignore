@@ -24,6 +24,7 @@ stderr_log.txt
 __pycache__/
 *.py[cod]
 *$py.class
+.grit
 error.txt
 
 # C extensions

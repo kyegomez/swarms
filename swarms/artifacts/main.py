@@ -10,6 +10,20 @@ class Artifact(BaseModel):
     """
 
     Artifact that has the task has been produced
+
+    Attributes:
+    -----------
+
+    artifact_id: str
+        ID of the artifact
+
+    file_name: str
+        Filename of the artifact
+
+    relative_path: str
+        Relative path of the artifact
+
+
     """
 
     artifact_id: StrictStr = Field(..., description="ID of the artifact")

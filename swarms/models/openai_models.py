@@ -93,7 +93,7 @@ def _create_retry_decorator(
     import openai
 
     errors = [
-        openai.Timeout,
+        openai.error.Timeout,
         openai.error.APIError,
         openai.error.APIConnectionError,
         openai.error.RateLimitError,
@@ -594,8 +594,7 @@ class BaseOpenAI(BaseLLM):
         if self.openai_proxy:
             import openai
 
-            # TODO: The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy={"http": self.openai_proxy, "https": self.openai_proxy})'
-            # openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
+            openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
         return {**openai_creds, **self._default_params}
 
     @property

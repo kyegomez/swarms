@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 from attr import define, field, Factory
 from dataclasses import dataclass
-from swarms.memory.vector_stores.base import BaseVectorStore
+from swarms.memory.base import BaseVectorStore
 from sqlalchemy.engine import Engine
 from sqlalchemy import create_engine, Column, String, JSON
 from sqlalchemy.ext.declarative import declarative_base
