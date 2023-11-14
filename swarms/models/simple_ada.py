@@ -2,6 +2,7 @@ from openai import OpenAI
 
 client = OpenAI()
 
+
 def get_ada_embeddings(text: str, model: str = "text-embedding-ada-002"):
     """
     Simple function to get embeddings from ada

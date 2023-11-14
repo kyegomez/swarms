@@ -1,6 +1,6 @@
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from swarms.models.auto_temp import OpenAIChat
+from swarms.models.openai_models import OpenAIChat
 
 
 class AutoTempAgent:
