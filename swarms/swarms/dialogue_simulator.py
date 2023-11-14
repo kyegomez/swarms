@@ -1,5 +1,3 @@
-
-
 class DialogueSimulator:
     """
     Dialogue Simulator

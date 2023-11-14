@@ -30,7 +30,17 @@ from langchain.schema.output import GenerationChunk
 from langchain.utils import get_from_dict_or_env, get_pydantic_field_names
 from langchain.utils.utils import build_extra_kwargs
 
+
+from importlib.metadata import version
+
+from packaging.version import parse
+
 logger = logging.getLogger(__name__)
+
+
+def is_openai_v1() -> bool:
+    _version = parse(version("openai"))
+    return _version.major >= 1
 
 
 def update_token_usage(
@@ -79,24 +89,24 @@ def _streaming_response_template() -> Dict[str, Any]:
     }
 
 
-# def _create_retry_decorator(
-#     llm: Union[BaseOpenAI, OpenAIChat],
-#     run_manager: Optional[
-#         Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
-#     ] = None,
-# ) -> Callable[[Any], Any]:
-#     import openai
+def _create_retry_decorator(
+    llm: Union[BaseOpenAI, OpenAIChat],
+    run_manager: Optional[
+        Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
+    ] = None,
+) -> Callable[[Any], Any]:
+    import openai
 
-#     errors = [
-#         openai.Timeout,
-#         openai.APIError,
-#         openai.error.APIConnectionError,
-#         openai.error.RateLimitError,
-#         openai.error.ServiceUnavailableError,
-#     ]
-#     return create_base_retry_decorator(
-#         error_types=errors, max_retries=llm.max_retries, run_manager=run_manager
-#     )
+    errors = [
+        openai.error.Timeout,
+        openai.error.APIError,
+        openai.error.APIConnectionError,
+        openai.error.RateLimitError,
+        openai.error.ServiceUnavailableError,
+    ]
+    return create_base_retry_decorator(
+        error_types=errors, max_retries=llm.max_retries, run_manager=run_manager
+    )
 
 
 def completion_with_retry(
@@ -105,9 +115,9 @@ def completion_with_retry(
     **kwargs: Any,
 ) -> Any:
     """Use tenacity to retry the completion call."""
-    # retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
+    retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
 
-    # @retry_decorator
+    @retry_decorator
     def _completion_with_retry(**kwargs: Any) -> Any:
         return llm.client.create(**kwargs)
 
@@ -120,9 +130,9 @@ async def acompletion_with_retry(
     **kwargs: Any,
 ) -> Any:
     """Use tenacity to retry the async completion call."""
-    # retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
+    retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
 
-    # @retry_decorator
+    @retry_decorator
     async def _completion_with_retry(**kwargs: Any) -> Any:
         # Use OpenAI's async api https://github.com/openai/openai-python#async-api
         return await llm.client.acreate(**kwargs)
@@ -500,11 +510,7 @@ class BaseOpenAI(BaseLLM):
         if self.openai_proxy:
             import openai
 
-            # raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g.", 
-            # 'OpenAI(proxy={
-            #     "http": self.openai_proxy,
-            #     "https": self.openai_proxy,
-            # })'")  # type: ignore[assignment]  # noqa: E501
+            openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
         return {**openai_creds, **self._default_params}
 
     @property
@@ -632,14 +638,13 @@ class OpenAI(BaseOpenAI):
     environment variable ``OPENAI_API_KEY`` set with your API key.
 
     Any parameters that are valid to be passed to the openai.create call can be passed
-    in, even if not explicitly saved on this class..,
+    in, even if not explicitly saved on this class.
 
     Example:
         .. code-block:: python
 
-            from swarms.models import OpenAI
+            from langchain.llms import OpenAI
             openai = OpenAI(model_name="text-davinci-003")
-            openai("What is the report on the 2022 oympian games?")
     """
 
     @property
@@ -659,7 +664,7 @@ class AzureOpenAI(BaseOpenAI):
     Example:
         .. code-block:: python
 
-            from swarms.models import AzureOpenAI
+            from langchain.llms import AzureOpenAI
             openai = AzureOpenAI(model_name="text-davinci-003")
     """
 
@@ -721,7 +726,7 @@ class OpenAIChat(BaseLLM):
     Example:
         .. code-block:: python
 
-            from swarms.models import OpenAIChat
+            from langchain.llms import OpenAIChat
             openaichat = OpenAIChat(model_name="gpt-3.5-turbo")
     """
 
@@ -783,11 +788,13 @@ class OpenAIChat(BaseLLM):
         try:
             import openai
 
-            
+            openai.api_key = openai_api_key
             if openai_api_base:
-                raise Exception("The 'openai.api_base' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(api_base=openai_api_base)'")
+                openai.api_base = openai_api_base
             if openai_organization:
-                raise Exception("The 'openai.organization' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(organization=openai_organization)'")
+                openai.organization = openai_organization
+            if openai_proxy:
+                openai.proxy = {"http": openai_proxy, "https": openai_proxy}  # type: ignore[assignment]  # noqa: E501
         except ImportError:
             raise ImportError(
                 "Could not import openai python package. "

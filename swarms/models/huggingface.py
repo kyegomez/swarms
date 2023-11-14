@@ -1,9 +1,13 @@
+import asyncio
+import concurrent.futures
 import logging
+from typing import List, Tuple
+
 
 import torch
+from termcolor import colored
 from torch.nn.parallel import DistributedDataParallel as DDP
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from termcolor import colored
 
 
 class HuggingfaceLLM:
@@ -43,6 +47,12 @@ class HuggingfaceLLM:
         # logger=None,
         distributed=False,
         decoding=False,
+        max_workers: int = 5,
+        repitition_penalty: float = 1.3,
+        no_repeat_ngram_size: int = 5,
+        temperature: float = 0.7,
+        top_k: int = 40,
+        top_p: float = 0.8,
         *args,
         **kwargs,
     ):
@@ -56,6 +66,14 @@ class HuggingfaceLLM:
         self.distributed = distributed
         self.decoding = decoding
         self.model, self.tokenizer = None, None
+        self.quantize = quantize
+        self.quantization_config = quantization_config
+        self.max_workers = max_workers
+        self.repitition_penalty = repitition_penalty
+        self.no_repeat_ngram_size = no_repeat_ngram_size
+        self.temperature = temperature
+        self.top_k = top_k
+        self.top_p = top_p
 
         if self.distributed:
             assert (
@@ -91,6 +109,10 @@ class HuggingfaceLLM:
         """Print error"""
         print(colored(f"Error: {error}", "red"))
 
+    async def async_run(self, task: str):
+        """Ashcnronous generate text for a given prompt"""
+        return await asyncio.to_thread(self.run, task)
+
     def load_model(self):
         """Load the model"""
         if not self.model or not self.tokenizer:
@@ -112,6 +134,21 @@ class HuggingfaceLLM:
             except Exception as error:
                 self.logger.error(f"Failed to load the model or the tokenizer: {error}")
                 raise
+
+    def concurrent_run(self, tasks: List[str], max_workers: int = 5):
+        """Concurrently generate text for a list of prompts."""
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            results = list(executor.map(self.run, tasks))
+        return results
+
+    def run_batch(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+        """Process a batch of tasks and images"""
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(self.run, task, img) for task, img in tasks_images
+            ]
+            results = [future.result() for future in futures]
+        return results
 
     def run(self, task: str):
         """
@@ -174,29 +211,6 @@ class HuggingfaceLLM:
                 )
             )
             raise
-
-    async def run_async(self, task: str, *args, **kwargs) -> str:
-        """
-        Run the model asynchronously
-
-        Args:
-            task (str): Task to run.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Examples:
-        >>> mpt_instance = MPT('mosaicml/mpt-7b-storywriter', "EleutherAI/gpt-neox-20b", max_tokens=150)
-        >>> mpt_instance("generate", "Once upon a time in a land far, far away...")
-        'Once upon a time in a land far, far away...'
-        >>> mpt_instance.batch_generate(["In the deep jungles,", "At the heart of the city,"], temperature=0.7)
-        ['In the deep jungles,',
-        'At the heart of the city,']
-        >>> mpt_instance.freeze_model()
-        >>> mpt_instance.unfreeze_model()
-
-        """
-        # Wrapping synchronous calls with async
-        return self.run(task, *args, **kwargs)
 
     def __call__(self, task: str):
         """

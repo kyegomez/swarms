@@ -15,7 +15,6 @@ def cohere_instance():
     return Cohere(cohere_api_key=api_key)
 
 
-
 def test_cohere_custom_configuration(cohere_instance):
     # Test customizing Cohere configurations
     cohere_instance.model = "base"
@@ -404,7 +403,6 @@ def test_cohere_async_stream_with_embed_multilingual_v3_model(cohere_instance):
         assert isinstance(token, str)
 
 
-
 def test_cohere_representation_model_embedding(cohere_instance):
     # Test using the Representation model for text embedding
     cohere_instance.model = "embed-english-v3.0"
@@ -625,6 +623,7 @@ def test_cohere_invalid_model(cohere_instance):
     cohere_instance.model = "invalid-model"
     with pytest.raises(ValueError):
         cohere_instance("Generate text using an invalid model.")
+
 
 def test_cohere_base_model_generation_with_max_tokens(cohere_instance):
     # Test generating text using the base model with a specified max_tokens limit

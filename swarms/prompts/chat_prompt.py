@@ -4,7 +4,6 @@ from abc import abstractmethod
 from typing import Dict, List, Sequence
 
 
-
 class Message:
     """
     The base abstract Message class.
