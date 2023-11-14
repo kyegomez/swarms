@@ -6,7 +6,6 @@ from swarms.prompts.operations_agent_prompt import OPERATIONS_AGENT_PROMPT
 from swarms.prompts.product_agent_prompt import PRODUCT_AGENT_PROMPT
 
 
-
 __all__ = [
     "CODE_INTERPRETER",
     "FINANCE_AGENT_PROMPT",

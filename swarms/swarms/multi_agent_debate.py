@@ -1,5 +1,3 @@
-
-
 # Define a selection function
 def select_speaker(step: int, agents) -> int:
     # This function selects the speaker in a round-robin fashion

@@ -1,4 +1,3 @@
-
 from termcolor import colored
 
 from swarms.prompts.autoblogen import (
