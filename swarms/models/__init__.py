@@ -5,15 +5,15 @@ import sys
 
 
 # LLMs
-from swarms.models.anthropic import Anthropic  # noqa: E402
-from swarms.models.petals import Petals  # noqa: E402
-from swarms.models.mistral import Mistral  # noqa: E402
-from swarms.models.openai_models import OpenAI, AzureOpenAI, OpenAIChat  # noqa: E402
-from swarms.models.zephyr import Zephyr  # noqa: E402
-from swarms.models.biogpt import BioGPT  # noqa: E402
-from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
-from swarms.models.wizard_storytelling import WizardLLMStoryTeller  # noqa: E402
-from swarms.models.mpt import MPT7B  # noqa: E402
+from swarms.models.anthropic import Anthropic
+from swarms.models.petals import Petals
+from swarms.models.mistral import Mistral
+from swarms.models.openai_models import OpenAIChat, AzureOpenAI, OpenAI
+from swarms.models.zephyr import Zephyr
+from swarms.models.biogpt import BioGPT
+from swarms.models.huggingface import HuggingfaceLLM
+from swarms.models.wizard_storytelling import WizardLLMStoryTeller
+from swarms.models.mpt import MPT7B
 
 # MultiModal Models
 from swarms.models.idefics import Idefics  # noqa: E402
