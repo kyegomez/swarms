@@ -8,7 +8,21 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class GroupChat:
-    """A group chat class that contains a list of agents and the maximum number of rounds."""
+    """
+    A group chat class that contains a list of agents and the maximum number of rounds.
+
+    Args:
+        agents: List[Flow]
+        messages: List[Dict]
+        max_round: int
+        admin_name: str
+
+    Usage:
+    >>> from swarms import GroupChat
+    >>> from swarms.structs.flow import Flow
+    >>> agents = Flow()
+
+    """
 
     agents: List[Flow]
     messages: List[Dict]
@@ -91,6 +105,22 @@ class GroupChat:
 
 
 class GroupChatManager:
+    """
+    GroupChatManager
+
+    Args:
+        groupchat: GroupChat
+        selector: Flow
+
+    Usage:
+    >>> from swarms import GroupChatManager
+    >>> from swarms.structs.flow import Flow
+    >>> agents = Flow()
+    >>> output = GroupChatManager(agents, lambda x: x)
+
+
+    """
+
     def __init__(self, groupchat: GroupChat, selector: Flow):
         self.groupchat = groupchat
         self.selector = selector
