@@ -1,13 +1,14 @@
 import sys
 
-log_file = open("errors.txt", "w")
-sys.stderr = log_file
+# log_file = open("errors.txt", "w")
+# sys.stderr = log_file
+
 
 # LLMs
 from swarms.models.anthropic import Anthropic
 from swarms.models.petals import Petals
 from swarms.models.mistral import Mistral
-from swarms.models.openai_models import OpenAI, AzureOpenAI, OpenAIChat
+from swarms.models.openai_models import OpenAIChat, AzureOpenAI, OpenAI
 from swarms.models.zephyr import Zephyr
 from swarms.models.biogpt import BioGPT
 from swarms.models.huggingface import HuggingfaceLLM

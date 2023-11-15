@@ -517,7 +517,7 @@ class Flow:
     def _run(self, **kwargs: Any) -> str:
         """Generate a result using the provided keyword args."""
         task = self.format_prompt(**kwargs)
-        response, history = self._generate(task, task)
+        response, history = self.llm._generate([ task, task ])
         logging.info(f"Message history: {history}")
         return response
 

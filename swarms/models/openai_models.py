@@ -1,6 +1,6 @@
-"""OpenAI chat wrapper."""
 from __future__ import annotations
 
+"""OpenAI chat wrapper."""
 import logging
 import os
 import sys
@@ -72,7 +72,7 @@ def _import_tiktoken() -> Any:
 
 
 def _create_retry_decorator(
-    llm: ChatOpenAI,
+    llm: OpenAIChat,
     run_manager: Optional[
         Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
     ] = None,
@@ -92,7 +92,7 @@ def _create_retry_decorator(
 
 
 async def acompletion_with_retry(
-    llm: ChatOpenAI,
+    llm: OpenAIChat,
     run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
     **kwargs: Any,
 ) -> Any:
@@ -139,8 +139,91 @@ def _convert_delta_to_message_chunk(
     else:
         return default_class(content=content)
 
+class OpenAI(BaseChatModel):
+    """OpenAI large language models.
 
-class ChatOpenAI(BaseChatModel):
+    To use, you should have the ``openai`` python package installed, and the
+    environment variable ``OPENAI_API_KEY`` set with your API key.
+
+    Any parameters that are valid to be passed to the openai.create call can be passed
+    in, even if not explicitly saved on this class..,
+
+    Example:
+        .. code-block:: python
+
+            from swarms.models import OpenAI
+            openai = OpenAI(model_name="text-davinci-003")
+            openai("What is the report on the 2022 oympian games?")
+    """
+
+    @property
+    def _invocation_params(self) -> Dict[str, Any]:
+        return {**{"model": self.model_name}, **super()._invocation_params}
+
+
+class AzureOpenAI(BaseChatModel):
+    """Azure-specific OpenAI large language models.
+
+    To use, you should have the ``openai`` python package installed, and the
+    environment variable ``OPENAI_API_KEY`` set with your API key.
+
+    Any parameters that are valid to be passed to the openai.create call can be passed
+    in, even if not explicitly saved on this class.
+
+    Example:
+        .. code-block:: python
+
+            from swarms.models import AzureOpenAI
+            openai = AzureOpenAI(model_name="text-davinci-003")
+    """
+
+    deployment_name: str = ""
+    """Deployment name to use."""
+    openai_api_type: str = ""
+    openai_api_version: str = ""
+
+    @root_validator()
+    def validate_azure_settings(cls, values: Dict) -> Dict:
+        values["openai_api_version"] = get_from_dict_or_env(
+            values,
+            "openai_api_version",
+            "OPENAI_API_VERSION",
+        )
+        values["openai_api_type"] = get_from_dict_or_env(
+            values, "openai_api_type", "OPENAI_API_TYPE", "azure"
+        )
+        return values
+
+    @property
+    def _identifying_params(self) -> Mapping[str, Any]:
+        return {
+            **{"deployment_name": self.deployment_name},
+            **super()._identifying_params,
+        }
+
+    @property
+    def _invocation_params(self) -> Dict[str, Any]:
+        openai_params = {
+            "engine": self.deployment_name,
+            "api_type": self.openai_api_type,
+            "api_version": self.openai_api_version,
+        }
+        return {**openai_params, **super()._invocation_params}
+
+    @property
+    def _llm_type(self) -> str:
+        """Return type of llm."""
+        return "azure"
+
+    @property
+    def lc_attributes(self) -> Dict[str, Any]:
+        return {
+            "openai_api_type": self.openai_api_type,
+            "openai_api_version": self.openai_api_version,
+        }
+
+
+class OpenAIChat(BaseChatModel):
     """`OpenAI` Chat large language models API.
 
     To use, you should have the ``openai`` python package installed, and the
