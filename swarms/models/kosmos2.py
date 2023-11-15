@@ -32,6 +32,26 @@ class Detections(BaseModel):
 
 
 class Kosmos2(BaseModel):
+    """
+    Kosmos2
+
+    Args:
+    ------
+    model: AutoModelForVision2Seq
+    processor: AutoProcessor
+
+    Usage:
+    ------
+    >>> from swarms import Kosmos2
+    >>> from swarms.models.kosmos2 import Detections
+    >>> from PIL import Image
+    >>> model = Kosmos2.initialize()
+    >>> image = Image.open("path_to_image.jpg")
+    >>> detections = model(image)
+    >>> print(detections)
+
+    """
+
     model: AutoModelForVision2Seq
     processor: AutoProcessor
 
