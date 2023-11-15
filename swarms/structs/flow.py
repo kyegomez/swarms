@@ -1,25 +1,13 @@
-"""
-TODO:
-- add a method that scrapes all the methods from the llm object and outputs them as a string
-- Add tools
-- Add open interpreter style conversation
-- Add memory vector database retrieval
-- add batch processing
-- add async processing for run and batch run
-- add plan module
-- concurrent
-- Add batched inputs
-"""
 import asyncio
-import re
+import inspect
 import json
 import logging
+import random
+import re
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
-from termcolor import colored
-import inspect
-import random
 
+from termcolor import colored
 
 # Prompts
 DYNAMIC_STOP_PROMPT = """
