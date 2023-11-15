@@ -18,14 +18,6 @@ llm = OpenAI(
 )
 
 
-@tool
-def search_api(query: str):
-    """
-    This is a search API, you can search the web for information.
-    """
-    pass
-
-
 ## Initialize the workflow
 flow = Flow(
     llm=llm,
