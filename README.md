@@ -110,19 +110,23 @@ llm = OpenAIChat(
 )
 
 # Initialize the Flow with the language flow
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
+agent1 = Flow(llm=llm, max_loops=1, dashboard=False)
 
 # Create another Flow for a different task
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+agent2 = Flow(llm=llm, max_loops=1, dashboard=False)
+
+agent3 = Flow(llm=llm, max_loops=1, dashboard=False)
 
 # Create the workflow
 workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to the workflow
-workflow.add("Generate a 10,000 word blog on health and wellness.", flow1)
+workflow.add("Generate a 10,000 word blog on health and wellness.", agent1)
 
 # Suppose the next task takes the output of the first task as input
-workflow.add("Summarize the generated blog", flow2)
+workflow.add("Summarize the generated blog", agent2)
+
+workflow.add("Create a references sheet of materials for the curriculm", agent3)
 
 # Run the workflow
 workflow.run()
