@@ -1,6 +1,14 @@
-from concurrent.futures import ThreadPoolExecutor
-from termcolor import colored
+import asyncio
+import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Callable, List
+
 from tabulate import tabulate
+from termcolor import colored
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class GodMode:
@@ -30,8 +38,15 @@ class GodMode:
 
     """
 
-    def __init__(self, llms):
+    def __init__(
+        self,
+        llms: List[Callable],
+        load_balancing: bool = False,
+        retry_attempts: int = 3,
+    ):
         self.llms = llms
+        self.load_balancing = load_balancing
+        self.retry_attempts = retry_attempts
         self.last_responses = None
         self.task_history = []
 
@@ -59,12 +74,6 @@ class GodMode:
         for llm in self.llms:
             responses.append(llm(task))
         return responses
-
-    def arun_all(self, task):
-        """Asynchronous run the task on all LLMs"""
-        with ThreadPoolExecutor() as executor:
-            responses = executor.map(lambda llm: llm(task), self.llms)
-        return list(responses)
 
     def print_arun_all(self, task):
         """Prints the responses in a tabular format"""
@@ -113,3 +122,44 @@ class GodMode:
                 tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"
             )
         )
+
+    def enable_load_balancing(self):
+        """Enable load balancing among LLMs."""
+        self.load_balancing = True
+        logger.info("Load balancing enabled.")
+
+    def disable_load_balancing(self):
+        """Disable load balancing."""
+        self.load_balancing = False
+        logger.info("Load balancing disabled.")
+
+    async def arun(self, task: str):
+        """Asynchronous run the task string"""
+        loop = asyncio.get_event_loop()
+        futures = [
+            loop.run_in_executor(None, lambda llm: llm(task), llm) for llm in self.llms
+        ]
+        for response in await asyncio.gather(*futures):
+            print(response)
+
+    def concurrent_run(self, task: str) -> List[str]:
+        """Synchronously run the task on all llms and collect responses"""
+        with ThreadPoolExecutor() as executor:
+            future_to_llm = {executor.submit(llm, task): llm for llm in self.llms}
+            responses = []
+            for future in as_completed(future_to_llm):
+                try:
+                    responses.append(future.result())
+                except Exception as error:
+                    print(f"{future_to_llm[future]} generated an exception: {error}")
+        self.last_responses = responses
+        self.task_history.append(task)
+        return responses
+
+    def add_llm(self, llm: Callable):
+        """Add an llm to the god mode"""
+        self.llms.append(llm)
+
+    def remove_llm(self, llm: Callable):
+        """Remove an llm from the god mode"""
+        self.llms.remove(llm)
