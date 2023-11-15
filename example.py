@@ -10,6 +10,7 @@ llm = OpenAIChat(
     # max_tokens=100,
 )
 
+
 @tool
 def search_api(query: str):
     """
@@ -18,13 +19,12 @@ def search_api(query: str):
     pass
 
 
-
 ## Initialize the workflow
 flow = Flow(
     llm=llm,
     max_loops=5,
     dashboard=True,
-    tools = [search_api]
+    tools=[search_api]
     # stopping_condition=None,  # You can define a stopping condition as needed.
     # loop_interval=1,
     # retry_attempts=3,

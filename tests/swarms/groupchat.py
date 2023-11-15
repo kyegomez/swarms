@@ -3,7 +3,7 @@ import pytest
 from swarms.models import OpenAIChat
 from swarms.models.anthropic import Anthropic
 from swarms.structs.flow import Flow
-from swarms.swarms.flow import GroupChat, GroupChatManager
+from swarms.swarms.groupchat import GroupChat, GroupChatManager
 
 llm = OpenAIChat()
 llm2 = Anthropic()
