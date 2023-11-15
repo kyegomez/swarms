@@ -1,15 +1,22 @@
+from swarms.tools.tool import tool
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
-
-api_key = ""
 
 # Initialize the language model, this model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
 llm = OpenAIChat(
     # model_name="gpt-4"
-    openai_api_key=api_key,
+    # openai_api_key=api_key,
     temperature=0.5,
     # max_tokens=100,
 )
+
+@tool
+def search_api(query: str):
+    """
+    This is a search API, you can search the web for information.
+    """
+    pass
+
 
 
 ## Initialize the workflow
@@ -17,7 +24,7 @@ flow = Flow(
     llm=llm,
     max_loops=5,
     dashboard=True,
-    # tools = [search_api, slack, ]
+    tools = [search_api]
     # stopping_condition=None,  # You can define a stopping condition as needed.
     # loop_interval=1,
     # retry_attempts=3,
