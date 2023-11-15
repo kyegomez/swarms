@@ -1,4 +1,4 @@
-from bmtools.agent.singletool import load_single_tools, STQuestionAnswerer
+from swarms.tools.agent.singletool import load_single_tools, STQuestionAnswerer
 
 tool_name, tool_url = 'sceneXplain',  "http://127.0.0.1:8079/tools/sceneXplain/"
 tools_name, tools_config = load_single_tools(tool_name, tool_url)

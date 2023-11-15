@@ -108,7 +108,7 @@ class AutoGPT:
             if action.name in tools:
                 tool = tools[action.name]
                 try:
-                    # for tools in BMTools, the input should be string, while for default langchain toosl, the input is in json format, here we modify the following code
+                    # for tools in swarms.tools, the input should be string, while for default langchain toosl, the input is in json format, here we modify the following code
                     json_args = json.dumps(action.args)
                     observation = tool.run(json_args)
                 except ValidationError as e:

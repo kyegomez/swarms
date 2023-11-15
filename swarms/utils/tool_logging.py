@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# BMTools copied from Huggingface Transformers
+# swarms.tools copied from Huggingface Transformers
 """ Logging utilities."""
 
 import logging
@@ -47,16 +47,16 @@ _default_log_level = logging.INFO
 
 def _get_default_logging_level():
     """
-    If BMTOOLS_VERBOSITY env var is set to one of the valid choices return that as the new default level. If it is
+    If SWARMSTOOLS_VERBOSITY env var is set to one of the valid choices return that as the new default level. If it is
     not - fall back to ``_default_log_level``
     """
-    env_level_str = os.getenv("BMTOOLS_VERBOSITY", None)
+    env_level_str = os.getenv("SWARMSTOOLS_VERBOSITY", None)
     if env_level_str:
         if env_level_str in log_levels:
             return log_levels[env_level_str]
         else:
             logging.getLogger().warning(
-                f"Unknown option BMTOOLS_VERBOSITY={env_level_str}, "
+                f"Unknown option SWARMSTOOLS_VERBOSITY={env_level_str}, "
                 f"has to be one of: { ', '.join(log_levels.keys()) }"
             )
     return _default_log_level
@@ -83,7 +83,7 @@ def _configure_library_root_logger() -> None:
         _default_handler = logging.StreamHandler()  # Set sys.stderr as stream.
         _default_handler.flush = sys.stderr.flush
         formatter = logging.Formatter(
-            "\033[1;31m[%(levelname)s|(BMTools)%(module)s:%(lineno)d]%(asctime)s >> \033[0m %(message)s")
+            "\033[1;31m[%(levelname)s|(SWARMSTools)%(module)s:%(lineno)d]%(asctime)s >> \033[0m %(message)s")
         _default_handler.setFormatter(formatter)
 
         # Apply our default configuration to the library root logger.
@@ -278,7 +278,7 @@ def get_logger(name: Optional[str] = None, verbosity='info') -> logging.Logger:
     logger.setLevel(log_levels[verbosity])
 
     # Set up a file handler to write log messages to a file
-    # file_handler = logging.FileHandler('/Users/xuanhe/Documents/our-paper/instructdb/code/BMTools/bmtools/tools/database/my_log_file.log')
+    # file_handler = logging.FileHandler('/Users/xuanhe/Documents/our-paper/instructdb/code/BMTools/swarms.tools/tools/database/my_log_file.log')
     # file_handler.setLevel(log_levels[verbosity])
     # logger.addHandler(file_handler)
 

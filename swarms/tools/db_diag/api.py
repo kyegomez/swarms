@@ -11,14 +11,14 @@ from nltk.tokenize import word_tokenize
 import nltk
 
 from ..tool import Tool
-from bmtools.tools.database.utils.db_parser import get_conf
-from bmtools.tools.database.utils.database import DBArgs, Database
-from bmtools.models.customllm import CustomLLM
-from bmtools.knowledge.knowledge_extraction import KnowledgeExtraction
-from bmtools.tools.db_diag.anomaly_detection import detect_anomalies
-from bmtools.tools.db_diag.anomaly_detection import prometheus
+from swarms.tools.tools.database.utils.db_parser import get_conf
+from swarms.tools.tools.database.utils.database import DBArgs, Database
+from swarms.tools.models.customllm import CustomLLM
+from swarms.tools.knowledge.knowledge_extraction import KnowledgeExtraction
+from swarms.tools.tools.db_diag.anomaly_detection import detect_anomalies
+from swarms.tools.tools.db_diag.anomaly_detection import prometheus
 
-from bmtools.tools.db_diag.example_generate import bm25
+from swarms.tools.tools.db_diag.example_generate import bm25
 
 import warnings
 
@@ -96,7 +96,7 @@ def build_db_diag_tool(config) -> Tool:
     # "node_sockstat_TCP_tw{instance=\"172.27.58.65:9100\"}", 
 
     # load knowlege extractor
-    knowledge_matcher = KnowledgeExtraction("/bmtools/tools/db_diag/root_causes_dbmind.jsonl")
+    knowledge_matcher = KnowledgeExtraction("/swarms.tools/tools/db_diag/root_causes_dbmind.jsonl")
 
     # load db settings
     script_path = os.path.abspath(__file__)
@@ -110,7 +110,7 @@ def build_db_diag_tool(config) -> Tool:
     server_config = get_conf(script_dir + '/my_config.ini', 'benchserver')
 
     monitoring_metrics = []
-    with open(str(os.getcwd()) + "/bmtools/tools/db_diag/database_monitoring_metrics", 'r') as f:
+    with open(str(os.getcwd()) + "/swarms/tools/db_diag/database_monitoring_metrics", 'r') as f:
         monitoring_metrics = f.read()
     monitoring_metrics = eval(monitoring_metrics)
 

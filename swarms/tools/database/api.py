@@ -5,8 +5,8 @@ import json
 import os
 
 from ..tool import Tool
-from bmtools.tools.database.utils.db_parser import get_conf
-from bmtools.tools.database.utils.database import DBArgs, Database
+from swarms.tools.database.utils.db_parser import get_conf
+from swarms.tools.database.utils.database import DBArgs, Database
 
 import openai
 

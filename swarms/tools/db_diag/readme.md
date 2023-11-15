@@ -11,7 +11,7 @@ Contributor: [Xuanhe Zhou](https://github.com/zhouxh19)
 
 ### Setup
 
-1. Follow the steps in [main readme](https://github.com/OpenBMB/BMTools/blob/main/README.md)
+1. Follow the steps in [main readme](https://github.com/OpenBMB/swarms.tools/blob/main/README.md)
 
 2. Configure the adopted LLM model in the 84th line of ../../agent/singletool.py, e.g., 
 

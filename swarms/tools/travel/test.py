@@ -1,4 +1,4 @@
-from bmtools.agent.singletool import load_single_tools, STQuestionAnswerer
+from swarms.tools.agent.singletool import load_single_tools, STQuestionAnswerer
 from datetime import datetime, timedelta
 
 tool_name, tool_url = 'travel',  "http://127.0.0.1:8079/tools/travel/"
