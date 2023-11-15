@@ -29,7 +29,7 @@ agent("write a weather report for SF today")
 
 
 """ 
-from bmtools.agent.singletool import load_single_tools, STQuestionAnswerer
+from swarms.agent.singletool import load_single_tools, STQuestionAnswerer
 
 tool_name, tool_url = 'wikipedia',  "http://127.0.0.1:8079/tools/wikipedia/"
 tool_name, tool_config = load_single_tools(tool_name, tool_url)

@@ -1,4 +1,4 @@
-from bmtools.agent.singletool import load_single_tools, STQuestionAnswerer
+from swarms.tools.agent.singletool import load_single_tools, STQuestionAnswerer
 import pathlib
 # Langchain
 tool_name, tool_url = 'gradio_tools',  "http://127.0.0.1:8079/tools/gradio_tools/"

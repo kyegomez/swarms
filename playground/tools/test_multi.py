@@ -1,4 +1,4 @@
-from bmtools.agent.tools_controller import load_valid_tools, MTQuestionAnswerer
+from swarms.agent.tools_controller import load_valid_tools, MTQuestionAnswerer
 tools_mappings = {
     'weather': "http://127.0.0.1:8079/tools/weather/",
     'file_operation': "http://127.0.0.1:8079/tools/file_operation/",

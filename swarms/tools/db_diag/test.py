@@ -1,5 +1,5 @@
 
-from bmtools.agent.singletool import load_single_tools, STQuestionAnswerer
+from swarms.tools.agent.singletool import load_single_tools, STQuestionAnswerer
 import datetime
 
 tool_name, tool_url = 'db_diag',  "http://127.0.0.1:8079/tools/db_diag/"

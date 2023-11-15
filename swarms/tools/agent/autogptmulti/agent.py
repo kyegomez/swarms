@@ -112,7 +112,7 @@ class AutoGPT:
             if action.name in tools:
                 tool = tools[action.name]
                 try:
-                    # for tools in BMTools, the input should be string, while for default langchain toosl, the input is in json format, here we modify the following code
+                    # for tools in swarms.tools, the input should be string, while for default langchain toosl, the input is in json format, here we modify the following code
                     tmp_json = action.args.copy()
                     tmp_json["history context"] = str(history_rec[-5:])[-500:]
                     tmp_json["user message"] = goals[0]
