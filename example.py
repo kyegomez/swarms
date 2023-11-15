@@ -1,4 +1,3 @@
-from swarms.tools.tool import tool
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
 
@@ -9,14 +8,6 @@ llm = OpenAIChat(
     temperature=0.5,
     # max_tokens=100,
 )
-
-
-@tool
-def search_api(query: str):
-    """
-    This is a search API, you can search the web for information.
-    """
-    pass
 
 
 ## Initialize the workflow
