@@ -13,7 +13,7 @@ from langchain.vectorstores import FAISS
 import faiss
 from langchain.docstore import InMemoryDocstore
 from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
-from bmtools.agent.executor import Executor, AgentExecutorWithTranslation
+from swarms.agent.executor import Executor, AgentExecutorWithTranslation
 
 class ContextAwareAgent(ZeroShotAgent):
     def get_full_inputs(
