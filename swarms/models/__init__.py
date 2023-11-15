@@ -17,7 +17,8 @@ from swarms.models.mpt import MPT7B  # noqa: E402
 
 # MultiModal Models
 from swarms.models.idefics import Idefics  # noqa: E402
-from swarms.models.kosmos_two import Kosmos  # noqa: E402
+
+# from swarms.models.kosmos_two import Kosmos  # noqa: E402
 from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.nougat import Nougat  # noqa: E402
 from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA  # noqa: E402
@@ -35,7 +36,7 @@ __all__ = [
     "OpenAIChat",
     "Zephyr",
     "Idefics",
-    "Kosmos",
+    # "Kosmos",
     "Vilt",
     "Nougat",
     "LayoutLMDocumentQA",
