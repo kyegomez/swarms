@@ -1,9 +1,13 @@
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
-from langchain.schema.messages import ChatMessage
+from langchain.schema.messages import ChatMessage, BaseMessage
+import os
+from dotenv import load_dotenv
 
-message = ChatMessage(role="user", content='Translate the following English text to French: Hello World"')
-api_key = ""
+load_dotenv()
+
+message: BaseMessage = [ ChatMessage(role="user", content='Translate the following English text to French: Hello World"') ]
+api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model, this model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
 llm = OpenAIChat(
