@@ -33,7 +33,17 @@ from langchain.utils import get_from_dict_or_env, get_pydantic_field_names
 from langchain.utils.openai import is_openai_v1
 from langchain.utils.utils import build_extra_kwargs
 
+
+from importlib.metadata import version
+
+from packaging.version import parse
+
 logger = logging.getLogger(__name__)
+
+
+def is_openai_v1() -> bool:
+    _version = parse(version("openai"))
+    return _version.major >= 1
 
 
 def update_token_usage(
@@ -93,7 +103,11 @@ def _create_retry_decorator(
     import openai
 
     errors = [
+<<<<<<< HEAD
         openai.Timeout,
+=======
+        openai.error.Timeout,
+>>>>>>> master
         openai.error.APIError,
         openai.error.APIConnectionError,
         openai.error.RateLimitError,
@@ -110,11 +124,16 @@ def completion_with_retry(
     **kwargs: Any,
 ) -> Any:
     """Use tenacity to retry the completion call."""
+<<<<<<< HEAD
     if is_openai_v1():
         return llm.client.create(**kwargs)
 
     retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
 
+=======
+    retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
+
+>>>>>>> master
     @retry_decorator
     def _completion_with_retry(**kwargs: Any) -> Any:
         return llm.client.create(**kwargs)
@@ -128,11 +147,16 @@ async def acompletion_with_retry(
     **kwargs: Any,
 ) -> Any:
     """Use tenacity to retry the async completion call."""
+<<<<<<< HEAD
     if is_openai_v1():
         return await llm.async_client.create(**kwargs)
 
     retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
 
+=======
+    retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
+
+>>>>>>> master
     @retry_decorator
     async def _completion_with_retry(**kwargs: Any) -> Any:
         # Use OpenAI's async api https://github.com/openai/openai-python#async-api
@@ -594,8 +618,12 @@ class BaseOpenAI(BaseLLM):
         if self.openai_proxy:
             import openai
 
+<<<<<<< HEAD
             # TODO: The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy={"http": self.openai_proxy, "https": self.openai_proxy})'
             # openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
+=======
+            openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
+>>>>>>> master
         return {**openai_creds, **self._default_params}
 
     @property
