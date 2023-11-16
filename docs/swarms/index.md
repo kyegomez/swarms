@@ -1,5 +1,4 @@
 # Swarms
-
 Swarms is a modular framework that enables reliable and useful multi-agent collaboration at scale to automate real-world tasks.
 
 
