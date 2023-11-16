@@ -74,7 +74,10 @@ flow = Flow(
 # out = flow.load_state("flow_state.json")
 # temp = flow.dynamic_temperature()
 # filter = flow.add_response_filter("Trump")
+
+# Run the flow
 out = flow.run("Generate a 10,000 word blog on health and wellness.")
+
 # out = flow.validate_response(out)
 # out = flow.analyze_feedback(out)
 # out = flow.print_history_and_memory()
