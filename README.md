@@ -38,6 +38,11 @@ Book a [1-on-1 Session with Kye](https://calendly.com/swarm-corp/30min), the Cre
 ## Usage
 We have a small gallery of examples to run here, [for more check out the docs to build your own agent and or swarms!](https://docs.apac.ai)
 
+### Basic Example
+
++ <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/swarms_example.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+Run example in Colab, using your OpenAI API key. 
+
 ### `Flow` Example
 - Reliable Structure that provides LLMS autonomy
 - Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
