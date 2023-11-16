@@ -1,4 +1,4 @@
-from swarms.models import OpenAIChat
+from swarms.models import OpenAI
 from swarms.structs import Flow
 from langchain.schema.messages import ChatMessage, BaseMessage
 import os
@@ -10,11 +10,10 @@ message: BaseMessage = [ ChatMessage(role="user", content='Translate the followi
 api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model, this model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
-llm = OpenAIChat(
+llm = OpenAI(
     # model_name="gpt-4"
     openai_api_key=api_key,
     temperature=0.5,
-    message = message
     # max_tokens=100,
 )
 
