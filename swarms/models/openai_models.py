@@ -495,7 +495,7 @@ class BaseOpenAI(BaseLLM):
         openai_creds: Dict[str, Any] = {
             "api_key": self.openai_api_key,
             "api_base": self.openai_api_base,
-            "organization": self.openai_organization,
+           "organization": self.openai_organization,
         }
         if self.openai_proxy:
             import openai
