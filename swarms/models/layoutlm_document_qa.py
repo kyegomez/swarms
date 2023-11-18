@@ -5,7 +5,7 @@ visual question answering on real world docs lik invoice, pdfs, etc
 from transformers import pipeline
 
 
-class LayoutLMDocumentQA:
+class 
     """
     LayoutLMDocumentQA for document question answering:
 
@@ -24,7 +24,6 @@ class LayoutLMDocumentQA:
     def __init__(
         self,
         model_name: str = "impira/layoutlm-document-qa",
-        task_type: str = "document-question-answering",
     ):
         self.model_name = model_name
         self.task_type = task_type
