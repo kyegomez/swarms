@@ -1,0 +1,5 @@
+user: "Question:"
+bot: "<work>"
+turn_template: "<|user|> <|user-message|>\n\n<|bot|><|bot-message|>\n\n"
+context: ""
+system_message: ""

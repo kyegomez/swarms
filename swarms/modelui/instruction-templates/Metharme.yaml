@@ -1,0 +1,5 @@
+user: "<|user|>"
+bot: "<|model|>"
+turn_template: "<|user|><|user-message|><|bot|><|bot-message|>"
+context: "<|system|>"
+system_message: ""
