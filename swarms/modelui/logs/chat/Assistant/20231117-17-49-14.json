@@ -1,0 +1,14 @@
+{
+    "internal": [
+        [
+            "<|BEGIN-VISIBLE-CHAT|>",
+            "How can I help you today?"
+        ]
+    ],
+    "visible": [
+        [
+            "",
+            "How can I help you today?"
+        ]
+    ]
+}
