@@ -1,5 +1,10 @@
-
+import json
 import os
+import sys
+import time
+from functools import partial
+from pathlib import Path
+from threading import Lock
 import warnings
 
 from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
@@ -17,16 +22,6 @@ with RequestBlocker():
 import matplotlib
 
 matplotlib.use('Agg')  # This fixes LaTeX rendering on some systems
-
-import json
-import os
-import sys
-import time
-from functools import partial
-from pathlib import Path
-from threading import Lock
-
-import yaml
 
 import swarms.modelui.modules.extensions as extensions_module
 from swarms.modelui.modules import (
@@ -53,59 +48,7 @@ from swarms.modelui.modules.models_settings import (
 )
 from swarms.modelui.modules.utils import gradio
 
-import warnings
-
-from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
-from swarms.modelui.modules.logging_colors import logger
-
-os.environ['GRADIO_ANALYTICS_ENABLED'] = 'False'
-os.environ['BITSANDBYTES_NOWELCOME'] = '1'
-warnings.filterwarnings('ignore', category=UserWarning, message='TypedStorage is deprecated')
-warnings.filterwarnings('ignore', category=UserWarning, message='Using the update method is deprecated')
-warnings.filterwarnings('ignore', category=UserWarning, message='Field "model_name" has conflict')
-
-with RequestBlocker():
-    import gradio as gr
-
-import matplotlib
-
-matplotlib.use('Agg')  # This fixes LaTeX rendering on some systems
-
-import json
-import os
-import sys
-import time
-from functools import partial
-from pathlib import Path
-from threading import Lock
-
 import yaml
-
-import swarms.modelui.modules.extensions as extensions_module
-from swarms.modelui.modules import (
-    chat,
-    shared,
-    training,
-    ui,
-    ui_chat,
-    ui_default,
-    ui_file_saving,
-    ui_model_menu,
-    ui_notebook,
-    ui_parameters,
-    ui_session,
-    utils
-)
-from swarms.modelui.modules.extensions import apply_extensions
-from swarms.modelui.modules.LoRA import add_lora_to_model
-from swarms.modelui.modules.models import load_model
-from swarms.modelui.modules.models_settings import (
-    get_fallback_settings,
-    get_model_metadata,
-    update_model_parameters
-)
-from swarms.modelui.modules.utils import gradio
-
 import gradio as gr
 from swarms.tools.tools_controller import MTQuestionAnswerer, load_valid_tools
 from swarms.tools.singletool import STQuestionAnswerer
@@ -315,12 +258,24 @@ def clear_history():
     chat_history = ""
     yield gr.update(visible=True, value=return_msg)
 
+title = 'Swarm Models'
+
+# css/js strings
+css = ui.css
+js = ui.js
+css += apply_extensions('css')
+js += apply_extensions('js')
+
+# with gr.Blocks(css=css, analytics_enabled=False, title=title, theme=ui.theme) as demo:
 with gr.Blocks() as demo:
     with gr.Row():
         with gr.Column(scale=14):
-            gr.Markdown("<h1 align='left'> Swarm Tools </h1>")
+            gr.Markdown("")
         with gr.Column(scale=1):
             gr.Image(show_label=False, show_download_button=False, value="images/swarmslogobanner.png")
+
+    with gr.Tab("Models"):
+        create_interface()
 
     with gr.Tab("Key setting"):
         OPENAI_API_KEY = gr.Textbox(label="OpenAI API KEY:", placeholder="sk-...", type="text")
@@ -373,9 +328,6 @@ with gr.Blocks() as demo:
                     label="Tools provided",
                     info="Choose the tools to solve your question.",
                 )
-
-        with gr.Tab("Models"):
-            create_interface()
 
     key_set_btn.click(fn=set_environ, inputs=[
         OPENAI_API_KEY,

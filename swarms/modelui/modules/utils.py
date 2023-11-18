@@ -93,7 +93,7 @@ def get_available_prompts():
 
 
 def get_available_characters():
-    paths = (x for x in Path('characters').iterdir() if x.suffix in ('.json', '.yaml', '.yml'))
+    paths = (x for x in Path('swarms/modelui/characters').iterdir() if x.suffix in ('.json', '.yaml', '.yml'))
     return sorted(set((k.stem for k in paths)), key=natural_keys)
 
 

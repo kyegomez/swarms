@@ -156,7 +156,7 @@ def create_interface():
         )
 
 
-if __name__ == "__main__":
+def model_flow():
 
     # Load custom settings
     settings_file = None

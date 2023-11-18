@@ -42,7 +42,7 @@ def presets_params():
 def load_preset(name):
     generate_params = default_preset()
     if name not in ['None', None, '']:
-        with open(Path(f'presets/{name}.yaml'), 'r') as infile:
+        with open(Path(f'swarms/modelui/presets/{name}.yaml'), 'r') as infile:
             preset = yaml.safe_load(infile)
 
         for k in preset:

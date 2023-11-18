@@ -1,5 +1,5 @@
-import html
 import os
+import html
 import re
 import time
 from pathlib import Path
@@ -221,51 +221,51 @@ def generate_instruct_html(history):
     return output
 
 
-def generate_cai_chat_html(history, name1, name2, style, reset_cache=False):
-    output = f'<style>{chat_styles[style]}</style><div class="chat" id="chat"><div class="messages">'
+# def generate_cai_chat_html(history, name1, name2, style, reset_cache=False):
+#     output = f'<style>{chat_styles[style, ""]}</style><div class="chat" id="chat"><div class="messages">'
 
-    # We use ?name2 and ?time.time() to force the browser to reset caches
-    img_bot = f'<img src="file/cache/pfp_character.png?{name2}">' if Path("cache/pfp_character.png").exists() else ''
-    img_me = f'<img src="file/cache/pfp_me.png?{time.time() if reset_cache else ""}">' if Path("cache/pfp_me.png").exists() else ''
+#     # We use ?name2 and ?time.time() to force the browser to reset caches
+#     img_bot = f'<img src="file/cache/pfp_character.png?{name2}">' if Path("cache/pfp_character.png").exists() else ''
+#     img_me = f'<img src="file/cache/pfp_me.png?{time.time() if reset_cache else ""}">' if Path("cache/pfp_me.png").exists() else ''
 
-    for i, _row in enumerate(history):
-        row = [convert_to_markdown(entry) for entry in _row]
+#     for i, _row in enumerate(history):
+#         row = [convert_to_markdown(entry) for entry in _row]
 
-        if row[0]:  # don't display empty user messages
-            output += f"""
-                  <div class="message">
-                    <div class="circle-you">
-                      {img_me}
-                    </div>
-                    <div class="text">
-                      <div class="username">
-                        {name1}
-                      </div>
-                      <div class="message-body">
-                        {row[0]}
-                      </div>
-                    </div>
-                  </div>
-                """
+#         if row[0]:  # don't display empty user messages
+#             output += f"""
+#                   <div class="message">
+#                     <div class="circle-you">
+#                       {img_me}
+#                     </div>
+#                     <div class="text">
+#                       <div class="username">
+#                         {name1}
+#                       </div>
+#                       <div class="message-body">
+#                         {row[0]}
+#                       </div>
+#                     </div>
+#                   </div>
+#                 """
 
-        output += f"""
-              <div class="message">
-                <div class="circle-bot">
-                  {img_bot}
-                </div>
-                <div class="text">
-                  <div class="username">
-                    {name2}
-                  </div>
-                  <div class="message-body">
-                    {row[1]}
-                  </div>
-                </div>
-              </div>
-            """
+#         output += f"""
+#               <div class="message">
+#                 <div class="circle-bot">
+#                   {img_bot}
+#                 </div>
+#                 <div class="text">
+#                   <div class="username">
+#                     {name2}
+#                   </div>
+#                   <div class="message-body">
+#                     {row[1]}
+#                   </div>
+#                 </div>
+#               </div>
+#             """
 
-    output += "</div></div>"
-    return output
+#     output += "</div></div>"
+#     return output
 
 
 def generate_chat_html(history, name1, name2, reset_cache=False):
@@ -304,5 +304,5 @@ def chat_html_wrapper(history, name1, name2, mode, style, reset_cache=False):
         return generate_instruct_html(history['visible'])
     elif style == 'wpp':
         return generate_chat_html(history['visible'], name1, name2)
-    else:
-        return generate_cai_chat_html(history['visible'], name1, name2, style, reset_cache)
+    # else:
+        # return generate_cai_chat_html(history['visible'], name1, name2, style, reset_cache)
