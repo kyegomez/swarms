@@ -19,6 +19,11 @@ on:
     branches: [ "master" ]
   schedule:
     - cron: '33 12 * * 5'
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+      - 'tests/tools/base.py'
+    
 
 jobs:
   analyze:
