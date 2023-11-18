@@ -5,10 +5,10 @@ from pathlib import Path
 import gradio as gr
 from PIL import Image
 
-from modules import chat, shared, ui, utils
-from modules.html_generator import chat_html_wrapper
-from modules.text_generation import stop_everything_event
-from modules.utils import gradio
+from swarms.modelui.modules import chat, shared, ui, utils
+from swarms.modelui.modules.html_generator import chat_html_wrapper
+from swarms.modelui.modules.text_generation import stop_everything_event
+from swarms.modelui.modules.utils import gradio
 
 inputs = ('Chat input', 'interface_state')
 reload_arr = ('history', 'name1', 'name2', 'mode', 'chat_style')

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from modules.logging_colors import logger
+from swarms.modelui.modules.logging_colors import logger
 
 # Model variables
 model = None

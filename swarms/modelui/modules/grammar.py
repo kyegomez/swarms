@@ -1,7 +1,7 @@
 from torch_grammar import GrammarSampler
 from transformers.generation.logits_process import LogitsProcessor
 
-from modules import shared
+from swarms.modelui.modules import shared
 
 sampler = None
 grammar = None

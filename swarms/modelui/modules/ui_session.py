@@ -1,8 +1,8 @@
 import gradio as gr
 
-from modules import shared, ui, utils
-from modules.github import clone_or_pull_repository
-from modules.utils import gradio
+from swarms.modelui.modules import shared, ui, utils
+from swarms.modelui.modules.github import clone_or_pull_repository
+from swarms.modelui.modules.utils import gradio
 
 
 def create_ui():

@@ -3,8 +3,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from modules import github, shared
-from modules.logging_colors import logger
+from swarms.modelui.modules import github, shared
+from swarms.modelui.modules.logging_colors import logger
 
 
 # Helper function to get multiple values from shared.gradio

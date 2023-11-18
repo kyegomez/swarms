@@ -1,7 +1,7 @@
 import gradio as gr
 
-from modules import chat, presets, shared, ui, utils
-from modules.utils import gradio
+from swarms.modelui.modules import chat, presets, shared, ui, utils
+from swarms.modelui.modules.utils import gradio
 
 
 def create_ui():

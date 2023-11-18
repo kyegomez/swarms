@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import gradio as gr
 
-from modules import shared
+from swarms.modelui.modules import shared
 
 loaders_and_params = OrderedDict({
     'Transformers': [

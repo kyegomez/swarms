@@ -4,9 +4,9 @@ import torch
 from peft import PeftModel
 from transformers import is_torch_xpu_available
 
-import modules.shared as shared
-from modules.logging_colors import logger
-from modules.models import reload_model
+import swarms.modelui.modules.shared as shared
+from swarms.modelui.modules.logging_colors import logger
+from swarms.modelui.modules.models import reload_model
 
 
 def add_lora_to_model(lora_names):

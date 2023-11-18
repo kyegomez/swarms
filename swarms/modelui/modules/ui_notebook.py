@@ -1,13 +1,13 @@
 import gradio as gr
 
-from modules import logits, shared, ui, utils
-from modules.prompts import count_tokens, load_prompt
-from modules.text_generation import (
+from swarms.modelui.modules import logits, shared, ui, utils
+from swarms.modelui.modules.prompts import count_tokens, load_prompt
+from swarms.modelui.modules.text_generation import (
     generate_reply_wrapper,
     get_token_ids,
     stop_everything_event
 )
-from modules.utils import gradio
+from swarms.modelui.modules.utils import gradio
 
 inputs = ('textbox-notebook', 'interface_state')
 outputs = ('textbox-notebook', 'html-notebook')

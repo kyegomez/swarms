@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-from modules import loaders, metadata_gguf, shared, ui
+from swarms.modelui.modules import loaders, metadata_gguf, shared, ui
 
 
 def get_fallback_settings():
