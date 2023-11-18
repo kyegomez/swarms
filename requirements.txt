@@ -33,7 +33,6 @@ chromadb
 tiktoken
 tabulate 
 colored
-griptape
 addict
 backoff
 ratelimit
