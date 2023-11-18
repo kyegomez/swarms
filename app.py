@@ -5,6 +5,7 @@ from langchain.schema import AgentFinish
 import os
 import requests
 
+from swarms.modelui.server import create_interface
 from tool_server import run_tool_server
 from threading import Thread
 from multiprocessing import Process
@@ -264,6 +265,9 @@ with gr.Blocks() as demo:
                     label="Tools provided",
                     info="Choose the tools to solve your question.",
                 )
+
+        with gr.Tab("Models"):
+            create_interface()
 
     key_set_btn.click(fn=set_environ, inputs=[
         OPENAI_API_KEY,
