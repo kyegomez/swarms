@@ -233,9 +233,11 @@ Swarms framework is not just a tool but a robust, scalable, and secure partner i
 - We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1)
 
 ## Community
-- [Join the Swarms community here on Discord!](https://discord.gg/AJazBmhKnr)
+- [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)
+- Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks![Sign up here](https://lu.ma/5p2jnc2v)
 
-# Discovery Call
+
+## Discovery Call
 Book a discovery call with the Swarms team to learn how to optimize and scale your swarm! [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
 
 # License
