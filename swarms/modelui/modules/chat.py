@@ -13,7 +13,7 @@ import yaml
 
 import swarms.modelui.modules.shared as shared
 from swarms.modelui.modules.extensions import apply_extensions
-from swarms.modelui.modules.html_generator import chat_html_wrapper, make_thumbnail
+from swarms.modelui.modules.html_generator import *
 from swarms.modelui.modules.logging_colors import logger
 from swarms.modelui.modules.text_generation import (
     generate_reply,
@@ -553,9 +553,9 @@ def load_character(character, name1, name2, instruct=False):
 
     if instruct:
         name1 = name2 = ''
-        folder = 'instruction-templates'
+        folder = 'swarms/modelui/instruction-templates'
     else:
-        folder = 'characters'
+        folder = 'swarms/modelui/characters'
 
     filepath = None
     for extension in ["yml", "yaml", "json"]:
