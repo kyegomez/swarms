@@ -33,7 +33,7 @@ error.txt
 
 errors.txt
 
-swarms/modelui/*
+/models/
 
 # Distribution / packaging
 .Python
