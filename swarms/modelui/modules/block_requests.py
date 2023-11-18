@@ -3,7 +3,7 @@ import io
 
 import requests
 
-from modules.logging_colors import logger
+from swarms.modelui.modules.logging_colors import logger
 
 original_open = open
 original_get = requests.get

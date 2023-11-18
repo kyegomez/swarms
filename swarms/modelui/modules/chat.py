@@ -9,18 +9,18 @@ from pathlib import Path
 
 import gradio as gr
 import yaml
-from PIL import Image
+# from PIL import image
 
-import modules.shared as shared
-from modules.extensions import apply_extensions
-from modules.html_generator import chat_html_wrapper, make_thumbnail
-from modules.logging_colors import logger
-from modules.text_generation import (
+import swarms.modelui.modules.shared as shared
+from swarms.modelui.modules.extensions import apply_extensions
+from swarms.modelui.modules.html_generator import chat_html_wrapper, make_thumbnail
+from swarms.modelui.modules.logging_colors import logger
+from swarms.modelui.modules.text_generation import (
     generate_reply,
     get_encoded_length,
     get_max_prompt_length
 )
-from modules.utils import (
+from swarms.modelui.modules.utils import (
     delete_file,
     get_available_characters,
     replace_all,

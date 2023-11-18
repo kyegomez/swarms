@@ -6,7 +6,7 @@ import torch
 import yaml
 from transformers import is_torch_xpu_available
 
-from modules import shared
+from swarms.modelui.modules import shared
 
 with open(Path(__file__).resolve().parent / '../css/NotoSans/stylesheet.css', 'r') as f:
     css = f.read()

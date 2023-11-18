@@ -5,8 +5,8 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
-import modules.shared as shared
-from modules.logging_colors import logger
+import swarms.modelui.modules.shared as shared
+from swarms.modelui.modules.logging_colors import logger
 
 if shared.args.xformers:
     try:

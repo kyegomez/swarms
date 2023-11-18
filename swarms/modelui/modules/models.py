@@ -19,10 +19,10 @@ from transformers import (
     GPTQConfig
 )
 
-import modules.shared as shared
-from modules import RoPE, llama_attn_hijack, sampler_hijack
-from modules.logging_colors import logger
-from modules.models_settings import get_model_metadata
+import swarms.modelui.modules.shared as shared
+from swarms.modelui.modules import RoPE, llama_attn_hijack, sampler_hijack
+from swarms.modelui.modules.logging_colors import logger
+from swarms.modelui.modules.models_settings import get_model_metadata
 
 transformers.logging.set_verbosity_error()
 
@@ -34,7 +34,7 @@ if shared.args.deepspeed:
         is_deepspeed_zero3_enabled
     )
 
-    from modules.deepspeed_parameters import generate_ds_config
+    from swarms.modelui.modules.deepspeed_parameters import generate_ds_config
 
     # Distributed setup
     local_rank = shared.args.local_rank if shared.args.local_rank is not None else int(os.getenv("LOCAL_RANK", "0"))
@@ -210,7 +210,7 @@ def huggingface_loader(model_name):
                         model,
                         dtype=torch.int8,
                         max_memory=params['max_memory'],
-                        no_split_module_classes=model._no_split_modules
+                        no_split_module_classes=model.swarms.modelui._no_split_modules
                     )
 
             if shared.args.disk:
@@ -237,7 +237,7 @@ def huggingface_loader(model_name):
 
 
 def llamacpp_loader(model_name):
-    from modules.llamacpp_model import LlamaCppModel
+    from swarms.modelui.modules.llamacpp_model import LlamaCppModel
 
     path = Path(f'{shared.args.model_dir}/{model_name}')
     if path.is_file():
@@ -251,7 +251,7 @@ def llamacpp_loader(model_name):
 
 
 def llamacpp_HF_loader(model_name):
-    from modules.llamacpp_hf import LlamacppHF
+    from swarms.modelui.modules.llamacpp_hf import LlamacppHF
 
     for fname in [model_name, "oobabooga_llama-tokenizer", "llama-tokenizer"]:
         path = Path(f'{shared.args.model_dir}/{fname}')
@@ -276,7 +276,7 @@ def llamacpp_HF_loader(model_name):
 
 
 def ctransformers_loader(model_name):
-    from modules.ctransformers_model import CtransformersModel
+    from swarms.modelui.modules.ctransformers_model import CtransformersModel
 
     path = Path(f'{shared.args.model_dir}/{model_name}')
     ctrans = CtransformersModel()
@@ -325,47 +325,47 @@ def GPTQ_loader(model_name):
     # Monkey patch
     if shared.args.monkey_patch:
         logger.warning("Applying the monkey patch for using LoRAs with GPTQ models. It may cause undefined behavior outside its intended scope.")
-        from modules.monkey_patch_gptq_lora import load_model_llama
+        from swarms.modelui.modules.monkey_patch_gptq_lora import load_model_llama
 
         model, _ = load_model_llama(model_name)
 
     # No monkey patch
     else:
-        import modules.GPTQ_loader
+        import swarms.modelui.modules.GPTQ_loader
 
-        model = modules.GPTQ_loader.load_quantized(model_name)
+        model = swarms.modelui.modules.GPTQ_loader.load_quantized(model_name)
 
     return model
 
 
 def AutoGPTQ_loader(model_name):
-    import modules.AutoGPTQ_loader
+    import swarms.modelui.modules.AutoGPTQ_loader
 
-    return modules.AutoGPTQ_loader.load_quantized(model_name)
+    return swarms.modelui.modules.AutoGPTQ_loader.load_quantized(model_name)
 
 
 def ExLlama_loader(model_name):
-    from modules.exllama import ExllamaModel
+    from swarms.modelui.modules.exllama import ExllamaModel
 
     model, tokenizer = ExllamaModel.from_pretrained(model_name)
     return model, tokenizer
 
 
 def ExLlama_HF_loader(model_name):
-    from modules.exllama_hf import ExllamaHF
+    from swarms.modelui.modules.exllama_hf import ExllamaHF
 
     return ExllamaHF.from_pretrained(model_name)
 
 
 def ExLlamav2_loader(model_name):
-    from modules.exllamav2 import Exllamav2Model
+    from swarms.modelui.modules.exllamav2 import Exllamav2Model
 
     model, tokenizer = Exllamav2Model.from_pretrained(model_name)
     return model, tokenizer
 
 
 def ExLlamav2_HF_loader(model_name):
-    from modules.exllamav2_hf import Exllamav2HF
+    from swarms.modelui.modules.exllamav2_hf import Exllamav2HF
 
     return Exllamav2HF.from_pretrained(model_name)
 
@@ -375,7 +375,7 @@ def RWKV_loader(model_name):
     This loader is not currently maintained as RWKV can now be loaded
     through the transformers library.
     '''
-    from modules.RWKV import RWKVModel, RWKVTokenizer
+    from swarms.modelui.modules.RWKV import RWKVModel, RWKVTokenizer
 
     model = RWKVModel.from_pretrained(
         Path(f'{shared.args.model_dir}/{model_name}'),

@@ -31,15 +31,15 @@ from transformers.models.auto.modeling_auto import (
     MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
 )
 
-from modules import shared, ui, utils
-from modules.evaluate import (
+from  swarms.modelui.modules import shared, ui, utils
+from  swarms.modelui.modules.evaluate import (
     calculate_perplexity,
     generate_markdown_table,
     save_past_evaluations
 )
-from modules.logging_colors import logger
-from modules.models import reload_model
-from modules.utils import natural_keys
+from  swarms.modelui.modules.logging_colors import logger
+from  swarms.modelui.modules.models import reload_model
+from  swarms.modelui.modules.utils import natural_keys
 
 MODEL_CLASSES = {v[1]: v[0] for v in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.items()}
 PARAMETERS = ["lora_name", "always_override", "q_proj_en", "v_proj_en", "k_proj_en", "o_proj_en", "gate_proj_en", "down_proj_en", "up_proj_en", "save_steps", "micro_batch_size", "batch_size", "epochs", "learning_rate", "lr_scheduler_type", "lora_rank", "lora_alpha", "lora_dropout", "cutoff_len", "dataset", "eval_dataset", "format", "eval_steps", "raw_text_file", "overlap_len", "newline_favor_len", "higher_rank_limit", "warmup_steps", "optimizer", "hard_cut_string", "train_only_after", "stop_at_loss", "add_eos_token", "min_chars", "report_to"]
@@ -69,7 +69,7 @@ def create_ui():
                             always_override = gr.Checkbox(label='Override Existing Files', value=False, info='If the name is the same, checking will replace the existing file, and unchecking will load and continue from it (the rank must be the same).', elem_classes=['no-background'])
 
                     with gr.Accordion(label='Target Modules', open=False):
-                        gr.Markdown("Selects which modules to target in training. Targeting more modules is closer to a full fine-tune at the cost of increased VRAM requirements and adapter size.\nNOTE: Only works for model_id='llama', other types will retain default training behavior and not use these settings.")
+                        gr.Markdown("Selects which  swarms.modelui.modules to target in training. Targeting more  swarms.modelui.modules is closer to a full fine-tune at the cost of increased VRAM requirements and adapter size.\nNOTE: Only works for model_id='llama', other types will retain default training behavior and not use these settings.")
                         with gr.Row():
                             with gr.Column():
                                 q_proj_en = gr.Checkbox(label='Enable q_proj', value=True)
@@ -339,7 +339,7 @@ def do_train(lora_name: str, always_override: bool, q_proj_en: bool, v_proj_en: 
     shared.tokenizer.pad_token_id = 0
     shared.tokenizer.padding_side = "left"
 
-    # Populate target_modules list with chosen X_proj modules. Llama-based models only atm, non-llama will revert to default behavior.
+    # Populate target_ swarms.modelui.modules list with chosen X_proj  swarms.modelui.modules. Llama-based models only atm, non-llama will revert to default behavior.
     def list_target_modules(model_id):
         if model_id != "llama":
             return model_to_lora_modules[model_id]

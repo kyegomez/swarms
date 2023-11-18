@@ -6,10 +6,10 @@ import torch
 from datasets import load_dataset
 from tqdm import tqdm
 
-from modules import shared
-from modules.models import clear_torch_cache, load_model, unload_model
-from modules.models_settings import get_model_metadata, update_model_parameters
-from modules.text_generation import encode
+from swarms.modelui.modules import shared
+from swarms.modelui.modules.models import clear_torch_cache, load_model, unload_model
+from swarms.modelui.modules.models_settings import get_model_metadata, update_model_parameters
+from swarms.modelui.modules.text_generation import encode
 
 
 def load_past_evaluations():

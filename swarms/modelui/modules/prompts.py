@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from modules.text_generation import get_encoded_length
+from swarms.modelui.modules.text_generation import get_encoded_length
 
 
 def load_prompt(fname):

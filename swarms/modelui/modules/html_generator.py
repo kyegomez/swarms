@@ -7,7 +7,7 @@ from pathlib import Path
 import markdown
 from PIL import Image, ImageOps
 
-from modules.utils import get_available_chat_styles
+from swarms.modelui.modules.utils import get_available_chat_styles
 
 # This is to store the paths to the thumbnails of the profile pictures
 image_cache = {}
@@ -22,7 +22,7 @@ with open(Path(__file__).resolve().parent / '../css/html_instruct_style.css', 'r
 # Custom chat styles
 chat_styles = {}
 for k in get_available_chat_styles():
-    chat_styles[k] = open(Path(f'css/chat_style-{k}.css'), 'r').read()
+    chat_styles[k] = open(Path(f'../css/chat_style-{k}.css'), 'r').read()
 
 # Handle styles that derive from other styles
 for k in chat_styles:

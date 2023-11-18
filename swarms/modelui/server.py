@@ -1,9 +1,8 @@
 import os
 import warnings
 
-import modules.one_click_installer_check
-from modules.block_requests import OpenMonkeyPatch, RequestBlocker
-from modules.logging_colors import logger
+from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
+from swarms.modelui.modules.logging_colors import logger
 
 os.environ['GRADIO_ANALYTICS_ENABLED'] = 'False'
 os.environ['BITSANDBYTES_NOWELCOME'] = '1'
@@ -28,8 +27,8 @@ from threading import Lock
 
 import yaml
 
-import modules.extensions as extensions_module
-from modules import (
+import swarms.modelui.modules.extensions as extensions_module
+from swarms.modelui.modules import (
     chat,
     shared,
     training,
@@ -43,15 +42,15 @@ from modules import (
     ui_session,
     utils
 )
-from modules.extensions import apply_extensions
-from modules.LoRA import add_lora_to_model
-from modules.models import load_model
-from modules.models_settings import (
+from swarms.modelui.modules.extensions import apply_extensions
+from swarms.modelui.modules.LoRA import add_lora_to_model
+from swarms.modelui.modules.models import load_model
+from swarms.modelui.modules.models_settings import (
     get_fallback_settings,
     get_model_metadata,
     update_model_parameters
 )
-from modules.utils import gradio
+from swarms.modelui.modules.utils import gradio
 
 
 def create_interface():

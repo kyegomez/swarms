@@ -7,7 +7,7 @@ import torch
 import transformers
 from transformers import is_torch_xpu_available
 
-import modules.shared as shared
+import swarms.modelui.modules.shared as shared
 
 
 class _StopEverythingStoppingCriteria(transformers.StoppingCriteria):

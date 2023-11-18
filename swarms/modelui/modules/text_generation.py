@@ -11,17 +11,17 @@ import torch
 import transformers
 from transformers import LogitsProcessorList, is_torch_xpu_available
 
-import modules.shared as shared
-from modules.callbacks import (
+import swarms.modelui.modules.shared as shared
+from swarms.modelui.modules.callbacks import (
     Iteratorize,
     Stream,
     _StopEverythingStoppingCriteria
 )
-from modules.extensions import apply_extensions
-from modules.grammar import GrammarLogitsProcessor
-from modules.html_generator import generate_4chan_html, generate_basic_html
-from modules.logging_colors import logger
-from modules.models import clear_torch_cache, local_rank
+from swarms.modelui.modules.extensions import apply_extensions
+from swarms.modelui.modules.grammar import GrammarLogitsProcessor
+from swarms.modelui.modules.html_generator import generate_4chan_html, generate_basic_html
+from swarms.modelui.modules.logging_colors import logger
+from swarms.modelui.modules.models import clear_torch_cache, local_rank
 
 
 def generate_reply(*args, **kwargs):
