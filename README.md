@@ -38,6 +38,14 @@ Book a [1-on-1 Session with Kye](https://calendly.com/swarm-corp/30min), the Cre
 ## Usage
 We have a small gallery of examples to run here, [for more check out the docs to build your own agent and or swarms!](https://docs.apac.ai)
 
+All of the examples assume you have set your API keys in the environment:
+
+```bash
+export OPENAI_API_KEY='yourapikey'
+export ANTHROPIC_API_KEY='yourotherapikey'
+```
+
+
 ### Example in Colab:
 
 <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/swarms_example.ipynb">
