@@ -1,22 +1,5 @@
-<<<<<<< HEAD
-"""
-TODO:
-- add a method that scrapes all the methods from the llm object and outputs them as a string
-- Add tools
-- Add open interpreter style conversation
-- Add memory vector database retrieval
-- add batch processing
-- add async processing for run and batch run
-- add plan module
-- concurrent
-- Add batched inputs
-"""
-import asyncio
-import re
-=======
 import asyncio
 import inspect
->>>>>>> master
 import json
 import logging
 import random
@@ -24,11 +7,8 @@ import re
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-<<<<<<< HEAD
-=======
 from termcolor import colored
 
->>>>>>> master
 # Prompts
 DYNAMIC_STOP_PROMPT = """
 When you have finished the task from the Human, output a special token: <DONE>
@@ -37,14 +17,6 @@ This will enable you to leave the autonomous loop.
 
 # Constants
 FLOW_SYSTEM_PROMPT = f"""
-<<<<<<< HEAD
-You are an autonomous agent granted autonomy from a Flow structure.
-Your role is to engage in multi-step conversations with your self or the user,
-generate long-form content like blogs, screenplays, or SOPs,
-and accomplish tasks. You can have internal dialogues with yourself or can interact with the user
-to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
-{DYNAMIC_STOP_PROMPT}
-=======
 You are an autonomous agent granted autonomy in a autonomous loop structure.
 Your role is to engage in multi-step conversations with your self or the user,
 generate long-form content like blogs, screenplays, or SOPs,
@@ -53,7 +25,6 @@ and accomplish tasks bestowed by the user.
 You can have internal dialogues with yourself or can interact with the user
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
 
->>>>>>> master
 """
 
 # Make it able to handle multi input tools
@@ -67,21 +38,16 @@ commands: {
             "tool1": "inputs",
             "tool1": "inputs"
         }
-<<<<<<< HEAD
-=======
         "tool2: "tool_name",
         "params": {
             "tool1": "inputs",
             "tool1": "inputs"
         }
->>>>>>> master
     }
 }
 
 {tools}
 """
-<<<<<<< HEAD
-=======
 
 
 def autonomous_agent_prompt(
@@ -116,7 +82,6 @@ def autonomous_agent_prompt(
 
 
     """
->>>>>>> master
 
 
 # Custom stopping condition
@@ -203,11 +168,7 @@ class Flow:
         self.feedback = []
         self.memory = []
         self.task = None
-<<<<<<< HEAD
-        self.stopping_token = stopping_token or "<DONE>"
-=======
         self.stopping_token = stopping_token  # or "<DONE>"
->>>>>>> master
         self.interactive = interactive
         self.dashboard = dashboard
         self.return_history = return_history
@@ -454,16 +415,11 @@ class Flow:
             print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
             print("\n")
 
-<<<<<<< HEAD
-            if self._check_stopping_condition(response) or parse_done_token(response):
-                break
-=======
             if self.stopping_token:
                 if self._check_stopping_condition(response) or parse_done_token(
                     response
                 ):
                     break
->>>>>>> master
 
             # Adjust temperature, comment if no work
             if self.dynamic_temperature:
