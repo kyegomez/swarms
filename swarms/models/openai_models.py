@@ -89,24 +89,24 @@ def _streaming_response_template() -> Dict[str, Any]:
     }
 
 
-def _create_retry_decorator(
-    llm: Union[BaseOpenAI, OpenAIChat],
-    run_manager: Optional[
-        Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
-    ] = None,
-) -> Callable[[Any], Any]:
-    import openai
+# def _create_retry_decorator(
+#     llm: Union[BaseOpenAI, OpenAIChat],
+#     run_manager: Optional[
+#         Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
+#     ] = None,
+# ) -> Callable[[Any], Any]:
+#     import openai
 
-    errors = [
-        openai.error.Timeout,
-        openai.error.APIError,
-        openai.error.APIConnectionError,
-        openai.error.RateLimitError,
-        openai.error.ServiceUnavailableError,
-    ]
-    return create_base_retry_decorator(
-        error_types=errors, max_retries=llm.max_retries, run_manager=run_manager
-    )
+#     errors = [
+#         openai.Timeout,
+#         openai.APIError,
+#         openai.error.APIConnectionError,
+#         openai.error.RateLimitError,
+#         openai.error.ServiceUnavailableError,
+#     ]
+#     return create_base_retry_decorator(
+#         error_types=errors, max_retries=llm.max_retries, run_manager=run_manager
+#     )
 
 
 def completion_with_retry(
@@ -115,9 +115,9 @@ def completion_with_retry(
     **kwargs: Any,
 ) -> Any:
     """Use tenacity to retry the completion call."""
-    retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
+    # retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
 
-    @retry_decorator
+    # @retry_decorator
     def _completion_with_retry(**kwargs: Any) -> Any:
         return llm.client.create(**kwargs)
 
@@ -130,9 +130,9 @@ async def acompletion_with_retry(
     **kwargs: Any,
 ) -> Any:
     """Use tenacity to retry the async completion call."""
-    retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
+    # retry_decorator = _create_retry_decorator(llm, run_manager=run_manager)
 
-    @retry_decorator
+    # @retry_decorator
     async def _completion_with_retry(**kwargs: Any) -> Any:
         # Use OpenAI's async api https://github.com/openai/openai-python#async-api
         return await llm.client.acreate(**kwargs)
@@ -505,12 +505,16 @@ class BaseOpenAI(BaseLLM):
         openai_creds: Dict[str, Any] = {
             "api_key": self.openai_api_key,
             "api_base": self.openai_api_base,
-            "organization": self.openai_organization,
+           "organization": self.openai_organization,
         }
         if self.openai_proxy:
             import openai
 
-            openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
+            # raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g.", 
+            # 'OpenAI(proxy={
+            #     "http": self.openai_proxy,
+            #     "https": self.openai_proxy,
+            # })'")  # type: ignore[assignment]  # noqa: E501
         return {**openai_creds, **self._default_params}
 
     @property
@@ -788,13 +792,11 @@ class OpenAIChat(BaseLLM):
         try:
             import openai
 
-            openai.api_key = openai_api_key
+            
             if openai_api_base:
-                openai.api_base = openai_api_base
+                raise Exception("The 'openai.api_base' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(api_base=openai_api_base)'")
             if openai_organization:
-                openai.organization = openai_organization
-            if openai_proxy:
-                openai.proxy = {"http": openai_proxy, "https": openai_proxy}  # type: ignore[assignment]  # noqa: E501
+                raise Exception("The 'openai.organization' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(organization=openai_organization)'")
         except ImportError:
             raise ImportError(
                 "Could not import openai python package. "

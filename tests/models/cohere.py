@@ -624,7 +624,6 @@ def test_cohere_invalid_model(cohere_instance):
     with pytest.raises(ValueError):
         cohere_instance("Generate text using an invalid model.")
 
-
 def test_cohere_base_model_generation_with_max_tokens(cohere_instance):
     # Test generating text using the base model with a specified max_tokens limit
     cohere_instance.model = "base"

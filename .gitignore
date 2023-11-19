@@ -34,6 +34,7 @@ error.txt
 
 errors.txt
 
+/models/
 
 # Distribution / packaging
 .Python
@@ -156,6 +157,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+secret_keys.sh
 
 # Spyder project settings
 .spyderproject

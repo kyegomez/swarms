@@ -1,3 +1,13 @@
+<<<<<<< HEAD
+# speech to text tool
+
+import os
+import subprocess
+
+import whisperx
+from pydub import AudioSegment
+from pytube import YouTube
+=======
 import os
 import subprocess
 
@@ -11,6 +21,7 @@ except Exception as error:
     print("pip install pydub")
     print("pip install whisperx")
     print(f"Pytube error: {error}")
+>>>>>>> master
 
 
 class WhisperX:

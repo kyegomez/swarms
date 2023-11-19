@@ -1,7 +1,7 @@
 import sys
 
-log_file = open("errors.txt", "w")
-sys.stderr = log_file
+# log_file = open("errors.txt", "w")
+# sys.stderr = log_file
 
 # LLMs
 from swarms.models.anthropic import Anthropic  # noqa: E402
@@ -43,6 +43,6 @@ __all__ = [
     "HuggingfaceLLM",
     "MPT7B",
     "WizardLLMStoryTeller",
-    # "GPT4Vision",
-    # "Dalle3",
+    "GPT4Vision",
+    "Dalle3",
 ]
