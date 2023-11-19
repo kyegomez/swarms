@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from typing import Dict, List, Sequence
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
 
 
 class Message:

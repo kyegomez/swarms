@@ -1,19 +1,23 @@
-# import queue
-# import threading
-# from time import sleep
-# from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
-# from swarms.workers.worker import Worker
+import logging
+import queue
+import threading
+from time import sleep
+from typing import Callable, Dict, List
+
+from termcolor import colored
+
+from swarms.structs.flow import Flow
+from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
 
 
-# class AutoScaler:
-#     """
-#     The AutoScaler is like a kubernetes pod, that autoscales an agent or worker or boss!
-#     # TODO Handle task assignment and task delegation
-#     # TODO: User task => decomposed into very small sub tasks => sub tasks assigned to workers => workers complete and update the swarm, can ask for help from other agents.
-#     # TODO: Missing, Task Assignment, Task delegation, Task completion, Swarm level communication with vector db
+class AutoScaler:
+    """
+    The AutoScaler is like a kubernetes pod, that autoscales an agent or worker or boss!
 
-
-#     Args:
+    Wraps around a structure like SequentialWorkflow 
+    and or Flow and parallelizes them on multiple threads so they're split across devices 
+    and you can use them like that
+    Args:
 
 #         initial_agents (int, optional): Number of initial agents. Defaults to 10.
 #         scale_up_factor (int, optional): Scale up factor. Defaults to 1.

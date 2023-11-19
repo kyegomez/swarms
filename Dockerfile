@@ -1,38 +1,42 @@
-# Use an official NVIDIA CUDA runtime as a parent image
-FROM python:3.10-slim-buster
 
-# Set the working directory in the container to /app
-WORKDIR /app
+# ==================================
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
 
-# Add the current directory contents into the container at /app
-ADD . /app
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-# Install Python, libgl1-mesa-glx and other dependencies
-RUN apt-get update && apt-get install -y \
-    python3-pip \
-    libgl1-mesa-glx \
-    && rm -rf /var/lib/apt/lists/* 
+# Set the working directory in the container
+WORKDIR /usr/src/swarm_cloud
 
-# Upgrade pip
-RUN pip3 install --upgrade pip
 
-# Install nltk
-RUN pip install nltk
+# Install Python dependencies
+# COPY requirements.txt and pyproject.toml if you're using poetry for dependency management
+COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt supervisor
+# Install the 'swarms' package, assuming it's available on PyPI
+RUN pip install swarms
 
-# Create the necessary directory and supervisord.conf
-RUN mkdir -p /etc/supervisor/conf.d && \
-    echo "[supervisord] \n\
-    nodaemon=true \n\
-    [program:app.py] \n\
-    command=python3 app.py \n\
-    [program:tool_server] \n\
-    command=python3 tool_server.py \n\
-    " > /etc/supervisor/conf.d/supervisord.conf
-# Make port 80 available to the world outside this container
-EXPOSE 80
+# Copy the rest of the application
+COPY . .
 
-# Run supervisord when the container launches
-CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "--port", "7860"]
+# Add entrypoint script if needed
+# COPY ./entrypoint.sh .
+# RUN chmod +x /usr/src/swarm_cloud/entrypoint.sh
+
+# Expose port if your application has a web interface
+# EXPOSE 5000
+
+# # Define environment variable for the swarm to work
+# ENV SWARM_API_KEY=your_swarm_api_key_here
+
+# # Add Docker CMD or ENTRYPOINT script to run the application
+# CMD python your_swarm_startup_script.py
+# Or use the entrypoint script if you have one
+# ENTRYPOINT ["/usr/src/swarm_cloud/entrypoint.sh"]
+
+# If you're using `CMD` to execute a Python script, make sure it's executable
+# RUN chmod +x your_swarm_startup_script.py
