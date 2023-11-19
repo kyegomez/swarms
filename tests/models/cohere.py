@@ -15,7 +15,6 @@ def cohere_instance():
     return Cohere(cohere_api_key=api_key)
 
 
-
 def test_cohere_custom_configuration(cohere_instance):
     # Test customizing Cohere configurations
     cohere_instance.model = "base"
@@ -402,7 +401,6 @@ def test_cohere_async_stream_with_embed_multilingual_v3_model(cohere_instance):
     async_generator = cohere_instance.async_stream("Write a story.")
     for token in async_generator:
         assert isinstance(token, str)
-
 
 
 def test_cohere_representation_model_embedding(cohere_instance):

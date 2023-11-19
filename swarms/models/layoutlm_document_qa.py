@@ -26,7 +26,9 @@ class LayoutLMDocumentQA:
         model_name: str = "impira/layoutlm-document-qa",
         task_type: str = "document-question-answering",
     ):
-        self.pipeline = pipeline(self.task_type, model=self.model_name)
+        self.model_name = model_name
+        self.task_type = task_type
+        self.pipeline = pipeline(task_type, model=self.model_name)
 
     def __call__(self, task: str, img_path: str):
         """Call for model"""

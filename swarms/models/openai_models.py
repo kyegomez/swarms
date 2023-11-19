@@ -30,7 +30,17 @@ from langchain.schema.output import GenerationChunk
 from langchain.utils import get_from_dict_or_env, get_pydantic_field_names
 from langchain.utils.utils import build_extra_kwargs
 
+
+from importlib.metadata import version
+
+from packaging.version import parse
+
 logger = logging.getLogger(__name__)
+
+
+def is_openai_v1() -> bool:
+    _version = parse(version("openai"))
+    return _version.major >= 1
 
 
 def update_token_usage(
@@ -632,14 +642,13 @@ class OpenAI(BaseOpenAI):
     environment variable ``OPENAI_API_KEY`` set with your API key.
 
     Any parameters that are valid to be passed to the openai.create call can be passed
-    in, even if not explicitly saved on this class..,
+    in, even if not explicitly saved on this class.
 
     Example:
         .. code-block:: python
 
-            from swarms.models import OpenAI
+            from langchain.llms import OpenAI
             openai = OpenAI(model_name="text-davinci-003")
-            openai("What is the report on the 2022 oympian games?")
     """
 
     @property
@@ -659,7 +668,7 @@ class AzureOpenAI(BaseOpenAI):
     Example:
         .. code-block:: python
 
-            from swarms.models import AzureOpenAI
+            from langchain.llms import AzureOpenAI
             openai = AzureOpenAI(model_name="text-davinci-003")
     """
 
@@ -721,7 +730,7 @@ class OpenAIChat(BaseLLM):
     Example:
         .. code-block:: python
 
-            from swarms.models import OpenAIChat
+            from langchain.llms import OpenAIChat
             openaichat = OpenAIChat(model_name="gpt-3.5-turbo")
     """
 
