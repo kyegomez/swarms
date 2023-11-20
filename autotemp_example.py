@@ -1,5 +1,5 @@
 from swarms.models import OpenAIChat
-from swarms.models.AutoTemp import AutoTemp
+from swarms.models.autotemp import AutoTemp
 
 # Your OpenAI API key
 api_key = ""
