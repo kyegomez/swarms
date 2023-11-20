@@ -1,14 +1,17 @@
 from swarms.models import OpenAIChat, BioGPT, Anthropic
 from swarms.structs import Flow
 from swarms.structs.sequential_workflow import SequentialWorkflow
-
+import os
 
 # Example usage
-api_key = ""  # Your actual API key here
+
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
+
 
 # Initialize the language flow
 llm = OpenAIChat(
-    openai_api_key=api_key,
+    openai_api_key=openai_api_key,
     temperature=0.5,
     max_tokens=3000,
 )
@@ -16,7 +19,7 @@ llm = OpenAIChat(
 biochat = BioGPT()
 
 # Use Anthropic
-anthropic = Anthropic()
+anthropic = Anthropic(anthropic_api_key=anthropic_api_key)
 
 # Initialize the agent with the language flow
 agent1 = Flow(llm=llm, max_loops=1, dashboard=False)
