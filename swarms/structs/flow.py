@@ -457,7 +457,7 @@ class Flow:
                         else:
                             print(f"AI: {response}")
                             history.append(f"AI: {response}")
-                            print(response)
+                            # print(response)
                         break
                     except Exception as e:
                         logging.error(f"Error generating response: {e}")
