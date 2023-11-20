@@ -13,8 +13,7 @@ black --experimental-string-processing swarms/
 
 # Run ruff on the 'swarms' directory.
 # Add any additional flags if needed according to your version of ruff.
-x
-#--unsafe_fix
+#ruff --unsafe_fix
 
 # YAPF
 yapf --recursive --in-place --verbose --style=google --parallel swarms
