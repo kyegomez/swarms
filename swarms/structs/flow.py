@@ -342,13 +342,12 @@ class Flow:
                 --------------------------------------------
 
                 Flow loop is initializing for {self.max_loops} with the following configuration:
-
-                Model Configuration: {model_config}
                 ----------------------------------------
 
                 Flow Configuration:
                     Name: {self.agent_name}
-                    System Prompt: {self.system_prompt}
+                    Description: {self.agent_description}
+                    System Prompt: {self.system_prompt} 
                     Task: {task}
                     Max Loops: {self.max_loops}
                     Stopping Condition: {self.stopping_condition}
@@ -360,6 +359,7 @@ class Flow:
                     Dynamic Temperature: {self.dynamic_temperature}
                     Autosave: {self.autosave}
                     Saved State: {self.saved_state_path}
+                    Model Configuration: {model_config}
 
                 ----------------------------------------
                 """,
