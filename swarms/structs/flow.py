@@ -46,6 +46,7 @@ commands: {
     }
 }
 
+-------------TOOLS---------------------------
 {tools}
 """
 
@@ -149,14 +150,16 @@ class Flow:
         dynamic_loops: Optional[bool] = False,
         interactive: bool = False,
         dashboard: bool = False,
-        agent_name: str = "Flow agent",
+        agent_name: str = " Autonomous Agent XYZ1B",
         system_prompt: str = FLOW_SYSTEM_PROMPT,
         # tools: List[Any] = None,
         dynamic_temperature: bool = False,
+        SOP: str = None,
         saved_state_path: Optional[str] = "flow_state.json",
         autosave: bool = False,
         context_length: int = 8192,
-        user_name: str = "Human",
+        user_name: str = "Human:",
+        self_healing: bool = False,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -175,6 +178,9 @@ class Flow:
         self.dynamic_temperature = dynamic_temperature
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
+        self.context_length = context_length
+        # SOPS to inject into the system prompt
+        self.SOP = SOP
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
@@ -184,6 +190,7 @@ class Flow:
         self.saved_state_path = saved_state_path
         self.autosave = autosave
         self.response_filters = []
+        self.self_healing = self_healing
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -688,14 +695,6 @@ class Flow:
             return "Timeout"
         return response
 
-    # def backup_memory_to_s3(self, bucket_name: str, object_name: str):
-    #     """Backup the memory to S3"""
-    #     import boto3
-
-    #     s3 = boto3.client("s3")
-    #     s3.put_object(Bucket=bucket_name, Key=object_name, Body=json.dumps(self.memory))
-    #     print(f"Backed up memory to S3: {bucket_name}/{object_name}")
-
     def analyze_feedback(self):
         """Analyze the feedback for issues"""
         feedback_counts = {}
@@ -920,3 +919,40 @@ class Flow:
     def update_retry_interval(self, retry_interval: int):
         """Update the retry interval"""
         self.retry_interval = retry_interval
+
+    def self_healing(self, **kwargs):
+        """
+        Self healing by debugging errors and refactoring its own code
+
+        Args:
+            **kwargs (Any): Any additional keyword arguments
+        """
+        # Run the flow
+        response = self.run_with_timeout("flow")
+
+        # If an error occurs, save the state
+        if not self.validate_response(response):
+            self.save_state("previous_state.txt")
+
+        # Refactor the code
+        self.refactor_code()
+
+        # Run the flow again
+        response = self.run_with_timeout("flow")
+
+        # If the error occurs again, revert to the previous state
+        if not self.validate_response(response):
+            self.load_state("previous_state.txt")
+
+        # If the error does not occur, continue
+        else:
+            print("Self-healing successful! Bug fixed!")
+
+        return response
+
+    def refactor_code(self):
+        """
+        Refactor the code
+        """
+        # Add your code here to refactor the code
+        pass
