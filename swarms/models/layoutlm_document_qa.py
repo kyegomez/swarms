@@ -3,7 +3,8 @@ LayoutLMDocumentQA is a multimodal good for
 visual question answering on real world docs lik invoice, pdfs, etc
 """
 
-class 
+
+class LayoutLMDocumentQA:
     """
     LayoutLMDocumentQA for document question answering:
 
