@@ -4,9 +4,14 @@ from typing import List
 from dotenv import load_dotenv
 
 from swarms.models import Anthropic, OpenAIChat
+from swarms.prompts.accountant_swarm_prompts import (
+    DECISION_MAKING_PROMPT,
+    DOC_ANALYZER_AGENT_PROMPT,
+    FRAUD_DETECTION_AGENT_PROMPT,
+    SUMMARY_GENERATOR_AGENT_PROMPT,
+)
 from swarms.structs import Flow
 from swarms.utils.pdf_to_text import pdf_to_text
-
 
 # Environment variables
 load_dotenv()
@@ -24,27 +29,18 @@ llm2 = Anthropic(
 )
 
 
-# Prompts for each agent
-SUMMARY_AGENT_PROMPT = """
-    Generate an actionable summary of this financial document be very specific and precise, provide bulletpoints be very specific provide methods of lowering expenses: {answer}"
-"""
-
-
 # Agents
-user_consultant_agent = Flow(
-    llm=llm1,
-)
 doc_analyzer_agent = Flow(
     llm=llm1,
+    sop=DOC_ANALYZER_AGENT_PROMPT,
 )
 summary_generator_agent = Flow(
     llm=llm2,
-)
-fraud_detection_agent = Flow(
-    llm=llm2,
+    sop=SUMMARY_GENERATOR_AGENT_PROMPT,
 )
 decision_making_support_agent = Flow(
     llm=llm2,
+    sop=DECISION_MAKING_PROMPT,
 )
 
 
@@ -71,11 +67,6 @@ class AccountantSwarms:
     2. The Fraud Detection agent detects fraud in the document.
     3. The Summary Agent generates an actionable summary of the document.
     4. The Decision Making Support agent provides decision making support
-    to the accountant.
-
-    Example:
-    >>> accountant_swarms = AccountantSwarms(
-
 
     """
 
@@ -101,14 +92,26 @@ class AccountantSwarms:
         pdf_text = pdf_to_text(self.pdf_path)
 
         # Detect fraud in the document
-        fraud_detection_agent_output = self.fraud_detection_agent(pdf_text)
+        fraud_detection_agent_output = doc_analyzer_agent.run(
+            f"{self.fraud_detection_instructions}: {pdf_text}"
+        )
 
         # Generate an actionable summary of the document
-        summary_agent_output = self.summary_agent(fraud_detection_agent_output)
+        summary_agent_output = summary_generator_agent.run(
+            f"{self.summary_agent_instructions}: {fraud_detection_agent_output}"
+        )
 
         # Provide decision making support to the accountant
-        decision_making_support_agent_output = self.decision_making_support_agent(
-            summary_agent_output
+        decision_making_support_agent_output = decision_making_support_agent.run(
+            f"{self.decision_making_support_agent_instructions}: {summary_agent_output}"
         )
 
         return decision_making_support_agent_output
+
+
+swarm = AccountantSwarms(
+    pdf_path="tesla.pdf",
+    fraud_detection_instructions="Detect fraud in the document",
+    summary_agent_instructions="Generate an actionable summary of the document",
+    decision_making_support_agent_instructions="Provide decision making support to the business owner:",
+)

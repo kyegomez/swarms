@@ -8,7 +8,6 @@ except ImportError:
     sys.exit(1)
 
 
-
 def pdf_to_text(pdf_path):
     """
     Converts a PDF file to a string of text.
@@ -25,7 +24,7 @@ def pdf_to_text(pdf_path):
     """
     try:
         # Open the PDF file
-        with open(pdf_path, 'rb') as file:
+        with open(pdf_path, "rb") as file:
             pdf_reader = PyPDF2.PdfReader(file)
             text = ""
 
@@ -38,6 +37,7 @@ def pdf_to_text(pdf_path):
         raise FileNotFoundError(f"The file at {pdf_path} was not found.")
     except Exception as e:
         raise Exception(f"An error occurred while reading the PDF file: {e}")
+
 
 # Example usage
 # text = pdf_to_text("test.pdf")
