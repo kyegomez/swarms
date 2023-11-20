@@ -7,9 +7,9 @@ from swarms.structs import SequentialWorkflow
 
 class BlogGen:
     def __init__(
-        self, api_key, blog_topic, temperature_range: str = "0.4,0.6,0.8,1.0,1.2,1.4"
+        self, api_key, blog_topic, temperature_range: str = "0.4,0.6,0.8,1.0,1.2"
     ):  # Add blog_topic as an argument
-        self.openai_chat = OpenAIChat(openai_api_key=api_key, temperature=0.7)
+        self.openai_chat = OpenAIChat(openai_api_key=api_key, temperature=0.8)
         self.auto_temp = AutoTemp(api_key)
         self.temperature_range = temperature_range
         self.workflow = SequentialWorkflow(max_loops=5)
@@ -20,11 +20,11 @@ class BlogGen:
         """
 
         self.DRAFT_WRITER_SYSTEM_PROMPT = """
-        Create an engaging and comprehensive blog article of at least 1,000 words on '{{CHOSEN_TOPIC}}'. The content should be original, informative, and reflective of a human-like style, with a clear structure including headings and sub-headings. Incorporate a blend of narrative, factual data, expert insights, and anecdotes to enrich the article. Focus on SEO optimization by using relevant keywords, ensuring readability, and including meta descriptions and title tags. The article should provide value, appeal to both knowledgeable and general readers, and maintain a balance between depth and accessibility. Aim to make the article engaging and suitable for online audiences, with a focus on shareability on social media platforms.
+        Create an engaging and comprehensive blog article of at least 1,000 words on '{{CHOSEN_TOPIC}}'. The content should be original, informative, and reflective of a human-like style, with a clear structure including headings and sub-headings. Incorporate a blend of narrative, factual data, expert insights, and anecdotes to enrich the article. Focus on SEO optimization by using relevant keywords, ensuring readability, and including meta descriptions and title tags. The article should provide value, appeal to both knowledgeable and general readers, and maintain a balance between depth and accessibility. Aim to make the article engaging and suitable for online audiences.
         """
 
         self.REVIEW_AGENT_SYSTEM_PROMPT = """
-        Critically review the drafted blog article on '{{ARTICLE_TOPIC}}' to refine it to high-quality content suitable for online publication. Ensure the article is coherent, factually accurate, engaging, and optimized for search engines (SEO). Check for the effective use of keywords, readability, internal and external links, and the inclusion of meta descriptions and title tags. Edit the content to enhance clarity, impact, and maintain the author’s voice. The goal is to polish the article into a professional, error-free piece that resonates with the target audience, adheres to publication standards, and is optimized for both search engines and social media sharing.
+        Critically review the drafted blog article on '{{ARTICLE_TOPIC}}' to refine it to high-quality content suitable for online publication. Ensure the article is coherent, factually accurate, engaging, and optimized for search engines (SEO). Check for the effective use of keywords, readability, internal and external links, and the inclusion of meta descriptions and title tags. Edit the content to enhance clarity, impact, and maintain the authors voice. The goal is to polish the article into a professional, error-free piece that resonates with the target audience, adheres to publication standards, and is optimized for both search engines and social media sharing.
         """
 
         self.DISTRIBUTION_AGENT_SYSTEM_PROMPT = """
