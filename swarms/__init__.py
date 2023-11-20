@@ -8,7 +8,6 @@ warnings.filterwarnings("ignore", category=UserWarning)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 try:
-
     log = logging.getLogger("pytorch")
     log.propagate = False
     log.setLevel(logging.ERROR)

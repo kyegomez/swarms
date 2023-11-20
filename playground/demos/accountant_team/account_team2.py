@@ -31,24 +31,31 @@ llm2 = Anthropic(
 doc_analyzer_agent = Flow(
     llm=llm2,
     sop=DOC_ANALYZER_AGENT_PROMPT,
-    max_loops="auto",
+    max_loops=1,
+    autosave=True,
+    saved_state_path="doc_analyzer_agent.json"
 )
 summary_generator_agent = Flow(
     llm=llm2,
     sop=SUMMARY_GENERATOR_AGENT_PROMPT,
-    max_loops="auto",
+    max_loops=1,
+    autosave=True,
+    saved_state_path="summary_generator_agent.json"
 )
 decision_making_support_agent = Flow(
     llm=llm2,
     sop=DECISION_MAKING_PROMPT,
-    max_loops="auto",
+    max_loops=1,
+    saved_state_path="decision_making_support_agent.json"
 )
 
 
-pdf_path="swarmdeck_a1.pdf"
-fraud_detection_instructions="Detect fraud in the document"
-summary_agent_instructions="Generate an actionable summary of the document"
-decision_making_support_agent_instructions="Provide decision making support to the business owner:"
+pdf_path = "bankstatement.pdf"
+fraud_detection_instructions = "Detect fraud in the document"
+summary_agent_instructions = "Generate an actionable summary of the document with action steps to take"
+decision_making_support_agent_instructions = (
+    "Provide decision making support to the business owner:"
+)
 
 
 # Transform the pdf to text
