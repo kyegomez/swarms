@@ -20,7 +20,7 @@ class BlogGen:
         """
 
         self.DRAFT_WRITER_SYSTEM_PROMPT = """
-        Create an engaging and comprehensive blog article of at least 5,000 words on '{{CHOSEN_TOPIC}}'. The content should be original, informative, and reflective of a human-like style, with a clear structure including headings and sub-headings. Incorporate a blend of narrative, factual data, expert insights, and anecdotes to enrich the article. Focus on SEO optimization by using relevant keywords, ensuring readability, and including meta descriptions and title tags. The article should provide value, appeal to both knowledgeable and general readers, and maintain a balance between depth and accessibility. Aim to make the article engaging and suitable for online audiences, with a focus on shareability on social media platforms.
+        Create an engaging and comprehensive blog article of at least 1,000 words on '{{CHOSEN_TOPIC}}'. The content should be original, informative, and reflective of a human-like style, with a clear structure including headings and sub-headings. Incorporate a blend of narrative, factual data, expert insights, and anecdotes to enrich the article. Focus on SEO optimization by using relevant keywords, ensuring readability, and including meta descriptions and title tags. The article should provide value, appeal to both knowledgeable and general readers, and maintain a balance between depth and accessibility. Aim to make the article engaging and suitable for online audiences, with a focus on shareability on social media platforms.
         """
 
         self.REVIEW_AGENT_SYSTEM_PROMPT = """
