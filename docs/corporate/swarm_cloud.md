@@ -16,24 +16,6 @@
 - **Cost Structure:** Includes development, maintenance, infrastructure, marketing, and administrative costs.
 - **Break-even Analysis:** Estimation based on projected user adoption rates and cost per agent.
 
-#### Pricing Structure
-- **Per Agent Usage Fee:** Charged based on the number of agents and the duration of their deployment.
-- **Hosting Fees:** Based on the data usage and processing requirements of the agents.
-- **Volume Discounts:** Available for large-scale deployments.
-
-#### Theoretical Cost and Pricing (in Markdown Table)
-
-```markdown
-| Service Component | Cost per Agent | Basic Plan | Standard Plan | Premium Plan |
-| ----------------- | -------------- | ---------- | ------------- | ------------ |
-| Development Cost  | $50            | Included   | Included      | Included     |
-| Deployment Cost   | $30            | Included   | Included      | Included     |
-| Hosting (per month) | $20           | $100       | $250          | $500         |
-| Maintenance (per month) | $15       | $50        | $125          | $250         |
-| Additional Services | -            | -          | +10%          | +20%         |
-| Volume Discount   | -              | -          | 5% for >100 agents | 10% for >200 agents |
-
-
 # Revnue Streams
 ```markdown
 | Pricing Structure         | Description | Details |
@@ -43,13 +25,12 @@
 | Performance-Based Pricing | Fees are tied to the performance or outcomes achieved by the agents. | - Clients pay for the effectiveness or results achieved by the agents. <br> - Higher fees for more complex or high-value tasks. |
 ```
 
-This table summarizes different pricing models, offering flexibility and scalability to cater to various client needs and deployment scenarios. Each pricing structure can be further tailored based on specific project requirements, market conditions, and operational costs.
-
-
-## Unique Pricing:
-Creating an innovative and diverse list of pricing structures and methods of value extraction for a service involving swarms of autonomous agents can help cater to various market segments and business needs. Here’s a comprehensive list:
-
 1. **Pay-Per-Mission Pricing:** Clients are charged for each specific task or mission completed by the agents.
+
+- **Per Agent Usage Fee:** Charged based on the number of agents and the duration of their deployment.
+- **Hosting Fees:** Based on the data usage and processing requirements of the agents.
+- **Volume Discounts:** Available for large-scale deployments.
+
 
 2. **Time-Based Subscription:** A subscription model where clients pay a recurring fee for continuous access to a set number of agents.
 
@@ -103,8 +84,6 @@ These diverse pricing strategies can be combined or tailored to fit different bu
 
 
 # ICP Analysis
-Creating an Ideal Customer Profile (ICP) map is crucial for identifying the potential first enterprise customer segments for a service involving swarms of autonomous agents. Below, I've outlined a comprehensive ICP map along with a market size table in markdown format, focusing on industries that could greatly benefit from such technology.
-
 ### Ideal Customer Profile (ICP) Map
 
 #### 1. Manufacturing and Industrial Automation
@@ -164,14 +143,10 @@ Creating an Ideal Customer Profile (ICP) map is crucial for identifying the pote
 | Construction and Infrastructure | $70 Billion              | Use in monitoring and managing large construction projects. |
 ```
 
-This ICP map and market size table provide a strategic overview of potential first enterprise customer segments for swarm technology, along with an estimation of their market sizes. It's important to note that these figures are hypothetical and would require market research for accurate quantification.
-
 #### Risk Analysis
 - **Market Risks:** Adaptation rate and competition.
 - **Operational Risks:** Reliability and scalability of infrastructure.
 - **Regulatory Risks:** Compliance with data security and privacy laws.
-
-
 
 # Business Model
 ---
