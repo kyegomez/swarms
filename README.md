@@ -40,7 +40,7 @@ We have a small gallery of examples to run here, [for more check out the docs to
 
 ### Example in Colab:
 
-<a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/swarms_example.ipynb">
+<a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a> Run example in Colab, using your OpenAI API key. 
 
