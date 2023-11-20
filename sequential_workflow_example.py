@@ -4,8 +4,10 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 import os
 
 # Example usage
+
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
+
 
 # Initialize the language flow
 llm = OpenAIChat(
