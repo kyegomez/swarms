@@ -1,13 +1,27 @@
-from swarms.models.nougat import Nougat
-from swarms.structs import Flow
-from swarms.models import OpenAIChat, Anthropic
+import os
 from typing import List
+
+from dotenv import load_dotenv
+
+from swarms.models import Anthropic, OpenAIChat
+from swarms.structs import Flow
+from swarms.utils.pdf_to_text import pdf_to_text
+
+
+# Environment variables
+load_dotenv()
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
 
 # Base llms
-llm1 = OpenAIChat()
-llm2 = Anthropic()
-nougat = Nougat()
+llm1 = OpenAIChat(
+    openai_api_key=openai_api_key,
+)
+
+llm2 = Anthropic(
+    anthropic_api_key=anthropic_api_key,
+)
 
 
 # Prompts for each agent
@@ -67,23 +81,27 @@ class AccountantSwarms:
 
     def __init__(
         self,
-        financial_document_img: str,
-        financial_document_list_img: List[str] = None,
+        pdf_path: str,
+        list_pdfs: List[str] = None,
         fraud_detection_instructions: str = None,
         summary_agent_instructions: str = None,
         decision_making_support_agent_instructions: str = None,
     ):
         super().__init__()
-        self.financial_document_img = financial_document_img
+        self.pdf_path = pdf_path
+        self.list_pdfs = list_pdfs
         self.fraud_detection_instructions = fraud_detection_instructions
         self.summary_agent_instructions = summary_agent_instructions
+        self.decision_making_support_agent_instructions = (
+            decision_making_support_agent_instructions
+        )
 
     def run(self):
-        # Extract text from the image
-        analyzed_doc = self.nougat(self.financial_document_img)
+        # Transform the pdf to text
+        pdf_text = pdf_to_text(self.pdf_path)
 
         # Detect fraud in the document
-        fraud_detection_agent_output = self.fraud_detection_agent(analyzed_doc)
+        fraud_detection_agent_output = self.fraud_detection_agent(pdf_text)
 
         # Generate an actionable summary of the document
         summary_agent_output = self.summary_agent(fraud_detection_agent_output)
