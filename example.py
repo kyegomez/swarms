@@ -1,4 +1,3 @@
-from swarms.models import OpenAIChat
 from swarms.structs import Flow
 import os
 

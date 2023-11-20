@@ -2,8 +2,6 @@
 LayoutLMDocumentQA is a multimodal good for
 visual question answering on real world docs lik invoice, pdfs, etc
 """
-from transformers import pipeline
-
 
 class 
     """
