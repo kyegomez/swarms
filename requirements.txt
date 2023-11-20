@@ -27,6 +27,7 @@ huggingface-hub
 google-generativeai
 sentencepiece
 duckduckgo-search
+PyPDF2
 agent-protocol
 accelerate
 chromadb

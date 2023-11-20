@@ -151,10 +151,11 @@ class Flow:
         interactive: bool = False,
         dashboard: bool = False,
         agent_name: str = " Autonomous Agent XYZ1B",
+        agent_description: str = None,
         system_prompt: str = FLOW_SYSTEM_PROMPT,
         # tools: List[Any] = None,
         dynamic_temperature: bool = False,
-        SOP: str = None,
+        sop: str = None,
         saved_state_path: Optional[str] = "flow_state.json",
         autosave: bool = False,
         context_length: int = 8192,
@@ -180,13 +181,14 @@ class Flow:
         self.user_name = user_name
         self.context_length = context_length
         # SOPS to inject into the system prompt
-        self.SOP = SOP
+        self.sop = sop
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
         # self.tools = tools or []
         self.system_prompt = system_prompt
         self.agent_name = agent_name
+        self.agent_description = agent_description
         self.saved_state_path = saved_state_path
         self.autosave = autosave
         self.response_filters = []
@@ -402,77 +404,81 @@ class Flow:
         5. Repeat until stopping condition is met or max_loops is reached
 
         """
-        # dynamic_prompt = self.construct_dynamic_prompt()
-        # combined_prompt = f"{dynamic_prompt}\n{task}"
+        try:
+            # dynamic_prompt = self.construct_dynamic_prompt()
+            # combined_prompt = f"{dynamic_prompt}\n{task}"
 
-        # Activate Autonomous agent message
-        self.activate_autonomous_agent()
+            # Activate Autonomous agent message
+            self.activate_autonomous_agent()
 
-        response = task  # or combined_prompt
-        history = [f"{self.user_name}: {task}"]
+            response = task  # or combined_prompt
+            history = [f"{self.user_name}: {task}"]
 
-        # If dashboard = True then print the dashboard
-        if self.dashboard:
-            self.print_dashboard(task)
+            # If dashboard = True then print the dashboard
+            if self.dashboard:
+                self.print_dashboard(task)
 
-        loop_count = 0
-        # for i in range(self.max_loops):
-        while self.max_loops == "auto" or loop_count < self.max_loops:
-            loop_count += 1
-            print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
-            print("\n")
+            loop_count = 0
+            # for i in range(self.max_loops):
+            while self.max_loops == "auto" or loop_count < self.max_loops:
+                loop_count += 1
+                print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
+                print("\n")
 
-            if self.stopping_token:
-                if self._check_stopping_condition(response) or parse_done_token(
-                    response
-                ):
-                    break
+                if self.stopping_token:
+                    if self._check_stopping_condition(response) or parse_done_token(
+                        response
+                    ):
+                        break
 
-            # Adjust temperature, comment if no work
-            if self.dynamic_temperature:
-                self.dynamic_temperature()
+                # Adjust temperature, comment if no work
+                if self.dynamic_temperature:
+                    self.dynamic_temperature()
 
-            # Preparing the prompt
-            task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
+                # Preparing the prompt
+                task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
 
-            attempt = 0
-            while attempt < self.retry_attempts:
-                try:
-                    response = self.llm(
-                        task,
-                        **kwargs,
-                    )
-                    # If there are any tools then parse and execute them
-                    # if self.tools:
-                    #     self.parse_and_execute_tools(response)
+                attempt = 0
+                while attempt < self.retry_attempts:
+                    try:
+                        response = self.llm(
+                            task,
+                            **kwargs,
+                        )
+                        # If there are any tools then parse and execute them
+                        # if self.tools:
+                        #     self.parse_and_execute_tools(response)
 
-                    if self.interactive:
-                        print(f"AI: {response}")
-                        history.append(f"AI: {response}")
-                        response = input("You: ")
-                        history.append(f"Human: {response}")
-                    else:
-                        print(f"AI: {response}")
-                        history.append(f"AI: {response}")
-                        print(response)
-                    break
-                except Exception as e:
-                    logging.error(f"Error generating response: {e}")
-                    attempt += 1
-                    time.sleep(self.retry_interval)
-            history.append(response)
-            time.sleep(self.loop_interval)
-        self.memory.append(history)
+                        if self.interactive:
+                            print(f"AI: {response}")
+                            history.append(f"AI: {response}")
+                            response = input("You: ")
+                            history.append(f"Human: {response}")
+                        else:
+                            print(f"AI: {response}")
+                            history.append(f"AI: {response}")
+                            print(response)
+                        break
+                    except Exception as e:
+                        logging.error(f"Error generating response: {e}")
+                        attempt += 1
+                        time.sleep(self.retry_interval)
+                history.append(response)
+                time.sleep(self.loop_interval)
+            self.memory.append(history)
 
-        if self.autosave:
-            save_path = self.saved_state_path or "flow_state.json"
-            print(colored(f"Autosaving flow state to {save_path}", "green"))
-            self.save_state(save_path)
+            if self.autosave:
+                save_path = self.saved_state_path or "flow_state.json"
+                print(colored(f"Autosaving flow state to {save_path}", "green"))
+                self.save_state(save_path)
 
-        if self.return_history:
-            return response, history
+            if self.return_history:
+                return response, history
 
-        return response
+            return response
+        except Exception as error:
+            print(f"Error running flow: {error}")
+            raise
 
     async def arun(self, task: str, **kwargs):
         """
@@ -572,13 +578,27 @@ class Flow:
         Returns:
             str: The agent history prompt
         """
-        system_prompt = system_prompt or self.system_prompt
-        agent_history_prompt = f"""
-            SYSTEM_PROMPT: {system_prompt}
+        if self.sop:
+            system_prompt = system_prompt or self.system_prompt
+            agent_history_prompt = f"""
+                SYSTEM_PROMPT: {system_prompt}
 
-            History: {history}
-        """
-        return agent_history_prompt
+                Follow this standard operating procedure (SOP) to complete tasks:
+                {self.sop}
+                
+                -----------------
+                History of conversations between yourself and your user {self.user_name}: {history}
+            """
+            return agent_history_prompt
+        else:
+            system_prompt = system_prompt or self.system_prompt
+            agent_history_prompt = f"""
+                SYSTEM_PROMPT: {system_prompt}
+
+
+                History: {history}
+            """
+            return agent_history_prompt
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """
