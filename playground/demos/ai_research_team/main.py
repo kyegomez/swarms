@@ -34,7 +34,7 @@ paper_summarizer_agent = Flow(
     sop=PAPER_SUMMARY_ANALYZER,
     max_loops=1,
     autosave=True,
-    saved_state_path='paper_summarizer.json'
+    saved_state_path="paper_summarizer.json",
 )
 
 paper_implementor_agent = Flow(
@@ -42,7 +42,7 @@ paper_implementor_agent = Flow(
     sop=PAPER_IMPLEMENTOR_AGENT_PROMPT,
     max_loops=1,
     autosave=True,
-    saved_state_path='paper_implementor.json'
+    saved_state_path="paper_implementor.json",
 )
 
 paper = pdf_to_text(PDF_PATH)

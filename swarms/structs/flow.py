@@ -347,6 +347,7 @@ class Flow:
                 Flow Configuration:
                     Name: {self.agent_name}
                     Description: {self.agent_description}
+                    Standard Operating Procedure: {self.sop}
                     System Prompt: {self.system_prompt} 
                     Task: {task}
                     Max Loops: {self.max_loops}
@@ -390,6 +391,97 @@ class Flow:
             print(error)
 
     def run(self, task: str, **kwargs):
+        """
+        Run the autonomous agent loop
+
+        Args:
+            task (str): The initial task to run
+
+        Flow:
+        1. Generate a response
+        2. Check stopping condition
+        3. If stopping condition is met, stop
+        4. If stopping condition is not met, generate a response
+        5. Repeat until stopping condition is met or max_loops is reached
+
+        """
+        try:
+            # dynamic_prompt = self.construct_dynamic_prompt()
+            # combined_prompt = f"{dynamic_prompt}\n{task}"
+
+            # Activate Autonomous agent message
+            self.activate_autonomous_agent()
+
+            response = task  # or combined_prompt
+            history = [f"{self.user_name}: {task}"]
+
+            # If dashboard = True then print the dashboard
+            if self.dashboard:
+                self.print_dashboard(task)
+
+            loop_count = 0
+            # for i in range(self.max_loops):
+            while self.max_loops == "auto" or loop_count < self.max_loops:
+                loop_count += 1
+                print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
+                print("\n")
+
+                if self.stopping_token:
+                    if self._check_stopping_condition(response) or parse_done_token(
+                        response
+                    ):
+                        break
+
+                # Adjust temperature, comment if no work
+                if self.dynamic_temperature:
+                    self.dynamic_temperature()
+
+                # Preparing the prompt
+                task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
+
+                attempt = 0
+                while attempt < self.retry_attempts:
+                    try:
+                        response = self.llm(
+                            task,
+                            **kwargs,
+                        )
+                        # If there are any tools then parse and execute them
+                        # if self.tools:
+                        #     self.parse_and_execute_tools(response)
+
+                        if self.interactive:
+                            print(f"AI: {response}")
+                            history.append(f"AI: {response}")
+                            response = input("You: ")
+                            history.append(f"Human: {response}")
+                        else:
+                            print(f"AI: {response}")
+                            history.append(f"AI: {response}")
+                            # print(response)
+                        break
+                    except Exception as e:
+                        logging.error(f"Error generating response: {e}")
+                        attempt += 1
+                        time.sleep(self.retry_interval)
+                history.append(response)
+                time.sleep(self.loop_interval)
+            self.memory.append(history)
+
+            if self.autosave:
+                save_path = self.saved_state_path or "flow_state.json"
+                print(colored(f"Autosaving flow state to {save_path}", "green"))
+                self.save_state(save_path)
+
+            if self.return_history:
+                return response, history
+
+            return response
+        except Exception as error:
+            print(f"Error running flow: {error}")
+            raise
+
+    def __call__(self, task: str, **kwargs):
         """
         Run the autonomous agent loop
 
@@ -947,28 +1039,7 @@ class Flow:
         Args:
             **kwargs (Any): Any additional keyword arguments
         """
-        # Run the flow
-        response = self.run_with_timeout("flow")
-
-        # If an error occurs, save the state
-        if not self.validate_response(response):
-            self.save_state("previous_state.txt")
-
-        # Refactor the code
-        self.refactor_code()
-
-        # Run the flow again
-        response = self.run_with_timeout("flow")
-
-        # If the error occurs again, revert to the previous state
-        if not self.validate_response(response):
-            self.load_state("previous_state.txt")
-
-        # If the error does not occur, continue
-        else:
-            print("Self-healing successful! Bug fixed!")
-
-        return response
+        pass
 
     def refactor_code(self):
         """
