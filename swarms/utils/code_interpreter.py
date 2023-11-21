@@ -33,8 +33,6 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
         done (threading.Event): An event that is set when the subprocess is done running code.
 
     Example:
-    >>> from swarms.utils.code_interpreter import SubprocessCodeInterpreter
-
     """
 
     def __init__(self):
@@ -89,7 +87,7 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
             daemon=True,
         ).start()
 
-    def run(self, code):
+    def run(self, code: str):
         retry_count = 0
         max_retries = 3
 

@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from swarms.swarms.autoscaler import AutoScaler
+from swarms.structs.autoscaler import AutoScaler
 from swarms.models import OpenAIChat
 from swarms.structs import Flow
 

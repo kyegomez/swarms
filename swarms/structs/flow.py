@@ -9,6 +9,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
+from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+from swarms.utils.parse_code import extract_code_in_backticks_in_string
+
 # Prompts
 DYNAMIC_STOP_PROMPT = """
 When you have finished the task from the Human, output a special token: <DONE>
@@ -120,6 +123,55 @@ class Flow:
         dynamic_temperature(bool): Dynamical temperature handling
         **kwargs (Any): Any additional keyword arguments
 
+    Methods:
+        run: Run the autonomous agent loop
+        run_concurrent: Run the autonomous agent loop concurrently
+        bulk_run: Run the autonomous agent loop in bulk
+        save: Save the flow history to a file
+        load: Load the flow history from a file
+        validate_response: Validate the response based on certain criteria
+        print_history_and_memory: Print the history and memory of the flow
+        step: Execute a single step in the flow interaction
+        graceful_shutdown: Gracefully shutdown the system saving the state
+        run_with_timeout: Run the loop but stop if it takes longer than the timeout
+        analyze_feedback: Analyze the feedback for issues
+        undo_last: Response the last response and return the previous state
+        add_response_filter: Add a response filter to filter out certain words from the response
+        apply_reponse_filters: Apply the response filters to the response
+        filtered_run: Filter the response
+        interactive_run: Interactive run mode
+        streamed_generation: Stream the generation of the response
+        get_llm_params: Extracts and returns the parameters of the llm object for serialization.
+        agent_history_prompt: Generate the agent history prompt
+        add_task_to_memory: Add the task to the memory
+        add_message_to_memory: Add the message to the memory
+        add_message_to_memory_and_truncate: Add the message to the memory and truncate
+        print_dashboard: Print dashboard
+        activate_autonomous_agent: Print the autonomous agent activation message
+        dynamic_temperature: Dynamically change the temperature
+        _check_stopping_condition: Check if the stopping condition is met
+        format_prompt: Format the prompt
+        get_llm_init_params: Get the llm init params
+        provide_feedback: Allow users to provide feedback on the responses
+        truncate_history: Take the history and truncate it to fit into the model context length
+        agent_history_prompt: Generate the agent history prompt
+        extract_tool_commands: Extract the tool commands from the text
+        parse_and_execute_tools: Parse and execute the tools
+        execute_tools: Execute the tool with the provided parameters
+        construct_dynamic_prompt: Construct the dynamic prompt
+        get_tool_description: Get the tool description
+        find_tool_by_name: Find a tool by name
+        parse_tool_command: Parse the text for tool usage
+        dynamic_temperature: Dynamically change the temperature
+        _run: Generate a result using the provided keyword args.
+        from_llm_and_template: Create FlowStream from LLM and a string template.
+        from_llm_and_template_file: Create FlowStream from LLM and a template file.
+        save_state: Save the state of the flow
+        load_state: Load the state of the flow
+        run_async: Run the flow asynchronously
+        arun: Run the flow asynchronously
+        run_code: Run the code in the response
+
     Example:
     >>> from swarms.models import OpenAIChat
     >>> from swarms.structs import Flow
@@ -161,6 +213,7 @@ class Flow:
         context_length: int = 8192,
         user_name: str = "Human:",
         self_healing: bool = False,
+        code_interpreter: bool = False,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -193,6 +246,8 @@ class Flow:
         self.autosave = autosave
         self.response_filters = []
         self.self_healing = self_healing
+        self.code_interpreter = code_interpreter
+        self.code_executor = SubprocessCodeInterpreter()
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -446,6 +501,9 @@ class Flow:
                             task,
                             **kwargs,
                         )
+
+                        if self.code_interpreter:
+                            self.run_code(response)
                         # If there are any tools then parse and execute them
                         # if self.tools:
                         #     self.parse_and_execute_tools(response)
@@ -537,6 +595,9 @@ class Flow:
                             task,
                             **kwargs,
                         )
+
+                        if self.code_interpreter:
+                            self.run_code(response)
                         # If there are any tools then parse and execute them
                         # if self.tools:
                         #     self.parse_and_execute_tools(response)
@@ -1032,6 +1093,80 @@ class Flow:
         """Update the retry interval"""
         self.retry_interval = retry_interval
 
+    def reset(self):
+        """Reset the flow"""
+        self.memory = []
+
+    def run_code(self, code: str):
+        """
+        text -> parse_code by looking for code inside 6 backticks `````-> run_code
+        """
+        parsed_code = extract_code_in_backticks_in_string(code)
+        run_code = self.code_executor.run(parsed_code)
+        return run_code
+
+    def tool_prompt_prep(self, api_docs: str = None, required_api: str = None):
+        """
+        Prepare the tool prompt
+        """
+        PROMPT = f"""
+        # Task
+        You will be provided with a list of APIs. These APIs will have a
+        description and a list of parameters and return types for each tool. Your
+        task involves creating 3 varied, complex, and detailed user scenarios
+        that require at least 5 API calls to complete involving at least 3
+        different APIs. One of these APIs will be explicitly provided and the
+        other two will be chosen by you.
+
+        For instance, given the APIs: SearchHotels, BookHotel, CancelBooking,
+        GetNFLNews. Given that GetNFLNews is explicitly provided, your scenario
+        should articulate something akin to:
+
+        "The user wants to see if the Broncos won their last game (GetNFLNews).
+        They then want to see if that qualifies them for the playoffs and who
+        they will be playing against (GetNFLNews). The Broncos did make it into
+        the playoffs, so the user wants watch the game in person. They want to
+        look for hotels where the playoffs are occurring (GetNBANews +
+        SearchHotels). After looking at the options, the user chooses to book a
+        3-day stay at the cheapest 4-star option (BookHotel)."
+        13
+
+        This scenario exemplifies a scenario using 5 API calls. The scenario is
+        complex, detailed, and concise as desired. The scenario also includes two
+        APIs used in tandem, the required API, GetNBANews to search for the
+        playoffs location and SearchHotels to find hotels based on the returned
+        location. Usage of multiple APIs in tandem is highly desirable and will
+        receive a higher score. Ideally each scenario should contain one or more
+        instances of multiple APIs being used in tandem.
+
+        Note that this scenario does not use all the APIs given and re-uses the "
+        GetNBANews" API. Re-using APIs is allowed, but each scenario should
+        involve at least 3 different APIs. Note that API usage is also included
+        in the scenario, but exact parameters are not necessary. You must use a
+        different combination of APIs for each scenario. All APIs must be used in
+        at least one scenario. You can only use the APIs provided in the APIs
+        section.
+        
+        Note that API calls are not explicitly mentioned and their uses are
+        included in parentheses. This behaviour should be mimicked in your
+        response.
+        Deliver your response in this format:
+        ‘‘‘
+        - Scenario 1: <Scenario1>
+        - Scenario 2: <Scenario2>
+        - Scenario 3: <Scenario3>
+        ‘‘‘
+        # APIs
+        ‘‘‘
+        {api_docs}
+        ‘‘‘
+        # Response
+        Required API: {required_api}
+        Scenarios with >=5 API calls:
+        ‘‘‘
+        - Scenario 1: <Scenario1>
+        """
+
     def self_healing(self, **kwargs):
         """
         Self healing by debugging errors and refactoring its own code
@@ -1041,9 +1176,52 @@ class Flow:
         """
         pass
 
-    def refactor_code(self):
-        """
-        Refactor the code
-        """
-        # Add your code here to refactor the code
-        pass
+    # def refactor_code(
+    #     self,
+    #     file: str,
+    #     changes: List,
+    #     confirm: bool = False
+    # ):
+    #     """
+    #     Refactor the code
+    #     """
+    #     with open(file) as f:
+    #         original_file_lines = f.readlines()
+
+    #     # Filter out the changes that are not confirmed
+    #     operation_changes = [
+    #         change for change in changes if "operation" in change
+    #     ]
+    #     explanations = [
+    #         change["explanation"] for change in changes if "explanation" in change
+    #     ]
+
+    #     # Sort the changes in reverse line order
+    #     # explanations.sort(key=lambda x: x["line", reverse=True])
+
+    # # def error_prompt_inject(
+    # #     self,
+    # #     file_path: str,
+    # #     args: List,
+    # #     error: str,
+    # # ):
+    # #     with open(file_path, "r") as f:
+    # #         file_lines = f.readlines()
+
+    # #     file_with_lines = []
+    # #     for i, line in enumerate(file_lines):
+    # #         file_with_lines.append(str(i + 1) + "" + line)
+    # #     file_with_lines = "".join(file_with_lines)
+
+    # #     prompt = f"""
+    # #         Here is the script that needs fixing:\n\n
+    # #         {file_with_lines}\n\n
+    # #         Here are the arguments it was provided:\n\n
+    # #         {args}\n\n
+    # #         Here is the error message:\n\n
+    # #         {error}\n
+    # #         "Please provide your suggested changes, and remember to stick to the "
+    # #         exact format as described above.
+    # #         """
+
+    # #     # Print(prompt)

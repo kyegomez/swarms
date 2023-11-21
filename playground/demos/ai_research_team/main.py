@@ -16,7 +16,7 @@ load_dotenv()
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
-PDF_PATH = "videocon.pdf"
+PDF_PATH = "fasterffn.pdf"
 
 
 # Base llms
@@ -43,8 +43,11 @@ paper_implementor_agent = Flow(
     max_loops=1,
     autosave=True,
     saved_state_path="paper_implementor.json",
+    code_interpreter=False,
 )
 
 paper = pdf_to_text(PDF_PATH)
-algorithmic_psuedocode_agent = paper_summarizer_agent.run(paper)
+algorithmic_psuedocode_agent = paper_summarizer_agent.run(
+    f"Focus on creating the algorithmic pseudocode for the novel method in this paper: {paper}"
+)
 pytorch_code = paper_implementor_agent.run(algorithmic_psuedocode_agent)
