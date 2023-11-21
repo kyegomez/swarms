@@ -93,7 +93,7 @@ class HuggingfaceLLM:
         set_logger(logger):
             Set logger.
 
-    
+
     Examples:
         >>> llm = HuggingfaceLLM(
         ...     model_id="EleutherAI/gpt-neo-2.7B",
@@ -426,19 +426,19 @@ class HuggingfaceLLM:
     def set_distributed(self, distributed):
         """Set distributed"""
         self.distributed = distributed
-    
+
     def set_decoding(self, decoding):
         """Set decoding"""
         self.decoding = decoding
-    
+
     def set_max_workers(self, max_workers):
         """Set max_workers"""
         self.max_workers = max_workers
-    
+
     def set_repitition_penalty(self, repitition_penalty):
         """Set repitition_penalty"""
         self.repitition_penalty = repitition_penalty
-    
+
     def set_no_repeat_ngram_size(self, no_repeat_ngram_size):
         """Set no_repeat_ngram_size"""
         self.no_repeat_ngram_size = no_repeat_ngram_size
@@ -458,7 +458,7 @@ class HuggingfaceLLM:
     def set_quantize(self, quantize):
         """Set quantize"""
         self.quantize = quantize
-    
+
     def set_quantization_config(self, quantization_config):
         """Set quantization_config"""
         self.quantization_config = quantization_config
