@@ -84,4 +84,4 @@ recursive = true
 aggressive = 3
 
 [tool.ruff]
-line-length = 200
+line-length = 120
