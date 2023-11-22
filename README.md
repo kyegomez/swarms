@@ -16,12 +16,8 @@ Swarms is a modular framework that enables reliable and useful multi-agent colla
 
 </div>
 
-## 🤝 Schedule a 1-on-1 Session
 
-Book a [1-on-1 Session with Kye](https://calendly.com/swarm-corp/30min), the Creator, to discuss any issues, provide feedback, or explore how we can improve Swarms for you.
-
-
-----------
+----
 
 ## Installation
 `pip3 install --upgrade swarms`
@@ -228,6 +224,7 @@ Swarms framework is not just a tool but a robust, scalable, and secure partner i
 ## Community
 - [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)
 - Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks![Sign up here](https://lu.ma/5p2jnc2v)
+
 
 
 ## Discovery Call
