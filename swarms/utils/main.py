@@ -9,7 +9,6 @@ from typing import Dict
 
 import boto3
 import numpy as np
-import pandas as pd
 import requests
 
 
