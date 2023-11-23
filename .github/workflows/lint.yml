@@ -20,3 +20,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Python environment
         uses: py-actions/flake8@v2
+  ruff-lint:
+    runs-on: ubuntu-latest
+    name: ruff Lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chartboost/ruff-action@v1
