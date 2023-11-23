@@ -12,9 +12,6 @@ jobs:
         uses: actions/checkout@v4
       - name: yaml Lint
         uses: ibiqlik/action-yamllint@v3
-        with:
-          file_or_dir: *.yaml
-          config_file: .yamllint.yml
   flake8-lint:
     runs-on: ubuntu-latest
     name: Lint
