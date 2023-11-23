@@ -22,6 +22,8 @@ jobs:
         test_type:
           - "core"
           - "extended"
+    - name: Install Poetry
+        uses: snok/install-poetry@v1
     name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
     steps:
       - uses: actions/checkout@v4
