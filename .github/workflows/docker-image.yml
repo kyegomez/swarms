@@ -1,6 +1,7 @@
+---
 name: Docker Image CI
 
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches: ["master"]
   pull_request:
