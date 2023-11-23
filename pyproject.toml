@@ -90,4 +90,4 @@ line-length = 200
 max-line-length = 200
 
 [tool.flake8]
-extend-ignore = E501, W292, W291, W293
+extend-ignore = "E501, W292, W291, W293"
