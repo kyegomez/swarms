@@ -1,5 +1,4 @@
 # Import necessary modules and define fixtures if needed
-import os
 import pytest
 import torch
 from PIL import Image
