@@ -22,11 +22,10 @@ Swarms is a modular framework that enables reliable and useful multi-agent colla
 ---
 
 ## Usage
-### Example in Colab:
 
-<a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
+Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a> Run example in Colab, using your OpenAI API key. 
+</a>
 
 ### `Flow` Example
 - Reliable Structure that provides LLMS autonomy
