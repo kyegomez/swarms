@@ -5,6 +5,16 @@ name: Lint
 on: [push, pull_request]
 
 jobs:
+  yaml-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v4
+      - name: yaml Lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: *.yaml
+          config_file: .yamllint.yml
   flake8-lint:
     runs-on: ubuntu-latest
     name: Lint
