@@ -6,7 +6,9 @@ from typing import Callable, List, Dict, Any, Sequence
 
 
 class Task:
-    def __init__(self, id: str, task: str, flows: Sequence[Flow], dependencies: List[str] = []):
+    def __init__(
+        self, id: str, task: str, flows: Sequence[Flow], dependencies: List[str] = []
+    ):
         self.id = id
         self.task = task
         self.flows = flows
@@ -62,8 +64,15 @@ flow4 = Flow(llm, max_loops=1)
 
 # Create tasks with their respective Flows and task strings
 task1 = Task("task1", "Generate a summary on Quantum field theory", [flow1])
-task2 = Task("task2", "Elaborate on the summary of topic X", [flow2, flow3], dependencies=["task1"])
-task3 = Task("task3", "Generate conclusions for topic X", [flow4], dependencies=["task1"])
+task2 = Task(
+    "task2",
+    "Elaborate on the summary of topic X",
+    [flow2, flow3],
+    dependencies=["task1"],
+)
+task3 = Task(
+    "task3", "Generate conclusions for topic X", [flow4], dependencies=["task1"]
+)
 
 # Create a workflow and add tasks
 workflow = Workflow()

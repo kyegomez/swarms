@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+from swarms.utils.markdown_message import display_markdown_message
+from swarms.utils.futures import execute_futures_dict
+>>>>>>> 4ae59df8 (tools fix, parse docs, inject tools docs into prompts, and attempt to execute tools, display markdown)
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.markdown_message import display_markdown_message
 from swarms.utils.parse_code import (

@@ -49,19 +49,35 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
 llm = OpenAIChat(
+<<<<<<< HEAD
     temperature=0.5,
     model_name="gpt-4",
     openai_api_key=api_key,
     max_tokens=4000
+=======
+    openai_api_key=api_key,
+    temperature=0.5,
+>>>>>>> 4ae59df8 (tools fix, parse docs, inject tools docs into prompts, and attempt to execute tools, display markdown)
 )
 
 
 ## Initialize the workflow
+<<<<<<< HEAD
 agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
 # Run the workflow on a task
 out = agent.run("Generate a 10,000 word blog on health and wellness.")
 print(out)
+=======
+flow = Flow(
+    llm=llm,
+    max_loops=2,
+    dashboard=True,
+
+)
+
+out = flow.run("Generate a 10,000 word blog on health and wellness.")
+>>>>>>> 4ae59df8 (tools fix, parse docs, inject tools docs into prompts, and attempt to execute tools, display markdown)
 
 
 ```
