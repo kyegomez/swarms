@@ -88,3 +88,6 @@ line-length = 200
 
 [tool.pylint]
 max-line-length = 200
+
+[tool.flake8]
+extend-ignore = E501, W292, W291, W293
