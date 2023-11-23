@@ -23,7 +23,9 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
+sentence_transformers = "*"
 transformers = "*"
+qdrant_client = "*"
 openai = "0.28.0"
 langchain = "*"
 asyncio = "*"
