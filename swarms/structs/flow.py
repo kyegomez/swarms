@@ -12,13 +12,7 @@ from termcolor import colored
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.parse_code import extract_code_in_backticks_in_string
 
-# Prompts
-DYNAMIC_STOP_PROMPT = """
-When you have finished the task from the Human, output a special token: <DONE>
-This will enable you to leave the autonomous loop.
-"""
-
-# Constants
+# System prompt
 FLOW_SYSTEM_PROMPT = f"""
 You are an autonomous agent granted autonomy in a autonomous loop structure.
 Your role is to engage in multi-step conversations with your self or the user,
@@ -29,6 +23,19 @@ You can have internal dialogues with yourself or can interact with the user
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
 
 """
+
+
+
+# Prompts
+DYNAMIC_STOP_PROMPT = """
+
+Now, when you 99% sure you have completed the task, you may follow the instructions below to escape the autonomous loop.
+
+When you have finished the task from the Human, output a special token: <DONE>
+This will enable you to leave the autonomous loop.
+"""
+
+
 
 # Make it able to handle multi input tools
 DYNAMICAL_TOOL_USAGE = """
@@ -191,7 +198,7 @@ class Flow:
     def __init__(
         self,
         llm: Any,
-        # template: str,
+        template: str,
         max_loops=5,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
@@ -217,6 +224,7 @@ class Flow:
         **kwargs: Any,
     ):
         self.llm = llm
+        self.template = template
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
