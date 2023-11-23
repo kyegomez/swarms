@@ -107,6 +107,8 @@ class SequentialWorkflow:
     tasks: List[Task] = field(default_factory=list)
     max_loops: int = 1
     autosave: bool = False
+    name: str = (None,)
+    description: str = (None,)
     saved_state_filepath: Optional[str] = "sequential_workflow_state.json"
     restore_state_filepath: Optional[str] = None
     dashboard: bool = False
@@ -248,6 +250,8 @@ class SequentialWorkflow:
                 f"""
                 Sequential Workflow Dashboard
                 --------------------------------
+                Name: {self.name}
+                Description: {self.description}
                 Tasks: {len(self.tasks)}
                 Max Loops: {self.max_loops}
                 Autosave: {self.autosave}

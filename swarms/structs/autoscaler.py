@@ -14,8 +14,8 @@ class AutoScaler:
     """
     The AutoScaler is like a kubernetes pod, that autoscales an agent or worker or boss!
 
-    Wraps around a structure like SequentialWorkflow 
-    and or Flow and parallelizes them on multiple threads so they're split across devices 
+    Wraps around a structure like SequentialWorkflow
+    and or Flow and parallelizes them on multiple threads so they're split across devices
     and you can use them like that
     Args:
 
