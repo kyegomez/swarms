@@ -23,17 +23,92 @@ class HuggingfaceLLM:
         verbose (bool, optional): Whether to print verbose logs. Defaults to False.
         logger (logging.Logger, optional): The logger to use. Defaults to a basic logger.
 
-    # Usage
-    ```
-    from swarms.models import HuggingfaceLLM
+    Methods:
+        run(task: str, max_length: int = 500) -> str:
+            Generate a response based on the prompt text.
 
-    model_id = "NousResearch/Yarn-Mistral-7b-128k"
-    inference = HuggingfaceLLM(model_id=model_id)
+        __call__(task: str, max_length: int = 500) -> str:
+            Generate a response based on the prompt text.
 
-    task = "Once upon a time"
-    generated_text = inference(task)
-    print(generated_text)
-    ```
+        save_model(path: str):
+            Save the model to a given path.
+
+        gpu_available() -> bool:
+            Check if GPU is available.
+
+        memory_consumption() -> dict:
+            Get the memory consumption of the GPU.
+
+        print_dashboard(task: str):
+            Print dashboard.
+
+        set_device(device: str):
+            Changes the device used for inference.
+
+        set_max_length(max_length: int):
+            Set max_length.
+
+        set_verbose(verbose: bool):
+            Set verbose.
+
+        set_distributed(distributed: bool):
+            Set distributed.
+
+        set_decoding(decoding: bool):
+            Set decoding.
+
+        set_max_workers(max_workers: int):
+            Set max_workers.
+
+        set_repitition_penalty(repitition_penalty: float):
+            Set repitition_penalty.
+
+        set_no_repeat_ngram_size(no_repeat_ngram_size: int):
+            Set no_repeat_ngram_size.
+
+        set_temperature(temperature: float):
+            Set temperature.
+
+        set_top_k(top_k: int):
+            Set top_k.
+
+        set_top_p(top_p: float):
+            Set top_p.
+
+        set_quantize(quantize: bool):
+            Set quantize.
+
+        set_quantization_config(quantization_config: dict):
+            Set quantization_config.
+
+        set_model_id(model_id: str):
+            Set model_id.
+
+        set_model(model):
+            Set model.
+
+        set_tokenizer(tokenizer):
+            Set tokenizer.
+
+        set_logger(logger):
+            Set logger.
+
+
+    Examples:
+        >>> llm = HuggingfaceLLM(
+        ...     model_id="EleutherAI/gpt-neo-2.7B",
+        ...     device="cuda",
+        ...     max_length=500,
+        ...     quantize=True,
+        ...     quantization_config={
+        ...         "load_in_4bit": True,
+        ...         "bnb_4bit_use_double_quant": True,
+        ...         "bnb_4bit_quant_type": "nf4",
+        ...         "bnb_4bit_compute_dtype": torch.bfloat16,
+        ...     },
+        ... )
+        >>> llm("Generate a 10,000 word blog on mental clarity and the benefits of meditation.")
+        'Generate a 10,000 word
     """
 
     def __init__(
@@ -343,3 +418,63 @@ class HuggingfaceLLM:
     def clear_chat_history(self):
         """Clear chat history"""
         self.chat_history = []
+
+    def set_verbose(self, verbose):
+        """Set verbose"""
+        self.verbose = verbose
+
+    def set_distributed(self, distributed):
+        """Set distributed"""
+        self.distributed = distributed
+
+    def set_decoding(self, decoding):
+        """Set decoding"""
+        self.decoding = decoding
+
+    def set_max_workers(self, max_workers):
+        """Set max_workers"""
+        self.max_workers = max_workers
+
+    def set_repitition_penalty(self, repitition_penalty):
+        """Set repitition_penalty"""
+        self.repitition_penalty = repitition_penalty
+
+    def set_no_repeat_ngram_size(self, no_repeat_ngram_size):
+        """Set no_repeat_ngram_size"""
+        self.no_repeat_ngram_size = no_repeat_ngram_size
+
+    def set_temperature(self, temperature):
+        """Set temperature"""
+        self.temperature = temperature
+
+    def set_top_k(self, top_k):
+        """Set top_k"""
+        self.top_k = top_k
+
+    def set_top_p(self, top_p):
+        """Set top_p"""
+        self.top_p = top_p
+
+    def set_quantize(self, quantize):
+        """Set quantize"""
+        self.quantize = quantize
+
+    def set_quantization_config(self, quantization_config):
+        """Set quantization_config"""
+        self.quantization_config = quantization_config
+
+    def set_model_id(self, model_id):
+        """Set model_id"""
+        self.model_id = model_id
+
+    def set_model(self, model):
+        """Set model"""
+        self.model = model
+
+    def set_tokenizer(self, tokenizer):
+        """Set tokenizer"""
+        self.tokenizer = tokenizer
+
+    def set_logger(self, logger):
+        """Set logger"""
+        self.logger = logger

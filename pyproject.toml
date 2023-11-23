@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "2.3.5"
+version = "2.3.9"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -39,10 +39,10 @@ backoff = "*"
 marshmallow = "*"
 datasets = "*"
 diffusers = "*"
+PyPDF2 = "*"
 accelerate = "*"
 sentencepiece = "*"
 wget = "*"
-griptape = "*"
 httpx = "*"
 tiktoken = "*"
 safetensors = "*"
@@ -82,3 +82,6 @@ ignore = "E501,W6"  # or ["E501", "W6"]
 in-place = true
 recursive = true
 aggressive = 3
+
+[tool.ruff]
+line-length = 120

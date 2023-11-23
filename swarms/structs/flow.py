@@ -9,13 +9,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
-# Prompts
-DYNAMIC_STOP_PROMPT = """
-When you have finished the task from the Human, output a special token: <DONE>
-This will enable you to leave the autonomous loop.
-"""
+from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+from swarms.utils.parse_code import extract_code_in_backticks_in_string
 
-# Constants
+# System prompt
 FLOW_SYSTEM_PROMPT = f"""
 You are an autonomous agent granted autonomy in a autonomous loop structure.
 Your role is to engage in multi-step conversations with your self or the user,
@@ -26,6 +23,19 @@ You can have internal dialogues with yourself or can interact with the user
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
 
 """
+
+
+
+# Prompts
+DYNAMIC_STOP_PROMPT = """
+
+Now, when you 99% sure you have completed the task, you may follow the instructions below to escape the autonomous loop.
+
+When you have finished the task from the Human, output a special token: <DONE>
+This will enable you to leave the autonomous loop.
+"""
+
+
 
 # Make it able to handle multi input tools
 DYNAMICAL_TOOL_USAGE = """
@@ -46,6 +56,7 @@ commands: {
     }
 }
 
+-------------TOOLS---------------------------
 {tools}
 """
 
@@ -119,6 +130,55 @@ class Flow:
         dynamic_temperature(bool): Dynamical temperature handling
         **kwargs (Any): Any additional keyword arguments
 
+    Methods:
+        run: Run the autonomous agent loop
+        run_concurrent: Run the autonomous agent loop concurrently
+        bulk_run: Run the autonomous agent loop in bulk
+        save: Save the flow history to a file
+        load: Load the flow history from a file
+        validate_response: Validate the response based on certain criteria
+        print_history_and_memory: Print the history and memory of the flow
+        step: Execute a single step in the flow interaction
+        graceful_shutdown: Gracefully shutdown the system saving the state
+        run_with_timeout: Run the loop but stop if it takes longer than the timeout
+        analyze_feedback: Analyze the feedback for issues
+        undo_last: Response the last response and return the previous state
+        add_response_filter: Add a response filter to filter out certain words from the response
+        apply_reponse_filters: Apply the response filters to the response
+        filtered_run: Filter the response
+        interactive_run: Interactive run mode
+        streamed_generation: Stream the generation of the response
+        get_llm_params: Extracts and returns the parameters of the llm object for serialization.
+        agent_history_prompt: Generate the agent history prompt
+        add_task_to_memory: Add the task to the memory
+        add_message_to_memory: Add the message to the memory
+        add_message_to_memory_and_truncate: Add the message to the memory and truncate
+        print_dashboard: Print dashboard
+        activate_autonomous_agent: Print the autonomous agent activation message
+        dynamic_temperature: Dynamically change the temperature
+        _check_stopping_condition: Check if the stopping condition is met
+        format_prompt: Format the prompt
+        get_llm_init_params: Get the llm init params
+        provide_feedback: Allow users to provide feedback on the responses
+        truncate_history: Take the history and truncate it to fit into the model context length
+        agent_history_prompt: Generate the agent history prompt
+        extract_tool_commands: Extract the tool commands from the text
+        parse_and_execute_tools: Parse and execute the tools
+        execute_tools: Execute the tool with the provided parameters
+        construct_dynamic_prompt: Construct the dynamic prompt
+        get_tool_description: Get the tool description
+        find_tool_by_name: Find a tool by name
+        parse_tool_command: Parse the text for tool usage
+        dynamic_temperature: Dynamically change the temperature
+        _run: Generate a result using the provided keyword args.
+        from_llm_and_template: Create FlowStream from LLM and a string template.
+        from_llm_and_template_file: Create FlowStream from LLM and a template file.
+        save_state: Save the state of the flow
+        load_state: Load the state of the flow
+        run_async: Run the flow asynchronously
+        arun: Run the flow asynchronously
+        run_code: Run the code in the response
+
     Example:
     >>> from swarms.models import OpenAIChat
     >>> from swarms.structs import Flow
@@ -138,7 +198,7 @@ class Flow:
     def __init__(
         self,
         llm: Any,
-        # template: str,
+        template: str,
         max_loops=5,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
@@ -149,17 +209,22 @@ class Flow:
         dynamic_loops: Optional[bool] = False,
         interactive: bool = False,
         dashboard: bool = False,
-        agent_name: str = "Flow agent",
+        agent_name: str = " Autonomous Agent XYZ1B",
+        agent_description: str = None,
         system_prompt: str = FLOW_SYSTEM_PROMPT,
         # tools: List[Any] = None,
         dynamic_temperature: bool = False,
+        sop: str = None,
         saved_state_path: Optional[str] = "flow_state.json",
         autosave: bool = False,
         context_length: int = 8192,
-        user_name: str = "Human",
+        user_name: str = "Human:",
+        self_healing: bool = False,
+        code_interpreter: bool = False,
         **kwargs: Any,
     ):
         self.llm = llm
+        self.template = template
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
@@ -175,15 +240,22 @@ class Flow:
         self.dynamic_temperature = dynamic_temperature
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
+        self.context_length = context_length
+        # SOPS to inject into the system prompt
+        self.sop = sop
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
         # self.tools = tools or []
         self.system_prompt = system_prompt
         self.agent_name = agent_name
+        self.agent_description = agent_description
         self.saved_state_path = saved_state_path
         self.autosave = autosave
         self.response_filters = []
+        self.self_healing = self_healing
+        self.code_interpreter = code_interpreter
+        self.code_executor = SubprocessCodeInterpreter()
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -333,13 +405,13 @@ class Flow:
                 --------------------------------------------
 
                 Flow loop is initializing for {self.max_loops} with the following configuration:
-
-                Model Configuration: {model_config}
                 ----------------------------------------
 
                 Flow Configuration:
                     Name: {self.agent_name}
-                    System Prompt: {self.system_prompt}
+                    Description: {self.agent_description}
+                    Standard Operating Procedure: {self.sop}
+                    System Prompt: {self.system_prompt} 
                     Task: {task}
                     Max Loops: {self.max_loops}
                     Stopping Condition: {self.stopping_condition}
@@ -351,6 +423,7 @@ class Flow:
                     Dynamic Temperature: {self.dynamic_temperature}
                     Autosave: {self.autosave}
                     Saved State: {self.saved_state_path}
+                    Model Configuration: {model_config}
 
                 ----------------------------------------
                 """,
@@ -395,77 +468,178 @@ class Flow:
         5. Repeat until stopping condition is met or max_loops is reached
 
         """
-        # dynamic_prompt = self.construct_dynamic_prompt()
-        # combined_prompt = f"{dynamic_prompt}\n{task}"
+        try:
+            # dynamic_prompt = self.construct_dynamic_prompt()
+            # combined_prompt = f"{dynamic_prompt}\n{task}"
 
-        # Activate Autonomous agent message
-        self.activate_autonomous_agent()
+            # Activate Autonomous agent message
+            self.activate_autonomous_agent()
 
-        response = task  # or combined_prompt
-        history = [f"{self.user_name}: {task}"]
+            response = task  # or combined_prompt
+            history = [f"{self.user_name}: {task}"]
 
-        # If dashboard = True then print the dashboard
-        if self.dashboard:
-            self.print_dashboard(task)
+            # If dashboard = True then print the dashboard
+            if self.dashboard:
+                self.print_dashboard(task)
 
-        loop_count = 0
-        # for i in range(self.max_loops):
-        while self.max_loops == "auto" or loop_count < self.max_loops:
-            loop_count += 1
-            print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
-            print("\n")
+            loop_count = 0
+            # for i in range(self.max_loops):
+            while self.max_loops == "auto" or loop_count < self.max_loops:
+                loop_count += 1
+                print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
+                print("\n")
 
-            if self.stopping_token:
-                if self._check_stopping_condition(response) or parse_done_token(
-                    response
-                ):
-                    break
+                if self.stopping_token:
+                    if self._check_stopping_condition(response) or parse_done_token(
+                        response
+                    ):
+                        break
 
-            # Adjust temperature, comment if no work
-            if self.dynamic_temperature:
-                self.dynamic_temperature()
+                # Adjust temperature, comment if no work
+                if self.dynamic_temperature:
+                    self.dynamic_temperature()
 
-            # Preparing the prompt
-            task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
+                # Preparing the prompt
+                task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
 
-            attempt = 0
-            while attempt < self.retry_attempts:
-                try:
-                    response = self.llm(
-                        task,
-                        **kwargs,
-                    )
-                    # If there are any tools then parse and execute them
-                    # if self.tools:
-                    #     self.parse_and_execute_tools(response)
+                attempt = 0
+                while attempt < self.retry_attempts:
+                    try:
+                        response = self.llm(
+                            task,
+                            **kwargs,
+                        )
 
-                    if self.interactive:
-                        print(f"AI: {response}")
-                        history.append(f"AI: {response}")
-                        response = input("You: ")
-                        history.append(f"Human: {response}")
-                    else:
-                        print(f"AI: {response}")
-                        history.append(f"AI: {response}")
-                        print(response)
-                    break
-                except Exception as e:
-                    logging.error(f"Error generating response: {e}")
-                    attempt += 1
-                    time.sleep(self.retry_interval)
-            history.append(response)
-            time.sleep(self.loop_interval)
-        self.memory.append(history)
+                        if self.code_interpreter:
+                            self.run_code(response)
+                        # If there are any tools then parse and execute them
+                        # if self.tools:
+                        #     self.parse_and_execute_tools(response)
 
-        if self.autosave:
-            save_path = self.saved_state_path or "flow_state.json"
-            print(colored(f"Autosaving flow state to {save_path}", "green"))
-            self.save_state(save_path)
+                        if self.interactive:
+                            print(f"AI: {response}")
+                            history.append(f"AI: {response}")
+                            response = input("You: ")
+                            history.append(f"Human: {response}")
+                        else:
+                            print(f"AI: {response}")
+                            history.append(f"AI: {response}")
+                            # print(response)
+                        break
+                    except Exception as e:
+                        logging.error(f"Error generating response: {e}")
+                        attempt += 1
+                        time.sleep(self.retry_interval)
+                history.append(response)
+                time.sleep(self.loop_interval)
+            self.memory.append(history)
 
-        if self.return_history:
-            return response, history
+            if self.autosave:
+                save_path = self.saved_state_path or "flow_state.json"
+                print(colored(f"Autosaving flow state to {save_path}", "green"))
+                self.save_state(save_path)
 
-        return response
+            if self.return_history:
+                return response, history
+
+            return response
+        except Exception as error:
+            print(f"Error running flow: {error}")
+            raise
+
+    def __call__(self, task: str, **kwargs):
+        """
+        Run the autonomous agent loop
+
+        Args:
+            task (str): The initial task to run
+
+        Flow:
+        1. Generate a response
+        2. Check stopping condition
+        3. If stopping condition is met, stop
+        4. If stopping condition is not met, generate a response
+        5. Repeat until stopping condition is met or max_loops is reached
+
+        """
+        try:
+            # dynamic_prompt = self.construct_dynamic_prompt()
+            # combined_prompt = f"{dynamic_prompt}\n{task}"
+
+            # Activate Autonomous agent message
+            self.activate_autonomous_agent()
+
+            response = task  # or combined_prompt
+            history = [f"{self.user_name}: {task}"]
+
+            # If dashboard = True then print the dashboard
+            if self.dashboard:
+                self.print_dashboard(task)
+
+            loop_count = 0
+            # for i in range(self.max_loops):
+            while self.max_loops == "auto" or loop_count < self.max_loops:
+                loop_count += 1
+                print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
+                print("\n")
+
+                if self.stopping_token:
+                    if self._check_stopping_condition(response) or parse_done_token(
+                        response
+                    ):
+                        break
+
+                # Adjust temperature, comment if no work
+                if self.dynamic_temperature:
+                    self.dynamic_temperature()
+
+                # Preparing the prompt
+                task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
+
+                attempt = 0
+                while attempt < self.retry_attempts:
+                    try:
+                        response = self.llm(
+                            task,
+                            **kwargs,
+                        )
+
+                        if self.code_interpreter:
+                            self.run_code(response)
+                        # If there are any tools then parse and execute them
+                        # if self.tools:
+                        #     self.parse_and_execute_tools(response)
+
+                        if self.interactive:
+                            print(f"AI: {response}")
+                            history.append(f"AI: {response}")
+                            response = input("You: ")
+                            history.append(f"Human: {response}")
+                        else:
+                            print(f"AI: {response}")
+                            history.append(f"AI: {response}")
+                            # print(response)
+                        break
+                    except Exception as e:
+                        logging.error(f"Error generating response: {e}")
+                        attempt += 1
+                        time.sleep(self.retry_interval)
+                history.append(response)
+                time.sleep(self.loop_interval)
+            self.memory.append(history)
+
+            if self.autosave:
+                save_path = self.saved_state_path or "flow_state.json"
+                print(colored(f"Autosaving flow state to {save_path}", "green"))
+                self.save_state(save_path)
+
+            if self.return_history:
+                return response, history
+
+            return response
+        except Exception as error:
+            print(f"Error running flow: {error}")
+            raise
 
     async def arun(self, task: str, **kwargs):
         """
@@ -565,13 +739,27 @@ class Flow:
         Returns:
             str: The agent history prompt
         """
-        system_prompt = system_prompt or self.system_prompt
-        agent_history_prompt = f"""
-            SYSTEM_PROMPT: {system_prompt}
+        if self.sop:
+            system_prompt = system_prompt or self.system_prompt
+            agent_history_prompt = f"""
+                SYSTEM_PROMPT: {system_prompt}
 
-            History: {history}
-        """
-        return agent_history_prompt
+                Follow this standard operating procedure (SOP) to complete tasks:
+                {self.sop}
+                
+                -----------------
+                History of conversations between yourself and your user {self.user_name}: {history}
+            """
+            return agent_history_prompt
+        else:
+            system_prompt = system_prompt or self.system_prompt
+            agent_history_prompt = f"""
+                SYSTEM_PROMPT: {system_prompt}
+
+
+                History: {history}
+            """
+            return agent_history_prompt
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """
@@ -687,14 +875,6 @@ class Flow:
             print("Operaiton timed out")
             return "Timeout"
         return response
-
-    # def backup_memory_to_s3(self, bucket_name: str, object_name: str):
-    #     """Backup the memory to S3"""
-    #     import boto3
-
-    #     s3 = boto3.client("s3")
-    #     s3.put_object(Bucket=bucket_name, Key=object_name, Body=json.dumps(self.memory))
-    #     print(f"Backed up memory to S3: {bucket_name}/{object_name}")
 
     def analyze_feedback(self):
         """Analyze the feedback for issues"""
@@ -920,3 +1100,136 @@ class Flow:
     def update_retry_interval(self, retry_interval: int):
         """Update the retry interval"""
         self.retry_interval = retry_interval
+
+    def reset(self):
+        """Reset the flow"""
+        self.memory = []
+
+    def run_code(self, code: str):
+        """
+        text -> parse_code by looking for code inside 6 backticks `````-> run_code
+        """
+        parsed_code = extract_code_in_backticks_in_string(code)
+        run_code = self.code_executor.run(parsed_code)
+        return run_code
+
+    def tool_prompt_prep(self, api_docs: str = None, required_api: str = None):
+        """
+        Prepare the tool prompt
+        """
+        PROMPT = f"""
+        # Task
+        You will be provided with a list of APIs. These APIs will have a
+        description and a list of parameters and return types for each tool. Your
+        task involves creating 3 varied, complex, and detailed user scenarios
+        that require at least 5 API calls to complete involving at least 3
+        different APIs. One of these APIs will be explicitly provided and the
+        other two will be chosen by you.
+
+        For instance, given the APIs: SearchHotels, BookHotel, CancelBooking,
+        GetNFLNews. Given that GetNFLNews is explicitly provided, your scenario
+        should articulate something akin to:
+
+        "The user wants to see if the Broncos won their last game (GetNFLNews).
+        They then want to see if that qualifies them for the playoffs and who
+        they will be playing against (GetNFLNews). The Broncos did make it into
+        the playoffs, so the user wants watch the game in person. They want to
+        look for hotels where the playoffs are occurring (GetNBANews +
+        SearchHotels). After looking at the options, the user chooses to book a
+        3-day stay at the cheapest 4-star option (BookHotel)."
+        13
+
+        This scenario exemplifies a scenario using 5 API calls. The scenario is
+        complex, detailed, and concise as desired. The scenario also includes two
+        APIs used in tandem, the required API, GetNBANews to search for the
+        playoffs location and SearchHotels to find hotels based on the returned
+        location. Usage of multiple APIs in tandem is highly desirable and will
+        receive a higher score. Ideally each scenario should contain one or more
+        instances of multiple APIs being used in tandem.
+
+        Note that this scenario does not use all the APIs given and re-uses the "
+        GetNBANews" API. Re-using APIs is allowed, but each scenario should
+        involve at least 3 different APIs. Note that API usage is also included
+        in the scenario, but exact parameters are not necessary. You must use a
+        different combination of APIs for each scenario. All APIs must be used in
+        at least one scenario. You can only use the APIs provided in the APIs
+        section.
+        
+        Note that API calls are not explicitly mentioned and their uses are
+        included in parentheses. This behaviour should be mimicked in your
+        response.
+        Deliver your response in this format:
+        ‘‘‘
+        - Scenario 1: <Scenario1>
+        - Scenario 2: <Scenario2>
+        - Scenario 3: <Scenario3>
+        ‘‘‘
+        # APIs
+        ‘‘‘
+        {api_docs}
+        ‘‘‘
+        # Response
+        Required API: {required_api}
+        Scenarios with >=5 API calls:
+        ‘‘‘
+        - Scenario 1: <Scenario1>
+        """
+
+    def self_healing(self, **kwargs):
+        """
+        Self healing by debugging errors and refactoring its own code
+
+        Args:
+            **kwargs (Any): Any additional keyword arguments
+        """
+        pass
+
+    # def refactor_code(
+    #     self,
+    #     file: str,
+    #     changes: List,
+    #     confirm: bool = False
+    # ):
+    #     """
+    #     Refactor the code
+    #     """
+    #     with open(file) as f:
+    #         original_file_lines = f.readlines()
+
+    #     # Filter out the changes that are not confirmed
+    #     operation_changes = [
+    #         change for change in changes if "operation" in change
+    #     ]
+    #     explanations = [
+    #         change["explanation"] for change in changes if "explanation" in change
+    #     ]
+
+    #     # Sort the changes in reverse line order
+    #     # explanations.sort(key=lambda x: x["line", reverse=True])
+
+    # # def error_prompt_inject(
+    # #     self,
+    # #     file_path: str,
+    # #     args: List,
+    # #     error: str,
+    # # ):
+    # #     with open(file_path, "r") as f:
+    # #         file_lines = f.readlines()
+
+    # #     file_with_lines = []
+    # #     for i, line in enumerate(file_lines):
+    # #         file_with_lines.append(str(i + 1) + "" + line)
+    # #     file_with_lines = "".join(file_with_lines)
+
+    # #     prompt = f"""
+    # #         Here is the script that needs fixing:\n\n
+    # #         {file_with_lines}\n\n
+    # #         Here are the arguments it was provided:\n\n
+    # #         {args}\n\n
+    # #         Here is the error message:\n\n
+    # #         {error}\n
+    # #         "Please provide your suggested changes, and remember to stick to the "
+    # #         exact format as described above.
+    # #         """
+
+    # #     # Print(prompt)

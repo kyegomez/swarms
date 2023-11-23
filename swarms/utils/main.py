@@ -1,17 +1,16 @@
-import pandas as pd
-from swarms.prompts.prebuild.multi_modal_prompts import DATAFRAME_PROMPT
-import requests
-from typing import Dict
-from enum import Enum
-from pathlib import Path
-import shutil
-import boto3
-from abc import ABC, abstractmethod, abstractstaticmethod
 import os
 import random
+import shutil
 import uuid
+from abc import ABC, abstractmethod, abstractstaticmethod
+from enum import Enum
+from pathlib import Path
+from typing import Dict
 
+import boto3
 import numpy as np
+import pandas as pd
+import requests
 
 
 def seed_everything(seed):
@@ -389,20 +388,3 @@ class FileHandler:
 # =>  base end
 
 # ===========================>
-
-
-class CsvToDataframe(BaseHandler):
-    def handle(self, filename: str):
-        df = pd.read_csv(filename)
-        description = (
-            f"Dataframe with {len(df)} rows and {len(df.columns)} columns. "
-            "Columns are: "
-            f"{', '.join(df.columns)}"
-        )
-
-        print(
-            f"\nProcessed CsvToDataframe, Input CSV: {filename}, Output Description:"
-            f" {description}"
-        )
-
-        return DATAFRAME_PROMPT.format(filename=filename, description=description)

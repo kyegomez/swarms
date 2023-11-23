@@ -66,7 +66,6 @@ nav:
   - Overview: "swarms/index.md"
   - swarms.swarms:
     - AbstractSwarm: "swarms/swarms/abstractswarm.md"
-    - AutoScaler: "swarms/swarms/autoscaler.md"
     - GodMode: "swarms/swarms/godmode.md"
     - Groupchat: "swarms/swarms/groupchat.md"
   - swarms.workers:
@@ -96,17 +95,18 @@ nav:
       - GPT4V: "swarms/models/gpt4v.md"
       - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
       - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
+      - ElevenLabsText2SpeechTool: "swarms/models/elevenlabs.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
-    - Workflow: "swarms/structs/workflow.md"
+    - AutoScaler: "swarms/swarms/autoscaler.md"
     - Flow: "swarms/structs/flow.md"
     - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
   - swarms.memory:
     - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
-  - swarms.chunkers: 
-    - BaseChunker: "swarms/chunkers/basechunker.md"
-    - PdfChunker: "swarms/chunkers/pdf_chunker.md"
+  # - swarms.chunkers: 
+  #   - BaseChunker: "swarms/chunkers/basechunker.md"
+  #   - PdfChunker: "swarms/chunkers/pdf_chunker.md"
 - Guides:
     - Overview: "examples/index.md"
     - Agents:
@@ -134,3 +134,4 @@ nav:
     - Architecture: "corporate/architecture.md"
     - Checklist: "corporate/checklist.md"
     - Hiring: "corporate/hiring.md"
+    - SwarmCloud: "corporate/swarm_cloud.md"
