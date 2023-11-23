@@ -84,4 +84,7 @@ recursive = true
 aggressive = 3
 
 [tool.ruff]
-line-length = 120
+line-length = 200
+
+[tool.pylint]
+max-line-length = 200
