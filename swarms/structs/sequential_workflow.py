@@ -260,10 +260,6 @@ class SequentialWorkflow:
                 --------------------------------
                 Metadata:
                 kwargs: {kwargs}
-
-
-
-
                 """,
                 "cyan",
                 attrs=["bold", "underline"],
