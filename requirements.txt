@@ -41,6 +41,7 @@ playwright
 wget==3.2
 simpleaichat
 httpx
+torch==2.1.1
 open_clip_torch
 ggl
 beautifulsoup4

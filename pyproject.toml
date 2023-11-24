@@ -22,14 +22,14 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = "^3.8.1"
 torch = "2.1.1"
-transformers = "2.10"
+transformers = "*"
 openai = "0.28.0"
 langchain = "*"
 asyncio = "*"
 einops = "*"
-google-generativeai = "0.3.0"
+google-generativeai = "*"
 langchain-experimental = "*"
 playwright = "*"
 weaviate-client = "*"
