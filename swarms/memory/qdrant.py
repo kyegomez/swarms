@@ -9,51 +9,56 @@ class Qdrant:
         self._load_embedding_model(model_name)
         self._setup_collection()
 
-    def _load_embedding_model(self, model_name):
-        # Load the embedding model
-        self.model = SentenceTransformer(model_name)
+    def _load_embedding_model(self, model_name: str):
+        try:
+            self.model = SentenceTransformer(model_name)
+        except Exception as e:
+            print(f"Error loading embedding model: {e}")
 
     def _setup_collection(self):
-        # Check if the collection already exists
         try:
             exists = self.client.get_collection(self.collection_name)
-            return
-        except Exception:
-            # Collection does not exist, create it
+            if exists:
+                print(f"Collection '{self.collection_name}' already exists.")
+        except Exception as e:
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(size=self.model.get_sentence_embedding_dimension(), distance=Distance.DOT),
             )
             print(f"Collection '{self.collection_name}' created.")
-        else:
-            print(f"Collection '{self.collection_name}' already exists.")
 
-    def add_vectors(self, docs):
-        # Add vectors with payloads to the collection
+    def add_vectors(self, docs: List[dict]):
         points = []
         for i, doc in enumerate(docs):
-            if doc.page_content:
-                embedding = self.model.encode(doc.page_content, normalize_embeddings=True)
-                points.append(PointStruct(id=i + 1, vector=embedding, payload={"content":doc.page_content}))
-            else:
-                print(f"Document at index {i} is missing 'text' or 'payload' key")
+            try:
+                if 'page_content' in doc:
+                    embedding = self.model.encode(doc['page_content'], normalize_embeddings=True)
+                    points.append(PointStruct(id=i + 1, vector=embedding, payload={"content": doc['page_content']}))
+                else:
+                    print(f"Document at index {i} is missing 'page_content' key")
+            except Exception as e:
+                print(f"Error processing document at index {i}: {e}")
 
-        operation_info = self.client.upsert(
-            collection_name=self.collection_name,
-            wait=True,
-            points=points,
-        )
-        print(operation_info)
-    def search_vectors(self, query, limit=3):
-        query_vector= self.model.encode(query, normalize_embeddings=True)
-        # Search for similar vectors
-        search_result = self.client.search(
-            collection_name=self.collection_name, 
-            query_vector=query_vector, 
-            limit=limit
-        )
-        return search_result
+        try:
+            operation_info = self.client.upsert(
+                collection_name=self.collection_name,
+                wait=True,
+                points=points,
+            )
+            return operation_info
+        except Exception as e:
+            print(f"Error adding vectors: {e}")
+            return None
 
-
-
-#TODO, use kwargs in constructor, have search result be text
+    def search_vectors(self, query: str, limit: int = 3):
+        try:
+            query_vector = self.model.encode(query, normalize_embeddings=True)
+            search_result = self.client.search(
+                collection_name=self.collection_name,
+                query_vector=query_vector,
+                limit=limit
+            )
+            return search_result
+        except Exception as e:
+            print(f"Error searching vectors: {e}")
+            return None
