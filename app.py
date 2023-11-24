@@ -1,6 +1,4 @@
-import json
 import os
-import sys
 import time
 from functools import partial
 from pathlib import Path
@@ -9,6 +7,8 @@ import warnings
 
 from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
 from swarms.modelui.modules.logging_colors import logger
+
+from vllm import LLM, SamplingParams
 
 os.environ['GRADIO_ANALYTICS_ENABLED'] = 'False'
 os.environ['BITSANDBYTES_NOWELCOME'] = '1'
@@ -48,12 +48,10 @@ from swarms.modelui.modules.models_settings import (
 )
 from swarms.modelui.modules.utils import gradio
 
-import yaml
 import gradio as gr
 from swarms.tools.tools_controller import MTQuestionAnswerer, load_valid_tools
 from swarms.tools.singletool import STQuestionAnswerer
 from langchain.schema import AgentFinish
-import os
 import requests
 
 from swarms.modelui.server import create_interface
@@ -273,9 +271,6 @@ with gr.Blocks() as demo:
             gr.Markdown("")
         with gr.Column(scale=1):
             gr.Image(show_label=False, show_download_button=False, value="images/swarmslogobanner.png")
-
-    with gr.Tab("Models"):
-        create_interface()
 
     with gr.Tab("Key setting"):
         OPENAI_API_KEY = gr.Textbox(label="OpenAI API KEY:", placeholder="sk-...", type="text")
