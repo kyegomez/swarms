@@ -6,7 +6,9 @@ api_key = os.getenv("PINECONE_API_KEY") or ""
 
 
 def test_init():
-    with patch("pinecone.init") as MockInit, patch("pinecone.Index") as MockIndex:
+    with patch("pinecone.init") as MockInit, patch(
+        "pinecone.Index"
+    ) as MockIndex:
         store = PineconeVectorStore(
             api_key=api_key, index_name="test_index", environment="test_env"
         )

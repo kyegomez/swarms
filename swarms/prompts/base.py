@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 
 def get_buffer_string(
-    messages: Sequence[BaseMessage], human_prefix: str = "Human", ai_prefix: str = "AI"
+    messages: Sequence[BaseMessage],
+    human_prefix: str = "Human",
+    ai_prefix: str = "AI",
 ) -> str:
     """Convert sequence of Messages to strings and concatenate them into one string.
 

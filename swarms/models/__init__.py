@@ -7,7 +7,11 @@ sys.stderr = log_file
 from swarms.models.anthropic import Anthropic  # noqa: E402
 from swarms.models.petals import Petals  # noqa: E402
 from swarms.models.mistral import Mistral  # noqa: E402
-from swarms.models.openai_models import OpenAI, AzureOpenAI, OpenAIChat  # noqa: E402
+from swarms.models.openai_models import (
+    OpenAI,
+    AzureOpenAI,
+    OpenAIChat,
+)  # noqa: E402
 from swarms.models.zephyr import Zephyr  # noqa: E402
 from swarms.models.biogpt import BioGPT  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402

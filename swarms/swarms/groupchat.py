@@ -47,7 +47,9 @@ class GroupChat:
 
     def next_agent(self, agent: Flow) -> Flow:
         """Return the next agent in the list."""
-        return self.agents[(self.agent_names.index(agent.name) + 1) % len(self.agents)]
+        return self.agents[
+            (self.agent_names.index(agent.name) + 1) % len(self.agents)
+        ]
 
     def select_speaker_msg(self):
         """Return the message for selecting the next speaker."""
@@ -78,9 +80,9 @@ class GroupChat:
                     {
                         "role": "system",
                         "content": (
-                            "Read the above conversation. Then select the next most"
-                            f" suitable role from {self.agent_names} to play. Only"
-                            " return the role."
+                            "Read the above conversation. Then select the next"
+                            f" most suitable role from {self.agent_names} to"
+                            " play. Only return the role."
                         ),
                     }
                 ]
@@ -126,7 +128,9 @@ class GroupChatManager:
         self.selector = selector
 
     def __call__(self, task: str):
-        self.groupchat.messages.append({"role": self.selector.name, "content": task})
+        self.groupchat.messages.append(
+            {"role": self.selector.name, "content": task}
+        )
         for i in range(self.groupchat.max_round):
             speaker = self.groupchat.select_speaker(
                 last_speaker=self.selector, selector=self.selector

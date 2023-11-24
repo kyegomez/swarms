@@ -30,7 +30,9 @@ def test_create_collection():
 
 def test_create_collection_exception():
     with patch("oceandb.Client") as MockClient:
-        MockClient.create_collection.side_effect = Exception("Create collection error")
+        MockClient.create_collection.side_effect = Exception(
+            "Create collection error"
+        )
         db = OceanDB(MockClient)
         with pytest.raises(Exception) as e:
             db.create_collection("test", "modality")

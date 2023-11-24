@@ -70,11 +70,13 @@ class Kosmos2(BaseModel):
         prompt = "<grounding>An image of"
 
         inputs = self.processor(text=prompt, images=image, return_tensors="pt")
-        outputs = self.model.generate(**inputs, use_cache=True, max_new_tokens=64)
+        outputs = self.model.generate(
+            **inputs, use_cache=True, max_new_tokens=64
+        )
 
-        generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[
-            0
-        ]
+        generated_text = self.processor.batch_decode(
+            outputs, skip_special_tokens=True
+        )[0]
 
         # The actual processing of generated_text to entities would go here
         # For the purpose of this example, assume a mock function 'extract_entities' exists:
@@ -99,7 +101,9 @@ class Kosmos2(BaseModel):
         if not entities:
             return Detections.empty()
 
-        class_ids = [0] * len(entities)  # Replace with actual class ID extraction logic
+        class_ids = [0] * len(
+            entities
+        )  # Replace with actual class ID extraction logic
         xyxys = [
             (
                 e[1][0] * image.width,
@@ -111,7 +115,9 @@ class Kosmos2(BaseModel):
         ]
         confidences = [1.0] * len(entities)  # Placeholder confidence
 
-        return Detections(xyxy=xyxys, class_id=class_ids, confidence=confidences)
+        return Detections(
+            xyxy=xyxys, class_id=class_ids, confidence=confidences
+        )
 
 
 # Usage:

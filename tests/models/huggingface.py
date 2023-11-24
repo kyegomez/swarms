@@ -84,7 +84,9 @@ def test_llm_initialization_params(model_id, max_length):
         assert instance.max_length == max_length
     else:
         instance = HuggingfaceLLM(model_id=model_id)
-        assert instance.max_length == 500  # Assuming 500 is the default max_length
+        assert (
+            instance.max_length == 500
+        )  # Assuming 500 is the default max_length
 
 
 # Test for setting an invalid device
@@ -180,7 +182,8 @@ def test_llm_long_input_warning(mock_warning, llm_instance):
 
 # Test for run method behavior when model raises an exception
 @patch(
-    "swarms.models.huggingface.HuggingfaceLLM._model.generate", side_effect=RuntimeError
+    "swarms.models.huggingface.HuggingfaceLLM._model.generate",
+    side_effect=RuntimeError,
 )
 def test_llm_run_model_exception(mock_generate, llm_instance):
     with pytest.raises(RuntimeError):
@@ -191,7 +194,9 @@ def test_llm_run_model_exception(mock_generate, llm_instance):
 @patch("torch.cuda.is_available", return_value=False)
 def test_llm_force_gpu_when_unavailable(mock_is_available, llm_instance):
     with pytest.raises(EnvironmentError):
-        llm_instance.set_device("cuda")  # Attempt to set CUDA when it's not available
+        llm_instance.set_device(
+            "cuda"
+        )  # Attempt to set CUDA when it's not available
 
 
 # Test for proper cleanup after model use (releasing resources)
@@ -225,7 +230,9 @@ def test_llm_multilingual_input(mock_run, llm_instance):
     mock_run.return_value = "mocked multilingual output"
     multilingual_input = "Bonjour, ceci est un test multilingue."
     result = llm_instance.run(multilingual_input)
-    assert isinstance(result, str)  # Simple check to ensure output is string type
+    assert isinstance(
+        result, str
+    )  # Simple check to ensure output is string type
 
 
 # Test caching mechanism to prevent re-running the same inputs

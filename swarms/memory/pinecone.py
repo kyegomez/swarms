@@ -108,7 +108,7 @@ class PineconeVectorStoreStore(BaseVector):
         vector_id: Optional[str] = None,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Upsert vector"""
         vector_id = vector_id if vector_id else str_to_hash(str(vector))
@@ -123,7 +123,9 @@ class PineconeVectorStoreStore(BaseVector):
         self, vector_id: str, namespace: Optional[str] = None
     ) -> Optional[BaseVector.Entry]:
         """Load entry"""
-        result = self.index.fetch(ids=[vector_id], namespace=namespace).to_dict()
+        result = self.index.fetch(
+            ids=[vector_id], namespace=namespace
+        ).to_dict()
         vectors = list(result["vectors"].values())
 
         if len(vectors) > 0:
@@ -138,7 +140,9 @@ class PineconeVectorStoreStore(BaseVector):
         else:
             return None
 
-    def load_entries(self, namespace: Optional[str] = None) -> list[BaseVector.Entry]:
+    def load_entries(
+        self, namespace: Optional[str] = None
+    ) -> list[BaseVector.Entry]:
         """Load entries"""
         # This is a hacky way to query up to 10,000 values from Pinecone. Waiting on an official API for fetching
         # all values from a namespace:
@@ -169,7 +173,7 @@ class PineconeVectorStoreStore(BaseVector):
         include_vectors: bool = False,
         # PineconeVectorStoreStorageDriver-specific params:
         include_metadata=True,
-        **kwargs
+        **kwargs,
     ) -> list[BaseVector.QueryResult]:
         """Query vectors"""
         vector = self.embedding_driver.embed_string(query)
@@ -196,6 +200,9 @@ class PineconeVectorStoreStore(BaseVector):
 
     def create_index(self, name: str, **kwargs) -> None:
         """Create index"""
-        params = {"name": name, "dimension": self.embedding_driver.dimensions} | kwargs
+        params = {
+            "name": name,
+            "dimension": self.embedding_driver.dimensions,
+        } | kwargs
 
         pinecone.create_index(**params)

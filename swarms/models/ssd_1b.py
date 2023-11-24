@@ -141,8 +141,8 @@ class SSD1B:
             print(
                 colored(
                     (
-                        f"Error running SSD1B: {error} try optimizing your api key and"
-                        " or try again"
+                        f"Error running SSD1B: {error} try optimizing your api"
+                        " key and or try again"
                     ),
                     "red",
                 )
@@ -167,8 +167,7 @@ class SSD1B:
         """Print the SSD1B dashboard"""
         print(
             colored(
-                (
-                    f"""SSD1B Dashboard: 
+                f"""SSD1B Dashboard: 
                     --------------------
 
                     Model: {self.model}
@@ -184,13 +183,14 @@ class SSD1B:
                     --------------------
                     
                     
-                    """
-                ),
+                    """,
                 "green",
             )
         )
 
-    def process_batch_concurrently(self, tasks: List[str], max_workers: int = 5):
+    def process_batch_concurrently(
+        self, tasks: List[str], max_workers: int = 5
+    ):
         """
 
         Process a batch of tasks concurrently
@@ -211,8 +211,12 @@ class SSD1B:
         >>> print(results)
 
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_task = {executor.submit(self, task): task for task in tasks}
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            future_to_task = {
+                executor.submit(self, task): task for task in tasks
+            }
             results = []
             for future in concurrent.futures.as_completed(future_to_task):
                 task = future_to_task[future]
@@ -225,13 +229,17 @@ class SSD1B:
                     print(
                         colored(
                             (
-                                f"Error running SSD1B: {error} try optimizing your api key and"
-                                " or try again"
+                                f"Error running SSD1B: {error} try optimizing"
+                                " your api key and or try again"
                             ),
                             "red",
                         )
                     )
-                    print(colored(f"Error running SSD1B: {error.http_status}", "red"))
+                    print(
+                        colored(
+                            f"Error running SSD1B: {error.http_status}", "red"
+                        )
+                    )
                     print(colored(f"Error running SSD1B: {error.error}", "red"))
                     raise error
 

@@ -133,7 +133,9 @@ class HuggingfaceLLM:
     ):
         self.logger = logging.getLogger(__name__)
         self.device = (
-            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+            device
+            if device
+            else ("cuda" if torch.cuda.is_available() else "cpu")
         )
         self.model_id = model_id
         self.max_length = max_length
@@ -178,7 +180,11 @@ class HuggingfaceLLM:
         except Exception as e:
             # self.logger.error(f"Failed to load the model or the tokenizer: {e}")
             # raise
-            print(colored(f"Failed to load the model and or the tokenizer: {e}", "red"))
+            print(
+                colored(
+                    f"Failed to load the model and or the tokenizer: {e}", "red"
+                )
+            )
 
     def print_error(self, error: str):
         """Print error"""
@@ -207,12 +213,16 @@ class HuggingfaceLLM:
                 if self.distributed:
                     self.model = DDP(self.model)
             except Exception as error:
-                self.logger.error(f"Failed to load the model or the tokenizer: {error}")
+                self.logger.error(
+                    f"Failed to load the model or the tokenizer: {error}"
+                )
                 raise
 
     def concurrent_run(self, tasks: List[str], max_workers: int = 5):
         """Concurrently generate text for a list of prompts."""
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
             results = list(executor.map(self.run, tasks))
         return results
 
@@ -220,7 +230,8 @@ class HuggingfaceLLM:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self.run, task, img) for task, img in tasks_images
+                executor.submit(self.run, task, img)
+                for task, img in tasks_images
             ]
             results = [future.result() for future in futures]
         return results
@@ -243,7 +254,9 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(task, return_tensors="pt").to(
+                self.device
+            )
 
             # self.log.start()
 
@@ -279,8 +292,8 @@ class HuggingfaceLLM:
             print(
                 colored(
                     (
-                        f"HuggingfaceLLM could not generate text because of error: {e},"
-                        " try optimizing your arguments"
+                        "HuggingfaceLLM could not generate text because of"
+                        f" error: {e}, try optimizing your arguments"
                     ),
                     "red",
                 )
@@ -305,7 +318,9 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(task, return_tensors="pt").to(
+                self.device
+            )
 
             # self.log.start()
 

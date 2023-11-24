@@ -35,4 +35,6 @@ def test_omnimodalagent_run(omni_agent):
 
 
 def test_task_executor_initialization(omni_agent):
-    assert omni_agent.task_executor is not None, "TaskExecutor initialization failed"
+    assert (
+        omni_agent.task_executor is not None
+    ), "TaskExecutor initialization failed"

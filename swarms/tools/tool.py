@@ -7,7 +7,17 @@ import warnings
 from abc import abstractmethod
 from functools import partial
 from inspect import signature
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 from langchain.callbacks.base import BaseCallbackManager
 from langchain.callbacks.manager import (
@@ -27,7 +37,11 @@ from pydantic import (
     root_validator,
     validate_arguments,
 )
-from langchain.schema.runnable import Runnable, RunnableConfig, RunnableSerializable
+from langchain.schema.runnable import (
+    Runnable,
+    RunnableConfig,
+    RunnableSerializable,
+)
 
 
 class SchemaAnnotationError(TypeError):
@@ -52,7 +66,11 @@ def _get_filtered_args(
     """Get the arguments from a function's signature."""
     schema = inferred_model.schema()["properties"]
     valid_keys = signature(func).parameters
-    return {k: schema[k] for k in valid_keys if k not in ("run_manager", "callbacks")}
+    return {
+        k: schema[k]
+        for k in valid_keys
+        if k not in ("run_manager", "callbacks")
+    }
 
 
 class _SchemaConfig:
@@ -120,12 +138,11 @@ class ChildTool(BaseTool):
     ..."""
                 name = cls.__name__
                 raise SchemaAnnotationError(
-                    f"Tool definition for {name} must include valid type annotations"
-                    " for argument 'args_schema' to behave as expected.\n"
-                    "Expected annotation of 'Type[BaseModel]'"
-                    f" but got '{args_schema_type}'.\n"
-                    "Expected class looks like:\n"
-                    f"{typehint_mandate}"
+                    f"Tool definition for {name} must include valid type"
+                    " annotations for argument 'args_schema' to behave as"
+                    " expected.\nExpected annotation of 'Type[BaseModel]' but"
+                    f" got '{args_schema_type}'.\nExpected class looks"
+                    f" like:\n{typehint_mandate}"
                 )
 
     name: str
@@ -147,7 +164,9 @@ class ChildTool(BaseTool):
 
     callbacks: Callbacks = Field(default=None, exclude=True)
     """Callbacks to be called during tool execution."""
-    callback_manager: Optional[BaseCallbackManager] = Field(default=None, exclude=True)
+    callback_manager: Optional[BaseCallbackManager] = Field(
+        default=None, exclude=True
+    )
     """Deprecated. Please use callbacks instead."""
     tags: Optional[List[str]] = None
     """Optional list of tags associated with the tool. Defaults to None
@@ -244,7 +263,9 @@ class ChildTool(BaseTool):
         else:
             if input_args is not None:
                 result = input_args.parse_obj(tool_input)
-                return {k: v for k, v in result.dict().items() if k in tool_input}
+                return {
+                    k: v for k, v in result.dict().items() if k in tool_input
+                }
         return tool_input
 
     @root_validator()
@@ -286,7 +307,9 @@ class ChildTool(BaseTool):
             *args,
         )
 
-    def _to_args_and_kwargs(self, tool_input: Union[str, Dict]) -> Tuple[Tuple, Dict]:
+    def _to_args_and_kwargs(
+        self, tool_input: Union[str, Dict]
+    ) -> Tuple[Tuple, Dict]:
         # For backwards compatibility, if run_input is a string,
         # pass as a positional argument.
         if isinstance(tool_input, str):
@@ -353,8 +376,9 @@ class ChildTool(BaseTool):
                 observation = self.handle_tool_error(e)
             else:
                 raise ValueError(
-                    "Got unexpected type of `handle_tool_error`. Expected bool, str "
-                    f"or callable. Received: {self.handle_tool_error}"
+                    "Got unexpected type of `handle_tool_error`. Expected"
+                    " bool, str or callable. Received:"
+                    f" {self.handle_tool_error}"
                 )
             run_manager.on_tool_end(
                 str(observation), color="red", name=self.name, **kwargs
@@ -409,7 +433,9 @@ class ChildTool(BaseTool):
             # We then call the tool on the tool input to get an observation
             tool_args, tool_kwargs = self._to_args_and_kwargs(parsed_input)
             observation = (
-                await self._arun(*tool_args, run_manager=run_manager, **tool_kwargs)
+                await self._arun(
+                    *tool_args, run_manager=run_manager, **tool_kwargs
+                )
                 if new_arg_supported
                 else await self._arun(*tool_args, **tool_kwargs)
             )
@@ -428,8 +454,9 @@ class ChildTool(BaseTool):
                 observation = self.handle_tool_error(e)
             else:
                 raise ValueError(
-                    "Got unexpected type of `handle_tool_error`. Expected bool, str "
-                    f"or callable. Received: {self.handle_tool_error}"
+                    "Got unexpected type of `handle_tool_error`. Expected"
+                    " bool, str or callable. Received:"
+                    f" {self.handle_tool_error}"
                 )
             await run_manager.on_tool_end(
                 str(observation), color="red", name=self.name, **kwargs
@@ -484,14 +511,17 @@ class Tool(BaseTool):
         # assume it takes a single string input.
         return {"tool_input": {"type": "string"}}
 
-    def _to_args_and_kwargs(self, tool_input: Union[str, Dict]) -> Tuple[Tuple, Dict]:
+    def _to_args_and_kwargs(
+        self, tool_input: Union[str, Dict]
+    ) -> Tuple[Tuple, Dict]:
         """Convert tool input to pydantic model."""
         args, kwargs = super()._to_args_and_kwargs(tool_input)
         # For backwards compatibility. The tool must be run with a single input
         all_args = list(args) + list(kwargs.values())
         if len(all_args) != 1:
             raise ToolException(
-                f"Too many arguments to single-input tool {self.name}. Args: {all_args}"
+                f"Too many arguments to single-input tool {self.name}. Args:"
+                f" {all_args}"
             )
         return tuple(all_args), {}
 
@@ -503,7 +533,9 @@ class Tool(BaseTool):
     ) -> Any:
         """Use the tool."""
         if self.func:
-            new_argument_supported = signature(self.func).parameters.get("callbacks")
+            new_argument_supported = signature(self.func).parameters.get(
+                "callbacks"
+            )
             return (
                 self.func(
                     *args,
@@ -537,12 +569,18 @@ class Tool(BaseTool):
             )
         else:
             return await asyncio.get_running_loop().run_in_executor(
-                None, partial(self._run, run_manager=run_manager, **kwargs), *args
+                None,
+                partial(self._run, run_manager=run_manager, **kwargs),
+                *args,
             )
 
     # TODO: this is for backwards compatibility, remove in future
     def __init__(
-        self, name: str, func: Optional[Callable], description: str, **kwargs: Any
+        self,
+        name: str,
+        func: Optional[Callable],
+        description: str,
+        **kwargs: Any,
     ) -> None:
         """Initialize tool."""
         super(Tool, self).__init__(
@@ -617,7 +655,9 @@ class StructuredTool(BaseTool):
     ) -> Any:
         """Use the tool."""
         if self.func:
-            new_argument_supported = signature(self.func).parameters.get("callbacks")
+            new_argument_supported = signature(self.func).parameters.get(
+                "callbacks"
+            )
             return (
                 self.func(
                     *args,
@@ -714,7 +754,9 @@ class StructuredTool(BaseTool):
         description = f"{name}{sig} - {description.strip()}"
         _args_schema = args_schema
         if _args_schema is None and infer_schema:
-            _args_schema = create_schema_from_function(f"{name}Schema", source_function)
+            _args_schema = create_schema_from_function(
+                f"{name}Schema", source_function
+            )
         return cls(
             name=name,
             func=func,
@@ -772,7 +814,9 @@ def tool(
                 async def ainvoke_wrapper(
                     callbacks: Optional[Callbacks] = None, **kwargs: Any
                 ) -> Any:
-                    return await runnable.ainvoke(kwargs, {"callbacks": callbacks})
+                    return await runnable.ainvoke(
+                        kwargs, {"callbacks": callbacks}
+                    )
 
                 def invoke_wrapper(
                     callbacks: Optional[Callbacks] = None, **kwargs: Any
@@ -821,7 +865,11 @@ def tool(
 
         return _make_tool
 
-    if len(args) == 2 and isinstance(args[0], str) and isinstance(args[1], Runnable):
+    if (
+        len(args) == 2
+        and isinstance(args[0], str)
+        and isinstance(args[1], Runnable)
+    ):
         return _make_with_name(args[0])(args[1])
     elif len(args) == 1 and isinstance(args[0], str):
         # if the argument is a string, then we use the string as the tool name

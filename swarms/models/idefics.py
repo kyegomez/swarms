@@ -66,7 +66,9 @@ class Idefics:
         max_length=100,
     ):
         self.device = (
-            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+            device
+            if device
+            else ("cuda" if torch.cuda.is_available() else "cpu")
         )
         self.model = IdeficsForVisionText2Text.from_pretrained(
             checkpoint,

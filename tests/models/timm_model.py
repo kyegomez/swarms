@@ -66,7 +66,9 @@ def test_call_parameterized(model_name, pretrained, in_chans):
 
 def test_get_supported_models_mock():
     model_handler = TimmModel()
-    model_handler._get_supported_models = Mock(return_value=["resnet18", "resnet50"])
+    model_handler._get_supported_models = Mock(
+        return_value=["resnet18", "resnet50"]
+    )
     supported_models = model_handler._get_supported_models()
     assert supported_models == ["resnet18", "resnet50"]
 
@@ -80,7 +82,9 @@ def test_create_model_mock(sample_model_info):
 
 def test_call_exception():
     model_handler = TimmModel()
-    model_info = TimmModelInfo(model_name="invalid_model", pretrained=True, in_chans=3)
+    model_info = TimmModelInfo(
+        model_name="invalid_model", pretrained=True, in_chans=3
+    )
     input_tensor = torch.randn(1, 3, 224, 224)
     with pytest.raises(Exception):
         model_handler.__call__(model_info, input_tensor)
@@ -111,7 +115,9 @@ def test_environment_variable():
 @pytest.mark.slow
 def test_marked_slow():
     model_handler = TimmModel()
-    model_info = TimmModelInfo(model_name="resnet18", pretrained=True, in_chans=3)
+    model_info = TimmModelInfo(
+        model_name="resnet18", pretrained=True, in_chans=3
+    )
     input_tensor = torch.randn(1, 3, 224, 224)
     output_shape = model_handler(model_info, input_tensor)
     assert isinstance(output_shape, torch.Size)
@@ -136,7 +142,9 @@ def test_marked_parameterized(model_name, pretrained, in_chans):
 
 def test_exception_testing():
     model_handler = TimmModel()
-    model_info = TimmModelInfo(model_name="invalid_model", pretrained=True, in_chans=3)
+    model_info = TimmModelInfo(
+        model_name="invalid_model", pretrained=True, in_chans=3
+    )
     input_tensor = torch.randn(1, 3, 224, 224)
     with pytest.raises(Exception):
         model_handler.__call__(model_info, input_tensor)
@@ -144,7 +152,9 @@ def test_exception_testing():
 
 def test_parameterized_testing():
     model_handler = TimmModel()
-    model_info = TimmModelInfo(model_name="resnet18", pretrained=True, in_chans=3)
+    model_info = TimmModelInfo(
+        model_name="resnet18", pretrained=True, in_chans=3
+    )
     input_tensor = torch.randn(1, 3, 224, 224)
     output_shape = model_handler.__call__(model_info, input_tensor)
     assert isinstance(output_shape, torch.Size)
@@ -153,7 +163,9 @@ def test_parameterized_testing():
 def test_use_mocks_and_monkeypatching():
     model_handler = TimmModel()
     model_handler._create_model = Mock(return_value=torch.nn.Module())
-    model_info = TimmModelInfo(model_name="resnet18", pretrained=True, in_chans=3)
+    model_info = TimmModelInfo(
+        model_name="resnet18", pretrained=True, in_chans=3
+    )
     model = model_handler._create_model(model_info)
     assert isinstance(model, torch.nn.Module)
 

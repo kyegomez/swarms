@@ -89,11 +89,15 @@ class PgVectorVectorStore(BaseVectorStore):
     engine: Optional[Engine] = field(default=None, kw_only=True)
     table_name: str = field(kw_only=True)
     _model: any = field(
-        default=Factory(lambda self: self.default_vector_model(), takes_self=True)
+        default=Factory(
+            lambda self: self.default_vector_model(), takes_self=True
+        )
     )
 
     @connection_string.validator
-    def validate_connection_string(self, _, connection_string: Optional[str]) -> None:
+    def validate_connection_string(
+        self, _, connection_string: Optional[str]
+    ) -> None:
         # If an engine is provided, the connection string is not used.
         if self.engine is not None:
             return
@@ -104,7 +108,8 @@ class PgVectorVectorStore(BaseVectorStore):
 
         if not connection_string.startswith("postgresql://"):
             raise ValueError(
-                "The connection string must describe a Postgres database connection"
+                "The connection string must describe a Postgres database"
+                " connection"
             )
 
     @engine.validator
@@ -148,7 +153,7 @@ class PgVectorVectorStore(BaseVectorStore):
         vector_id: Optional[str] = None,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Inserts or updates a vector in the collection."""
         with Session(self.engine) as session:
@@ -208,7 +213,7 @@ class PgVectorVectorStore(BaseVectorStore):
         namespace: Optional[str] = None,
         include_vectors: bool = False,
         distance_metric: str = "cosine_distance",
-        **kwargs
+        **kwargs,
     ) -> list[BaseVectorStore.QueryResult]:
         """Performs a search on the collection to find vectors similar to the provided input vector,
         optionally filtering to only those that match the provided namespace.

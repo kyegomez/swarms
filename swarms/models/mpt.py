@@ -29,7 +29,9 @@ class MPT7B:
 
     """
 
-    def __init__(self, model_name: str, tokenizer_name: str, max_tokens: int = 100):
+    def __init__(
+        self, model_name: str, tokenizer_name: str, max_tokens: int = 100
+    ):
         # Loading model and tokenizer details
         self.model_name = model_name
         self.tokenizer_name = tokenizer_name
@@ -118,7 +120,10 @@ class MPT7B:
         """
         with torch.autocast("cuda", dtype=torch.bfloat16):
             return self.pipe(
-                prompt, max_new_tokens=self.max_tokens, do_sample=True, use_cache=True
+                prompt,
+                max_new_tokens=self.max_tokens,
+                do_sample=True,
+                use_cache=True,
             )[0]["generated_text"]
 
     async def generate_async(self, prompt: str) -> str:

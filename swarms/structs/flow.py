@@ -348,7 +348,8 @@ class Flow:
                 return "\n".join(tool_descriptions)
             except Exception as error:
                 print(
-                    f"Error getting tool description: {error} try adding a description to the tool or removing the tool"
+                    f"Error getting tool description: {error} try adding a"
+                    " description to the tool or removing the tool"
                 )
         else:
             return "No tools available"
@@ -479,8 +480,12 @@ class Flow:
             print(colored("Initializing Autonomous Agent...", "yellow"))
             # print(colored("Loading modules...", "yellow"))
             # print(colored("Modules loaded successfully.", "green"))
-            print(colored("Autonomous Agent Activated.", "cyan", attrs=["bold"]))
-            print(colored("All systems operational. Executing task...", "green"))
+            print(
+                colored("Autonomous Agent Activated.", "cyan", attrs=["bold"])
+            )
+            print(
+                colored("All systems operational. Executing task...", "green")
+            )
         except Exception as error:
             print(
                 colored(
@@ -525,14 +530,16 @@ class Flow:
             loop_count = 0
             while self.max_loops == "auto" or loop_count < self.max_loops:
                 loop_count += 1
-                print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
+                print(
+                    colored(f"\nLoop {loop_count} of {self.max_loops}", "blue")
+                )
                 print("\n")
 
                 # Check to see if stopping token is in the output to stop the loop
                 if self.stopping_token:
-                    if self._check_stopping_condition(response) or parse_done_token(
+                    if self._check_stopping_condition(
                         response
-                    ):
+                    ) or parse_done_token(response):
                         break
 
                 # Adjust temperature, comment if no work
@@ -629,7 +636,9 @@ class Flow:
             print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
             print("\n")
 
-            if self._check_stopping_condition(response) or parse_done_token(response):
+            if self._check_stopping_condition(response) or parse_done_token(
+                response
+            ):
                 break
 
             # Adjust temperature, comment if no work
@@ -949,7 +958,8 @@ class Flow:
             if hasattr(self.llm, name):
                 value = getattr(self.llm, name)
                 if isinstance(
-                    value, (str, int, float, bool, list, dict, tuple, type(None))
+                    value,
+                    (str, int, float, bool, list, dict, tuple, type(None)),
                 ):
                     llm_params[name] = value
                 else:
@@ -1010,7 +1020,9 @@ class Flow:
 
         print(f"Flow state loaded from {file_path}")
 
-    def retry_on_failure(self, function, retries: int = 3, retry_delay: int = 1):
+    def retry_on_failure(
+        self, function, retries: int = 3, retry_delay: int = 1
+    ):
         """Retry wrapper for LLM calls."""
         attempt = 0
         while attempt < retries:

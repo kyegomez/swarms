@@ -64,7 +64,8 @@ class GodMode:
             table.append([f"LLM {i+1}", response])
         print(
             colored(
-                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
+                "cyan",
             )
         )
 
@@ -83,7 +84,8 @@ class GodMode:
             table.append([f"LLM {i+1}", response])
         print(
             colored(
-                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
+                "cyan",
             )
         )
 
@@ -115,11 +117,13 @@ class GodMode:
             print(f"{i + 1}. {task}")
         print("\nLast Responses:")
         table = [
-            [f"LLM {i+1}", response] for i, response in enumerate(self.last_responses)
+            [f"LLM {i+1}", response]
+            for i, response in enumerate(self.last_responses)
         ]
         print(
             colored(
-                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"), "cyan"
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
+                "cyan",
             )
         )
 
@@ -137,7 +141,8 @@ class GodMode:
         """Asynchronous run the task string"""
         loop = asyncio.get_event_loop()
         futures = [
-            loop.run_in_executor(None, lambda llm: llm(task), llm) for llm in self.llms
+            loop.run_in_executor(None, lambda llm: llm(task), llm)
+            for llm in self.llms
         ]
         for response in await asyncio.gather(*futures):
             print(response)
@@ -145,13 +150,18 @@ class GodMode:
     def concurrent_run(self, task: str) -> List[str]:
         """Synchronously run the task on all llms and collect responses"""
         with ThreadPoolExecutor() as executor:
-            future_to_llm = {executor.submit(llm, task): llm for llm in self.llms}
+            future_to_llm = {
+                executor.submit(llm, task): llm for llm in self.llms
+            }
             responses = []
             for future in as_completed(future_to_llm):
                 try:
                     responses.append(future.result())
                 except Exception as error:
-                    print(f"{future_to_llm[future]} generated an exception: {error}")
+                    print(
+                        f"{future_to_llm[future]} generated an exception:"
+                        f" {error}"
+                    )
         self.last_responses = responses
         self.task_history.append(task)
         return responses

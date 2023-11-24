@@ -7,7 +7,11 @@ from typing import Callable, List, Dict, Any, Sequence
 
 class Task:
     def __init__(
-        self, id: str, task: str, flows: Sequence[Flow], dependencies: List[str] = []
+        self,
+        id: str,
+        task: str,
+        flows: Sequence[Flow],
+        dependencies: List[str] = [],
     ):
         self.id = id
         self.task = task
@@ -20,7 +24,9 @@ class Task:
         for flow in self.flows:
             result = flow.run(self.task, *args)
             self.results.append(result)
-            args = [result]  # The output of one flow becomes the input to the next
+            args = [
+                result
+            ]  # The output of one flow becomes the input to the next
 
 
 class Workflow:
@@ -41,7 +47,10 @@ class Workflow:
                 ):
                     future = self.executor.submit(
                         task.execute,
-                        {dep: self.tasks[dep].results for dep in task.dependencies},
+                        {
+                            dep: self.tasks[dep].results
+                            for dep in task.dependencies
+                        },
                     )
                     futures.append((future, task.id))
 

@@ -54,7 +54,9 @@ class JinaEmbeddings:
     ):
         self.logger = logging.getLogger(__name__)
         self.device = (
-            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+            device
+            if device
+            else ("cuda" if torch.cuda.is_available() else "cpu")
         )
         self.model_id = model_id
         self.max_length = max_length
@@ -83,7 +85,9 @@ class JinaEmbeddings:
 
         try:
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id, quantization_config=bnb_config, trust_remote_code=True
+                self.model_id,
+                quantization_config=bnb_config,
+                trust_remote_code=True,
             )
 
             self.model  # .to(self.device)
@@ -112,7 +116,9 @@ class JinaEmbeddings:
                 if self.distributed:
                     self.model = DDP(self.model)
             except Exception as error:
-                self.logger.error(f"Failed to load the model or the tokenizer: {error}")
+                self.logger.error(
+                    f"Failed to load the model or the tokenizer: {error}"
+                )
                 raise
 
     def run(self, task: str):

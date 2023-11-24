@@ -154,7 +154,7 @@ class BioGPT:
                 min_length=self.min_length,
                 max_length=self.max_length,
                 num_beams=num_beams,
-                early_stopping=early_stopping
+                early_stopping=early_stopping,
             )
         return self.tokenizer.decode(beam_output[0], skip_special_tokens=True)
 

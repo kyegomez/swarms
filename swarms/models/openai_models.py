@@ -62,19 +62,25 @@ def _stream_response_to_generation_chunk(
     return GenerationChunk(
         text=stream_response["choices"][0]["text"],
         generation_info=dict(
-            finish_reason=stream_response["choices"][0].get("finish_reason", None),
+            finish_reason=stream_response["choices"][0].get(
+                "finish_reason", None
+            ),
             logprobs=stream_response["choices"][0].get("logprobs", None),
         ),
     )
 
 
-def _update_response(response: Dict[str, Any], stream_response: Dict[str, Any]) -> None:
+def _update_response(
+    response: Dict[str, Any], stream_response: Dict[str, Any]
+) -> None:
     """Update response from the stream response."""
     response["choices"][0]["text"] += stream_response["choices"][0]["text"]
     response["choices"][0]["finish_reason"] = stream_response["choices"][0].get(
         "finish_reason", None
     )
-    response["choices"][0]["logprobs"] = stream_response["choices"][0]["logprobs"]
+    response["choices"][0]["logprobs"] = stream_response["choices"][0][
+        "logprobs"
+    ]
 
 
 def _streaming_response_template() -> Dict[str, Any]:
@@ -315,9 +321,11 @@ class BaseOpenAI(BaseLLM):
                     chunk.text,
                     chunk=chunk,
                     verbose=self.verbose,
-                    logprobs=chunk.generation_info["logprobs"]
-                    if chunk.generation_info
-                    else None,
+                    logprobs=(
+                        chunk.generation_info["logprobs"]
+                        if chunk.generation_info
+                        else None
+                    ),
                 )
 
     async def _astream(
@@ -339,9 +347,11 @@ class BaseOpenAI(BaseLLM):
                     chunk.text,
                     chunk=chunk,
                     verbose=self.verbose,
-                    logprobs=chunk.generation_info["logprobs"]
-                    if chunk.generation_info
-                    else None,
+                    logprobs=(
+                        chunk.generation_info["logprobs"]
+                        if chunk.generation_info
+                        else None
+                    ),
                 )
 
     def _generate(
@@ -377,10 +387,14 @@ class BaseOpenAI(BaseLLM):
         for _prompts in sub_prompts:
             if self.streaming:
                 if len(_prompts) > 1:
-                    raise ValueError("Cannot stream results with multiple prompts.")
+                    raise ValueError(
+                        "Cannot stream results with multiple prompts."
+                    )
 
                 generation: Optional[GenerationChunk] = None
-                for chunk in self._stream(_prompts[0], stop, run_manager, **kwargs):
+                for chunk in self._stream(
+                    _prompts[0], stop, run_manager, **kwargs
+                ):
                     if generation is None:
                         generation = chunk
                     else:
@@ -389,12 +403,16 @@ class BaseOpenAI(BaseLLM):
                 choices.append(
                     {
                         "text": generation.text,
-                        "finish_reason": generation.generation_info.get("finish_reason")
-                        if generation.generation_info
-                        else None,
-                        "logprobs": generation.generation_info.get("logprobs")
-                        if generation.generation_info
-                        else None,
+                        "finish_reason": (
+                            generation.generation_info.get("finish_reason")
+                            if generation.generation_info
+                            else None
+                        ),
+                        "logprobs": (
+                            generation.generation_info.get("logprobs")
+                            if generation.generation_info
+                            else None
+                        ),
                     }
                 )
             else:
@@ -424,7 +442,9 @@ class BaseOpenAI(BaseLLM):
         for _prompts in sub_prompts:
             if self.streaming:
                 if len(_prompts) > 1:
-                    raise ValueError("Cannot stream results with multiple prompts.")
+                    raise ValueError(
+                        "Cannot stream results with multiple prompts."
+                    )
 
                 generation: Optional[GenerationChunk] = None
                 async for chunk in self._astream(
@@ -438,12 +458,16 @@ class BaseOpenAI(BaseLLM):
                 choices.append(
                     {
                         "text": generation.text,
-                        "finish_reason": generation.generation_info.get("finish_reason")
-                        if generation.generation_info
-                        else None,
-                        "logprobs": generation.generation_info.get("logprobs")
-                        if generation.generation_info
-                        else None,
+                        "finish_reason": (
+                            generation.generation_info.get("finish_reason")
+                            if generation.generation_info
+                            else None
+                        ),
+                        "logprobs": (
+                            generation.generation_info.get("logprobs")
+                            if generation.generation_info
+                            else None
+                        ),
                     }
                 )
             else:
@@ -463,7 +487,9 @@ class BaseOpenAI(BaseLLM):
         """Get the sub prompts for llm call."""
         if stop is not None:
             if "stop" in params:
-                raise ValueError("`stop` found in both the input and default params.")
+                raise ValueError(
+                    "`stop` found in both the input and default params."
+                )
             params["stop"] = stop
         if params["max_tokens"] == -1:
             if len(prompts) != 1:
@@ -541,7 +567,9 @@ class BaseOpenAI(BaseLLM):
         try:
             enc = tiktoken.encoding_for_model(model_name)
         except KeyError:
-            logger.warning("Warning: model not found. Using cl100k_base encoding.")
+            logger.warning(
+                "Warning: model not found. Using cl100k_base encoding."
+            )
             model = "cl100k_base"
             enc = tiktoken.get_encoding(model)
 
@@ -602,8 +630,9 @@ class BaseOpenAI(BaseLLM):
 
         if context_size is None:
             raise ValueError(
-                f"Unknown model: {modelname}. Please provide a valid OpenAI model name."
-                "Known models are: " + ", ".join(model_token_mapping.keys())
+                f"Unknown model: {modelname}. Please provide a valid OpenAI"
+                " model name.Known models are: "
+                + ", ".join(model_token_mapping.keys())
             )
 
         return context_size
@@ -753,7 +782,9 @@ class OpenAIChat(BaseLLM):
     @root_validator(pre=True)
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
-        all_required_field_names = {field.alias for field in cls.__fields__.values()}
+        all_required_field_names = {
+            field.alias for field in cls.__fields__.values()
+        }
 
         extra = values.get("model_kwargs", {})
         for field_name in list(values):
@@ -820,13 +851,21 @@ class OpenAIChat(BaseLLM):
     ) -> Tuple:
         if len(prompts) > 1:
             raise ValueError(
-                f"OpenAIChat currently only supports single prompt, got {prompts}"
+                "OpenAIChat currently only supports single prompt, got"
+                f" {prompts}"
             )
-        messages = self.prefix_messages + [{"role": "user", "content": prompts[0]}]
-        params: Dict[str, Any] = {**{"model": self.model_name}, **self._default_params}
+        messages = self.prefix_messages + [
+            {"role": "user", "content": prompts[0]}
+        ]
+        params: Dict[str, Any] = {
+            **{"model": self.model_name},
+            **self._default_params,
+        }
         if stop is not None:
             if "stop" in params:
-                raise ValueError("`stop` found in both the input and default params.")
+                raise ValueError(
+                    "`stop` found in both the input and default params."
+                )
             params["stop"] = stop
         if params.get("max_tokens") == -1:
             # for ChatGPT api, omitting max_tokens is equivalent to having no limit
@@ -897,7 +936,11 @@ class OpenAIChat(BaseLLM):
         }
         return LLMResult(
             generations=[
-                [Generation(text=full_response["choices"][0]["message"]["content"])]
+                [
+                    Generation(
+                        text=full_response["choices"][0]["message"]["content"]
+                    )
+                ]
             ],
             llm_output=llm_output,
         )
@@ -911,7 +954,9 @@ class OpenAIChat(BaseLLM):
     ) -> LLMResult:
         if self.streaming:
             generation: Optional[GenerationChunk] = None
-            async for chunk in self._astream(prompts[0], stop, run_manager, **kwargs):
+            async for chunk in self._astream(
+                prompts[0], stop, run_manager, **kwargs
+            ):
                 if generation is None:
                     generation = chunk
                 else:
@@ -930,7 +975,11 @@ class OpenAIChat(BaseLLM):
         }
         return LLMResult(
             generations=[
-                [Generation(text=full_response["choices"][0]["message"]["content"])]
+                [
+                    Generation(
+                        text=full_response["choices"][0]["message"]["content"]
+                    )
+                ]
             ],
             llm_output=llm_output,
         )
