@@ -149,6 +149,7 @@ class SequentialWorkflow:
         return {task.description: task.result for task in self.tasks}
 
     def remove_task(self, task_description: str) -> None:
+        """Remove tasks from sequential workflow"""
         self.tasks = [
             task for task in self.tasks if task.description != task_description
         ]
