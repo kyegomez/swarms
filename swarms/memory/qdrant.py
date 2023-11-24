@@ -1,13 +1,19 @@
+from typing import List
+from qdrant_client.http.models import CollectionInfoResponse, OperationResponse, SearchResult
+from sentence_transformers import SentenceTransformer
 from httpx import RequestError
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
-from sentence_transformers import SentenceTransformer
+
 class Qdrant:
-    def __init__(self,api_key, host, port=6333, collection_name="qdrant", model_name="BAAI/bge-small-en-v1.5", https=True ):
-        self.client = QdrantClient(url=host, port=port, api_key=api_key) #, port=port, api_key=api_key, https=False
-        self.collection_name = collection_name
-        self._load_embedding_model(model_name)
-        self._setup_collection()
+    def __init__(self, api_key: str, host: str, port: int = 6333, collection_name: str = "qdrant", model_name: str = "BAAI/bge-small-en-v1.5", https: bool = True):
+        try:
+            self.client = QdrantClient(url=host, port=port, api_key=api_key)
+            self.collection_name = collection_name
+            self._load_embedding_model(model_name)
+            self._setup_collection()
+        except RequestError as e:
+            print(f"Error setting up QdrantClient: {e}")
 
     def _load_embedding_model(self, model_name: str):
         try:
