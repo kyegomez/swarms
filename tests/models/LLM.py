@@ -11,7 +11,9 @@ class TestLLM(unittest.TestCase):
     @patch.object(ChatOpenAI, "__init__", return_value=None)
     def setUp(self, mock_hf_init, mock_openai_init):
         self.llm_openai = LLM(openai_api_key="mock_openai_key")
-        self.llm_hf = LLM(hf_repo_id="mock_repo_id", hf_api_token="mock_hf_token")
+        self.llm_hf = LLM(
+            hf_repo_id="mock_repo_id", hf_api_token="mock_hf_token"
+        )
         self.prompt = "Who won the FIFA World Cup in 1998?"
 
     def test_init(self):

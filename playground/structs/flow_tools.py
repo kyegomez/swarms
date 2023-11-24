@@ -30,7 +30,9 @@ async def async_load_playwright(url: str) -> str:
 
             text = soup.get_text()
             lines = (line.strip() for line in text.splitlines())
-            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            chunks = (
+                phrase.strip() for line in lines for phrase in line.split("  ")
+            )
             results = "\n".join(chunk for chunk in chunks if chunk)
         except Exception as e:
             results = f"Error: {e}"
@@ -58,5 +60,6 @@ flow = Flow(
 )
 
 out = flow.run(
-    "Generate a 10,000 word blog on mental clarity and the benefits of meditation."
+    "Generate a 10,000 word blog on mental clarity and the benefits of"
+    " meditation."
 )

@@ -61,10 +61,14 @@ def test_run_text_to_speech_with_mock(eleven_labs_tool):
 def test_run_text_to_speech_error_handling(eleven_labs_tool):
     with patch("your_module._import_elevenlabs") as mock_elevenlabs:
         mock_elevenlabs_instance = mock_elevenlabs.return_value
-        mock_elevenlabs_instance.generate.side_effect = Exception("Test Exception")
+        mock_elevenlabs_instance.generate.side_effect = Exception(
+            "Test Exception"
+        )
         with pytest.raises(
             RuntimeError,
-            match="Error while running ElevenLabsText2SpeechTool: Test Exception",
+            match=(
+                "Error while running ElevenLabsText2SpeechTool: Test Exception"
+            ),
         ):
             eleven_labs_tool.run(SAMPLE_TEXT)
 

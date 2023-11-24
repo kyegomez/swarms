@@ -7,7 +7,11 @@ from typing import Callable, Dict, List
 from termcolor import colored
 
 from swarms.structs.flow import Flow
-from swarms.utils.decorators import error_decorator, log_decorator, timing_decorator
+from swarms.utils.decorators import (
+    error_decorator,
+    log_decorator,
+    timing_decorator,
+)
 
 
 class AutoScaler:
@@ -69,7 +73,9 @@ class AutoScaler:
         try:
             self.tasks_queue.put(task)
         except Exception as error:
-            print(f"Error adding task to queue: {error} try again with a new task")
+            print(
+                f"Error adding task to queue: {error} try again with a new task"
+            )
 
     @log_decorator
     @error_decorator
@@ -108,10 +114,15 @@ class AutoScaler:
 
                 if pending_tasks / len(self.agents_pool) > self.busy_threshold:
                     self.scale_up()
-                elif active_agents / len(self.agents_pool) < self.idle_threshold:
+                elif (
+                    active_agents / len(self.agents_pool) < self.idle_threshold
+                ):
                     self.scale_down()
         except Exception as error:
-            print(f"Error monitoring and scaling: {error} try again with a new task")
+            print(
+                f"Error monitoring and scaling: {error} try again with a new"
+                " task"
+            )
 
     @log_decorator
     @error_decorator
@@ -125,7 +136,9 @@ class AutoScaler:
             while True:
                 task = self.task_queue.get()
                 if task:
-                    available_agent = next((agent for agent in self.agents_pool))
+                    available_agent = next(
+                        (agent for agent in self.agents_pool)
+                    )
                     if available_agent:
                         available_agent.run(task)
         except Exception as error:

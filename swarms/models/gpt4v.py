@@ -190,12 +190,15 @@ class GPT4Vision:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self.run, task, img) for task, img in tasks_images
+                executor.submit(self.run, task, img)
+                for task, img in tasks_images
             ]
             results = [future.result() for future in futures]
         return results
 
-    async def run_batch_async(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+    async def run_batch_async(
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images asynchronously"""
         loop = asyncio.get_event_loop()
         futures = [

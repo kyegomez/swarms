@@ -36,7 +36,10 @@ def test_kosmos2_with_sample_image(kosmos2, sample_image):
 
 # Mocked extract_entities function for testing
 def mock_extract_entities(text):
-    return [("entity1", (0.1, 0.2, 0.3, 0.4)), ("entity2", (0.5, 0.6, 0.7, 0.8))]
+    return [
+        ("entity1", (0.1, 0.2, 0.3, 0.4)),
+        ("entity2", (0.5, 0.6, 0.7, 0.8)),
+    ]
 
 
 # Mocked process_entities_to_detections function for testing
@@ -54,7 +57,9 @@ def test_kosmos2_with_mocked_extraction_and_detection(
 ):
     monkeypatch.setattr(kosmos2, "extract_entities", mock_extract_entities)
     monkeypatch.setattr(
-        kosmos2, "process_entities_to_detections", mock_process_entities_to_detections
+        kosmos2,
+        "process_entities_to_detections",
+        mock_process_entities_to_detections,
     )
 
     detections = kosmos2(img=sample_image)
@@ -234,7 +239,12 @@ def test_kosmos2_with_entities_containing_special_characters(
     kosmos2, sample_image, monkeypatch
 ):
     def mock_extract_entities(text):
-        return [("entity1 with special characters (ü, ö, etc.)", (0.1, 0.2, 0.3, 0.4))]
+        return [
+            (
+                "entity1 with special characters (ü, ö, etc.)",
+                (0.1, 0.2, 0.3, 0.4),
+            )
+        ]
 
     monkeypatch.setattr(kosmos2, "extract_entities", mock_extract_entities)
     detections = kosmos2(img=sample_image)
@@ -252,7 +262,10 @@ def test_kosmos2_with_image_containing_multiple_objects(
     kosmos2, sample_image, monkeypatch
 ):
     def mock_extract_entities(text):
-        return [("entity1", (0.1, 0.2, 0.3, 0.4)), ("entity2", (0.5, 0.6, 0.7, 0.8))]
+        return [
+            ("entity1", (0.1, 0.2, 0.3, 0.4)),
+            ("entity2", (0.5, 0.6, 0.7, 0.8)),
+        ]
 
     monkeypatch.setattr(kosmos2, "extract_entities", mock_extract_entities)
     detections = kosmos2(img=sample_image)
@@ -266,7 +279,9 @@ def test_kosmos2_with_image_containing_multiple_objects(
 
 
 # Test Kosmos2 with image containing no objects
-def test_kosmos2_with_image_containing_no_objects(kosmos2, sample_image, monkeypatch):
+def test_kosmos2_with_image_containing_no_objects(
+    kosmos2, sample_image, monkeypatch
+):
     def mock_extract_entities(text):
         return []
 

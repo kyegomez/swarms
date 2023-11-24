@@ -201,7 +201,9 @@ def dim_multiline(message: str) -> str:
     lines = message.split("\n")
     if len(lines) <= 1:
         return lines[0]
-    return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(Color.black().bright())
+    return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(
+        Color.black().bright()
+    )
 
 
 # +=============================> ANSI Ending
@@ -227,7 +229,9 @@ class AbstractUploader(ABC):
 
 
 class S3Uploader(AbstractUploader):
-    def __init__(self, accessKey: str, secretKey: str, region: str, bucket: str):
+    def __init__(
+        self, accessKey: str, secretKey: str, region: str, bucket: str
+    ):
         self.accessKey = accessKey
         self.secretKey = secretKey
         self.region = region
@@ -338,7 +342,9 @@ class FileHandler:
         self.handlers = handlers
         self.path = path
 
-    def register(self, filetype: FileType, handler: BaseHandler) -> "FileHandler":
+    def register(
+        self, filetype: FileType, handler: BaseHandler
+    ) -> "FileHandler":
         self.handlers[filetype] = handler
         return self
 
@@ -356,7 +362,9 @@ class FileHandler:
 
     def handle(self, url: str) -> str:
         try:
-            if url.startswith(os.environ.get("SERVER", "http://localhost:8000")):
+            if url.startswith(
+                os.environ.get("SERVER", "http://localhost:8000")
+            ):
                 local_filepath = url[
                     len(os.environ.get("SERVER", "http://localhost:8000")) + 1 :
                 ]

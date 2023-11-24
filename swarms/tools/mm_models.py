@@ -28,7 +28,9 @@ class MaskFormer:
     def __init__(self, device):
         print("Initializing MaskFormer to %s" % device)
         self.device = device
-        self.processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
+        self.processor = CLIPSegProcessor.from_pretrained(
+            "CIDAS/clipseg-rd64-refined"
+        )
         self.model = CLIPSegForImageSegmentation.from_pretrained(
             "CIDAS/clipseg-rd64-refined"
         ).to(device)
@@ -76,23 +78,26 @@ class ImageEditing:
     @tool(
         name="Remove Something From The Photo",
         description=(
-            "useful when you want to remove and object or something from the photo "
-            "from its description or location. "
-            "The input to this tool should be a comma separated string of two, "
-            "representing the image_path and the object need to be removed. "
+            "useful when you want to remove and object or something from the"
+            " photo from its description or location. The input to this tool"
+            " should be a comma separated string of two, representing the"
+            " image_path and the object need to be removed. "
         ),
     )
     def inference_remove(self, inputs):
         image_path, to_be_removed_txt = inputs.split(",")
-        return self.inference_replace(f"{image_path},{to_be_removed_txt},background")
+        return self.inference_replace(
+            f"{image_path},{to_be_removed_txt},background"
+        )
 
     @tool(
         name="Replace Something From The Photo",
         description=(
-            "useful when you want to replace an object from the object description or"
-            " location with another object from its description. The input to this tool"
-            " should be a comma separated string of three, representing the image_path,"
-            " the object to be replaced, the object to be replaced with "
+            "useful when you want to replace an object from the object"
+            " description or location with another object from its description."
+            " The input to this tool should be a comma separated string of"
+            " three, representing the image_path, the object to be replaced,"
+            " the object to be replaced with "
         ),
     )
     def inference_replace(self, inputs):
@@ -137,10 +142,10 @@ class InstructPix2Pix:
     @tool(
         name="Instruct Image Using Text",
         description=(
-            "useful when you want to the style of the image to be like the text. "
-            "like: make it look like a painting. or make it like a robot. "
-            "The input to this tool should be a comma separated string of two, "
-            "representing the image_path and the text. "
+            "useful when you want to the style of the image to be like the"
+            " text. like: make it look like a painting. or make it like a"
+            " robot. The input to this tool should be a comma separated string"
+            " of two, representing the image_path and the text. "
         ),
     )
     def inference(self, inputs):
@@ -149,14 +154,17 @@ class InstructPix2Pix:
         image_path, text = inputs.split(",")[0], ",".join(inputs.split(",")[1:])
         original_image = Image.open(image_path)
         image = self.pipe(
-            text, image=original_image, num_inference_steps=40, image_guidance_scale=1.2
+            text,
+            image=original_image,
+            num_inference_steps=40,
+            image_guidance_scale=1.2,
         ).images[0]
         updated_image_path = get_new_image_name(image_path, func_name="pix2pix")
         image.save(updated_image_path)
 
         logger.debug(
-            f"\nProcessed InstructPix2Pix, Input Image: {image_path}, Instruct Text:"
-            f" {text}, Output Image: {updated_image_path}"
+            f"\nProcessed InstructPix2Pix, Input Image: {image_path}, Instruct"
+            f" Text: {text}, Output Image: {updated_image_path}"
         )
 
         return updated_image_path
@@ -173,17 +181,18 @@ class Text2Image:
         self.pipe.to(device)
         self.a_prompt = "best quality, extremely detailed"
         self.n_prompt = (
-            "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, "
-            "fewer digits, cropped, worst quality, low quality"
+            "longbody, lowres, bad anatomy, bad hands, missing fingers, extra"
+            " digit, fewer digits, cropped, worst quality, low quality"
         )
 
     @tool(
         name="Generate Image From User Input Text",
         description=(
-            "useful when you want to generate an image from a user input text and save"
-            " it to a file. like: generate an image of an object or something, or"
-            " generate an image that includes some objects. The input to this tool"
-            " should be a string, representing the text used to generate image. "
+            "useful when you want to generate an image from a user input text"
+            " and save it to a file. like: generate an image of an object or"
+            " something, or generate an image that includes some objects. The"
+            " input to this tool should be a string, representing the text used"
+            " to generate image. "
         ),
     )
     def inference(self, text):
@@ -205,7 +214,9 @@ class VisualQuestionAnswering:
         print("Initializing VisualQuestionAnswering to %s" % device)
         self.torch_dtype = torch.float16 if "cuda" in device else torch.float32
         self.device = device
-        self.processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
+        self.processor = BlipProcessor.from_pretrained(
+            "Salesforce/blip-vqa-base"
+        )
         self.model = BlipForQuestionAnswering.from_pretrained(
             "Salesforce/blip-vqa-base", torch_dtype=self.torch_dtype
         ).to(self.device)
@@ -213,10 +224,11 @@ class VisualQuestionAnswering:
     @tool(
         name="Answer Question About The Image",
         description=(
-            "useful when you need an answer for a question based on an image. like:"
-            " what is the background color of the last image, how many cats in this"
-            " figure, what is in this figure. The input to this tool should be a comma"
-            " separated string of two, representing the image_path and the question"
+            "useful when you need an answer for a question based on an image."
+            " like: what is the background color of the last image, how many"
+            " cats in this figure, what is in this figure. The input to this"
+            " tool should be a comma separated string of two, representing the"
+            " image_path and the question"
         ),
     )
     def inference(self, inputs):
@@ -229,8 +241,8 @@ class VisualQuestionAnswering:
         answer = self.processor.decode(out[0], skip_special_tokens=True)
 
         logger.debug(
-            f"\nProcessed VisualQuestionAnswering, Input Image: {image_path}, Input"
-            f" Question: {question}, Output Answer: {answer}"
+            f"\nProcessed VisualQuestionAnswering, Input Image: {image_path},"
+            f" Input Question: {question}, Output Answer: {answer}"
         )
 
         return answer
@@ -245,7 +257,8 @@ class ImageCaptioning(BaseHandler):
             "Salesforce/blip-image-captioning-base"
         )
         self.model = BlipForConditionalGeneration.from_pretrained(
-            "Salesforce/blip-image-captioning-base", torch_dtype=self.torch_dtype
+            "Salesforce/blip-image-captioning-base",
+            torch_dtype=self.torch_dtype,
         ).to(self.device)
 
     def handle(self, filename: str):
@@ -264,8 +277,8 @@ class ImageCaptioning(BaseHandler):
         out = self.model.generate(**inputs)
         description = self.processor.decode(out[0], skip_special_tokens=True)
         print(
-            f"\nProcessed ImageCaptioning, Input Image: {filename}, Output Text:"
-            f" {description}"
+            f"\nProcessed ImageCaptioning, Input Image: {filename}, Output"
+            f" Text: {description}"
         )
 
         return IMAGE_PROMPT.format(filename=filename, description=description)

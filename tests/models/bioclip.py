@@ -127,7 +127,9 @@ def test_clip_multiple_images(clip_instance, sample_image_path):
 
 
 # Test model inference performance
-def test_clip_inference_performance(clip_instance, sample_image_path, benchmark):
+def test_clip_inference_performance(
+    clip_instance, sample_image_path, benchmark
+):
     labels = [
         "adenocarcinoma histopathology",
         "brain MRI",

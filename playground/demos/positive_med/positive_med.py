@@ -39,9 +39,9 @@ def get_review_prompt(article):
 
 
 def social_media_prompt(article: str, goal: str = "Clicks and engagement"):
-    prompt = SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT.replace("{{ARTICLE}}", article).replace(
-        "{{GOAL}}", goal
-    )
+    prompt = SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT.replace(
+        "{{ARTICLE}}", article
+    ).replace("{{GOAL}}", goal)
     return prompt
 
 
@@ -50,7 +50,8 @@ topic_selection_task = (
     "Generate 10 topics on gaining mental clarity using ancient practices"
 )
 topics = llm(
-    f"Your System Instructions: {TOPIC_GENERATOR}, Your current task: {topic_selection_task}"
+    f"Your System Instructions: {TOPIC_GENERATOR}, Your current task:"
+    f" {topic_selection_task}"
 )
 
 dashboard = print(
@@ -109,7 +110,9 @@ reviewed_draft = print(
 
 
 # Agent that publishes on social media
-distribution_agent = llm(social_media_prompt(draft_blog, goal="Clicks and engagement"))
+distribution_agent = llm(
+    social_media_prompt(draft_blog, goal="Clicks and engagement")
+)
 distribution_agent_out = print(
     colored(
         f"""

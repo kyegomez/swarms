@@ -113,8 +113,8 @@ class Logger:
         )
         error_handler.setLevel(logging.ERROR)
         error_formatter = AutoGptFormatter(
-            "%(asctime)s %(levelname)s %(module)s:%(funcName)s:%(lineno)d %(title)s"
-            " %(message_no_color)s"
+            "%(asctime)s %(levelname)s %(module)s:%(funcName)s:%(lineno)d"
+            " %(title)s %(message_no_color)s"
         )
         error_handler.setFormatter(error_formatter)
 
@@ -140,7 +140,12 @@ class Logger:
         self.chat_plugins = []
 
     def typewriter_log(
-        self, title="", title_color="", content="", speak_text=False, level=logging.INFO
+        self,
+        title="",
+        title_color="",
+        content="",
+        speak_text=False,
+        level=logging.INFO,
     ):
         """
         Logs a message to the typewriter.
@@ -255,7 +260,9 @@ class Logger:
             if isinstance(message, list):
                 message = " ".join(message)
         self.logger.log(
-            level, message, extra={"title": str(title), "color": str(title_color)}
+            level,
+            message,
+            extra={"title": str(title), "color": str(title_color)},
         )
 
     def set_level(self, level):
@@ -284,12 +291,15 @@ class Logger:
         if not additionalText:
             additionalText = (
                 "Please ensure you've setup and configured everything"
-                " correctly. Read https://github.com/Torantulino/Auto-GPT#readme to "
-                "double check. You can also create a github issue or join the discord"
+                " correctly. Read"
+                " https://github.com/Torantulino/Auto-GPT#readme to double"
+                " check. You can also create a github issue or join the discord"
                 " and ask there!"
             )
 
-        self.typewriter_log("DOUBLE CHECK CONFIGURATION", Fore.YELLOW, additionalText)
+        self.typewriter_log(
+            "DOUBLE CHECK CONFIGURATION", Fore.YELLOW, additionalText
+        )
 
     def log_json(self, data: Any, file_name: str) -> None:
         """
@@ -367,7 +377,9 @@ class TypingConsoleHandler(logging.StreamHandler):
                 print(word, end="", flush=True)
                 if i < len(words) - 1:
                     print(" ", end="", flush=True)
-                typing_speed = random.uniform(min_typing_speed, max_typing_speed)
+                typing_speed = random.uniform(
+                    min_typing_speed, max_typing_speed
+                )
                 time.sleep(typing_speed)
                 # type faster after each word
                 min_typing_speed = min_typing_speed * 0.95

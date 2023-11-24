@@ -111,7 +111,9 @@ class Orchestrator:
 
         self.chroma_client = chromadb.Client()
 
-        self.collection = self.chroma_client.create_collection(name=collection_name)
+        self.collection = self.chroma_client.create_collection(
+            name=collection_name
+        )
 
         self.current_tasks = {}
 
@@ -148,13 +150,14 @@ class Orchestrator:
                 )
 
                 logging.info(
-                    f"Task {id(str)} has been processed by agent {id(agent)} with"
+                    f"Task {id(str)} has been processed by agent"
+                    f" {id(agent)} with"
                 )
 
             except Exception as error:
                 logging.error(
-                    f"Failed to process task {id(task)} by agent {id(agent)}. Error:"
-                    f" {error}"
+                    f"Failed to process task {id(task)} by agent {id(agent)}."
+                    f" Error: {error}"
                 )
             finally:
                 with self.condition:
@@ -175,7 +178,9 @@ class Orchestrator:
 
         try:
             # Query the vector database for documents created by the agents
-            results = self.collection.query(query_texts=[str(agent_id)], n_results=10)
+            results = self.collection.query(
+                query_texts=[str(agent_id)], n_results=10
+            )
 
             return results
         except Exception as e:
@@ -212,7 +217,9 @@ class Orchestrator:
             self.collection.add(documents=[result], ids=[str(id(result))])
 
         except Exception as e:
-            logging.error(f"Failed to append the agent output to database. Error: {e}")
+            logging.error(
+                f"Failed to append the agent output to database. Error: {e}"
+            )
             raise
 
     def run(self, objective: str):
@@ -226,7 +233,9 @@ class Orchestrator:
 
             results = [
                 self.assign_task(agent_id, task)
-                for agent_id, task in zip(range(len(self.agents)), self.task_queue)
+                for agent_id, task in zip(
+                    range(len(self.agents)), self.task_queue
+                )
             ]
 
             for result in results:
