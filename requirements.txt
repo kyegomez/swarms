@@ -1,6 +1,5 @@
-# faiss-gpu
+torch==2.1.1
 transformers
-revChatGPT
 pandas
 langchain
 nest_asyncio
@@ -12,7 +11,6 @@ playwright
 wget==3.2
 simpleaichat
 httpx
-torch==2.1.1
 open_clip_torch
 ggl
 beautifulsoup4
@@ -60,7 +58,6 @@ streamlit
 test-tube
 timm
 torchmetrics
-transformers
 webdataset
 marshmallow
 yapf
