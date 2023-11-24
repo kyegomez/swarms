@@ -144,18 +144,11 @@ class SSD1B:
             # Handling exceptions and printing the errors details
             print(
                 colored(
-                    (
-<<<<<<< HEAD
-                        f"Error running SSD1B: {error} try optimizing"
-                        " your api key and or try again"
-=======
                         f"Error running SSD1B: {error} try optimizing your api"
                         " key and or try again"
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
-                    ),
                     "red",
                 )
-            )
+            );
             raise error
 
     def _generate_image_name(self, task: str):
@@ -239,41 +232,17 @@ class SSD1B:
                 except Exception as error:
                     print(
                         colored(
-                            (
-<<<<<<< HEAD
-                                f"Error running SSD1B: {error} try"
-                                " optimizing your api key and or try"
-                                " again"
-=======
-                                f"Error running SSD1B: {error} try optimizing"
-                                " your api key and or try again"
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
-                            ),
+                            f"Error running SSD1B: {error} try optimizing"
+                            " your api key and or try again",
                             "red",
                         )
                     )
                     print(
                         colored(
-<<<<<<< HEAD
-                            (
-                                "Error running SSD1B:"
-                                f" {error.http_status}"
-                            ),
-                            "red",
-                        )
-                    )
-                    print(
-                        colored(
-                            f"Error running SSD1B: {error.error}",
-                            "red",
-                        )
-                    )
-=======
                             f"Error running SSD1B: {error.http_status}", "red"
                         )
                     )
                     print(colored(f"Error running SSD1B: {error.error}", "red"))
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     raise error
 
     def _generate_uuid(self):

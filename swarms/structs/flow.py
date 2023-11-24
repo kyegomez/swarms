@@ -137,7 +137,7 @@ class Flow:
     """
     Flow is the structure that provides autonomy to any llm in a reliable and effective fashion.
     The flow structure is designed to be used with any llm and provides the following features:
-    
+
     Features:
     * Interactive, AI generates, then user input
     * Message history and performance history fed -> into context -> truncate if too long
@@ -489,10 +489,8 @@ class Flow:
         except Exception as error:
             print(
                 colored(
-                    (
-                        "Error activating autonomous agent. Try optimizing your"
-                        " parameters..."
-                    ),
+                    "Error activating autonomous agent. Try optimizing your"
+                    " parameters...",
                     "red",
                 )
             )
@@ -652,7 +650,7 @@ class Flow:
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(
-                        task**kwargs,
+                        task ** kwargs,
                     )
                     if self.interactive:
                         print(f"AI: {response}")

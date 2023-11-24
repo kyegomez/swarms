@@ -170,17 +170,9 @@ class Dalle3:
             # Handling exceptions and printing the errors details
             print(
                 colored(
-                    (
-<<<<<<< HEAD
-                        f"Error running Dalle3: {error} try"
-                        " optimizing your api key and or try again"
-=======
                         f"Error running Dalle3: {error} try optimizing your api"
                         " key and or try again"
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     ),
-                    "red",
-                )
             )
             raise error
 
@@ -243,13 +235,8 @@ class Dalle3:
             print(
                 colored(
                     (
-<<<<<<< HEAD
-                        f"Error running Dalle3: {error} try"
-                        " optimizing your api key and or try again"
-=======
                         f"Error running Dalle3: {error} try optimizing your api"
                         " key and or try again"
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     ),
                     "red",
                 )
@@ -333,41 +320,18 @@ class Dalle3:
                 except Exception as error:
                     print(
                         colored(
-                            (
-<<<<<<< HEAD
-                                f"Error running Dalle3: {error} try"
-                                " optimizing your api key and or try"
-                                " again"
-=======
                                 f"Error running Dalle3: {error} try optimizing"
                                 " your api key and or try again"
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
-                            ),
                             "red",
                         )
                     )
                     print(
                         colored(
-<<<<<<< HEAD
-                            (
-                                "Error running Dalle3:"
-                                f" {error.http_status}"
-                            ),
-                            "red",
-                        )
-                    )
-                    print(
-                        colored(
-                            f"Error running Dalle3: {error.error}",
-                            "red",
-                        )
-=======
                             f"Error running Dalle3: {error.http_status}", "red"
                         )
                     )
                     print(
                         colored(f"Error running Dalle3: {error.error}", "red")
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     )
                     raise error
 

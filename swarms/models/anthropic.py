@@ -200,9 +200,11 @@ def build_extra_kwargs(
         if field_name in extra_kwargs:
             raise ValueError(f"Found {field_name} supplied twice.")
         if field_name not in all_required_field_names:
-            warnings.warn(f"""WARNING! {field_name} is not default parameter.
+            warnings.warn(
+                f"""WARNING! {field_name} is not default parameter.
                 {field_name} was transferred to model_kwargs.
-                Please confirm that {field_name} is what you intended.""")
+                Please confirm that {field_name} is what you intended."""
+            )
             extra_kwargs[field_name] = values.pop(field_name)
 
     invalid_model_kwargs = all_required_field_names.intersection(
