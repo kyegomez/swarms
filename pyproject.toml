@@ -77,18 +77,11 @@ mypy-protobuf = "^3.0.0"
 
 
 [tool.autopep8]
-max_line_length = 70
+max_line_length = 80
 ignore = "E501,W6"  # or ["E501", "W6"]
 in-place = true
 recursive = true
 aggressive = 3
 
 [tool.ruff]
-line-length = 70
-
-[tool.black]
-line-length = 70
-target-version = ['py38']
-preview = true
-
-
+line-length = 80
