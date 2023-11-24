@@ -20,6 +20,14 @@ Distribution Agent:
 - Optimize writer prompt to create longer and more enjoyeable blogs
 - Use Local Models like Storywriter
 """
+from termcolor import colored
+from swarms.models import OpenAIChat
+from swarms.prompts.autobloggen
+    DRAFT_AGENT_SYSTEM_PROMPT,
+    REVIEW_PROMPT,
+    SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT,
+    TOPIC_GENERATOR,
+)
 import os
 
 from termcolor import colored
@@ -41,13 +49,7 @@ def get_review_prompt(article):
     return prompt
 
 
-<<<<<<< HEAD
-def social_media_prompt(
-    article: str, goal: str = "Clicks and engagement"
-):
-=======
 def social_media_prompt(article: str, goal: str = "Clicks and engagement"):
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
     prompt = SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT.replace(
         "{{ARTICLE}}", article
     ).replace("{{GOAL}}", goal)
@@ -60,13 +62,8 @@ topic_selection_task = (
     " practices"
 )
 topics = llm(
-<<<<<<< HEAD
-    f"Your System Instructions: {TOPIC_GENERATOR_SYSTEM_PROMPT}, Your"
-    f" current task: {topic_selection_task}"
-=======
     f"Your System Instructions: {TOPIC_GENERATOR}, Your current task:"
     f" {topic_selection_task}"
->>>>>>> 49c7b97c (code quality fixes: line length = 80)
 )
 
 dashboard = print(
