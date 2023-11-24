@@ -21,7 +21,7 @@ Distribution Agent:
 """
 from termcolor import colored
 from swarms.models import OpenAIChat
-from swarms.prompts.autoblogen import (
+from swarms.prompts.autobloggen
     DRAFT_AGENT_SYSTEM_PROMPT,
     REVIEW_PROMPT,
     SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT,
