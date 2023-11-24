@@ -50,7 +50,9 @@ def xor_args(*arg_groups: Tuple[str, ...]) -> Callable:
             ]
             invalid_groups = [i for i, count in enumerate(counts) if count != 1]
             if invalid_groups:
-                invalid_group_names = [", ".join(arg_groups[i]) for i in invalid_groups]
+                invalid_group_names = [
+                    ", ".join(arg_groups[i]) for i in invalid_groups
+                ]
                 raise ValueError(
                     "Exactly one argument in each of the following"
                     " groups must be defined:"
@@ -106,7 +108,10 @@ def mock_now(dt_value):  # type: ignore
 
 
 def guard_import(
-    module_name: str, *, pip_name: Optional[str] = None, package: Optional[str] = None
+    module_name: str,
+    *,
+    pip_name: Optional[str] = None,
+    package: Optional[str] = None,
 ) -> Any:
     """Dynamically imports a module and raises a helpful exception if the module is not
     installed."""
@@ -180,18 +185,18 @@ def build_extra_kwargs(
         if field_name in extra_kwargs:
             raise ValueError(f"Found {field_name} supplied twice.")
         if field_name not in all_required_field_names:
-            warnings.warn(
-                f"""WARNING! {field_name} is not default parameter.
+            warnings.warn(f"""WARNING! {field_name} is not default parameter.
                 {field_name} was transferred to model_kwargs.
-                Please confirm that {field_name} is what you intended."""
-            )
+                Please confirm that {field_name} is what you intended.""")
             extra_kwargs[field_name] = values.pop(field_name)
 
-    invalid_model_kwargs = all_required_field_names.intersection(extra_kwargs.keys())
+    invalid_model_kwargs = all_required_field_names.intersection(
+        extra_kwargs.keys()
+    )
     if invalid_model_kwargs:
         raise ValueError(
-            f"Parameters {invalid_model_kwargs} should be specified explicitly. "
-            "Instead they were passed in as part of `model_kwargs` parameter."
+            f"Parameters {invalid_model_kwargs} should be specified explicitly."
+            " Instead they were passed in as part of `model_kwargs` parameter."
         )
 
     return extra_kwargs
@@ -250,7 +255,9 @@ class _AnthropicCommon(BaseLanguageModel):
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
         values["anthropic_api_key"] = convert_to_secret_str(
-            get_from_dict_or_env(values, "anthropic_api_key", "ANTHROPIC_API_KEY")
+            get_from_dict_or_env(
+                values, "anthropic_api_key", "ANTHROPIC_API_KEY"
+            )
         )
         # Get custom api url from environment.
         values["anthropic_api_url"] = get_from_dict_or_env(
@@ -305,7 +312,9 @@ class _AnthropicCommon(BaseLanguageModel):
         """Get the identifying parameters."""
         return {**{}, **self._default_params}
 
-    def _get_anthropic_stop(self, stop: Optional[List[str]] = None) -> List[str]:
+    def _get_anthropic_stop(
+        self, stop: Optional[List[str]] = None
+    ) -> List[str]:
         if not self.HUMAN_PROMPT or not self.AI_PROMPT:
             raise NameError("Please ensure the anthropic package is loaded")
 
@@ -354,8 +363,8 @@ class Anthropic(LLM, _AnthropicCommon):
     def raise_warning(cls, values: Dict) -> Dict:
         """Raise warning that this class is deprecated."""
         warnings.warn(
-            "This Anthropic LLM is deprecated. "
-            "Please use `from langchain.chat_models import ChatAnthropic` instead"
+            "This Anthropic LLM is deprecated. Please use `from"
+            " langchain.chat_models import ChatAnthropic` instead"
         )
         return values
 
@@ -372,12 +381,16 @@ class Anthropic(LLM, _AnthropicCommon):
             return prompt  # Already wrapped.
 
         # Guard against common errors in specifying wrong number of newlines.
-        corrected_prompt, n_subs = re.subn(r"^\n*Human:", self.HUMAN_PROMPT, prompt)
+        corrected_prompt, n_subs = re.subn(
+            r"^\n*Human:", self.HUMAN_PROMPT, prompt
+        )
         if n_subs == 1:
             return corrected_prompt
 
         # As a last resort, wrap the prompt ourselves to emulate instruct-style.
-        return f"{self.HUMAN_PROMPT} {prompt}{self.AI_PROMPT} Sure, here you go:\n"
+        return (
+            f"{self.HUMAN_PROMPT} {prompt}{self.AI_PROMPT} Sure, here you go:\n"
+        )
 
     def _call(
         self,
@@ -476,7 +489,10 @@ class Anthropic(LLM, _AnthropicCommon):
         params = {**self._default_params, **kwargs}
 
         for token in self.client.completions.create(
-            prompt=self._wrap_prompt(prompt), stop_sequences=stop, stream=True, **params
+            prompt=self._wrap_prompt(prompt),
+            stop_sequences=stop,
+            stream=True,
+            **params,
         ):
             chunk = GenerationChunk(text=token.completion)
             yield chunk

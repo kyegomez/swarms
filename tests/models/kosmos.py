@@ -45,7 +45,9 @@ def test_get_image(mock_image_request):
 # Test multimodal grounding
 def test_multimodal_grounding(mock_image_request):
     kosmos = Kosmos()
-    kosmos.multimodal_grounding("Find the red apple in the image.", TEST_IMAGE_URL)
+    kosmos.multimodal_grounding(
+        "Find the red apple in the image.", TEST_IMAGE_URL
+    )
     # TODO: Validate the result if possible
 
 
@@ -117,7 +119,9 @@ def test_multimodal_grounding(kosmos):
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_referring_expression_comprehension(kosmos):
-    kosmos.referring_expression_comprehension("Show me the green bottle.", IMG_URL2)
+    kosmos.referring_expression_comprehension(
+        "Show me the green bottle.", IMG_URL2
+    )
 
 
 @pytest.mark.usefixtures("mock_request_get")
@@ -147,7 +151,9 @@ def test_multimodal_grounding_2(kosmos):
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_referring_expression_comprehension_2(kosmos):
-    kosmos.referring_expression_comprehension("Where is the water bottle?", IMG_URL3)
+    kosmos.referring_expression_comprehension(
+        "Where is the water bottle?", IMG_URL3
+    )
 
 
 @pytest.mark.usefixtures("mock_request_get")

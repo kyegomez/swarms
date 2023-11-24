@@ -113,7 +113,9 @@ class SequentialWorkflow:
     restore_state_filepath: Optional[str] = None
     dashboard: bool = False
 
-    def add(self, task: str, flow: Union[Callable, Flow], *args, **kwargs) -> None:
+    def add(
+        self, task: str, flow: Union[Callable, Flow], *args, **kwargs
+    ) -> None:
         """
         Add a task to the workflow.
 
@@ -182,7 +184,9 @@ class SequentialWorkflow:
             raise ValueError(f"Task {task_description} not found in workflow.")
 
     def save_workflow_state(
-        self, filepath: Optional[str] = "sequential_workflow_state.json", **kwargs
+        self,
+        filepath: Optional[str] = "sequential_workflow_state.json",
+        **kwargs,
     ) -> None:
         """
         Saves the workflow state to a json file.
@@ -348,8 +352,9 @@ class SequentialWorkflow:
                             # Ensure that 'task' is provided in the kwargs
                             if "task" not in task.kwargs:
                                 raise ValueError(
-                                    "The 'task' argument is required for the Flow flow"
-                                    f" execution in '{task.description}'"
+                                    "The 'task' argument is required for the"
+                                    " Flow flow execution in"
+                                    f" '{task.description}'"
                                 )
                             # Separate the 'task' argument from other kwargs
                             flow_task_arg = task.kwargs.pop("task")
@@ -373,7 +378,9 @@ class SequentialWorkflow:
 
                         # Autosave the workflow state
                         if self.autosave:
-                            self.save_workflow_state("sequential_workflow_state.json")
+                            self.save_workflow_state(
+                                "sequential_workflow_state.json"
+                            )
         except Exception as e:
             print(
                 colored(
@@ -404,8 +411,8 @@ class SequentialWorkflow:
                         # Ensure that 'task' is provided in the kwargs
                         if "task" not in task.kwargs:
                             raise ValueError(
-                                "The 'task' argument is required for the Flow flow"
-                                f" execution in '{task.description}'"
+                                "The 'task' argument is required for the Flow"
+                                f" flow execution in '{task.description}'"
                             )
                         # Separate the 'task' argument from other kwargs
                         flow_task_arg = task.kwargs.pop("task")
@@ -429,4 +436,6 @@ class SequentialWorkflow:
 
                     # Autosave the workflow state
                     if self.autosave:
-                        self.save_workflow_state("sequential_workflow_state.json")
+                        self.save_workflow_state(
+                            "sequential_workflow_state.json"
+                        )

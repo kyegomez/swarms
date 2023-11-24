@@ -74,7 +74,9 @@ def test_anthropic_default_params(anthropic_instance):
     }
 
 
-def test_anthropic_run(mock_anthropic_env, mock_requests_post, anthropic_instance):
+def test_anthropic_run(
+    mock_anthropic_env, mock_requests_post, anthropic_instance
+):
     mock_response = Mock()
     mock_response.json.return_value = {"completion": "Generated text"}
     mock_requests_post.return_value = mock_response
@@ -98,7 +100,9 @@ def test_anthropic_run(mock_anthropic_env, mock_requests_post, anthropic_instanc
     )
 
 
-def test_anthropic_call(mock_anthropic_env, mock_requests_post, anthropic_instance):
+def test_anthropic_call(
+    mock_anthropic_env, mock_requests_post, anthropic_instance
+):
     mock_response = Mock()
     mock_response.json.return_value = {"completion": "Generated text"}
     mock_requests_post.return_value = mock_response
@@ -193,18 +197,24 @@ def test_anthropic_convert_prompt(anthropic_instance):
 
 
 def test_anthropic_call_with_stop(anthropic_instance):
-    response = anthropic_instance("Translate to French.", stop=["stop1", "stop2"])
+    response = anthropic_instance(
+        "Translate to French.", stop=["stop1", "stop2"]
+    )
     assert response == "Mocked Response from Anthropic"
 
 
 def test_anthropic_stream_with_stop(anthropic_instance):
-    generator = anthropic_instance.stream("Write a story.", stop=["stop1", "stop2"])
+    generator = anthropic_instance.stream(
+        "Write a story.", stop=["stop1", "stop2"]
+    )
     for token in generator:
         assert isinstance(token, str)
 
 
 def test_anthropic_async_call_with_stop(anthropic_instance):
-    response = anthropic_instance.async_call("Tell me a joke.", stop=["stop1", "stop2"])
+    response = anthropic_instance.async_call(
+        "Tell me a joke.", stop=["stop1", "stop2"]
+    )
     assert response == "Mocked Response from Anthropic"
 
 

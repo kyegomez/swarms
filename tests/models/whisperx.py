@@ -28,7 +28,9 @@ def test_speech_to_text_install(mock_run):
 # Mock pytube.YouTube and pytube.Streams for download tests
 @patch("pytube.YouTube")
 @patch.object(YouTube, "streams")
-def test_speech_to_text_download_youtube_video(mock_streams, mock_youtube, temp_dir):
+def test_speech_to_text_download_youtube_video(
+    mock_streams, mock_youtube, temp_dir
+):
     # Mock YouTube and streams
     video_url = "https://www.youtube.com/watch?v=MJd6pr16LRM"
     mock_stream = mock_streams().filter().first()
@@ -116,7 +118,11 @@ def test_speech_to_text_transcribe_whisperx_failure(
 @patch("whisperx.align")
 @patch.object(whisperx.DiarizationPipeline, "__call__")
 def test_speech_to_text_transcribe_missing_segments(
-    mock_diarization, mock_align, mock_align_model, mock_load_audio, mock_load_model
+    mock_diarization,
+    mock_align,
+    mock_align_model,
+    mock_load_audio,
+    mock_load_model,
 ):
     # Mock whisperx functions to return incomplete output
     mock_load_model.return_value = mock_load_model
@@ -142,7 +148,11 @@ def test_speech_to_text_transcribe_missing_segments(
 @patch("whisperx.align")
 @patch.object(whisperx.DiarizationPipeline, "__call__")
 def test_speech_to_text_transcribe_align_failure(
-    mock_diarization, mock_align, mock_align_model, mock_load_audio, mock_load_model
+    mock_diarization,
+    mock_align,
+    mock_align_model,
+    mock_load_audio,
+    mock_load_model,
 ):
     # Mock whisperx functions to raise an exception during align
     mock_load_model.return_value = mock_load_model

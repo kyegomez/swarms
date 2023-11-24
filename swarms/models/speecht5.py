@@ -90,7 +90,9 @@ class SpeechT5:
         self.processor = SpeechT5Processor.from_pretrained(self.model_name)
         self.model = SpeechT5ForTextToSpeech.from_pretrained(self.model_name)
         self.vocoder = SpeechT5HifiGan.from_pretrained(self.vocoder_name)
-        self.embeddings_dataset = load_dataset(self.dataset_name, split="validation")
+        self.embeddings_dataset = load_dataset(
+            self.dataset_name, split="validation"
+        )
 
     def __call__(self, text: str, speaker_id: float = 7306):
         """Call the model on some text and return the speech."""
@@ -121,7 +123,9 @@ class SpeechT5:
     def set_embeddings_dataset(self, dataset_name):
         """Set the embeddings dataset to a new dataset."""
         self.dataset_name = dataset_name
-        self.embeddings_dataset = load_dataset(self.dataset_name, split="validation")
+        self.embeddings_dataset = load_dataset(
+            self.dataset_name, split="validation"
+        )
 
     # Feature 1: Get sampling rate
     def get_sampling_rate(self):

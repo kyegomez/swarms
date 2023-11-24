@@ -146,7 +146,8 @@ class OpenAIFunctionCaller:
         self.messages.append({"role": role, "content": content})
 
     @retry(
-        wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3)
+        wait=wait_random_exponential(multiplier=1, max=40),
+        stop=stop_after_attempt(3),
     )
     def chat_completion_request(
         self,
@@ -194,17 +195,22 @@ class OpenAIFunctionCaller:
             elif message["role"] == "user":
                 print(
                     colored(
-                        f"user: {message['content']}\n", role_to_color[message["role"]]
+                        f"user: {message['content']}\n",
+                        role_to_color[message["role"]],
                     )
                 )
-            elif message["role"] == "assistant" and message.get("function_call"):
+            elif message["role"] == "assistant" and message.get(
+                "function_call"
+            ):
                 print(
                     colored(
                         f"assistant: {message['function_call']}\n",
                         role_to_color[message["role"]],
                     )
                 )
-            elif message["role"] == "assistant" and not message.get("function_call"):
+            elif message["role"] == "assistant" and not message.get(
+                "function_call"
+            ):
                 print(
                     colored(
                         f"assistant: {message['content']}\n",

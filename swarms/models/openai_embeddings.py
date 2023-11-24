@@ -43,7 +43,9 @@ def get_pydantic_field_names(cls: Any) -> Set[str]:
 logger = logging.getLogger(__name__)
 
 
-def _create_retry_decorator(embeddings: OpenAIEmbeddings) -> Callable[[Any], Any]:
+def _create_retry_decorator(
+    embeddings: OpenAIEmbeddings,
+) -> Callable[[Any], Any]:
     import llm
 
     min_seconds = 4
@@ -118,7 +120,9 @@ def embed_with_retry(embeddings: OpenAIEmbeddings, **kwargs: Any) -> Any:
     return _embed_with_retry(**kwargs)
 
 
-async def async_embed_with_retry(embeddings: OpenAIEmbeddings, **kwargs: Any) -> Any:
+async def async_embed_with_retry(
+    embeddings: OpenAIEmbeddings, **kwargs: Any
+) -> Any:
     """Use tenacity to retry the embedding call."""
 
     @_async_retry_decorator(embeddings)
@@ -172,7 +176,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
 
     client: Any  #: :meta private:
     model: str = "text-embedding-ada-002"
-    deployment: str = model  # to support Azure OpenAI Service custom deployment names
+    deployment: str = (
+        model  # to support Azure OpenAI Service custom deployment names
+    )
     openai_api_version: Optional[str] = None
     # to support Azure OpenAI Service custom endpoints
     openai_api_base: Optional[str] = None
@@ -229,11 +235,14 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 )
                 extra[field_name] = values.pop(field_name)
 
-        invalid_model_kwargs = all_required_field_names.intersection(extra.keys())
+        invalid_model_kwargs = all_required_field_names.intersection(
+            extra.keys()
+        )
         if invalid_model_kwargs:
             raise ValueError(
-                f"Parameters {invalid_model_kwargs} should be specified explicitly. "
-                "Instead they were passed in as part of `model_kwargs` parameter."
+                f"Parameters {invalid_model_kwargs} should be specified"
+                " explicitly. Instead they were passed in as part of"
+                " `model_kwargs` parameter."
             )
 
         values["model_kwargs"] = extra
@@ -333,7 +342,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         try:
             encoding = tiktoken.encoding_for_model(model_name)
         except KeyError:
-            logger.warning("Warning: model not found. Using cl100k_base encoding.")
+            logger.warning(
+                "Warning: model not found. Using cl100k_base encoding."
+            )
             model = "cl100k_base"
             encoding = tiktoken.get_encoding(model)
         for i, text in enumerate(texts):
@@ -384,11 +395,11 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                     self,
                     input="",
                     **self._invocation_params,
-                )[
-                    "data"
-                ][0]["embedding"]
+                )["data"][0]["embedding"]
             else:
-                average = np.average(_result, axis=0, weights=num_tokens_in_batch[i])
+                average = np.average(
+                    _result, axis=0, weights=num_tokens_in_batch[i]
+                )
             embeddings[i] = (average / np.linalg.norm(average)).tolist()
 
         return embeddings
@@ -414,7 +425,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         try:
             encoding = tiktoken.encoding_for_model(model_name)
         except KeyError:
-            logger.warning("Warning: model not found. Using cl100k_base encoding.")
+            logger.warning(
+                "Warning: model not found. Using cl100k_base encoding."
+            )
             model = "cl100k_base"
             encoding = tiktoken.get_encoding(model)
         for i, text in enumerate(texts):
@@ -458,7 +471,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                     )
                 )["data"][0]["embedding"]
             else:
-                average = np.average(_result, axis=0, weights=num_tokens_in_batch[i])
+                average = np.average(
+                    _result, axis=0, weights=num_tokens_in_batch[i]
+                )
             embeddings[i] = (average / np.linalg.norm(average)).tolist()
 
         return embeddings
@@ -495,7 +510,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         """
         # NOTE: to keep things simple, we assume the list may contain texts longer
         #       than the maximum context and use length-safe embedding function.
-        return await self._aget_len_safe_embeddings(texts, engine=self.deployment)
+        return await self._aget_len_safe_embeddings(
+            texts, engine=self.deployment
+        )
 
     def embed_query(self, text: str) -> List[float]:
         """Call out to OpenAI's embedding endpoint for embedding query text.

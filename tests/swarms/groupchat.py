@@ -165,7 +165,9 @@ def test_groupchat_select_speaker():
 
     # Simulate selecting the next speaker
     last_speaker = agent1
-    next_speaker = manager.select_speaker(last_speaker=last_speaker, selector=selector)
+    next_speaker = manager.select_speaker(
+        last_speaker=last_speaker, selector=selector
+    )
 
     # Ensure the next speaker is agent2
     assert next_speaker == agent2
@@ -183,7 +185,9 @@ def test_groupchat_underpopulated_group():
 
     # Simulate selecting the next speaker in an underpopulated group
     last_speaker = agent1
-    next_speaker = manager.select_speaker(last_speaker=last_speaker, selector=selector)
+    next_speaker = manager.select_speaker(
+        last_speaker=last_speaker, selector=selector
+    )
 
     # Ensure the next speaker is the same as the last speaker in an underpopulated group
     assert next_speaker == last_speaker
@@ -207,7 +211,9 @@ def test_groupchat_max_rounds():
         last_speaker = next_speaker
 
     # Try one more round, should stay with the last speaker
-    next_speaker = manager.select_speaker(last_speaker=last_speaker, selector=selector)
+    next_speaker = manager.select_speaker(
+        last_speaker=last_speaker, selector=selector
+    )
 
     # Ensure the next speaker is the same as the last speaker after reaching max rounds
     assert next_speaker == last_speaker

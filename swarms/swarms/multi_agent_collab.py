@@ -13,8 +13,8 @@ from swarms.utils.logger import logger
 class BidOutputParser(RegexParser):
     def get_format_instructions(self) -> str:
         return (
-            "Your response should be an integrater delimited by angled brackets like"
-            " this: <int>"
+            "Your response should be an integrater delimited by angled brackets"
+            " like this: <int>"
         )
 
 
@@ -194,11 +194,15 @@ class MultiAgentCollaboration:
             print("\n")
             n += 1
 
-    def select_next_speaker_roundtable(self, step: int, agents: List[Flow]) -> int:
+    def select_next_speaker_roundtable(
+        self, step: int, agents: List[Flow]
+    ) -> int:
         """Selects the next speaker."""
         return step % len(agents)
 
-    def select_next_speaker_director(step: int, agents: List[Flow], director) -> int:
+    def select_next_speaker_director(
+        step: int, agents: List[Flow], director
+    ) -> int:
         # if the step if even => director
         # => director selects next speaker
         if step % 2 == 1:
@@ -265,7 +269,10 @@ class MultiAgentCollaboration:
     def format_results(self, results):
         """Formats the results of the run method"""
         formatted_results = "\n".join(
-            [f"{result['agent']} responded: {result['response']}" for result in results]
+            [
+                f"{result['agent']} responded: {result['response']}"
+                for result in results
+            ]
         )
         return formatted_results
 
@@ -291,7 +298,12 @@ class MultiAgentCollaboration:
         return state
 
     def __repr__(self):
-        return f"MultiAgentCollaboration(agents={self.agents}, selection_function={self.select_next_speaker}, max_iters={self.max_iters}, autosave={self.autosave}, saved_file_path_name={self.saved_file_path_name})"
+        return (
+            f"MultiAgentCollaboration(agents={self.agents},"
+            f" selection_function={self.select_next_speaker},"
+            f" max_iters={self.max_iters}, autosave={self.autosave},"
+            f" saved_file_path_name={self.saved_file_path_name})"
+        )
 
     def performance(self):
         """Tracks and reports the performance of each agent"""

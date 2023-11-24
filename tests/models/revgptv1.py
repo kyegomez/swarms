@@ -19,7 +19,10 @@ class TestRevChatGPT(unittest.TestCase):
         self.assertLess(self.model.end_time - self.model.start_time, 60)
 
     def test_generate_summary(self):
-        text = "This is a sample text to summarize. It has multiple sentences and details. The summary should be concise."
+        text = (
+            "This is a sample text to summarize. It has multiple sentences and"
+            " details. The summary should be concise."
+        )
         summary = self.model.generate_summary(text)
         self.assertLess(len(summary), len(text) / 2)
 
@@ -60,7 +63,9 @@ class TestRevChatGPT(unittest.TestCase):
         convo_id = "123"
         title = "New Title"
         self.model.chatbot.change_title(convo_id, title)
-        self.assertEqual(self.model.chatbot.get_msg_history(convo_id)["title"], title)
+        self.assertEqual(
+            self.model.chatbot.get_msg_history(convo_id)["title"], title
+        )
 
     def test_delete_conversation(self):
         convo_id = "123"
@@ -76,7 +81,9 @@ class TestRevChatGPT(unittest.TestCase):
     def test_rollback_conversation(self):
         original_convo_id = self.model.chatbot.conversation_id
         self.model.chatbot.rollback_conversation(1)
-        self.assertNotEqual(original_convo_id, self.model.chatbot.conversation_id)
+        self.assertNotEqual(
+            original_convo_id, self.model.chatbot.conversation_id
+        )
 
 
 if __name__ == "__main__":

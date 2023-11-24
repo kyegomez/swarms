@@ -75,7 +75,9 @@ def test_tokenizer_type(fuyu_instance):
 
 
 def test_processor_has_image_processor_and_tokenizer(fuyu_instance):
-    assert fuyu_instance.processor.image_processor == fuyu_instance.image_processor
+    assert (
+        fuyu_instance.processor.image_processor == fuyu_instance.image_processor
+    )
     assert fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer
 
 

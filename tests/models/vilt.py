@@ -33,7 +33,9 @@ def test_vilt_prediction(mock_image_open, mock_requests_get, vilt_instance):
 
 
 # 3. Test Exception Handling for network
-@patch.object(requests, "get", side_effect=requests.RequestException("Network error"))
+@patch.object(
+    requests, "get", side_effect=requests.RequestException("Network error")
+)
 def test_vilt_network_exception(vilt_instance):
     with pytest.raises(requests.RequestException):
         vilt_instance(

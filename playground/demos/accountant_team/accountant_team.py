@@ -103,7 +103,8 @@ class AccountantSwarms:
 
         # Provide decision making support to the accountant
         decision_making_support_agent_output = decision_making_support_agent.run(
-            f"{self.decision_making_support_agent_instructions}: {summary_agent_output}"
+            f"{self.decision_making_support_agent_instructions}:"
+            f" {summary_agent_output}"
         )
 
         return decision_making_support_agent_output
@@ -113,5 +114,7 @@ swarm = AccountantSwarms(
     pdf_path="tesla.pdf",
     fraud_detection_instructions="Detect fraud in the document",
     summary_agent_instructions="Generate an actionable summary of the document",
-    decision_making_support_agent_instructions="Provide decision making support to the business owner:",
+    decision_making_support_agent_instructions=(
+        "Provide decision making support to the business owner:"
+    ),
 )

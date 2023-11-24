@@ -103,7 +103,9 @@ class AutoBlogGenSwarm:
         review_agent = self.print_beautifully("Review Agent", review_agent)
 
         # Agent that publishes on social media
-        distribution_agent = self.llm(self.social_media_prompt(article=review_agent))
+        distribution_agent = self.llm(
+            self.social_media_prompt(article=review_agent)
+        )
         distribution_agent = self.print_beautifully(
             "Distribution Agent", distribution_agent
         )
@@ -115,7 +117,11 @@ class AutoBlogGenSwarm:
                 for i in range(self.iterations):
                     self.step()
             except Exception as error:
-                print(colored(f"Error while running AutoBlogGenSwarm {error}", "red"))
+                print(
+                    colored(
+                        f"Error while running AutoBlogGenSwarm {error}", "red"
+                    )
+                )
                 if attempt == self.retry_attempts - 1:
                     raise
 

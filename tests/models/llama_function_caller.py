@@ -72,7 +72,9 @@ def test_llama_custom_function_invalid_arguments(llama_caller):
 # Test streaming with custom runtime
 def test_llama_custom_runtime():
     llama_caller = LlamaFunctionCaller(
-        model_id="Your-Model-ID", cache_dir="Your-Cache-Directory", runtime="cuda"
+        model_id="Your-Model-ID",
+        cache_dir="Your-Cache-Directory",
+        runtime="cuda",
     )
     user_prompt = "Tell me about the tallest mountain in the world."
     response = llama_caller(user_prompt)
@@ -83,7 +85,9 @@ def test_llama_custom_runtime():
 # Test caching functionality
 def test_llama_cache():
     llama_caller = LlamaFunctionCaller(
-        model_id="Your-Model-ID", cache_dir="Your-Cache-Directory", runtime="cuda"
+        model_id="Your-Model-ID",
+        cache_dir="Your-Cache-Directory",
+        runtime="cuda",
     )
 
     # Perform a request to populate the cache
@@ -99,7 +103,9 @@ def test_llama_cache():
 # Test response length within max_tokens limit
 def test_llama_response_length():
     llama_caller = LlamaFunctionCaller(
-        model_id="Your-Model-ID", cache_dir="Your-Cache-Directory", runtime="cuda"
+        model_id="Your-Model-ID",
+        cache_dir="Your-Cache-Directory",
+        runtime="cuda",
     )
 
     # Generate a long prompt

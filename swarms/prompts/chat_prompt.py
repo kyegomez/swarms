@@ -105,7 +105,9 @@ class ChatMessage(Message):
 
 
 def get_buffer_string(
-    messages: Sequence[Message], human_prefix: str = "Human", ai_prefix: str = "AI"
+    messages: Sequence[Message],
+    human_prefix: str = "Human",
+    ai_prefix: str = "AI",
 ) -> str:
     string_messages = []
     for m in messages:

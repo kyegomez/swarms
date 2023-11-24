@@ -4,7 +4,12 @@ from unittest.mock import Mock
 
 import pytest
 from dotenv import load_dotenv
-from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
+from requests.exceptions import (
+    ConnectionError,
+    HTTPError,
+    RequestException,
+    Timeout,
+)
 
 from swarms.models.gpt4v import GPT4Vision, GPT4VisionResponse
 
@@ -173,7 +178,11 @@ def test_gpt4vision_call_retry_with_success_after_timeout(
         Timeout("Request timed out"),
         {
             "choices": [
-                {"message": {"content": {"text": "A description of the image."}}}
+                {
+                    "message": {
+                        "content": {"text": "A description of the image."}
+                    }
+                }
             ],
         },
     ]
@@ -200,16 +209,18 @@ def test_gpt4vision_process_img():
     assert img_data.startswith("/9j/")  # Base64-encoded image data
 
 
-def test_gpt4vision_call_single_task_single_image(gpt4vision, mock_openai_client):
+def test_gpt4vision_call_single_task_single_image(
+    gpt4vision, mock_openai_client
+):
     # Arrange
     img_url = "https://images.unsplash.com/photo-1694734479942-8cc7f4660578?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     task = "Describe this image."
 
     expected_response = GPT4VisionResponse(answer="A description of the image.")
 
-    mock_openai_client.chat.completions.create.return_value.choices[
-        0
-    ].text = expected_response.answer
+    mock_openai_client.chat.completions.create.return_value.choices[0].text = (
+        expected_response.answer
+    )
 
     # Act
     response = gpt4vision(img_url, [task])
@@ -219,16 +230,21 @@ def test_gpt4vision_call_single_task_single_image(gpt4vision, mock_openai_client
     mock_openai_client.chat.completions.create.assert_called_once()
 
 
-def test_gpt4vision_call_single_task_multiple_images(gpt4vision, mock_openai_client):
+def test_gpt4vision_call_single_task_multiple_images(
+    gpt4vision, mock_openai_client
+):
     # Arrange
-    img_urls = ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
+    img_urls = [
+        "https://example.com/image1.jpg",
+        "https://example.com/image2.jpg",
+    ]
     task = "Describe these images."
 
     expected_response = GPT4VisionResponse(answer="Descriptions of the images.")
 
-    mock_openai_client.chat.completions.create.return_value.choices[
-        0
-    ].text = expected_response.answer
+    mock_openai_client.chat.completions.create.return_value.choices[0].text = (
+        expected_response.answer
+    )
 
     # Act
     response = gpt4vision(img_urls, [task])
@@ -238,7 +254,9 @@ def test_gpt4vision_call_single_task_multiple_images(gpt4vision, mock_openai_cli
     mock_openai_client.chat.completions.create.assert_called_once()
 
 
-def test_gpt4vision_call_multiple_tasks_single_image(gpt4vision, mock_openai_client):
+def test_gpt4vision_call_multiple_tasks_single_image(
+    gpt4vision, mock_openai_client
+):
     # Arrange
     img_url = "https://images.unsplash.com/photo-1694734479942-8cc7f4660578?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     tasks = ["Describe this image.", "What's in this picture?"]
@@ -249,7 +267,9 @@ def test_gpt4vision_call_multiple_tasks_single_image(gpt4vision, mock_openai_cli
     ]
 
     def create_mock_response(response):
-        return {"choices": [{"message": {"content": {"text": response.answer}}}]}
+        return {
+            "choices": [{"message": {"content": {"text": response.answer}}}]
+        }
 
     mock_openai_client.chat.completions.create.side_effect = [
         create_mock_response(response) for response in expected_responses
@@ -279,7 +299,11 @@ def test_gpt4vision_call_multiple_tasks_single_image(gpt4vision, mock_openai_cli
         mock_openai_client.chat.completions.create.side_effect = [
             {
                 "choices": [
-                    {"message": {"content": {"text": expected_responses[i].answer}}}
+                    {
+                        "message": {
+                            "content": {"text": expected_responses[i].answer}
+                        }
+                    }
                 ]
             }
             for i in range(len(expected_responses))
@@ -295,7 +319,9 @@ def test_gpt4vision_call_multiple_tasks_single_image(gpt4vision, mock_openai_cli
         )  # Should be called only once
 
 
-def test_gpt4vision_call_multiple_tasks_multiple_images(gpt4vision, mock_openai_client):
+def test_gpt4vision_call_multiple_tasks_multiple_images(
+    gpt4vision, mock_openai_client
+):
     # Arrange
     img_urls = [
         "https://images.unsplash.com/photo-1694734479857-626882b6db37?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -328,7 +354,9 @@ def test_gpt4vision_call_http_error(gpt4vision, mock_openai_client):
     img_url = "https://images.unsplash.com/photo-1694734479942-8cc7f4660578?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     task = "Describe this image."
 
-    mock_openai_client.chat.completions.create.side_effect = HTTPError("HTTP Error")
+    mock_openai_client.chat.completions.create.side_effect = HTTPError(
+        "HTTP Error"
+    )
 
     # Act and Assert
     with pytest.raises(HTTPError):

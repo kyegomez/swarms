@@ -47,7 +47,9 @@ def test_run_auto_select(auto_temp_agent):
 def test_run_no_scores(auto_temp_agent):
     task = "Invalid task."
     temperature_string = "0.4,0.6,0.8,1.0,1.2,1.4"
-    with ThreadPoolExecutor(max_workers=auto_temp_agent.max_workers) as executor:
+    with ThreadPoolExecutor(
+        max_workers=auto_temp_agent.max_workers
+    ) as executor:
         with patch.object(
             executor, "submit", side_effect=[None, None, None, None, None, None]
         ):

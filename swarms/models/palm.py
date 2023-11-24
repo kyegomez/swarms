@@ -37,10 +37,16 @@ def _create_retry_decorator() -> Callable[[Any], Any]:
     return retry(
         reraise=True,
         stop=stop_after_attempt(max_retries),
-        wait=wait_exponential(multiplier=multiplier, min=min_seconds, max=max_seconds),
+        wait=wait_exponential(
+            multiplier=multiplier, min=min_seconds, max=max_seconds
+        ),
         retry=(
-            retry_if_exception_type(google.api_core.exceptions.ResourceExhausted)
-            | retry_if_exception_type(google.api_core.exceptions.ServiceUnavailable)
+            retry_if_exception_type(
+                google.api_core.exceptions.ResourceExhausted
+            )
+            | retry_if_exception_type(
+                google.api_core.exceptions.ServiceUnavailable
+            )
             | retry_if_exception_type(google.api_core.exceptions.GoogleAPIError)
         ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
@@ -64,7 +70,9 @@ def _strip_erroneous_leading_spaces(text: str) -> str:
     The PaLM API will sometimes erroneously return a single leading space in all
     lines > 1. This function strips that space.
     """
-    has_leading_space = all(not line or line[0] == " " for line in text.split("\n")[1:])
+    has_leading_space = all(
+        not line or line[0] == " " for line in text.split("\n")[1:]
+    )
     if has_leading_space:
         return text.replace("\n ", "\n")
     else:
@@ -112,7 +120,10 @@ class GooglePalm(BaseLLM, BaseModel):
 
         values["client"] = genai
 
-        if values["temperature"] is not None and not 0 <= values["temperature"] <= 1:
+        if (
+            values["temperature"] is not None
+            and not 0 <= values["temperature"] <= 1
+        ):
             raise ValueError("temperature must be in the range [0.0, 1.0]")
 
         if values["top_p"] is not None and not 0 <= values["top_p"] <= 1:
@@ -121,7 +132,10 @@ class GooglePalm(BaseLLM, BaseModel):
         if values["top_k"] is not None and values["top_k"] <= 0:
             raise ValueError("top_k must be positive")
 
-        if values["max_output_tokens"] is not None and values["max_output_tokens"] <= 0:
+        if (
+            values["max_output_tokens"] is not None
+            and values["max_output_tokens"] <= 0
+        ):
             raise ValueError("max_output_tokens must be greater than zero")
 
         return values

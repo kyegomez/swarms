@@ -44,7 +44,9 @@ class TestBingChat(unittest.TestCase):
         original_image_gen = BingChat.ImageGen
         BingChat.ImageGen = MockImageGen
 
-        img_path = self.chat.create_img("Test prompt", auth_cookie="mock_auth_cookie")
+        img_path = self.chat.create_img(
+            "Test prompt", auth_cookie="mock_auth_cookie"
+        )
         self.assertEqual(img_path, "./output/mock_image.png")
 
         BingChat.ImageGen = original_image_gen

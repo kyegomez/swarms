@@ -79,7 +79,9 @@ class ElevenLabsText2SpeechTool(BaseTool):
                 f.write(speech)
             return f.name
         except Exception as e:
-            raise RuntimeError(f"Error while running ElevenLabsText2SpeechTool: {e}")
+            raise RuntimeError(
+                f"Error while running ElevenLabsText2SpeechTool: {e}"
+            )
 
     def play(self, speech_file: str) -> None:
         """Play the text as speech."""
@@ -93,7 +95,9 @@ class ElevenLabsText2SpeechTool(BaseTool):
         """Stream the text as speech as it is generated.
         Play the text in your speakers."""
         elevenlabs = _import_elevenlabs()
-        speech_stream = elevenlabs.generate(text=query, model=self.model, stream=True)
+        speech_stream = elevenlabs.generate(
+            text=query, model=self.model, stream=True
+        )
         elevenlabs.stream(speech_stream)
 
     def save(self, speech_file: str, path: str) -> None:

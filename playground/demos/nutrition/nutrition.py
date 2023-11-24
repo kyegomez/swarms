@@ -10,9 +10,16 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 # Define prompts for various tasks
-MEAL_PLAN_PROMPT = "Based on the following user preferences: dietary restrictions as vegetarian, preferred cuisines as Italian and Indian, a total caloric intake of around 2000 calories per day, and an exclusion of legumes, create a detailed weekly meal plan. Include a variety of meals for breakfast, lunch, dinner, and optional snacks."
+MEAL_PLAN_PROMPT = (
+    "Based on the following user preferences: dietary restrictions as"
+    " vegetarian, preferred cuisines as Italian and Indian, a total caloric"
+    " intake of around 2000 calories per day, and an exclusion of legumes,"
+    " create a detailed weekly meal plan. Include a variety of meals for"
+    " breakfast, lunch, dinner, and optional snacks."
+)
 IMAGE_ANALYSIS_PROMPT = (
-    "Identify the items in this fridge, including their quantities and condition."
+    "Identify the items in this fridge, including their quantities and"
+    " condition."
 )
 
 
@@ -45,7 +52,9 @@ def create_vision_agent(image_path):
                     {"type": "text", "text": IMAGE_ANALYSIS_PROMPT},
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}"
+                        },
                     },
                 ],
             }
@@ -53,7 +62,9 @@ def create_vision_agent(image_path):
         "max_tokens": 300,
     }
     response = requests.post(
-        "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+        "https://api.openai.com/v1/chat/completions",
+        headers=headers,
+        json=payload,
     )
     return response.json()
 
@@ -65,10 +76,11 @@ def generate_integrated_shopping_list(
     # Prepare the prompt for the LLM
     fridge_contents = image_analysis["choices"][0]["message"]["content"]
     prompt = (
-        f"Based on this meal plan: {meal_plan_output}, "
-        f"and the following items in the fridge: {fridge_contents}, "
-        f"considering dietary preferences as vegetarian with a preference for Italian and Indian cuisines, "
-        f"generate a comprehensive shopping list that includes only the items needed."
+        f"Based on this meal plan: {meal_plan_output}, and the following items"
+        f" in the fridge: {fridge_contents}, considering dietary preferences as"
+        " vegetarian with a preference for Italian and Indian cuisines,"
+        " generate a comprehensive shopping list that includes only the items"
+        " needed."
     )
 
     # Send the prompt to the LLM and return the response
@@ -94,7 +106,9 @@ user_preferences = {
 }
 
 # Generate Meal Plan
-meal_plan_output = meal_plan_agent.run(f"Generate a meal plan: {user_preferences}")
+meal_plan_output = meal_plan_agent.run(
+    f"Generate a meal plan: {user_preferences}"
+)
 
 # Vision Agent - Analyze an Image
 image_analysis_output = create_vision_agent("full_fridge.jpg")

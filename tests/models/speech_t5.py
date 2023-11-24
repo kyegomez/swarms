@@ -17,7 +17,9 @@ def test_speecht5_init(speecht5_model):
     assert isinstance(speecht5_model.processor, SpeechT5.processor.__class__)
     assert isinstance(speecht5_model.model, SpeechT5.model.__class__)
     assert isinstance(speecht5_model.vocoder, SpeechT5.vocoder.__class__)
-    assert isinstance(speecht5_model.embeddings_dataset, torch.utils.data.Dataset)
+    assert isinstance(
+        speecht5_model.embeddings_dataset, torch.utils.data.Dataset
+    )
 
 
 def test_speecht5_call(speecht5_model):
@@ -59,8 +61,12 @@ def test_speecht5_set_embeddings_dataset(speecht5_model):
     new_dataset_name = "Matthijs/cmu-arctic-xvectors-test"
     speecht5_model.set_embeddings_dataset(new_dataset_name)
     assert speecht5_model.dataset_name == new_dataset_name
-    assert isinstance(speecht5_model.embeddings_dataset, torch.utils.data.Dataset)
-    speecht5_model.set_embeddings_dataset(old_dataset_name)  # Restore original dataset
+    assert isinstance(
+        speecht5_model.embeddings_dataset, torch.utils.data.Dataset
+    )
+    speecht5_model.set_embeddings_dataset(
+        old_dataset_name
+    )  # Restore original dataset
 
 
 def test_speecht5_get_sampling_rate(speecht5_model):

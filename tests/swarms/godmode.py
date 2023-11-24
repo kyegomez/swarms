@@ -16,7 +16,13 @@ def test_godmode_run(monkeypatch):
     godmode = GodMode(llms=[LLM] * 5)
     responses = godmode.run("task1")
     assert len(responses) == 5
-    assert responses == ["response", "response", "response", "response", "response"]
+    assert responses == [
+        "response",
+        "response",
+        "response",
+        "response",
+        "response",
+    ]
 
 
 @patch("builtins.print")

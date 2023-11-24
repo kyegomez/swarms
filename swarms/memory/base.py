@@ -37,7 +37,7 @@ class BaseVectorStore(ABC):
         self,
         artifacts: dict[str, list[TextArtifact]],
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         execute_futures_dict(
             {
@@ -54,7 +54,7 @@ class BaseVectorStore(ABC):
         artifact: TextArtifact,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         if not meta:
             meta = {}
@@ -67,7 +67,11 @@ class BaseVectorStore(ABC):
             vector = artifact.generate_embedding(self.embedding_driver)
 
         return self.upsert_vector(
-            vector, vector_id=artifact.id, namespace=namespace, meta=meta, **kwargs
+            vector,
+            vector_id=artifact.id,
+            namespace=namespace,
+            meta=meta,
+            **kwargs,
         )
 
     def upsert_text(
@@ -76,14 +80,14 @@ class BaseVectorStore(ABC):
         vector_id: Optional[str] = None,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         return self.upsert_vector(
             self.embedding_driver.embed_string(string),
             vector_id=vector_id,
             namespace=namespace,
             meta=meta if meta else {},
-            **kwargs
+            **kwargs,
         )
 
     @abstractmethod
@@ -93,12 +97,14 @@ class BaseVectorStore(ABC):
         vector_id: Optional[str] = None,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         ...
 
     @abstractmethod
-    def load_entry(self, vector_id: str, namespace: Optional[str] = None) -> Entry:
+    def load_entry(
+        self, vector_id: str, namespace: Optional[str] = None
+    ) -> Entry:
         ...
 
     @abstractmethod
@@ -112,6 +118,6 @@ class BaseVectorStore(ABC):
         count: Optional[int] = None,
         namespace: Optional[str] = None,
         include_vectors: bool = False,
-        **kwargs
+        **kwargs,
     ) -> list[QueryResult]:
         ...
