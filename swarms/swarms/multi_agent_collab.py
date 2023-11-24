@@ -56,7 +56,7 @@ class MultiAgentCollaboration:
 
     Usage:
     >>> from swarms.models import OpenAIChat
-    >>> from swarms.structs import Agent
+    >>> from swarms.structs import Flow
     >>> from swarms.swarms.multi_agent_collab import MultiAgentCollaboration
     >>>
     >>> # Initialize the language model
@@ -66,14 +66,14 @@ class MultiAgentCollaboration:
     >>>
     >>>
     >>> ## Initialize the workflow
-    >>> agent = Agent(llm=llm, max_loops=1, dashboard=True)
+    >>> flow = Flow(llm=llm, max_loops=1, dashboard=True)
     >>>
     >>> # Run the workflow on a task
-    >>> out = agent.run("Generate a 10,000 word blog on health and wellness.")
+    >>> out = flow.run("Generate a 10,000 word blog on health and wellness.")
     >>>
     >>> # Initialize the multi-agent collaboration
     >>> swarm = MultiAgentCollaboration(
-    >>>     agents=[agent],
+    >>>     agents=[flow],
     >>>     max_iters=4,
     >>> )
     >>>
@@ -87,7 +87,7 @@ class MultiAgentCollaboration:
 
     def __init__(
         self,
-        agents: List[Agent],
+        agents: List[Flow],
         selection_function: callable = None,
         max_iters: int = 10,
         autosave: bool = True,
@@ -200,15 +200,11 @@ class MultiAgentCollaboration:
             print("\n")
             n += 1
 
-    def select_next_speaker_roundtable(
-        self, step: int, agents: List[Agent]
-    ) -> int:
+    def select_next_speaker_roundtable(self, step: int, agents: List[Flow]) -> int:
         """Selects the next speaker."""
         return step % len(agents)
 
-    def select_next_speaker_director(
-        step: int, agents: List[Agent], director
-    ) -> int:
+    def select_next_speaker_director(step: int, agents: List[Flow], director) -> int:
         # if the step if even => director
         # => director selects next speaker
         if step % 2 == 1:
@@ -262,9 +258,7 @@ class MultiAgentCollaboration:
         for _ in range(self.max_iters):
             for agent in self.agents:
                 result = agent.run(conversation)
-                self.results.append(
-                    {"agent": agent, "response": result}
-                )
+                self.results.append({"agent": agent, "response": result})
                 conversation += result
 
                 if self.autosave:

@@ -1,19 +1,24 @@
 import re
 from swarms.models.openai_models import OpenAIChat
 
+
 class AutoTemp:
     """
     AutoTemp is a tool for automatically selecting the best temperature setting for a given task.
     It generates responses at different temperatures, evaluates them, and ranks them based on quality.
     """
 
-    def __init__(self, api_key, default_temp=0.0, alt_temps=None, auto_select=True, max_workers=6):
+    def __init__(
+        self, api_key, default_temp=0.0, alt_temps=None, auto_select=True, max_workers=6
+    ):
         self.api_key = api_key
         self.default_temp = default_temp
         self.alt_temps = alt_temps if alt_temps else [0.4, 0.6, 0.8, 1.0, 1.2, 1.4]
         self.auto_select = auto_select
         self.max_workers = max_workers
-        self.llm = OpenAIChat(openai_api_key=self.api_key, temperature=self.default_temp)
+        self.llm = OpenAIChat(
+            openai_api_key=self.api_key, temperature=self.default_temp
+        )
 
     def evaluate_output(self, output, temperature):
         print(f"Evaluating output at temperature {temperature}...")
@@ -34,12 +39,16 @@ class AutoTemp:
         ---
         """
         score_text = self.llm(eval_prompt, temperature=0.5)
-        score_match = re.search(r'\b\d+(\.\d)?\b', score_text)
+        score_match = re.search(r"\b\d+(\.\d)?\b", score_text)
         return round(float(score_match.group()), 1) if score_match else 0.0
 
     def run(self, prompt, temperature_string):
         print("Starting generation process...")
-        temperature_list = [float(temp.strip()) for temp in temperature_string.split(',') if temp.strip()]
+        temperature_list = [
+            float(temp.strip())
+            for temp in temperature_string.split(",")
+            if temp.strip()
+        ]
         outputs = {}
         scores = {}
         for temp in temperature_list:
