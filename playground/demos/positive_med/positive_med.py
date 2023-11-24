@@ -15,13 +15,14 @@ Distribution Agent:
 - Social Media posts for the article.
 
 # TODO
+- Make prompts better
 - Add shorter and better topic generator prompt
 - Optimize writer prompt to create longer and more enjoyeable blogs
 - Use Local Models like Storywriter
 """
 from termcolor import colored
 from swarms.models import OpenAIChat
-from swarms.prompts.autobloggen
+from swarms.prompts.autobloggen import (
     DRAFT_AGENT_SYSTEM_PROMPT,
     REVIEW_PROMPT,
     SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT,
