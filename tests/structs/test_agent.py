@@ -30,10 +30,15 @@ def basic_flow(mocked_llm):
 
 @pytest.fixture
 def flow_with_condition(mocked_llm):
+<<<<<<< HEAD:tests/structs/test_agent.py
     return Agent(
         llm=mocked_llm,
         max_loops=5,
         stopping_condition=stop_when_repeats,
+=======
+    return Flow(
+        llm=mocked_llm, max_loops=5, stopping_condition=stop_when_repeats
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/structs/flow.py
     )
 
 
@@ -116,6 +121,7 @@ def test_flow_with_custom_stopping_condition(mocked_llm):
     def stopping_condition(x):
         return "terminate" in x.lower()
 
+<<<<<<< HEAD:tests/structs/test_agent.py
     agent = Agent(
         llm=mocked_llm,
         max_loops=5,
@@ -123,6 +129,13 @@ def test_flow_with_custom_stopping_condition(mocked_llm):
     )
     assert agent.stopping_condition("Please terminate now")
     assert not agent.stopping_condition("Continue the process")
+=======
+    flow = Flow(
+        llm=mocked_llm, max_loops=5, stopping_condition=stopping_condition
+    )
+    assert flow.stopping_condition("Please terminate now")
+    assert not flow.stopping_condition("Continue the process")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/structs/flow.py
 
 
 # Test calling the agent directly
@@ -191,9 +204,13 @@ def test_save_different_memory(basic_flow, tmp_path):
 
 # Test the stopping condition check
 def test_check_stopping_condition(flow_with_condition):
+<<<<<<< HEAD:tests/structs/test_agent.py
     assert flow_with_condition._check_stopping_condition(
         "Stop this process"
     )
+=======
+    assert flow_with_condition._check_stopping_condition("Stop this process")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/structs/flow.py
     assert not flow_with_condition._check_stopping_condition(
         "Continue the task"
     )
@@ -399,11 +416,16 @@ def test_flow_autosave_path(flow_instance):
 def test_flow_response_length(flow_instance):
     # Test checking the length of the response
     response = flow_instance.run(
+<<<<<<< HEAD:tests/structs/test_agent.py
         "Generate a 10,000 word long blog on mental clarity and the"
         " benefits of meditation."
     )
     assert (
         len(response) > flow_instance.get_response_length_threshold()
+=======
+        "Generate a 10,000 word long blog on mental clarity and the benefits of"
+        " meditation."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/structs/flow.py
     )
 
 
@@ -583,6 +605,7 @@ def test_flow_rollback(flow_instance):
         flow_instance.get_current_prompt() == state1["current_prompt"]
     )
     assert flow_instance.get_instructions() == state1["instructions"]
+<<<<<<< HEAD:tests/structs/test_agent.py
     assert (
         flow_instance.get_user_messages() == state1["user_messages"]
     )
@@ -594,6 +617,11 @@ def test_flow_rollback(flow_instance):
         flow_instance.get_conversation_log()
         == state1["conversation_log"]
     )
+=======
+    assert flow_instance.get_user_messages() == state1["user_messages"]
+    assert flow_instance.get_response_history() == state1["response_history"]
+    assert flow_instance.get_conversation_log() == state1["conversation_log"]
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/structs/flow.py
     assert (
         flow_instance.is_dynamic_pacing_enabled()
         == state1["dynamic_pacing_enabled"]
@@ -772,12 +800,17 @@ def test_flow_disable_message_history(flow_instance):
     response = flow_instance.run(
         "This message should not be recorded in history."
     )
+<<<<<<< HEAD:tests/structs/test_agent.py
     assert (
         "This message should not be recorded in history." in response
     )
     assert (
         len(flow_instance.get_message_history()) == 0
     )  # History is empty
+=======
+    assert "This message should not be recorded in history." in response
+    assert len(flow_instance.get_message_history()) == 0  # History is empty
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/structs/flow.py
 
 
 def test_flow_enable_message_history(flow_instance):

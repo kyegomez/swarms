@@ -38,9 +38,13 @@ def test_vilt_prediction(
 
 # 3. Test Exception Handling for network
 @patch.object(
+<<<<<<< HEAD:tests/models/test_vilt.py
     requests,
     "get",
     side_effect=requests.RequestException("Network error"),
+=======
+    requests, "get", side_effect=requests.RequestException("Network error")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/vilt.py
 )
 def test_vilt_network_exception(vilt_instance):
     with pytest.raises(requests.RequestException):

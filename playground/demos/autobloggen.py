@@ -126,11 +126,15 @@ class AutoBlogGenSwarm:
             except Exception as error:
                 print(
                     colored(
+<<<<<<< HEAD:playground/demos/autobloggen.py
                         (
                             "Error while running AutoBlogGenSwarm"
                             f" {error}"
                         ),
                         "red",
+=======
+                        f"Error while running AutoBlogGenSwarm {error}", "red"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):swarms/swarms/autobloggen.py
                     )
                 )
                 if attempt == self.retry_attempts - 1:

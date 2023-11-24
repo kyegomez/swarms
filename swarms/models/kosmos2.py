@@ -71,9 +71,13 @@ class Kosmos2(BaseModel):
         image = Image.open(img)
         prompt = "<grounding>An image of"
 
+<<<<<<< HEAD
         inputs = self.processor(
             text=prompt, images=image, return_tensors="pt"
         )
+=======
+        inputs = self.processor(text=prompt, images=image, return_tensors="pt")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         outputs = self.model.generate(
             **inputs, use_cache=True, max_new_tokens=64
         )

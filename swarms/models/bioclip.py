@@ -112,9 +112,15 @@ class BioClip:
         template: str = "this is a photo of ",
         context_length: int = 256,
     ):
+<<<<<<< HEAD
         image = torch.stack(
             [self.preprocess_val(Image.open(img_path))]
         ).to(self.device)
+=======
+        image = torch.stack([self.preprocess_val(Image.open(img_path))]).to(
+            self.device
+        )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         texts = self.tokenizer(
             [template + l for l in labels],
             context_length=context_length,
@@ -152,10 +158,14 @@ class BioClip:
             metadata["filename"]
             + "\n"
             + "\n".join(
+<<<<<<< HEAD
                 [
                     f"{k}: {v*100:.1f}"
                     for k, v in metadata["top_probs"].items()
                 ]
+=======
+                [f"{k}: {v*100:.1f}" for k, v in metadata["top_probs"].items()]
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
         )
         ax.set_title(title, fontsize=14)

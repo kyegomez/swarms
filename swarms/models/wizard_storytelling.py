@@ -114,8 +114,12 @@ class WizardLLMStoryTeller:
                     self.model = DDP(self.model)
             except Exception as error:
                 self.logger.error(
+<<<<<<< HEAD
                     "Failed to load the model or the tokenizer:"
                     f" {error}"
+=======
+                    f"Failed to load the model or the tokenizer: {error}"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 )
                 raise
 

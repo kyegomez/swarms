@@ -114,8 +114,12 @@ def test_yi34b_generate_text_with_invalid_repitition_penalty(
     prompt = "There's a place where time stands still."
     repitition_penalty = 0.0  # Invalid repitition_penalty
     with pytest.raises(
+<<<<<<< HEAD:tests/models/test_yi_200k.py
         ValueError,
         match="repitition_penalty must be a positive float",
+=======
+        ValueError, match="repitition_penalty must be a positive float"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/yi_200k.py
     ):
         yi34b_model(prompt, repitition_penalty=repitition_penalty)
 

@@ -117,9 +117,14 @@ class Logger:
         )
         error_handler.setLevel(logging.ERROR)
         error_formatter = AutoGptFormatter(
+<<<<<<< HEAD
             "%(asctime)s %(levelname)s"
             " %(module)s:%(funcName)s:%(lineno)d %(title)s"
             " %(message_no_color)s"
+=======
+            "%(asctime)s %(levelname)s %(module)s:%(funcName)s:%(lineno)d"
+            " %(title)s %(message_no_color)s"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
         error_handler.setFormatter(error_formatter)
 
@@ -299,9 +304,15 @@ class Logger:
             additionalText = (
                 "Please ensure you've setup and configured everything"
                 " correctly. Read"
+<<<<<<< HEAD
                 " https://github.com/Torantulino/Auto-GPT#readme to"
                 " double check. You can also create a github issue or"
                 " join the discord and ask there!"
+=======
+                " https://github.com/Torantulino/Auto-GPT#readme to double"
+                " check. You can also create a github issue or join the discord"
+                " and ask there!"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
 
         self.typewriter_log(

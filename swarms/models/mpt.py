@@ -30,10 +30,14 @@ class MPT7B:
     """
 
     def __init__(
+<<<<<<< HEAD
         self,
         model_name: str,
         tokenizer_name: str,
         max_tokens: int = 100,
+=======
+        self, model_name: str, tokenizer_name: str, max_tokens: int = 100
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
     ):
         # Loading model and tokenizer details
         self.model_name = model_name

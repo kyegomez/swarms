@@ -47,9 +47,13 @@ def _create_retry_decorator() -> Callable[[Any], Any]:
             | retry_if_exception_type(
                 google.api_core.exceptions.ServiceUnavailable
             )
+<<<<<<< HEAD
             | retry_if_exception_type(
                 google.api_core.exceptions.GoogleAPIError
             )
+=======
+            | retry_if_exception_type(google.api_core.exceptions.GoogleAPIError)
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
@@ -127,9 +131,13 @@ class GooglePalm(BaseLLM, BaseModel):
             values["temperature"] is not None
             and not 0 <= values["temperature"] <= 1
         ):
+<<<<<<< HEAD
             raise ValueError(
                 "temperature must be in the range [0.0, 1.0]"
             )
+=======
+            raise ValueError("temperature must be in the range [0.0, 1.0]")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 
         if (
             values["top_p"] is not None
@@ -144,9 +152,13 @@ class GooglePalm(BaseLLM, BaseModel):
             values["max_output_tokens"] is not None
             and values["max_output_tokens"] <= 0
         ):
+<<<<<<< HEAD
             raise ValueError(
                 "max_output_tokens must be greater than zero"
             )
+=======
+            raise ValueError("max_output_tokens must be greater than zero")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 
         return values
 

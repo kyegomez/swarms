@@ -18,6 +18,12 @@ def get_ada_embeddings(
 
     text = text.replace("\n", " ")
 
+<<<<<<< HEAD
     return client.embeddings.create(input=[text], model=model)[
         "data"
     ][0]["embedding"]
+=======
+    return client.embeddings.create(input=[text], model=model)["data"][0][
+        "embedding"
+    ]
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)

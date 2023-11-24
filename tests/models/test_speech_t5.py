@@ -18,9 +18,13 @@ def test_speecht5_init(speecht5_model):
         speecht5_model.processor, SpeechT5.processor.__class__
     )
     assert isinstance(speecht5_model.model, SpeechT5.model.__class__)
+<<<<<<< HEAD:tests/models/test_speech_t5.py
     assert isinstance(
         speecht5_model.vocoder, SpeechT5.vocoder.__class__
     )
+=======
+    assert isinstance(speecht5_model.vocoder, SpeechT5.vocoder.__class__)
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/speech_t5.py
     assert isinstance(
         speecht5_model.embeddings_dataset, torch.utils.data.Dataset
     )

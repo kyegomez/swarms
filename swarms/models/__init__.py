@@ -8,10 +8,14 @@ from swarms.models.openai_models import (
     AzureOpenAI,
     OpenAIChat,
 )  # noqa: E402
+<<<<<<< HEAD
 
 # from swarms.models.vllm import vLLM  # noqa: E402
 
 # from swarms.models.zephyr import Zephyr  # noqa: E402
+=======
+from swarms.models.zephyr import Zephyr  # noqa: E402
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 from swarms.models.biogpt import BioGPT  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
 from swarms.models.wizard_storytelling import (

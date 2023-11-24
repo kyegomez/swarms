@@ -13,7 +13,11 @@ orchestrator = Orchestrator(
 
 # Agent 7 sends a message to Agent 9
 orchestrator.chat(
+<<<<<<< HEAD
     sender_id=7,
     receiver_id=9,
     message="Can you help me with this task?",
+=======
+    sender_id=7, receiver_id=9, message="Can you help me with this task?"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 )

@@ -80,12 +80,18 @@ def test_tokenizer_type(fuyu_instance):
 
 def test_processor_has_image_processor_and_tokenizer(fuyu_instance):
     assert (
+<<<<<<< HEAD:tests/models/test_fuyu.py
         fuyu_instance.processor.image_processor
         == fuyu_instance.image_processor
     )
     assert (
         fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer
     )
+=======
+        fuyu_instance.processor.image_processor == fuyu_instance.image_processor
+    )
+    assert fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/fuyu.py
 
 
 def test_model_device_map(fuyu_instance):

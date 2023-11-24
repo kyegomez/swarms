@@ -70,9 +70,13 @@ def _stream_response_to_generation_chunk(
             finish_reason=stream_response["choices"][0].get(
                 "finish_reason", None
             ),
+<<<<<<< HEAD
             logprobs=stream_response["choices"][0].get(
                 "logprobs", None
             ),
+=======
+            logprobs=stream_response["choices"][0].get("logprobs", None),
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         ),
     )
 
@@ -81,6 +85,7 @@ def _update_response(
     response: Dict[str, Any], stream_response: Dict[str, Any]
 ) -> None:
     """Update response from the stream response."""
+<<<<<<< HEAD
     response["choices"][0]["text"] += stream_response["choices"][0][
         "text"
     ]
@@ -90,6 +95,15 @@ def _update_response(
     response["choices"][0]["logprobs"] = stream_response["choices"][
         0
     ]["logprobs"]
+=======
+    response["choices"][0]["text"] += stream_response["choices"][0]["text"]
+    response["choices"][0]["finish_reason"] = stream_response["choices"][0].get(
+        "finish_reason", None
+    )
+    response["choices"][0]["logprobs"] = stream_response["choices"][0][
+        "logprobs"
+    ]
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 
 
 def _streaming_response_template() -> Dict[str, Any]:
@@ -431,9 +445,13 @@ class BaseOpenAI(BaseLLM):
                     {
                         "text": generation.text,
                         "finish_reason": (
+<<<<<<< HEAD
                             generation.generation_info.get(
                                 "finish_reason"
                             )
+=======
+                            generation.generation_info.get("finish_reason")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                             if generation.generation_info
                             else None
                         ),
@@ -491,9 +509,13 @@ class BaseOpenAI(BaseLLM):
                     {
                         "text": generation.text,
                         "finish_reason": (
+<<<<<<< HEAD
                             generation.generation_info.get(
                                 "finish_reason"
                             )
+=======
+                            generation.generation_info.get("finish_reason")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                             if generation.generation_info
                             else None
                         ),
@@ -525,8 +547,12 @@ class BaseOpenAI(BaseLLM):
         if stop is not None:
             if "stop" in params:
                 raise ValueError(
+<<<<<<< HEAD
                     "`stop` found in both the input and default"
                     " params."
+=======
+                    "`stop` found in both the input and default params."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 )
             params["stop"] = stop
         if params["max_tokens"] == -1:
@@ -620,8 +646,12 @@ class BaseOpenAI(BaseLLM):
             enc = tiktoken.encoding_for_model(model_name)
         except KeyError:
             logger.warning(
+<<<<<<< HEAD
                 "Warning: model not found. Using cl100k_base"
                 " encoding."
+=======
+                "Warning: model not found. Using cl100k_base encoding."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
             model = "cl100k_base"
             enc = tiktoken.get_encoding(model)
@@ -683,8 +713,13 @@ class BaseOpenAI(BaseLLM):
 
         if context_size is None:
             raise ValueError(
+<<<<<<< HEAD
                 f"Unknown model: {modelname}. Please provide a valid"
                 " OpenAI model name.Known models are: "
+=======
+                f"Unknown model: {modelname}. Please provide a valid OpenAI"
+                " model name.Known models are: "
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 + ", ".join(model_token_mapping.keys())
             )
 
@@ -925,8 +960,13 @@ class OpenAIChat(BaseLLM):
     ) -> Tuple:
         if len(prompts) > 1:
             raise ValueError(
+<<<<<<< HEAD
                 "OpenAIChat currently only supports single prompt,"
                 f" got {prompts}"
+=======
+                "OpenAIChat currently only supports single prompt, got"
+                f" {prompts}"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
         messages = self.prefix_messages + [
             {"role": "user", "content": prompts[0]}
@@ -938,8 +978,12 @@ class OpenAIChat(BaseLLM):
         if stop is not None:
             if "stop" in params:
                 raise ValueError(
+<<<<<<< HEAD
                     "`stop` found in both the input and default"
                     " params."
+=======
+                    "`stop` found in both the input and default params."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 )
             params["stop"] = stop
         if params.get("max_tokens") == -1:
@@ -1019,9 +1063,13 @@ class OpenAIChat(BaseLLM):
             generations=[
                 [
                     Generation(
+<<<<<<< HEAD
                         text=full_response["choices"][0]["message"][
                             "content"
                         ]
+=======
+                        text=full_response["choices"][0]["message"]["content"]
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     )
                 ]
             ],
@@ -1060,9 +1108,13 @@ class OpenAIChat(BaseLLM):
             generations=[
                 [
                     Generation(
+<<<<<<< HEAD
                         text=full_response["choices"][0]["message"][
                             "content"
                         ]
+=======
+                        text=full_response["choices"][0]["message"]["content"]
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     )
                 ]
             ],

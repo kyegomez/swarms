@@ -32,8 +32,12 @@ def timing_decorator(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         logging.info(
+<<<<<<< HEAD
             f"{func.__name__} executed in"
             f" {end_time - start_time} seconds"
+=======
+            f"{func.__name__} executed in {end_time - start_time} seconds"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
         return result
 
@@ -84,8 +88,12 @@ def deprecated_decorator(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         warnings.warn(
+<<<<<<< HEAD
             f"{func.__name__} is deprecated",
             category=DeprecationWarning,
+=======
+            f"{func.__name__} is deprecated", category=DeprecationWarning
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
         return func(*args, **kwargs)
 

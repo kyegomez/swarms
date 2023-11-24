@@ -7,7 +7,10 @@ from swarms.structs import SequentialWorkflow
 
 class BlogGen:
     def __init__(
-        self, api_key, blog_topic, temperature_range: str = "0.4,0.6,0.8,1.0,1.2"
+        self,
+        api_key,
+        blog_topic,
+        temperature_range: str = "0.4,0.6,0.8,1.0,1.2",
     ):  # Add blog_topic as an argument
         self.openai_chat = OpenAIChat(openai_api_key=api_key, temperature=0.8)
         self.auto_temp = AutoTemp(api_key)
@@ -40,7 +43,10 @@ class BlogGen:
             topic_output = topic_result.generations[0][0].text
             print(
                 colored(
-                    f"\nTopic Selection Task Output:\n----------------------------\n{topic_output}\n",
+                    (
+                        "\nTopic Selection Task"
+                        f" Output:\n----------------------------\n{topic_output}\n"
+                    ),
                     "white",
                 )
             )
@@ -58,7 +64,10 @@ class BlogGen:
             initial_draft_output = auto_temp_output  # Assuming AutoTemp.run returns the best output directly
             print(
                 colored(
-                    f"\nInitial Draft Output:\n----------------------------\n{initial_draft_output}\n",
+                    (
+                        "\nInitial Draft"
+                        f" Output:\n----------------------------\n{initial_draft_output}\n"
+                    ),
                     "white",
                 )
             )
@@ -71,7 +80,10 @@ class BlogGen:
             review_output = review_result.generations[0][0].text
             print(
                 colored(
-                    f"\nReview Output:\n----------------------------\n{review_output}\n",
+                    (
+                        "\nReview"
+                        f" Output:\n----------------------------\n{review_output}\n"
+                    ),
                     "white",
                 )
             )
@@ -80,22 +92,28 @@ class BlogGen:
             distribution_prompt = self.DISTRIBUTION_AGENT_SYSTEM_PROMPT.replace(
                 "{{ARTICLE_TOPIC}}", chosen_topic
             )
-            distribution_result = self.openai_chat.generate([distribution_prompt])
+            distribution_result = self.openai_chat.generate(
+                [distribution_prompt]
+            )
             distribution_output = distribution_result.generations[0][0].text
             print(
                 colored(
-                    f"\nDistribution Output:\n----------------------------\n{distribution_output}\n",
+                    (
+                        "\nDistribution"
+                        f" Output:\n----------------------------\n{distribution_output}\n"
+                    ),
                     "white",
                 )
             )
 
             # Final compilation of the blog
-            final_blog_content = (
-                f"{initial_draft_output}\n\n{review_output}\n\n{distribution_output}"
-            )
+            final_blog_content = f"{initial_draft_output}\n\n{review_output}\n\n{distribution_output}"
             print(
                 colored(
-                    f"\nFinal Blog Content:\n----------------------------\n{final_blog_content}\n",
+                    (
+                        "\nFinal Blog"
+                        f" Content:\n----------------------------\n{final_blog_content}\n"
+                    ),
                     "green",
                 )
             )

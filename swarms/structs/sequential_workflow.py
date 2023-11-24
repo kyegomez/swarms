@@ -117,11 +117,15 @@ class SequentialWorkflow:
     dashboard: bool = False
 
     def add(
+<<<<<<< HEAD
         self,
         agent: Union[Callable, Agent],
         task: Optional[str] = None,
         *args,
         **kwargs,
+=======
+        self, task: str, flow: Union[Callable, Flow], *args, **kwargs
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
     ) -> None:
         """
         Add a task to the workflow.
@@ -511,9 +515,15 @@ class SequentialWorkflow:
                             # Ensure that 'task' is provided in the kwargs
                             if "task" not in task.kwargs:
                                 raise ValueError(
+<<<<<<< HEAD
                                     "The 'task' argument is required"
                                     " for the Agent agent execution"
                                     f" in '{task.description}'"
+=======
+                                    "The 'task' argument is required for the"
+                                    " Flow flow execution in"
+                                    f" '{task.description}'"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                                 )
                             # Separate the 'task' argument from other kwargs
                             flow_task_arg = task.kwargs.pop("task")
@@ -565,6 +575,7 @@ class SequentialWorkflow:
             ValueError: If a Agent instance is used as a task and the 'task' argument is not provided.
 
         """
+<<<<<<< HEAD
         try:
             for _ in range(self.max_loops):
                 for task in self.tasks:
@@ -585,6 +596,19 @@ class SequentialWorkflow:
                                 flow_task_arg,
                                 *task.args,
                                 **task.kwargs,
+=======
+        for _ in range(self.max_loops):
+            for task in self.tasks:
+                # Check if the current task can be executed
+                if task.result is None:
+                    # Check if the flow is a Flow and a 'task' argument is needed
+                    if isinstance(task.flow, Flow):
+                        # Ensure that 'task' is provided in the kwargs
+                        if "task" not in task.kwargs:
+                            raise ValueError(
+                                "The 'task' argument is required for the Flow"
+                                f" flow execution in '{task.description}'"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                             )
                         else:
                             # If it's not a Agent instance, call the agent directly
@@ -592,6 +616,7 @@ class SequentialWorkflow:
                                 *task.args, **task.kwargs
                             )
 
+<<<<<<< HEAD
                         # Pass the result as an argument to the next task if it exists
                         next_task_index = self.tasks.index(task) + 1
                         if next_task_index < len(self.tasks):
@@ -620,3 +645,10 @@ class SequentialWorkflow:
                     attrs=["bold", "underline"],
                 )
             )
+=======
+                    # Autosave the workflow state
+                    if self.autosave:
+                        self.save_workflow_state(
+                            "sequential_workflow_state.json"
+                        )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)

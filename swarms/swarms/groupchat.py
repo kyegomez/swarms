@@ -50,8 +50,12 @@ class GroupChat:
     def next_agent(self, agent: Agent) -> Agent:
         """Return the next agent in the list."""
         return self.agents[
+<<<<<<< HEAD
             (self.agent_names.index(agent.name) + 1)
             % len(self.agents)
+=======
+            (self.agent_names.index(agent.name) + 1) % len(self.agents)
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         ]
 
     def select_speaker_msg(self):
@@ -83,10 +87,16 @@ class GroupChat:
                     {
                         "role": "system",
                         "content": (
+<<<<<<< HEAD
                             "Read the above conversation. Then"
                             " select the next most suitable role"
                             f" from {self.agent_names} to play. Only"
                             " return the role."
+=======
+                            "Read the above conversation. Then select the next"
+                            f" most suitable role from {self.agent_names} to"
+                            " play. Only return the role."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                         ),
                     }
                 ]
@@ -150,6 +160,7 @@ class GroupChatManager:
         self.selector = selector
 
     def __call__(self, task: str):
+<<<<<<< HEAD
         """Call 'GroupChatManager' instance as a function.
 
         Args:
@@ -158,6 +169,8 @@ class GroupChatManager:
         Returns:
             _type_: _description_
         """
+=======
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         self.groupchat.messages.append(
             {"role": self.selector.name, "content": task}
         )

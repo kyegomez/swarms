@@ -144,7 +144,11 @@ class PineconeVectorStoreStore(BaseVectorStore):
 
     def load_entries(
         self, namespace: Optional[str] = None
+<<<<<<< HEAD
     ) -> list[BaseVectorStore.Entry]:
+=======
+    ) -> list[BaseVector.Entry]:
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         """Load entries"""
         # This is a hacky way to query up to 10,000 values from Pinecone. Waiting on an official API for fetching
         # all values from a namespace:
@@ -176,7 +180,11 @@ class PineconeVectorStoreStore(BaseVectorStore):
         # PineconDBStorageDriver-specific params:
         include_metadata=True,
         **kwargs,
+<<<<<<< HEAD
     ) -> list[BaseVectorStore.QueryResult]:
+=======
+    ) -> list[BaseVector.QueryResult]:
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         """Query vectors"""
         vector = self.embedding_driver.embed_string(query)
 

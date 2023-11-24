@@ -16,8 +16,12 @@ class PromptGenerator:
                 "text": "thought",
                 "reasoning": "reasoning",
                 "plan": (
+<<<<<<< HEAD
                     "- short bulleted\n- list that conveys\n-"
                     " long-term plan"
+=======
+                    "- short bulleted\n- list that conveys\n- long-term plan"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 ),
                 "criticism": "constructive self-criticism",
                 "speak": "thoughts summary to say to user",
@@ -76,10 +80,16 @@ class PromptGenerator:
         prompt_string = (
             f"Constraints:\n{''.join(self.constraints)}\n\nCommands:\n{''.join(self.commands)}\n\nResources:\n{''.join(self.resources)}\n\nPerformance"
             f" Evaluation:\n{''.join(self.performance_evaluation)}\n\nYou"
+<<<<<<< HEAD
             " should only respond in JSON format as described below"
             " \nResponse Format:"
             f" \n{formatted_response_format} \nEnsure the response"
             " can be parsed by Python json.loads"
+=======
+            " should only respond in JSON format as described below \nResponse"
+            f" Format: \n{formatted_response_format} \nEnsure the response can"
+            " be parsed by Python json.loads"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
 
         return prompt_string

@@ -54,6 +54,7 @@ def test_transcribe_audio_file(distil_whisper_model):
 
 @pytest.mark.asyncio
 async def test_async_transcribe_audio_file(distil_whisper_model):
+<<<<<<< HEAD:tests/models/test_distill_whisper.py
     test_data = np.random.rand(
         16000
     )  # Simulated audio data (1 second)
@@ -63,6 +64,11 @@ async def test_async_transcribe_audio_file(distil_whisper_model):
         audio_file_path = create_audio_file(
             test_data, 16000, audio_file.name
         )
+=======
+    test_data = np.random.rand(16000)  # Simulated audio data (1 second)
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
+        audio_file_path = create_audio_file(test_data, 16000, audio_file.name)
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/distill_whisper.py
         transcription = await distil_whisper_model.async_transcribe(
             audio_file_path
         )
@@ -86,9 +92,13 @@ def test_transcribe_audio_data(distil_whisper_model):
 
 @pytest.mark.asyncio
 async def test_async_transcribe_audio_data(distil_whisper_model):
+<<<<<<< HEAD:tests/models/test_distill_whisper.py
     test_data = np.random.rand(
         16000
     )  # Simulated audio data (1 second)
+=======
+    test_data = np.random.rand(16000)  # Simulated audio data (1 second)
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/distill_whisper.py
     transcription = await distil_whisper_model.async_transcribe(
         test_data.tobytes()
     )
@@ -193,9 +203,13 @@ def test_create_audio_file():
         16000
     )  # Simulated audio data (1 second)
     sample_rate = 16000
+<<<<<<< HEAD:tests/models/test_distill_whisper.py
     with tempfile.NamedTemporaryFile(
         suffix=".wav", delete=False
     ) as audio_file:
+=======
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/distill_whisper.py
         audio_file_path = create_audio_file(
             test_data, sample_rate, audio_file.name
         )
@@ -323,9 +337,13 @@ async def test_async_transcribe_with_mocked_model(
 ):
     model_mock, processor_mock = mocked_model
     # Set up what the mock should return when it's called
+<<<<<<< HEAD:tests/models/test_distill_whisper.py
     model_mock.return_value.generate.return_value = torch.tensor(
         [[0]]
     )
+=======
+    model_mock.return_value.generate.return_value = torch.tensor([[0]])
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/distill_whisper.py
     processor_mock.return_value.batch_decode.return_value = [
         "mocked transcription"
     ]

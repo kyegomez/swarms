@@ -101,11 +101,19 @@ class AbstractSwarm(ABC):
         """Remove a agent from the swarm"""
         pass
 
+<<<<<<< HEAD
     # @abstractmethod
     def broadcast(
         self, message: str, sender: Optional["Agent"] = None
     ):
         """Broadcast a message to all agents"""
+=======
+    @abstractmethod
+    def broadcast(
+        self, message: str, sender: Optional["AbstractWorker"] = None
+    ):
+        """Broadcast a message to all workers"""
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         pass
 
     # @abstractmethod

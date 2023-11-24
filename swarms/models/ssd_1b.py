@@ -145,8 +145,13 @@ class SSD1B:
             print(
                 colored(
                     (
+<<<<<<< HEAD
                         f"Error running SSD1B: {error} try optimizing"
                         " your api key and or try again"
+=======
+                        f"Error running SSD1B: {error} try optimizing your api"
+                        " key and or try again"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     ),
                     "red",
                 )
@@ -235,15 +240,21 @@ class SSD1B:
                     print(
                         colored(
                             (
+<<<<<<< HEAD
                                 f"Error running SSD1B: {error} try"
                                 " optimizing your api key and or try"
                                 " again"
+=======
+                                f"Error running SSD1B: {error} try optimizing"
+                                " your api key and or try again"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                             ),
                             "red",
                         )
                     )
                     print(
                         colored(
+<<<<<<< HEAD
                             (
                                 "Error running SSD1B:"
                                 f" {error.http_status}"
@@ -257,6 +268,12 @@ class SSD1B:
                             "red",
                         )
                     )
+=======
+                            f"Error running SSD1B: {error.http_status}", "red"
+                        )
+                    )
+                    print(colored(f"Error running SSD1B: {error.error}", "red"))
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     raise error
 
     def _generate_uuid(self):

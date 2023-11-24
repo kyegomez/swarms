@@ -18,8 +18,13 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
     Y = np.array(Y)
     if X.shape[1] != Y.shape[1]:
         raise ValueError(
+<<<<<<< HEAD
             "Number of columns in X and Y must be the same. X has"
             f" shape {X.shape} and Y has shape {Y.shape}."
+=======
+            "Number of columns in X and Y must be the same. X has shape"
+            f" {X.shape} and Y has shape {Y.shape}."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
     try:
         import simsimd as simd
@@ -32,9 +37,15 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
         return Z
     except ImportError:
         logger.info(
+<<<<<<< HEAD
             "Unable to import simsimd, defaulting to NumPy"
             " implementation. If you want to use simsimd please"
             " install with `pip install simsimd`."
+=======
+            "Unable to import simsimd, defaulting to NumPy implementation. If"
+            " you want to use simsimd please install with `pip install"
+            " simsimd`."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
         X_norm = np.linalg.norm(X, axis=1)
         Y_norm = np.linalg.norm(Y, axis=1)

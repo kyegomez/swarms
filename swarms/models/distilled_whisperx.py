@@ -33,8 +33,13 @@ def async_retry(max_retries=3, exceptions=(Exception,), delay=1):
                     if retries <= 0:
                         raise
                     print(
+<<<<<<< HEAD
                         f"Retry after exception: {e}, Attempts"
                         f" remaining: {retries}"
+=======
+                        f"Retry after exception: {e}, Attempts remaining:"
+                        f" {retries}"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     )
                     await asyncio.sleep(delay)
 
@@ -70,9 +75,13 @@ class DistilWhisperModel:
     def __init__(self, model_id="distil-whisper/distil-large-v2"):
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.torch_dtype = (
+<<<<<<< HEAD
             torch.float16
             if torch.cuda.is_available()
             else torch.float32
+=======
+            torch.float16 if torch.cuda.is_available() else torch.float32
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
         self.model_id = model_id
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
@@ -162,8 +171,13 @@ class DistilWhisperModel:
                         return_tensors="pt",
                         padding=True,
                     )
+<<<<<<< HEAD
                     processed_inputs = (
                         processed_inputs.input_values.to(self.device)
+=======
+                    processed_inputs = processed_inputs.input_values.to(
+                        self.device
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     )
 
                     # Generate transcription for the chunk
@@ -185,8 +199,12 @@ class DistilWhisperModel:
 
         except Exception as e:
             print(
+<<<<<<< HEAD
                 colored(
                     f"An error occurred during transcription: {e}",
                     "red",
                 )
+=======
+                colored(f"An error occurred during transcription: {e}", "red")
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )

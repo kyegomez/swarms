@@ -69,9 +69,22 @@ class Fuyu(BaseMultiModalModel):
             text (str): _description_
             img (str): _description_
 
+<<<<<<< HEAD
         Returns:
             _type_: _description_
         """
+=======
+        output = self.model.generate(
+            **model_inputs, max_new_tokens=self.max_new_tokens
+        )
+        text = self.processor.batch_decode(
+            output[:, -7:], skip_special_tokens=True
+        )
+        return print(str(text))
+
+    def get_img_from_web(self, img_url: str):
+        """Get the image from the web"""
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         try:
             img = self.get_img(img)
             model_inputs = self.processor(

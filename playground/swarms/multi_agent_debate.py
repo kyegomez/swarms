@@ -40,9 +40,15 @@ debate = MultiAgentDebate(agents, select_speaker)
 
 # Run task
 task = (
+<<<<<<< HEAD
     "What were the winning boston marathon times for the past 5 years"
     " (ending in 2022)? Generate a table of the year, name, country"
     " of origin, and times."
+=======
+    "What were the winning boston marathon times for the past 5 years (ending"
+    " in 2022)? Generate a table of the year, name, country of origin, and"
+    " times."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 )
 results = debate.run(task, max_iters=4)
 

@@ -13,8 +13,13 @@ from swarms.utils.logger import logger
 class BidOutputParser(RegexParser):
     def get_format_instructions(self) -> str:
         return (
+<<<<<<< HEAD
             "Your response should be an integrater delimited by"
             " angled brackets like this: <int>"
+=======
+            "Your response should be an integrater delimited by angled brackets"
+            " like this: <int>"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
 
 
@@ -200,11 +205,15 @@ class MultiAgentCollaboration:
             print("\n")
             n += 1
 
-    def select_next_speaker_roundtable(self, step: int, agents: List[Flow]) -> int:
+    def select_next_speaker_roundtable(
+        self, step: int, agents: List[Flow]
+    ) -> int:
         """Selects the next speaker."""
         return step % len(agents)
 
-    def select_next_speaker_director(step: int, agents: List[Flow], director) -> int:
+    def select_next_speaker_director(
+        step: int, agents: List[Flow], director
+    ) -> int:
         # if the step if even => director
         # => director selects next speaker
         if step % 2 == 1:

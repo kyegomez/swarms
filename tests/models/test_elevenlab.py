@@ -84,8 +84,12 @@ def test_run_text_to_speech_error_handling(eleven_labs_tool):
         with pytest.raises(
             RuntimeError,
             match=(
+<<<<<<< HEAD:tests/models/test_elevenlab.py
                 "Error while running ElevenLabsText2SpeechTool: Test"
                 " Exception"
+=======
+                "Error while running ElevenLabsText2SpeechTool: Test Exception"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/elevenlab.py
             ),
         ):
             eleven_labs_tool.run(SAMPLE_TEXT)

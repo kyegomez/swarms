@@ -2,6 +2,7 @@ PY_SIMPLE_COMPLETION_INSTRUCTION = (
     "# Write the body of this function only."
 )
 PY_REFLEXION_COMPLETION_INSTRUCTION = (
+<<<<<<< HEAD
     "You are a Python writing assistant. You will be given your past"
     " function implementation, a series of unit tests, and a hint to"
     " change the implementation appropriately. Write your full"
@@ -14,6 +15,20 @@ PY_SELF_REFLECTION_COMPLETION_INSTRUCTION = (
     " wrong as indicated by the tests. You will need this as a hint"
     " when you try again later. Only provide the few sentence"
     " description in your answer, not the implementation.\n\n-----"
+=======
+    "You are a Python writing assistant. You will be given your past function"
+    " implementation, a series of unit tests, and a hint to change the"
+    " implementation appropriately. Write your full implementation (restate the"
+    " function signature).\n\n-----"
+)
+PY_SELF_REFLECTION_COMPLETION_INSTRUCTION = (
+    "You are a Python writing assistant. You will be given a function"
+    " implementation and a series of unit tests. Your goal is to write a few"
+    " sentences to explain why your implementation is wrong as indicated by the"
+    " tests. You will need this as a hint when you try again later. Only"
+    " provide the few sentence description in your answer, not the"
+    " implementation.\n\n-----"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 )
 USE_PYTHON_CODEBLOCK_INSTRUCTION = (
     "Use a Python code block to write your response. For"
@@ -21,6 +36,7 @@ USE_PYTHON_CODEBLOCK_INSTRUCTION = (
 )
 
 PY_SIMPLE_CHAT_INSTRUCTION = (
+<<<<<<< HEAD
     "You are an AI that only responds with python code, NOT ENGLISH."
     " You will be given a function signature and its docstring by the"
     " user. Write your full implementation (restate the function"
@@ -43,6 +59,28 @@ PY_REFLEXION_CHAT_INSTRUCTION_V2 = (
     " implementation of a function, a series of unit tests results,"
     " and your self-reflection on your previous implementation. Write"
     " your full implementation (restate the function signature)."
+=======
+    "You are an AI that only responds with python code, NOT ENGLISH. You will"
+    " be given a function signature and its docstring by the user. Write your"
+    " full implementation (restate the function signature)."
+)
+PY_SIMPLE_CHAT_INSTRUCTION_V2 = (
+    "You are an AI that only responds with only python code. You will be given"
+    " a function signature and its docstring by the user. Write your full"
+    " implementation (restate the function signature)."
+)
+PY_REFLEXION_CHAT_INSTRUCTION = (
+    "You are an AI Python assistant. You will be given your past function"
+    " implementation, a series of unit tests, and a hint to change the"
+    " implementation appropriately. Write your full implementation (restate the"
+    " function signature)."
+)
+PY_REFLEXION_CHAT_INSTRUCTION_V2 = (
+    "You are an AI Python assistant. You will be given your previous"
+    " implementation of a function, a series of unit tests results, and your"
+    " self-reflection on your previous implementation. Write your full"
+    " implementation (restate the function signature)."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 )
 PY_REFLEXION_FEW_SHOT_ADD = '''Example 1:
 [previous impl]:
@@ -177,6 +215,7 @@ END EXAMPLES
 
 '''
 PY_SELF_REFLECTION_CHAT_INSTRUCTION = (
+<<<<<<< HEAD
     "You are a Python programming assistant. You will be given a"
     " function implementation and a series of unit tests. Your goal"
     " is to write a few sentences to explain why your implementation"
@@ -191,6 +230,21 @@ PY_SELF_REFLECTION_CHAT_INSTRUCTION_V2 = (
     " implementation is wrong as indicated by the tests. You will"
     " need this as guidance when you try again later. Only provide"
     " the few sentence description in your answer, not the"
+=======
+    "You are a Python programming assistant. You will be given a function"
+    " implementation and a series of unit tests. Your goal is to write a few"
+    " sentences to explain why your implementation is wrong as indicated by the"
+    " tests. You will need this as a hint when you try again later. Only"
+    " provide the few sentence description in your answer, not the"
+    " implementation."
+)
+PY_SELF_REFLECTION_CHAT_INSTRUCTION_V2 = (
+    "You are a Python programming assistant. You will be given a function"
+    " implementation and a series of unit test results. Your goal is to write a"
+    " few sentences to explain why your implementation is wrong as indicated by"
+    " the tests. You will need this as guidance when you try again later. Only"
+    " provide the few sentence description in your answer, not the"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
     " implementation. You will be given a few examples by the user."
 )
 PY_SELF_REFLECTION_FEW_SHOT = """Example 1:

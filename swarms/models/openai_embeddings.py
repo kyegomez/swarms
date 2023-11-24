@@ -188,7 +188,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
 
     client: Any  #: :meta private:
     model: str = "text-embedding-ada-002"
-    deployment: str = model  # to support Azure OpenAI Service custom deployment names
+    deployment: str = (
+        model  # to support Azure OpenAI Service custom deployment names
+    )
     openai_api_version: Optional[str] = None
     # to support Azure OpenAI Service custom endpoints
     openai_api_base: Optional[str] = None
@@ -256,9 +258,15 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         )
         if invalid_model_kwargs:
             raise ValueError(
+<<<<<<< HEAD
                 f"Parameters {invalid_model_kwargs} should be"
                 " specified explicitly. Instead they were passed in"
                 " as part of `model_kwargs` parameter."
+=======
+                f"Parameters {invalid_model_kwargs} should be specified"
+                " explicitly. Instead they were passed in as part of"
+                " `model_kwargs` parameter."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
 
         values["model_kwargs"] = extra
@@ -369,8 +377,12 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             encoding = tiktoken.encoding_for_model(model_name)
         except KeyError:
             logger.warning(
+<<<<<<< HEAD
                 "Warning: model not found. Using cl100k_base"
                 " encoding."
+=======
+                "Warning: model not found. Using cl100k_base encoding."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
             model = "cl100k_base"
             encoding = tiktoken.get_encoding(model)
@@ -435,9 +447,13 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 average = np.average(
                     _result, axis=0, weights=num_tokens_in_batch[i]
                 )
+<<<<<<< HEAD
             embeddings[i] = (
                 average / np.linalg.norm(average)
             ).tolist()
+=======
+            embeddings[i] = (average / np.linalg.norm(average)).tolist()
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 
         return embeddings
 
@@ -469,8 +485,12 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             encoding = tiktoken.encoding_for_model(model_name)
         except KeyError:
             logger.warning(
+<<<<<<< HEAD
                 "Warning: model not found. Using cl100k_base"
                 " encoding."
+=======
+                "Warning: model not found. Using cl100k_base encoding."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
             model = "cl100k_base"
             encoding = tiktoken.get_encoding(model)
@@ -526,9 +546,13 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 average = np.average(
                     _result, axis=0, weights=num_tokens_in_batch[i]
                 )
+<<<<<<< HEAD
             embeddings[i] = (
                 average / np.linalg.norm(average)
             ).tolist()
+=======
+            embeddings[i] = (average / np.linalg.norm(average)).tolist()
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 
         return embeddings
 

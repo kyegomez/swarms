@@ -23,7 +23,10 @@ from swarms.models import Idefics
 # Multi Modality Auto Agent
 llm = Idefics(max_length=2000)
 
-task = "User: What is in this image? https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"
+task = (
+    "User: What is in this image?"
+    " https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"
+)
 
 ## Initialize the workflow
 flow = Flow(

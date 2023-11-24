@@ -22,9 +22,13 @@ def test_nougat_default_initialization(setup_nougat):
 
 def test_nougat_custom_initialization():
     nougat = Nougat(
+<<<<<<< HEAD:tests/models/test_nougat.py
         model_name_or_path="custom_path",
         min_length=10,
         max_new_tokens=50,
+=======
+        model_name_or_path="custom_path", min_length=10, max_new_tokens=50
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/nougat.py
     )
     assert nougat.model_name_or_path == "custom_path"
     assert nougat.min_length == 10

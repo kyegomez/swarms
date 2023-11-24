@@ -143,11 +143,18 @@ class ChildTool(BaseTool):
     ..."""
                 name = cls.__name__
                 raise SchemaAnnotationError(
+<<<<<<< HEAD
                     f"Tool definition for {name} must include valid"
                     " type annotations for argument 'args_schema' to"
                     " behave as expected.\nExpected annotation of"
                     " 'Type[BaseModel]' but got"
                     f" '{args_schema_type}'.\nExpected class looks"
+=======
+                    f"Tool definition for {name} must include valid type"
+                    " annotations for argument 'args_schema' to behave as"
+                    " expected.\nExpected annotation of 'Type[BaseModel]' but"
+                    f" got '{args_schema_type}'.\nExpected class looks"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     f" like:\n{typehint_mandate}"
                 )
 
@@ -270,9 +277,13 @@ class ChildTool(BaseTool):
             if input_args is not None:
                 result = input_args.parse_obj(tool_input)
                 return {
+<<<<<<< HEAD
                     k: v
                     for k, v in result.dict().items()
                     if k in tool_input
+=======
+                    k: v for k, v in result.dict().items() if k in tool_input
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 }
         return tool_input
 
@@ -397,8 +408,13 @@ class ChildTool(BaseTool):
                 observation = self.handle_tool_error(e)
             else:
                 raise ValueError(
+<<<<<<< HEAD
                     "Got unexpected type of `handle_tool_error`."
                     " Expected bool, str or callable. Received:"
+=======
+                    "Got unexpected type of `handle_tool_error`. Expected"
+                    " bool, str or callable. Received:"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     f" {self.handle_tool_error}"
                 )
             run_manager.on_tool_end(
@@ -489,8 +505,13 @@ class ChildTool(BaseTool):
                 observation = self.handle_tool_error(e)
             else:
                 raise ValueError(
+<<<<<<< HEAD
                     "Got unexpected type of `handle_tool_error`."
                     " Expected bool, str or callable. Received:"
+=======
+                    "Got unexpected type of `handle_tool_error`. Expected"
+                    " bool, str or callable. Received:"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     f" {self.handle_tool_error}"
                 )
             await run_manager.on_tool_end(
@@ -563,8 +584,13 @@ class Tool(BaseTool):
         all_args = list(args) + list(kwargs.values())
         if len(all_args) != 1:
             raise ToolException(
+<<<<<<< HEAD
                 "Too many arguments to single-input tool"
                 f" {self.name}. Args: {all_args}"
+=======
+                f"Too many arguments to single-input tool {self.name}. Args:"
+                f" {all_args}"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
         return tuple(all_args), {}
 
@@ -576,9 +602,15 @@ class Tool(BaseTool):
     ) -> Any:
         """Use the tool."""
         if self.func:
+<<<<<<< HEAD
             new_argument_supported = signature(
                 self.func
             ).parameters.get("callbacks")
+=======
+            new_argument_supported = signature(self.func).parameters.get(
+                "callbacks"
+            )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             return (
                 self.func(
                     *args,
@@ -710,9 +742,15 @@ class StructuredTool(BaseTool):
     ) -> Any:
         """Use the tool."""
         if self.func:
+<<<<<<< HEAD
             new_argument_supported = signature(
                 self.func
             ).parameters.get("callbacks")
+=======
+            new_argument_supported = signature(self.func).parameters.get(
+                "callbacks"
+            )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             return (
                 self.func(
                     *args,

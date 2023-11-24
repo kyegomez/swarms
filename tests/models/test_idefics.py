@@ -46,12 +46,17 @@ def test_run(idefics_instance):
     prompts = [["User: Test"]]
     with patch.object(
         idefics_instance, "processor"
+<<<<<<< HEAD:tests/models/test_idefics.py
     ) as mock_processor, patch.object(
         idefics_instance, "model"
     ) as mock_model:
         mock_processor.return_value = {
             "input_ids": torch.tensor([1, 2, 3])
         }
+=======
+    ) as mock_processor, patch.object(idefics_instance, "model") as mock_model:
+        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/idefics.py
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
 
@@ -65,12 +70,17 @@ def test_call(idefics_instance):
     prompts = [["User: Test"]]
     with patch.object(
         idefics_instance, "processor"
+<<<<<<< HEAD:tests/models/test_idefics.py
     ) as mock_processor, patch.object(
         idefics_instance, "model"
     ) as mock_model:
         mock_processor.return_value = {
             "input_ids": torch.tensor([1, 2, 3])
         }
+=======
+    ) as mock_processor, patch.object(idefics_instance, "model") as mock_model:
+        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/idefics.py
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
 

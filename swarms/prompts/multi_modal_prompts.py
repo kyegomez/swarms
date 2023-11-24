@@ -1,6 +1,11 @@
 ERROR_PROMPT = (
+<<<<<<< HEAD
     "An error has occurred for the following text: \n{promptedQuery}"
     " Please explain this error.\n {e}"
+=======
+    "An error has occurred for the following text: \n{promptedQuery} Please"
+    " explain this error.\n {e}"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 )
 
 IMAGE_PROMPT = """

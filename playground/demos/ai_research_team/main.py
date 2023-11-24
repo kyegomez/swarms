@@ -48,9 +48,14 @@ paper_implementor_agent = Agent(
 
 paper = pdf_to_text(PDF_PATH)
 algorithmic_psuedocode_agent = paper_summarizer_agent.run(
+<<<<<<< HEAD
     "Focus on creating the algorithmic pseudocode for the novel"
     f" method in this paper: {paper}"
 )
 pytorch_code = paper_implementor_agent.run(
     algorithmic_psuedocode_agent
+=======
+    "Focus on creating the algorithmic pseudocode for the novel method in this"
+    f" paper: {paper}"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 )

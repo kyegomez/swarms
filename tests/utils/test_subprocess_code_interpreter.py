@@ -88,8 +88,12 @@ def test_subprocess_code_interpreter_run_with_keyboard_interrupt(
     )
     result = list(subprocess_code_interpreter.run(code))
     assert any(
+<<<<<<< HEAD:tests/utils/test_subprocess_code_interpreter.py
         "KeyboardInterrupt" in output.get("output", "")
         for output in result
+=======
+        "KeyboardInterrupt" in output.get("output", "") for output in result
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/utils/subprocess_code_interpreter.py
     )
 
 
@@ -302,6 +306,10 @@ def test_subprocess_code_interpreter_run_with_unicode_characters(
     code = 'print("こんにちは、世界")'  # Contains unicode characters
     result = list(subprocess_code_interpreter.run(code))
     assert any(
+<<<<<<< HEAD:tests/utils/test_subprocess_code_interpreter.py
         "こんにちは、世界" in output.get("output", "")
         for output in result
+=======
+        "こんにちは、世界" in output.get("output", "") for output in result
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/utils/subprocess_code_interpreter.py
     )

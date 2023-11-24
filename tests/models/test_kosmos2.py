@@ -56,9 +56,12 @@ def test_kosmos2_with_mocked_extraction_and_detection(
     kosmos2, sample_image, monkeypatch
 ):
     monkeypatch.setattr(
+<<<<<<< HEAD:tests/models/test_kosmos2.py
         kosmos2, "extract_entities", mock_extract_entities
     )
     monkeypatch.setattr(
+=======
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/kosmos2.py
         kosmos2,
         "process_entities_to_detections",
         mock_process_entities_to_detections,

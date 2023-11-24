@@ -189,11 +189,15 @@ class HuggingfaceLLM:
             # raise
             print(
                 colored(
+<<<<<<< HEAD
                     (
                         "Failed to load the model and or the"
                         f" tokenizer: {e}"
                     ),
                     "red",
+=======
+                    f"Failed to load the model and or the tokenizer: {e}", "red"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 )
             )
 
@@ -227,8 +231,12 @@ class HuggingfaceLLM:
                     self.model = DDP(self.model)
             except Exception as error:
                 self.logger.error(
+<<<<<<< HEAD
                     "Failed to load the model or the tokenizer:"
                     f" {error}"
+=======
+                    f"Failed to load the model or the tokenizer: {error}"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 )
                 raise
 
@@ -270,7 +278,13 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
+<<<<<<< HEAD
             inputs = self.tokenizer.encode(task, return_tensors="pt")
+=======
+            inputs = self.tokenizer.encode(task, return_tensors="pt").to(
+                self.device
+            )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 
             # self.log.start()
 
@@ -311,9 +325,14 @@ class HuggingfaceLLM:
             print(
                 colored(
                     (
+<<<<<<< HEAD
                         "HuggingfaceLLM could not generate text"
                         f" because of error: {e}, try optimizing your"
                         " arguments"
+=======
+                        "HuggingfaceLLM could not generate text because of"
+                        f" error: {e}, try optimizing your arguments"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     ),
                     "red",
                 )
@@ -338,9 +357,15 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
+<<<<<<< HEAD
             inputs = self.tokenizer.encode(
                 task, return_tensors="pt"
             ).to(self.device)
+=======
+            inputs = self.tokenizer.encode(task, return_tensors="pt").to(
+                self.device
+            )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 
             # self.log.start()
 

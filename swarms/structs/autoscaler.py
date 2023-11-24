@@ -8,7 +8,11 @@ import concurrent.futures
 
 from termcolor import colored
 
+<<<<<<< HEAD
 from swarms.structs.agent import Agent
+=======
+from swarms.structs.flow import Flow
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 from swarms.utils.decorators import (
     error_decorator,
     log_decorator,
@@ -139,8 +143,12 @@ class AutoScaler:
             self.task_queue.put(task)
         except Exception as error:
             print(
+<<<<<<< HEAD
                 f"Error adding task to queue: {error} try again with"
                 " a new task"
+=======
+                f"Error adding task to queue: {error} try again with a new task"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
 
     @log_decorator
@@ -217,14 +225,23 @@ class AutoScaler:
                 ):
                     self.scale_up()
                 elif (
+<<<<<<< HEAD
                     active_agents / len(self.agents_pool)
                     < self.idle_threshold
+=======
+                    active_agents / len(self.agents_pool) < self.idle_threshold
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 ):
                     self.scale_down()
         except Exception as error:
             print(
+<<<<<<< HEAD
                 f"Error monitoring and scaling: {error} try again"
                 " with a new task"
+=======
+                f"Error monitoring and scaling: {error} try again with a new"
+                " task"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
 
     @log_decorator

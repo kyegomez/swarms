@@ -87,6 +87,7 @@ class SpeechT5:
         self.model_name = model_name
         self.vocoder_name = vocoder_name
         self.dataset_name = dataset_name
+<<<<<<< HEAD
         self.processor = SpeechT5Processor.from_pretrained(
             self.model_name
         )
@@ -96,6 +97,11 @@ class SpeechT5:
         self.vocoder = SpeechT5HifiGan.from_pretrained(
             self.vocoder_name
         )
+=======
+        self.processor = SpeechT5Processor.from_pretrained(self.model_name)
+        self.model = SpeechT5ForTextToSpeech.from_pretrained(self.model_name)
+        self.vocoder = SpeechT5HifiGan.from_pretrained(self.vocoder_name)
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         self.embeddings_dataset = load_dataset(
             self.dataset_name, split="validation"
         )

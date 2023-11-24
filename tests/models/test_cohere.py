@@ -564,8 +564,13 @@ def test_cohere_representation_model_multilingual_max_tokens_limit_exceeded(
     cohere_instance.model = "embed-multilingual-v3.0"
     cohere_instance.max_tokens = 10
     prompt = (
+<<<<<<< HEAD:tests/models/test_cohere.py
         "This is a test prompt that will exceed the max tokens limit"
         " for multilingual model."
+=======
+        "This is a test prompt that will exceed the max tokens limit for"
+        " multilingual model."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/cohere.py
     )
     with pytest.raises(ValueError):
         cohere_instance.embed(prompt)
@@ -614,8 +619,13 @@ def test_cohere_representation_model_multilingual_light_max_tokens_limit_exceede
     cohere_instance.model = "embed-multilingual-light-v3.0"
     cohere_instance.max_tokens = 10
     prompt = (
+<<<<<<< HEAD:tests/models/test_cohere.py
         "This is a test prompt that will exceed the max tokens limit"
         " for multilingual light model."
+=======
+        "This is a test prompt that will exceed the max tokens limit for"
+        " multilingual light model."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/cohere.py
     )
     with pytest.raises(ValueError):
         cohere_instance.embed(prompt)
@@ -687,8 +697,13 @@ def test_cohere_representation_model_english_max_tokens_limit_exceeded(
     cohere_instance.model = "embed-english-v3.0"
     cohere_instance.max_tokens = 10
     prompt = (
+<<<<<<< HEAD:tests/models/test_cohere.py
         "This is a test prompt that will exceed the max tokens limit"
         " for English model."
+=======
+        "This is a test prompt that will exceed the max tokens limit for"
+        " English model."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/cohere.py
     )
     with pytest.raises(ValueError):
         cohere_instance.embed(prompt)
@@ -737,8 +752,13 @@ def test_cohere_representation_model_english_light_max_tokens_limit_exceeded(
     cohere_instance.model = "embed-english-light-v3.0"
     cohere_instance.max_tokens = 10
     prompt = (
+<<<<<<< HEAD:tests/models/test_cohere.py
         "This is a test prompt that will exceed the max tokens limit"
         " for English light model."
+=======
+        "This is a test prompt that will exceed the max tokens limit for"
+        " English light model."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/cohere.py
     )
     with pytest.raises(ValueError):
         cohere_instance.embed(prompt)

@@ -47,8 +47,13 @@ def test_cell_biology_response(biogpt_instance):
 # 40. Test for a question about protein structure
 def test_protein_structure_response(biogpt_instance):
     question = (
+<<<<<<< HEAD:tests/models/test_biogpt.py
         "What's the difference between alpha helix and beta sheet"
         " structures in proteins?"
+=======
+        "What's the difference between alpha helix and beta sheet structures in"
+        " proteins?"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/models/biogpt.py
     )
     response = biogpt_instance(question)
     assert response and isinstance(response, str)

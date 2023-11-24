@@ -86,9 +86,13 @@ def test_tool_ainvoke_with_coroutine():
         return input_data
 
     tool = Tool(
+<<<<<<< HEAD:tests/tools/test_base.py
         name="test_tool",
         coroutine=async_function,
         description="Test tool",
+=======
+        name="test_tool", coroutine=async_function, description="Test tool"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80):tests/tools/base.py
     )
     result = tool.ainvoke("input_data")
     assert result == "input_data"

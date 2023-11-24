@@ -127,8 +127,13 @@ class PgVectorVectorStore(BaseVectorStore):
 
         if not connection_string.startswith("postgresql://"):
             raise ValueError(
+<<<<<<< HEAD
                 "The connection string must describe a Postgres"
                 " database connection"
+=======
+                "The connection string must describe a Postgres database"
+                " connection"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
 
     @engine.validator

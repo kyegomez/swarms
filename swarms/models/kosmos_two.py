@@ -150,9 +150,13 @@ class Kosmos:
             reverse_norm_std = torch.tensor(
                 [0.26862954, 0.26130258, 0.27577711]
             )[:, None, None]
+<<<<<<< HEAD
             image_tensor = (
                 image_tensor * reverse_norm_std + reverse_norm_mean
             )
+=======
+            image_tensor = image_tensor * reverse_norm_std + reverse_norm_mean
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             pil_img = T.ToPILImage()(image_tensor)
             image_h = pil_img.height
             image_w = pil_img.width
@@ -244,12 +248,16 @@ class Kosmos:
 
                 for prev_bbox in previous_bboxes:
                     while is_overlapping(
+<<<<<<< HEAD
                         (
                             text_bg_x1,
                             text_bg_y1,
                             text_bg_x2,
                             text_bg_y2,
                         ),
+=======
+                        (text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2),
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                         prev_bbox,
                     ):
                         text_bg_y1 += (
@@ -267,6 +275,12 @@ class Kosmos:
                             + text_offset_original
                             + 2 * text_spaces
                         )
+<<<<<<< HEAD
+=======
+                        y1 += (
+                            text_height + text_offset_original + 2 * text_spaces
+                        )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
 
                         if text_bg_y2 >= image_h:
                             text_bg_y1 = max(

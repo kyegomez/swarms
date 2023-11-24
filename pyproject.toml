@@ -85,3 +85,13 @@ aggressive = 3
 
 [tool.ruff]
 line-length = 80
+<<<<<<< HEAD
+=======
+
+[tool.black]
+line-length = 80
+target-version = ['py38']
+preview = true
+
+
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)

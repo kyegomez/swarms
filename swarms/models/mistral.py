@@ -50,8 +50,12 @@ class Mistral:
         # Check if the specified device is available
         if not torch.cuda.is_available() and device == "cuda":
             raise ValueError(
+<<<<<<< HEAD
                 "CUDA is not available. Please choose a different"
                 " device."
+=======
+                "CUDA is not available. Please choose a different device."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             )
 
         # Load the model and tokenizer
@@ -79,9 +83,15 @@ class Mistral:
         """Run the model on a given task."""
 
         try:
+<<<<<<< HEAD
             model_inputs = self.tokenizer(
                 [task], return_tensors="pt"
             ).to(self.device)
+=======
+            model_inputs = self.tokenizer([task], return_tensors="pt").to(
+                self.device
+            )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             generated_ids = self.model.generate(
                 **model_inputs,
                 max_length=self.max_length,
@@ -100,9 +110,15 @@ class Mistral:
         """Run the model on a given task."""
 
         try:
+<<<<<<< HEAD
             model_inputs = self.tokenizer(
                 [task], return_tensors="pt"
             ).to(self.device)
+=======
+            model_inputs = self.tokenizer([task], return_tensors="pt").to(
+                self.device
+            )
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
             generated_ids = self.model.generate(
                 **model_inputs,
                 max_length=self.max_length,

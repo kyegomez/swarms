@@ -200,11 +200,9 @@ def build_extra_kwargs(
         if field_name in extra_kwargs:
             raise ValueError(f"Found {field_name} supplied twice.")
         if field_name not in all_required_field_names:
-            warnings.warn(
-                f"""WARNING! {field_name} is not default parameter.
+            warnings.warn(f"""WARNING! {field_name} is not default parameter.
                 {field_name} was transferred to model_kwargs.
-                Please confirm that {field_name} is what you intended."""
-            )
+                Please confirm that {field_name} is what you intended.""")
             extra_kwargs[field_name] = values.pop(field_name)
 
     invalid_model_kwargs = all_required_field_names.intersection(
@@ -212,9 +210,14 @@ def build_extra_kwargs(
     )
     if invalid_model_kwargs:
         raise ValueError(
+<<<<<<< HEAD
             f"Parameters {invalid_model_kwargs} should be specified"
             " explicitly. Instead they were passed in as part of"
             " `model_kwargs` parameter."
+=======
+            f"Parameters {invalid_model_kwargs} should be specified explicitly."
+            " Instead they were passed in as part of `model_kwargs` parameter."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
 
     return extra_kwargs
@@ -415,8 +418,12 @@ class Anthropic(LLM, _AnthropicCommon):
 
         # As a last resort, wrap the prompt ourselves to emulate instruct-style.
         return (
+<<<<<<< HEAD
             f"{self.HUMAN_PROMPT} {prompt}{self.AI_PROMPT} Sure, here"
             " you go:\n"
+=======
+            f"{self.HUMAN_PROMPT} {prompt}{self.AI_PROMPT} Sure, here you go:\n"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
 
     def _call(

@@ -60,8 +60,12 @@ class StepOutput(BaseModel):
     __root__: Any = Field(
         ...,
         description=(
+<<<<<<< HEAD
             "Output that the task step has produced. Any value is"
             " allowed."
+=======
+            "Output that the task step has produced. Any value is allowed."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         ),
         example='{\n"tokens": 7894,\n"estimated_cost": "0,24$"\n}',
     )
@@ -132,9 +136,15 @@ class Step(StepRequestBody):
         None,
         description="Output of the task step.",
         example=(
+<<<<<<< HEAD
             "I am going to use the write_to_file command and write"
             " Washington to a file called output.txt"
             " <write_to_file('output.txt', 'Washington')"
+=======
+            "I am going to use the write_to_file command and write Washington"
+            " to a file called output.txt <write_to_file('output.txt',"
+            " 'Washington')"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         ),
     )
     additional_output: Optional[StepOutput] = None

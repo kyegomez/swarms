@@ -64,11 +64,15 @@ class GodMode:
             table.append([f"LLM {i+1}", response])
         print(
             colored(
+<<<<<<< HEAD
                 tabulate(
                     table,
                     headers=["LLM", "Response"],
                     tablefmt="pretty",
                 ),
+=======
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 "cyan",
             )
         )
@@ -88,11 +92,15 @@ class GodMode:
             table.append([f"LLM {i+1}", response])
         print(
             colored(
+<<<<<<< HEAD
                 tabulate(
                     table,
                     headers=["LLM", "Response"],
                     tablefmt="pretty",
                 ),
+=======
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 "cyan",
             )
         )
@@ -130,11 +138,15 @@ class GodMode:
         ]
         print(
             colored(
+<<<<<<< HEAD
                 tabulate(
                     table,
                     headers=["LLM", "Response"],
                     tablefmt="pretty",
                 ),
+=======
+                tabulate(table, headers=["LLM", "Response"], tablefmt="pretty"),
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 "cyan",
             )
         )
@@ -171,8 +183,13 @@ class GodMode:
                     responses.append(future.result())
                 except Exception as error:
                     print(
+<<<<<<< HEAD
                         f"{future_to_llm[future]} generated an"
                         f" exception: {error}"
+=======
+                        f"{future_to_llm[future]} generated an exception:"
+                        f" {error}"
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                     )
         self.last_responses = responses
         self.task_history.append(task)

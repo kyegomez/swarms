@@ -37,9 +37,13 @@ class DialogueAgent:
             [
                 self.system_message,
                 HumanMessage(
+<<<<<<< HEAD
                     content="\n".join(
                         self.message_history + [self.prefix]
                     )
+=======
+                    content="\n".join(self.message_history + [self.prefix])
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
                 ),
             ]
         )
@@ -133,8 +137,12 @@ The presidential candidates are: {', '.join(character_names)}."""
 
 player_descriptor_system_message = SystemMessage(
     content=(
+<<<<<<< HEAD
         "You can add detail to the description of each presidential"
         " candidate."
+=======
+        "You can add detail to the description of each presidential candidate."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
     )
 )
 
@@ -163,9 +171,13 @@ Your goal is to be as creative as possible and make the voters think you are the
 """
 
 
+<<<<<<< HEAD
 def generate_character_system_message(
     character_name, character_header
 ):
+=======
+def generate_character_system_message(character_name, character_header):
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
     return SystemMessage(content=f"""{character_header}
 You will speak in the style of {character_name}, and exaggerate their personality.
 You will come up with creative ideas related to {topic}.
@@ -192,9 +204,13 @@ character_headers = [
     )
 ]
 character_system_messages = [
+<<<<<<< HEAD
     generate_character_system_message(
         character_name, character_headers
     )
+=======
+    generate_character_system_message(character_name, character_headers)
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
     for character_name, character_headers in zip(
         character_names, character_headers
     )
@@ -220,8 +236,13 @@ for (
 class BidOutputParser(RegexParser):
     def get_format_instructions(self) -> str:
         return (
+<<<<<<< HEAD
             "Your response should be an integer delimited by angled"
             " brackets, like this: <int>."
+=======
+            "Your response should be an integer delimited by angled brackets,"
+            " like this: <int>."
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         )
 
 

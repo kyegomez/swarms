@@ -85,10 +85,25 @@ class Idefics(BaseMultiModalModel):
         *args,
         **kwargs,
     ):
+<<<<<<< HEAD
         # Initialize the parent class
         super().__init__(*args, **kwargs)
         self.model_name = model_name
         self.device = device
+=======
+        self.device = (
+            device
+            if device
+            else ("cuda" if torch.cuda.is_available() else "cpu")
+        )
+        self.model = IdeficsForVisionText2Text.from_pretrained(
+            checkpoint,
+            torch_dtype=torch_dtype,
+        ).to(self.device)
+
+        self.processor = AutoProcessor.from_pretrained(checkpoint)
+
+>>>>>>> 49c7b97c (code quality fixes: line length = 80)
         self.max_length = max_length
         self.batched_mode = batched_mode
 
