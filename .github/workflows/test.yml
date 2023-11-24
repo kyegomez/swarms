@@ -1,6 +1,5 @@
 ---
 name: test
-  - jobs: poetry testing
 
 on:
   push:
