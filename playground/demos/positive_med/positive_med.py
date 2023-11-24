@@ -24,9 +24,9 @@ from termcolor import colored
 from swarms.models import OpenAIChat
 from swarms.prompts.autobloggen import (
     DRAFT_AGENT_SYSTEM_PROMPT,
-    REVIEW_PROMPT,
+    AUTOBLOG_REVIEW_PROMPT,
     SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT,
-    TOPIC_GENERATOR,
+    TOPIC_GENERATOR_SYSTEM_PROMPT,
 )
 import os
 
@@ -35,7 +35,7 @@ llm = OpenAIChat(openai_api_key=api_key)
 
 
 def get_review_prompt(article):
-    prompt = REVIEW_PROMPT.replace("{{ARTICLE}}", article)
+    prompt = AUTOBLOG_REVIEW_PROMPT.replace("{{ARTICLE}}", article)
     return prompt
 
 
@@ -51,7 +51,7 @@ topic_selection_task = (
     "Generate 10 topics on gaining mental clarity using ancient practices"
 )
 topics = llm(
-    f"Your System Instructions: {TOPIC_GENERATOR}, Your current task:"
+    f"Your System Instructions: {TOPIC_GENERATOR_SYSTEM_PROMPT}, Your current task:"
     f" {topic_selection_task}"
 )
 
