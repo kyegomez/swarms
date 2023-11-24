@@ -23,6 +23,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
+torch = "2.1.1"
 transformers = "*"
 openai = "0.28.0"
 langchain = "*"
@@ -30,7 +31,6 @@ asyncio = "*"
 nest_asyncio = "*"
 einops = "*"
 google-generativeai = "*"
-torch = "*"
 langchain-experimental = "*"
 playwright = "*"
 duckduckgo-search = "*"
