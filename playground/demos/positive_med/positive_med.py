@@ -24,9 +24,9 @@ from termcolor import colored
 from swarms.models import OpenAIChat
 from swarms.prompts.autobloggen import (
     DRAFT_AGENT_SYSTEM_PROMPT,
-    REVIEW_PROMPT,
+    AUTOBLOG_REVIEW_PROMPT,
     SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT,
-    TOPIC_GENERATOR,
+    TOPIC_GENERATOR_SYSTEM_PROMPT,
 )
 import os
 
@@ -62,7 +62,7 @@ topic_selection_task = (
     " practices"
 )
 topics = llm(
-    f"Your System Instructions: {TOPIC_GENERATOR}, Your current task:"
+    f"Your System Instructions: {TOPIC_GENERATOR_SYSTEM_PROMPT}, Your current task:"
     f" {topic_selection_task}"
 )
 
