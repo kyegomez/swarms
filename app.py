@@ -122,6 +122,7 @@ return_msg = []
 chat_history = ""
 
 MAX_SLEEP_TIME = 40
+
 def load_tools():
     global valid_tools_info
     global all_tools_list
@@ -130,6 +131,11 @@ def load_tools():
     except BaseException as e:
         print(repr(e))
     all_tools_list = sorted(list(valid_tools_info.keys()))
+    # Download the VLLM model from the provided URL and add it to the dropdown array
+    vllm_model_url = os.environ.get("VLLM_MODEL_URL", "")
+    if vllm_model_url:
+        vllm_model = LLM.from_pretrained(vllm_model_url)
+        available_models.append(vllm_model)
     return gr.update(choices=all_tools_list)
 
 def set_environ(OPENAI_API_KEY: str,
@@ -162,6 +168,7 @@ def set_environ(OPENAI_API_KEY: str,
     os.environ["HUGGINGFACE_API_KEY"] = HUGGINGFACE_API_KEY
     os.environ["AMADEUS_ID"] = AMADEUS_ID
     os.environ["AMADEUS_KEY"] = AMADEUS_KEY
+    os.environ["VLLM_MODEL_URL"] = VLLM_MODEL_URL
     if not tool_server_flag:
         start_tool_server()
         time.sleep(MAX_SLEEP_TIME)
@@ -288,6 +295,7 @@ with gr.Blocks() as demo:
         HUGGINGFACE_API_KEY = gr.Textbox(label="Huggingface api key:", placeholder="Key to use models in huggingface hub", type="text")
         AMADEUS_ID = gr.Textbox(label="Amadeus id:", placeholder="Id to use Amadeus", type="text")
         AMADEUS_KEY = gr.Textbox(label="Amadeus key:", placeholder="Key to use Amadeus", type="text")
+        VLLM_MODEL_URL = gr.Textbox(label="VLLM Model URL:", placeholder="URL to download VLLM model from Hugging Face", type="text")
         key_set_btn = gr.Button(value="Set keys!")
 
 
@@ -340,6 +348,7 @@ with gr.Blocks() as demo:
         HUGGINGFACE_API_KEY,
         AMADEUS_ID,
         AMADEUS_KEY,
+        VLLM_MODEL_URL,
     ], outputs=key_set_btn)
     key_set_btn.click(fn=load_tools, outputs=tools_chosen)
 
