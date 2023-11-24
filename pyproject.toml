@@ -84,4 +84,13 @@ recursive = true
 aggressive = 3
 
 [tool.ruff]
-line-length = 120
+line-length = 200
+
+[tool.pylint]
+max-line-length = 200
+
+[tool.flake8]
+extend-ignore = "E266, E501, W292, W291, W293i"
+
+[tool.yamllint]
+disable-line rule:truthy
