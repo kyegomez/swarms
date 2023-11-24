@@ -3,9 +3,6 @@ transformers
 pandas
 langchain
 nest_asyncio
-pegasusx
-google-generativeai 
-EdgeGPT
 langchain-experimental
 playwright
 wget==3.2
@@ -24,9 +21,7 @@ soundfile
 huggingface-hub
 google-generativeai
 sentencepiece
-duckduckgo-search
 PyPDF2
-agent-protocol
 accelerate
 chromadb
 tiktoken
@@ -54,7 +49,6 @@ openai
 opencv-python
 prettytable
 safetensors
-streamlit
 test-tube
 timm
 torchmetrics
@@ -62,7 +56,6 @@ webdataset
 marshmallow
 yapf
 autopep8
-dalle3
 cohere
 torchvision
 rich
@@ -71,5 +64,4 @@ rich
 mkdocs
 mkdocs-material
 mkdocs-glightbox
-
 pre-commit
