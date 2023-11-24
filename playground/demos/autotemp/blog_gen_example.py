@@ -1,5 +1,5 @@
 import os
-from swarms.swarms.blog_gen import BlogGen
+from blog_gen import BlogGen
 
 
 def main():
