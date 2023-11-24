@@ -12,9 +12,7 @@ class BlogGen:
         blog_topic,
         temperature_range: str = "0.4,0.6,0.8,1.0,1.2",
     ):  # Add blog_topic as an argument
-        self.openai_chat = OpenAIChat(
-            openai_api_key=api_key, temperature=0.8
-        )
+        self.openai_chat = OpenAIChat(openai_api_key=api_key, temperature=0.8)
         self.auto_temp = AutoTemp(api_key)
         self.temperature_range = temperature_range
         self.workflow = SequentialWorkflow(max_loops=5)
@@ -54,15 +52,11 @@ class BlogGen:
             )
 
             chosen_topic = topic_output.split("\n")[0]
-            print(
-                colored("Selected topic: " + chosen_topic, "yellow")
-            )
+            print(colored("Selected topic: " + chosen_topic, "yellow"))
 
             # Initial draft generation with AutoTemp
-            initial_draft_prompt = (
-                self.DRAFT_WRITER_SYSTEM_PROMPT.replace(
-                    "{{CHOSEN_TOPIC}}", chosen_topic
-                )
+            initial_draft_prompt = self.DRAFT_WRITER_SYSTEM_PROMPT.replace(
+                "{{CHOSEN_TOPIC}}", chosen_topic
             )
             auto_temp_output = self.auto_temp.run(
                 initial_draft_prompt, self.temperature_range
@@ -95,17 +89,13 @@ class BlogGen:
             )
 
             # Distribution preparation using OpenAIChat
-            distribution_prompt = (
-                self.DISTRIBUTION_AGENT_SYSTEM_PROMPT.replace(
-                    "{{ARTICLE_TOPIC}}", chosen_topic
-                )
+            distribution_prompt = self.DISTRIBUTION_AGENT_SYSTEM_PROMPT.replace(
+                "{{ARTICLE_TOPIC}}", chosen_topic
             )
             distribution_result = self.openai_chat.generate(
                 [distribution_prompt]
             )
-            distribution_output = distribution_result.generations[0][
-                0
-            ].text
+            distribution_output = distribution_result.generations[0][0].text
             print(
                 colored(
                     (
