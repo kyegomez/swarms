@@ -28,7 +28,9 @@ llama_caller.add_func(
 )
 
 # Call the function
-result = llama_caller.call_function("get_weather", location="Paris", format="Celsius")
+result = llama_caller.call_function(
+    "get_weather", location="Paris", format="Celsius"
+)
 print(result)
 
 # Stream a user prompt

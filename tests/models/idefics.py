@@ -1,7 +1,11 @@
 import pytest
 from unittest.mock import patch
 import torch
-from swarms.models.idefics import Idefics, IdeficsForVisionText2Text, AutoProcessor
+from swarms.models.idefics import (
+    Idefics,
+    IdeficsForVisionText2Text,
+    AutoProcessor,
+)
 
 
 @pytest.fixture
@@ -30,7 +34,8 @@ def test_init_default(idefics_instance):
 )
 def test_init_device(device, expected):
     with patch(
-        "torch.cuda.is_available", return_value=True if expected == "cuda" else False
+        "torch.cuda.is_available",
+        return_value=True if expected == "cuda" else False,
     ):
         instance = Idefics(device=device)
     assert instance.device == expected
@@ -39,9 +44,9 @@ def test_init_device(device, expected):
 # Test `run` method
 def test_run(idefics_instance):
     prompts = [["User: Test"]]
-    with patch.object(idefics_instance, "processor") as mock_processor, patch.object(
-        idefics_instance, "model"
-    ) as mock_model:
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor, patch.object(idefics_instance, "model") as mock_model:
         mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
@@ -54,9 +59,9 @@ def test_run(idefics_instance):
 # Test `__call__` method (using the same logic as run for simplicity)
 def test_call(idefics_instance):
     prompts = [["User: Test"]]
-    with patch.object(idefics_instance, "processor") as mock_processor, patch.object(
-        idefics_instance, "model"
-    ) as mock_model:
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor, patch.object(idefics_instance, "model") as mock_model:
         mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
@@ -85,7 +90,9 @@ def test_set_checkpoint(idefics_instance):
     ) as mock_from_pretrained, patch.object(AutoProcessor, "from_pretrained"):
         idefics_instance.set_checkpoint(new_checkpoint)
 
-    mock_from_pretrained.assert_called_with(new_checkpoint, torch_dtype=torch.bfloat16)
+    mock_from_pretrained.assert_called_with(
+        new_checkpoint, torch_dtype=torch.bfloat16
+    )
 
 
 # Test `set_device` method

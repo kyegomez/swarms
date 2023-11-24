@@ -20,6 +20,12 @@ Swarms is designed to provide modular building blocks to build scalable swarms o
 
 Before you contribute a new feature, consider submitting an Issue to discuss the feature so the community can weigh in and assist.
 
+### Requirements:
+- New class and or function Module with documentation in docstrings with error handling
+- Tests using pytest in tests folder in the same module folder
+- Documentation in the docs/swarms/module_name folder and then added into the mkdocs.yml
+
+
 ## How to Contribute Changes
 
 First, fork this repository to your own GitHub account. Click "fork" in the top corner of the `swarms` repository to get started:
@@ -43,10 +49,29 @@ git push -u origin main
 ```
 
 ## 🎨 Code quality
+- Follow the following guide on code quality a python guide or your PR will most likely be overlooked: [CLICK HERE](https://google.github.io/styleguide/pyguide.html)
+
+
 
 ### Pre-commit tool
 
 This project utilizes the [pre-commit](https://pre-commit.com/) tool to maintain code quality and consistency. Before submitting a pull request or making any commits, it is important to run the pre-commit tool to ensure that your changes meet the project's guidelines.
+
+
+- Install pre-commit (https://pre-commit.com/)
+
+```bash
+pip install pre-commit
+```
+
+- Check that it's installed
+
+```bash
+pre-commit --version
+```
+
+Now when you make a git commit, the black code formatter and ruff linter will run.
+
 
 Furthermore, we have integrated a pre-commit GitHub Action into our workflow. This means that with every pull request opened, the pre-commit checks will be automatically enforced, streamlining the code review process and ensuring that all contributions adhere to our quality standards.
 
@@ -59,6 +84,7 @@ To run the pre-commit tool, follow these steps:
 3. Run the command `pre-commit run --all-files`. This will execute the pre-commit hooks configured for this project against the modified files. If any issues are found, the pre-commit tool will provide feedback on how to resolve them. Make the necessary changes and re-run the pre-commit command until all issues are resolved.
 
 4. You can also install pre-commit as a git hook by execute `pre-commit install`. Every time you made `git commit` pre-commit run automatically for you.
+
 
 ### Docstrings
 

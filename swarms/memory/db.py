@@ -151,7 +151,9 @@ class InMemoryTaskDB(TaskDB):
     ) -> Artifact:
         artifact_id = str(uuid.uuid4())
         artifact = Artifact(
-            artifact_id=artifact_id, file_name=file_name, relative_path=relative_path
+            artifact_id=artifact_id,
+            file_name=file_name,
+            relative_path=relative_path,
         )
         task = await self.get_task(task_id)
         task.artifacts.append(artifact)

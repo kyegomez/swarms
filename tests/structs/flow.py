@@ -30,7 +30,9 @@ def basic_flow(mocked_llm):
 
 @pytest.fixture
 def flow_with_condition(mocked_llm):
-    return Flow(llm=mocked_llm, max_loops=5, stopping_condition=stop_when_repeats)
+    return Flow(
+        llm=mocked_llm, max_loops=5, stopping_condition=stop_when_repeats
+    )
 
 
 # Basic Tests
@@ -61,7 +63,9 @@ def test_provide_feedback(basic_flow):
 @patch("time.sleep", return_value=None)  # to speed up tests
 def test_run_without_stopping_condition(mocked_sleep, basic_flow):
     response = basic_flow.run("Test task")
-    assert response == "Test task"  # since our mocked llm doesn't modify the response
+    assert (
+        response == "Test task"
+    )  # since our mocked llm doesn't modify the response
 
 
 @patch("time.sleep", return_value=None)  # to speed up tests
@@ -108,7 +112,9 @@ def test_flow_with_custom_stopping_condition(mocked_llm):
     def stopping_condition(x):
         return "terminate" in x.lower()
 
-    flow = Flow(llm=mocked_llm, max_loops=5, stopping_condition=stopping_condition)
+    flow = Flow(
+        llm=mocked_llm, max_loops=5, stopping_condition=stopping_condition
+    )
     assert flow.stopping_condition("Please terminate now")
     assert not flow.stopping_condition("Continue the process")
 
@@ -174,7 +180,9 @@ def test_save_different_memory(basic_flow, tmp_path):
 # Test the stopping condition check
 def test_check_stopping_condition(flow_with_condition):
     assert flow_with_condition._check_stopping_condition("Stop this process")
-    assert not flow_with_condition._check_stopping_condition("Continue the task")
+    assert not flow_with_condition._check_stopping_condition(
+        "Continue the task"
+    )
 
 
 # Test without providing max loops (default value should be 5)
@@ -370,7 +378,8 @@ def test_flow_autosave_path(flow_instance):
 def test_flow_response_length(flow_instance):
     # Test checking the length of the response
     response = flow_instance.run(
-        "Generate a 10,000 word long blog on mental clarity and the benefits of meditation."
+        "Generate a 10,000 word long blog on mental clarity and the benefits of"
+        " meditation."
     )
     assert len(response) > flow_instance.get_response_length_threshold()
 
@@ -550,7 +559,10 @@ def test_flow_rollback(flow_instance):
     assert flow_instance.get_user_messages() == state1["user_messages"]
     assert flow_instance.get_response_history() == state1["response_history"]
     assert flow_instance.get_conversation_log() == state1["conversation_log"]
-    assert flow_instance.is_dynamic_pacing_enabled() == state1["dynamic_pacing_enabled"]
+    assert (
+        flow_instance.is_dynamic_pacing_enabled()
+        == state1["dynamic_pacing_enabled"]
+    )
     assert (
         flow_instance.get_response_length_threshold()
         == state1["response_length_threshold"]
@@ -565,7 +577,9 @@ def test_flow_contextual_intent(flow_instance):
     # Test contextual intent handling
     flow_instance.add_context("location", "New York")
     flow_instance.add_context("time", "tomorrow")
-    response = flow_instance.run("What's the weather like in {location} at {time}?")
+    response = flow_instance.run(
+        "What's the weather like in {location} at {time}?"
+    )
     assert "New York" in response
     assert "tomorrow" in response
 
@@ -689,7 +703,9 @@ def test_flow_clear_injected_messages(flow_instance):
 def test_flow_disable_message_history(flow_instance):
     # Test disabling message history recording
     flow_instance.disable_message_history()
-    response = flow_instance.run("This message should not be recorded in history.")
+    response = flow_instance.run(
+        "This message should not be recorded in history."
+    )
     assert "This message should not be recorded in history." in response
     assert len(flow_instance.get_message_history()) == 0  # History is empty
 
@@ -800,16 +816,24 @@ def test_flow_input_validation(flow_instance):
         )  # Invalid logger type, should raise ValueError
 
     with pytest.raises(ValueError):
-        flow_instance.add_context(None, "value")  # None key, should raise ValueError
+        flow_instance.add_context(
+            None, "value"
+        )  # None key, should raise ValueError
 
     with pytest.raises(ValueError):
-        flow_instance.add_context("key", None)  # None value, should raise ValueError
+        flow_instance.add_context(
+            "key", None
+        )  # None value, should raise ValueError
 
     with pytest.raises(ValueError):
-        flow_instance.update_context(None, "value")  # None key, should raise ValueError
+        flow_instance.update_context(
+            None, "value"
+        )  # None key, should raise ValueError
 
     with pytest.raises(ValueError):
-        flow_instance.update_context("key", None)  # None value, should raise ValueError
+        flow_instance.update_context(
+            "key", None
+        )  # None value, should raise ValueError
 
 
 def test_flow_conversation_reset(flow_instance):
@@ -913,16 +937,24 @@ def test_flow_error_handling(flow_instance):
         )  # Invalid logger type, should raise ValueError
 
     with pytest.raises(ValueError):
-        flow_instance.add_context(None, "value")  # None key, should raise ValueError
+        flow_instance.add_context(
+            None, "value"
+        )  # None key, should raise ValueError
 
     with pytest.raises(ValueError):
-        flow_instance.add_context("key", None)  # None value, should raise ValueError
+        flow_instance.add_context(
+            "key", None
+        )  # None value, should raise ValueError
 
     with pytest.raises(ValueError):
-        flow_instance.update_context(None, "value")  # None key, should raise ValueError
+        flow_instance.update_context(
+            None, "value"
+        )  # None key, should raise ValueError
 
     with pytest.raises(ValueError):
-        flow_instance.update_context("key", None)  # None value, should raise ValueError
+        flow_instance.update_context(
+            "key", None
+        )  # None value, should raise ValueError
 
 
 def test_flow_context_operations(flow_instance):
@@ -1089,7 +1121,9 @@ def test_flow_agent_history_prompt(flow_instance):
     system_prompt = "This is the system prompt."
     history = ["User: Hi", "AI: Hello"]
 
-    agent_history_prompt = flow_instance.agent_history_prompt(system_prompt, history)
+    agent_history_prompt = flow_instance.agent_history_prompt(
+        system_prompt, history
+    )
 
     assert "SYSTEM_PROMPT: This is the system prompt." in agent_history_prompt
     assert "History: ['User: Hi', 'AI: Hello']" in agent_history_prompt

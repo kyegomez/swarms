@@ -1,5 +1,9 @@
 from unittest.mock import patch
-from swarms.swarms.multi_agent_debate import MultiAgentDebate, Worker, select_speaker
+from swarms.swarms.multi_agent_debate import (
+    MultiAgentDebate,
+    Worker,
+    select_speaker,
+)
 
 
 def test_multiagentdebate_initialization():
@@ -57,5 +61,6 @@ def test_multiagentdebate_format_results():
     formatted_results = multiagentdebate.format_results(results)
     assert (
         formatted_results
-        == "Agent Agent 1 responded: Hello, world!\nAgent Agent 2 responded: Goodbye, world!"
+        == "Agent Agent 1 responded: Hello, world!\nAgent Agent 2 responded:"
+        " Goodbye, world!"
     )

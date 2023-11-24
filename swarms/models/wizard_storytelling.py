@@ -45,7 +45,9 @@ class WizardLLMStoryTeller:
     ):
         self.logger = logging.getLogger(__name__)
         self.device = (
-            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+            device
+            if device
+            else ("cuda" if torch.cuda.is_available() else "cpu")
         )
         self.model_id = model_id
         self.max_length = max_length
@@ -101,7 +103,9 @@ class WizardLLMStoryTeller:
                 if self.distributed:
                     self.model = DDP(self.model)
             except Exception as error:
-                self.logger.error(f"Failed to load the model or the tokenizer: {error}")
+                self.logger.error(
+                    f"Failed to load the model or the tokenizer: {error}"
+                )
                 raise
 
     def run(self, prompt_text: str):

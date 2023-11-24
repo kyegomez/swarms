@@ -26,7 +26,10 @@ def mock_bitsandbytesconfig():
 
 @pytest.fixture
 def hugging_face_llm(
-    mock_torch, mock_autotokenizer, mock_automodelforcausallm, mock_bitsandbytesconfig
+    mock_torch,
+    mock_autotokenizer,
+    mock_automodelforcausallm,
+    mock_bitsandbytesconfig,
 ):
     HuggingFaceLLM.torch = mock_torch
     HuggingFaceLLM.AutoTokenizer = mock_autotokenizer
@@ -70,8 +73,12 @@ def test_init_with_quantize(
 def test_generate_text(hugging_face_llm):
     prompt_text = "test prompt"
     expected_output = "test output"
-    hugging_face_llm.tokenizer.encode.return_value = torch.tensor([0])  # Mock tensor
-    hugging_face_llm.model.generate.return_value = torch.tensor([0])  # Mock tensor
+    hugging_face_llm.tokenizer.encode.return_value = torch.tensor(
+        [0]
+    )  # Mock tensor
+    hugging_face_llm.model.generate.return_value = torch.tensor(
+        [0]
+    )  # Mock tensor
     hugging_face_llm.tokenizer.decode.return_value = expected_output
 
     output = hugging_face_llm.generate_text(prompt_text)

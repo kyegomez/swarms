@@ -111,7 +111,9 @@ class Chroma(VectorStore):
                         chroma_db_impl="duckdb+parquet",
                     )
                 else:
-                    _client_settings = chromadb.config.Settings(is_persistent=True)
+                    _client_settings = chromadb.config.Settings(
+                        is_persistent=True
+                    )
                 _client_settings.persist_directory = persist_directory
             else:
                 _client_settings = chromadb.config.Settings()
@@ -124,9 +126,11 @@ class Chroma(VectorStore):
         self._embedding_function = embedding_function
         self._collection = self._client.get_or_create_collection(
             name=collection_name,
-            embedding_function=self._embedding_function.embed_documents
-            if self._embedding_function is not None
-            else None,
+            embedding_function=(
+                self._embedding_function.embed_documents
+                if self._embedding_function is not None
+                else None
+            ),
             metadata=collection_metadata,
         )
         self.override_relevance_score_fn = relevance_score_fn
@@ -203,7 +207,9 @@ class Chroma(VectorStore):
                 metadatas = [metadatas[idx] for idx in non_empty_ids]
                 texts_with_metadatas = [texts[idx] for idx in non_empty_ids]
                 embeddings_with_metadatas = (
-                    [embeddings[idx] for idx in non_empty_ids] if embeddings else None
+                    [embeddings[idx] for idx in non_empty_ids]
+                    if embeddings
+                    else None
                 )
                 ids_with_metadata = [ids[idx] for idx in non_empty_ids]
                 try:
@@ -216,7 +222,8 @@ class Chroma(VectorStore):
                 except ValueError as e:
                     if "Expected metadata value to be" in str(e):
                         msg = (
-                            "Try filtering complex metadata from the document using "
+                            "Try filtering complex metadata from the document"
+                            " using "
                             "langchain.vectorstores.utils.filter_complex_metadata."
                         )
                         raise ValueError(e.args[0] + "\n\n" + msg)
@@ -258,7 +265,9 @@ class Chroma(VectorStore):
         Returns:
             List[Document]: List of documents most similar to the query text.
         """
-        docs_and_scores = self.similarity_search_with_score(query, k, filter=filter)
+        docs_and_scores = self.similarity_search_with_score(
+            query, k, filter=filter
+        )
         return [doc for doc, _ in docs_and_scores]
 
     def similarity_search_by_vector(
@@ -428,7 +437,9 @@ class Chroma(VectorStore):
 
         candidates = _results_to_docs(results)
 
-        selected_results = [r for i, r in enumerate(candidates) if i in mmr_selected]
+        selected_results = [
+            r for i, r in enumerate(candidates) if i in mmr_selected
+        ]
         return selected_results
 
     def max_marginal_relevance_search(
@@ -460,7 +471,8 @@ class Chroma(VectorStore):
         """
         if self._embedding_function is None:
             raise ValueError(
-                "For MMR search, you must specify an embedding function oncreation."
+                "For MMR search, you must specify an embedding function"
+                " oncreation."
             )
 
         embedding = self._embedding_function.embed_query(query)
@@ -543,7 +555,9 @@ class Chroma(VectorStore):
         """
         return self.update_documents([document_id], [document])
 
-    def update_documents(self, ids: List[str], documents: List[Document]) -> None:
+    def update_documents(
+        self, ids: List[str], documents: List[Document]
+    ) -> None:
         """Update a document in the collection.
 
         Args:
@@ -554,7 +568,8 @@ class Chroma(VectorStore):
         metadata = [document.metadata for document in documents]
         if self._embedding_function is None:
             raise ValueError(
-                "For update, you must specify an embedding function on creation."
+                "For update, you must specify an embedding function on"
+                " creation."
             )
         embeddings = self._embedding_function.embed_documents(text)
 
@@ -645,7 +660,9 @@ class Chroma(VectorStore):
                     ids=batch[0],
                 )
         else:
-            chroma_collection.add_texts(texts=texts, metadatas=metadatas, ids=ids)
+            chroma_collection.add_texts(
+                texts=texts, metadatas=metadatas, ids=ids
+            )
         return chroma_collection
 
     @classmethod

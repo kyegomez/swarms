@@ -169,8 +169,8 @@ class Dalle3:
             print(
                 colored(
                     (
-                        f"Error running Dalle3: {error} try optimizing your api key and"
-                        " or try again"
+                        f"Error running Dalle3: {error} try optimizing your api"
+                        " key and or try again"
                     ),
                     "red",
                 )
@@ -234,8 +234,8 @@ class Dalle3:
             print(
                 colored(
                     (
-                        f"Error running Dalle3: {error} try optimizing your api key and"
-                        " or try again"
+                        f"Error running Dalle3: {error} try optimizing your api"
+                        " key and or try again"
                     ),
                     "red",
                 )
@@ -248,8 +248,7 @@ class Dalle3:
         """Print the Dalle3 dashboard"""
         print(
             colored(
-                (
-                    f"""Dalle3 Dashboard: 
+                f"""Dalle3 Dashboard: 
                     --------------------
 
                     Model: {self.model}
@@ -265,13 +264,14 @@ class Dalle3:
                     --------------------
                     
                     
-                    """
-                ),
+                    """,
                 "green",
             )
         )
 
-    def process_batch_concurrently(self, tasks: List[str], max_workers: int = 5):
+    def process_batch_concurrently(
+        self, tasks: List[str], max_workers: int = 5
+    ):
         """
 
         Process a batch of tasks concurrently
@@ -293,8 +293,12 @@ class Dalle3:
         ['https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png',
 
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_task = {executor.submit(self, task): task for task in tasks}
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            future_to_task = {
+                executor.submit(self, task): task for task in tasks
+            }
             results = []
             for future in concurrent.futures.as_completed(future_to_task):
                 task = future_to_task[future]
@@ -307,14 +311,20 @@ class Dalle3:
                     print(
                         colored(
                             (
-                                f"Error running Dalle3: {error} try optimizing your api key and"
-                                " or try again"
+                                f"Error running Dalle3: {error} try optimizing"
+                                " your api key and or try again"
                             ),
                             "red",
                         )
                     )
-                    print(colored(f"Error running Dalle3: {error.http_status}", "red"))
-                    print(colored(f"Error running Dalle3: {error.error}", "red"))
+                    print(
+                        colored(
+                            f"Error running Dalle3: {error.http_status}", "red"
+                        )
+                    )
+                    print(
+                        colored(f"Error running Dalle3: {error.error}", "red")
+                    )
                     raise error
 
     def _generate_uuid(self):

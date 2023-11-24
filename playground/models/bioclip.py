@@ -1,6 +1,8 @@
 from swarms.models.bioclip import BioClip
 
-clip = BioClip("hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224")
+clip = BioClip(
+    "hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224"
+)
 
 labels = [
     "adenocarcinoma histopathology",

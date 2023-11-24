@@ -11,14 +11,9 @@ from termcolor import colored
 
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.parse_code import extract_code_in_backticks_in_string
+from swarms.tools.tool import BaseTool
 
-# Prompts
-DYNAMIC_STOP_PROMPT = """
-When you have finished the task from the Human, output a special token: <DONE>
-This will enable you to leave the autonomous loop.
-"""
-
-# Constants
+# System prompt
 FLOW_SYSTEM_PROMPT = f"""
 You are an autonomous agent granted autonomy in a autonomous loop structure.
 Your role is to engage in multi-step conversations with your self or the user,
@@ -29,6 +24,17 @@ You can have internal dialogues with yourself or can interact with the user
 to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
 
 """
+
+
+# Prompts
+DYNAMIC_STOP_PROMPT = """
+
+Now, when you 99% sure you have completed the task, you may follow the instructions below to escape the autonomous loop.
+
+When you have finished the task from the Human, output a special token: <DONE>
+This will enable you to leave the autonomous loop.
+"""
+
 
 # Make it able to handle multi input tools
 DYNAMICAL_TOOL_USAGE = """
@@ -46,11 +52,39 @@ commands: {
             "tool1": "inputs",
             "tool1": "inputs"
         }
+        "tool3: "tool_name",
+        "params": {
+            "tool1": "inputs",
+            "tool1": "inputs"
+        }
     }
 }
 
 -------------TOOLS---------------------------
 {tools}
+"""
+
+SCENARIOS = """
+commands: {
+    "tools": {
+        tool1: "tool_name",
+        "params": {
+            "tool1": "inputs",
+            "tool1": "inputs"
+        }
+        "tool2: "tool_name",
+        "params": {
+            "tool1": "inputs",
+            "tool1": "inputs"
+        }
+        "tool3: "tool_name",
+        "params": {
+            "tool1": "inputs",
+            "tool1": "inputs"
+        }
+    }
+}
+
 """
 
 
@@ -101,9 +135,9 @@ def parse_done_token(response: str) -> bool:
 
 class Flow:
     """
-    Flow is a chain like structure from langchain that provides the autonomy to language models
-    to generate sequential responses.
-
+    Flow is the structure that provides autonomy to any llm in a reliable and effective fashion.
+    The flow structure is designed to be used with any llm and provides the following features:
+    
     Features:
     * Interactive, AI generates, then user input
     * Message history and performance history fed -> into context -> truncate if too long
@@ -191,7 +225,7 @@ class Flow:
     def __init__(
         self,
         llm: Any,
-        # template: str,
+        template: Optional[str] = None,
         max_loops=5,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
@@ -205,7 +239,7 @@ class Flow:
         agent_name: str = " Autonomous Agent XYZ1B",
         agent_description: str = None,
         system_prompt: str = FLOW_SYSTEM_PROMPT,
-        # tools: List[Any] = None,
+        tools: List[BaseTool] = None,
         dynamic_temperature: bool = False,
         sop: str = None,
         saved_state_path: Optional[str] = "flow_state.json",
@@ -217,6 +251,7 @@ class Flow:
         **kwargs: Any,
     ):
         self.llm = llm
+        self.template = template
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
@@ -238,7 +273,7 @@ class Flow:
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
-        # self.tools = tools or []
+        self.tools = tools or []
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -302,68 +337,82 @@ class Flow:
     #     # Parse the text for tool usage
     #     pass
 
-    # def get_tool_description(self):
-    #     """Get the tool description"""
-    #     tool_descriptions = []
-    #     for tool in self.tools:
-    #         description = f"{tool.name}: {tool.description}"
-    #         tool_descriptions.append(description)
-    #     return "\n".join(tool_descriptions)
+    def get_tool_description(self):
+        """Get the tool description"""
+        if self.tools:
+            try:
+                tool_descriptions = []
+                for tool in self.tools:
+                    description = f"{tool.name}: {tool.description}"
+                    tool_descriptions.append(description)
+                return "\n".join(tool_descriptions)
+            except Exception as error:
+                print(
+                    f"Error getting tool description: {error} try adding a"
+                    " description to the tool or removing the tool"
+                )
+        else:
+            return "No tools available"
 
-    # def find_tool_by_name(self, name: str):
-    #     """Find a tool by name"""
-    #     for tool in self.tools:
-    #         if tool.name == name:
-    #             return tool
-    #     return None
+    def find_tool_by_name(self, name: str):
+        """Find a tool by name"""
+        for tool in self.tools:
+            if tool.name == name:
+                return tool
+        return None
 
-    # def construct_dynamic_prompt(self):
-    #     """Construct the dynamic prompt"""
-    #     tools_description = self.get_tool_description()
-    #     return DYNAMICAL_TOOL_USAGE.format(tools=tools_description)
+    def construct_dynamic_prompt(self):
+        """Construct the dynamic prompt"""
+        tools_description = self.get_tool_description()
 
-    # def extract_tool_commands(self, text: str):
-    #     """
-    #     Extract the tool commands from the text
+        tool_prompt = self.tool_prompt_prep(tools_description, SCENARIOS)
 
-    #     Example:
-    #     ```json
-    #     {
-    #         "tool": "tool_name",
-    #         "params": {
-    #             "tool1": "inputs",
-    #             "param2": "value2"
-    #         }
-    #     }
-    #     ```
+        return tool_prompt
 
-    #     """
-    #     # Regex to find JSON like strings
-    #     pattern = r"```json(.+?)```"
-    #     matches = re.findall(pattern, text, re.DOTALL)
-    #     json_commands = []
-    #     for match in matches:
-    #         try:
-    #             json_commands = json.loads(match)
-    #             json_commands.append(json_commands)
-    #         except Exception as error:
-    #             print(f"Error parsing JSON command: {error}")
+        # return DYNAMICAL_TOOL_USAGE.format(tools=tools_description)
 
-    # def parse_and_execute_tools(self, response):
-    #     """Parse and execute the tools"""
-    #     json_commands = self.extract_tool_commands(response)
-    #     for command in json_commands:
-    #         tool_name = command.get("tool")
-    #         params = command.get("parmas", {})
-    #         self.execute_tool(tool_name, params)
+    def extract_tool_commands(self, text: str):
+        """
+        Extract the tool commands from the text
 
-    # def execute_tools(self, tool_name, params):
-    #     """Execute the tool with the provided params"""
-    #     tool = self.tool_find_by_name(tool_name)
-    #     if tool:
-    #         # Execute the tool with the provided parameters
-    #         tool_result = tool.run(**params)
-    #         print(tool_result)
+        Example:
+        ```json
+        {
+            "tool": "tool_name",
+            "params": {
+                "tool1": "inputs",
+                "param2": "value2"
+            }
+        }
+        ```
+
+        """
+        # Regex to find JSON like strings
+        pattern = r"```json(.+?)```"
+        matches = re.findall(pattern, text, re.DOTALL)
+        json_commands = []
+        for match in matches:
+            try:
+                json_commands = json.loads(match)
+                json_commands.append(json_commands)
+            except Exception as error:
+                print(f"Error parsing JSON command: {error}")
+
+    def parse_and_execute_tools(self, response: str):
+        """Parse and execute the tools"""
+        json_commands = self.extract_tool_commands(response)
+        for command in json_commands:
+            tool_name = command.get("tool")
+            params = command.get("parmas", {})
+            self.execute_tool(tool_name, params)
+
+    def execute_tools(self, tool_name, params):
+        """Execute the tool with the provided params"""
+        tool = self.tool_find_by_name(tool_name)
+        if tool:
+            # Execute the tool with the provided parameters
+            tool_result = tool.run(**params)
+            print(tool_result)
 
     def truncate_history(self):
         """
@@ -431,8 +480,12 @@ class Flow:
             print(colored("Initializing Autonomous Agent...", "yellow"))
             # print(colored("Loading modules...", "yellow"))
             # print(colored("Modules loaded successfully.", "green"))
-            print(colored("Autonomous Agent Activated.", "cyan", attrs=["bold"]))
-            print(colored("All systems operational. Executing task...", "green"))
+            print(
+                colored("Autonomous Agent Activated.", "cyan", attrs=["bold"])
+            )
+            print(
+                colored("All systems operational. Executing task...", "green")
+            )
         except Exception as error:
             print(
                 colored(
@@ -475,16 +528,18 @@ class Flow:
                 self.print_dashboard(task)
 
             loop_count = 0
-            # for i in range(self.max_loops):
             while self.max_loops == "auto" or loop_count < self.max_loops:
                 loop_count += 1
-                print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
+                print(
+                    colored(f"\nLoop {loop_count} of {self.max_loops}", "blue")
+                )
                 print("\n")
 
+                # Check to see if stopping token is in the output to stop the loop
                 if self.stopping_token:
-                    if self._check_stopping_condition(response) or parse_done_token(
+                    if self._check_stopping_condition(
                         response
-                    ):
+                    ) or parse_done_token(response):
                         break
 
                 # Adjust temperature, comment if no work
@@ -502,17 +557,22 @@ class Flow:
                             **kwargs,
                         )
 
+                        # If code interpreter is enabled then run the code
                         if self.code_interpreter:
                             self.run_code(response)
-                        # If there are any tools then parse and execute them
-                        # if self.tools:
-                        #     self.parse_and_execute_tools(response)
 
+                        # If there are any tools then parse and execute them
+                        if self.tools:
+                            self.parse_and_execute_tools(response)
+
+                        # If interactive mode is enabled then print the response and get user input
                         if self.interactive:
                             print(f"AI: {response}")
                             history.append(f"AI: {response}")
                             response = input("You: ")
                             history.append(f"Human: {response}")
+
+                        # If interactive mode is not enabled then print the response
                         else:
                             print(f"AI: {response}")
                             history.append(f"AI: {response}")
@@ -522,109 +582,20 @@ class Flow:
                         logging.error(f"Error generating response: {e}")
                         attempt += 1
                         time.sleep(self.retry_interval)
+                # Add the response to the history
                 history.append(response)
+
                 time.sleep(self.loop_interval)
+            # Add the history to the memory
             self.memory.append(history)
 
+            # If autosave is enabled then save the state
             if self.autosave:
                 save_path = self.saved_state_path or "flow_state.json"
                 print(colored(f"Autosaving flow state to {save_path}", "green"))
                 self.save_state(save_path)
 
-            if self.return_history:
-                return response, history
-
-            return response
-        except Exception as error:
-            print(f"Error running flow: {error}")
-            raise
-
-    def __call__(self, task: str, **kwargs):
-        """
-        Run the autonomous agent loop
-
-        Args:
-            task (str): The initial task to run
-
-        Flow:
-        1. Generate a response
-        2. Check stopping condition
-        3. If stopping condition is met, stop
-        4. If stopping condition is not met, generate a response
-        5. Repeat until stopping condition is met or max_loops is reached
-
-        """
-        try:
-            # dynamic_prompt = self.construct_dynamic_prompt()
-            # combined_prompt = f"{dynamic_prompt}\n{task}"
-
-            # Activate Autonomous agent message
-            self.activate_autonomous_agent()
-
-            response = task  # or combined_prompt
-            history = [f"{self.user_name}: {task}"]
-
-            # If dashboard = True then print the dashboard
-            if self.dashboard:
-                self.print_dashboard(task)
-
-            loop_count = 0
-            # for i in range(self.max_loops):
-            while self.max_loops == "auto" or loop_count < self.max_loops:
-                loop_count += 1
-                print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
-                print("\n")
-
-                if self.stopping_token:
-                    if self._check_stopping_condition(response) or parse_done_token(
-                        response
-                    ):
-                        break
-
-                # Adjust temperature, comment if no work
-                if self.dynamic_temperature:
-                    self.dynamic_temperature()
-
-                # Preparing the prompt
-                task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
-
-                attempt = 0
-                while attempt < self.retry_attempts:
-                    try:
-                        response = self.llm(
-                            task,
-                            **kwargs,
-                        )
-
-                        if self.code_interpreter:
-                            self.run_code(response)
-                        # If there are any tools then parse and execute them
-                        # if self.tools:
-                        #     self.parse_and_execute_tools(response)
-
-                        if self.interactive:
-                            print(f"AI: {response}")
-                            history.append(f"AI: {response}")
-                            response = input("You: ")
-                            history.append(f"Human: {response}")
-                        else:
-                            print(f"AI: {response}")
-                            history.append(f"AI: {response}")
-                            # print(response)
-                        break
-                    except Exception as e:
-                        logging.error(f"Error generating response: {e}")
-                        attempt += 1
-                        time.sleep(self.retry_interval)
-                history.append(response)
-                time.sleep(self.loop_interval)
-            self.memory.append(history)
-
-            if self.autosave:
-                save_path = self.saved_state_path or "flow_state.json"
-                print(colored(f"Autosaving flow state to {save_path}", "green"))
-                self.save_state(save_path)
-
+            # If return history is enabled then return the response and history
             if self.return_history:
                 return response, history
 
@@ -665,7 +636,9 @@ class Flow:
             print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
             print("\n")
 
-            if self._check_stopping_condition(response) or parse_done_token(response):
+            if self._check_stopping_condition(response) or parse_done_token(
+                response
+            ):
                 break
 
             # Adjust temperature, comment if no work
@@ -985,7 +958,8 @@ class Flow:
             if hasattr(self.llm, name):
                 value = getattr(self.llm, name)
                 if isinstance(
-                    value, (str, int, float, bool, list, dict, tuple, type(None))
+                    value,
+                    (str, int, float, bool, list, dict, tuple, type(None)),
                 ):
                     llm_params[name] = value
                 else:
@@ -1046,7 +1020,9 @@ class Flow:
 
         print(f"Flow state loaded from {file_path}")
 
-    def retry_on_failure(self, function, retries: int = 3, retry_delay: int = 1):
+    def retry_on_failure(
+        self, function, retries: int = 3, retry_delay: int = 1
+    ):
         """Retry wrapper for LLM calls."""
         attempt = 0
         while attempt < retries:
@@ -1105,7 +1081,7 @@ class Flow:
         run_code = self.code_executor.run(parsed_code)
         return run_code
 
-    def tool_prompt_prep(self, api_docs: str = None, required_api: str = None):
+    def tools_prompt_prep(self, docs: str = None, scenarios: str = None):
         """
         Prepare the tool prompt
         """
@@ -1152,19 +1128,14 @@ class Flow:
         response.
         Deliver your response in this format:
         ‘‘‘
-        - Scenario 1: <Scenario1>
-        - Scenario 2: <Scenario2>
-        - Scenario 3: <Scenario3>
+        {scenarios}
         ‘‘‘
         # APIs
         ‘‘‘
-        {api_docs}
+        {docs}
         ‘‘‘
         # Response
-        Required API: {required_api}
-        Scenarios with >=5 API calls:
         ‘‘‘
-        - Scenario 1: <Scenario1>
         """
 
     def self_healing(self, **kwargs):

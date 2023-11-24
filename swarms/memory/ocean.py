@@ -91,7 +91,9 @@ class OceanDB:
         try:
             return collection.add(documents=[document], ids=[id])
         except Exception as e:
-            logging.error(f"Failed to append document to the collection. Error {e}")
+            logging.error(
+                f"Failed to append document to the collection. Error {e}"
+            )
             raise
 
     def add_documents(self, collection, documents: List[str], ids: List[str]):
@@ -137,7 +139,9 @@ class OceanDB:
                 the results of the query
         """
         try:
-            results = collection.query(query_texts=query_texts, n_results=n_results)
+            results = collection.query(
+                query_texts=query_texts, n_results=n_results
+            )
             return results
         except Exception as e:
             logging.error(f"Failed to query the collection. Error {e}")

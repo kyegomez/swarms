@@ -21,7 +21,9 @@ def test_nougat_default_initialization(setup_nougat):
 
 
 def test_nougat_custom_initialization():
-    nougat = Nougat(model_name_or_path="custom_path", min_length=10, max_new_tokens=50)
+    nougat = Nougat(
+        model_name_or_path="custom_path", min_length=10, max_new_tokens=50
+    )
     assert nougat.model_name_or_path == "custom_path"
     assert nougat.min_length == 10
     assert nougat.max_new_tokens == 50
@@ -98,7 +100,8 @@ def mock_processor_and_model():
     with patch(
         "transformers.NougatProcessor.from_pretrained", return_value=Mock()
     ), patch(
-        "transformers.VisionEncoderDecoderModel.from_pretrained", return_value=Mock()
+        "transformers.VisionEncoderDecoderModel.from_pretrained",
+        return_value=Mock(),
     ):
         yield
 

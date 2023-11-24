@@ -48,6 +48,7 @@ paper_implementor_agent = Flow(
 
 paper = pdf_to_text(PDF_PATH)
 algorithmic_psuedocode_agent = paper_summarizer_agent.run(
-    f"Focus on creating the algorithmic pseudocode for the novel method in this paper: {paper}"
+    "Focus on creating the algorithmic pseudocode for the novel method in this"
+    f" paper: {paper}"
 )
 pytorch_code = paper_implementor_agent.run(algorithmic_psuedocode_agent)

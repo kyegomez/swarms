@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "2.3.9"
+version = "2.4.0"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -23,16 +23,14 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-sentence_transformers = "*"
+torch = "2.1.1"
 transformers = "*"
-qdrant_client = "*"
 openai = "0.28.0"
 langchain = "*"
 asyncio = "*"
 nest_asyncio = "*"
 einops = "*"
 google-generativeai = "*"
-torch = "*"
 langchain-experimental = "*"
 playwright = "*"
 duckduckgo-search = "*"
@@ -79,11 +77,18 @@ mypy-protobuf = "^3.0.0"
 
 
 [tool.autopep8]
-max_line_length = 120
+max_line_length = 80
 ignore = "E501,W6"  # or ["E501", "W6"]
 in-place = true
 recursive = true
 aggressive = 3
 
 [tool.ruff]
-line-length = 120
+line-length = 80
+
+[tool.black]
+line-length = 80
+target-version = ['py38']
+preview = true
+
+

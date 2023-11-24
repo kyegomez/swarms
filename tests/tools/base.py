@@ -75,7 +75,9 @@ def test_tool_ainvoke_with_coroutine():
     async def async_function(input_data):
         return input_data
 
-    tool = Tool(name="test_tool", coroutine=async_function, description="Test tool")
+    tool = Tool(
+        name="test_tool", coroutine=async_function, description="Test tool"
+    )
     result = tool.ainvoke("input_data")
     assert result == "input_data"
 
@@ -560,7 +562,9 @@ class TestTool:
         with pytest.raises(ValueError):
             tool(no_doc_func)
 
-    def test_tool_raises_error_runnable_without_object_schema(self, mock_runnable):
+    def test_tool_raises_error_runnable_without_object_schema(
+        self, mock_runnable
+    ):
         with pytest.raises(ValueError):
             tool(mock_runnable)
 

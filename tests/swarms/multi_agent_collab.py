@@ -115,7 +115,10 @@ def test_repr(collaboration):
 
 
 def test_load(collaboration):
-    state = {"step": 5, "results": [{"agent": "Agent1", "response": "Response1"}]}
+    state = {
+        "step": 5,
+        "results": [{"agent": "Agent1", "response": "Response1"}],
+    }
     with open(collaboration.saved_file_path_name, "w") as file:
         json.dump(state, file)
 
@@ -140,7 +143,8 @@ def test_save(collaboration, tmp_path):
 
 # Example of parameterized test for different selection functions
 @pytest.mark.parametrize(
-    "selection_function", [select_next_speaker_director, select_speaker_round_table]
+    "selection_function",
+    [select_next_speaker_director, select_speaker_round_table],
 )
 def test_selection_functions(collaboration, selection_function):
     collaboration.select_next_speaker = selection_function

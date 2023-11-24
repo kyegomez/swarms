@@ -46,7 +46,9 @@ class Fuyu:
         self.tokenizer = AutoTokenizer.from_pretrained(pretrained_path)
         self.image_processor = FuyuImageProcessor()
         self.processor = FuyuProcessor(
-            image_processor=self.image_processor, tokenizer=self.tokenizer, **kwargs
+            image_processor=self.image_processor,
+            tokenizer=self.tokenizer,
+            **kwargs,
         )
         self.model = FuyuForCausalLM.from_pretrained(
             pretrained_path,
@@ -69,8 +71,12 @@ class Fuyu:
         for k, v in model_inputs.items():
             model_inputs[k] = v.to(self.device_map)
 
-        output = self.model.generate(**model_inputs, max_new_tokens=self.max_new_tokens)
-        text = self.processor.batch_decode(output[:, -7:], skip_special_tokens=True)
+        output = self.model.generate(
+            **model_inputs, max_new_tokens=self.max_new_tokens
+        )
+        text = self.processor.batch_decode(
+            output[:, -7:], skip_special_tokens=True
+        )
         return print(str(text))
 
     def get_img_from_web(self, img_url: str):

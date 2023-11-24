@@ -28,7 +28,10 @@ def async_retry(max_retries=3, exceptions=(Exception,), delay=1):
                     retries -= 1
                     if retries <= 0:
                         raise
-                    print(f"Retry after exception: {e}, Attempts remaining: {retries}")
+                    print(
+                        f"Retry after exception: {e}, Attempts remaining:"
+                        f" {retries}"
+                    )
                     await asyncio.sleep(delay)
 
         return wrapper
@@ -62,7 +65,9 @@ class DistilWhisperModel:
 
     def __init__(self, model_id="distil-whisper/distil-large-v2"):
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        self.torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+        self.torch_dtype = (
+            torch.float16 if torch.cuda.is_available() else torch.float32
+        )
         self.model_id = model_id
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_id,
@@ -119,7 +124,9 @@ class DistilWhisperModel:
         try:
             with torch.no_grad():
                 # Load the whole audio file, but process and transcribe it in chunks
-                audio_input = self.processor.audio_file_to_array(audio_file_path)
+                audio_input = self.processor.audio_file_to_array(
+                    audio_file_path
+                )
                 sample_rate = audio_input.sampling_rate
                 len(audio_input.array) / sample_rate
                 chunks = [
@@ -139,7 +146,9 @@ class DistilWhisperModel:
                         return_tensors="pt",
                         padding=True,
                     )
-                    processed_inputs = processed_inputs.input_values.to(self.device)
+                    processed_inputs = processed_inputs.input_values.to(
+                        self.device
+                    )
 
                     # Generate transcription for the chunk
                     logits = self.model.generate(processed_inputs)
@@ -157,4 +166,6 @@ class DistilWhisperModel:
                     time.sleep(chunk_duration)
 
         except Exception as e:
-            print(colored(f"An error occurred during transcription: {e}", "red"))
+            print(
+                colored(f"An error occurred during transcription: {e}", "red")
+            )

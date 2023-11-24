@@ -4,7 +4,10 @@ import time
 
 import pytest
 
-from swarms.utils.code_interpreter import BaseCodeInterpreter, SubprocessCodeInterpreter
+from swarms.utils.code_interpreter import (
+    BaseCodeInterpreter,
+    SubprocessCodeInterpreter,
+)
 
 
 @pytest.fixture
@@ -53,7 +56,9 @@ def test_subprocess_code_interpreter_run_success(subprocess_code_interpreter):
     assert any("Hello, World!" in output.get("output", "") for output in result)
 
 
-def test_subprocess_code_interpreter_run_with_error(subprocess_code_interpreter):
+def test_subprocess_code_interpreter_run_with_error(
+    subprocess_code_interpreter,
+):
     code = 'print("Hello, World")\nraise ValueError("Error!")'
     result = list(subprocess_code_interpreter.run(code))
     assert any("Error!" in output.get("output", "") for output in result)
@@ -62,9 +67,14 @@ def test_subprocess_code_interpreter_run_with_error(subprocess_code_interpreter)
 def test_subprocess_code_interpreter_run_with_keyboard_interrupt(
     subprocess_code_interpreter,
 ):
-    code = 'import time\ntime.sleep(2)\nprint("Hello, World")\nraise KeyboardInterrupt'
+    code = (
+        'import time\ntime.sleep(2)\nprint("Hello, World")\nraise'
+        " KeyboardInterrupt"
+    )
     result = list(subprocess_code_interpreter.run(code))
-    assert any("KeyboardInterrupt" in output.get("output", "") for output in result)
+    assert any(
+        "KeyboardInterrupt" in output.get("output", "") for output in result
+    )
 
 
 def test_subprocess_code_interpreter_run_max_retries(
@@ -78,7 +88,8 @@ def test_subprocess_code_interpreter_run_max_retries(
     code = 'print("Hello, World!")'
     result = list(subprocess_code_interpreter.run(code))
     assert any(
-        "Maximum retries reached. Could not execute code." in output.get("output", "")
+        "Maximum retries reached. Could not execute code."
+        in output.get("output", "")
         for output in result
     )
 
@@ -112,19 +123,25 @@ def test_subprocess_code_interpreter_run_retry_on_error(
 # Import statements and fixtures from the previous code block
 
 
-def test_subprocess_code_interpreter_line_postprocessor(subprocess_code_interpreter):
+def test_subprocess_code_interpreter_line_postprocessor(
+    subprocess_code_interpreter,
+):
     line = "This is a test line"
     processed_line = subprocess_code_interpreter.line_postprocessor(line)
     assert processed_line == line  # No processing, should remain the same
 
 
-def test_subprocess_code_interpreter_preprocess_code(subprocess_code_interpreter):
+def test_subprocess_code_interpreter_preprocess_code(
+    subprocess_code_interpreter,
+):
     code = 'print("Hello, World!")'
     preprocessed_code = subprocess_code_interpreter.preprocess_code(code)
     assert preprocessed_code == code  # No preprocessing, should remain the same
 
 
-def test_subprocess_code_interpreter_detect_active_line(subprocess_code_interpreter):
+def test_subprocess_code_interpreter_detect_active_line(
+    subprocess_code_interpreter,
+):
     line = "Active line: 5"
     active_line = subprocess_code_interpreter.detect_active_line(line)
     assert active_line == 5
@@ -172,7 +189,9 @@ def test_subprocess_code_interpreter_handle_stream_output_stdout(
     subprocess_code_interpreter,
 ):
     line = "This is a test line"
-    subprocess_code_interpreter.handle_stream_output(threading.current_thread(), False)
+    subprocess_code_interpreter.handle_stream_output(
+        threading.current_thread(), False
+    )
     subprocess_code_interpreter.process.stdout.write(line + "\n")
     subprocess_code_interpreter.process.stdout.flush()
     time.sleep(0.1)
@@ -184,7 +203,9 @@ def test_subprocess_code_interpreter_handle_stream_output_stderr(
     subprocess_code_interpreter,
 ):
     line = "This is an error line"
-    subprocess_code_interpreter.handle_stream_output(threading.current_thread(), True)
+    subprocess_code_interpreter.handle_stream_output(
+        threading.current_thread(), True
+    )
     subprocess_code_interpreter.process.stderr.write(line + "\n")
     subprocess_code_interpreter.process.stderr.flush()
     time.sleep(0.1)
@@ -207,12 +228,13 @@ def test_subprocess_code_interpreter_run_with_exception(
     subprocess_code_interpreter, capsys
 ):
     code = 'print("Hello, World!")'
-    subprocess_code_interpreter.start_cmd = (
-        "nonexistent_command"  # Force an exception during subprocess creation
+    subprocess_code_interpreter.start_cmd = (  # Force an exception during subprocess creation
+        "nonexistent_command"
     )
     result = list(subprocess_code_interpreter.run(code))
     assert any(
-        "Maximum retries reached" in output.get("output", "") for output in result
+        "Maximum retries reached" in output.get("output", "")
+        for output in result
     )
 
 
@@ -245,4 +267,6 @@ def test_subprocess_code_interpreter_run_with_unicode_characters(
 ):
     code = 'print("こんにちは、世界")'  # Contains unicode characters
     result = list(subprocess_code_interpreter.run(code))
-    assert any("こんにちは、世界" in output.get("output", "") for output in result)
+    assert any(
+        "こんにちは、世界" in output.get("output", "") for output in result
+    )
