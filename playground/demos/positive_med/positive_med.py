@@ -20,15 +20,17 @@ Distribution Agent:
 - Optimize writer prompt to create longer and more enjoyeable blogs
 - Use Local Models like Storywriter
 """
+import os
+
 from termcolor import colored
+
 from swarms.models import OpenAIChat
 from swarms.prompts.autobloggen import (
-    DRAFT_AGENT_SYSTEM_PROMPT,
     AUTOBLOG_REVIEW_PROMPT,
+    DRAFT_AGENT_SYSTEM_PROMPT,
     SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT,
     TOPIC_GENERATOR_SYSTEM_PROMPT,
 )
-import os
 
 from termcolor import colored
 
