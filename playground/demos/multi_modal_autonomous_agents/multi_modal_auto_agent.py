@@ -1,22 +1,3 @@
-<<<<<<< HEAD
-from swarms.structs import Agent
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
-
-
-llm = GPT4VisionAPI()
-
-task = "What is the color of the object?"
-img = "images/swarms.jpeg"
-
-## Initialize the workflow
-agent = Agent(
-    llm=llm,
-    max_loops="auto",
-    dashboard=True,
-)
-
-agent.run(task=task, img=img)
-=======
 from swarms.structs import Flow
 from swarms.models import Idefics
 
@@ -50,4 +31,3 @@ out = flow.run(task)
 # out = flow.print_history_and_memory()
 # # out = flow.save_state("flow_state.json")
 # print(out)
->>>>>>> fa52e094 (CLEAN UP: Flow and demo layouts)

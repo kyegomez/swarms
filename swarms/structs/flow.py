@@ -496,7 +496,7 @@ class Flow:
             )
             print(error)
 
-    def run(self, task: str, **kwargs):
+    def run(self, task: str, img: Optional[str], **kwargs):
         """
         Run the autonomous agent loop
 
@@ -550,10 +550,17 @@ class Flow:
                 attempt = 0
                 while attempt < self.retry_attempts:
                     try:
-                        response = self.llm(
-                            task,
-                            **kwargs,
-                        )
+                        if img:
+                            response = self.llm(
+                                task,
+                                img,
+                                **kwargs,
+                            )
+                        else:
+                            response = self.llm(
+                                task,
+                                **kwargs,
+                            )
 
                         # If code interpreter is enabled then run the code
                         if self.code_interpreter:
