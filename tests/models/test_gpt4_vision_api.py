@@ -1,9 +1,12 @@
-import pytest
-from unittest.mock import mock_open, patch, Mock
-from requests.exceptions import RequestException
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
+import asyncio
 import os
+from unittest.mock import AsyncMock, Mock, mock_open, patch
+from aiohttp import ClientResponseError
+import pytest
 from dotenv import load_dotenv
+from requests.exceptions import RequestException
+
+from swarms.models.gpt4_vision_api import GPT4VisionAPI
 
 load_dotenv()
 
@@ -120,3 +123,116 @@ def test_call_method_with_exception(gpt_api):
     with patch("requests.post", side_effect=Exception("Test Exception")):
         with pytest.raises(Exception):
             gpt_api(task, img_url)
+
+
+@pytest.mark.asyncio
+async def test_arun_success(vision_api):
+    expected_response = {
+        "choices": [{"message": {"content": "This is the model's response."}}]
+    }
+    with patch(
+        "aiohttp.ClientSession.post",
+        new_callable=AsyncMock,
+        return_value=AsyncMock(json=AsyncMock(return_value=expected_response)),
+    ) as mock_post:
+        result = await vision_api.arun("What is this?", img)
+        mock_post.assert_called_once()
+        assert result == "This is the model's response."
+
+
+@pytest.mark.asyncio
+async def test_arun_request_error(vision_api):
+    with patch(
+        "aiohttp.ClientSession.post",
+        new_callable=AsyncMock,
+        side_effect=Exception("Request Error"),
+    ) as mock_post:
+        with pytest.raises(Exception):
+            await vision_api.arun("What is this?", img)
+
+
+def test_run_many_success(vision_api):
+    expected_response = {
+        "choices": [{"message": {"content": "This is the model's response."}}]
+    }
+    with patch(
+        "requests.post", return_value=Mock(json=lambda: expected_response)
+    ) as mock_post:
+        tasks = ["What is this?", "What is that?"]
+        imgs = [img, img]
+        results = vision_api.run_many(tasks, imgs)
+        assert mock_post.call_count == 2
+        assert results == [
+            "This is the model's response.",
+            "This is the model's response.",
+        ]
+
+
+def test_run_many_request_error(vision_api):
+    with patch(
+        "requests.post", side_effect=RequestException("Request Error")
+    ) as mock_post:
+        tasks = ["What is this?", "What is that?"]
+        imgs = [img, img]
+        with pytest.raises(RequestException):
+            vision_api.run_many(tasks, imgs)
+
+
+@pytest.mark.asyncio
+async def test_arun_json_decode_error(vision_api):
+    with patch(
+        "aiohttp.ClientSession.post",
+        new_callable=AsyncMock,
+        return_value=AsyncMock(json=AsyncMock(side_effect=ValueError)),
+    ) as mock_post:
+        with pytest.raises(ValueError):
+            await vision_api.arun("What is this?", img)
+
+
+@pytest.mark.asyncio
+async def test_arun_api_error(vision_api):
+    error_response = {"error": {"message": "API Error"}}
+    with patch(
+        "aiohttp.ClientSession.post",
+        new_callable=AsyncMock,
+        return_value=AsyncMock(json=AsyncMock(return_value=error_response)),
+    ) as mock_post:
+        with pytest.raises(Exception, match="API Error"):
+            await vision_api.arun("What is this?", img)
+
+
+@pytest.mark.asyncio
+async def test_arun_unexpected_response(vision_api):
+    unexpected_response = {"unexpected": "response"}
+    with patch(
+        "aiohttp.ClientSession.post",
+        new_callable=AsyncMock,
+        return_value=AsyncMock(
+            json=AsyncMock(return_value=unexpected_response)
+        ),
+    ) as mock_post:
+        with pytest.raises(Exception, match="Unexpected response"):
+            await vision_api.arun("What is this?", img)
+
+
+@pytest.mark.asyncio
+async def test_arun_retries(vision_api):
+    with patch(
+        "aiohttp.ClientSession.post",
+        new_callable=AsyncMock,
+        side_effect=ClientResponseError(None, None),
+    ) as mock_post:
+        with pytest.raises(ClientResponseError):
+            await vision_api.arun("What is this?", img)
+        assert mock_post.call_count == vision_api.retries + 1
+
+
+@pytest.mark.asyncio
+async def test_arun_timeout(vision_api):
+    with patch(
+        "aiohttp.ClientSession.post",
+        new_callable=AsyncMock,
+        side_effect=asyncio.TimeoutError,
+    ) as mock_post:
+        with pytest.raises(asyncio.TimeoutError):
+            await vision_api.arun("What is this?", img)
