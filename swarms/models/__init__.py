@@ -52,5 +52,4 @@ __all__ = [
     # "Dalle3",
     # "DistilWhisperModel",
     "GPT4VisionAPI",
-    
 ]
