@@ -25,6 +25,7 @@ from swarms.models.idefics import Idefics  # noqa: E402
 from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.nougat import Nougat  # noqa: E402
 from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA  # noqa: E402
+from swarms.models.gpt4_vision_api import GPT4VisionAPI  # noqa: E40
 
 # from swarms.models.gpt4v import GPT4Vision
 # from swarms.models.dalle3 import Dalle3
@@ -49,4 +50,7 @@ __all__ = [
     "WizardLLMStoryTeller",
     # "GPT4Vision",
     # "Dalle3",
+    # "DistilWhisperModel",
+    "GPT4VisionAPI",
+    
 ]
