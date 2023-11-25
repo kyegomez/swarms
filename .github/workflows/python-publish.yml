@@ -1,7 +1,7 @@
-
+---
 name: Upload Python Package
 
-on:
+on:  # yamllint disable-line rule:truthy
   release:
     types: [published]
 
@@ -13,7 +13,7 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    steps:
+   steps:
     - uses: actions/checkout@v4
     - name: Set up Python
       uses: actions/setup-python@v4
