@@ -29,4 +29,4 @@ RUN pip install swarms
 RUN pip install pytest
 
 # Run pytest on all tests in the tests directory
-CMD find ./tests -name '*.py' -exec pytest {} +
+CMD pytest
