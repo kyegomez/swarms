@@ -498,7 +498,7 @@ class Flow:
             )
             print(error)
 
-    def run(self, task: str, img: Optional[str], **kwargs):
+    def run(self, task: Optional[str], img: Optional[str] = None, **kwargs):
         """
         Run the autonomous agent loop
 
@@ -528,7 +528,11 @@ class Flow:
                 self.print_dashboard(task)
 
             loop_count = 0
+            
+            # While the max_loops is auto or the loop count is less than the max_loops
             while self.max_loops == "auto" or loop_count < self.max_loops:
+                
+                # Loop count
                 loop_count += 1
                 print(
                     colored(f"\nLoop {loop_count} of {self.max_loops}", "blue")
