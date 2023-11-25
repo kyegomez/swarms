@@ -53,8 +53,8 @@ topic_selection_task = (
     "Generate 10 topics on gaining mental clarity using ancient practices"
 )
 topics = llm(
-    f"Your System Instructions: {TOPIC_GENERATOR_SYSTEM_PROMPT}, Your current task:"
-    f" {topic_selection_task}"
+    f"Your System Instructions: {TOPIC_GENERATOR_SYSTEM_PROMPT}, Your current"
+    f" task: {topic_selection_task}"
 )
 
 dashboard = print(
