@@ -114,7 +114,6 @@ class GPT4VisionAPI:
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
-        # Function to handle vision tasks
 
     def __call__(self, task: str, img: str):
         """Run the model."""

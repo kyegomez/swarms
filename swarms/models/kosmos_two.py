@@ -18,38 +18,31 @@ def is_overlapping(rect1, rect2):
 
 class Kosmos:
     """
+    Kosmos model by Yen-Chun Shieh
 
-    Args:
+    Parameters
+    ----------
+    model_name : str
+        Path to the pretrained model
+    
+    Examples
+    --------
+    >>> kosmos = Kosmos()
+    >>> kosmos("Hello, my name is", "path/to/image.png")
 
-
-    # Initialize Kosmos
-    kosmos = Kosmos()
-
-    # Perform multimodal grounding
-    kosmos.multimodal_grounding("Find the red apple in the image.", "https://example.com/apple.jpg")
-
-    # Perform referring expression comprehension
-    kosmos.referring_expression_comprehension("Show me the green bottle.", "https://example.com/bottle.jpg")
-
-    # Generate referring expressions
-    kosmos.referring_expression_generation("It is on the table.", "https://example.com/table.jpg")
-
-    # Perform grounded visual question answering
-    kosmos.grounded_vqa("What is the color of the car?", "https://example.com/car.jpg")
-
-    # Generate grounded image caption
-    kosmos.grounded_image_captioning("https://example.com/beach.jpg")
     """
 
     def __init__(
         self,
         model_name="ydshieh/kosmos-2-patch14-224",
+        *args,
+        **kwargs,
     ):
         self.model = AutoModelForVision2Seq.from_pretrained(
-            model_name, trust_remote_code=True
+            model_name, trust_remote_code=True, *args, **kwargs
         )
         self.processor = AutoProcessor.from_pretrained(
-            model_name, trust_remote_code=True
+            model_name, trust_remote_code=True, *args, **kwargs
         )
 
     def get_image(self, url):
