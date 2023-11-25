@@ -11,7 +11,6 @@ img = "images/swarms.jpeg"
 flow = Flow(
     llm=llm,
     max_loops="auto",
-    dashboard=True,
 )
 
 flow.run(task=task, img=img)
