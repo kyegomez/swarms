@@ -1,6 +1,7 @@
-import logging 
+import logging
 import asyncio
 import base64
+from typing import Optional
 import concurrent.futures
 from termcolor import colored
 import json
@@ -11,6 +12,13 @@ from typing import List, Tuple
 import aiohttp
 import requests
 from dotenv import load_dotenv
+
+
+try:
+    import cv2
+except ImportError:
+    print("OpenCV not installed. Please install OpenCV to use this model.")
+    raise ImportError
 
 # Load environment variables
 load_dotenv()
@@ -59,7 +67,8 @@ class GPT4VisionAPI:
         max_workers: int = 10,
         max_tokens: str = 300,
         openai_proxy: str = "https://api.openai.com/v1/chat/completions",
-        beautify: bool = False
+        beautify: bool = False,
+        streaming_enabled: Optional[bool] = False,
     ):
         super().__init__()
         self.openai_api_key = openai_api_key
@@ -69,6 +78,7 @@ class GPT4VisionAPI:
         self.max_tokens = max_tokens
         self.openai_proxy = openai_proxy
         self.beautify = beautify
+        self.streaming_enabled = streaming_enabled
 
         if self.logging_enabled:
             logging.basicConfig(level=logging.DEBUG)
@@ -123,13 +133,100 @@ class GPT4VisionAPI:
             out = response.json()
             content = out["choices"][0]["message"]["content"]
 
+            if self.streaming_enabled:
+                content = self.stream_response(content)
+            else:
+                pass
+
             if self.beautify:
                 content = colored(content, "cyan")
+                print(content)
             else:
                 print(content)
+
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
+
+    def video_prompt(self, frames):
+        """
+        SystemPrompt is a class that generates a prompt for the user to respond to.
+        The prompt is generated based on the current state of the system.
+
+        Parameters
+        ----------
+        frames : list
+            A list of base64 frames
+
+        Returns
+        -------
+        PROMPT : str
+            The system prompt
+
+        Examples
+        --------
+
+        >>> from swarms.models import GPT4VisionAPI
+        >>> llm = GPT4VisionAPI()
+        >>> video = "video.mp4"
+        >>> base64_frames = llm.process_video(video)
+        >>> prompt = llm.video_prompt(base64_frames)
+        >>> print(prompt)
+
+        """
+        PROMPT = f"""
+        These are frames from a video that I want to upload. Generate a compelling description that I can upload along with the video:
+        
+        {frames}
+        """
+        return PROMPT
+
+    def stream_response(self, content: str):
+        """Stream the response of the output
+
+        Args:
+            content (str): _description_
+        """
+        for chunk in content:
+            print(chunk)
+
+    def process_video(self, video: str):
+        """
+        Process a video into a list of base64 frames
+
+        Parameters
+        ----------
+        video : str
+            The path to the video file
+
+        Returns
+        -------
+        base64_frames : list
+            A list of base64 frames
+
+        Examples
+        --------
+        >>> from swarms.models import GPT4VisionAPI
+        >>> llm = GPT4VisionAPI()
+        >>> video = "video.mp4"
+        >>> base64_frames = llm.process_video(video)
+
+        """
+        video = cv2.VideoCapture(video)
+
+        base64_frames = []
+        while video.isOpened():
+            success, frame = video.read()
+            if not success:
+                break
+            _, buffer = cv2.imencode(".jpg", frame)
+            base64_frames.append(base64.b64encode(buffer).decode("utf-8"))
+
+        video.release()
+        print(len(base64_frames), "frames read.")
+
+        for img in base64_frames:
+            base64.b64decode(img.encode("utf-8"))
 
     def __call__(self, task: str, img: str):
         """Run the model."""
@@ -168,10 +265,17 @@ class GPT4VisionAPI:
             out = response.json()
             content = out["choices"][0]["message"]["content"]
 
+            if self.streaming_enabled:
+                content = self.stream_response(content)
+            else:
+                pass
+
             if self.beautify:
                 content = colored(content, "cyan")
+                print(content)
             else:
                 print(content)
+
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
