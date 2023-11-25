@@ -33,6 +33,8 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
         done (threading.Event): An event that is set when the subprocess is done running code.
 
     Example:
+    >>> from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+
     """
 
     def __init__(self):
@@ -87,7 +89,7 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
             daemon=True,
         ).start()
 
-    def run(self, code: str):
+    def run(self, code):
         retry_count = 0
         max_retries = 3
 
@@ -116,20 +118,14 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
                     # Most of the time it doesn't matter, but we should figure out why it happens frequently with:
                     # applescript
                     yield {"output": traceback.format_exc()}
-                    yield {
-                        "output": f"Retrying... ({retry_count}/{max_retries})"
-                    }
+                    yield {"output": f"Retrying... ({retry_count}/{max_retries})"}
                     yield {"output": "Restarting process."}
 
                 self.start_process()
 
                 retry_count += 1
                 if retry_count > max_retries:
-                    yield {
-                        "output": (
-                            "Maximum retries reached. Could not execute code."
-                        )
-                    }
+                    yield {"output": "Maximum retries reached. Could not execute code."}
                     return
 
         while True:
@@ -138,9 +134,7 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
             else:
                 time.sleep(0.1)
             try:
-                output = self.output_queue.get(
-                    timeout=0.3
-                )  # Waits for 0.3 seconds
+                output = self.output_queue.get(timeout=0.3)  # Waits for 0.3 seconds
                 yield output
             except queue.Empty:
                 if self.done.is_set():

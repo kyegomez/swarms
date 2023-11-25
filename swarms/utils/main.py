@@ -1,16 +1,17 @@
-import os
-import random
-import shutil
-import uuid
-from abc import ABC, abstractmethod, abstractstaticmethod
+import pandas as pd
+from swarms.prompts.prebuild.multi_modal_prompts import DATAFRAME_PROMPT
+import requests
+from typing import Dict
 from enum import Enum
 from pathlib import Path
-from typing import Dict
-
+import shutil
 import boto3
+from abc import ABC, abstractmethod, abstractstaticmethod
+import os
+import random
+import uuid
+
 import numpy as np
-import pandas as pd
-import requests
 
 
 def seed_everything(seed):
@@ -201,9 +202,7 @@ def dim_multiline(message: str) -> str:
     lines = message.split("\n")
     if len(lines) <= 1:
         return lines[0]
-    return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(
-        Color.black().bright()
-    )
+    return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(Color.black().bright())
 
 
 # +=============================> ANSI Ending
@@ -229,9 +228,7 @@ class AbstractUploader(ABC):
 
 
 class S3Uploader(AbstractUploader):
-    def __init__(
-        self, accessKey: str, secretKey: str, region: str, bucket: str
-    ):
+    def __init__(self, accessKey: str, secretKey: str, region: str, bucket: str):
         self.accessKey = accessKey
         self.secretKey = secretKey
         self.region = region
@@ -342,9 +339,7 @@ class FileHandler:
         self.handlers = handlers
         self.path = path
 
-    def register(
-        self, filetype: FileType, handler: BaseHandler
-    ) -> "FileHandler":
+    def register(self, filetype: FileType, handler: BaseHandler) -> "FileHandler":
         self.handlers[filetype] = handler
         return self
 
@@ -362,9 +357,7 @@ class FileHandler:
 
     def handle(self, url: str) -> str:
         try:
-            if url.startswith(
-                os.environ.get("SERVER", "http://localhost:8000")
-            ):
+            if url.startswith(os.environ.get("SERVER", "http://localhost:8000")):
                 local_filepath = url[
                     len(os.environ.get("SERVER", "http://localhost:8000")) + 1 :
                 ]
@@ -396,3 +389,20 @@ class FileHandler:
 # =>  base end
 
 # ===========================>
+
+
+class CsvToDataframe(BaseHandler):
+    def handle(self, filename: str):
+        df = pd.read_csv(filename)
+        description = (
+            f"Dataframe with {len(df)} rows and {len(df.columns)} columns. "
+            "Columns are: "
+            f"{', '.join(df.columns)}"
+        )
+
+        print(
+            f"\nProcessed CsvToDataframe, Input CSV: {filename}, Output Description:"
+            f" {description}"
+        )
+
+        return DATAFRAME_PROMPT.format(filename=filename, description=description)
