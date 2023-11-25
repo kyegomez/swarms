@@ -25,7 +25,7 @@ def test_encode_image(vision_api):
     with patch(
         "builtins.open", mock_open(read_data=b"test_image_data"), create=True
     ):
-        encoded_image = vision_api.encode_image("test_image.jpg")
+        encoded_image = vision_api.encode_image(img)
         assert encoded_image == "dGVzdF9pbWFnZV9kYXRh"
 
 
@@ -34,7 +34,7 @@ def test_run_success(vision_api):
     with patch(
         "requests.post", return_value=Mock(json=lambda: expected_response)
     ) as mock_post:
-        result = vision_api.run("What is this?", "test_image.jpg")
+        result = vision_api.run("What is this?", img)
         mock_post.assert_called_once()
         assert result == "This is the model's response."
 
@@ -44,7 +44,7 @@ def test_run_request_error(vision_api):
         "requests.post", side_effect=RequestException("Request Error")
     ) as mock_post:
         with pytest.raises(RequestException):
-            vision_api.run("What is this?", "test_image.jpg")
+            vision_api.run("What is this?", img)
 
 
 def test_run_response_error(vision_api):
@@ -53,7 +53,7 @@ def test_run_response_error(vision_api):
         "requests.post", return_value=Mock(json=lambda: expected_response)
     ) as mock_post:
         with pytest.raises(RuntimeError):
-            vision_api.run("What is this?", "test_image.jpg")
+            vision_api.run("What is this?", img)
 
 
 def test_call(vision_api):
@@ -61,7 +61,7 @@ def test_call(vision_api):
     with patch(
         "requests.post", return_value=Mock(json=lambda: expected_response)
     ) as mock_post:
-        result = vision_api("What is this?", "test_image.jpg")
+        result = vision_api("What is this?", img)
         mock_post.assert_called_once()
         assert result == "This is the model's response."
 

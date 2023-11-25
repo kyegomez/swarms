@@ -18,7 +18,10 @@ class GPT4VisionAPI:
     ----------
     openai_api_key : str
         The OpenAI API key. Defaults to the OPENAI_API_KEY environment variable.
+    max_tokens : int
+        The maximum number of tokens to generate. Defaults to 300.
 
+    
     Methods
     -------
     encode_image(img: str)
@@ -39,9 +42,10 @@ class GPT4VisionAPI:
 
     """
 
-    def __init__(self, openai_api_key: str = openai_api_key):
+    def __init__(self, openai_api_key: str = openai_api_key, max_tokens: str = 300):
         super().__init__()
         self.openai_api_key = openai_api_key
+        self.max_tokens = max_tokens
 
     def encode_image(self, img: str):
         """Encode image to base64."""
@@ -75,7 +79,7 @@ class GPT4VisionAPI:
                         ],
                     }
                 ],
-                "max_tokens": 300,
+                "max_tokens": self.max_tokens,
             }
             response = requests.post(
                 "https://api.openai.com/v1/chat/completions",
@@ -84,8 +88,8 @@ class GPT4VisionAPI:
             )
 
             out = response.json()
-
-            out = out["choices"][0]["text"]
+            content = out["choices"][0]["message"]["content"]
+            print(content)
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
@@ -117,14 +121,18 @@ class GPT4VisionAPI:
                         ],
                     }
                 ],
-                "max_tokens": 300,
+                "max_tokens": self.max_tokens,
             }
             response = requests.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers=headers,
                 json=payload,
             )
-            return response.json()
+
+            out = response.json()
+            content = out["choices"][0]["message"]["content"]
+            print(content)
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
+        # Function to handle vision tasks
