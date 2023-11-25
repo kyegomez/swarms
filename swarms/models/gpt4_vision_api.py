@@ -2,6 +2,7 @@ import base64
 import os
 import requests
 from dotenv import load_dotenv
+import concurrent.futures
 
 # Load environment variables
 load_dotenv()
@@ -136,3 +137,4 @@ class GPT4VisionAPI:
             print(f"Error with the request: {error}")
             raise error
         # Function to handle vision tasks
+
