@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
+
 class GPT4VisionAPI:
     """
     GPT-4 Vision API
@@ -34,13 +35,11 @@ class GPT4VisionAPI:
     >>> task = "What is the color of the object?"
     >>> img = "https://i.imgur.com/2M2ZGwC.jpeg"
     >>> llm.run(task, img)
-    
-    
+
+
     """
-    def __init__(
-        self,
-        openai_api_key: str = openai_api_key
-    ):
+
+    def __init__(self, openai_api_key: str = openai_api_key):
         super().__init__()
         self.openai_api_key = openai_api_key
 
@@ -52,7 +51,7 @@ class GPT4VisionAPI:
     # Function to handle vision tasks
     def run(self, task: str, img: str):
         """Run the model."""
-        try:                
+        try:
             base64_image = self.encode_image(img)
             headers = {
                 "Content-Type": "application/json",
@@ -68,7 +67,9 @@ class GPT4VisionAPI:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                    "url": (
+                                        f"data:image/jpeg;base64,{base64_image}"
+                                    )
                                 },
                             },
                         ],
@@ -92,7 +93,7 @@ class GPT4VisionAPI:
 
     def __call__(self, task: str, img: str):
         """Run the model."""
-        try:                
+        try:
             base64_image = self.encode_image(img)
             headers = {
                 "Content-Type": "application/json",
@@ -108,7 +109,9 @@ class GPT4VisionAPI:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                    "url": (
+                                        f"data:image/jpeg;base64,{base64_image}"
+                                    )
                                 },
                             },
                         ],
