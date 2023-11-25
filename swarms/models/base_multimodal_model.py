@@ -20,6 +20,7 @@ class BaseMultiModalModel:
         max_workers: Optional[int] = 10,
         top_p: Optional[int] = 1,
         top_k: Optional[int] = 50,
+        beautify: Optional[bool] = False,
         device: Optional[str] = "cuda",
         max_new_tokens: Optional[int] = 500,
         retries: Optional[int] = 3,
@@ -30,6 +31,7 @@ class BaseMultiModalModel:
         self.max_workers = max_workers
         self.top_p = top_p
         self.top_k = top_k
+        self.beautify = beautify
         self.device = device
         self.max_new_tokens = max_new_tokens
         self.retries = retries
@@ -207,3 +209,7 @@ class BaseMultiModalModel:
         """Get the chat history tokens"""
         return self._num_tokens()
     
+    def print_beautiful(self, content: str, color: str = "cyan"):
+        """Print Beautifully with termcolor"""
+        content = colored(content, color)
+        print(content)

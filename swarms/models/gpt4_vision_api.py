@@ -1,3 +1,4 @@
+import logging 
 import asyncio
 import base64
 import concurrent.futures
@@ -54,16 +55,27 @@ class GPT4VisionAPI:
         self,
         openai_api_key: str = openai_api_key,
         model_name: str = "gpt-4-vision-preview",
+        logging_enabled: bool = False,
         max_workers: int = 10,
         max_tokens: str = 300,
         openai_proxy: str = "https://api.openai.com/v1/chat/completions",
+        beautify: bool = False
     ):
         super().__init__()
         self.openai_api_key = openai_api_key
+        self.logging_enabled = logging_enabled
         self.model_name = model_name
         self.max_workers = max_workers
         self.max_tokens = max_tokens
         self.openai_proxy = openai_proxy
+        self.beautify = beautify
+
+        if self.logging_enabled:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            # Disable debug logs for requests and urllib3
+            logging.getLogger("requests").setLevel(logging.WARNING)
+            logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     def encode_image(self, img: str):
         """Encode image to base64."""
@@ -83,7 +95,7 @@ class GPT4VisionAPI:
                 "Authorization": f"Bearer {openai_api_key}",
             }
             payload = {
-                "model": self.model_name,
+                "model": "gpt-4-vision-preview",
                 "messages": [
                     {
                         "role": "user",
@@ -103,14 +115,18 @@ class GPT4VisionAPI:
                 "max_tokens": self.max_tokens,
             }
             response = requests.post(
-                "https://api.openai.com/v1/chat/completions",
+                self.openai_proxy,
                 headers=headers,
                 json=payload,
             )
 
             out = response.json()
             content = out["choices"][0]["message"]["content"]
-            print(content)
+
+            if self.beautify:
+                content = colored(content, "cyan")
+            else:
+                print(content)
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
@@ -151,11 +167,14 @@ class GPT4VisionAPI:
 
             out = response.json()
             content = out["choices"][0]["message"]["content"]
-            print(content)
+
+            if self.beautify:
+                content = colored(content, "cyan")
+            else:
+                print(content)
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
-        # Function to handle vision tasks
 
     def run_many(
         self,
