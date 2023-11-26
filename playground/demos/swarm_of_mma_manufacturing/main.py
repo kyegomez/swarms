@@ -18,10 +18,10 @@ import os
 from dotenv import load_dotenv
 from swarms.models import GPT4VisionAPI
 
-
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
+ 
 llm = GPT4VisionAPI(
     openai_api_key=api_key
 )
