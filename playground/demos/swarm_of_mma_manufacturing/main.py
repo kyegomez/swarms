@@ -14,18 +14,24 @@ Flow:
 health security agent -> quality control agent -> productivity agent -> safety agent -> security agent -> sustainability agent -> efficiency agent 
 """
 from swarms.structs import Flow, SequentialWorkflow
+import os
+from dotenv import load_dotenv
 from swarms.models import GPT4VisionAPI
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
 
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
 
-llm = GPT4VisionAPI()
+llm = GPT4VisionAPI(
+    openai_api_key=api_key
+)
 
-assembly_line = "assembly_line.jpg"
-red_robots = "red_robots.jpg"
-robots = "robots.jpg"
-tesla_assembly_line = "tesla_assembly.jpg"
+assembly_line = "playground/demos/swarm_of_mma_manufacturing/assembly_line.jpg"
+red_robots = "playground/demos/swarm_of_mma_manufacturing/red_robots.jpg"
+robots = "playground/demos/swarm_of_mma_manufacturing/robots.jpg"
+tesla_assembly_line = "playground/demos/swarm_of_mma_manufacturing/tesla_assembly.jpg"
 
 
 # Define detailed prompts for each agent
@@ -70,68 +76,54 @@ efficiency_prompt = tasks["efficiency"]
 # Health security agent
 health_security_agent = Flow(
     llm=llm,
-    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1 + health_safety_prompt,
+    sop_list=health_safety_prompt,
     max_loops=2,
-)
-
-# Quality control agent
-quality_control_agent = Flow(
-    llm=llm,
-    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
-    max_loops=2,
+    multi_modal=True
 )
 
 # Quality control agent
 productivity_check_agent = Flow(
     llm=llm,
-    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1 + productivity_prompt,
+    sop=productivity_prompt,
     max_loops=2,
+    multi_modal=True
 )
 
 # Security agent
 security_check_agent = Flow(
     llm=llm,
-    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1 + security_prompt,
+    sop=security_prompt,
     max_loops=2,
+    multi_modal=True
 )
 
 # Efficiency agent
 efficiency_check_agent = Flow(
     llm=llm,
-    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1 + efficiency_prompt,
+    sop=efficiency_prompt,
     max_loops=2,
+    multi_modal=True
 )
 
-
-# Sequential workflow
-workflow = SequentialWorkflow(
-    max_loops=4,
-    name="Swarm of multi modal autonomous agents for manufacturing!",
-    description="Swarm of multi modal autonomous agents for manufacturing!",
-)
 
 # Add the first task to the health_security_agent
-health_check = workflow.add(
-    health_security_agent,
+health_check = health_security_agent.run(
     "Analyze the safety of this factory",
     robots
 )
 
 # Add the third task to the productivity_check_agent
-productivity_check = workflow.add(
-    productivity_check_agent, health_check, assembly_line
+productivity_check = productivity_check_agent.run(
+    health_check, assembly_line
 )
 
 # Add the fourth task to the security_check_agent
-security_check = workflow.add(
-    security_check_agent, productivity_check, red_robots
+security_check = security_check_agent.add(
+    productivity_check, red_robots
 )
 
 # Add the fifth task to the efficiency_check_agent
-efficiency_check = workflow.add(
-    efficiency_check_agent, security_check, tesla_assembly_line
+efficiency_check = efficiency_check_agent.run(
+    security_check, tesla_assembly_line
 )
 
-
-# Run the workflow
-workflow.run()

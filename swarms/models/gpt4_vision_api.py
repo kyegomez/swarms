@@ -130,7 +130,6 @@ class GPT4VisionAPI:
             )
 
             out = response.json()
-            content = print(out)
             content = out["choices"][0]["message"]["content"]
 
             if self.streaming_enabled:
@@ -263,7 +262,6 @@ class GPT4VisionAPI:
             )
 
             out = response.json()
-            content = print(out)
             content = out["choices"][0]["message"]["content"]
 
             if self.streaming_enabled:
