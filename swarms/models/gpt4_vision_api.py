@@ -1,18 +1,16 @@
-import logging
 import asyncio
 import base64
-from typing import Optional
 import concurrent.futures
-from termcolor import colored
 import json
+import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import aiohttp
 import requests
 from dotenv import load_dotenv
-
+from termcolor import colored
 
 try:
     import cv2
@@ -94,9 +92,10 @@ class GPT4VisionAPI:
 
     def download_img_then_encode(self, img: str):
         """Download image from URL then encode image to base64 using requests"""
+        pass
 
     # Function to handle vision tasks
-    def run(self, task: str, img: str):
+    def run(self, task: Optional[str] = None, img: Optional[str] = None, *args, **kwargs):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
@@ -131,6 +130,7 @@ class GPT4VisionAPI:
             )
 
             out = response.json()
+            content = print(out)
             content = out["choices"][0]["message"]["content"]
 
             if self.streaming_enabled:
@@ -263,6 +263,7 @@ class GPT4VisionAPI:
             )
 
             out = response.json()
+            content = print(out)
             content = out["choices"][0]["message"]["content"]
 
             if self.streaming_enabled:
@@ -287,6 +288,14 @@ class GPT4VisionAPI:
     ):
         """
         Run the model on multiple tasks and images all at once using concurrent
+        
+        Args:
+            tasks (List[str]): List of tasks
+            imgs (List[str]): List of image paths
+            
+        Returns:
+            List[str]: List of responses
+        
 
         """
         # Instantiate the thread pool executor
@@ -301,8 +310,8 @@ class GPT4VisionAPI:
 
     async def arun(
         self,
-        task: str,
-        img: str,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
     ):
         """
         Asynchronously run the model

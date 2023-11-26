@@ -13,6 +13,49 @@ from termcolor import colored
 
 
 class BaseMultiModalModel:
+    """
+    Base class for multimodal models
+    
+    
+    Args:
+        model_name (Optional[str], optional): Model name. Defaults to None.
+        temperature (Optional[int], optional): Temperature. Defaults to 0.5.
+        max_tokens (Optional[int], optional): Max tokens. Defaults to 500.
+        max_workers (Optional[int], optional): Max workers. Defaults to 10.
+        top_p (Optional[int], optional): Top p. Defaults to 1.
+        top_k (Optional[int], optional): Top k. Defaults to 50.
+        beautify (Optional[bool], optional): Beautify. Defaults to False.
+        device (Optional[str], optional): Device. Defaults to "cuda".
+        max_new_tokens (Optional[int], optional): Max new tokens. Defaults to 500.
+        retries (Optional[int], optional): Retries. Defaults to 3.
+        
+    Examples:
+        >>> from swarms.models.base_multimodal_model import BaseMultiModalModel
+        >>> model = BaseMultiModalModel()
+        >>> model.run("Generate a summary of this text")
+        >>> model.run("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")
+        >>> model.run_batch(["Generate a summary of this text", "Generate a summary of this text"])
+        >>> model.run_batch([("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"), ("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")])
+        >>> model.run_batch_async(["Generate a summary of this text", "Generate a summary of this text"])
+        >>> model.run_batch_async([("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"), ("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")])
+        >>> model.run_batch_async_with_retries(["Generate a summary of this text", "Generate a summary of this text"])
+        >>> model.run_batch_async_with_retries([("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"), ("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")])
+        >>> model.generate_summary("Generate a summary of this text")
+        >>> model.set_temperature(0.5)
+        >>> model.set_max_tokens(500)
+        >>> model.get_generation_time()
+        >>> model.get_chat_history()
+        >>> model.get_unique_chat_history()
+        >>> model.get_chat_history_length()
+        >>> model.get_unique_chat_history_length()
+        >>> model.get_chat_history_tokens()
+        >>> model.print_beautiful("Print this beautifully")
+        >>> model.stream("Stream this")
+        >>> model.unique_chat_history()
+        >>> model.clear_chat_history()
+        >>> model.get_img_from_web("https://www.google.com/images/branding/googlelogo/")
+    
+    """
     def __init__(
         self,
         model_name: Optional[str],
