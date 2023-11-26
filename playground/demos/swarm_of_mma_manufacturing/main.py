@@ -13,13 +13,11 @@ Efficiency agent: Agent that monitors the efficiency of the factory: input image
 Flow:
 health security agent -> quality control agent -> productivity agent -> safety agent -> security agent -> sustainability agent -> efficiency agent 
 """
-from swarms.structs import Flow, SequentialWorkflow
+from swarms.structs import Flow
 import os
 from dotenv import load_dotenv
 from swarms.models import GPT4VisionAPI
-from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
-)
+
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
