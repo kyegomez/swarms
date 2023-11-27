@@ -1,15 +1,22 @@
 import asyncio
 import base64
 import concurrent.futures
-from termcolor import colored
 import json
+import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import aiohttp
 import requests
 from dotenv import load_dotenv
+from termcolor import colored
+
+try:
+    import cv2
+except ImportError:
+    print("OpenCV not installed. Please install OpenCV to use this model.")
+    raise ImportError
 
 # Load environment variables
 load_dotenv()
@@ -54,16 +61,29 @@ class GPT4VisionAPI:
         self,
         openai_api_key: str = openai_api_key,
         model_name: str = "gpt-4-vision-preview",
+        logging_enabled: bool = False,
         max_workers: int = 10,
         max_tokens: str = 300,
         openai_proxy: str = "https://api.openai.com/v1/chat/completions",
+        beautify: bool = False,
+        streaming_enabled: Optional[bool] = False,
     ):
         super().__init__()
         self.openai_api_key = openai_api_key
+        self.logging_enabled = logging_enabled
         self.model_name = model_name
         self.max_workers = max_workers
         self.max_tokens = max_tokens
         self.openai_proxy = openai_proxy
+        self.beautify = beautify
+        self.streaming_enabled = streaming_enabled
+
+        if self.logging_enabled:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            # Disable debug logs for requests and urllib3
+            logging.getLogger("requests").setLevel(logging.WARNING)
+            logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     def encode_image(self, img: str):
         """Encode image to base64."""
@@ -72,9 +92,10 @@ class GPT4VisionAPI:
 
     def download_img_then_encode(self, img: str):
         """Download image from URL then encode image to base64 using requests"""
+        pass
 
     # Function to handle vision tasks
-    def run(self, task: str, img: str):
+    def run(self, task: Optional[str] = None, img: Optional[str] = None, *args, **kwargs):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
@@ -83,7 +104,7 @@ class GPT4VisionAPI:
                 "Authorization": f"Bearer {openai_api_key}",
             }
             payload = {
-                "model": self.model_name,
+                "model": "gpt-4-vision-preview",
                 "messages": [
                     {
                         "role": "user",
@@ -103,17 +124,108 @@ class GPT4VisionAPI:
                 "max_tokens": self.max_tokens,
             }
             response = requests.post(
-                "https://api.openai.com/v1/chat/completions",
+                self.openai_proxy,
                 headers=headers,
                 json=payload,
             )
 
             out = response.json()
             content = out["choices"][0]["message"]["content"]
-            print(content)
+
+            if self.streaming_enabled:
+                content = self.stream_response(content)
+            else:
+                pass
+
+            if self.beautify:
+                content = colored(content, "cyan")
+                print(content)
+            else:
+                print(content)
+
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
+
+    def video_prompt(self, frames):
+        """
+        SystemPrompt is a class that generates a prompt for the user to respond to.
+        The prompt is generated based on the current state of the system.
+
+        Parameters
+        ----------
+        frames : list
+            A list of base64 frames
+
+        Returns
+        -------
+        PROMPT : str
+            The system prompt
+
+        Examples
+        --------
+
+        >>> from swarms.models import GPT4VisionAPI
+        >>> llm = GPT4VisionAPI()
+        >>> video = "video.mp4"
+        >>> base64_frames = llm.process_video(video)
+        >>> prompt = llm.video_prompt(base64_frames)
+        >>> print(prompt)
+
+        """
+        PROMPT = f"""
+        These are frames from a video that I want to upload. Generate a compelling description that I can upload along with the video:
+        
+        {frames}
+        """
+        return PROMPT
+
+    def stream_response(self, content: str):
+        """Stream the response of the output
+
+        Args:
+            content (str): _description_
+        """
+        for chunk in content:
+            print(chunk)
+
+    def process_video(self, video: str):
+        """
+        Process a video into a list of base64 frames
+
+        Parameters
+        ----------
+        video : str
+            The path to the video file
+
+        Returns
+        -------
+        base64_frames : list
+            A list of base64 frames
+
+        Examples
+        --------
+        >>> from swarms.models import GPT4VisionAPI
+        >>> llm = GPT4VisionAPI()
+        >>> video = "video.mp4"
+        >>> base64_frames = llm.process_video(video)
+
+        """
+        video = cv2.VideoCapture(video)
+
+        base64_frames = []
+        while video.isOpened():
+            success, frame = video.read()
+            if not success:
+                break
+            _, buffer = cv2.imencode(".jpg", frame)
+            base64_frames.append(base64.b64encode(buffer).decode("utf-8"))
+
+        video.release()
+        print(len(base64_frames), "frames read.")
+
+        for img in base64_frames:
+            base64.b64decode(img.encode("utf-8"))
 
     def __call__(self, task: str, img: str):
         """Run the model."""
@@ -151,11 +263,21 @@ class GPT4VisionAPI:
 
             out = response.json()
             content = out["choices"][0]["message"]["content"]
-            print(content)
+
+            if self.streaming_enabled:
+                content = self.stream_response(content)
+            else:
+                pass
+
+            if self.beautify:
+                content = colored(content, "cyan")
+                print(content)
+            else:
+                print(content)
+
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
-        # Function to handle vision tasks
 
     def run_many(
         self,
@@ -164,6 +286,14 @@ class GPT4VisionAPI:
     ):
         """
         Run the model on multiple tasks and images all at once using concurrent
+        
+        Args:
+            tasks (List[str]): List of tasks
+            imgs (List[str]): List of image paths
+            
+        Returns:
+            List[str]: List of responses
+        
 
         """
         # Instantiate the thread pool executor
@@ -178,8 +308,8 @@ class GPT4VisionAPI:
 
     async def arun(
         self,
-        task: str,
-        img: str,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
     ):
         """
         Asynchronously run the model

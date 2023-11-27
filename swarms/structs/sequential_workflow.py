@@ -29,6 +29,18 @@ class Task:
     Task class for running a task in a sequential workflow.
 
 
+    Args:
+        description (str): The description of the task.
+        flow (Union[Callable, Flow]): The model or flow to execute the task.
+        args (List[Any]): Additional arguments to pass to the task execution.
+        kwargs (Dict[str, Any]): Additional keyword arguments to pass to the task execution.
+        result (Any): The result of the task execution.
+        history (List[Any]): The history of the task execution.
+
+    Methods:
+        execute: Execute the task.
+
+
     Examples:
     >>> from swarms.structs import Task, Flow
     >>> from swarms.models import OpenAIChat
@@ -36,8 +48,6 @@ class Task:
     >>> task = Task(description="What's the weather in miami", flow=flow)
     >>> task.execute()
     >>> task.result
-
-
 
     """
 
@@ -54,9 +64,6 @@ class Task:
 
         Raises:
             ValueError: If a Flow instance is used as a task and the 'task' argument is not provided.
-
-
-
         """
         if isinstance(self.flow, Flow):
             # Add a prompt to notify the Flow of the sequential workflow
@@ -114,14 +121,20 @@ class SequentialWorkflow:
     dashboard: bool = False
 
     def add(
-        self, task: str, flow: Union[Callable, Flow], *args, **kwargs
+        self,
+        flow: Union[Callable, Flow],
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
     ) -> None:
         """
         Add a task to the workflow.
 
         Args:
-            task (str): The task description or the initial input for the Flow.
             flow (Union[Callable, Flow]): The model or flow to execute the task.
+            task (str): The task description or the initial input for the Flow.
+            img (str): The image to understand for the task.
             *args: Additional arguments to pass to the task execution.
             **kwargs: Additional keyword arguments to pass to the task execution.
         """
@@ -130,9 +143,22 @@ class SequentialWorkflow:
             kwargs["task"] = task  # Set the task as a keyword argument for Flow
 
         # Append the task to the tasks list
-        self.tasks.append(
-            Task(description=task, flow=flow, args=list(args), kwargs=kwargs)
-        )
+        if self.img:
+            self.tasks.append(
+                Task(
+                    description=task,
+                    flow=flow,
+                    args=list(args),
+                    kwargs=kwargs,
+                    img=img,
+                )
+            )
+        else:
+            self.tasks.append(
+                Task(
+                    description=task, flow=flow, args=list(args), kwargs=kwargs
+                )
+            )
 
     def reset_workflow(self) -> None:
         """Resets the workflow by clearing the results of each task."""
@@ -148,18 +174,16 @@ class SequentialWorkflow:
         """
         return {task.description: task.result for task in self.tasks}
 
-    def remove_task(self, task_description: str) -> None:
+    def remove_task(self, task: str) -> None:
         """Remove tasks from sequential workflow"""
-        self.tasks = [
-            task for task in self.tasks if task.description != task_description
-        ]
+        self.tasks = [task for task in self.tasks if task.description != task]
 
-    def update_task(self, task_description: str, **updates) -> None:
+    def update_task(self, task: str, **updates) -> None:
         """
         Updates the arguments of a task in the workflow.
 
         Args:
-            task_description (str): The description of the task to update.
+            task (str): The description of the task to update.
             **updates: The updates to apply to the task.
 
         Raises:
@@ -178,11 +202,11 @@ class SequentialWorkflow:
 
         """
         for task in self.tasks:
-            if task.description == task_description:
+            if task.description == task:
                 task.kwargs.update(updates)
                 break
         else:
-            raise ValueError(f"Task {task_description} not found in workflow.")
+            raise ValueError(f"Task {task} not found in workflow.")
 
     def save_workflow_state(
         self,
@@ -272,6 +296,7 @@ class SequentialWorkflow:
         )
 
     def workflow_shutdown(self, **kwargs) -> None:
+        """Shuts down the workflow."""
         print(
             colored(
                 """
@@ -282,6 +307,7 @@ class SequentialWorkflow:
         )
 
     def add_objective_to_workflow(self, task: str, **kwargs) -> None:
+        """Adds an objective to the workflow."""
         print(
             colored(
                 """

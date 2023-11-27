@@ -99,7 +99,9 @@ class WhisperX:
             print("The key 'segments' is not found in the result.")
 
     def transcribe(self, audio_file):
-        model = whisperx_model.load_model("large-v2", self.device, self.compute_type)
+        model = whisperx_model.load_model(
+            "large-v2", self.device, self.compute_type
+        )
         audio = whisperx_model.load_audio(audio_file)
         result = model.transcribe(audio, batch_size=self.batch_size)
 

@@ -24,7 +24,7 @@ class Kosmos:
     ----------
     model_name : str
         Path to the pretrained model
-    
+
     Examples
     --------
     >>> kosmos = Kosmos()

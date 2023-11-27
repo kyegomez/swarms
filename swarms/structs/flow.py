@@ -9,9 +9,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
+from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.parse_code import extract_code_in_backticks_in_string
-from swarms.tools.tool import BaseTool
+from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
+    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
+)
 
 # System prompt
 FLOW_SYSTEM_PROMPT = f"""
@@ -154,7 +157,7 @@ class Flow:
         retry_interval (int): The interval between retry attempts
         interactive (bool): Whether or not to run in interactive mode
         dashboard (bool): Whether or not to print the dashboard
-        dynamic_temperature(bool): Dynamical temperature handling
+        dynamic_temperature_enabled(bool): Dynamical temperature handling
         **kwargs (Any): Any additional keyword arguments
 
     Methods:
@@ -182,7 +185,6 @@ class Flow:
         add_message_to_memory_and_truncate: Add the message to the memory and truncate
         print_dashboard: Print dashboard
         activate_autonomous_agent: Print the autonomous agent activation message
-        dynamic_temperature: Dynamically change the temperature
         _check_stopping_condition: Check if the stopping condition is met
         format_prompt: Format the prompt
         get_llm_init_params: Get the llm init params
@@ -236,18 +238,20 @@ class Flow:
         dynamic_loops: Optional[bool] = False,
         interactive: bool = False,
         dashboard: bool = False,
-        agent_name: str = " Autonomous Agent XYZ1B",
+        agent_name: str = "Autonomous Agent XYZ1B",
         agent_description: str = None,
         system_prompt: str = FLOW_SYSTEM_PROMPT,
         tools: List[BaseTool] = None,
-        dynamic_temperature: bool = False,
-        sop: str = None,
+        dynamic_temperature_enabled: Optional[bool] = False,
+        sop: Optional[str] = None,
+        sop_list: Optional[List[str]] = None,
         saved_state_path: Optional[str] = "flow_state.json",
-        autosave: bool = False,
-        context_length: int = 8192,
+        autosave: Optional[bool] = False,
+        context_length: Optional[int] = 8192,
         user_name: str = "Human:",
-        self_healing: bool = False,
-        code_interpreter: bool = False,
+        self_healing_enabled: Optional[bool] = False,
+        code_interpreter: Optional[bool] = False,
+        multi_modal: Optional[bool] = None,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -257,22 +261,17 @@ class Flow:
         self.loop_interval = loop_interval
         self.retry_attempts = retry_attempts
         self.retry_interval = retry_interval
-        self.feedback = []
-        self.memory = []
         self.task = None
         self.stopping_token = stopping_token  # or "<DONE>"
         self.interactive = interactive
         self.dashboard = dashboard
         self.return_history = return_history
-        self.dynamic_temperature = dynamic_temperature
+        self.dynamic_temperature_enabled = dynamic_temperature_enabled
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-        # SOPS to inject into the system prompt
         self.sop = sop
-        # The max_loops will be set dynamically if the dynamic_loop
-        if self.dynamic_loops:
-            self.max_loops = "auto"
+        self.sop_list = sop_list
         self.tools = tools or []
         self.system_prompt = system_prompt
         self.agent_name = agent_name
@@ -280,8 +279,27 @@ class Flow:
         self.saved_state_path = saved_state_path
         self.autosave = autosave
         self.response_filters = []
-        self.self_healing = self_healing
+        self.self_healing_enabled = self_healing_enabled
         self.code_interpreter = code_interpreter
+        self.multi_modal = multi_modal
+
+        # The max_loops will be set dynamically if the dynamic_loop
+        if self.dynamic_loops:
+            self.max_loops = "auto"
+
+        # If multimodal = yes then set the sop to the multimodal sop
+        if self.multi_modal:
+            self.sop = MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1
+
+        # If the user inputs a list of strings for the sop then join them and set the sop
+        if self.sop_list:
+            self.sop = "\n".join(self.sop_list)
+
+        # Memory
+        self.feedback = []
+        self.memory = []
+
+        # Initialize the code executor
         self.code_executor = SubprocessCodeInterpreter()
 
     def provide_feedback(self, feedback: str) -> None:
@@ -461,7 +479,7 @@ class Flow:
                     Retry Interval: {self.retry_interval}
                     Interactive: {self.interactive}
                     Dashboard: {self.dashboard}
-                    Dynamic Temperature: {self.dynamic_temperature}
+                    Dynamic Temperature: {self.dynamic_temperature_enabled}
                     Autosave: {self.autosave}
                     Saved State: {self.saved_state_path}
                     Model Configuration: {model_config}
@@ -498,7 +516,7 @@ class Flow:
             )
             print(error)
 
-    def run(self, task: str, img: Optional[str], **kwargs):
+    def run(self, task: Optional[str], img: Optional[str] = None, **kwargs):
         """
         Run the autonomous agent loop
 
@@ -528,7 +546,10 @@ class Flow:
                 self.print_dashboard(task)
 
             loop_count = 0
+
+            # While the max_loops is auto or the loop count is less than the max_loops
             while self.max_loops == "auto" or loop_count < self.max_loops:
+                # Loop count
                 loop_count += 1
                 print(
                     colored(f"\nLoop {loop_count} of {self.max_loops}", "blue")
@@ -543,7 +564,7 @@ class Flow:
                         break
 
                 # Adjust temperature, comment if no work
-                if self.dynamic_temperature:
+                if self.dynamic_temperature_enabled:
                     self.dynamic_temperature()
 
                 # Preparing the prompt
@@ -649,7 +670,7 @@ class Flow:
                 break
 
             # Adjust temperature, comment if no work
-            if self.dynamic_temperature:
+            if self.dynamic_temperature_enabled:
                 self.dynamic_temperature()
 
             # Preparing the prompt
@@ -994,7 +1015,7 @@ class Flow:
             "retry_interval": self.retry_interval,
             "interactive": self.interactive,
             "dashboard": self.dashboard,
-            "dynamic_temperature": self.dynamic_temperature,
+            "dynamic_temperature": self.dynamic_temperature_enabled,
         }
 
         with open(file_path, "w") as f:
