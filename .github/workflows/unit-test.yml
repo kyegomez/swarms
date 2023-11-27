@@ -18,16 +18,18 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.9'
 
     - name: Install dependencies
-      run: pip install -r requirements.txt
+      run: |
+        pip install -r requirements.txt
+        pip install pytest
 
     - name: Run Python unit tests
-      run: python3 -m unittest tests/
+      run: pytest
 
     - name: Verify that the Docker image for the action builds
       run: docker build . --file Dockerfile
 
     - name: Verify integration test results
-      run: find tests/ -name "*.py" | xargs pytest
+      run: pytest

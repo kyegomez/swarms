@@ -1,19 +1,29 @@
+---
 # This is a basic workflow to help you get started with Actions
 
 name: Lint
 
-on: [push, pull_request]
+on: [push, pull_request]  # yamllint disable-line rule:truthy
 
 jobs:
+  yaml-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v4
+      - name: yaml Lint
+        uses: ibiqlik/action-yamllint@v3
   flake8-lint:
     runs-on: ubuntu-latest
-    name: Lint
+    name: flake8 Lint
     steps:
       - name: Check out source repository
         uses: actions/checkout@v4
       - name: Set up Python environment
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-      - name: flake8 Lint
         uses: py-actions/flake8@v2
+  ruff-lint:
+    runs-on: ubuntu-latest
+    name: ruff Lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chartboost/ruff-action@v1
