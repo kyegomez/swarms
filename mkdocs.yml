@@ -78,13 +78,13 @@ nav:
   - swarms.models:
       - Language:
           - Overview: "swarms/models/index.md"
-      - HuggingFaceLLM: "swarms/models/huggingface.md"
-      - Anthropic: "swarms/models/anthropic.md"
-      - OpenAI: "swarms/models/openai.md"
-      - Zephyr: "swarms/models/zephyr.md"
-      - BioGPT: "swarms/models/biogpt.md"
-      - MPT7B: "swarms/models/mpt.md"
-      - Mistral: "swarms/models/mistral.md"
+          - HuggingFaceLLM: "swarms/models/huggingface.md"
+          - Anthropic: "swarms/models/anthropic.md"
+          - OpenAI: "swarms/models/openai.md"
+          - Zephyr: "swarms/models/zephyr.md"
+          - BioGPT: "swarms/models/biogpt.md"
+          - MPT7B: "swarms/models/mpt.md"
+          - Mistral: "swarms/models/mistral.md"
       - MultiModal:
           - Fuyu: "swarms/models/fuyu.md"
           - Vilt: "swarms/models/vilt.md"
@@ -105,9 +105,6 @@ nav:
   - swarms.memory:
       - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
       - PGVectorStore: "swarms/memory/pg.md"
-# - swarms.chunkers:
-#   - BaseChunker: "swarms/chunkers/basechunker.md"
-#   - PdfChunker: "swarms/chunkers/pdf_chunker.md"
   - Guides:
       - Overview: "examples/index.md"
       - Agents:
