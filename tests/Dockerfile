@@ -21,7 +21,6 @@ RUN pip install poetry
 
 # Disable virtualenv creation by poetry and install dependencies
 RUN poetry config virtualenvs.create false
-RUN poetry install --no-interaction --no-ansi
 
 # Install the 'swarms' package if it's not included in the poetry.lock
 RUN pip install swarms
@@ -30,4 +29,4 @@ RUN pip install swarms
 RUN pip install pytest
 
 # Run pytest on all tests in the tests directory
-CMD find ./tests -name '*.py' -exec pytest {} +
+CMD pytest

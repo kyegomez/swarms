@@ -1,4 +1,4 @@
-AUTOBLOG_GEN_GENERATOR = """
+TOPIC_GENERATOR_SYSTEM_PROMPT = """
 
 First search for a list of topics on the web based their relevance to Positive Med's long term vision then rank than based on the goals this month, then output a single headline title for a blog for the next autonomous agent to write the blog, utilize the SOP below to help you strategically select topics. Output a single topic that will be the foundation for a blog.
 
