@@ -246,6 +246,8 @@ To see how to contribute, visit [Contribution guidelines](https://github.com/kye
 <a href="https://github.com/kyegomez/swarms/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
 </a>
+
+
 ## Community
 - [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)
 - Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks [Sign up here](https://lu.ma/5p2jnc2v)
