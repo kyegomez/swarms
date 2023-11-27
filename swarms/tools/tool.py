@@ -34,7 +34,7 @@ from pydantic import (
     Extra,
     Field,
     create_model,
-    root_validator,
+    model_validator,
     validate_arguments,
 )
 from langchain.schema.runnable import (
