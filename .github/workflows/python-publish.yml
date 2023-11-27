@@ -1,0 +1,58 @@
+<<<<<<< HEAD
+
+name: Upload Python Package
+
+on:
+=======
+---
+name: Upload Python Package
+
+on:  # yamllint disable-line rule:truthy
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+<<<<<<< HEAD
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+    - name: Build package
+      run: python -m build
+    - name: Publish package
+      uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+=======
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+      - name: Build package
+        run: python -m build
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4

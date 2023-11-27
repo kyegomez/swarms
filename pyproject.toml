@@ -1,0 +1,102 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "swarms"
+version = "2.4.5"
+description = "Swarms - Pytorch"
+license = "MIT"
+authors = ["Kye Gomez <kye@apac.ai>"]
+homepage = "https://github.com/kyegomez/swarms"
+documentation = "https://swarms.apac.ai"  # Add this if you have documentation.
+readme = "README.md"  # Assuming you have a README.md
+repository = "https://github.com/kyegomez/swarms"
+keywords = ["artificial intelligence", "deep learning", "optimizers", "Prompt Engineering"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+<<<<<<< HEAD
+    "Programming Language :: Python :: 3.6"
+]
+
+[tool.poetry.dependencies]
+python = "^3.8.1"
+=======
+    "Programming Language :: Python :: 3.10"
+]
+
+[tool.poetry.dependencies]
+python = "^3.9.1"
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4
+torch = "2.1.1"
+transformers = "*"
+openai = "0.28.0"
+langchain = "*"
+asyncio = "*"
+nest_asyncio = "*"
+einops = "*"
+google-generativeai = "*"
+langchain-experimental = "*"
+playwright = "*"
+duckduckgo-search = "*"
+faiss-cpu = "*"
+backoff = "*"
+marshmallow = "*"
+datasets = "*"
+diffusers = "*"
+PyPDF2 = "*"
+accelerate = "*"
+sentencepiece = "*"
+wget = "*"
+httpx = "*"
+tiktoken = "*"
+safetensors = "*"
+attrs = "*"
+ggl = "*"
+ratelimit = "*"
+beautifulsoup4 = "*"
+cohere = "*"
+huggingface-hub = "*"
+pydantic = "*"
+tenacity = "*"
+Pillow = "*"
+chromadb = "*"
+opencv-python-headless = "*"
+tabulate = "*"
+termcolor = "*"
+black = "*"
+open_clip_torch = "*"
+dalle3 = "*"
+soundfile = "*"
+torchvision = "*"
+rich = "*"
+
+[tool.poetry.group.lint.dependencies]
+ruff = "^0.0.249"
+types-toml = "^0.10.8.1"
+types-redis = "^4.3.21.6"
+types-pytz = "^2023.3.0.0"
+black = "^23.1.0"
+types-chardet = "^5.0.4.6"
+mypy-protobuf = "^3.0.0"
+
+
+[tool.autopep8]
+max_line_length = 80
+ignore = "E501,W6"  # or ["E501", "W6"]
+in-place = true
+recursive = true
+aggressive = 3
+
+[tool.ruff]
+line-length = 80
+
+[tool.black]
+line-length = 80
+target-version = ['py38']
+preview = true
+
+

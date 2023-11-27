@@ -1,0 +1,37 @@
+<<<<<<< HEAD
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+=======
+---
+name: Docker Image CI
+
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+<<<<<<< HEAD
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+=======
+    name: Build Docker image
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4

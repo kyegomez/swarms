@@ -1,0 +1,17 @@
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+
+mkdocs:
+  configuration: mkdocs.yml
+
+python:
+   install:
+<<<<<<< HEAD
+   - requirements: requirements.txt
+=======
+   - requirements: requirements.txt
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4

@@ -1,0 +1,42 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest tests/unit
+
+      - name: Run integration tests
+        run: pytest tests/integration
+
+      - name: Run code coverage
+        run: pytest --cov=swarms tests/
+
+      - name: Run linters
+        run: pylint swarms
+
+      - name: Build documentation
+        run: make docs
+
+      - name: Validate documentation
+        run: sphinx-build -b linkcheck docs build/docs
+
+      - name: Run performance tests
+        run: find ./tests -name '*.py' -exec pytest {} \;

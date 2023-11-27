@@ -1,0 +1,21 @@
+<<<<<<< HEAD
+=======
+---
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4
+# https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+<<<<<<< HEAD
+
+=======
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4

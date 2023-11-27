@@ -1,0 +1,6 @@
+[flake8]
+<<<<<<< HEAD
+extend-ignore = E501, W292, W291
+=======
+extend-ignore = E501, W292, W291, W293
+>>>>>>> 3d3dddaf0c7894ec2df14c51f7dd843c41c878c4
