@@ -15,26 +15,29 @@ Distribution Agent:
 - Social Media posts for the article.
 
 # TODO
+- Make prompts better
 - Add shorter and better topic generator prompt
 - Optimize writer prompt to create longer and more enjoyeable blogs
 - Use Local Models like Storywriter
 """
-from termcolor import colored
-from swarms.models import OpenAIChat
-from swarms.prompts.autoblogen import (
-    DRAFT_AGENT_SYSTEM_PROMPT,
-    REVIEW_PROMPT,
-    SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT,
-    TOPIC_GENERATOR,
-)
 import os
+
+from termcolor import colored
+
+from swarms.models import OpenAIChat
+from swarms.prompts.autobloggen import (
+    AUTOBLOG_REVIEW_PROMPT,
+    DRAFT_AGENT_SYSTEM_PROMPT,
+    SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT,
+    TOPIC_GENERATOR_SYSTEM_PROMPT,
+)
 
 api_key = os.environ["OPENAI_API_KEY"]
 llm = OpenAIChat(openai_api_key=api_key)
 
 
 def get_review_prompt(article):
-    prompt = REVIEW_PROMPT.replace("{{ARTICLE}}", article)
+    prompt = AUTOBLOG_REVIEW_PROMPT.replace("{{ARTICLE}}", article)
     return prompt
 
 
@@ -50,8 +53,8 @@ topic_selection_task = (
     "Generate 10 topics on gaining mental clarity using ancient practices"
 )
 topics = llm(
-    f"Your System Instructions: {TOPIC_GENERATOR}, Your current task:"
-    f" {topic_selection_task}"
+    f"Your System Instructions: {TOPIC_GENERATOR_SYSTEM_PROMPT}, Your current"
+    f" task: {topic_selection_task}"
 )
 
 dashboard = print(

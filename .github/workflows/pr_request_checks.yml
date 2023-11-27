@@ -1,3 +1,4 @@
+---
 name: Pull Request Checks
 
 on:
@@ -19,9 +20,11 @@ jobs:
           python-version: 3.x
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install pytest 
 
       - name: Run tests and checks
         run: |
-          find tests/ -name "*.py" | xargs pytest
+          pytest
           pylint swarms

@@ -7,7 +7,7 @@ import pytest
 import whisperx
 from pydub import AudioSegment
 from pytube import YouTube
-from swarms.models.whisperx import WhisperX
+from swarms.models.whisperx_model import WhisperX
 
 
 # Fixture to create a temporary directory for testing

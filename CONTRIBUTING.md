@@ -72,7 +72,6 @@ pre-commit --version
 
 Now when you make a git commit, the black code formatter and ruff linter will run.
 
-
 Furthermore, we have integrated a pre-commit GitHub Action into our workflow. This means that with every pull request opened, the pre-commit checks will be automatically enforced, streamlining the code review process and ensuring that all contributions adhere to our quality standards.
 
 To run the pre-commit tool, follow these steps:
@@ -124,13 +123,13 @@ You can learn more about mkdocs on the [mkdocs website](https://www.mkdocs.org/)
 
 ## 🧪 tests
 - Run all the tests in the tests folder
-`find ./tests -name '*.py' -exec pytest {} \;`
-
+   ```pytest```
+   
 ## Code Quality
-`quality.sh` runs 4 different code formatters for ultra reliable code cleanup using Autopep8, Black, Ruff, YAPF
+`code-quality.sh` runs 4 different code formatters for ultra reliable code cleanup using Autopep8, Black, Ruff, YAPF
 1. Open your terminal.
 
-2. Change directory to where `quality.sh` is located using `cd` command:
+2. Change directory to where `code-quality.sh` is located using `cd` command:
    ```sh
    cd /path/to/directory
    ```
@@ -142,17 +141,17 @@ You can learn more about mkdocs on the [mkdocs website](https://www.mkdocs.org/)
 
 4. Run the script:
    ```sh
-   ./quality.sh
+   ./code-quality.sh
    ```
    
 If the script requires administrative privileges, you might need to run it with `sudo`:
 ```sh
-sudo ./quality.sh
+sudo ./code-quality.sh
 ```
 
-Please replace `/path/to/directory` with the actual path where the `quality.sh` script is located on your system.
+Please replace `/path/to/directory` with the actual path where the `code-quality.sh` script is located on your system.
 
-If you're asking for a specific content or functionality inside `quality.sh` related to YAPF or other code quality tools, you would need to edit the `quality.sh` script to include the desired commands, such as running YAPF on a directory. The contents of `quality.sh` would dictate exactly what happens when you run it.
+If you're asking for a specific content or functionality inside `code-quality.sh` related to YAPF or other code quality tools, you would need to edit the `code-quality.sh` script to include the desired commands, such as running YAPF on a directory. The contents of `code-quality.sh` would dictate exactly what happens when you run it.
 
 
 ## 📄 license

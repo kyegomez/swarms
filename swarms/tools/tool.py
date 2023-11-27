@@ -118,7 +118,7 @@ class ToolException(Exception):
 
 
 class BaseTool(RunnableSerializable[Union[str, Dict], Any]):
-    """Interface LangChain tools must implement."""
+    """Interface swarms tools must implement."""
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Create the definition of the new tool class."""
