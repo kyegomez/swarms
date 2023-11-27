@@ -96,7 +96,7 @@ nav:
   - swarms.structs:
       - Overview: "swarms/structs/overview.md"
       - AutoScaler: "swarms/swarms/autoscaler.md"
-      - Flow: "swarms/structs/flow.md"
+      - Agent: "swarms/structs/agent.md"
       - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
   - swarms.memory:
       - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
@@ -105,7 +105,7 @@ nav:
   - Guides:
       - Overview: "examples/index.md"
       - Agents:
-      - Flow: "examples/flow.md"
+      - Agent: "examples/agent.md"
       - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
       - OmniAgent: "examples/omni_agent.md"
       - 2O+ Autonomous Agent Blogs: "examples/ideas.md"

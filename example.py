@@ -2,9 +2,9 @@ import os
 
 from dotenv import load_dotenv
 
-# Import the OpenAIChat model and the Flow struct
+# Import the OpenAIChat model and the Agent struct
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 
 # Load the environment variables
 load_dotenv()
@@ -20,7 +20,7 @@ llm = OpenAIChat(
 
 
 ## Initialize the workflow
-flow = Flow(llm=llm, max_loops=1, dashboard=True)
+agent = Agent(llm=llm, max_loops=1, dashboard=True)
 
 # Run the workflow on a task
-out = flow.run("Generate a 10,000 word blog on health and wellness.")
+out = agent.run("Generate a 10,000 word blog on health and wellness.")

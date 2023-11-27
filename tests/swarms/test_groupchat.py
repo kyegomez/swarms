@@ -2,7 +2,7 @@ import pytest
 
 from swarms.models import OpenAIChat
 from swarms.models.anthropic import Anthropic
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 from swarms.swarms.groupchat import GroupChat, GroupChatManager
 
 llm = OpenAIChat()
@@ -21,12 +21,12 @@ class MockOpenAI:
 # Create fixtures for agents and a sample message
 @pytest.fixture
 def agent1():
-    return Flow(name="Agent1", llm=llm)
+    return Agent(name="Agent1", llm=llm)
 
 
 @pytest.fixture
 def agent2():
-    return Flow(name="Agent2", llm=llm2)
+    return Agent(name="Agent2", llm=llm2)
 
 
 @pytest.fixture
@@ -155,7 +155,7 @@ def test_groupchat_manager_generate_reply():
 
 # Test case to ensure GroupChat selects the next speaker correctly
 def test_groupchat_select_speaker():
-    agent3 = Flow(name="agent3", llm=llm)
+    agent3 = Agent(name="agent3", llm=llm)
     agents = [agent1, agent2, agent3]
     groupchat = GroupChat(agents=agents, messages=[], max_round=10)
 
@@ -175,7 +175,7 @@ def test_groupchat_select_speaker():
 
 # Test case to ensure GroupChat handles underpopulated group correctly
 def test_groupchat_underpopulated_group():
-    agent1 = Flow(name="agent1", llm=llm)
+    agent1 = Agent(name="agent1", llm=llm)
     agents = [agent1]
     groupchat = GroupChat(agents=agents, messages=[], max_round=10)
 

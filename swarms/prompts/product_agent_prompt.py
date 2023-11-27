@@ -104,7 +104,7 @@ Start with a basic prototype. Then, refine based on user feedback and testing. C
 5.4 Accessibility is Paramount
 
 Ensure your product is usable by everyone, including those with disabilities. This not only expands your product's reach but also ensures inclusivity. Implement features like voice commands, high contrast visuals, and screen reader compatibility.
-5.5 Prioritize Functionality and User Flow
+5.5 Prioritize Functionality and User Agent
 
 A product can be aesthetically pleasing, but if it doesn't function well or is difficult to navigate, it will lose its value. Ensure seamless user flows and intuitive interactions.
 5.6 Maintain Consistency

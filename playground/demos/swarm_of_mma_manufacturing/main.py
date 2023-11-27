@@ -10,10 +10,10 @@ Sustainability agent: Agent that monitors the sustainability of the factory: inp
 Efficiency agent: Agent that monitors the efficiency of the factory: input image of factory output: efficiency index 0.0 - 1.0 being the highest    
 
 
-Flow:
+Agent:
 health security agent -> quality control agent -> productivity agent -> safety agent -> security agent -> sustainability agent -> efficiency agent 
 """
-from swarms.structs import Flow
+from swarms.structs import Agent
 import os
 from dotenv import load_dotenv
 from swarms.models import GPT4VisionAPI
@@ -72,7 +72,7 @@ efficiency_prompt = tasks["efficiency"]
 
 
 # Health security agent
-health_security_agent = Flow(
+health_security_agent = Agent(
     llm=llm,
     sop_list=health_safety_prompt,
     max_loops=2,
@@ -80,7 +80,7 @@ health_security_agent = Flow(
 )
 
 # Quality control agent
-productivity_check_agent = Flow(
+productivity_check_agent = Agent(
     llm=llm,
     sop=productivity_prompt,
     max_loops=2,
@@ -88,7 +88,7 @@ productivity_check_agent = Flow(
 )
 
 # Security agent
-security_check_agent = Flow(
+security_check_agent = Agent(
     llm=llm,
     sop=security_prompt,
     max_loops=2,
@@ -96,7 +96,7 @@ security_check_agent = Flow(
 )
 
 # Efficiency agent
-efficiency_check_agent = Flow(
+efficiency_check_agent = Agent(
     llm=llm,
     sop=efficiency_prompt,
     max_loops=2,

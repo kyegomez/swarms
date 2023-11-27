@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from termcolor import colored
 
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 
 
 # Define a generic Task that can handle different types of callable objects
@@ -31,7 +31,7 @@ class Task:
 
     Args:
         description (str): The description of the task.
-        flow (Union[Callable, Flow]): The model or flow to execute the task.
+        agent (Union[Callable, Agent]): The model or agent to execute the task.
         args (List[Any]): Additional arguments to pass to the task execution.
         kwargs (Dict[str, Any]): Additional keyword arguments to pass to the task execution.
         result (Any): The result of the task execution.
@@ -42,17 +42,17 @@ class Task:
 
 
     Examples:
-    >>> from swarms.structs import Task, Flow
+    >>> from swarms.structs import Task, Agent
     >>> from swarms.models import OpenAIChat
-    >>> flow = Flow(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
-    >>> task = Task(description="What's the weather in miami", flow=flow)
+    >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
+    >>> task = Task(description="What's the weather in miami", agent=agent)
     >>> task.execute()
     >>> task.result
 
     """
 
     description: str
-    flow: Union[Callable, Flow]
+    agent: Union[Callable, Agent]
     args: List[Any] = field(default_factory=list)
     kwargs: Dict[str, Any] = field(default_factory=dict)
     result: Any = None
@@ -63,10 +63,10 @@ class Task:
         Execute the task.
 
         Raises:
-            ValueError: If a Flow instance is used as a task and the 'task' argument is not provided.
+            ValueError: If a Agent instance is used as a task and the 'task' argument is not provided.
         """
-        if isinstance(self.flow, Flow):
-            # Add a prompt to notify the Flow of the sequential workflow
+        if isinstance(self.agent, Agent):
+            # Add a prompt to notify the Agent of the sequential workflow
             if "prompt" in self.kwargs:
                 self.kwargs["prompt"] += (
                     f"\n\nPrevious output: {self.result}" if self.result else ""
@@ -75,9 +75,9 @@ class Task:
                 self.kwargs["prompt"] = f"Main task: {self.description}" + (
                     f"\n\nPrevious output: {self.result}" if self.result else ""
                 )
-            self.result = self.flow.run(*self.args, **self.kwargs)
+            self.result = self.agent.run(*self.args, **self.kwargs)
         else:
-            self.result = self.flow(*self.args, **self.kwargs)
+            self.result = self.agent(*self.args, **self.kwargs)
 
         self.history.append(self.result)
 
@@ -122,7 +122,7 @@ class SequentialWorkflow:
 
     def add(
         self,
-        flow: Union[Callable, Flow],
+        agent: Union[Callable, Agent],
         task: Optional[str] = None,
         img: Optional[str] = None,
         *args,
@@ -132,22 +132,22 @@ class SequentialWorkflow:
         Add a task to the workflow.
 
         Args:
-            flow (Union[Callable, Flow]): The model or flow to execute the task.
-            task (str): The task description or the initial input for the Flow.
+            agent (Union[Callable, Agent]): The model or agent to execute the task.
+            task (str): The task description or the initial input for the Agent.
             img (str): The image to understand for the task.
             *args: Additional arguments to pass to the task execution.
             **kwargs: Additional keyword arguments to pass to the task execution.
         """
-        # If the flow is a Flow instance, we include the task in kwargs for Flow.run()
-        if isinstance(flow, Flow):
-            kwargs["task"] = task  # Set the task as a keyword argument for Flow
+        # If the agent is a Agent instance, we include the task in kwargs for Agent.run()
+        if isinstance(agent, Agent):
+            kwargs["task"] = task  # Set the task as a keyword argument for Agent
 
         # Append the task to the tasks list
         if self.img:
             self.tasks.append(
                 Task(
                     description=task,
-                    flow=flow,
+                    agent=agent,
                     args=list(args),
                     kwargs=kwargs,
                     img=img,
@@ -156,7 +156,7 @@ class SequentialWorkflow:
         else:
             self.tasks.append(
                 Task(
-                    description=task, flow=flow, args=list(args), kwargs=kwargs
+                    description=task, agent=agent, args=list(args), kwargs=kwargs
                 )
             )
 
@@ -319,7 +319,7 @@ class SequentialWorkflow:
 
         task = Task(
             description=task,
-            flow=kwargs["flow"],
+            agent=kwargs["agent"],
             args=list(kwargs["args"]),
             kwargs=kwargs["kwargs"],
         )
@@ -352,7 +352,7 @@ class SequentialWorkflow:
             for task_state in state["tasks"]:
                 task = Task(
                     description=task_state["description"],
-                    flow=task_state["flow"],
+                    agent=task_state["agent"],
                     args=task_state["args"],
                     kwargs=task_state["kwargs"],
                     result=task_state["result"],
@@ -365,7 +365,7 @@ class SequentialWorkflow:
         Run the workflow.
 
         Raises:
-            ValueError: If a Flow instance is used as a task and the 'task' argument is not provided.
+            ValueError: If a Agent instance is used as a task and the 'task' argument is not provided.
 
         """
         try:
@@ -374,30 +374,30 @@ class SequentialWorkflow:
                 for task in self.tasks:
                     # Check if the current task can be executed
                     if task.result is None:
-                        # Check if the flow is a Flow and a 'task' argument is needed
-                        if isinstance(task.flow, Flow):
+                        # Check if the agent is a Agent and a 'task' argument is needed
+                        if isinstance(task.agent, Agent):
                             # Ensure that 'task' is provided in the kwargs
                             if "task" not in task.kwargs:
                                 raise ValueError(
                                     "The 'task' argument is required for the"
-                                    " Flow flow execution in"
+                                    " Agent agent execution in"
                                     f" '{task.description}'"
                                 )
                             # Separate the 'task' argument from other kwargs
                             flow_task_arg = task.kwargs.pop("task")
-                            task.result = task.flow.run(
+                            task.result = task.agent.run(
                                 flow_task_arg, *task.args, **task.kwargs
                             )
                         else:
-                            # If it's not a Flow instance, call the flow directly
-                            task.result = task.flow(*task.args, **task.kwargs)
+                            # If it's not a Agent instance, call the agent directly
+                            task.result = task.agent(*task.args, **task.kwargs)
 
                         # Pass the result as an argument to the next task if it exists
                         next_task_index = self.tasks.index(task) + 1
                         if next_task_index < len(self.tasks):
                             next_task = self.tasks[next_task_index]
-                            if isinstance(next_task.flow, Flow):
-                                # For Flow flows, 'task' should be a keyword argument
+                            if isinstance(next_task.agent, Agent):
+                                # For Agent flows, 'task' should be a keyword argument
                                 next_task.kwargs["task"] = task.result
                             else:
                                 # For other callable flows, the result is added to args
@@ -413,7 +413,7 @@ class SequentialWorkflow:
                 colored(
                     (
                         f"Error initializing the Sequential workflow: {e} try"
-                        " optimizing your inputs like the flow class and task"
+                        " optimizing your inputs like the agent class and task"
                         " description"
                     ),
                     "red",
@@ -426,36 +426,36 @@ class SequentialWorkflow:
         Asynchronously run the workflow.
 
         Raises:
-            ValueError: If a Flow instance is used as a task and the 'task' argument is not provided.
+            ValueError: If a Agent instance is used as a task and the 'task' argument is not provided.
 
         """
         for _ in range(self.max_loops):
             for task in self.tasks:
                 # Check if the current task can be executed
                 if task.result is None:
-                    # Check if the flow is a Flow and a 'task' argument is needed
-                    if isinstance(task.flow, Flow):
+                    # Check if the agent is a Agent and a 'task' argument is needed
+                    if isinstance(task.agent, Agent):
                         # Ensure that 'task' is provided in the kwargs
                         if "task" not in task.kwargs:
                             raise ValueError(
-                                "The 'task' argument is required for the Flow"
-                                f" flow execution in '{task.description}'"
+                                "The 'task' argument is required for the Agent"
+                                f" agent execution in '{task.description}'"
                             )
                         # Separate the 'task' argument from other kwargs
                         flow_task_arg = task.kwargs.pop("task")
-                        task.result = await task.flow.arun(
+                        task.result = await task.agent.arun(
                             flow_task_arg, *task.args, **task.kwargs
                         )
                     else:
-                        # If it's not a Flow instance, call the flow directly
-                        task.result = await task.flow(*task.args, **task.kwargs)
+                        # If it's not a Agent instance, call the agent directly
+                        task.result = await task.agent(*task.args, **task.kwargs)
 
                     # Pass the result as an argument to the next task if it exists
                     next_task_index = self.tasks.index(task) + 1
                     if next_task_index < len(self.tasks):
                         next_task = self.tasks[next_task_index]
-                        if isinstance(next_task.flow, Flow):
-                            # For Flow flows, 'task' should be a keyword argument
+                        if isinstance(next_task.agent, Agent):
+                            # For Agent flows, 'task' should be a keyword argument
                             next_task.kwargs["task"] = task.result
                         else:
                             # For other callable flows, the result is added to args

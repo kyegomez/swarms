@@ -1,5 +1,5 @@
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
@@ -8,11 +8,11 @@ llm = OpenAIChat(
     max_tokens=3000,
 )
 
-# Initialize the Flow with the language flow
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize the Agent with the language agent
+flow1 = Agent(llm=llm, max_loops=1, dashboard=False)
 
-# Create another Flow for a different task
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Create another Agent for a different task
+flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create the workflow
 workflow = SequentialWorkflow(max_loops=1)

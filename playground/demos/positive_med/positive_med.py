@@ -1,5 +1,5 @@
 """
-Swarm Flow
+Swarm Agent
 Topic selection agent -> draft agent -> review agent -> distribution agent
 
 Topic Selection Agent:
