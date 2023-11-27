@@ -101,6 +101,7 @@ nav:
   - swarms.memory:
       - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
       - PGVectorStore: "swarms/memory/pg.md"
+      - Qdrant: "swarms/memory/qdrant.md"
   - Guides:
       - Overview: "examples/index.md"
       - Agents:
