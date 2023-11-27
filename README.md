@@ -237,9 +237,15 @@ Swarms framework is not just a tool but a robust, scalable, and secure partner i
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
 
-## Contribute
-- We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1)
+## 🫶 Contributions:
 
+Swarms is an open-source project, and contributions are welcome. If you want to contribute, you can create new features, fix bugs, or improve the infrastructure. Please refer to the [CONTRIBUTING.md](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1) file in the repository for more information on how to contribute.
+
+To see how to contribute, visit [Contribution guidelines](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md)
+
+<a href="https://github.com/kyegomez/swarms/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
+</a>
 ## Community
 - [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)
 - Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks [Sign up here](https://lu.ma/5p2jnc2v)
