@@ -5,7 +5,7 @@ from typing import List
 import tenacity
 from langchain.output_parsers import RegexParser
 
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 from swarms.utils.logger import logger
 
 
@@ -29,7 +29,7 @@ class MultiAgentCollaboration:
     Multi-agent collaboration class.
 
     Attributes:
-        agents (List[Flow]): The agents in the collaboration.
+        agents (List[Agent]): The agents in the collaboration.
         selection_function (callable): The function that selects the next speaker.
             Defaults to select_next_speaker.
         max_iters (int): The maximum number of iterations. Defaults to 10.
@@ -56,7 +56,7 @@ class MultiAgentCollaboration:
 
     Usage:
     >>> from swarms.models import OpenAIChat
-    >>> from swarms.structs import Flow
+    >>> from swarms.structs import Agent
     >>> from swarms.swarms.multi_agent_collab import MultiAgentCollaboration
     >>>
     >>> # Initialize the language model
@@ -66,14 +66,14 @@ class MultiAgentCollaboration:
     >>>
     >>>
     >>> ## Initialize the workflow
-    >>> flow = Flow(llm=llm, max_loops=1, dashboard=True)
+    >>> agent = Agent(llm=llm, max_loops=1, dashboard=True)
     >>>
     >>> # Run the workflow on a task
-    >>> out = flow.run("Generate a 10,000 word blog on health and wellness.")
+    >>> out = agent.run("Generate a 10,000 word blog on health and wellness.")
     >>>
     >>> # Initialize the multi-agent collaboration
     >>> swarm = MultiAgentCollaboration(
-    >>>     agents=[flow],
+    >>>     agents=[agent],
     >>>     max_iters=4,
     >>> )
     >>>
@@ -87,7 +87,7 @@ class MultiAgentCollaboration:
 
     def __init__(
         self,
-        agents: List[Flow],
+        agents: List[Agent],
         selection_function: callable = None,
         max_iters: int = 10,
         autosave: bool = True,
@@ -117,7 +117,7 @@ class MultiAgentCollaboration:
             agent.run(f"Name {name} and message: {message}")
         self._step += 1
 
-    def inject_agent(self, agent: Flow):
+    def inject_agent(self, agent: Agent):
         """Injects an agent into the multi-agent collaboration."""
         self.agents.append(agent)
 
@@ -195,13 +195,13 @@ class MultiAgentCollaboration:
             n += 1
 
     def select_next_speaker_roundtable(
-        self, step: int, agents: List[Flow]
+        self, step: int, agents: List[Agent]
     ) -> int:
         """Selects the next speaker."""
         return step % len(agents)
 
     def select_next_speaker_director(
-        step: int, agents: List[Flow], director
+        step: int, agents: List[Agent], director
     ) -> int:
         # if the step if even => director
         # => director selects next speaker

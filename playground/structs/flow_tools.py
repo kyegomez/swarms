@@ -1,5 +1,5 @@
 from swarms.models import Anthropic
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.tools.tool import tool
 
 import asyncio
@@ -52,14 +52,14 @@ def browse_web_page(url: str) -> str:
 
 
 ## Initialize the workflow
-flow = Flow(
+agent = Agent(
     llm=llm,
     max_loops=5,
     tools=[browse_web_page],
     dashboard=True,
 )
 
-out = flow.run(
+out = agent.run(
     "Generate a 10,000 word blog on mental clarity and the benefits of"
     " meditation."
 )

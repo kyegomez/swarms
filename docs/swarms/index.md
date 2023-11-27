@@ -22,15 +22,15 @@ Book a [1-on-1 Session with Kye](https://calendly.com/swarm-corp/30min), the Cre
 ## Usage
 We have a small gallery of examples to run here, [for more check out the docs to build your own agent and or swarms!](https://docs.apac.ai)
 
-### `Flow` Example
+### `Agent` Example
 - Reliable Structure that provides LLMS autonomy
 - Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
-- Enterprise Grade + Production Grade: `Flow` is designed and optimized for automating real-world tasks at scale!
+- Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
 
 ```python
 
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 
 api_key = ""
 
@@ -43,7 +43,7 @@ llm = OpenAIChat(
 )
 
 ## Initialize the workflow
-flow = Flow(
+agent = Agent(
     llm=llm,
     max_loops=2,
     dashboard=True,
@@ -55,14 +55,14 @@ flow = Flow(
     # dynamic_temperature=False,  # Set to 'True' for dynamic temperature handling.
 )
 
-# out = flow.load_state("flow_state.json")
-# temp = flow.dynamic_temperature()
-# filter = flow.add_response_filter("Trump")
-out = flow.run("Generate a 10,000 word blog on health and wellness.")
-# out = flow.validate_response(out)
-# out = flow.analyze_feedback(out)
-# out = flow.print_history_and_memory()
-# # out = flow.save_state("flow_state.json")
+# out = agent.load_state("flow_state.json")
+# temp = agent.dynamic_temperature()
+# filter = agent.add_response_filter("Trump")
+out = agent.run("Generate a 10,000 word blog on health and wellness.")
+# out = agent.validate_response(out)
+# out = agent.analyze_feedback(out)
+# out = agent.print_history_and_memory()
+# # out = agent.save_state("flow_state.json")
 # print(out)
 
 
@@ -74,11 +74,11 @@ out = flow.run("Generate a 10,000 word blog on health and wellness.")
 ### `SequentialWorkflow`
 - A Sequential swarm of autonomous agents where each agent's outputs are fed into the next agent
 - Save and Restore Workflow states!
-- Integrate Flow's with various LLMs and Multi-Modality Models
+- Integrate Agent's with various LLMs and Multi-Modality Models
 
 ```python
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
@@ -86,20 +86,20 @@ api_key = (
     ""  # Your actual API key here
 )
 
-# Initialize the language flow
+# Initialize the language agent
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
     max_tokens=3000,
 )
 
-# Initialize the Flow with the language flow
-agent1 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize the Agent with the language agent
+agent1 = Agent(llm=llm, max_loops=1, dashboard=False)
 
-# Create another Flow for a different task
-agent2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Create another Agent for a different task
+agent2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
-agent3 = Flow(llm=llm, max_loops=1, dashboard=False)
+agent3 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create the workflow
 workflow = SequentialWorkflow(max_loops=1)

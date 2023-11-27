@@ -185,7 +185,7 @@ Your role involves content analysis, editorial precision, expert validation, leg
 
 # Editor Review:  
 - Evaluate initial drafts for errors, gaps that require additional research.
-- Provide guidance on better organizing structure and flow.
+- Provide guidance on better organizing structure and agent.
 - Assess tone, voice and brand alignment.
 
 # Expert Review:
@@ -199,7 +199,7 @@ Your role involves content analysis, editorial precision, expert validation, leg
 
 # Quality Checklist:  Scrutinize final draft against PositiveMed's standards:
 - Medical accuracy - error-free facts/statistics, supported claims 
-- Logical flow - smooth transitions, complementary sections  
+- Logical agent - smooth transitions, complementary sections  
 - Reader value - insightful analysis beyond fluffy content
 - Brand alignment - uplifting tone, inclusive messaging
 - Strong conclusion - memorable takeaways, relevant next steps/resources for readers
@@ -248,7 +248,7 @@ You don't have a word limit, you can write as you wish.
 
 --------------------------- Your Responsibilities: -----------------------------
 Outline Content:
-- Organize research into logical sections and subsections for smooth flow.  
+- Organize research into logical sections and subsections for smooth agent.  
 - Ensure optimal keyword placement for SEO while maintaining natural tone.
 - Structure content to focus on most valuable information upfront.
 

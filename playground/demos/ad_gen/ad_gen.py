@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from swarms.models import OpenAIChat
 from playground.models.stable_diffusion import StableDiffusion
-from swarms.structs import Flow, SequentialWorkflow
+from swarms.structs import Agent, SequentialWorkflow
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -13,9 +13,9 @@ stability_api_key = os.getenv("STABILITY_API_KEY")
 llm = OpenAIChat(openai_api_key=openai_api_key, temperature=0.5, max_tokens=3000)
 sd_api = StableDiffusion(api_key=stability_api_key)
 
-def run_task(description, product_name, flow, **kwargs):
+def run_task(description, product_name, agent, **kwargs):
     full_description = f"{description} about {product_name}"  # Incorporate product name into the task
-    result = flow.run(task=full_description, **kwargs)
+    result = agent.run(task=full_description, **kwargs)
     return result
 
 
@@ -40,10 +40,10 @@ product_name = input("Enter a product name for ad creation (e.g., 'PS5', 'AirPod
 prompt_generator = ProductPromptGenerator(product_name)
 creative_prompt = prompt_generator.generate_prompt()
 
-# Run tasks using Flow
-concept_flow = Flow(llm=llm, max_loops=1, dashboard=False)
-design_flow = Flow(llm=llm, max_loops=1, dashboard=False)
-copywriting_flow = Flow(llm=llm, max_loops=1, dashboard=False)
+# Run tasks using Agent
+concept_flow = Agent(llm=llm, max_loops=1, dashboard=False)
+design_flow = Agent(llm=llm, max_loops=1, dashboard=False)
+copywriting_flow = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Execute tasks
 concept_result = run_task("Generate a creative concept", product_name, concept_flow)

@@ -22,9 +22,9 @@ Before delving into the details of the **SequentialWorkflow** class, let's defin
 
 A **task** refers to a specific unit of work that needs to be executed as part of the workflow. Each task is associated with a description and can be implemented as a callable object, such as a function or a model.
 
-### Flow
+### Agent
 
-A **flow** represents a callable object that can be a task within the **SequentialWorkflow**. Flows encapsulate the logic and functionality of a particular task. Flows can be functions, models, or any callable object that can be executed.
+A **agent** represents a callable object that can be a task within the **SequentialWorkflow**. Agents encapsulate the logic and functionality of a particular task. Agents can be functions, models, or any callable object that can be executed.
 
 ### Sequential Execution
 
@@ -70,7 +70,7 @@ The **SequentialWorkflow** class is versatile and can be employed in a wide rang
 
 2. **Workflow Creation**: Create an instance of the **SequentialWorkflow** class. Specify the maximum number of loops the workflow should run and whether a dashboard should be displayed.
 
-3. **Task Addition**: Add tasks to the workflow using the `add` method. Each task should be described using a human-readable description, and the associated flow (callable object) should be provided. Additional arguments and keyword arguments can be passed to the task.
+3. **Task Addition**: Add tasks to the workflow using the `add` method. Each task should be described using a human-readable description, and the associated agent (callable object) should be provided. Additional arguments and keyword arguments can be passed to the task.
 
 4. **Task Execution**: Execute the workflow using the `run` method. The tasks within the workflow will be executed sequentially, with task results passed as inputs to subsequent tasks.
 
@@ -93,10 +93,10 @@ Let's begin with a quick example to demonstrate how to create and run a Sequenti
 
 ```python
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
-# Initialize the language model flow (e.g., GPT-3)
+# Initialize the language model agent (e.g., GPT-3)
 llm = OpenAIChat(
     openai_api_key="YOUR_API_KEY",
     temperature=0.5,
@@ -104,8 +104,8 @@ llm = OpenAIChat(
 )
 
 # Initialize flows for individual tasks
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+flow1 = Agent(llm=llm, max_loops=1, dashboard=False)
+flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create the Sequential Workflow
 workflow = SequentialWorkflow(max_loops=1)
@@ -134,13 +134,13 @@ The `Task` class represents an individual task in the workflow. A task is essent
 
 ```python
 class Task:
-    def __init__(self, description: str, flow: Union[Callable, Flow], args: List[Any] = [], kwargs: Dict[str, Any] = {}, result: Any = None, history: List[Any] = [])
+    def __init__(self, description: str, agent: Union[Callable, Agent], args: List[Any] = [], kwargs: Dict[str, Any] = {}, result: Any = None, history: List[Any] = [])
 ```
 
 ### Parameters
 
 - `description` (str): A description of the task.
-- `flow` (Union[Callable, Flow]): The callable object representing the task. It can be a function, class, or a `Flow` instance.
+- `agent` (Union[Callable, Agent]): The callable object representing the task. It can be a function, class, or a `Agent` instance.
 - `args` (List[Any]): A list of positional arguments to pass to the task when executed. Default is an empty list.
 - `kwargs` (Dict[str, Any]): A dictionary of keyword arguments to pass to the task when executed. Default is an empty dictionary.
 - `result` (Any): The result of the task's execution. Default is `None`.
@@ -156,7 +156,7 @@ Execute the task.
 def execute(self):
 ```
 
-This method executes the task and updates the `result` and `history` attributes of the task. It checks if the task is a `Flow` instance and if the 'task' argument is needed.
+This method executes the task and updates the `result` and `history` attributes of the task. It checks if the task is a `Agent` instance and if the 'task' argument is needed.
 
 ## Class: `SequentialWorkflow`
 
@@ -182,15 +182,15 @@ class SequentialWorkflow:
 
 ### Methods
 
-#### `add(task: str, flow: Union[Callable, Flow], *args, **kwargs)`
+#### `add(task: str, agent: Union[Callable, Agent], *args, **kwargs)`
 
 Add a task to the workflow.
 
 ```python
-def add(self, task: str, flow: Union[Callable, Flow], *args, **kwargs) -> None:
+def add(self, task: str, agent: Union[Callable, Agent], *args, **kwargs) -> None:
 ```
 
-This method adds a new task to the workflow. You can provide a description of the task, the callable object (function, class, or `Flow` instance), and any additional positional or keyword arguments required for the task.
+This method adds a new task to the workflow. You can provide a description of the task, the callable object (function, class, or `Agent` instance), and any additional positional or keyword arguments required for the task.
 
 #### `reset_workflow()`
 
@@ -262,7 +262,7 @@ Run the workflow sequentially.
 def run(self) -> None:
 ```
 
-This method executes the tasks in the workflow sequentially. It checks if a task is a `Flow` instance and handles the flow of data between tasks accordingly.
+This method executes the tasks in the workflow sequentially. It checks if a task is a `Agent` instance and handles the agent of data between tasks accordingly.
 
 #### `arun()`
 
@@ -272,7 +272,7 @@ Asynchronously run the workflow.
 async def arun(self) -> None:
 ```
 
-This method asynchronously executes the tasks in the workflow sequentially. It's suitable for use cases where asynchronous execution is required. It also handles data flow between tasks.
+This method asynchronously executes the tasks in the workflow sequentially. It's suitable for use cases where asynchronous execution is required. It also handles data agent between tasks.
 
 #### `workflow_bootup(**kwargs)`
 
@@ -306,7 +306,7 @@ In this example, we'll create a Sequential Workflow and add tasks to it.
 
 ```python
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
@@ -314,16 +314,16 @@ api_key = (
     ""  # Your actual API key here
 )
 
-# Initialize the language flow
+# Initialize the language agent
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
     max_tokens=3000,
 )
 
-# Initialize Flows for individual tasks
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize Agents for individual tasks
+flow1 = Agent(llm=llm, max_loops=1, dashboard=False)
+flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create the Sequential Workflow
 workflow = SequentialWorkflow(max_loops=1)
@@ -346,7 +346,7 @@ In this example, we'll create a Sequential Workflow, add tasks to it, and then r
 
 ```python
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
@@ -354,16 +354,16 @@ api_key = (
     ""  # Your actual API key here
 )
 
-# Initialize the language flow
+# Initialize the language agent
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
     max_tokens=3000,
 )
 
-# Initialize Flows for individual tasks
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize Agents for individual tasks
+flow1 = Agent(llm=llm, max_loops=1, dashboard=False)
+flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create the Sequential Workflow
 workflow = SequentialWorkflow(max_loops=1)
@@ -389,7 +389,7 @@ In this example, we'll create a Sequential Workflow, add tasks to it, run the wo
 
 ```python
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
@@ -397,16 +397,16 @@ api_key = (
     ""  # Your actual API key here
 )
 
-# Initialize the language flow
+# Initialize the language agent
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
     max_tokens=3000,
 )
 
-# Initialize Flows for individual tasks
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize Agents for individual tasks
+flow1 = Agent(llm=llm, max_loops=1, dashboard=False)
+flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create the Sequential Workflow
 workflow = SequentialWorkflow(max_loops=1)
@@ -432,7 +432,7 @@ In this example, we'll create a Sequential Workflow, add tasks to it, and then r
 
 ```python
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
@@ -440,16 +440,16 @@ api_key = (
     ""  # Your actual API key here
 )
 
-# Initialize the language flow
+# Initialize the language agent
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
     max_tokens=3000,
 )
 
-# Initialize Flows for individual tasks
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize Agents for individual tasks
+flow1 = Agent(llm=llm, max_loops=1, dashboard=False)
+flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create the Sequential Workflow
 workflow = SequentialWorkflow(max_loops=1)
@@ -475,7 +475,7 @@ In this example, we'll create a Sequential Workflow, add tasks to it, and then u
 
 ```python
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
@@ -483,16 +483,16 @@ api_key = (
     ""  # Your actual API key here
 )
 
-# Initialize the language flow
+# Initialize the language agent
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
     max_tokens=3000,
 )
 
-# Initialize Flows for individual tasks
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize Agents for individual tasks
+flow1 = Agent(llm=llm, max_loops=1, dashboard=False)
+flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create the Sequential Workflow
 workflow = SequentialWorkflow(max_loops=1)
@@ -579,11 +579,11 @@ In summary, the Sequential Workflow module provides a foundation for orchestrati
 
 ## Frequently Asked Questions (FAQs)
 
-### Q1: What is the difference between a task and a flow in Sequential Workflows?
+### Q1: What is the difference between a task and a agent in Sequential Workflows?
 
 **A1:** In Sequential Workflows, a **task** refers to a specific unit of work that needs to be executed. It can be implemented as a callable object, such as a Python function, and is the fundamental building block of a workflow.
 
-A **flow**, on the other hand, is an encapsulation of a task within the workflow. Flows define the order in which tasks are executed and can be thought of as task containers. They allow you to specify dependencies, error handling, and other workflow-related configurations.
+A **agent**, on the other hand, is an encapsulation of a task within the workflow. Agents define the order in which tasks are executed and can be thought of as task containers. They allow you to specify dependencies, error handling, and other workflow-related configurations.
 
 ### Q2: Can I run tasks in parallel within a Sequential Workflow?
 

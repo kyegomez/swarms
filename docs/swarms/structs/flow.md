@@ -1,14 +1,14 @@
-# `Flow` Documentation
+# `Agent` Documentation
 
 ## Overview
 
-The `Flow` class is a Python module designed to facilitate interactions with a language model, particularly one that operates as an autonomous agent. This class is part of a larger framework aimed at creating conversational agents using advanced language models like GPT-3. It enables you to establish a conversational loop with the model, generate responses, collect feedback, and control the flow of the conversation.
+The `Agent` class is a Python module designed to facilitate interactions with a language model, particularly one that operates as an autonomous agent. This class is part of a larger framework aimed at creating conversational agents using advanced language models like GPT-3. It enables you to establish a conversational loop with the model, generate responses, collect feedback, and control the agent of the conversation.
 
-In this documentation, you will learn how to use the `Flow` class effectively, its purpose, and how it can be integrated into your projects.
+In this documentation, you will learn how to use the `Agent` class effectively, its purpose, and how it can be integrated into your projects.
 
 ## Purpose
 
-The `Flow` class serves several key purposes:
+The `Agent` class serves several key purposes:
 
 1. **Conversational Loop**: It establishes a conversational loop with a language model. This means it allows you to interact with the model in a back-and-forth manner, taking turns in the conversation.
 
@@ -20,10 +20,10 @@ The `Flow` class serves several key purposes:
 
 ## Class Definition
 
-The `Flow` class has the following constructor:
+The `Agent` class has the following constructor:
 
 ```python
-class Flow:
+class Agent:
     def __init__(
         self,
         llm: Any,
@@ -49,18 +49,18 @@ class Flow:
 
 ## Usage
 
-The `Flow` class can be used to create a conversational loop with the language model. Here's how you can use it:
+The `Agent` class can be used to create a conversational loop with the language model. Here's how you can use it:
 
 ```python
-from swarms.structs import Flow
+from swarms.structs import Agent
 
-flow = Flow(llm=my_language_model, max_loops=5)
+agent = Agent(llm=my_language_model, max_loops=5)
 
 # Define a starting task or message
 initial_task = "Generate a 10,000 word blog on health and wellness."
 
 # Run the conversation loop
-final_response = flow.run(initial_task)
+final_response = agent.run(initial_task)
 ```
 
 ### Feedback
@@ -68,7 +68,7 @@ final_response = flow.run(initial_task)
 You can collect feedback during the conversation using the `provide_feedback` method:
 
 ```python
-flow.provide_feedback("Generate an SOP for new sales employees on the best cold sales practices")
+agent.provide_feedback("Generate an SOP for new sales employees on the best cold sales practices")
 ```
 
 ### Stopping Condition
@@ -76,12 +76,12 @@ flow.provide_feedback("Generate an SOP for new sales employees on the best cold 
 You can define a custom stopping condition using a function. For example, you can stop the conversation if the response contains the word "Stop":
 
 ```python
-from swarms.structs import Flow
+from swarms.structs import Agent
 
 def stop_when_repeats(response: str) -> bool:
     return "Stop" in response.lower()
 
-flow = Flow(llm=my_language_model, max_loops=5, stopping_condition=stop_when_repeats)
+agent = Agent(llm=my_language_model, max_loops=5, stopping_condition=stop_when_repeats)
 ```
 
 ### Retry Mechanism
@@ -89,7 +89,7 @@ flow = Flow(llm=my_language_model, max_loops=5, stopping_condition=stop_when_rep
 If the response generation fails, the class will retry up to the specified number of attempts:
 
 ```python
-flow = Flow(llm=my_language_model, max_loops=5, retry_attempts=3)
+agent = Agent(llm=my_language_model, max_loops=5, retry_attempts=3)
 ```
 
 ## Additional Information
@@ -107,45 +107,45 @@ Here are three usage examples:
 ### Example 1: Simple Conversation
 
 ```python
-from swarms.structs import Flow
+from swarms.structs import Agent
 # Select any Language model from the models folder
 from swarms.models import Mistral, OpenAIChat
 
 llm = Mistral()
 # llm = OpenAIChat()
 
-flow = Flow(llm=llm, max_loops=5)
+agent = Agent(llm=llm, max_loops=5)
 
 # Define a starting task or message
 initial_task = "Generate an long form analysis on the transformer model architecture."
 
 # Run the conversation loop
-final_response = flow.run(initial_task)
+final_response = agent.run(initial_task)
 ```
 
 ### Example 2: Custom Stopping Condition
 
 ```python
-from swarms.structs import Flow
+from swarms.structs import Agent
 
 def stop_when_repeats(response: str) -> bool:
     return "Stop" in response.lower()
 
-flow = Flow(llm=llm, max_loops=5, stopping_condition=stop_when_repeats)
+agent = Agent(llm=llm, max_loops=5, stopping_condition=stop_when_repeats)
 ```
 
 ### Example 3: Interactive Conversation
 
 ```python
-from swarms.structs import Flow
+from swarms.structs import Agent
 
-flow = Flow(llm=llm, max_loops=5, interactive=True)
+agent = Agent(llm=llm, max_loops=5, interactive=True)
 
 # Provide initial task
 initial_task = "Rank and prioritize the following financial documents and cut out 30% of our expenses"
 
 # Run the conversation loop
-final_response = flow.run(initial_task)
+final_response = agent.run(initial_task)
 ```
 
 ## References and Resources
@@ -154,4 +154,4 @@ final_response = flow.run(initial_task)
 
 ## Conclusion
 
-The `Flow` class provides a powerful way to interact with language models in a conversational manner. By defining custom stopping conditions, collecting feedback, and controlling the flow of the conversation, you can create engaging and interactive applications that make use of advanced language models.
+The `Agent` class provides a powerful way to interact with language models in a conversational manner. By defining custom stopping conditions, collecting feedback, and controlling the agent of the conversation, you can create engaging and interactive applications that make use of advanced language models.

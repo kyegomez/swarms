@@ -3,7 +3,7 @@ import base64
 import requests
 from dotenv import load_dotenv
 from swarms.models import Anthropic, OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 
 # Load environment variables
 load_dotenv()
@@ -89,7 +89,7 @@ def generate_integrated_shopping_list(
 
 
 # Define agent for meal planning
-meal_plan_agent = Flow(
+meal_plan_agent = Agent(
     llm=llm,
     sop=MEAL_PLAN_PROMPT,
     max_loops=1,

@@ -16,9 +16,9 @@ class DialogueSimulator:
     Usage:
     ------
     >>> from swarms import DialogueSimulator
-    >>> from swarms.structs.flow import Flow
-    >>> agents = Flow()
-    >>> agents1 = Flow()
+    >>> from swarms.structs.agent import Agent
+    >>> agents = Agent()
+    >>> agents1 = Agent()
     >>> model = DialogueSimulator([agents, agents1], max_iters=10, name="test")
     >>> model.run("test")
     """

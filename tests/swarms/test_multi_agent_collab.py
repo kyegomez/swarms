@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 from unittest.mock import Mock
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.models import OpenAIChat
 from swarms.swarms.multi_agent_collab import (
     MultiAgentCollaboration,
@@ -11,8 +11,8 @@ from swarms.swarms.multi_agent_collab import (
 )
 
 # Sample agents for testing
-agent1 = Flow(llm=OpenAIChat(), max_loops=2)
-agent2 = Flow(llm=OpenAIChat(), max_loops=2)
+agent1 = Agent(llm=OpenAIChat(), max_loops=2)
+agent2 = Agent(llm=OpenAIChat(), max_loops=2)
 agents = [agent1, agent2]
 
 
@@ -43,7 +43,7 @@ def test_inject(collaboration):
 
 
 def test_inject_agent(collaboration):
-    agent3 = Flow(llm=OpenAIChat(), max_loops=2)
+    agent3 = Agent(llm=OpenAIChat(), max_loops=2)
     collaboration.inject_agent(agent3)
     assert len(collaboration.agents) == 3
     assert agent3 in collaboration.agents

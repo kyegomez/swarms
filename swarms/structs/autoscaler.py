@@ -6,7 +6,7 @@ from typing import Callable, Dict, List
 
 from termcolor import colored
 
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 from swarms.utils.decorators import (
     error_decorator,
     log_decorator,
@@ -19,7 +19,7 @@ class AutoScaler:
     The AutoScaler is like a kubernetes pod, that autoscales an agent or worker or boss!
 
     Wraps around a structure like SequentialWorkflow
-    and or Flow and parallelizes them on multiple threads so they're split across devices
+    and or Agent and parallelizes them on multiple threads so they're split across devices
     and you can use them like that
     Args:
 
@@ -41,12 +41,12 @@ class AutoScaler:
     Usage
     ```
     from swarms.swarms import AutoScaler
-    from swarms.structs.flow import Flow
+    from swarms.structs.agent import Agent
 
     @AutoScaler
-    flow = Flow()
+    agent = Agent()
 
-    flow.run("what is your name")
+    agent.run("what is your name")
     ```
     """
 
@@ -61,7 +61,7 @@ class AutoScaler:
         busy_threshold=0.7,
         agent=None,
     ):
-        self.agent = agent or Flow
+        self.agent = agent or Agent
         self.agents_pool = [self.agent() for _ in range(initial_agents)]
         self.task_queue = queue.Queue()
         self.scale_up_factor = scale_up_factor
@@ -86,7 +86,7 @@ class AutoScaler:
             with self.lock:
                 new_agents_counts = len(self.agents_pool) * self.scale_up_factor
                 for _ in range(new_agents_counts):
-                    self.agents_pool.append(Flow())
+                    self.agents_pool.append(Agent())
         except Exception as error:
             print(f"Error scaling up: {error} try again with a new task")
 

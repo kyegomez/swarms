@@ -165,7 +165,7 @@ In essence, Swarms makes the dream of comprehensive business automation an attai
 
 ### Value prop SWARMS
 ```
-We've helped thousands of people just like you automate 30% of their activities with Swarms. And, all it takes to get started is a fast simple onboarding flow that asks you to integrate your tools and datasources. 
+We've helped thousands of people just like you automate 30% of their activities with Swarms. And, all it takes to get started is a fast simple onboarding agent that asks you to integrate your tools and datasources. 
 ```
 
 In today's competitive landscape, organizations of all sizes are continually seeking ways to automate routine tasks, streamline processes, and make data-driven decisions. Enter Swarms, a revolutionary AI-based technology that leverages the power of multiple autonomous agents to perform tasks with unprecedented speed and accuracy.
