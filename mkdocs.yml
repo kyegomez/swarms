@@ -1,4 +1,3 @@
----
 site_name: Swarms Docs
 plugins:
   - glightbox
@@ -7,9 +6,6 @@ copyright: "&copy; APAC Corp, Inc."
 extra_css:
   - docs/assets/css/extra.css
 extra:
-  # analytics:
-  #   provider: google
-  #   property: G-QM8EDPSCB6
   social:
     - icon: fontawesome/solid/house
       link: assets/img/SwarmsLogoIcon.png
@@ -61,8 +57,8 @@ markdown_extensions:
 nav:
   - Home:
       - Overview: "index.md"
-  - Contributing: "contributing.md"
-  - Docker Container Setup: "docker_setup.md"
+      - Contributing: "contributing.md"
+      - Docker Container Setup: "docker_setup.md"
   - Swarms:
       - Overview: "swarms/index.md"
   - swarms.swarms:
@@ -108,9 +104,9 @@ nav:
   - Guides:
       - Overview: "examples/index.md"
       - Agents:
-          - Flow: "examples/flow.md"
-          - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
-          - OmniAgent: "examples/omni_agent.md"
+      - Flow: "examples/flow.md"
+      - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
+      - OmniAgent: "examples/omni_agent.md"
       - 2O+ Autonomous Agent Blogs: "examples/ideas.md"
   - Applications:
       - CustomerSupport:
