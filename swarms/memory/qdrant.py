@@ -1,5 +1,4 @@
 from typing import List
-from qdrant_client.http.models import CollectionInfoResponse, OperationResponse, SearchResult
 from sentence_transformers import SentenceTransformer
 from httpx import RequestError
 from qdrant_client import QdrantClient
@@ -7,6 +6,22 @@ from qdrant_client.http.models import Distance, VectorParams, PointStruct
 
 class Qdrant:
     def __init__(self, api_key: str, host: str, port: int = 6333, collection_name: str = "qdrant", model_name: str = "BAAI/bge-small-en-v1.5", https: bool = True):
+        """
+            Qdrant class for managing collections and performing vector operations using QdrantClient.
+
+            Attributes:
+                client (QdrantClient): The Qdrant client for interacting with the Qdrant server.
+                collection_name (str): Name of the collection to be managed in Qdrant.
+                model (SentenceTransformer): The model used for generating sentence embeddings.
+
+            Args:
+                api_key (str): API key for authenticating with Qdrant.
+                host (str): Host address of the Qdrant server.
+                port (int): Port number of the Qdrant server. Defaults to 6333.
+                collection_name (str): Name of the collection to be used or created. Defaults to "qdrant".
+                model_name (str): Name of the model to be used for embeddings. Defaults to "BAAI/bge-small-en-v1.5".
+                https (bool): Flag to indicate if HTTPS should be used. Defaults to True.
+            """
         try:
             self.client = QdrantClient(url=host, port=port, api_key=api_key)
             self.collection_name = collection_name
@@ -16,6 +31,12 @@ class Qdrant:
             print(f"Error setting up QdrantClient: {e}")
 
     def _load_embedding_model(self, model_name: str):
+        """
+        Loads the sentence embedding model specified by the model name.
+
+        Args:
+            model_name (str): The name of the model to load for generating embeddings.
+        """
         try:
             self.model = SentenceTransformer(model_name)
         except Exception as e:
@@ -34,6 +55,15 @@ class Qdrant:
             print(f"Collection '{self.collection_name}' created.")
 
     def add_vectors(self, docs: List[dict]):
+        """
+        Adds vector representations of documents to the Qdrant collection.
+
+        Args:
+            docs (List[dict]): A list of documents where each document is a dictionary with at least a 'page_content' key.
+
+        Returns:
+            OperationResponse or None: Returns the operation information if successful, otherwise None.
+        """
         points = []
         for i, doc in enumerate(docs):
             try:
@@ -57,6 +87,16 @@ class Qdrant:
             return None
 
     def search_vectors(self, query: str, limit: int = 3):
+        """
+        Searches the collection for vectors similar to the query vector.
+
+        Args:
+            query (str): The query string to be converted into a vector and used for searching.
+            limit (int): The number of search results to return. Defaults to 3.
+
+        Returns:
+            SearchResult or None: Returns the search results if successful, otherwise None.
+        """
         try:
             query_vector = self.model.encode(query, normalize_embeddings=True)
             search_result = self.client.search(
