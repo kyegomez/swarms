@@ -249,8 +249,8 @@ class Flow:
         autosave: Optional[bool] = False,
         context_length: Optional[int] = 8192,
         user_name: str = "Human:",
-        self_healing_enabled: bool = False,
-        code_interpreter: bool = False,
+        self_healing_enabled: Optional[bool] = False,
+        code_interpreter: Optional[bool] = False,
         multi_modal: Optional[bool] = None,
         **kwargs: Any,
     ):
