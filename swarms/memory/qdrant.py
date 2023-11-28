@@ -6,6 +6,23 @@ from qdrant_client.http.models import Distance, VectorParams, PointStruct
 
 
 class Qdrant:
+    """
+    Qdrant class for managing collections and performing vector operations using QdrantClient.
+
+    Attributes:
+        client (QdrantClient): The Qdrant client for interacting with the Qdrant server.
+        collection_name (str): Name of the collection to be managed in Qdrant.
+        model (SentenceTransformer): The model used for generating sentence embeddings.
+
+    Args:
+        api_key (str): API key for authenticating with Qdrant.
+        host (str): Host address of the Qdrant server.
+        port (int): Port number of the Qdrant server. Defaults to 6333.
+        collection_name (str): Name of the collection to be used or created. Defaults to "qdrant".
+        model_name (str): Name of the model to be used for embeddings. Defaults to "BAAI/bge-small-en-v1.5".
+        https (bool): Flag to indicate if HTTPS should be used. Defaults to True.
+    """
+
     def __init__(
         self,
         api_key: str,
@@ -15,22 +32,6 @@ class Qdrant:
         model_name: str = "BAAI/bge-small-en-v1.5",
         https: bool = True,
     ):
-        """
-        Qdrant class for managing collections and performing vector operations using QdrantClient.
-
-        Attributes:
-            client (QdrantClient): The Qdrant client for interacting with the Qdrant server.
-            collection_name (str): Name of the collection to be managed in Qdrant.
-            model (SentenceTransformer): The model used for generating sentence embeddings.
-
-        Args:
-            api_key (str): API key for authenticating with Qdrant.
-            host (str): Host address of the Qdrant server.
-            port (int): Port number of the Qdrant server. Defaults to 6333.
-            collection_name (str): Name of the collection to be used or created. Defaults to "qdrant".
-            model_name (str): Name of the model to be used for embeddings. Defaults to "BAAI/bge-small-en-v1.5".
-            https (bool): Flag to indicate if HTTPS should be used. Defaults to True.
-        """
         try:
             self.client = QdrantClient(url=host, port=port, api_key=api_key)
             self.collection_name = collection_name

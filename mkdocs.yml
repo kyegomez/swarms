@@ -96,7 +96,7 @@ nav:
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - AutoScaler: "swarms/swarms/autoscaler.md"
-    - Flow: "swarms/structs/flow.md"
+    - Agent: "swarms/structs/agent.md"
     - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
   - swarms.memory:
     - PineconeVectorStoreStore: "swarms/memory/pinecone.md"

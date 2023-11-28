@@ -54,7 +54,7 @@ def generate_treatment_plan(diagnosis):
 xray_image_path = "playground/demos/xray/xray2.jpg"
 
 
-# Diagnosis 
+# Diagnosis
 diagnosis = analyze_xray_agent.run(
     task="Analyze the following XRAY", img=xray_image_path
 )
