@@ -140,7 +140,9 @@ class SequentialWorkflow:
         """
         # If the agent is a Agent instance, we include the task in kwargs for Agent.run()
         if isinstance(agent, Agent):
-            kwargs["task"] = task  # Set the task as a keyword argument for Agent
+            kwargs["task"] = (
+                task  # Set the task as a keyword argument for Agent
+            )
 
         # Append the task to the tasks list
         if self.img:
@@ -156,7 +158,10 @@ class SequentialWorkflow:
         else:
             self.tasks.append(
                 Task(
-                    description=task, agent=agent, args=list(args), kwargs=kwargs
+                    description=task,
+                    agent=agent,
+                    args=list(args),
+                    kwargs=kwargs,
                 )
             )
 
@@ -448,7 +453,9 @@ class SequentialWorkflow:
                         )
                     else:
                         # If it's not a Agent instance, call the agent directly
-                        task.result = await task.agent(*task.args, **task.kwargs)
+                        task.result = await task.agent(
+                            *task.args, **task.kwargs
+                        )
 
                     # Pass the result as an argument to the next task if it exists
                     next_task_index = self.tasks.index(task) + 1

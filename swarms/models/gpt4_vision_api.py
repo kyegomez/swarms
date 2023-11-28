@@ -95,7 +95,13 @@ class GPT4VisionAPI:
         pass
 
     # Function to handle vision tasks
-    def run(self, task: Optional[str] = None, img: Optional[str] = None, *args, **kwargs):
+    def run(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
@@ -286,14 +292,14 @@ class GPT4VisionAPI:
     ):
         """
         Run the model on multiple tasks and images all at once using concurrent
-        
+
         Args:
             tasks (List[str]): List of tasks
             imgs (List[str]): List of image paths
-            
+
         Returns:
             List[str]: List of responses
-        
+
 
         """
         # Instantiate the thread pool executor

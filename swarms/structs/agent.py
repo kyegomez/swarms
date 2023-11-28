@@ -620,7 +620,9 @@ class Agent:
             # If autosave is enabled then save the state
             if self.autosave:
                 save_path = self.saved_state_path or "flow_state.json"
-                print(colored(f"Autosaving agent state to {save_path}", "green"))
+                print(
+                    colored(f"Autosaving agent state to {save_path}", "green")
+                )
                 self.save_state(save_path)
 
             # If return history is enabled then return the response and history

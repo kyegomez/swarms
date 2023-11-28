@@ -7,6 +7,7 @@ from typing import List
 
 load_dotenv()
 
+
 class StableDiffusion:
     """
     A class to interact with the Stable Diffusion API for generating images from text prompts.
@@ -41,7 +42,16 @@ class StableDiffusion:
         Generates an image based on the provided text prompt and returns the paths of the saved images.
     """
 
-    def __init__(self, api_key: str, api_host: str = "https://api.stability.ai", cfg_scale: int = 7, height: int = 1024, width: int = 1024, samples: int = 1, steps: int = 30):
+    def __init__(
+        self,
+        api_key: str,
+        api_host: str = "https://api.stability.ai",
+        cfg_scale: int = 7,
+        height: int = 1024,
+        width: int = 1024,
+        samples: int = 1,
+        steps: int = 30,
+    ):
         """
         Initialize the StableDiffusion class with API configurations.
 
@@ -73,7 +83,7 @@ class StableDiffusion:
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Accept": "application/json",
         }
         self.output_dir = "images"
         os.makedirs(self.output_dir, exist_ok=True)
@@ -117,7 +127,9 @@ class StableDiffusion:
         image_paths = []
         for i, image in enumerate(data["artifacts"]):
             unique_id = uuid.uuid4()  # Generate a unique identifier
-            image_path = os.path.join(self.output_dir, f"{unique_id}_v1_txt2img_{i}.png")
+            image_path = os.path.join(
+                self.output_dir, f"{unique_id}_v1_txt2img_{i}.png"
+            )
             with open(image_path, "wb") as f:
                 f.write(base64.b64decode(image["base64"]))
             image_paths.append(image_path)

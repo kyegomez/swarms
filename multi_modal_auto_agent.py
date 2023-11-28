@@ -13,8 +13,8 @@ img = "images/swarms.jpeg"
 ## Initialize the workflow
 agent = Agent(
     llm=llm,
-    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
     max_loops="auto",
+    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
 
 agent.run(task=task, img=img)
