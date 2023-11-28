@@ -26,7 +26,7 @@ def test_collaboration_initialization(collaboration):
     assert callable(collaboration.select_next_speaker)
     assert collaboration.max_iters == 10
     assert collaboration.results == []
-    assertTrue(collaboration.logging, "Collaboration logging is not enabled")
+    assert collaboration.logging
 
 
 def test_reset(collaboration):
