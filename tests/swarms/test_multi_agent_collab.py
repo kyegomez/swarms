@@ -100,6 +100,7 @@ def test_set_interaction_rules(collaboration):
     assert hasattr(collaboration, "interaction_rules")
     assert collaboration.interaction_rules == rules
 
+
 def test_repr(collaboration):
     repr_str = repr(collaboration)
     assert isinstance(repr_str, str)
