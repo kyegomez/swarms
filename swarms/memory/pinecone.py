@@ -1,5 +1,5 @@
 from typing import Optional
-from swarms.memory.vector_stores.base import BaseVector
+from swarms.memory.base import BaseVector
 import pinecone
 from attr import define, field
 from swarms.utils.hash import str_to_hash
