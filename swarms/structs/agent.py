@@ -602,7 +602,7 @@ class Agent:
 
                         # If interactive mode is not enabled then print the response
                         else:
-                            print(f"AI: {response}")
+                            # print(f"AI: {response}")
                             history.append(f"AI: {response}")
                             # print(response)
                         break
