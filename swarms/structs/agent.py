@@ -20,9 +20,10 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.prompts.tools import (
     DYNAMIC_STOP_PROMPT,
     DYNAMICAL_TOOL_USAGE,
-    SCENARIOS
+    SCENARIOS,
 )
 from swarms.prompts.agent_system_prompts import FLOW_SYSTEM_PROMPT
+
 
 def autonomous_agent_prompt(
     tools_prompt: str = DYNAMICAL_TOOL_USAGE,
