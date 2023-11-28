@@ -69,6 +69,10 @@ class BaseMultiModalModel:
         device: Optional[str] = "cuda",
         max_new_tokens: Optional[int] = 500,
         retries: Optional[int] = 3,
+        system_prompt: Optional[str] = None,
+        meta_prompt: Optional[str] = None,
+        *args,
+        **kwargs,
     ):
         self.model_name = model_name
         self.temperature = temperature
@@ -265,3 +269,17 @@ class BaseMultiModalModel:
         """
         for chunk in content:
             print(chunk)
+
+    def meta_prompt(self):
+        """Meta Prompt
+
+        Returns:
+            _type_: _description_
+        """
+        META_PROMPT = """
+        For any labels or markings on an image that you reference in your response, please 
+        enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for 
+        example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be 
+        numbers or letters and typically correspond to specific segments or parts of the image.
+        """
+        return META_PROMPT

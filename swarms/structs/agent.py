@@ -17,80 +17,12 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.utils.pdf_to_text import pdf_to_text
 
-# System prompt
-FLOW_SYSTEM_PROMPT = f"""
-You are an autonomous agent granted autonomy in a autonomous loop structure.
-Your role is to engage in multi-step conversations with your self or the user,
-generate long-form content like blogs, screenplays, or SOPs,
-and accomplish tasks bestowed by the user. 
-
-You can have internal dialogues with yourself or can interact with the user
-to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand.
-
-"""
-
-
-# Prompts
-DYNAMIC_STOP_PROMPT = """
-
-Now, when you 99% sure you have completed the task, you may follow the instructions below to escape the autonomous loop.
-
-When you have finished the task from the Human, output a special token: <DONE>
-This will enable you to leave the autonomous loop.
-"""
-
-
-# Make it able to handle multi input tools
-DYNAMICAL_TOOL_USAGE = """
-You have access to the following tools:
-Output a JSON object with the following structure to use the tools
-commands: {
-    "tools": {
-        tool1: "tool_name",
-        "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
-        }
-        "tool2: "tool_name",
-        "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
-        }
-        "tool3: "tool_name",
-        "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
-        }
-    }
-}
-
--------------TOOLS---------------------------
-{tools}
-"""
-
-SCENARIOS = """
-commands: {
-    "tools": {
-        tool1: "tool_name",
-        "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
-        }
-        "tool2: "tool_name",
-        "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
-        }
-        "tool3: "tool_name",
-        "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
-        }
-    }
-}
-
-"""
-
+from swarms.prompts.tools import (
+    DYNAMIC_STOP_PROMPT,
+    DYNAMICAL_TOOL_USAGE,
+    SCENARIOS
+)
+from swarms.prompts.agent_system_prompts import FLOW_SYSTEM_PROMPT
 
 def autonomous_agent_prompt(
     tools_prompt: str = DYNAMICAL_TOOL_USAGE,
