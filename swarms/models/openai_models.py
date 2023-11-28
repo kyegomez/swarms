@@ -751,9 +751,9 @@ class OpenAIChat(BaseLLM):
 
     Any parameters that are valid to be passed to the openai.create call can be passed
     in, even if not explicitly saved on this class.
-    
+
     Args:
-    
+
         model_name: The model name to use.
         model_kwargs: Any additional kwargs to pass to the model.
         openai_api_key: The OpenAI API key to use.
@@ -764,8 +764,8 @@ class OpenAIChat(BaseLLM):
         streaming: Whether to stream the results or not.
         allowed_special: Set of special tokens that are allowed。
         disallowed_special: Set of special tokens that are not allowed。
-        
-        
+
+
 
     Example:
         .. code-block:: python
