@@ -1,5 +1,3 @@
-
-
 # System prompt
 FLOW_SYSTEM_PROMPT = """
 You are an autonomous agent granted autonomy in a autonomous loop structure.

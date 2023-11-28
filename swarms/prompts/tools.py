@@ -1,4 +1,3 @@
-
 # Prompts
 DYNAMIC_STOP_PROMPT = """
 
