@@ -15,6 +15,7 @@ from swarms.utils.parse_code import extract_code_in_backticks_in_string
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.utils.pdf_to_text import pdf_to_text
 
 # System prompt
 FLOW_SYSTEM_PROMPT = f"""
@@ -252,6 +253,10 @@ class Agent:
         self_healing_enabled: Optional[bool] = False,
         code_interpreter: Optional[bool] = False,
         multi_modal: Optional[bool] = None,
+        pdf_path: Optional[str] = None,
+        list_of_pdf: Optional[str] = None,
+        tokenizer: Optional[str] = None,
+        *args,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -282,6 +287,9 @@ class Agent:
         self.self_healing_enabled = self_healing_enabled
         self.code_interpreter = code_interpreter
         self.multi_modal = multi_modal
+        self.pdf_path = pdf_path
+        self.list_of_pdf = list_of_pdf
+        self.tokenizer = tokenizer
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -350,10 +358,6 @@ class Agent:
             )
 
         return "\n".join(params_str_list)
-
-    # def parse_tool_command(self, text: str):
-    #     # Parse the text for tool usage
-    #     pass
 
     def get_tool_description(self):
         """Get the tool description"""
@@ -1110,6 +1114,31 @@ class Agent:
         parsed_code = extract_code_in_backticks_in_string(code)
         run_code = self.code_executor.run(parsed_code)
         return run_code
+
+    def pdf_connector(self, pdf: str = None):
+        """Transforms the pdf into text
+
+        Args:
+            pdf (str, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        pdf = pdf or self.pdf_path
+        text = pdf_to_text(pdf)
+        return text
+
+    def pdf_chunker(self, text: str = None):
+        """Chunk the pdf into sentences
+
+        Args:
+            text (str, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        text = text or self.pdf_connector()
+        pass
 
     def tools_prompt_prep(self, docs: str = None, scenarios: str = None):
         """
