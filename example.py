@@ -24,3 +24,4 @@ agent = Agent(llm=llm, max_loops=1, dashboard=True)
 
 # Run the workflow on a task
 out = agent.run("Generate a 10,000 word blog on health and wellness.")
+print(out)
