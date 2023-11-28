@@ -33,28 +33,17 @@ code
 """
 
 # Initialize the language model
-llm = OpenAIChat(
-    openai_api_key=api_key,
-    max_tokens=5000
-)
+llm = OpenAIChat(openai_api_key=api_key, max_tokens=5000)
 
 
 # Documentation agent
 documentation_agent = Agent(
-    llm=llm,
-    sop=DOCUMENTATION_SOP,
-    max_loops=1,
-    multi_modal=True
+    llm=llm, sop=DOCUMENTATION_SOP, max_loops=1, multi_modal=True
 )
 
 
 # Tests agent
-tests_agent = Agent(
-    llm=llm,
-    sop=TEST_SOP,
-    max_loops=2,
-    multi_modal=True
-)
+tests_agent = Agent(llm=llm, sop=TEST_SOP, max_loops=2, multi_modal=True)
 
 
 # Run the documentation agent
@@ -64,5 +53,6 @@ documentation = documentation_agent.run(
 
 # Run the tests agent
 tests = tests_agent.run(
-    f"Write tests for the following code:{TASK} here is the documentation: {documentation}"
+    f"Write tests for the following code:{TASK} here is the documentation:"
+    f" {documentation}"
 )
