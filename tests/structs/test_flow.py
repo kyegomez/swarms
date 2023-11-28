@@ -7,7 +7,7 @@ import pytest
 from dotenv import load_dotenv
 
 from swarms.models import OpenAIChat
-from swarms.structs.flow import Flow, stop_when_repeats
+from swarms.structs.agent import Agent, stop_when_repeats
 from swarms.utils.logger import logger
 
 load_dotenv()
@@ -25,12 +25,12 @@ def mocked_llm():
 
 @pytest.fixture
 def basic_flow(mocked_llm):
-    return Flow(llm=mocked_llm, max_loops=5)
+    return Agent(llm=mocked_llm, max_loops=5)
 
 
 @pytest.fixture
 def flow_with_condition(mocked_llm):
-    return Flow(
+    return Agent(
         llm=mocked_llm, max_loops=5, stopping_condition=stop_when_repeats
     )
 
@@ -93,7 +93,7 @@ def test_save_and_load(basic_flow, tmp_path):
     basic_flow.memory.append(["Test1", "Test2"])
     basic_flow.save(file_path)
 
-    new_flow = Flow(llm=mocked_llm, max_loops=5)
+    new_flow = Agent(llm=mocked_llm, max_loops=5)
     new_flow.load(file_path)
     assert new_flow.memory == [["Test1", "Test2"]]
 
@@ -107,19 +107,19 @@ def test_env_variable_handling(monkeypatch):
 # TODO: Add more tests, especially edge cases and exception cases. Implement parametrized tests for varied inputs.
 
 
-# Test initializing the flow with different stopping conditions
+# Test initializing the agent with different stopping conditions
 def test_flow_with_custom_stopping_condition(mocked_llm):
     def stopping_condition(x):
         return "terminate" in x.lower()
 
-    flow = Flow(
+    agent = Agent(
         llm=mocked_llm, max_loops=5, stopping_condition=stopping_condition
     )
-    assert flow.stopping_condition("Please terminate now")
-    assert not flow.stopping_condition("Continue the process")
+    assert agent.stopping_condition("Please terminate now")
+    assert not agent.stopping_condition("Continue the process")
 
 
-# Test calling the flow directly
+# Test calling the agent directly
 def test_flow_call(basic_flow):
     response = basic_flow("Test call")
     assert response == "Test call"
@@ -187,14 +187,14 @@ def test_check_stopping_condition(flow_with_condition):
 
 # Test without providing max loops (default value should be 5)
 def test_default_max_loops(mocked_llm):
-    flow = Flow(llm=mocked_llm)
-    assert flow.max_loops == 5
+    agent = Agent(llm=mocked_llm)
+    assert agent.max_loops == 5
 
 
-# Test creating flow from llm and template
+# Test creating agent from llm and template
 def test_from_llm_and_template(mocked_llm):
-    flow = Flow.from_llm_and_template(mocked_llm, "Test template")
-    assert isinstance(flow, Flow)
+    agent = Agent.from_llm_and_template(mocked_llm, "Test template")
+    assert isinstance(agent, Agent)
 
 
 # Mocking the OpenAIChat for testing
@@ -202,8 +202,8 @@ def test_from_llm_and_template(mocked_llm):
 def test_mocked_openai_chat(MockedOpenAIChat):
     llm = MockedOpenAIChat(openai_api_key=openai_api_key)
     llm.return_value = MagicMock()
-    flow = Flow(llm=llm, max_loops=5)
-    flow.run("Mocked run")
+    agent = Agent(llm=llm, max_loops=5)
+    agent.run("Mocked run")
     assert MockedOpenAIChat.called
 
 
@@ -232,16 +232,16 @@ def test_different_retry_intervals(mocked_sleep, basic_flow):
     assert response == "Test retry interval"
 
 
-# Test invoking the flow with additional kwargs
+# Test invoking the agent with additional kwargs
 @patch("time.sleep", return_value=None)
 def test_flow_call_with_kwargs(mocked_sleep, basic_flow):
     response = basic_flow("Test call", param1="value1", param2="value2")
     assert response == "Test call"
 
 
-# Test initializing the flow with all parameters
+# Test initializing the agent with all parameters
 def test_flow_initialization_all_params(mocked_llm):
-    flow = Flow(
+    agent = Agent(
         llm=mocked_llm,
         max_loops=10,
         stopping_condition=stop_when_repeats,
@@ -252,11 +252,11 @@ def test_flow_initialization_all_params(mocked_llm):
         param1="value1",
         param2="value2",
     )
-    assert flow.max_loops == 10
-    assert flow.loop_interval == 2
-    assert flow.retry_attempts == 4
-    assert flow.retry_interval == 2
-    assert flow.interactive
+    assert agent.max_loops == 10
+    assert agent.loop_interval == 2
+    assert agent.retry_attempts == 4
+    assert agent.retry_interval == 2
+    assert agent.interactive
 
 
 # Test the stopping token is in the response
@@ -268,30 +268,30 @@ def test_stopping_token_in_response(mocked_sleep, basic_flow):
 
 @pytest.fixture
 def flow_instance():
-    # Create an instance of the Flow class with required parameters for testing
+    # Create an instance of the Agent class with required parameters for testing
     # You may need to adjust this based on your actual class initialization
     llm = OpenAIChat(
         openai_api_key=openai_api_key,
     )
-    flow = Flow(
+    agent = Agent(
         llm=llm,
         max_loops=5,
         interactive=False,
         dashboard=False,
         dynamic_temperature=False,
     )
-    return flow
+    return agent
 
 
 def test_flow_run(flow_instance):
-    # Test the basic run method of the Flow class
+    # Test the basic run method of the Agent class
     response = flow_instance.run("Test task")
     assert isinstance(response, str)
     assert len(response) > 0
 
 
 def test_flow_interactive_mode(flow_instance):
-    # Test the interactive mode of the Flow class
+    # Test the interactive mode of the Agent class
     flow_instance.interactive = True
     response = flow_instance.run("Test task")
     assert isinstance(response, str)
@@ -299,7 +299,7 @@ def test_flow_interactive_mode(flow_instance):
 
 
 def test_flow_dashboard_mode(flow_instance):
-    # Test the dashboard mode of the Flow class
+    # Test the dashboard mode of the Agent class
     flow_instance.dashboard = True
     response = flow_instance.run("Test task")
     assert isinstance(response, str)
@@ -307,7 +307,7 @@ def test_flow_dashboard_mode(flow_instance):
 
 
 def test_flow_autosave(flow_instance):
-    # Test the autosave functionality of the Flow class
+    # Test the autosave functionality of the Agent class
     flow_instance.autosave = True
     response = flow_instance.run("Test task")
     assert isinstance(response, str)
@@ -359,7 +359,7 @@ def test_flow_graceful_shutdown(flow_instance):
     assert result is not None
 
 
-# Add more test cases as needed to cover various aspects of your Flow class
+# Add more test cases as needed to cover various aspects of your Agent class
 
 
 def test_flow_max_loops(flow_instance):
@@ -481,7 +481,7 @@ def test_flow_clear_conversation_log(flow_instance):
 
 
 def test_flow_get_state(flow_instance):
-    # Test getting the current state of the Flow instance
+    # Test getting the current state of the Agent instance
     state = flow_instance.get_state()
     assert isinstance(state, dict)
     assert "current_prompt" in state
@@ -497,7 +497,7 @@ def test_flow_get_state(flow_instance):
 
 
 def test_flow_load_state(flow_instance):
-    # Test loading the state into the Flow instance
+    # Test loading the state into the Agent instance
     state = {
         "current_prompt": "Loaded prompt",
         "instructions": ["Step 1", "Step 2"],
@@ -529,7 +529,7 @@ def test_flow_load_state(flow_instance):
 
 
 def test_flow_save_state(flow_instance):
-    # Test saving the state of the Flow instance
+    # Test saving the state of the Agent instance
     flow_instance.change_prompt("New prompt")
     flow_instance.add_instruction("Step 1")
     flow_instance.add_user_message("User message")
@@ -602,7 +602,7 @@ def test_flow_contextual_intent_reset(flow_instance):
     assert "New York" in response2
 
 
-# Add more test cases as needed to cover various aspects of your Flow class
+# Add more test cases as needed to cover various aspects of your Agent class
 def test_flow_interruptible(flow_instance):
     # Test interruptible mode
     flow_instance.interruptible = True
@@ -789,9 +789,9 @@ def test_flow_clear_context(flow_instance):
 
 
 def test_flow_input_validation(flow_instance):
-    # Test input validation for invalid flow configurations
+    # Test input validation for invalid agent configurations
     with pytest.raises(ValueError):
-        Flow(config=None)  # Invalid config, should raise ValueError
+        Agent(config=None)  # Invalid config, should raise ValueError
 
     with pytest.raises(ValueError):
         flow_instance.set_message_delimiter(
@@ -848,7 +848,7 @@ def test_flow_conversation_persistence(flow_instance):
     flow_instance.run("Message 2")
     conversation = flow_instance.get_conversation()
 
-    new_flow_instance = Flow()
+    new_flow_instance = Agent()
     new_flow_instance.load_conversation(conversation)
     assert len(new_flow_instance.get_message_history()) == 2
     assert "Message 1" in new_flow_instance.get_message_history()[0]
@@ -916,7 +916,7 @@ def test_flow_multiple_event_listeners(flow_instance):
         mock_second_response.assert_called_once()
 
 
-# Add more test cases as needed to cover various aspects of your Flow class
+# Add more test cases as needed to cover various aspects of your Agent class
 def test_flow_error_handling(flow_instance):
     # Test error handling and exceptions
     with pytest.raises(ValueError):
@@ -965,7 +965,7 @@ def test_flow_context_operations(flow_instance):
     assert flow_instance.get_context("user_id") is None
 
 
-# Add more test cases as needed to cover various aspects of your Flow class
+# Add more test cases as needed to cover various aspects of your Agent class
 
 
 def test_flow_long_messages(flow_instance):
@@ -1015,7 +1015,7 @@ def test_flow_custom_logging(flow_instance):
 
 
 def test_flow_performance(flow_instance):
-    # Test the performance of the Flow class by running a large number of messages
+    # Test the performance of the Agent class by running a large number of messages
     num_messages = 1000
     for i in range(num_messages):
         flow_instance.run(f"Message {i}")
@@ -1036,7 +1036,7 @@ def test_flow_complex_use_case(flow_instance):
     assert flow_instance.get_context("user_id") is None
 
 
-# Add more test cases as needed to cover various aspects of your Flow class
+# Add more test cases as needed to cover various aspects of your Agent class
 def test_flow_context_handling(flow_instance):
     # Test context handling
     flow_instance.add_context("user_id", "12345")
@@ -1081,7 +1081,7 @@ def test_flow_custom_timeout(flow_instance):
     assert execution_time >= 10  # Ensure the timeout was respected
 
 
-# Add more test cases as needed to thoroughly cover your Flow class
+# Add more test cases as needed to thoroughly cover your Agent class
 
 
 def test_flow_interactive_run(flow_instance, capsys):
@@ -1111,7 +1111,7 @@ def test_flow_interactive_run(flow_instance, capsys):
     simulate_user_input(user_input)
 
 
-# Assuming you have already defined your Flow class and created an instance for testing
+# Assuming you have already defined your Agent class and created an instance for testing
 
 
 def test_flow_agent_history_prompt(flow_instance):
@@ -1152,34 +1152,36 @@ def test_flow_bulk_run(flow_instance):
 
 
 def test_flow_from_llm_and_template():
-    # Test creating Flow instance from an LLM and a template
+    # Test creating Agent instance from an LLM and a template
     llm_instance = mocked_llm  # Replace with your LLM class
     template = "This is a template for testing."
 
-    flow_instance = Flow.from_llm_and_template(llm_instance, template)
+    flow_instance = Agent.from_llm_and_template(llm_instance, template)
 
-    assert isinstance(flow_instance, Flow)
+    assert isinstance(flow_instance, Agent)
 
 
 def test_flow_from_llm_and_template_file():
-    # Test creating Flow instance from an LLM and a template file
+    # Test creating Agent instance from an LLM and a template file
     llm_instance = mocked_llm  # Replace with your LLM class
     template_file = "template.txt"  # Create a template file for testing
 
-    flow_instance = Flow.from_llm_and_template_file(llm_instance, template_file)
+    flow_instance = Agent.from_llm_and_template_file(
+        llm_instance, template_file
+    )
 
-    assert isinstance(flow_instance, Flow)
+    assert isinstance(flow_instance, Agent)
 
 
 def test_flow_save_and_load(flow_instance, tmp_path):
-    # Test saving and loading the flow state
+    # Test saving and loading the agent state
     file_path = tmp_path / "flow_state.json"
 
     # Save the state
     flow_instance.save(file_path)
 
     # Create a new instance and load the state
-    new_flow_instance = Flow(llm=mocked_llm, max_loops=5)
+    new_flow_instance = Agent(llm=mocked_llm, max_loops=5)
     new_flow_instance.load(file_path)
 
     # Ensure that the loaded state matches the original state
@@ -1195,22 +1197,22 @@ def test_flow_validate_response(flow_instance):
     assert flow_instance.validate_response(invalid_response) is False
 
 
-# Add more test cases as needed for other methods and features of your Flow class
+# Add more test cases as needed for other methods and features of your Agent class
 
 # Finally, don't forget to run your tests using a testing framework like pytest
 
-# Assuming you have already defined your Flow class and created an instance for testing
+# Assuming you have already defined your Agent class and created an instance for testing
 
 
 def test_flow_print_history_and_memory(capsys, flow_instance):
-    # Test printing the history and memory of the flow
+    # Test printing the history and memory of the agent
     history = ["User: Hi", "AI: Hello"]
     flow_instance.memory = [history]
 
     flow_instance.print_history_and_memory()
 
     captured = capsys.readouterr()
-    assert "Flow History and Memory" in captured.out
+    assert "Agent History and Memory" in captured.out
     assert "Loop 1:" in captured.out
     assert "User: Hi" in captured.out
     assert "AI: Hello" in captured.out
@@ -1225,6 +1227,6 @@ def test_flow_run_with_timeout(flow_instance):
     assert response in ["Actual Response", "Timeout"]
 
 
-# Add more test cases as needed for other methods and features of your Flow class
+# Add more test cases as needed for other methods and features of your Agent class
 
 # Finally, don't forget to run your tests using a testing framework like pytest

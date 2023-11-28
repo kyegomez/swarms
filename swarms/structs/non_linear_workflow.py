@@ -1,5 +1,5 @@
 from swarms.models import OpenAIChat
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 
 import concurrent.futures
 from typing import Callable, List, Dict, Any, Sequence
@@ -10,7 +10,7 @@ class Task:
         self,
         id: str,
         task: str,
-        flows: Sequence[Flow],
+        flows: Sequence[Agent],
         dependencies: List[str] = [],
     ):
         self.id = id
@@ -21,12 +21,12 @@ class Task:
 
     def execute(self, parent_results: Dict[str, Any]):
         args = [parent_results[dep] for dep in self.dependencies]
-        for flow in self.flows:
-            result = flow.run(self.task, *args)
+        for agent in self.flows:
+            result = agent.run(self.task, *args)
             self.results.append(result)
             args = [
                 result
-            ]  # The output of one flow becomes the input to the next
+            ]  # The output of one agent becomes the input to the next
 
 
 class Workflow:
@@ -65,13 +65,13 @@ class Workflow:
 # create flows
 llm = OpenAIChat(openai_api_key="sk-")
 
-flow1 = Flow(llm, max_loops=1)
-flow2 = Flow(llm, max_loops=1)
-flow3 = Flow(llm, max_loops=1)
-flow4 = Flow(llm, max_loops=1)
+flow1 = Agent(llm, max_loops=1)
+flow2 = Agent(llm, max_loops=1)
+flow3 = Agent(llm, max_loops=1)
+flow4 = Agent(llm, max_loops=1)
 
 
-# Create tasks with their respective Flows and task strings
+# Create tasks with their respective Agents and task strings
 task1 = Task("task1", "Generate a summary on Quantum field theory", [flow1])
 task2 = Task(
     "task2",

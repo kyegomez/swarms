@@ -1,5 +1,5 @@
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 
 api_key = ""
 
@@ -12,7 +12,7 @@ llm = OpenAIChat(
 )
 
 ## Initialize the workflow
-flow = Flow(
+agent = Agent(
     llm=llm,
     max_loops=2,
     dashboard=True,
@@ -24,12 +24,12 @@ flow = Flow(
     # dynamic_temperature=False,  # Set to 'True' for dynamic temperature handling.
 )
 
-# out = flow.load_state("flow_state.json")
-# temp = flow.dynamic_temperature()
-# filter = flow.add_response_filter("Trump")
-out = flow.run("Generate a 10,000 word blog on health and wellness.")
-# out = flow.validate_response(out)
-# out = flow.analyze_feedback(out)
-# out = flow.print_history_and_memory()
-# # out = flow.save_state("flow_state.json")
+# out = agent.load_state("flow_state.json")
+# temp = agent.dynamic_temperature()
+# filter = agent.add_response_filter("Trump")
+out = agent.run("Generate a 10,000 word blog on health and wellness.")
+# out = agent.validate_response(out)
+# out = agent.analyze_feedback(out)
+# out = agent.print_history_and_memory()
+# # out = agent.save_state("flow_state.json")
 # print(out)

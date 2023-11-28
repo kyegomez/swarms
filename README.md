@@ -27,10 +27,10 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
-### `Flow` Example
+### `Agent` Example
 - Reliable Structure that provides LLMS autonomy
 - Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
-- Enterprise Grade + Production Grade: `Flow` is designed and optimized for automating real-world tasks at scale!
+- Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
 
 ```python
 
@@ -38,9 +38,9 @@ import os
 
 from dotenv import load_dotenv
 
-# Import the OpenAIChat model and the Flow struct
+# Import the OpenAIChat model and the Agent struct
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 
 # Load the environment variables
 load_dotenv()
@@ -56,10 +56,10 @@ llm = OpenAIChat(
 
 
 ## Initialize the workflow
-flow = Flow(llm=llm, max_loops=1, dashboard=True)
+agent = Agent(llm=llm, max_loops=1, dashboard=True)
 
 # Run the workflow on a task
-out = flow.run("Generate a 10,000 word blog on health and wellness.")
+out = agent.run("Generate a 10,000 word blog on health and wellness.")
 
 
 
@@ -70,11 +70,11 @@ out = flow.run("Generate a 10,000 word blog on health and wellness.")
 ### `SequentialWorkflow`
 - A Sequential swarm of autonomous agents where each agent's outputs are fed into the next agent
 - Save and Restore Workflow states!
-- Integrate Flow's with various LLMs and Multi-Modality Models
+- Integrate Agent's with various LLMs and Multi-Modality Models
 
 ```python
 from swarms.models import OpenAIChat, BioGPT, Anthropic
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 
@@ -83,7 +83,7 @@ api_key = (
     ""  # Your actual API key here
 )
 
-# Initialize the language flow
+# Initialize the language agent
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
@@ -95,16 +95,16 @@ biochat = BioGPT()
 # Use Anthropic
 anthropic = Anthropic()
 
-# Initialize the agent with the language flow
-agent1 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize the agent with the language agent
+agent1 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create another agent for a different task
-agent2 = Flow(llm=llm, max_loops=1, dashboard=False)
+agent2 = Agent(llm=llm, max_loops=1, dashboard=False)
 
 # Create another agent for a different task
-agent3 = Flow(llm=biochat, max_loops=1, dashboard=False)
+agent3 = Agent(llm=biochat, max_loops=1, dashboard=False)
 
-# agent4 = Flow(llm=anthropic, max_loops="auto")
+# agent4 = Agent(llm=anthropic, max_loops="auto")
 
 # Create the workflow
 workflow = SequentialWorkflow(max_loops=1)
@@ -127,10 +127,10 @@ for task in workflow.tasks:
 ```
 
 ## `Multi Modal Autonomous Agents`
-- Run the flow with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
+- Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
 
 ```python
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
@@ -147,14 +147,14 @@ task = (
 img = "assembly_line.jpg"
 
 ## Initialize the workflow
-flow = Flow(
+agent = Agent(
     llm=llm,
     max_loops='auto'
     sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
     dashboard=True,
 )
 
-flow.run(task=task, img=img)
+agent.run(task=task, img=img)
 
 
 
@@ -237,8 +237,16 @@ Swarms framework is not just a tool but a robust, scalable, and secure partner i
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
 
-## Contribute
-- We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1)
+## 🫶 Contributions:
+
+Swarms is an open-source project, and contributions are welcome. If you want to contribute, you can create new features, fix bugs, or improve the infrastructure. Please refer to the [CONTRIBUTING.md](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1) file in the repository for more information on how to contribute.
+
+To see how to contribute, visit [Contribution guidelines](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md)
+
+<a href="https://github.com/kyegomez/swarms/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
+</a>
+
 
 ## Community
 - [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)

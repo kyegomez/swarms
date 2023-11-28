@@ -1,4 +1,4 @@
-name: Welcome WorkFlow
+name: Welcome WorkAgent
 
 on:
   issues:

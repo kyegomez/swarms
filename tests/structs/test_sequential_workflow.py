@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from swarms.models import OpenAIChat
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow, Task
 
 # Mock the OpenAI API key using environment variables
@@ -21,8 +21,8 @@ class MockOpenAIChat:
         return "Mocked result"
 
 
-# Mock Flow class for testing
-class MockFlow:
+# Mock Agent class for testing
+class MockAgent:
     def __init__(self, *args, **kwargs):
         pass
 
@@ -45,16 +45,16 @@ class MockSequentialWorkflow:
 # Test Task class
 def test_task_initialization():
     description = "Sample Task"
-    flow = MockOpenAIChat()
-    task = Task(description=description, flow=flow)
+    agent = MockOpenAIChat()
+    task = Task(description=description, agent=agent)
     assert task.description == description
-    assert task.flow == flow
+    assert task.agent == agent
 
 
 def test_task_execute():
     description = "Sample Task"
-    flow = MockOpenAIChat()
-    task = Task(description=description, flow=flow)
+    agent = MockOpenAIChat()
+    task = Task(description=description, agent=agent)
     task.execute()
     assert task.result == "Mocked result"
 
@@ -78,7 +78,7 @@ def test_sequential_workflow_add_task():
     workflow.add(task_description, task_flow)
     assert len(workflow.tasks) == 1
     assert workflow.tasks[0].description == task_description
-    assert workflow.tasks[0].flow == task_flow
+    assert workflow.tasks[0].agent == task_flow
 
 
 def test_sequential_workflow_reset_workflow():
@@ -169,8 +169,8 @@ def test_sequential_workflow_workflow_dashboard(capfd):
     assert "Sequential Workflow Dashboard" in out
 
 
-# Mock Flow class for async testing
-class MockAsyncFlow:
+# Mock Agent class for async testing
+class MockAsyncAgent:
     def __init__(self, *args, **kwargs):
         pass
 
@@ -183,7 +183,7 @@ class MockAsyncFlow:
 async def test_sequential_workflow_arun():
     workflow = SequentialWorkflow()
     task_description = "Sample Task"
-    task_flow = MockAsyncFlow()
+    task_flow = MockAsyncAgent()
     workflow.add(task_description, task_flow)
     await workflow.arun()
     assert workflow.tasks[0].result == "Mocked result"
@@ -196,9 +196,9 @@ def test_real_world_usage_with_openai_key():
 
 
 def test_real_world_usage_with_flow_and_openai_key():
-    # Initialize a flow with the language model
-    flow = Flow(llm=OpenAIChat())
-    assert isinstance(flow, Flow)
+    # Initialize a agent with the language model
+    agent = Agent(llm=OpenAIChat())
+    assert isinstance(agent, Agent)
 
 
 def test_real_world_usage_with_sequential_workflow():

@@ -6,7 +6,7 @@ from swarms.prompts.accountant_swarm_prompts import (
     DOC_ANALYZER_AGENT_PROMPT,
     SUMMARY_GENERATOR_AGENT_PROMPT,
 )
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.utils.pdf_to_text import pdf_to_text
 
 # Environment variables
@@ -28,21 +28,21 @@ llm2 = Anthropic(
 
 
 # Agents
-doc_analyzer_agent = Flow(
+doc_analyzer_agent = Agent(
     llm=llm2,
     sop=DOC_ANALYZER_AGENT_PROMPT,
     max_loops=1,
     autosave=True,
     saved_state_path="doc_analyzer_agent.json",
 )
-summary_generator_agent = Flow(
+summary_generator_agent = Agent(
     llm=llm2,
     sop=SUMMARY_GENERATOR_AGENT_PROMPT,
     max_loops=1,
     autosave=True,
     saved_state_path="summary_generator_agent.json",
 )
-decision_making_support_agent = Flow(
+decision_making_support_agent = Agent(
     llm=llm2,
     sop=DECISION_MAKING_PROMPT,
     max_loops=1,

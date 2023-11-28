@@ -7,7 +7,7 @@ from swarms.prompts.ai_research_team import (
     PAPER_IMPLEMENTOR_AGENT_PROMPT,
     PAPER_SUMMARY_ANALYZER,
 )
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.utils.pdf_to_text import pdf_to_text
 
 # Base llms
@@ -29,7 +29,7 @@ llm2 = Anthropic(
 )
 
 # Agents
-paper_summarizer_agent = Flow(
+paper_summarizer_agent = Agent(
     llm=llm2,
     sop=PAPER_SUMMARY_ANALYZER,
     max_loops=1,
@@ -37,7 +37,7 @@ paper_summarizer_agent = Flow(
     saved_state_path="paper_summarizer.json",
 )
 
-paper_implementor_agent = Flow(
+paper_implementor_agent = Agent(
     llm=llm1,
     sop=PAPER_IMPLEMENTOR_AGENT_PROMPT,
     max_loops=1,

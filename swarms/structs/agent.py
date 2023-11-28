@@ -15,6 +15,7 @@ from swarms.utils.parse_code import extract_code_in_backticks_in_string
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.utils.pdf_to_text import pdf_to_text
 
 # System prompt
 FLOW_SYSTEM_PROMPT = f"""
@@ -136,10 +137,10 @@ def parse_done_token(response: str) -> bool:
     return "<DONE>" in response
 
 
-class Flow:
+class Agent:
     """
-    Flow is the structure that provides autonomy to any llm in a reliable and effective fashion.
-    The flow structure is designed to be used with any llm and provides the following features:
+    Agent is the structure that provides autonomy to any llm in a reliable and effective fashion.
+    The agent structure is designed to be used with any llm and provides the following features:
 
     Features:
     * Interactive, AI generates, then user input
@@ -164,11 +165,11 @@ class Flow:
         run: Run the autonomous agent loop
         run_concurrent: Run the autonomous agent loop concurrently
         bulk_run: Run the autonomous agent loop in bulk
-        save: Save the flow history to a file
-        load: Load the flow history from a file
+        save: Save the agent history to a file
+        load: Load the agent history from a file
         validate_response: Validate the response based on certain criteria
-        print_history_and_memory: Print the history and memory of the flow
-        step: Execute a single step in the flow interaction
+        print_history_and_memory: Print the history and memory of the agent
+        step: Execute a single step in the agent interaction
         graceful_shutdown: Gracefully shutdown the system saving the state
         run_with_timeout: Run the loop but stop if it takes longer than the timeout
         analyze_feedback: Analyze the feedback for issues
@@ -200,28 +201,28 @@ class Flow:
         parse_tool_command: Parse the text for tool usage
         dynamic_temperature: Dynamically change the temperature
         _run: Generate a result using the provided keyword args.
-        from_llm_and_template: Create FlowStream from LLM and a string template.
-        from_llm_and_template_file: Create FlowStream from LLM and a template file.
-        save_state: Save the state of the flow
-        load_state: Load the state of the flow
-        run_async: Run the flow asynchronously
-        arun: Run the flow asynchronously
+        from_llm_and_template: Create AgentStream from LLM and a string template.
+        from_llm_and_template_file: Create AgentStream from LLM and a template file.
+        save_state: Save the state of the agent
+        load_state: Load the state of the agent
+        run_async: Run the agent asynchronously
+        arun: Run the agent asynchronously
         run_code: Run the code in the response
 
     Example:
     >>> from swarms.models import OpenAIChat
-    >>> from swarms.structs import Flow
+    >>> from swarms.structs import Agent
     >>> llm = OpenAIChat(
     ...     openai_api_key=api_key,
     ...     temperature=0.5,
     ... )
-    >>> flow = Flow(
+    >>> agent = Agent(
     ...     llm=llm, max_loops=5,
     ...     #system_prompt=SYSTEM_PROMPT,
     ...     #retry_interval=1,
     ... )
-    >>> flow.run("Generate a 10,000 word blog")
-    >>> flow.save("path/flow.yaml")
+    >>> agent.run("Generate a 10,000 word blog")
+    >>> agent.save("path/agent.yaml")
     """
 
     def __init__(
@@ -252,6 +253,10 @@ class Flow:
         self_healing_enabled: Optional[bool] = False,
         code_interpreter: Optional[bool] = False,
         multi_modal: Optional[bool] = None,
+        pdf_path: Optional[str] = None,
+        list_of_pdf: Optional[str] = None,
+        tokenizer: Optional[str] = None,
+        *args,
         **kwargs: Any,
     ):
         self.llm = llm
@@ -282,6 +287,9 @@ class Flow:
         self.self_healing_enabled = self_healing_enabled
         self.code_interpreter = code_interpreter
         self.multi_modal = multi_modal
+        self.pdf_path = pdf_path
+        self.list_of_pdf = list_of_pdf
+        self.tokenizer = tokenizer
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -350,10 +358,6 @@ class Flow:
             )
 
         return "\n".join(params_str_list)
-
-    # def parse_tool_command(self, text: str):
-    #     # Parse the text for tool usage
-    #     pass
 
     def get_tool_description(self):
         """Get the tool description"""
@@ -460,13 +464,13 @@ class Flow:
         print(
             colored(
                 f"""
-                Flow Dashboard
+                Agent Dashboard
                 --------------------------------------------
 
-                Flow loop is initializing for {self.max_loops} with the following configuration:
+                Agent loop is initializing for {self.max_loops} with the following configuration:
                 ----------------------------------------
 
-                Flow Configuration:
+                Agent Configuration:
                     Name: {self.agent_name}
                     Description: {self.agent_description}
                     Standard Operating Procedure: {self.sop}
@@ -523,7 +527,7 @@ class Flow:
         Args:
             task (str): The initial task to run
 
-        Flow:
+        Agent:
         1. Generate a response
         2. Check stopping condition
         3. If stopping condition is met, stop
@@ -602,7 +606,7 @@ class Flow:
 
                         # If interactive mode is not enabled then print the response
                         else:
-                            print(f"AI: {response}")
+                            # print(f"AI: {response}")
                             history.append(f"AI: {response}")
                             # print(response)
                         break
@@ -620,7 +624,9 @@ class Flow:
             # If autosave is enabled then save the state
             if self.autosave:
                 save_path = self.saved_state_path or "flow_state.json"
-                print(colored(f"Autosaving flow state to {save_path}", "green"))
+                print(
+                    colored(f"Autosaving agent state to {save_path}", "green")
+                )
                 self.save_state(save_path)
 
             # If return history is enabled then return the response and history
@@ -629,7 +635,7 @@ class Flow:
 
             return response
         except Exception as error:
-            print(f"Error running flow: {error}")
+            print(f"Error running agent: {error}")
             raise
 
     async def arun(self, task: str, **kwargs):
@@ -639,7 +645,7 @@ class Flow:
         Args:
             task (str): The initial task to run
 
-        Flow:
+        Agent:
         1. Generate a response
         2. Check stopping condition
         3. If stopping condition is met, stop
@@ -702,7 +708,7 @@ class Flow:
 
         if self.autosave:
             save_path = self.saved_state_path or "flow_state.json"
-            print(colored(f"Autosaving flow state to {save_path}", "green"))
+            print(colored(f"Autosaving agent state to {save_path}", "green"))
             self.save_state(save_path)
 
         if self.return_history:
@@ -770,32 +776,32 @@ class Flow:
         return [self.run(**input_data) for input_data in inputs]
 
     @staticmethod
-    def from_llm_and_template(llm: Any, template: str) -> "Flow":
-        """Create FlowStream from LLM and a string template."""
-        return Flow(llm=llm, template=template)
+    def from_llm_and_template(llm: Any, template: str) -> "Agent":
+        """Create AgentStream from LLM and a string template."""
+        return Agent(llm=llm, template=template)
 
     @staticmethod
-    def from_llm_and_template_file(llm: Any, template_file: str) -> "Flow":
-        """Create FlowStream from LLM and a template file."""
+    def from_llm_and_template_file(llm: Any, template_file: str) -> "Agent":
+        """Create AgentStream from LLM and a template file."""
         with open(template_file, "r") as f:
             template = f.read()
-        return Flow(llm=llm, template=template)
+        return Agent(llm=llm, template=template)
 
     def save(self, file_path) -> None:
         with open(file_path, "w") as f:
             json.dump(self.memory, f)
-        print(f"Saved flow history to {file_path}")
+        print(f"Saved agent history to {file_path}")
 
     def load(self, file_path: str):
         """
-        Load the flow history from a file.
+        Load the agent history from a file.
 
         Args:
-            file_path (str): The path to the file containing the saved flow history.
+            file_path (str): The path to the file containing the saved agent history.
         """
         with open(file_path, "r") as f:
             self.memory = json.load(f)
-        print(f"Loaded flow history from {file_path}")
+        print(f"Loaded agent history from {file_path}")
 
     def validate_response(self, response: str) -> bool:
         """Validate the response based on certain criteria"""
@@ -806,10 +812,10 @@ class Flow:
 
     def print_history_and_memory(self):
         """
-        Prints the entire history and memory of the flow.
+        Prints the entire history and memory of the agent.
         Each message is colored and formatted for better readability.
         """
-        print(colored("Flow History and Memory", "cyan", attrs=["bold"]))
+        print(colored("Agent History and Memory", "cyan", attrs=["bold"]))
         print(colored("========================", "cyan", attrs=["bold"]))
         for loop_index, history in enumerate(self.memory, start=1):
             print(colored(f"\nLoop {loop_index}:", "yellow", attrs=["bold"]))
@@ -820,12 +826,12 @@ class Flow:
                 else:
                     print(colored(f"{speaker}:", "blue") + f" {message_text}")
             print(colored("------------------------", "cyan"))
-        print(colored("End of Flow History", "cyan", attrs=["bold"]))
+        print(colored("End of Agent History", "cyan", attrs=["bold"]))
 
     def step(self, task: str, **kwargs):
         """
 
-        Executes a single step in the flow interaction, generating a response
+        Executes a single step in the agent interaction, generating a response
         from the language model based on the given input text.
 
         Args:
@@ -842,7 +848,7 @@ class Flow:
             # Generate the response using lm
             response = self.llm(task, **kwargs)
 
-            # Update the flow's history with the new interaction
+            # Update the agent's history with the new interaction
             if self.interactive:
                 self.memory.append(f"AI: {response}")
                 self.memory.append(f"Human: {task}")
@@ -885,9 +891,9 @@ class Flow:
 
         Example:
         # Feature 2: Undo functionality
-        response = flow.run("Another task")
+        response = agent.run("Another task")
         print(f"Response: {response}")
-        previous_state, message = flow.undo_last()
+        previous_state, message = agent.undo_last()
         print(message)
 
         """
@@ -907,8 +913,8 @@ class Flow:
         Add a response filter to filter out certain words from the response
 
         Example:
-        flow.add_response_filter("Trump")
-        flow.run("Generate a report on Trump")
+        agent.add_response_filter("Trump")
+        agent.run("Generate a report on Trump")
 
 
         """
@@ -927,8 +933,8 @@ class Flow:
     def filtered_run(self, task: str) -> str:
         """
         # Feature 3: Response filtering
-        flow.add_response_filter("report")
-        response = flow.filtered_run("Generate a report on finance")
+        agent.add_response_filter("report")
+        response = agent.filtered_run("Generate a report on finance")
         print(response)
         """
         raw_response = self.run(task)
@@ -954,7 +960,7 @@ class Flow:
 
         Example:
         # Feature 4: Streamed generation
-        response = flow.streamed_generation("Generate a report on finance")
+        response = agent.streamed_generation("Generate a report on finance")
         print(response)
 
         """
@@ -999,13 +1005,13 @@ class Flow:
 
     def save_state(self, file_path: str) -> None:
         """
-        Saves the current state of the flow to a JSON file, including the llm parameters.
+        Saves the current state of the agent to a JSON file, including the llm parameters.
 
         Args:
             file_path (str): The path to the JSON file where the state will be saved.
 
         Example:
-        >>> flow.save_state('saved_flow.json')
+        >>> agent.save_state('saved_flow.json')
         """
         state = {
             "memory": self.memory,
@@ -1021,18 +1027,18 @@ class Flow:
         with open(file_path, "w") as f:
             json.dump(state, f, indent=4)
 
-        saved = colored("Saved flow state to", "green")
+        saved = colored("Saved agent state to", "green")
         print(f"{saved} {file_path}")
 
     def load_state(self, file_path: str):
         """
-        Loads the state of the flow from a json file and restores the configuration and memory.
+        Loads the state of the agent from a json file and restores the configuration and memory.
 
 
         Example:
-        >>> flow = Flow(llm=llm_instance, max_loops=5)
-        >>> flow.load_state('saved_flow.json')
-        >>> flow.run("Continue with the task")
+        >>> agent = Agent(llm=llm_instance, max_loops=5)
+        >>> agent.load_state('saved_flow.json')
+        >>> agent.run("Continue with the task")
 
         """
         with open(file_path, "r") as f:
@@ -1046,7 +1052,7 @@ class Flow:
         self.retry_interval = state.get("retry_interval", 1)
         self.interactive = state.get("interactive", False)
 
-        print(f"Flow state loaded from {file_path}")
+        print(f"Agent state loaded from {file_path}")
 
     def retry_on_failure(
         self, function, retries: int = 3, retry_delay: int = 1
@@ -1098,7 +1104,7 @@ class Flow:
         self.retry_interval = retry_interval
 
     def reset(self):
-        """Reset the flow"""
+        """Reset the agent"""
         self.memory = []
 
     def run_code(self, code: str):
@@ -1108,6 +1114,31 @@ class Flow:
         parsed_code = extract_code_in_backticks_in_string(code)
         run_code = self.code_executor.run(parsed_code)
         return run_code
+
+    def pdf_connector(self, pdf: str = None):
+        """Transforms the pdf into text
+
+        Args:
+            pdf (str, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        pdf = pdf or self.pdf_path
+        text = pdf_to_text(pdf)
+        return text
+
+    def pdf_chunker(self, text: str = None):
+        """Chunk the pdf into sentences
+
+        Args:
+            text (str, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        text = text or self.pdf_connector()
+        pass
 
     def tools_prompt_prep(self, docs: str = None, scenarios: str = None):
         """
