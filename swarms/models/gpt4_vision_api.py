@@ -23,6 +23,11 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 
+gpt4_vision_system_prompt = """
+You are an multi-modal autonomous agent. You are given a task and an image. You must generate a response to the task and image.
+
+"""
+
 class GPT4VisionAPI:
     """
     GPT-4 Vision API
@@ -67,8 +72,8 @@ class GPT4VisionAPI:
         openai_proxy: str = "https://api.openai.com/v1/chat/completions",
         beautify: bool = False,
         streaming_enabled: Optional[bool] = False,
-        meta_prompt: Optional[bool] = None,
-        system_prompt: Optional[str] = None,
+        meta_prompt: Optional[bool] = False,
+        system_prompt: Optional[str] = gpt4_vision_system_prompt,
         *args,
         **kwargs,
     ):
@@ -119,7 +124,7 @@ class GPT4VisionAPI:
                 "Authorization": f"Bearer {openai_api_key}",
             }
             payload = {
-                "model": "gpt-4-vision-preview",
+                "model": self.model_name,
                 "messages": [
                     {"role": "system", "content": [self.system_prompt]},
                     {
@@ -243,7 +248,13 @@ class GPT4VisionAPI:
         for img in base64_frames:
             base64.b64decode(img.encode("utf-8"))
 
-    def __call__(self, task: str, img: str):
+    def __call__(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
@@ -252,7 +263,7 @@ class GPT4VisionAPI:
                 "Authorization": f"Bearer {openai_api_key}",
             }
             payload = {
-                "model": "gpt-4-vision-preview",
+                "model": self.model_name,
                 "messages": [
                     {"role": "system", "content": [self.system_prompt]},
                     {
@@ -437,16 +448,16 @@ class GPT4VisionAPI:
         )
         return dashboard
 
-    def meta_prompt_init(self):
-        """Meta Prompt
+    # def meta_prompt_init(self):
+    #     """Meta Prompt
 
-        Returns:
-            _type_: _description_
-        """
-        META_PROMPT = """
-        For any labels or markings on an image that you reference in your response, please 
-        enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for 
-        example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be 
-        numbers or letters and typically correspond to specific segments or parts of the image.
-        """
-        return META_PROMPT
+    #     Returns:
+    #         _type_: _description_
+    #     """
+    #     META_PROMPT = """
+    #     For any labels or markings on an image that you reference in your response, please 
+    #     enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for 
+    #     example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be 
+    #     numbers or letters and typically correspond to specific segments or parts of the image.
+    #     """
+    #     return META_PROMPT
