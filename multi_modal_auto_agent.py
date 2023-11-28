@@ -15,6 +15,8 @@ agent = Agent(
     llm=llm,
     max_loops="auto",
     sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
+    autosave=True,
+    dashboard=True,
 )
 
 agent.run(task=task, img=img)
