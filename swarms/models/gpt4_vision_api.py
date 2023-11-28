@@ -67,6 +67,10 @@ class GPT4VisionAPI:
         openai_proxy: str = "https://api.openai.com/v1/chat/completions",
         beautify: bool = False,
         streaming_enabled: Optional[bool] = False,
+        meta_prompt: Optional[bool] = None,
+        system_prompt: Optional[str] = None,
+        *args,
+        **kwargs,
     ):
         super().__init__()
         self.openai_api_key = openai_api_key
@@ -77,6 +81,8 @@ class GPT4VisionAPI:
         self.openai_proxy = openai_proxy
         self.beautify = beautify
         self.streaming_enabled = streaming_enabled
+        self.meta_prompt = meta_prompt
+        self.system_prompt = system_prompt
 
         if self.logging_enabled:
             logging.basicConfig(level=logging.DEBUG)
@@ -84,6 +90,9 @@ class GPT4VisionAPI:
             # Disable debug logs for requests and urllib3
             logging.getLogger("requests").setLevel(logging.WARNING)
             logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+        if self.meta_prompt:
+            self.system_prompt = self.meta_prompt_init()
 
     def encode_image(self, img: str):
         """Encode image to base64."""
@@ -112,6 +121,7 @@ class GPT4VisionAPI:
             payload = {
                 "model": "gpt-4-vision-preview",
                 "messages": [
+                    {"role": "system", "content": [self.system_prompt]},
                     {
                         "role": "user",
                         "content": [
@@ -125,7 +135,7 @@ class GPT4VisionAPI:
                                 },
                             },
                         ],
-                    }
+                    },
                 ],
                 "max_tokens": self.max_tokens,
             }
@@ -244,6 +254,7 @@ class GPT4VisionAPI:
             payload = {
                 "model": "gpt-4-vision-preview",
                 "messages": [
+                    {"role": "system", "content": [self.system_prompt]},
                     {
                         "role": "user",
                         "content": [
@@ -257,7 +268,7 @@ class GPT4VisionAPI:
                                 },
                             },
                         ],
-                    }
+                    },
                 ],
                 "max_tokens": self.max_tokens,
             }
@@ -425,3 +436,17 @@ class GPT4VisionAPI:
             )
         )
         return dashboard
+
+    def meta_prompt_init(self):
+        """Meta Prompt
+
+        Returns:
+            _type_: _description_
+        """
+        META_PROMPT = """
+        For any labels or markings on an image that you reference in your response, please 
+        enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for 
+        example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be 
+        numbers or letters and typically correspond to specific segments or parts of the image.
+        """
+        return META_PROMPT
