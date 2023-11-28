@@ -9,20 +9,19 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
-from swarms.tools.tool import BaseTool
-from swarms.utils.code_interpreter import SubprocessCodeInterpreter
-from swarms.utils.parse_code import extract_code_in_backticks_in_string
+from swarms.prompts.agent_system_prompts import FLOW_SYSTEM_PROMPT
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
-from swarms.utils.pdf_to_text import pdf_to_text
-
 from swarms.prompts.tools import (
     DYNAMIC_STOP_PROMPT,
     DYNAMICAL_TOOL_USAGE,
     SCENARIOS,
 )
-from swarms.prompts.agent_system_prompts import FLOW_SYSTEM_PROMPT
+from swarms.tools.tool import BaseTool
+from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+from swarms.utils.parse_code import extract_code_in_backticks_in_string
+from swarms.utils.pdf_to_text import pdf_to_text
 
 
 def autonomous_agent_prompt(
