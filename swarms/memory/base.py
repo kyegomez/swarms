@@ -9,8 +9,6 @@ from griptape.artifacts import TextArtifact
 
 @define
 class BaseVectorStore(ABC):
-    """ """
-
     DEFAULT_QUERY_COUNT = 5
 
     @dataclass
