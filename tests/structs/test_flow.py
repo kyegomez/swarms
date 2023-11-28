@@ -1168,7 +1168,9 @@ def test_flow_from_llm_and_template_file():
     llm_instance = mocked_llm  # Replace with your LLM class
     template_file = "template.txt"  # Create a template file for testing
 
-    flow_instance = Agent.from_llm_and_template_file(llm_instance, template_file)
+    flow_instance = Agent.from_llm_and_template_file(
+        llm_instance, template_file
+    )
 
     assert isinstance(flow_instance, Agent)
 

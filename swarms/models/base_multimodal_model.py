@@ -15,8 +15,8 @@ from termcolor import colored
 class BaseMultiModalModel:
     """
     Base class for multimodal models
-    
-    
+
+
     Args:
         model_name (Optional[str], optional): Model name. Defaults to None.
         temperature (Optional[int], optional): Temperature. Defaults to 0.5.
@@ -28,7 +28,7 @@ class BaseMultiModalModel:
         device (Optional[str], optional): Device. Defaults to "cuda".
         max_new_tokens (Optional[int], optional): Max new tokens. Defaults to 500.
         retries (Optional[int], optional): Retries. Defaults to 3.
-        
+
     Examples:
         >>> from swarms.models.base_multimodal_model import BaseMultiModalModel
         >>> model = BaseMultiModalModel()
@@ -54,8 +54,9 @@ class BaseMultiModalModel:
         >>> model.unique_chat_history()
         >>> model.clear_chat_history()
         >>> model.get_img_from_web("https://www.google.com/images/branding/googlelogo/")
-    
+
     """
+
     def __init__(
         self,
         model_name: Optional[str],
