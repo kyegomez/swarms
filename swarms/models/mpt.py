@@ -30,7 +30,10 @@ class MPT7B:
     """
 
     def __init__(
-        self, model_name: str, tokenizer_name: str, max_tokens: int = 100
+        self,
+        model_name: str,
+        tokenizer_name: str,
+        max_tokens: int = 100,
     ):
         # Loading model and tokenizer details
         self.model_name = model_name
@@ -138,9 +141,13 @@ class MPT7B:
         """Call the model asynchronously""" ""
         return await self.run_async(task, *args, **kwargs)
 
-    def batch_generate(self, prompts: list, temperature: float = 1.0) -> list:
+    def batch_generate(
+        self, prompts: list, temperature: float = 1.0
+    ) -> list:
         """Batch generate text"""
-        self.logger.info(f"Generating text for {len(prompts)} prompts...")
+        self.logger.info(
+            f"Generating text for {len(prompts)} prompts..."
+        )
         results = []
         with torch.autocast("cuda", dtype=torch.bfloat16):
             for prompt in prompts:

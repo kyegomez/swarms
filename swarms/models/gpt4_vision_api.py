@@ -15,7 +15,10 @@ from termcolor import colored
 try:
     import cv2
 except ImportError:
-    print("OpenCV not installed. Please install OpenCV to use this model.")
+    print(
+        "OpenCV not installed. Please install OpenCV to use this"
+        " model."
+    )
     raise ImportError
 
 # Load environment variables
@@ -127,7 +130,10 @@ class GPT4VisionAPI:
             payload = {
                 "model": self.model_name,
                 "messages": [
-                    {"role": "system", "content": [self.system_prompt]},
+                    {
+                        "role": "system",
+                        "content": [self.system_prompt],
+                    },
                     {
                         "role": "user",
                         "content": [
@@ -135,9 +141,7 @@ class GPT4VisionAPI:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": (
-                                        f"data:image/jpeg;base64,{base64_image}"
-                                    )
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
                                 },
                             },
                         ],
@@ -241,7 +245,9 @@ class GPT4VisionAPI:
             if not success:
                 break
             _, buffer = cv2.imencode(".jpg", frame)
-            base64_frames.append(base64.b64encode(buffer).decode("utf-8"))
+            base64_frames.append(
+                base64.b64encode(buffer).decode("utf-8")
+            )
 
         video.release()
         print(len(base64_frames), "frames read.")
@@ -266,7 +272,10 @@ class GPT4VisionAPI:
             payload = {
                 "model": self.model_name,
                 "messages": [
-                    {"role": "system", "content": [self.system_prompt]},
+                    {
+                        "role": "system",
+                        "content": [self.system_prompt],
+                    },
                     {
                         "role": "user",
                         "content": [
@@ -274,9 +283,7 @@ class GPT4VisionAPI:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": (
-                                        f"data:image/jpeg;base64,{base64_image}"
-                                    )
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
                                 },
                             },
                         ],
@@ -326,7 +333,9 @@ class GPT4VisionAPI:
 
         """
         # Instantiate the thread pool executor
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+        with ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
             results = executor.map(self.run, tasks, imgs)
 
         # Print the results for debugging
@@ -372,9 +381,7 @@ class GPT4VisionAPI:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": (
-                                        f"data:image/jpeg;base64,{base64_image}"
-                                    )
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
                                 },
                             },
                         ],
@@ -384,7 +391,9 @@ class GPT4VisionAPI:
             }
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    self.openai_proxy, headers=headers, data=json.dumps(payload)
+                    self.openai_proxy,
+                    headers=headers,
+                    data=json.dumps(payload),
                 ) as response:
                     out = await response.json()
                     content = out["choices"][0]["message"]["content"]
@@ -393,7 +402,9 @@ class GPT4VisionAPI:
             print(f"Error with the request {error}")
             raise error
 
-    def run_batch(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+    def run_batch(
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
@@ -420,7 +431,9 @@ class GPT4VisionAPI:
         """Process a batch of tasks and images asynchronously with retries"""
         loop = asyncio.get_event_loop()
         futures = [
-            loop.run_in_executor(None, self.run_with_retries, task, img)
+            loop.run_in_executor(
+                None, self.run_with_retries, task, img
+            )
             for task, img in tasks_images
         ]
         return await asyncio.gather(*futures)
@@ -428,7 +441,9 @@ class GPT4VisionAPI:
     def health_check(self):
         """Health check for the GPT4Vision model"""
         try:
-            response = requests.get("https://api.openai.com/v1/engines")
+            response = requests.get(
+                "https://api.openai.com/v1/engines"
+            )
             return response.status_code == 200
         except requests.RequestException as error:
             print(f"Health check failed: {error}")

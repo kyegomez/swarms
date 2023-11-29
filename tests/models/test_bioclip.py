@@ -14,7 +14,9 @@ def sample_image_path():
 
 @pytest.fixture
 def clip_instance():
-    return BioClip("microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224")
+    return BioClip(
+        "microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224"
+    )
 
 
 # Basic tests for the BioClip class
@@ -44,12 +46,16 @@ def test_clip_call_method(clip_instance, sample_image_path):
     assert len(result) == len(labels)
 
 
-def test_clip_plot_image_with_metadata(clip_instance, sample_image_path):
+def test_clip_plot_image_with_metadata(
+    clip_instance, sample_image_path
+):
     metadata = {
         "filename": "sample_image.jpg",
         "top_probs": {"label1": 0.75, "label2": 0.65},
     }
-    clip_instance.plot_image_with_metadata(sample_image_path, metadata)
+    clip_instance.plot_image_with_metadata(
+        sample_image_path, metadata
+    )
 
 
 # More test cases can be added to cover additional functionality and edge cases
@@ -147,7 +153,9 @@ def test_clip_inference_performance(
 
 
 # Test different preprocessing pipelines
-def test_clip_preprocessing_pipelines(clip_instance, sample_image_path):
+def test_clip_preprocessing_pipelines(
+    clip_instance, sample_image_path
+):
     labels = ["label1", "label2"]
     image = Image.open(sample_image_path)
 

@@ -61,6 +61,6 @@ def test_multiagentdebate_format_results():
     formatted_results = multiagentdebate.format_results(results)
     assert (
         formatted_results
-        == "Agent Agent 1 responded: Hello, world!\nAgent Agent 2 responded:"
-        " Goodbye, world!"
+        == "Agent Agent 1 responded: Hello, world!\nAgent Agent 2"
+        " responded: Goodbye, world!"
     )

@@ -2,7 +2,8 @@ from langchain.document_loaders import CSVLoader
 from swarms.memory import qdrant
 
 loader = CSVLoader(
-    file_path="../document_parsing/aipg/aipg.csv", encoding="utf-8-sig"
+    file_path="../document_parsing/aipg/aipg.csv",
+    encoding="utf-8-sig",
 )
 docs = loader.load()
 

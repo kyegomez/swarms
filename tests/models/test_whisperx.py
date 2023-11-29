@@ -34,7 +34,9 @@ def test_speech_to_text_download_youtube_video(
     # Mock YouTube and streams
     video_url = "https://www.youtube.com/watch?v=MJd6pr16LRM"
     mock_stream = mock_streams().filter().first()
-    mock_stream.download.return_value = os.path.join(temp_dir, "video.mp4")
+    mock_stream.download.return_value = os.path.join(
+        temp_dir, "video.mp4"
+    )
     mock_youtube.return_value = mock_youtube
     mock_youtube.streams = mock_streams
 
@@ -68,7 +70,9 @@ def test_speech_to_text_transcribe_youtube_video(
 
     mock_load_audio.return_value = "audio_path"
     mock_align_model.return_value = (mock_align_model, "metadata")
-    mock_align.return_value = {"segments": [{"text": "Hello, World!"}]}
+    mock_align.return_value = {
+        "segments": [{"text": "Hello, World!"}]
+    }
 
     # Mock diarization pipeline
     mock_diarization.return_value = None
@@ -193,14 +197,18 @@ def test_speech_to_text_transcribe_diarization_failure(
     # Mock YouTube and streams
     video_url = "https://www.youtube.com/watch?v=MJd6pr16LRM"
     mock_stream = mock_streams().filter().first()
-    mock_stream.download.return_value = os.path.join(temp_dir, "video.mp4")
+    mock_stream.download.return_value = os.path.join(
+        temp_dir, "video.mp4"
+    )
     mock_youtube.return_value = mock_youtube
     mock_youtube.streams = mock_streams
 
     # Mock whisperx functions
     mock_load_audio.return_value = "audio_path"
     mock_align_model.return_value = (mock_align_model, "metadata")
-    mock_align.return_value = {"segments": [{"text": "Hello, World!"}]}
+    mock_align.return_value = {
+        "segments": [{"text": "Hello, World!"}]
+    }
 
     # Mock diarization pipeline to raise an exception
     mock_diarization.side_effect = Exception("Diarization failed")

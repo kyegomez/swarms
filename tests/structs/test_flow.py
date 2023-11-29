@@ -31,7 +31,9 @@ def basic_flow(mocked_llm):
 @pytest.fixture
 def flow_with_condition(mocked_llm):
     return Agent(
-        llm=mocked_llm, max_loops=5, stopping_condition=stop_when_repeats
+        llm=mocked_llm,
+        max_loops=5,
+        stopping_condition=stop_when_repeats,
     )
 
 
@@ -69,7 +71,9 @@ def test_run_without_stopping_condition(mocked_sleep, basic_flow):
 
 
 @patch("time.sleep", return_value=None)  # to speed up tests
-def test_run_with_stopping_condition(mocked_sleep, flow_with_condition):
+def test_run_with_stopping_condition(
+    mocked_sleep, flow_with_condition
+):
     response = flow_with_condition.run("Stop")
     assert response == "Stop"
 
@@ -113,7 +117,9 @@ def test_flow_with_custom_stopping_condition(mocked_llm):
         return "terminate" in x.lower()
 
     agent = Agent(
-        llm=mocked_llm, max_loops=5, stopping_condition=stopping_condition
+        llm=mocked_llm,
+        max_loops=5,
+        stopping_condition=stopping_condition,
     )
     assert agent.stopping_condition("Please terminate now")
     assert not agent.stopping_condition("Continue the process")
@@ -127,7 +133,9 @@ def test_flow_call(basic_flow):
 
 # Test formatting the prompt
 def test_format_prompt(basic_flow):
-    formatted_prompt = basic_flow.format_prompt("Hello {name}", name="John")
+    formatted_prompt = basic_flow.format_prompt(
+        "Hello {name}", name="John"
+    )
     assert formatted_prompt == "Hello John"
 
 
@@ -155,7 +163,11 @@ def test_interactive_mode(basic_flow):
 
 # Test bulk run with varied inputs
 def test_bulk_run_varied_inputs(basic_flow):
-    inputs = [{"task": "Test1"}, {"task": "Test2"}, {"task": "Stop now"}]
+    inputs = [
+        {"task": "Test1"},
+        {"task": "Test2"},
+        {"task": "Stop now"},
+    ]
     responses = basic_flow.bulk_run(inputs)
     assert responses == ["Test1", "Test2", "Stop now"]
 
@@ -179,7 +191,9 @@ def test_save_different_memory(basic_flow, tmp_path):
 
 # Test the stopping condition check
 def test_check_stopping_condition(flow_with_condition):
-    assert flow_with_condition._check_stopping_condition("Stop this process")
+    assert flow_with_condition._check_stopping_condition(
+        "Stop this process"
+    )
     assert not flow_with_condition._check_stopping_condition(
         "Continue the task"
     )
@@ -211,7 +225,10 @@ def test_mocked_openai_chat(MockedOpenAIChat):
 @patch("time.sleep", return_value=None)
 def test_retry_attempts(mocked_sleep, basic_flow):
     basic_flow.retry_attempts = 2
-    basic_flow.llm.side_effect = [Exception("Test Exception"), "Valid response"]
+    basic_flow.llm.side_effect = [
+        Exception("Test Exception"),
+        "Valid response",
+    ]
     response = basic_flow.run("Test retry")
     assert response == "Valid response"
 
@@ -235,7 +252,9 @@ def test_different_retry_intervals(mocked_sleep, basic_flow):
 # Test invoking the agent with additional kwargs
 @patch("time.sleep", return_value=None)
 def test_flow_call_with_kwargs(mocked_sleep, basic_flow):
-    response = basic_flow("Test call", param1="value1", param2="value2")
+    response = basic_flow(
+        "Test call", param1="value1", param2="value2"
+    )
     assert response == "Test call"
 
 
@@ -319,7 +338,9 @@ def test_flow_autosave(flow_instance):
 def test_flow_response_filtering(flow_instance):
     # Test the response filtering functionality
     flow_instance.add_response_filter("filter_this")
-    response = flow_instance.filtered_run("This message should filter_this")
+    response = flow_instance.filtered_run(
+        "This message should filter_this"
+    )
     assert "filter_this" not in response
 
 
@@ -378,10 +399,12 @@ def test_flow_autosave_path(flow_instance):
 def test_flow_response_length(flow_instance):
     # Test checking the length of the response
     response = flow_instance.run(
-        "Generate a 10,000 word long blog on mental clarity and the benefits of"
-        " meditation."
+        "Generate a 10,000 word long blog on mental clarity and the"
+        " benefits of meditation."
     )
-    assert len(response) > flow_instance.get_response_length_threshold()
+    assert (
+        len(response) > flow_instance.get_response_length_threshold()
+    )
 
 
 def test_flow_set_response_length_threshold(flow_instance):
@@ -470,7 +493,9 @@ def test_flow_get_conversation_log(flow_instance):
     flow_instance.run("Message 1")
     flow_instance.run("Message 2")
     conversation_log = flow_instance.get_conversation_log()
-    assert len(conversation_log) == 4  # Including system and user messages
+    assert (
+        len(conversation_log) == 4
+    )  # Including system and user messages
 
 
 def test_flow_clear_conversation_log(flow_instance):
@@ -554,11 +579,21 @@ def test_flow_rollback(flow_instance):
     flow_instance.change_prompt("New prompt")
     state2 = flow_instance.get_state()
     flow_instance.rollback_to_state(state1)
-    assert flow_instance.get_current_prompt() == state1["current_prompt"]
+    assert (
+        flow_instance.get_current_prompt() == state1["current_prompt"]
+    )
     assert flow_instance.get_instructions() == state1["instructions"]
-    assert flow_instance.get_user_messages() == state1["user_messages"]
-    assert flow_instance.get_response_history() == state1["response_history"]
-    assert flow_instance.get_conversation_log() == state1["conversation_log"]
+    assert (
+        flow_instance.get_user_messages() == state1["user_messages"]
+    )
+    assert (
+        flow_instance.get_response_history()
+        == state1["response_history"]
+    )
+    assert (
+        flow_instance.get_conversation_log()
+        == state1["conversation_log"]
+    )
     assert (
         flow_instance.is_dynamic_pacing_enabled()
         == state1["dynamic_pacing_enabled"]
@@ -567,9 +602,14 @@ def test_flow_rollback(flow_instance):
         flow_instance.get_response_length_threshold()
         == state1["response_length_threshold"]
     )
-    assert flow_instance.get_response_filters() == state1["response_filters"]
+    assert (
+        flow_instance.get_response_filters()
+        == state1["response_filters"]
+    )
     assert flow_instance.get_max_loops() == state1["max_loops"]
-    assert flow_instance.get_autosave_path() == state1["autosave_path"]
+    assert (
+        flow_instance.get_autosave_path() == state1["autosave_path"]
+    )
     assert flow_instance.get_state() == state1
 
 
@@ -587,9 +627,13 @@ def test_flow_contextual_intent(flow_instance):
 def test_flow_contextual_intent_override(flow_instance):
     # Test contextual intent override
     flow_instance.add_context("location", "New York")
-    response1 = flow_instance.run("What's the weather like in {location}?")
+    response1 = flow_instance.run(
+        "What's the weather like in {location}?"
+    )
     flow_instance.add_context("location", "Los Angeles")
-    response2 = flow_instance.run("What's the weather like in {location}?")
+    response2 = flow_instance.run(
+        "What's the weather like in {location}?"
+    )
     assert "New York" in response1
     assert "Los Angeles" in response2
 
@@ -597,9 +641,13 @@ def test_flow_contextual_intent_override(flow_instance):
 def test_flow_contextual_intent_reset(flow_instance):
     # Test resetting contextual intent
     flow_instance.add_context("location", "New York")
-    response1 = flow_instance.run("What's the weather like in {location}?")
+    response1 = flow_instance.run(
+        "What's the weather like in {location}?"
+    )
     flow_instance.reset_context()
-    response2 = flow_instance.run("What's the weather like in {location}?")
+    response2 = flow_instance.run(
+        "What's the weather like in {location}?"
+    )
     assert "New York" in response1
     assert "New York" in response2
 
@@ -624,7 +672,9 @@ def test_flow_non_interruptible(flow_instance):
 def test_flow_timeout(flow_instance):
     # Test conversation timeout
     flow_instance.timeout = 60  # Set a timeout of 60 seconds
-    response = flow_instance.run("This should take some time to respond.")
+    response = flow_instance.run(
+        "This should take some time to respond."
+    )
     assert "Timed out" in response
     assert flow_instance.is_timed_out() is True
 
@@ -673,14 +723,20 @@ def test_flow_save_and_load_conversation(flow_instance):
 
 def test_flow_inject_custom_system_message(flow_instance):
     # Test injecting a custom system message into the conversation
-    flow_instance.inject_custom_system_message("Custom system message")
-    assert "Custom system message" in flow_instance.get_message_history()
+    flow_instance.inject_custom_system_message(
+        "Custom system message"
+    )
+    assert (
+        "Custom system message" in flow_instance.get_message_history()
+    )
 
 
 def test_flow_inject_custom_user_message(flow_instance):
     # Test injecting a custom user message into the conversation
     flow_instance.inject_custom_user_message("Custom user message")
-    assert "Custom user message" in flow_instance.get_message_history()
+    assert (
+        "Custom user message" in flow_instance.get_message_history()
+    )
 
 
 def test_flow_inject_custom_response(flow_instance):
@@ -691,13 +747,23 @@ def test_flow_inject_custom_response(flow_instance):
 
 def test_flow_clear_injected_messages(flow_instance):
     # Test clearing injected messages from the conversation
-    flow_instance.inject_custom_system_message("Custom system message")
+    flow_instance.inject_custom_system_message(
+        "Custom system message"
+    )
     flow_instance.inject_custom_user_message("Custom user message")
     flow_instance.inject_custom_response("Custom response")
     flow_instance.clear_injected_messages()
-    assert "Custom system message" not in flow_instance.get_message_history()
-    assert "Custom user message" not in flow_instance.get_message_history()
-    assert "Custom response" not in flow_instance.get_message_history()
+    assert (
+        "Custom system message"
+        not in flow_instance.get_message_history()
+    )
+    assert (
+        "Custom user message"
+        not in flow_instance.get_message_history()
+    )
+    assert (
+        "Custom response" not in flow_instance.get_message_history()
+    )
 
 
 def test_flow_disable_message_history(flow_instance):
@@ -706,14 +772,20 @@ def test_flow_disable_message_history(flow_instance):
     response = flow_instance.run(
         "This message should not be recorded in history."
     )
-    assert "This message should not be recorded in history." in response
-    assert len(flow_instance.get_message_history()) == 0  # History is empty
+    assert (
+        "This message should not be recorded in history." in response
+    )
+    assert (
+        len(flow_instance.get_message_history()) == 0
+    )  # History is empty
 
 
 def test_flow_enable_message_history(flow_instance):
     # Test enabling message history recording
     flow_instance.enable_message_history()
-    response = flow_instance.run("This message should be recorded in history.")
+    response = flow_instance.run(
+        "This message should be recorded in history."
+    )
     assert "This message should be recorded in history." in response
     assert len(flow_instance.get_message_history()) == 1
 
@@ -723,7 +795,9 @@ def test_flow_custom_logger(flow_instance):
     custom_logger = logger  # Replace with your custom logger class
     flow_instance.set_logger(custom_logger)
     response = flow_instance.run("Custom logger test")
-    assert "Logged using custom logger" in response  # Verify logging message
+    assert (
+        "Logged using custom logger" in response
+    )  # Verify logging message
 
 
 def test_flow_batch_processing(flow_instance):
@@ -991,8 +1065,14 @@ def test_flow_custom_response(flow_instance):
     flow_instance.set_response_generator(custom_response_generator)
 
     assert flow_instance.run("Hello") == "Hi there!"
-    assert flow_instance.run("How are you?") == "I'm doing well, thank you."
-    assert flow_instance.run("What's your name?") == "I don't understand."
+    assert (
+        flow_instance.run("How are you?")
+        == "I'm doing well, thank you."
+    )
+    assert (
+        flow_instance.run("What's your name?")
+        == "I don't understand."
+    )
 
 
 def test_flow_message_validation(flow_instance):
@@ -1003,8 +1083,12 @@ def test_flow_message_validation(flow_instance):
     flow_instance.set_message_validator(custom_message_validator)
 
     assert flow_instance.run("Valid message") is not None
-    assert flow_instance.run("") is None  # Empty message should be rejected
-    assert flow_instance.run(None) is None  # None message should be rejected
+    assert (
+        flow_instance.run("") is None
+    )  # Empty message should be rejected
+    assert (
+        flow_instance.run(None) is None
+    )  # None message should be rejected
 
 
 def test_flow_custom_logging(flow_instance):
@@ -1029,10 +1113,15 @@ def test_flow_complex_use_case(flow_instance):
     flow_instance.add_context("user_id", "12345")
     flow_instance.run("Hello")
     flow_instance.run("How can I help you?")
-    assert flow_instance.get_response() == "Please provide more details."
+    assert (
+        flow_instance.get_response() == "Please provide more details."
+    )
     flow_instance.update_context("user_id", "54321")
     flow_instance.run("I need help with my order")
-    assert flow_instance.get_response() == "Sure, I can assist with that."
+    assert (
+        flow_instance.get_response()
+        == "Sure, I can assist with that."
+    )
     flow_instance.reset_conversation()
     assert len(flow_instance.get_message_history()) == 0
     assert flow_instance.get_context("user_id") is None
@@ -1071,7 +1160,9 @@ def test_flow_concurrent_requests(flow_instance):
 
 def test_flow_custom_timeout(flow_instance):
     # Test custom timeout handling
-    flow_instance.set_timeout(10)  # Set a custom timeout of 10 seconds
+    flow_instance.set_timeout(
+        10
+    )  # Set a custom timeout of 10 seconds
     assert flow_instance.get_timeout() == 10
 
     import time
@@ -1125,8 +1216,13 @@ def test_flow_agent_history_prompt(flow_instance):
         system_prompt, history
     )
 
-    assert "SYSTEM_PROMPT: This is the system prompt." in agent_history_prompt
-    assert "History: ['User: Hi', 'AI: Hello']" in agent_history_prompt
+    assert (
+        "SYSTEM_PROMPT: This is the system prompt."
+        in agent_history_prompt
+    )
+    assert (
+        "History: ['User: Hi', 'AI: Hello']" in agent_history_prompt
+    )
 
 
 async def test_flow_run_concurrent(flow_instance):
@@ -1158,7 +1254,9 @@ def test_flow_from_llm_and_template():
     llm_instance = mocked_llm  # Replace with your LLM class
     template = "This is a template for testing."
 
-    flow_instance = Agent.from_llm_and_template(llm_instance, template)
+    flow_instance = Agent.from_llm_and_template(
+        llm_instance, template
+    )
 
     assert isinstance(flow_instance, Agent)
 
@@ -1166,7 +1264,9 @@ def test_flow_from_llm_and_template():
 def test_flow_from_llm_and_template_file():
     # Test creating Agent instance from an LLM and a template file
     llm_instance = mocked_llm  # Replace with your LLM class
-    template_file = "template.txt"  # Create a template file for testing
+    template_file = (  # Create a template file for testing
+        "template.txt"
+    )
 
     flow_instance = Agent.from_llm_and_template_file(
         llm_instance, template_file

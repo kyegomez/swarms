@@ -11,7 +11,9 @@ def test_dialoguesimulator_initialization():
 @patch("swarms.workers.worker.Worker.run")
 def test_dialoguesimulator_run(mock_run):
     dialoguesimulator = DialogueSimulator(agents=[Worker] * 5)
-    dialoguesimulator.run(max_iters=5, name="Agent 1", message="Hello, world!")
+    dialoguesimulator.run(
+        max_iters=5, name="Agent 1", message="Hello, world!"
+    )
     assert mock_run.call_count == 30
 
 

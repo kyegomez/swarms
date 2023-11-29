@@ -3,7 +3,11 @@ import logging
 import torch
 from numpy.linalg import norm
 from torch.nn.parallel import DistributedDataParallel as DDP
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+)
 
 
 def cos_sim(a, b):
@@ -92,14 +96,18 @@ class JinaEmbeddings:
 
             self.model  # .to(self.device)
         except Exception as e:
-            self.logger.error(f"Failed to load the model or the tokenizer: {e}")
+            self.logger.error(
+                f"Failed to load the model or the tokenizer: {e}"
+            )
             raise
 
     def load_model(self):
         """Load the model"""
         if not self.model or not self.tokenizer:
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_id
+                )
 
                 bnb_config = (
                     BitsAndBytesConfig(**self.quantization_config)
@@ -117,7 +125,8 @@ class JinaEmbeddings:
                     self.model = DDP(self.model)
             except Exception as error:
                 self.logger.error(
-                    f"Failed to load the model or the tokenizer: {error}"
+                    "Failed to load the model or the tokenizer:"
+                    f" {error}"
                 )
                 raise
 
@@ -137,7 +146,9 @@ class JinaEmbeddings:
         max_length = self.max_length
 
         try:
-            embeddings = self.model.encode([task], max_length=max_length)
+            embeddings = self.model.encode(
+                [task], max_length=max_length
+            )
 
             if self.cos_sim:
                 print(cos_sim(embeddings[0], embeddings[1]))
@@ -186,7 +197,9 @@ class JinaEmbeddings:
         max_length = self.max_length
 
         try:
-            embeddings = self.model.encode([task], max_length=max_length)
+            embeddings = self.model.encode(
+                [task], max_length=max_length
+            )
 
             if self.cos_sim:
                 print(cos_sim(embeddings[0], embeddings[1]))

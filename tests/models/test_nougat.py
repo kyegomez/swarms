@@ -22,7 +22,9 @@ def test_nougat_default_initialization(setup_nougat):
 
 def test_nougat_custom_initialization():
     nougat = Nougat(
-        model_name_or_path="custom_path", min_length=10, max_new_tokens=50
+        model_name_or_path="custom_path",
+        min_length=10,
+        max_new_tokens=50,
     )
     assert nougat.model_name_or_path == "custom_path"
     assert nougat.min_length == 10
@@ -38,11 +40,16 @@ def test_model_initialization(setup_nougat):
 
 
 @pytest.mark.parametrize(
-    "cuda_available, expected_device", [(True, "cuda"), (False, "cpu")]
+    "cuda_available, expected_device",
+    [(True, "cuda"), (False, "cpu")],
 )
-def test_device_initialization(cuda_available, expected_device, monkeypatch):
+def test_device_initialization(
+    cuda_available, expected_device, monkeypatch
+):
     monkeypatch.setattr(
-        torch, "cuda", Mock(is_available=Mock(return_value=cuda_available))
+        torch,
+        "cuda",
+        Mock(is_available=Mock(return_value=cuda_available)),
     )
     nougat = Nougat()
     assert nougat.device == expected_device
@@ -67,7 +74,9 @@ def test_get_image_invalid_path(setup_nougat):
         (10, 50),
     ],
 )
-def test_model_call_with_diff_params(setup_nougat, min_len, max_tokens):
+def test_model_call_with_diff_params(
+    setup_nougat, min_len, max_tokens
+):
     setup_nougat.min_length = min_len
     setup_nougat.max_new_tokens = max_tokens
 
@@ -98,7 +107,8 @@ def test_model_call_mocked_output(setup_nougat):
 def mock_processor_and_model():
     """Mock the NougatProcessor and VisionEncoderDecoderModel to simulate their behavior."""
     with patch(
-        "transformers.NougatProcessor.from_pretrained", return_value=Mock()
+        "transformers.NougatProcessor.from_pretrained",
+        return_value=Mock(),
     ), patch(
         "transformers.VisionEncoderDecoderModel.from_pretrained",
         return_value=Mock(),
@@ -161,7 +171,9 @@ def test_nougat_different_model_path(setup_nougat):
 
 @pytest.mark.usefixtures("mock_processor_and_model")
 def test_nougat_bad_image_path(setup_nougat):
-    with pytest.raises(Exception):  # Adjust the exception type accordingly.
+    with pytest.raises(
+        Exception
+    ):  # Adjust the exception type accordingly.
         setup_nougat("bad_image_path.png")
 
 

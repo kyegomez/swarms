@@ -24,7 +24,10 @@ class DialogueSimulator:
     """
 
     def __init__(
-        self, agents: List[Callable], max_iters: int = 10, name: str = None
+        self,
+        agents: List[Callable],
+        max_iters: int = 10,
+        name: str = None,
     ):
         self.agents = agents
         self.max_iters = max_iters
@@ -60,7 +63,8 @@ class DialogueSimulator:
 
     def __repr__(self):
         return (
-            f"DialogueSimulator({self.agents}, {self.max_iters}, {self.name})"
+            f"DialogueSimulator({self.agents}, {self.max_iters},"
+            f" {self.name})"
         )
 
     def save_state(self):

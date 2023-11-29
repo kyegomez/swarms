@@ -31,7 +31,9 @@ def test_yi34b_generate_text_with_length(yi34b_model, max_length):
 
 
 @pytest.mark.parametrize("temperature", [0.5, 1.0, 1.5])
-def test_yi34b_generate_text_with_temperature(yi34b_model, temperature):
+def test_yi34b_generate_text_with_temperature(
+    yi34b_model, temperature
+):
     prompt = "There's a place where time stands still."
     generated_text = yi34b_model(prompt, temperature=temperature)
     assert isinstance(generated_text, str)
@@ -89,7 +91,9 @@ def test_yi34b_generate_text_with_invalid_top_k(yi34b_model):
 def test_yi34b_generate_text_with_invalid_top_p(yi34b_model):
     prompt = "There's a place where time stands still."
     top_p = 1.5  # Invalid top_p
-    with pytest.raises(ValueError, match="top_p must be between 0.0 and 1.0"):
+    with pytest.raises(
+        ValueError, match="top_p must be between 0.0 and 1.0"
+    ):
         yi34b_model(prompt, top_p=top_p)
 
 
@@ -98,15 +102,20 @@ def test_yi34b_generate_text_with_repitition_penalty(
     yi34b_model, repitition_penalty
 ):
     prompt = "There's a place where time stands still."
-    generated_text = yi34b_model(prompt, repitition_penalty=repitition_penalty)
+    generated_text = yi34b_model(
+        prompt, repitition_penalty=repitition_penalty
+    )
     assert isinstance(generated_text, str)
 
 
-def test_yi34b_generate_text_with_invalid_repitition_penalty(yi34b_model):
+def test_yi34b_generate_text_with_invalid_repitition_penalty(
+    yi34b_model,
+):
     prompt = "There's a place where time stands still."
     repitition_penalty = 0.0  # Invalid repitition_penalty
     with pytest.raises(
-        ValueError, match="repitition_penalty must be a positive float"
+        ValueError,
+        match="repitition_penalty must be a positive float",
     ):
         yi34b_model(prompt, repitition_penalty=repitition_penalty)
 

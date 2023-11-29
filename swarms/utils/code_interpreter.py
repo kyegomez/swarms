@@ -117,7 +117,10 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
                     # applescript
                     yield {"output": traceback.format_exc()}
                     yield {
-                        "output": f"Retrying... ({retry_count}/{max_retries})"
+                        "output": (
+                            "Retrying..."
+                            f" ({retry_count}/{max_retries})"
+                        )
                     }
                     yield {"output": "Restarting process."}
 
@@ -127,7 +130,8 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
                 if retry_count > max_retries:
                     yield {
                         "output": (
-                            "Maximum retries reached. Could not execute code."
+                            "Maximum retries reached. Could not"
+                            " execute code."
                         )
                     }
                     return

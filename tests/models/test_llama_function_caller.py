@@ -25,15 +25,26 @@ def test_llama_custom_function(llama_caller):
         function=sample_function,
         description="Sample custom function",
         arguments=[
-            {"name": "arg1", "type": "string", "description": "Argument 1"},
-            {"name": "arg2", "type": "string", "description": "Argument 2"},
+            {
+                "name": "arg1",
+                "type": "string",
+                "description": "Argument 1",
+            },
+            {
+                "name": "arg2",
+                "type": "string",
+                "description": "Argument 2",
+            },
         ],
     )
 
     result = llama_caller.call_function(
         "sample_function", arg1="arg1_value", arg2="arg2_value"
     )
-    assert result == "Sample function called with args: arg1_value, arg2_value"
+    assert (
+        result
+        == "Sample function called with args: arg1_value, arg2_value"
+    )
 
 
 # Test streaming user prompts
@@ -60,13 +71,23 @@ def test_llama_custom_function_invalid_arguments(llama_caller):
         function=sample_function,
         description="Sample custom function",
         arguments=[
-            {"name": "arg1", "type": "string", "description": "Argument 1"},
-            {"name": "arg2", "type": "string", "description": "Argument 2"},
+            {
+                "name": "arg1",
+                "type": "string",
+                "description": "Argument 1",
+            },
+            {
+                "name": "arg2",
+                "type": "string",
+                "description": "Argument 2",
+            },
         ],
     )
 
     with pytest.raises(TypeError):
-        llama_caller.call_function("sample_function", arg1="arg1_value")
+        llama_caller.call_function(
+            "sample_function", arg1="arg1_value"
+        )
 
 
 # Test streaming with custom runtime

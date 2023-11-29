@@ -170,7 +170,9 @@ class LlamaFunctionCaller:
         prompt = f"{task}\n\n"
 
         # Encode and send to the model
-        inputs = self.tokenizer([prompt], return_tensors="pt").to(self.runtime)
+        inputs = self.tokenizer([prompt], return_tensors="pt").to(
+            self.runtime
+        )
 
         streamer = TextStreamer(self.tokenizer)
 

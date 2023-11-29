@@ -22,10 +22,14 @@ def mock_vector_db():
 def orchestrator(mock_agent, mock_vector_db):
     agent_list = [mock_agent for _ in range(5)]
     task_queue = []
-    return Orchestrator(mock_agent, agent_list, task_queue, mock_vector_db)
+    return Orchestrator(
+        mock_agent, agent_list, task_queue, mock_vector_db
+    )
 
 
-def test_assign_task(orchestrator, mock_agent, mock_task, mock_vector_db):
+def test_assign_task(
+    orchestrator, mock_agent, mock_task, mock_vector_db
+):
     orchestrator.task_queue.append(mock_task)
     orchestrator.assign_task(0, mock_task)
 

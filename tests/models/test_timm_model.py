@@ -6,7 +6,9 @@ from swarms.models.timm import TimmModel, TimmModelInfo
 
 @pytest.fixture
 def sample_model_info():
-    return TimmModelInfo(model_name="resnet18", pretrained=True, in_chans=3)
+    return TimmModelInfo(
+        model_name="resnet18", pretrained=True, in_chans=3
+    )
 
 
 def test_get_supported_models():
@@ -25,7 +27,9 @@ def test_create_model(sample_model_info):
 def test_call(sample_model_info):
     model_handler = TimmModel()
     input_tensor = torch.randn(1, 3, 224, 224)
-    output_shape = model_handler.__call__(sample_model_info, input_tensor)
+    output_shape = model_handler.__call__(
+        sample_model_info, input_tensor
+    )
     assert isinstance(output_shape, torch.Size)
 
 
@@ -39,7 +43,9 @@ def test_call(sample_model_info):
 )
 def test_create_model_parameterized(model_name, pretrained, in_chans):
     model_info = TimmModelInfo(
-        model_name=model_name, pretrained=pretrained, in_chans=in_chans
+        model_name=model_name,
+        pretrained=pretrained,
+        in_chans=in_chans,
     )
     model_handler = TimmModel()
     model = model_handler._create_model(model_info)
@@ -56,7 +62,9 @@ def test_create_model_parameterized(model_name, pretrained, in_chans):
 )
 def test_call_parameterized(model_name, pretrained, in_chans):
     model_info = TimmModelInfo(
-        model_name=model_name, pretrained=pretrained, in_chans=in_chans
+        model_name=model_name,
+        pretrained=pretrained,
+        in_chans=in_chans,
     )
     model_handler = TimmModel()
     input_tensor = torch.randn(1, in_chans, 224, 224)
@@ -133,7 +141,9 @@ def test_marked_slow():
 )
 def test_marked_parameterized(model_name, pretrained, in_chans):
     model_info = TimmModelInfo(
-        model_name=model_name, pretrained=pretrained, in_chans=in_chans
+        model_name=model_name,
+        pretrained=pretrained,
+        in_chans=in_chans,
     )
     model_handler = TimmModel()
     model = model_handler._create_model(model_info)

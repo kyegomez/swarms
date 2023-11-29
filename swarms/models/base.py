@@ -27,7 +27,9 @@ class AbstractModel(ABC):
 
     def chat(self, task: str, history: str = "") -> str:
         """Chat with the model"""
-        complete_task = task + " | " + history  # Delimiter for clarity
+        complete_task = (
+            task + " | " + history
+        )  # Delimiter for clarity
         return self.run(complete_task)
 
     def __call__(self, task: str) -> str:

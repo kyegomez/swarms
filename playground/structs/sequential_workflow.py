@@ -18,7 +18,9 @@ flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to the workflow
-workflow.add("Generate a 10,000 word blog on health and wellness.", flow1)
+workflow.add(
+    "Generate a 10,000 word blog on health and wellness.", flow1
+)
 
 # Suppose the next task takes the output of the first task as input
 workflow.add("Summarize the generated blog", flow2)

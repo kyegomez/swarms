@@ -16,12 +16,16 @@ class PromptGenerator:
                 "text": "thought",
                 "reasoning": "reasoning",
                 "plan": (
-                    "- short bulleted\n- list that conveys\n- long-term plan"
+                    "- short bulleted\n- list that conveys\n-"
+                    " long-term plan"
                 ),
                 "criticism": "constructive self-criticism",
                 "speak": "thoughts summary to say to user",
             },
-            "command": {"name": "command name", "args": {"arg name": "value"}},
+            "command": {
+                "name": "command name",
+                "args": {"arg name": "value"},
+            },
         }
 
     def add_constraint(self, constraint: str) -> None:
@@ -66,13 +70,16 @@ class PromptGenerator:
         Returns:
             str: The generated prompt string.
         """
-        formatted_response_format = json.dumps(self.response_format, indent=4)
+        formatted_response_format = json.dumps(
+            self.response_format, indent=4
+        )
         prompt_string = (
             f"Constraints:\n{''.join(self.constraints)}\n\nCommands:\n{''.join(self.commands)}\n\nResources:\n{''.join(self.resources)}\n\nPerformance"
             f" Evaluation:\n{''.join(self.performance_evaluation)}\n\nYou"
-            " should only respond in JSON format as described below \nResponse"
-            f" Format: \n{formatted_response_format} \nEnsure the response can"
-            " be parsed by Python json.loads"
+            " should only respond in JSON format as described below"
+            " \nResponse Format:"
+            f" \n{formatted_response_format} \nEnsure the response"
+            " can be parsed by Python json.loads"
         )
 
         return prompt_string

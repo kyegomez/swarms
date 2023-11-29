@@ -37,12 +37,18 @@ llm = OpenAIChat(openai_api_key=api_key, max_tokens=5000)
 
 # Documentation agent
 documentation_agent = Agent(
-    llm=llm, sop=DOCUMENTATION_SOP, max_loops=1,
+    llm=llm,
+    sop=DOCUMENTATION_SOP,
+    max_loops=1,
 )
 
 
 # Tests agent
-tests_agent = Agent(llm=llm, sop=TEST_SOP, max_loops=2,)
+tests_agent = Agent(
+    llm=llm,
+    sop=TEST_SOP,
+    max_loops=2,
+)
 
 
 # Run the documentation agent
@@ -52,6 +58,6 @@ documentation = documentation_agent.run(
 
 # Run the tests agent
 tests = tests_agent.run(
-    f"Write tests for the following code:{TASK} here is the documentation:"
-    f" {documentation}"
+    f"Write tests for the following code:{TASK} here is the"
+    f" documentation: {documentation}"
 )

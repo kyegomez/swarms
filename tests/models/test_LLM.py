@@ -17,7 +17,9 @@ class TestLLM(unittest.TestCase):
         self.prompt = "Who won the FIFA World Cup in 1998?"
 
     def test_init(self):
-        self.assertEqual(self.llm_openai.openai_api_key, "mock_openai_key")
+        self.assertEqual(
+            self.llm_openai.openai_api_key, "mock_openai_key"
+        )
         self.assertEqual(self.llm_hf.hf_repo_id, "mock_repo_id")
         self.assertEqual(self.llm_hf.hf_api_token, "mock_hf_token")
 
@@ -41,7 +43,9 @@ class TestLLM(unittest.TestCase):
         with self.assertRaises(ValueError):
             LLM(hf_repo_id="mock_repo_id")
 
-    @patch.dict(os.environ, {"HUGGINGFACEHUB_API_TOKEN": "mock_hf_token"})
+    @patch.dict(
+        os.environ, {"HUGGINGFACEHUB_API_TOKEN": "mock_hf_token"}
+    )
     def test_hf_token_from_env(self):
         llm = LLM(hf_repo_id="mock_repo_id")
         self.assertEqual(llm.hf_api_token, "mock_hf_token")

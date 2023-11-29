@@ -24,8 +24,12 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 llm = GPT4VisionAPI(openai_api_key=api_key)
 
-assembly_line = "playground/demos/swarm_of_mma_manufacturing/assembly_line.jpg"
-red_robots = "playground/demos/swarm_of_mma_manufacturing/red_robots.jpg"
+assembly_line = (
+    "playground/demos/swarm_of_mma_manufacturing/assembly_line.jpg"
+)
+red_robots = (
+    "playground/demos/swarm_of_mma_manufacturing/red_robots.jpg"
+)
 robots = "playground/demos/swarm_of_mma_manufacturing/robots.jpg"
 tesla_assembly_line = (
     "playground/demos/swarm_of_mma_manufacturing/tesla_assembly.jpg"
@@ -35,29 +39,31 @@ tesla_assembly_line = (
 # Define detailed prompts for each agent
 tasks = {
     "health_safety": (
-        "Analyze the factory's working environment for health safety. Focus on"
-        " cleanliness, ventilation, spacing between workstations, and personal"
-        " protective equipment availability."
+        "Analyze the factory's working environment for health safety."
+        " Focus on cleanliness, ventilation, spacing between"
+        " workstations, and personal protective equipment"
+        " availability."
     ),
     "productivity": (
-        "Review the factory's workflow efficiency, machine utilization, and"
-        " employee engagement. Identify operational delays or bottlenecks."
+        "Review the factory's workflow efficiency, machine"
+        " utilization, and employee engagement. Identify operational"
+        " delays or bottlenecks."
     ),
     "safety": (
-        "Analyze the factory's safety measures, including fire exits, safety"
-        " signage, and emergency response equipment."
+        "Analyze the factory's safety measures, including fire exits,"
+        " safety signage, and emergency response equipment."
     ),
     "security": (
-        "Evaluate the factory's security systems, entry/exit controls, and"
-        " potential vulnerabilities."
+        "Evaluate the factory's security systems, entry/exit"
+        " controls, and potential vulnerabilities."
     ),
     "sustainability": (
-        "Inspect the factory's sustainability practices, including waste"
-        " management, energy usage, and eco-friendly processes."
+        "Inspect the factory's sustainability practices, including"
+        " waste management, energy usage, and eco-friendly processes."
     ),
     "efficiency": (
-        "Assess the manufacturing process's efficiency, considering the layout,"
-        " logistics, and automation level."
+        "Assess the manufacturing process's efficiency, considering"
+        " the layout, logistics, and automation level."
     ),
 }
 
@@ -73,7 +79,10 @@ efficiency_prompt = tasks["efficiency"]
 
 # Health security agent
 health_security_agent = Agent(
-    llm=llm, sop_list=health_safety_prompt, max_loops=2, multi_modal=True
+    llm=llm,
+    sop_list=health_safety_prompt,
+    max_loops=2,
+    multi_modal=True,
 )
 
 # Quality control agent
@@ -98,10 +107,14 @@ health_check = health_security_agent.run(
 )
 
 # Add the third task to the productivity_check_agent
-productivity_check = productivity_check_agent.run(health_check, assembly_line)
+productivity_check = productivity_check_agent.run(
+    health_check, assembly_line
+)
 
 # Add the fourth task to the security_check_agent
-security_check = security_check_agent.add(productivity_check, red_robots)
+security_check = security_check_agent.add(
+    productivity_check, red_robots
+)
 
 # Add the fifth task to the efficiency_check_agent
 efficiency_check = efficiency_check_agent.run(

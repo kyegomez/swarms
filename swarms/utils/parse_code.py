@@ -6,7 +6,9 @@ def extract_code_in_backticks_in_string(message: str) -> str:
     To extract code from a string in markdown and return a string
 
     """
-    pattern = r"`` ``(.*?)`` "  # Non-greedy match between six backticks
+    pattern = (  # Non-greedy match between six backticks
+        r"`` ``(.*?)`` "
+    )
     match = re.search(
         pattern, message, re.DOTALL
     )  # re.DOTALL to match newline chars

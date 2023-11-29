@@ -6,7 +6,10 @@ import pytest
 
 from swarms.models import OpenAIChat
 from swarms.structs.agent import Agent
-from swarms.structs.sequential_workflow import SequentialWorkflow, Task
+from swarms.structs.sequential_workflow import (
+    SequentialWorkflow,
+    Task,
+)
 
 # Mock the OpenAI API key using environment variables
 os.environ["OPENAI_API_KEY"] = "mocked_api_key"
@@ -66,7 +69,10 @@ def test_sequential_workflow_initialization():
     assert len(workflow.tasks) == 0
     assert workflow.max_loops == 1
     assert workflow.autosave is False
-    assert workflow.saved_state_filepath == "sequential_workflow_state.json"
+    assert (
+        workflow.saved_state_filepath
+        == "sequential_workflow_state.json"
+    )
     assert workflow.restore_state_filepath is None
     assert workflow.dashboard is False
 

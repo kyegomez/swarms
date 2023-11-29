@@ -61,7 +61,9 @@ class Nougat:
     def __call__(self, img: str):
         """Call the model with an image_path str as an input"""
         image = Image.open(img)
-        pixel_values = self.processor(image, return_tensors="pt").pixel_values
+        pixel_values = self.processor(
+            image, return_tensors="pt"
+        ).pixel_values
 
         # Generate transcriptions, here we only generate 30 tokens
         outputs = self.model.generate(
@@ -92,7 +94,9 @@ class Nougat:
 
         # Convert the matches to a readable format
         cleaned_data = [
-            "Date: {}, Amount: {}".format(date, amount.replace(",", ""))
+            "Date: {}, Amount: {}".format(
+                date, amount.replace(",", "")
+            )
             for date, amount in matches
         ]
 

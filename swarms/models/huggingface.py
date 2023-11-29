@@ -7,7 +7,11 @@ from typing import List, Tuple
 import torch
 from termcolor import colored
 from torch.nn.parallel import DistributedDataParallel as DDP
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+)
 
 
 class HuggingfaceLLM:
@@ -173,7 +177,10 @@ class HuggingfaceLLM:
                 self.model_id, *args, **kwargs
             )
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id, quantization_config=bnb_config, *args, **kwargs
+                self.model_id,
+                quantization_config=bnb_config,
+                *args,
+                **kwargs,
             )
 
             self.model  # .to(self.device)
@@ -182,7 +189,11 @@ class HuggingfaceLLM:
             # raise
             print(
                 colored(
-                    f"Failed to load the model and or the tokenizer: {e}", "red"
+                    (
+                        "Failed to load the model and or the"
+                        f" tokenizer: {e}"
+                    ),
+                    "red",
                 )
             )
 
@@ -198,7 +209,9 @@ class HuggingfaceLLM:
         """Load the model"""
         if not self.model or not self.tokenizer:
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_id
+                )
 
                 bnb_config = (
                     BitsAndBytesConfig(**self.quantization_config)
@@ -214,7 +227,8 @@ class HuggingfaceLLM:
                     self.model = DDP(self.model)
             except Exception as error:
                 self.logger.error(
-                    f"Failed to load the model or the tokenizer: {error}"
+                    "Failed to load the model or the tokenizer:"
+                    f" {error}"
                 )
                 raise
 
@@ -226,7 +240,9 @@ class HuggingfaceLLM:
             results = list(executor.map(self.run, tasks))
         return results
 
-    def run_batch(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+    def run_batch(
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
@@ -254,9 +270,9 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(task, return_tensors="pt").to(
-                self.device
-            )
+            inputs = self.tokenizer.encode(
+                task, return_tensors="pt"
+            ).to(self.device)
 
             # self.log.start()
 
@@ -266,7 +282,9 @@ class HuggingfaceLLM:
                         output_sequence = []
 
                         outputs = self.model.generate(
-                            inputs, max_length=len(inputs) + 1, do_sample=True
+                            inputs,
+                            max_length=len(inputs) + 1,
+                            do_sample=True,
                         )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
@@ -274,7 +292,8 @@ class HuggingfaceLLM:
                         # print token in real-time
                         print(
                             self.tokenizer.decode(
-                                [output_tokens], skip_special_tokens=True
+                                [output_tokens],
+                                skip_special_tokens=True,
                             ),
                             end="",
                             flush=True,
@@ -287,13 +306,16 @@ class HuggingfaceLLM:
                     )
 
             del inputs
-            return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return self.tokenizer.decode(
+                outputs[0], skip_special_tokens=True
+            )
         except Exception as e:
             print(
                 colored(
                     (
-                        "HuggingfaceLLM could not generate text because of"
-                        f" error: {e}, try optimizing your arguments"
+                        "HuggingfaceLLM could not generate text"
+                        f" because of error: {e}, try optimizing your"
+                        " arguments"
                     ),
                     "red",
                 )
@@ -318,9 +340,9 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(task, return_tensors="pt").to(
-                self.device
-            )
+            inputs = self.tokenizer.encode(
+                task, return_tensors="pt"
+            ).to(self.device)
 
             # self.log.start()
 
@@ -330,7 +352,9 @@ class HuggingfaceLLM:
                         output_sequence = []
 
                         outputs = self.model.generate(
-                            inputs, max_length=len(inputs) + 1, do_sample=True
+                            inputs,
+                            max_length=len(inputs) + 1,
+                            do_sample=True,
                         )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
@@ -338,7 +362,8 @@ class HuggingfaceLLM:
                         # print token in real-time
                         print(
                             self.tokenizer.decode(
-                                [output_tokens], skip_special_tokens=True
+                                [output_tokens],
+                                skip_special_tokens=True,
                             ),
                             end="",
                             flush=True,
@@ -352,7 +377,9 @@ class HuggingfaceLLM:
 
             del inputs
 
-            return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return self.tokenizer.decode(
+                outputs[0], skip_special_tokens=True
+            )
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise

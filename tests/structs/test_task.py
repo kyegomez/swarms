@@ -21,10 +21,11 @@ def llm():
 
 def test_agent_run_task(llm):
     task = (
-        "Analyze this image of an assembly line and identify any issues such as"
-        " misaligned parts, defects, or deviations from the standard assembly"
-        " process. IF there is anything unsafe in the image, explain why it is"
-        " unsafe and how it could be improved."
+        "Analyze this image of an assembly line and identify any"
+        " issues such as misaligned parts, defects, or deviations"
+        " from the standard assembly process. IF there is anything"
+        " unsafe in the image, explain why it is unsafe and how it"
+        " could be improved."
     )
     img = "assembly_line.jpg"
 
@@ -47,7 +48,9 @@ def test_agent_run_task(llm):
 @pytest.fixture
 def task():
     agents = [Agent(llm=llm, id=f"Agent_{i}") for i in range(5)]
-    return Task(id="Task_1", task="Task_Name", agents=agents, dependencies=[])
+    return Task(
+        id="Task_1", task="Task_Name", agents=agents, dependencies=[]
+    )
 
 
 # Basic tests

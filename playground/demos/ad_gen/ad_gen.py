@@ -30,15 +30,34 @@ class ProductAdConceptGenerator:
             "in a luxurious setting", "in a playful and colorful background", "in an ice cave setting",
             "in a serene and calm landscape"
         ]
+<<<<<<< HEAD
+=======
+        self.contexts = [
+            "high realism product ad (extremely creative)"
+        ]
+>>>>>>> 831147e ([CODE QUALITY])
 
     def generate_concept(self):
         theme = random.choice(self.themes)
         context = random.choice(self.contexts)
+<<<<<<< HEAD
         return f"An ad for {self.product_name} that embodies a {theme} theme {context}"
 
 # User input
 product_name = input("Enter a product name for ad creation (e.g., 'PS5', 'AirPods', 'Kirkland Vodka'): ")
 social_media_platform = input("Enter a social media platform (e.g., 'Facebook', 'Twitter', 'Instagram'): ")
+=======
+        return (
+            f"{theme} inside a {style} {self.product_name}, {context}"
+        )
+
+
+# User input
+product_name = input(
+    "Enter a product name for ad creation (e.g., 'PS5', 'AirPods',"
+    " 'Kirkland Vodka'): "
+)
+>>>>>>> 831147e ([CODE QUALITY])
 
 # Generate creative concept
 concept_generator = ProductAdConceptGenerator(product_name)
@@ -53,6 +72,16 @@ ad_copy_prompt = f"Write a compelling {social_media_platform} ad copy for a prod
 ad_copy = ad_copy_agent.run(task=ad_copy_prompt)
 
 # Output the results
+<<<<<<< HEAD
 print("Creative Concept:", creative_concept)
 print("Image Path:", image_paths[0] if image_paths else "No image generated")
 print("Ad Copy:", ad_copy)
+=======
+print("Creative Concept:", concept_result)
+print("Design Ideas:", design_result)
+print("Ad Copy:", copywriting_result)
+print(
+    "Image Path:",
+    image_paths[0] if image_paths else "No image generated",
+)
+>>>>>>> 831147e ([CODE QUALITY])

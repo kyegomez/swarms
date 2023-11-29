@@ -93,7 +93,9 @@ class WhisperX:
 
         try:
             segments = result["segments"]
-            transcription = " ".join(segment["text"] for segment in segments)
+            transcription = " ".join(
+                segment["text"] for segment in segments
+            )
             return transcription
         except KeyError:
             print("The key 'segments' is not found in the result.")
@@ -128,7 +130,9 @@ class WhisperX:
 
         try:
             segments = result["segments"]
-            transcription = " ".join(segment["text"] for segment in segments)
+            transcription = " ".join(
+                segment["text"] for segment in segments
+            )
             return transcription
         except KeyError:
             print("The key 'segments' is not found in the result.")

@@ -26,7 +26,9 @@ def test_texts():
 def test_get_ada_embeddings_basic(test_texts):
     with patch("openai.resources.Embeddings.create") as mock_create:
         # Mocking the OpenAI API call
-        mock_create.return_value = {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
+        mock_create.return_value = {
+            "data": [{"embedding": [0.1, 0.2, 0.3]}]
+        }
 
         for text in test_texts:
             embedding = get_ada_embeddings(text)
@@ -36,7 +38,8 @@ def test_get_ada_embeddings_basic(test_texts):
                 0.3,
             ], "Embedding does not match expected output"
             mock_create.assert_called_with(
-                input=[text.replace("\n", " ")], model="text-embedding-ada-002"
+                input=[text.replace("\n", " ")],
+                model="text-embedding-ada-002",
             )
 
 
@@ -44,16 +47,28 @@ def test_get_ada_embeddings_basic(test_texts):
 @pytest.mark.parametrize(
     "text, model, expected_call_model",
     [
-        ("Hello World", "text-embedding-ada-002", "text-embedding-ada-002"),
-        ("Hello World", "text-embedding-ada-001", "text-embedding-ada-001"),
+        (
+            "Hello World",
+            "text-embedding-ada-002",
+            "text-embedding-ada-002",
+        ),
+        (
+            "Hello World",
+            "text-embedding-ada-001",
+            "text-embedding-ada-001",
+        ),
     ],
 )
 def test_get_ada_embeddings_models(text, model, expected_call_model):
     with patch("openai.resources.Embeddings.create") as mock_create:
-        mock_create.return_value = {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
+        mock_create.return_value = {
+            "data": [{"embedding": [0.1, 0.2, 0.3]}]
+        }
 
         _ = get_ada_embeddings(text, model=model)
-        mock_create.assert_called_with(input=[text], model=expected_call_model)
+        mock_create.assert_called_with(
+            input=[text], model=expected_call_model
+        )
 
 
 # Exception Test

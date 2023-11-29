@@ -54,7 +54,9 @@ IMPORTANT: Avoid repeating actions such as doing the same CLICK event twice in a
 Objective: {objective}
 """
 
-USER_QUESTION = "Hello, I can help you with anything. What would you like done?"
+USER_QUESTION = (
+    "Hello, I can help you with anything. What would you like done?"
+)
 
 SUMMARY_PROMPT = """
 You are a Self-Operating Computer. You just completed a request from a user by operating the computer. Now you need to share the results. 
@@ -89,7 +91,8 @@ def format_vision_prompt(objective, previous_action):
     """
     if previous_action:
         previous_action = (
-            f"Here was the previous action you took: {previous_action}"
+            "Here was the previous action you took:"
+            f" {previous_action}"
         )
     else:
         previous_action = ""

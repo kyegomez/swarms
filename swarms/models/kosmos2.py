@@ -20,7 +20,9 @@ class Detections(BaseModel):
         ), "All fields must have the same length."
         return values
 
-    @validator("xyxy", "class_id", "confidence", pre=True, each_item=True)
+    @validator(
+        "xyxy", "class_id", "confidence", pre=True, each_item=True
+    )
     def check_not_empty(cls, v):
         if isinstance(v, list) and len(v) == 0:
             raise ValueError("List must not be empty")
@@ -69,7 +71,9 @@ class Kosmos2(BaseModel):
         image = Image.open(img)
         prompt = "<grounding>An image of"
 
-        inputs = self.processor(text=prompt, images=image, return_tensors="pt")
+        inputs = self.processor(
+            text=prompt, images=image, return_tensors="pt"
+        )
         outputs = self.model.generate(
             **inputs, use_cache=True, max_new_tokens=64
         )
@@ -83,7 +87,9 @@ class Kosmos2(BaseModel):
         entities = self.extract_entities(generated_text)
 
         # Convert entities to detections format
-        detections = self.process_entities_to_detections(entities, image)
+        detections = self.process_entities_to_detections(
+            entities, image
+        )
         return detections
 
     def extract_entities(

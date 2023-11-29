@@ -124,10 +124,15 @@ class BaseTool(RunnableSerializable[Union[str, Dict], Any]):
         """Create the definition of the new tool class."""
         super().__init_subclass__(**kwargs)
 
-        args_schema_type = cls.__annotations__.get("args_schema", None)
+        args_schema_type = cls.__annotations__.get(
+            "args_schema", None
+        )
 
         if args_schema_type is not None:
-            if args_schema_type is None or args_schema_type == BaseModel:
+            if (
+                args_schema_type is None
+                or args_schema_type == BaseModel
+            ):
                 # Throw errors for common mis-annotations.
                 # TODO: Use get_args / get_origin and fully
                 # specify valid annotations.
@@ -138,10 +143,11 @@ class ChildTool(BaseTool):
     ..."""
                 name = cls.__name__
                 raise SchemaAnnotationError(
-                    f"Tool definition for {name} must include valid type"
-                    " annotations for argument 'args_schema' to behave as"
-                    " expected.\nExpected annotation of 'Type[BaseModel]' but"
-                    f" got '{args_schema_type}'.\nExpected class looks"
+                    f"Tool definition for {name} must include valid"
+                    " type annotations for argument 'args_schema' to"
+                    " behave as expected.\nExpected annotation of"
+                    " 'Type[BaseModel]' but got"
+                    f" '{args_schema_type}'.\nExpected class looks"
                     f" like:\n{typehint_mandate}"
                 )
 
@@ -264,7 +270,9 @@ class ChildTool(BaseTool):
             if input_args is not None:
                 result = input_args.parse_obj(tool_input)
                 return {
-                    k: v for k, v in result.dict().items() if k in tool_input
+                    k: v
+                    for k, v in result.dict().items()
+                    if k in tool_input
                 }
         return tool_input
 
@@ -273,7 +281,10 @@ class ChildTool(BaseTool):
         """Raise deprecation warning if callback_manager is used."""
         if values.get("callback_manager") is not None:
             warnings.warn(
-                "callback_manager is deprecated. Please use callbacks instead.",
+                (
+                    "callback_manager is deprecated. Please use"
+                    " callbacks instead."
+                ),
                 DeprecationWarning,
             )
             values["callbacks"] = values.pop("callback_manager", None)
@@ -346,18 +357,28 @@ class ChildTool(BaseTool):
             self.metadata,
         )
         # TODO: maybe also pass through run_manager is _run supports kwargs
-        new_arg_supported = signature(self._run).parameters.get("run_manager")
+        new_arg_supported = signature(self._run).parameters.get(
+            "run_manager"
+        )
         run_manager = callback_manager.on_tool_start(
             {"name": self.name, "description": self.description},
-            tool_input if isinstance(tool_input, str) else str(tool_input),
+            (
+                tool_input
+                if isinstance(tool_input, str)
+                else str(tool_input)
+            ),
             color=start_color,
             name=run_name,
             **kwargs,
         )
         try:
-            tool_args, tool_kwargs = self._to_args_and_kwargs(parsed_input)
+            tool_args, tool_kwargs = self._to_args_and_kwargs(
+                parsed_input
+            )
             observation = (
-                self._run(*tool_args, run_manager=run_manager, **tool_kwargs)
+                self._run(
+                    *tool_args, run_manager=run_manager, **tool_kwargs
+                )
                 if new_arg_supported
                 else self._run(*tool_args, **tool_kwargs)
             )
@@ -376,12 +397,15 @@ class ChildTool(BaseTool):
                 observation = self.handle_tool_error(e)
             else:
                 raise ValueError(
-                    "Got unexpected type of `handle_tool_error`. Expected"
-                    " bool, str or callable. Received:"
+                    "Got unexpected type of `handle_tool_error`."
+                    " Expected bool, str or callable. Received:"
                     f" {self.handle_tool_error}"
                 )
             run_manager.on_tool_end(
-                str(observation), color="red", name=self.name, **kwargs
+                str(observation),
+                color="red",
+                name=self.name,
+                **kwargs,
             )
             return observation
         except (Exception, KeyboardInterrupt) as e:
@@ -389,7 +413,10 @@ class ChildTool(BaseTool):
             raise e
         else:
             run_manager.on_tool_end(
-                str(observation), color=color, name=self.name, **kwargs
+                str(observation),
+                color=color,
+                name=self.name,
+                **kwargs,
             )
             return observation
 
@@ -421,17 +448,25 @@ class ChildTool(BaseTool):
             metadata,
             self.metadata,
         )
-        new_arg_supported = signature(self._arun).parameters.get("run_manager")
+        new_arg_supported = signature(self._arun).parameters.get(
+            "run_manager"
+        )
         run_manager = await callback_manager.on_tool_start(
             {"name": self.name, "description": self.description},
-            tool_input if isinstance(tool_input, str) else str(tool_input),
+            (
+                tool_input
+                if isinstance(tool_input, str)
+                else str(tool_input)
+            ),
             color=start_color,
             name=run_name,
             **kwargs,
         )
         try:
             # We then call the tool on the tool input to get an observation
-            tool_args, tool_kwargs = self._to_args_and_kwargs(parsed_input)
+            tool_args, tool_kwargs = self._to_args_and_kwargs(
+                parsed_input
+            )
             observation = (
                 await self._arun(
                     *tool_args, run_manager=run_manager, **tool_kwargs
@@ -454,12 +489,15 @@ class ChildTool(BaseTool):
                 observation = self.handle_tool_error(e)
             else:
                 raise ValueError(
-                    "Got unexpected type of `handle_tool_error`. Expected"
-                    " bool, str or callable. Received:"
+                    "Got unexpected type of `handle_tool_error`."
+                    " Expected bool, str or callable. Received:"
                     f" {self.handle_tool_error}"
                 )
             await run_manager.on_tool_end(
-                str(observation), color="red", name=self.name, **kwargs
+                str(observation),
+                color="red",
+                name=self.name,
+                **kwargs,
             )
             return observation
         except (Exception, KeyboardInterrupt) as e:
@@ -467,11 +505,16 @@ class ChildTool(BaseTool):
             raise e
         else:
             await run_manager.on_tool_end(
-                str(observation), color=color, name=self.name, **kwargs
+                str(observation),
+                color=color,
+                name=self.name,
+                **kwargs,
             )
             return observation
 
-    def __call__(self, tool_input: str, callbacks: Callbacks = None) -> str:
+    def __call__(
+        self, tool_input: str, callbacks: Callbacks = None
+    ) -> str:
         """Make tool callable."""
         return self.run(tool_input, callbacks=callbacks)
 
@@ -520,8 +563,8 @@ class Tool(BaseTool):
         all_args = list(args) + list(kwargs.values())
         if len(all_args) != 1:
             raise ToolException(
-                f"Too many arguments to single-input tool {self.name}. Args:"
-                f" {all_args}"
+                "Too many arguments to single-input tool"
+                f" {self.name}. Args: {all_args}"
             )
         return tuple(all_args), {}
 
@@ -533,13 +576,17 @@ class Tool(BaseTool):
     ) -> Any:
         """Use the tool."""
         if self.func:
-            new_argument_supported = signature(self.func).parameters.get(
-                "callbacks"
-            )
+            new_argument_supported = signature(
+                self.func
+            ).parameters.get("callbacks")
             return (
                 self.func(
                     *args,
-                    callbacks=run_manager.get_child() if run_manager else None,
+                    callbacks=(
+                        run_manager.get_child()
+                        if run_manager
+                        else None
+                    ),
                     **kwargs,
                 )
                 if new_argument_supported
@@ -555,13 +602,17 @@ class Tool(BaseTool):
     ) -> Any:
         """Use the tool asynchronously."""
         if self.coroutine:
-            new_argument_supported = signature(self.coroutine).parameters.get(
-                "callbacks"
-            )
+            new_argument_supported = signature(
+                self.coroutine
+            ).parameters.get("callbacks")
             return (
                 await self.coroutine(
                     *args,
-                    callbacks=run_manager.get_child() if run_manager else None,
+                    callbacks=(
+                        run_manager.get_child()
+                        if run_manager
+                        else None
+                    ),
                     **kwargs,
                 )
                 if new_argument_supported
@@ -602,7 +653,9 @@ class Tool(BaseTool):
     ) -> Tool:
         """Initialize tool from a function."""
         if func is None and coroutine is None:
-            raise ValueError("Function and/or coroutine must be provided")
+            raise ValueError(
+                "Function and/or coroutine must be provided"
+            )
         return cls(
             name=name,
             func=func,
@@ -618,7 +671,9 @@ class StructuredTool(BaseTool):
     """Tool that can operate on any number of inputs."""
 
     description: str = ""
-    args_schema: Type[BaseModel] = Field(..., description="The tool schema.")
+    args_schema: Type[BaseModel] = Field(
+        ..., description="The tool schema."
+    )
     """The input arguments' schema."""
     func: Optional[Callable[..., Any]]
     """The function to run when the tool is called."""
@@ -655,13 +710,17 @@ class StructuredTool(BaseTool):
     ) -> Any:
         """Use the tool."""
         if self.func:
-            new_argument_supported = signature(self.func).parameters.get(
-                "callbacks"
-            )
+            new_argument_supported = signature(
+                self.func
+            ).parameters.get("callbacks")
             return (
                 self.func(
                     *args,
-                    callbacks=run_manager.get_child() if run_manager else None,
+                    callbacks=(
+                        run_manager.get_child()
+                        if run_manager
+                        else None
+                    ),
                     **kwargs,
                 )
                 if new_argument_supported
@@ -677,13 +736,17 @@ class StructuredTool(BaseTool):
     ) -> str:
         """Use the tool asynchronously."""
         if self.coroutine:
-            new_argument_supported = signature(self.coroutine).parameters.get(
-                "callbacks"
-            )
+            new_argument_supported = signature(
+                self.coroutine
+            ).parameters.get("callbacks")
             return (
                 await self.coroutine(
                     *args,
-                    callbacks=run_manager.get_child() if run_manager else None,
+                    callbacks=(
+                        run_manager.get_child()
+                        if run_manager
+                        else None
+                    ),
                     **kwargs,
                 )
                 if new_argument_supported
@@ -740,12 +803,15 @@ class StructuredTool(BaseTool):
         elif coroutine is not None:
             source_function = coroutine
         else:
-            raise ValueError("Function and/or coroutine must be provided")
+            raise ValueError(
+                "Function and/or coroutine must be provided"
+            )
         name = name or source_function.__name__
         description = description or source_function.__doc__
         if description is None:
             raise ValueError(
-                "Function must have a docstring if description not provided."
+                "Function must have a docstring if description not"
+                " provided."
             )
 
         # Description example:
@@ -804,28 +870,41 @@ def tool(
     """
 
     def _make_with_name(tool_name: str) -> Callable:
-        def _make_tool(dec_func: Union[Callable, Runnable]) -> BaseTool:
+        def _make_tool(
+            dec_func: Union[Callable, Runnable]
+        ) -> BaseTool:
             if isinstance(dec_func, Runnable):
                 runnable = dec_func
 
-                if runnable.input_schema.schema().get("type") != "object":
-                    raise ValueError("Runnable must have an object schema.")
+                if (
+                    runnable.input_schema.schema().get("type")
+                    != "object"
+                ):
+                    raise ValueError(
+                        "Runnable must have an object schema."
+                    )
 
                 async def ainvoke_wrapper(
-                    callbacks: Optional[Callbacks] = None, **kwargs: Any
+                    callbacks: Optional[Callbacks] = None,
+                    **kwargs: Any,
                 ) -> Any:
                     return await runnable.ainvoke(
                         kwargs, {"callbacks": callbacks}
                     )
 
                 def invoke_wrapper(
-                    callbacks: Optional[Callbacks] = None, **kwargs: Any
+                    callbacks: Optional[Callbacks] = None,
+                    **kwargs: Any,
                 ) -> Any:
-                    return runnable.invoke(kwargs, {"callbacks": callbacks})
+                    return runnable.invoke(
+                        kwargs, {"callbacks": callbacks}
+                    )
 
                 coroutine = ainvoke_wrapper
                 func = invoke_wrapper
-                schema: Optional[Type[BaseModel]] = runnable.input_schema
+                schema: Optional[Type[BaseModel]] = (
+                    runnable.input_schema
+                )
                 description = repr(runnable)
             elif inspect.iscoroutinefunction(dec_func):
                 coroutine = dec_func
@@ -852,8 +931,8 @@ def tool(
             # a simple string->string function
             if func.__doc__ is None:
                 raise ValueError(
-                    "Function must have a docstring if "
-                    "description not provided and infer_schema is False."
+                    "Function must have a docstring if description"
+                    " not provided and infer_schema is False."
                 )
             return Tool(
                 name=tool_name,

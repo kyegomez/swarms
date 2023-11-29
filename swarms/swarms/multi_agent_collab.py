@@ -13,8 +13,8 @@ from swarms.utils.logger import logger
 class BidOutputParser(RegexParser):
     def get_format_instructions(self) -> str:
         return (
-            "Your response should be an integrater delimited by angled brackets"
-            " like this: <int>"
+            "Your response should be an integrater delimited by"
+            " angled brackets like this: <int>"
         )
 
 
@@ -123,7 +123,9 @@ class MultiAgentCollaboration:
 
     def step(self) -> tuple[str, str]:
         """Steps through the multi-agent collaboration."""
-        speaker_idx = self.select_next_speaker(self._step, self.agents)
+        speaker_idx = self.select_next_speaker(
+            self._step, self.agents
+        )
         speaker = self.agents[speaker_idx]
         message = speaker.send()
         message = speaker.send()
@@ -146,7 +148,8 @@ class MultiAgentCollaboration:
         wait=tenacity.wait_none(),
         retry=tenacity.retry_if_exception_type(ValueError),
         before_sleep=lambda retry_state: print(
-            f"ValueError occured: {retry_state.outcome.exception()}, retying..."
+            f"ValueError occured: {retry_state.outcome.exception()},"
+            " retying..."
         ),
         retry_error_callback=lambda retry_state: 0,
     )
@@ -167,7 +170,9 @@ class MultiAgentCollaboration:
             bid = self.ask_for_bid(agent)
             bids.append(bid)
         max_value = max(bids)
-        max_indices = [i for i, x in enumerate(bids) if x == max_value]
+        max_indices = [
+            i for i, x in enumerate(bids) if x == max_value
+        ]
         idx = random.choice(max_indices)
         return idx
 
@@ -176,7 +181,8 @@ class MultiAgentCollaboration:
         wait=tenacity.wait_none(),
         retry=tenacity.retry_if_exception_type(ValueError),
         before_sleep=lambda retry_state: print(
-            f"ValueError occured: {retry_state.outcome.exception()}, retying..."
+            f"ValueError occured: {retry_state.outcome.exception()},"
+            " retying..."
         ),
         retry_error_callback=lambda retry_state: 0,
     )
@@ -256,7 +262,9 @@ class MultiAgentCollaboration:
         for _ in range(self.max_iters):
             for agent in self.agents:
                 result = agent.run(conversation)
-                self.results.append({"agent": agent, "response": result})
+                self.results.append(
+                    {"agent": agent, "response": result}
+                )
                 conversation += result
 
                 if self.autosave:
@@ -309,7 +317,9 @@ class MultiAgentCollaboration:
         """Tracks and reports the performance of each agent"""
         performance_data = {}
         for agent in self.agents:
-            performance_data[agent.name] = agent.get_performance_metrics()
+            performance_data[agent.name] = (
+                agent.get_performance_metrics()
+            )
         return performance_data
 
     def set_interaction_rules(self, rules):

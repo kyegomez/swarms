@@ -62,7 +62,9 @@ class AutoScaler:
         agent=None,
     ):
         self.agent = agent or Agent
-        self.agents_pool = [self.agent() for _ in range(initial_agents)]
+        self.agents_pool = [
+            self.agent() for _ in range(initial_agents)
+        ]
         self.task_queue = queue.Queue()
         self.scale_up_factor = scale_up_factor
         self.idle_threshold = idle_threshold
@@ -74,7 +76,8 @@ class AutoScaler:
             self.tasks_queue.put(task)
         except Exception as error:
             print(
-                f"Error adding task to queue: {error} try again with a new task"
+                f"Error adding task to queue: {error} try again with"
+                " a new task"
             )
 
     @log_decorator
@@ -84,20 +87,29 @@ class AutoScaler:
         """Add more agents"""
         try:
             with self.lock:
-                new_agents_counts = len(self.agents_pool) * self.scale_up_factor
+                new_agents_counts = (
+                    len(self.agents_pool) * self.scale_up_factor
+                )
                 for _ in range(new_agents_counts):
                     self.agents_pool.append(Agent())
         except Exception as error:
-            print(f"Error scaling up: {error} try again with a new task")
+            print(
+                f"Error scaling up: {error} try again with a new task"
+            )
 
     def scale_down(self):
         """scale down"""
         try:
             with self.lock:
-                if len(self.agents_pool) > 10:  # ensure minmum of 10 agents
+                if (
+                    len(self.agents_pool) > 10
+                ):  # ensure minmum of 10 agents
                     del self.agents_pool[-1]  # remove last agent
         except Exception as error:
-            print(f"Error scaling down: {error} try again with a new task")
+            print(
+                f"Error scaling down: {error} try again with a new"
+                " task"
+            )
 
     @log_decorator
     @error_decorator
@@ -109,19 +121,27 @@ class AutoScaler:
                 sleep(60)  # check minute
                 pending_tasks = self.task_queue.qsize()
                 active_agents = sum(
-                    [1 for agent in self.agents_pool if agent.is_busy()]
+                    [
+                        1
+                        for agent in self.agents_pool
+                        if agent.is_busy()
+                    ]
                 )
 
-                if pending_tasks / len(self.agents_pool) > self.busy_threshold:
+                if (
+                    pending_tasks / len(self.agents_pool)
+                    > self.busy_threshold
+                ):
                     self.scale_up()
                 elif (
-                    active_agents / len(self.agents_pool) < self.idle_threshold
+                    active_agents / len(self.agents_pool)
+                    < self.idle_threshold
                 ):
                     self.scale_down()
         except Exception as error:
             print(
-                f"Error monitoring and scaling: {error} try again with a new"
-                " task"
+                f"Error monitoring and scaling: {error} try again"
+                " with a new task"
             )
 
     @log_decorator
@@ -130,7 +150,9 @@ class AutoScaler:
     def start(self):
         """Start scaling"""
         try:
-            monitor_thread = threading.Thread(target=self.monitor_and_scale)
+            monitor_thread = threading.Thread(
+                target=self.monitor_and_scale
+            )
             monitor_thread.start()
 
             while True:
@@ -142,13 +164,17 @@ class AutoScaler:
                     if available_agent:
                         available_agent.run(task)
         except Exception as error:
-            print(f"Error starting: {error} try again with a new task")
+            print(
+                f"Error starting: {error} try again with a new task"
+            )
 
     def check_agent_health(self):
         """Checks the health of each agent and replaces unhealthy agents."""
         for i, agent in enumerate(self.agents_pool):
             if not agent.is_healthy():
-                logging.warning(f"Replacing unhealthy agent at index {i}")
+                logging.warning(
+                    f"Replacing unhealthy agent at index {i}"
+                )
                 self.agents_pool[i] = self.agent()
 
     def balance_load(self):
@@ -159,7 +185,9 @@ class AutoScaler:
                     task = self.task_queue.get()
                     agent.run(task)
 
-    def set_scaling_strategy(self, strategy: Callable[[int, int], int]):
+    def set_scaling_strategy(
+        self, strategy: Callable[[int, int], int]
+    ):
         """Set a custom scaling strategy."""
         self.custom_scale_strategy = strategy
 
@@ -179,7 +207,11 @@ class AutoScaler:
 
     def report_agent_metrics(self) -> Dict[str, List[float]]:
         """Collects and reports metrics from each agent."""
-        metrics = {"completion_time": [], "success_rate": [], "error_rate": []}
+        metrics = {
+            "completion_time": [],
+            "success_rate": [],
+            "error_rate": [],
+        }
         for agent in self.agents_pool:
             agent_metrics = agent.get_metrics()
             for key in metrics.keys():

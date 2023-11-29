@@ -33,12 +33,16 @@ agent3 = Agent(llm=biochat, max_loops=1, dashboard=False)
 workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to the workflow
-workflow.add("Generate a 10,000 word blog on health and wellness.", agent1)
+workflow.add(
+    "Generate a 10,000 word blog on health and wellness.", agent1
+)
 
 # Suppose the next task takes the output of the first task as input
 workflow.add("Summarize the generated blog", agent2)
 
-workflow.add("Create a references sheet of materials for the curriculm", agent3)
+workflow.add(
+    "Create a references sheet of materials for the curriculm", agent3
+)
 
 # Run the workflow
 workflow.run()

@@ -83,4 +83,6 @@ class FastViT:
         top_classes = top_classes.cpu().numpy().tolist()
         # top_class_labels = [FASTVIT_IMAGENET_1K_CLASSES[i] for i in top_classes] # Uncomment if class labels are needed
 
-        return ClassificationResult(class_id=top_classes, confidence=top_probs)
+        return ClassificationResult(
+            class_id=top_classes, confidence=top_probs
+        )

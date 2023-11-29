@@ -3,6 +3,7 @@ import os
 import warnings
 import sys
 
+
 def disable_logging():
     log_file = open("errors.txt", "w")
     sys.stderr = log_file
@@ -30,4 +31,6 @@ def disable_logging():
         "wandb.docker.auth",
     ]:
         logger = logging.getLogger(logger_name)
-        logger.setLevel(logging.WARNING)  # Supress DEBUG and info logs
+        logger.setLevel(
+            logging.WARNING
+        )  # Supress DEBUG and info logs

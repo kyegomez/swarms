@@ -19,13 +19,17 @@ def test_vilt_initialization(vilt_instance):
 # 2. Test Model Predictions
 @patch.object(requests, "get")
 @patch.object(Image, "open")
-def test_vilt_prediction(mock_image_open, mock_requests_get, vilt_instance):
+def test_vilt_prediction(
+    mock_image_open, mock_requests_get, vilt_instance
+):
     mock_image = Mock()
     mock_image_open.return_value = mock_image
     mock_requests_get.return_value.raw = Mock()
 
     # It's a mock response, so no real answer expected
-    with pytest.raises(Exception):  # Ensure exception is more specific
+    with pytest.raises(
+        Exception
+    ):  # Ensure exception is more specific
         vilt_instance(
             "What is this image",
             "https://images.unsplash.com/photo-1582538885592-e70a5d7ab3d3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80",
@@ -34,7 +38,9 @@ def test_vilt_prediction(mock_image_open, mock_requests_get, vilt_instance):
 
 # 3. Test Exception Handling for network
 @patch.object(
-    requests, "get", side_effect=requests.RequestException("Network error")
+    requests,
+    "get",
+    side_effect=requests.RequestException("Network error"),
 )
 def test_vilt_network_exception(vilt_instance):
     with pytest.raises(requests.RequestException):
@@ -50,12 +56,17 @@ def test_vilt_network_exception(vilt_instance):
     [
         ("What is this?", "http://example.com/image1.jpg"),
         ("Who is in the image?", "http://example.com/image2.jpg"),
-        ("Where was this picture taken?", "http://example.com/image3.jpg"),
+        (
+            "Where was this picture taken?",
+            "http://example.com/image3.jpg",
+        ),
         # ... Add more scenarios
     ],
 )
 def test_vilt_various_inputs(text, image_url, vilt_instance):
-    with pytest.raises(Exception):  # Again, ensure exception is more specific
+    with pytest.raises(
+        Exception
+    ):  # Again, ensure exception is more specific
         vilt_instance(text, image_url)
 
 

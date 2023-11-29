@@ -43,7 +43,9 @@ class Fuyu:
         self.device_map = device_map
         self.max_new_tokens = max_new_tokens
 
-        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            pretrained_path
+        )
         self.image_processor = FuyuImageProcessor()
         self.processor = FuyuProcessor(
             image_processor=self.image_processor,
@@ -87,5 +89,7 @@ class Fuyu:
             image_pil = Image.open(BytesIO(response.content))
             return image_pil
         except requests.RequestException as error:
-            print(f"Error fetching image from {img} and error: {error}")
+            print(
+                f"Error fetching image from {img} and error: {error}"
+            )
             return None
