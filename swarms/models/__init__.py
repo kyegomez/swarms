@@ -1,8 +1,3 @@
-import sys
-
-log_file = open("errors.txt", "w")
-sys.stderr = log_file
-
 # LLMs
 from swarms.models.anthropic import Anthropic  # noqa: E402
 from swarms.models.petals import Petals  # noqa: E402
