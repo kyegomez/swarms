@@ -28,7 +28,8 @@ class BaseVectorStore(ABC):
 
     embedding_driver: Any
     futures_executor: futures.Executor = field(
-        default=Factory(lambda: futures.ThreadPoolExecutor()), kw_only=True
+        default=Factory(lambda: futures.ThreadPoolExecutor()),
+        kw_only=True,
     )
 
     def upsert_text_artifacts(
@@ -40,7 +41,11 @@ class BaseVectorStore(ABC):
         execute_futures_dict(
             {
                 namespace: self.futures_executor.submit(
-                    self.upsert_text_artifact, a, namespace, meta, **kwargs
+                    self.upsert_text_artifact,
+                    a,
+                    namespace,
+                    meta,
+                    **kwargs,
                 )
                 for namespace, artifact_list in artifacts.items()
                 for a in artifact_list
@@ -62,7 +67,9 @@ class BaseVectorStore(ABC):
         if artifact.embedding:
             vector = artifact.embedding
         else:
-            vector = artifact.generate_embedding(self.embedding_driver)
+            vector = artifact.generate_embedding(
+                self.embedding_driver
+            )
 
         return self.upsert_vector(
             vector,
@@ -106,7 +113,9 @@ class BaseVectorStore(ABC):
         ...
 
     @abstractmethod
-    def load_entries(self, namespace: Optional[str] = None) -> list[Entry]:
+    def load_entries(
+        self, namespace: Optional[str] = None
+    ) -> list[Entry]:
         ...
 
     @abstractmethod

@@ -21,7 +21,9 @@ from swarms.prompts.tools import (
 )
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
-from swarms.utils.parse_code import extract_code_in_backticks_in_string
+from swarms.utils.parse_code import (
+    extract_code_in_backticks_in_string,
+)
 from swarms.utils.pdf_to_text import pdf_to_text
 
 
@@ -140,7 +142,7 @@ class Agent:
         get_llm_init_params(): Get LLM init params
         get_tool_description(): Get the tool description
         find_tool_by_name(name: str): Find a tool by name
-        
+
 
     Example:
     >>> from swarms.models import OpenAIChat
@@ -180,6 +182,7 @@ class Agent:
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
+        # memory: Optional[Vectorstore] = None,
         saved_state_path: Optional[str] = "flow_state.json",
         autosave: Optional[bool] = False,
         context_length: Optional[int] = 8192,
@@ -189,7 +192,7 @@ class Agent:
         multi_modal: Optional[bool] = None,
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
-        tokenizer: Optional[str] = None,
+        tokenizer: Optional[Any] = None,
         *args,
         **kwargs: Any,
     ):
@@ -305,8 +308,9 @@ class Agent:
                 return "\n".join(tool_descriptions)
             except Exception as error:
                 print(
-                    f"Error getting tool description: {error} try adding a"
-                    " description to the tool or removing the tool"
+                    f"Error getting tool description: {error} try"
+                    " adding a description to the tool or removing"
+                    " the tool"
                 )
         else:
             return "No tools available"
@@ -322,7 +326,9 @@ class Agent:
         """Construct the dynamic prompt"""
         tools_description = self.get_tool_description()
 
-        tool_prompt = self.tool_prompt_prep(tools_description, SCENARIOS)
+        tool_prompt = self.tool_prompt_prep(
+            tools_description, SCENARIOS
+        )
 
         return tool_prompt
 
@@ -435,27 +441,36 @@ class Agent:
     def activate_autonomous_agent(self):
         """Print the autonomous agent activation message"""
         try:
-            print(colored("Initializing Autonomous Agent...", "yellow"))
+            print(
+                colored("Initializing Autonomous Agent...", "yellow")
+            )
             # print(colored("Loading modules...", "yellow"))
             # print(colored("Modules loaded successfully.", "green"))
             print(
-                colored("Autonomous Agent Activated.", "cyan", attrs=["bold"])
+                colored(
+                    "Autonomous Agent Activated.",
+                    "cyan",
+                    attrs=["bold"],
+                )
             )
             print(
-                colored("All systems operational. Executing task...", "green")
+                colored(
+                    "All systems operational. Executing task...",
+                    "green",
+                )
             )
         except Exception as error:
             print(
                 colored(
                     (
-                        "Error activating autonomous agent. Try optimizing your"
-                        " parameters..."
+                        "Error activating autonomous agent. Try"
+                        " optimizing your parameters..."
                     ),
                     "red",
                 )
             )
             print(error)
-            
+
     def loop_count_print(self, loop_count, max_loops):
         """loop_count_print summary
 
@@ -463,11 +478,9 @@ class Agent:
             loop_count (_type_): _description_
             max_loops (_type_): _description_
         """
-        print(
-            colored(f"\nLoop {loop_count} of {max_loops}", "cyan")
-        )
+        print(colored(f"\nLoop {loop_count} of {max_loops}", "cyan"))
         print("\n")
-        
+
     def _history(self, user_name: str, task: str) -> str:
         """Generate the history for the history prompt
 
@@ -480,8 +493,10 @@ class Agent:
         """
         history = [f"{user_name}: {task}"]
         return history
-    
-    def _dynamic_prompt_setup(self, dynamic_prompt: str, task: str) -> str:
+
+    def _dynamic_prompt_setup(
+        self, dynamic_prompt: str, task: str
+    ) -> str:
         """_dynamic_prompt_setup summary
 
         Args:
@@ -491,11 +506,15 @@ class Agent:
         Returns:
             str: _description_
         """
-        dynamic_prompt = dynamic_prompt or self.construct_dynamic_prompt()
+        dynamic_prompt = (
+            dynamic_prompt or self.construct_dynamic_prompt()
+        )
         combined_prompt = f"{dynamic_prompt}\n{task}"
         return combined_prompt
 
-    def run(self, task: Optional[str], img: Optional[str] = None, **kwargs):
+    def run(
+        self, task: Optional[str], img: Optional[str] = None, **kwargs
+    ):
         """
         Run the autonomous agent loop
 
@@ -524,7 +543,10 @@ class Agent:
             loop_count = 0
 
             # While the max_loops is auto or the loop count is less than the max_loops
-            while self.max_loops == "auto" or loop_count < self.max_loops:
+            while (
+                self.max_loops == "auto"
+                or loop_count < self.max_loops
+            ):
                 # Loop count
                 loop_count += 1
                 self.loop_count_print(loop_count, self.max_loops)
@@ -542,7 +564,9 @@ class Agent:
                     self.dynamic_temperature()
 
                 # Preparing the prompt
-                task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
+                task = self.agent_history_prompt(
+                    FLOW_SYSTEM_PROMPT, response
+                )
 
                 attempt = 0
                 while attempt < self.retry_attempts:
@@ -581,7 +605,9 @@ class Agent:
                             # print(response)
                         break
                     except Exception as e:
-                        logging.error(f"Error generating response: {e}")
+                        logging.error(
+                            f"Error generating response: {e}"
+                        )
                         attempt += 1
                         time.sleep(self.retry_interval)
                 # Add the response to the history
@@ -595,7 +621,10 @@ class Agent:
             if self.autosave:
                 save_path = self.saved_state_path or "flow_state.json"
                 print(
-                    colored(f"Autosaving agent state to {save_path}", "green")
+                    colored(
+                        f"Autosaving agent state to {save_path}",
+                        "green",
+                    )
                 )
                 self.save_state(save_path)
 
@@ -637,12 +666,16 @@ class Agent:
         # for i in range(self.max_loops):
         while self.max_loops == "auto" or loop_count < self.max_loops:
             loop_count += 1
-            print(colored(f"\nLoop {loop_count} of {self.max_loops}", "blue"))
+            print(
+                colored(
+                    f"\nLoop {loop_count} of {self.max_loops}", "blue"
+                )
+            )
             print("\n")
 
-            if self._check_stopping_condition(response) or parse_done_token(
+            if self._check_stopping_condition(
                 response
-            ):
+            ) or parse_done_token(response):
                 break
 
             # Adjust temperature, comment if no work
@@ -650,7 +683,9 @@ class Agent:
                 self.dynamic_temperature()
 
             # Preparing the prompt
-            task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
+            task = self.agent_history_prompt(
+                FLOW_SYSTEM_PROMPT, response
+            )
 
             attempt = 0
             while attempt < self.retry_attempts:
@@ -678,7 +713,11 @@ class Agent:
 
         if self.autosave:
             save_path = self.saved_state_path or "flow_state.json"
-            print(colored(f"Autosaving agent state to {save_path}", "green"))
+            print(
+                colored(
+                    f"Autosaving agent state to {save_path}", "green"
+                )
+            )
             self.save_state(save_path)
 
         if self.return_history:
@@ -737,7 +776,9 @@ class Agent:
         Args:
             tasks (List[str]): A list of tasks to run.
         """
-        task_coroutines = [self.run_async(task, **kwargs) for task in tasks]
+        task_coroutines = [
+            self.run_async(task, **kwargs) for task in tasks
+        ]
         completed_tasks = await asyncio.gather(*task_coroutines)
         return completed_tasks
 
@@ -751,7 +792,9 @@ class Agent:
         return Agent(llm=llm, template=template)
 
     @staticmethod
-    def from_llm_and_template_file(llm: Any, template_file: str) -> "Agent":
+    def from_llm_and_template_file(
+        llm: Any, template_file: str
+    ) -> "Agent":
         """Create AgentStream from LLM and a template file."""
         with open(template_file, "r") as f:
             template = f.read()
@@ -785,16 +828,34 @@ class Agent:
         Prints the entire history and memory of the agent.
         Each message is colored and formatted for better readability.
         """
-        print(colored("Agent History and Memory", "cyan", attrs=["bold"]))
-        print(colored("========================", "cyan", attrs=["bold"]))
+        print(
+            colored(
+                "Agent History and Memory", "cyan", attrs=["bold"]
+            )
+        )
+        print(
+            colored(
+                "========================", "cyan", attrs=["bold"]
+            )
+        )
         for loop_index, history in enumerate(self.memory, start=1):
-            print(colored(f"\nLoop {loop_index}:", "yellow", attrs=["bold"]))
+            print(
+                colored(
+                    f"\nLoop {loop_index}:", "yellow", attrs=["bold"]
+                )
+            )
             for message in history:
                 speaker, _, message_text = message.partition(": ")
                 if "Human" in speaker:
-                    print(colored(f"{speaker}:", "green") + f" {message_text}")
+                    print(
+                        colored(f"{speaker}:", "green")
+                        + f" {message_text}"
+                    )
                 else:
-                    print(colored(f"{speaker}:", "blue") + f" {message_text}")
+                    print(
+                        colored(f"{speaker}:", "blue")
+                        + f" {message_text}"
+                    )
             print(colored("------------------------", "cyan"))
         print(colored("End of Agent History", "cyan", attrs=["bold"]))
 
@@ -963,7 +1024,16 @@ class Agent:
                 value = getattr(self.llm, name)
                 if isinstance(
                     value,
-                    (str, int, float, bool, list, dict, tuple, type(None)),
+                    (
+                        str,
+                        int,
+                        float,
+                        bool,
+                        list,
+                        dict,
+                        tuple,
+                        type(None),
+                    ),
                 ):
                     llm_params[name] = value
                 else:
@@ -1110,7 +1180,9 @@ class Agent:
         text = text or self.pdf_connector()
         pass
 
-    def tools_prompt_prep(self, docs: str = None, scenarios: str = None):
+    def tools_prompt_prep(
+        self, docs: str = None, scenarios: str = None
+    ):
         """
         Prepare the tool prompt
         """

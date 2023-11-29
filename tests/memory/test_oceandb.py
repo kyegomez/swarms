@@ -44,14 +44,18 @@ def test_append_document():
         db = OceanDB(MockClient)
         collection = Mock()
         db.append_document(collection, "doc", "id")
-        collection.add.assert_called_once_with(documents=["doc"], ids=["id"])
+        collection.add.assert_called_once_with(
+            documents=["doc"], ids=["id"]
+        )
 
 
 def test_append_document_exception():
     with patch("oceandb.Client") as MockClient:
         db = OceanDB(MockClient)
         collection = Mock()
-        collection.add.side_effect = Exception("Append document error")
+        collection.add.side_effect = Exception(
+            "Append document error"
+        )
         with pytest.raises(Exception) as e:
             db.append_document(collection, "doc", "id")
         assert str(e.value) == "Append document error"
@@ -73,7 +77,9 @@ def test_add_documents_exception():
         collection = Mock()
         collection.add.side_effect = Exception("Add documents error")
         with pytest.raises(Exception) as e:
-            db.add_documents(collection, ["doc1", "doc2"], ["id1", "id2"])
+            db.add_documents(
+                collection, ["doc1", "doc2"], ["id1", "id2"]
+            )
         assert str(e.value) == "Add documents error"
 
 

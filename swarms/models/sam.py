@@ -1,7 +1,12 @@
 import cv2
 import numpy as np
 from PIL import Image
-from transformers import SamImageProcessor, SamModel, SamProcessor, pipeline
+from transformers import (
+    SamImageProcessor,
+    SamModel,
+    SamProcessor,
+    pipeline,
+)
 
 try:
     import cv2
@@ -44,16 +49,18 @@ def compute_mask_iou_vectorized(masks: np.ndarray) -> np.ndarray:
     """
     if np.any(masks.sum(axis=(1, 2)) == 0):
         raise ValueError(
-            "One or more masks are empty. Please filter out empty masks before"
-            " using `compute_iou_vectorized` function."
+            "One or more masks are empty. Please filter out empty"
+            " masks before using `compute_iou_vectorized` function."
         )
 
     masks_bool = masks.astype(bool)
     masks_flat = masks_bool.reshape(masks.shape[0], -1)
-    intersection = np.logical_and(masks_flat[:, None], masks_flat[None, :]).sum(
-        axis=2
-    )
-    union = np.logical_or(masks_flat[:, None], masks_flat[None, :]).sum(axis=2)
+    intersection = np.logical_and(
+        masks_flat[:, None], masks_flat[None, :]
+    ).sum(axis=2)
+    union = np.logical_or(
+        masks_flat[:, None], masks_flat[None, :]
+    ).sum(axis=2)
     iou_matrix = intersection / union
     return iou_matrix
 
@@ -96,7 +103,9 @@ def mask_non_max_suppression(
 
 
 def filter_masks_by_relative_area(
-    masks: np.ndarray, minimum_area: float = 0.01, maximum_area: float = 1.0
+    masks: np.ndarray,
+    minimum_area: float = 0.01,
+    maximum_area: float = 1.0,
 ) -> np.ndarray:
     """
     Filters masks based on their relative area within the total area of each mask.
@@ -123,18 +132,21 @@ def filter_masks_by_relative_area(
 
     if not (0 <= minimum_area <= 1) or not (0 <= maximum_area <= 1):
         raise ValueError(
-            "`minimum_area` and `maximum_area` must be between 0 and 1."
+            "`minimum_area` and `maximum_area` must be between 0"
+            " and 1."
         )
 
     if minimum_area > maximum_area:
         raise ValueError(
-            "`minimum_area` must be less than or equal to `maximum_area`."
+            "`minimum_area` must be less than or equal to"
+            " `maximum_area`."
         )
 
     total_area = masks.shape[1] * masks.shape[2]
     relative_areas = masks.sum(axis=(1, 2)) / total_area
     return masks[
-        (relative_areas >= minimum_area) & (relative_areas <= maximum_area)
+        (relative_areas >= minimum_area)
+        & (relative_areas <= maximum_area)
     ]
 
 
@@ -170,7 +182,9 @@ def adjust_mask_features_by_relative_area(
         if feature_type == FeatureType.ISLAND
         else cv2.RETR_CCOMP
     )
-    contours, _ = cv2.findContours(mask, operation, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        mask, operation, cv2.CHAIN_APPROX_SIMPLE
+    )
 
     for contour in contours:
         area = cv2.contourArea(contour)
@@ -180,7 +194,9 @@ def adjust_mask_features_by_relative_area(
                 image=mask,
                 contours=[contour],
                 contourIdx=-1,
-                color=(0 if feature_type == FeatureType.ISLAND else 255),
+                color=(
+                    0 if feature_type == FeatureType.ISLAND else 255
+                ),
                 thickness=-1,
             )
     return np.where(mask > 0, 1, 0).astype(bool)
@@ -198,7 +214,9 @@ def masks_to_marks(masks: np.ndarray) -> sv.Detections:
         sv.Detections: An object containing the masks and their bounding box
             coordinates.
     """
-    return sv.Detections(mask=masks, xyxy=sv.mask_to_xyxy(masks=masks))
+    return sv.Detections(
+        mask=masks, xyxy=sv.mask_to_xyxy(masks=masks)
+    )
 
 
 def refine_marks(
@@ -262,11 +280,15 @@ class SegmentAnythingMarkGenerator:
     """
 
     def __init__(
-        self, device: str = "cpu", model_name: str = "facebook/sam-vit-huge"
+        self,
+        device: str = "cpu",
+        model_name: str = "facebook/sam-vit-huge",
     ):
         self.model = SamModel.from_pretrained(model_name).to(device)
         self.processor = SamProcessor.from_pretrained(model_name)
-        self.image_processor = SamImageProcessor.from_pretrained(model_name)
+        self.image_processor = SamImageProcessor.from_pretrained(
+            model_name
+        )
         self.pipeline = pipeline(
             task="mask-generation",
             model=self.model,
@@ -285,7 +307,9 @@ class SegmentAnythingMarkGenerator:
             sv.Detections: An object containing the segmentation masks and their
                 corresponding bounding box coordinates.
         """
-        image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        image = Image.fromarray(
+            cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        )
         outputs = self.pipeline(image, points_per_batch=64)
         masks = np.array(outputs["masks"])
         return masks_to_marks(masks=masks)

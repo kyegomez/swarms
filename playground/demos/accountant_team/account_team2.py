@@ -53,7 +53,8 @@ decision_making_support_agent = Agent(
 pdf_path = "bankstatement.pdf"
 fraud_detection_instructions = "Detect fraud in the document"
 summary_agent_instructions = (
-    "Generate an actionable summary of the document with action steps to take"
+    "Generate an actionable summary of the document with action steps"
+    " to take"
 )
 decision_making_support_agent_instructions = (
     "Provide decision making support to the business owner:"
@@ -77,5 +78,6 @@ summary_agent_output = summary_generator_agent.run(
 
 # Provide decision making support to the accountant
 decision_making_support_agent_output = decision_making_support_agent.run(
-    f"{decision_making_support_agent_instructions}: {summary_agent_output}"
+    f"{decision_making_support_agent_instructions}:"
+    f" {summary_agent_output}"
 )

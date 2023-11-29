@@ -23,9 +23,7 @@ def dalle3(mock_openai_client):
 def test_dalle3_call_success(dalle3, mock_openai_client):
     # Arrange
     task = "A painting of a dog"
-    expected_img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
+    expected_img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
     mock_openai_client.images.generate.return_value = Mock(
         data=[Mock(url=expected_img_url)]
     )
@@ -35,7 +33,9 @@ def test_dalle3_call_success(dalle3, mock_openai_client):
 
     # Assert
     assert img_url == expected_img_url
-    mock_openai_client.images.generate.assert_called_once_with(prompt=task, n=4)
+    mock_openai_client.images.generate.assert_called_once_with(
+        prompt=task, n=4
+    )
 
 
 def test_dalle3_call_failure(dalle3, mock_openai_client, capsys):
@@ -45,7 +45,9 @@ def test_dalle3_call_failure(dalle3, mock_openai_client, capsys):
 
     # Mocking OpenAIError
     mock_openai_client.images.generate.side_effect = OpenAIError(
-        expected_error_message, http_status=500, error="Internal Server Error"
+        expected_error_message,
+        http_status=500,
+        error="Internal Server Error",
     )
 
     # Act and assert
@@ -53,7 +55,9 @@ def test_dalle3_call_failure(dalle3, mock_openai_client, capsys):
         dalle3(task)
 
     assert str(excinfo.value) == expected_error_message
-    mock_openai_client.images.generate.assert_called_once_with(prompt=task, n=4)
+    mock_openai_client.images.generate.assert_called_once_with(
+        prompt=task, n=4
+    )
 
     # Ensure the error message is printed in red
     captured = capsys.readouterr()
@@ -62,12 +66,8 @@ def test_dalle3_call_failure(dalle3, mock_openai_client, capsys):
 
 def test_dalle3_create_variations_success(dalle3, mock_openai_client):
     # Arrange
-    img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
-    expected_variation_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_02ABCDE.png"
-    )
+    img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
+    expected_variation_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_02ABCDE.png"
     mock_openai_client.images.create_variation.return_value = Mock(
         data=[Mock(url=expected_variation_url)]
     )
@@ -84,16 +84,20 @@ def test_dalle3_create_variations_success(dalle3, mock_openai_client):
     assert kwargs["size"] == "1024x1024"
 
 
-def test_dalle3_create_variations_failure(dalle3, mock_openai_client, capsys):
+def test_dalle3_create_variations_failure(
+    dalle3, mock_openai_client, capsys
+):
     # Arrange
-    img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
+    img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
     expected_error_message = "Error running Dalle3: API Error"
 
     # Mocking OpenAIError
-    mock_openai_client.images.create_variation.side_effect = OpenAIError(
-        expected_error_message, http_status=500, error="Internal Server Error"
+    mock_openai_client.images.create_variation.side_effect = (
+        OpenAIError(
+            expected_error_message,
+            http_status=500,
+            error="Internal Server Error",
+        )
     )
 
     # Act and assert
@@ -158,9 +162,7 @@ def test_dalle3_convert_to_bytesio():
 def test_dalle3_call_multiple_times(dalle3, mock_openai_client):
     # Arrange
     task = "A painting of a dog"
-    expected_img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
+    expected_img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
     mock_openai_client.images.generate.return_value = Mock(
         data=[Mock(url=expected_img_url)]
     )
@@ -180,7 +182,9 @@ def test_dalle3_call_with_large_input(dalle3, mock_openai_client):
     task = "A" * 2048  # Input longer than API's limit
     expected_error_message = "Error running Dalle3: API Error"
     mock_openai_client.images.generate.side_effect = OpenAIError(
-        expected_error_message, http_status=500, error="Internal Server Error"
+        expected_error_message,
+        http_status=500,
+        error="Internal Server Error",
     )
 
     # Act and assert
@@ -228,14 +232,14 @@ def test_dalle3_convert_to_bytesio_invalid_format(dalle3):
 def test_dalle3_call_with_retry(dalle3, mock_openai_client):
     # Arrange
     task = "A painting of a dog"
-    expected_img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
+    expected_img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
 
     # Simulate a retry scenario
     mock_openai_client.images.generate.side_effect = [
         OpenAIError(
-            "Temporary error", http_status=500, error="Internal Server Error"
+            "Temporary error",
+            http_status=500,
+            error="Internal Server Error",
         ),
         Mock(data=[Mock(url=expected_img_url)]),
     ]
@@ -248,19 +252,19 @@ def test_dalle3_call_with_retry(dalle3, mock_openai_client):
     assert mock_openai_client.images.generate.call_count == 2
 
 
-def test_dalle3_create_variations_with_retry(dalle3, mock_openai_client):
+def test_dalle3_create_variations_with_retry(
+    dalle3, mock_openai_client
+):
     # Arrange
-    img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
-    expected_variation_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_02ABCDE.png"
-    )
+    img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
+    expected_variation_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_02ABCDE.png"
 
     # Simulate a retry scenario
     mock_openai_client.images.create_variation.side_effect = [
         OpenAIError(
-            "Temporary error", http_status=500, error="Internal Server Error"
+            "Temporary error",
+            http_status=500,
+            error="Internal Server Error",
         ),
         Mock(data=[Mock(url=expected_variation_url)]),
     ]
@@ -273,14 +277,18 @@ def test_dalle3_create_variations_with_retry(dalle3, mock_openai_client):
     assert mock_openai_client.images.create_variation.call_count == 2
 
 
-def test_dalle3_call_exception_logging(dalle3, mock_openai_client, capsys):
+def test_dalle3_call_exception_logging(
+    dalle3, mock_openai_client, capsys
+):
     # Arrange
     task = "A painting of a dog"
     expected_error_message = "Error running Dalle3: API Error"
 
     # Mocking OpenAIError
     mock_openai_client.images.generate.side_effect = OpenAIError(
-        expected_error_message, http_status=500, error="Internal Server Error"
+        expected_error_message,
+        http_status=500,
+        error="Internal Server Error",
     )
 
     # Act
@@ -296,14 +304,16 @@ def test_dalle3_create_variations_exception_logging(
     dalle3, mock_openai_client, capsys
 ):
     # Arrange
-    img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
+    img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
     expected_error_message = "Error running Dalle3: API Error"
 
     # Mocking OpenAIError
-    mock_openai_client.images.create_variation.side_effect = OpenAIError(
-        expected_error_message, http_status=500, error="Internal Server Error"
+    mock_openai_client.images.create_variation.side_effect = (
+        OpenAIError(
+            expected_error_message,
+            http_status=500,
+            error="Internal Server Error",
+        )
     )
 
     # Act
@@ -328,7 +338,9 @@ def test_dalle3_call_no_api_key():
     # Arrange
     task = "A painting of a dog"
     dalle3 = Dalle3(api_key=None)
-    expected_error_message = "Error running Dalle3: API Key is missing"
+    expected_error_message = (
+        "Error running Dalle3: API Key is missing"
+    )
 
     # Act and assert
     with pytest.raises(ValueError) as excinfo:
@@ -339,11 +351,11 @@ def test_dalle3_call_no_api_key():
 
 def test_dalle3_create_variations_no_api_key():
     # Arrange
-    img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
+    img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
     dalle3 = Dalle3(api_key=None)
-    expected_error_message = "Error running Dalle3: API Key is missing"
+    expected_error_message = (
+        "Error running Dalle3: API Key is missing"
+    )
 
     # Act and assert
     with pytest.raises(ValueError) as excinfo:
@@ -360,7 +372,9 @@ def test_dalle3_call_with_retry_max_retries_exceeded(
 
     # Simulate max retries exceeded
     mock_openai_client.images.generate.side_effect = OpenAIError(
-        "Temporary error", http_status=500, error="Internal Server Error"
+        "Temporary error",
+        http_status=500,
+        error="Internal Server Error",
     )
 
     # Act and assert
@@ -374,13 +388,15 @@ def test_dalle3_create_variations_with_retry_max_retries_exceeded(
     dalle3, mock_openai_client
 ):
     # Arrange
-    img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
+    img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
 
     # Simulate max retries exceeded
-    mock_openai_client.images.create_variation.side_effect = OpenAIError(
-        "Temporary error", http_status=500, error="Internal Server Error"
+    mock_openai_client.images.create_variation.side_effect = (
+        OpenAIError(
+            "Temporary error",
+            http_status=500,
+            error="Internal Server Error",
+        )
     )
 
     # Act and assert
@@ -393,14 +409,14 @@ def test_dalle3_create_variations_with_retry_max_retries_exceeded(
 def test_dalle3_call_retry_with_success(dalle3, mock_openai_client):
     # Arrange
     task = "A painting of a dog"
-    expected_img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
+    expected_img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
 
     # Simulate success after a retry
     mock_openai_client.images.generate.side_effect = [
         OpenAIError(
-            "Temporary error", http_status=500, error="Internal Server Error"
+            "Temporary error",
+            http_status=500,
+            error="Internal Server Error",
         ),
         Mock(data=[Mock(url=expected_img_url)]),
     ]
@@ -417,17 +433,15 @@ def test_dalle3_create_variations_retry_with_success(
     dalle3, mock_openai_client
 ):
     # Arrange
-    img_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
-    )
-    expected_variation_url = (
-        "https://cdn.openai.com/dall-e/encoded/feats/feats_02ABCDE.png"
-    )
+    img_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png"
+    expected_variation_url = "https://cdn.openai.com/dall-e/encoded/feats/feats_02ABCDE.png"
 
     # Simulate success after a retry
     mock_openai_client.images.create_variation.side_effect = [
         OpenAIError(
-            "Temporary error", http_status=500, error="Internal Server Error"
+            "Temporary error",
+            http_status=500,
+            error="Internal Server Error",
         ),
         Mock(data=[Mock(url=expected_variation_url)]),
     ]

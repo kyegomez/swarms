@@ -45,10 +45,16 @@ def xor_args(*arg_groups: Tuple[str, ...]) -> Callable:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             """Validate exactly one arg in each group is not None."""
             counts = [
-                sum(1 for arg in arg_group if kwargs.get(arg) is not None)
+                sum(
+                    1
+                    for arg in arg_group
+                    if kwargs.get(arg) is not None
+                )
                 for arg_group in arg_groups
             ]
-            invalid_groups = [i for i, count in enumerate(counts) if count != 1]
+            invalid_groups = [
+                i for i, count in enumerate(counts) if count != 1
+            ]
             if invalid_groups:
                 invalid_group_names = [
                     ", ".join(arg_groups[i]) for i in invalid_groups
@@ -119,8 +125,9 @@ def guard_import(
         module = importlib.import_module(module_name, package)
     except ImportError:
         raise ImportError(
-            f"Could not import {module_name} python package. "
-            f"Please install it with `pip install {pip_name or module_name}`."
+            f"Could not import {module_name} python package. Please"
+            " install it with `pip install"
+            f" {pip_name or module_name}`."
         )
     return module
 
@@ -134,25 +141,33 @@ def check_package_version(
 ) -> None:
     """Check the version of a package."""
     imported_version = parse(version(package))
-    if lt_version is not None and imported_version >= parse(lt_version):
+    if lt_version is not None and imported_version >= parse(
+        lt_version
+    ):
         raise ValueError(
-            f"Expected {package} version to be < {lt_version}. Received "
-            f"{imported_version}."
+            f"Expected {package} version to be < {lt_version}."
+            f" Received {imported_version}."
         )
-    if lte_version is not None and imported_version > parse(lte_version):
+    if lte_version is not None and imported_version > parse(
+        lte_version
+    ):
         raise ValueError(
-            f"Expected {package} version to be <= {lte_version}. Received "
-            f"{imported_version}."
+            f"Expected {package} version to be <= {lte_version}."
+            f" Received {imported_version}."
         )
-    if gt_version is not None and imported_version <= parse(gt_version):
+    if gt_version is not None and imported_version <= parse(
+        gt_version
+    ):
         raise ValueError(
-            f"Expected {package} version to be > {gt_version}. Received "
-            f"{imported_version}."
+            f"Expected {package} version to be > {gt_version}."
+            f" Received {imported_version}."
         )
-    if gte_version is not None and imported_version < parse(gte_version):
+    if gte_version is not None and imported_version < parse(
+        gte_version
+    ):
         raise ValueError(
-            f"Expected {package} version to be >= {gte_version}. Received "
-            f"{imported_version}."
+            f"Expected {package} version to be >= {gte_version}."
+            f" Received {imported_version}."
         )
 
 
@@ -185,9 +200,11 @@ def build_extra_kwargs(
         if field_name in extra_kwargs:
             raise ValueError(f"Found {field_name} supplied twice.")
         if field_name not in all_required_field_names:
-            warnings.warn(f"""WARNING! {field_name} is not default parameter.
+            warnings.warn(
+                f"""WARNING! {field_name} is not default parameter.
                 {field_name} was transferred to model_kwargs.
-                Please confirm that {field_name} is what you intended.""")
+                Please confirm that {field_name} is what you intended."""
+            )
             extra_kwargs[field_name] = values.pop(field_name)
 
     invalid_model_kwargs = all_required_field_names.intersection(
@@ -195,8 +212,9 @@ def build_extra_kwargs(
     )
     if invalid_model_kwargs:
         raise ValueError(
-            f"Parameters {invalid_model_kwargs} should be specified explicitly."
-            " Instead they were passed in as part of `model_kwargs` parameter."
+            f"Parameters {invalid_model_kwargs} should be specified"
+            " explicitly. Instead they were passed in as part of"
+            " `model_kwargs` parameter."
         )
 
     return extra_kwargs
@@ -273,12 +291,16 @@ class _AnthropicCommon(BaseLanguageModel):
             check_package_version("anthropic", gte_version="0.3")
             values["client"] = anthropic.Anthropic(
                 base_url=values["anthropic_api_url"],
-                api_key=values["anthropic_api_key"].get_secret_value(),
+                api_key=values[
+                    "anthropic_api_key"
+                ].get_secret_value(),
                 timeout=values["default_request_timeout"],
             )
             values["async_client"] = anthropic.AsyncAnthropic(
                 base_url=values["anthropic_api_url"],
-                api_key=values["anthropic_api_key"].get_secret_value(),
+                api_key=values[
+                    "anthropic_api_key"
+                ].get_secret_value(),
                 timeout=values["default_request_timeout"],
             )
             values["HUMAN_PROMPT"] = anthropic.HUMAN_PROMPT
@@ -316,7 +338,9 @@ class _AnthropicCommon(BaseLanguageModel):
         self, stop: Optional[List[str]] = None
     ) -> List[str]:
         if not self.HUMAN_PROMPT or not self.AI_PROMPT:
-            raise NameError("Please ensure the anthropic package is loaded")
+            raise NameError(
+                "Please ensure the anthropic package is loaded"
+            )
 
         if stop is None:
             stop = []
@@ -375,7 +399,9 @@ class Anthropic(LLM, _AnthropicCommon):
 
     def _wrap_prompt(self, prompt: str) -> str:
         if not self.HUMAN_PROMPT or not self.AI_PROMPT:
-            raise NameError("Please ensure the anthropic package is loaded")
+            raise NameError(
+                "Please ensure the anthropic package is loaded"
+            )
 
         if prompt.startswith(self.HUMAN_PROMPT):
             return prompt  # Already wrapped.
@@ -389,7 +415,8 @@ class Anthropic(LLM, _AnthropicCommon):
 
         # As a last resort, wrap the prompt ourselves to emulate instruct-style.
         return (
-            f"{self.HUMAN_PROMPT} {prompt}{self.AI_PROMPT} Sure, here you go:\n"
+            f"{self.HUMAN_PROMPT} {prompt}{self.AI_PROMPT} Sure, here"
+            " you go:\n"
         )
 
     def _call(
@@ -419,7 +446,10 @@ class Anthropic(LLM, _AnthropicCommon):
         if self.streaming:
             completion = ""
             for chunk in self._stream(
-                prompt=prompt, stop=stop, run_manager=run_manager, **kwargs
+                prompt=prompt,
+                stop=stop,
+                run_manager=run_manager,
+                **kwargs,
             ):
                 completion += chunk.text
             return completion
@@ -447,7 +477,10 @@ class Anthropic(LLM, _AnthropicCommon):
         if self.streaming:
             completion = ""
             async for chunk in self._astream(
-                prompt=prompt, stop=stop, run_manager=run_manager, **kwargs
+                prompt=prompt,
+                stop=stop,
+                run_manager=run_manager,
+                **kwargs,
             ):
                 completion += chunk.text
             return completion
@@ -533,10 +566,14 @@ class Anthropic(LLM, _AnthropicCommon):
             chunk = GenerationChunk(text=token.completion)
             yield chunk
             if run_manager:
-                await run_manager.on_llm_new_token(chunk.text, chunk=chunk)
+                await run_manager.on_llm_new_token(
+                    chunk.text, chunk=chunk
+                )
 
     def get_num_tokens(self, text: str) -> int:
         """Calculate number of tokens."""
         if not self.count_tokens:
-            raise NameError("Please ensure the anthropic package is loaded")
+            raise NameError(
+                "Please ensure the anthropic package is loaded"
+            )
         return self.count_tokens(text)

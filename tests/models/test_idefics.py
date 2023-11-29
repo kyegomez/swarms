@@ -46,8 +46,12 @@ def test_run(idefics_instance):
     prompts = [["User: Test"]]
     with patch.object(
         idefics_instance, "processor"
-    ) as mock_processor, patch.object(idefics_instance, "model") as mock_model:
-        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+    ) as mock_processor, patch.object(
+        idefics_instance, "model"
+    ) as mock_model:
+        mock_processor.return_value = {
+            "input_ids": torch.tensor([1, 2, 3])
+        }
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
 
@@ -61,8 +65,12 @@ def test_call(idefics_instance):
     prompts = [["User: Test"]]
     with patch.object(
         idefics_instance, "processor"
-    ) as mock_processor, patch.object(idefics_instance, "model") as mock_model:
-        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+    ) as mock_processor, patch.object(
+        idefics_instance, "model"
+    ) as mock_model:
+        mock_processor.return_value = {
+            "input_ids": torch.tensor([1, 2, 3])
+        }
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
 
@@ -75,7 +83,9 @@ def test_call(idefics_instance):
 def test_chat(idefics_instance):
     user_input = "User: Hello"
     response = "Model: Hi there!"
-    with patch.object(idefics_instance, "run", return_value=[response]):
+    with patch.object(
+        idefics_instance, "run", return_value=[response]
+    ):
         result = idefics_instance.chat(user_input)
 
     assert result == response
@@ -87,7 +97,9 @@ def test_set_checkpoint(idefics_instance):
     new_checkpoint = "new_checkpoint"
     with patch.object(
         IdeficsForVisionText2Text, "from_pretrained"
-    ) as mock_from_pretrained, patch.object(AutoProcessor, "from_pretrained"):
+    ) as mock_from_pretrained, patch.object(
+        AutoProcessor, "from_pretrained"
+    ):
         idefics_instance.set_checkpoint(new_checkpoint)
 
     mock_from_pretrained.assert_called_with(

@@ -69,11 +69,18 @@ class Task:
             # Add a prompt to notify the Agent of the sequential workflow
             if "prompt" in self.kwargs:
                 self.kwargs["prompt"] += (
-                    f"\n\nPrevious output: {self.result}" if self.result else ""
+                    f"\n\nPrevious output: {self.result}"
+                    if self.result
+                    else ""
                 )
             else:
-                self.kwargs["prompt"] = f"Main task: {self.description}" + (
-                    f"\n\nPrevious output: {self.result}" if self.result else ""
+                self.kwargs["prompt"] = (
+                    f"Main task: {self.description}"
+                    + (
+                        f"\n\nPrevious output: {self.result}"
+                        if self.result
+                        else ""
+                    )
                 )
             self.result = self.agent.run(*self.args, **self.kwargs)
         else:
@@ -116,7 +123,9 @@ class SequentialWorkflow:
     autosave: bool = False
     name: str = (None,)
     description: str = (None,)
-    saved_state_filepath: Optional[str] = "sequential_workflow_state.json"
+    saved_state_filepath: Optional[str] = (
+        "sequential_workflow_state.json"
+    )
     restore_state_filepath: Optional[str] = None
     dashboard: bool = False
 
@@ -181,7 +190,9 @@ class SequentialWorkflow:
 
     def remove_task(self, task: str) -> None:
         """Remove tasks from sequential workflow"""
-        self.tasks = [task for task in self.tasks if task.description != task]
+        self.tasks = [
+            task for task in self.tasks if task.description != task
+        ]
 
     def update_task(self, task: str, **updates) -> None:
         """
@@ -330,7 +341,9 @@ class SequentialWorkflow:
         )
         self.tasks.append(task)
 
-    def load_workflow_state(self, filepath: str = None, **kwargs) -> None:
+    def load_workflow_state(
+        self, filepath: str = None, **kwargs
+    ) -> None:
         """
         Loads the workflow state from a json file and restores the workflow state.
 
@@ -384,18 +397,22 @@ class SequentialWorkflow:
                             # Ensure that 'task' is provided in the kwargs
                             if "task" not in task.kwargs:
                                 raise ValueError(
-                                    "The 'task' argument is required for the"
-                                    " Agent agent execution in"
-                                    f" '{task.description}'"
+                                    "The 'task' argument is required"
+                                    " for the Agent agent execution"
+                                    f" in '{task.description}'"
                                 )
                             # Separate the 'task' argument from other kwargs
                             flow_task_arg = task.kwargs.pop("task")
                             task.result = task.agent.run(
-                                flow_task_arg, *task.args, **task.kwargs
+                                flow_task_arg,
+                                *task.args,
+                                **task.kwargs,
                             )
                         else:
                             # If it's not a Agent instance, call the agent directly
-                            task.result = task.agent(*task.args, **task.kwargs)
+                            task.result = task.agent(
+                                *task.args, **task.kwargs
+                            )
 
                         # Pass the result as an argument to the next task if it exists
                         next_task_index = self.tasks.index(task) + 1
@@ -417,9 +434,9 @@ class SequentialWorkflow:
             print(
                 colored(
                     (
-                        f"Error initializing the Sequential workflow: {e} try"
-                        " optimizing your inputs like the agent class and task"
-                        " description"
+                        "Error initializing the Sequential workflow:"
+                        f" {e} try optimizing your inputs like the"
+                        " agent class and task description"
                     ),
                     "red",
                     attrs=["bold", "underline"],
@@ -443,8 +460,9 @@ class SequentialWorkflow:
                         # Ensure that 'task' is provided in the kwargs
                         if "task" not in task.kwargs:
                             raise ValueError(
-                                "The 'task' argument is required for the Agent"
-                                f" agent execution in '{task.description}'"
+                                "The 'task' argument is required for"
+                                " the Agent agent execution in"
+                                f" '{task.description}'"
                             )
                         # Separate the 'task' argument from other kwargs
                         flow_task_arg = task.kwargs.pop("task")

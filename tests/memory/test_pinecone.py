@@ -10,7 +10,9 @@ def test_init():
         "pinecone.Index"
     ) as MockIndex:
         store = PineconeVectorStore(
-            api_key=api_key, index_name="test_index", environment="test_env"
+            api_key=api_key,
+            index_name="test_index",
+            environment="test_env",
         )
         MockInit.assert_called_once()
         MockIndex.assert_called_once()
@@ -20,10 +22,15 @@ def test_init():
 def test_upsert_vector():
     with patch("pinecone.init"), patch("pinecone.Index") as MockIndex:
         store = PineconeVectorStore(
-            api_key=api_key, index_name="test_index", environment="test_env"
+            api_key=api_key,
+            index_name="test_index",
+            environment="test_env",
         )
         store.upsert_vector(
-            [1.0, 2.0, 3.0], "test_id", "test_namespace", {"meta": "data"}
+            [1.0, 2.0, 3.0],
+            "test_id",
+            "test_namespace",
+            {"meta": "data"},
         )
         MockIndex.return_value.upsert.assert_called()
 
@@ -31,7 +38,9 @@ def test_upsert_vector():
 def test_load_entry():
     with patch("pinecone.init"), patch("pinecone.Index") as MockIndex:
         store = PineconeVectorStore(
-            api_key=api_key, index_name="test_index", environment="test_env"
+            api_key=api_key,
+            index_name="test_index",
+            environment="test_env",
         )
         store.load_entry("test_id", "test_namespace")
         MockIndex.return_value.fetch.assert_called()
@@ -40,7 +49,9 @@ def test_load_entry():
 def test_load_entries():
     with patch("pinecone.init"), patch("pinecone.Index") as MockIndex:
         store = PineconeVectorStore(
-            api_key=api_key, index_name="test_index", environment="test_env"
+            api_key=api_key,
+            index_name="test_index",
+            environment="test_env",
         )
         store.load_entries("test_namespace")
         MockIndex.return_value.query.assert_called()
@@ -49,7 +60,9 @@ def test_load_entries():
 def test_query():
     with patch("pinecone.init"), patch("pinecone.Index") as MockIndex:
         store = PineconeVectorStore(
-            api_key=api_key, index_name="test_index", environment="test_env"
+            api_key=api_key,
+            index_name="test_index",
+            environment="test_env",
         )
         store.query("test_query", 10, "test_namespace")
         MockIndex.return_value.query.assert_called()
@@ -60,7 +73,9 @@ def test_create_index():
         "pinecone.create_index"
     ) as MockCreateIndex:
         store = PineconeVectorStore(
-            api_key=api_key, index_name="test_index", environment="test_env"
+            api_key=api_key,
+            index_name="test_index",
+            environment="test_env",
         )
         store.create_index("test_index")
         MockCreateIndex.assert_called()

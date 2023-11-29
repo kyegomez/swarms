@@ -23,7 +23,9 @@ def test_init():
 def test_init_exception():
     with pytest.raises(ValueError):
         PgVectorVectorStore(
-            connection_string="mysql://root:password@localhost:3306/test",
+            connection_string=(
+                "mysql://root:password@localhost:3306/test"
+            ),
             table_name="test",
         )
 
@@ -47,7 +49,10 @@ def test_upsert_vector():
             table_name="test",
         )
         store.upsert_vector(
-            [1.0, 2.0, 3.0], "test_id", "test_namespace", {"meta": "data"}
+            [1.0, 2.0, 3.0],
+            "test_id",
+            "test_namespace",
+            {"meta": "data"},
         )
         MockSession.assert_called()
         MockSession.return_value.merge.assert_called()

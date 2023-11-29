@@ -70,7 +70,10 @@ class MultiModalLlava:
 
     def chat(self):
         """Interactive chat in terminal"""
-        print("Starting chat with LlavaModel. Type 'exit' to end the session.")
+        print(
+            "Starting chat with LlavaModel. Type 'exit' to end the"
+            " session."
+        )
         while True:
             user_input = input("You: ")
             if user_input.lower() == "exit":

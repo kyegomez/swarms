@@ -1,6 +1,9 @@
 import pytest
 from unittest.mock import patch, mock_open
-from swarms.models.eleven_labs import ElevenLabsText2SpeechTool, ElevenLabsModel
+from swarms.models.eleven_labs import (
+    ElevenLabsText2SpeechTool,
+    ElevenLabsModel,
+)
 import os
 from dotenv import load_dotenv
 
@@ -26,31 +29,45 @@ def test_run_text_to_speech(eleven_labs_tool):
 
 
 def test_play_speech(eleven_labs_tool):
-    with patch("builtins.open", mock_open(read_data="fake_audio_data")):
+    with patch(
+        "builtins.open", mock_open(read_data="fake_audio_data")
+    ):
         eleven_labs_tool.play(EXPECTED_SPEECH_FILE)
 
 
 def test_stream_speech(eleven_labs_tool):
-    with patch("tempfile.NamedTemporaryFile", mock_open()) as mock_file:
+    with patch(
+        "tempfile.NamedTemporaryFile", mock_open()
+    ) as mock_file:
         eleven_labs_tool.stream_speech(SAMPLE_TEXT)
-        mock_file.assert_called_with(mode="bx", suffix=".wav", delete=False)
+        mock_file.assert_called_with(
+            mode="bx", suffix=".wav", delete=False
+        )
 
 
 # Testing fixture and environment variables
 def test_api_key_validation(eleven_labs_tool):
-    with patch("langchain.utils.get_from_dict_or_env", return_value=API_KEY):
+    with patch(
+        "langchain.utils.get_from_dict_or_env", return_value=API_KEY
+    ):
         values = {"eleven_api_key": None}
-        validated_values = eleven_labs_tool.validate_environment(values)
+        validated_values = eleven_labs_tool.validate_environment(
+            values
+        )
         assert "eleven_api_key" in validated_values
 
 
 # Mocking the external library
 def test_run_text_to_speech_with_mock(eleven_labs_tool):
-    with patch("tempfile.NamedTemporaryFile", mock_open()) as mock_file, patch(
+    with patch(
+        "tempfile.NamedTemporaryFile", mock_open()
+    ) as mock_file, patch(
         "your_module._import_elevenlabs"
     ) as mock_elevenlabs:
         mock_elevenlabs_instance = mock_elevenlabs.return_value
-        mock_elevenlabs_instance.generate.return_value = b"fake_audio_data"
+        mock_elevenlabs_instance.generate.return_value = (
+            b"fake_audio_data"
+        )
         eleven_labs_tool.run(SAMPLE_TEXT)
         assert mock_file.call_args[1]["suffix"] == ".wav"
         assert mock_file.call_args[1]["delete"] is False
@@ -67,7 +84,8 @@ def test_run_text_to_speech_error_handling(eleven_labs_tool):
         with pytest.raises(
             RuntimeError,
             match=(
-                "Error while running ElevenLabsText2SpeechTool: Test Exception"
+                "Error while running ElevenLabsText2SpeechTool: Test"
+                " Exception"
             ),
         ):
             eleven_labs_tool.run(SAMPLE_TEXT)
@@ -75,9 +93,12 @@ def test_run_text_to_speech_error_handling(eleven_labs_tool):
 
 # Parameterized testing
 @pytest.mark.parametrize(
-    "model", [ElevenLabsModel.MULTI_LINGUAL, ElevenLabsModel.MONO_LINGUAL]
+    "model",
+    [ElevenLabsModel.MULTI_LINGUAL, ElevenLabsModel.MONO_LINGUAL],
 )
-def test_run_text_to_speech_with_different_models(eleven_labs_tool, model):
+def test_run_text_to_speech_with_different_models(
+    eleven_labs_tool, model
+):
     eleven_labs_tool.model = model
     speech_file = eleven_labs_tool.run(SAMPLE_TEXT)
     assert isinstance(speech_file, str)

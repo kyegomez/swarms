@@ -35,25 +35,38 @@ def test_base_code_interpreter_terminate_not_implemented():
         interpreter.terminate()
 
 
-def test_subprocess_code_interpreter_init(subprocess_code_interpreter):
-    assert isinstance(subprocess_code_interpreter, SubprocessCodeInterpreter)
+def test_subprocess_code_interpreter_init(
+    subprocess_code_interpreter,
+):
+    assert isinstance(
+        subprocess_code_interpreter, SubprocessCodeInterpreter
+    )
 
 
-def test_subprocess_code_interpreter_start_process(subprocess_code_interpreter):
+def test_subprocess_code_interpreter_start_process(
+    subprocess_code_interpreter,
+):
     subprocess_code_interpreter.start_process()
     assert subprocess_code_interpreter.process is not None
 
 
-def test_subprocess_code_interpreter_terminate(subprocess_code_interpreter):
+def test_subprocess_code_interpreter_terminate(
+    subprocess_code_interpreter,
+):
     subprocess_code_interpreter.start_process()
     subprocess_code_interpreter.terminate()
     assert subprocess_code_interpreter.process.poll() is not None
 
 
-def test_subprocess_code_interpreter_run_success(subprocess_code_interpreter):
+def test_subprocess_code_interpreter_run_success(
+    subprocess_code_interpreter,
+):
     code = 'print("Hello, World!")'
     result = list(subprocess_code_interpreter.run(code))
-    assert any("Hello, World!" in output.get("output", "") for output in result)
+    assert any(
+        "Hello, World!" in output.get("output", "")
+        for output in result
+    )
 
 
 def test_subprocess_code_interpreter_run_with_error(
@@ -61,7 +74,9 @@ def test_subprocess_code_interpreter_run_with_error(
 ):
     code = 'print("Hello, World")\nraise ValueError("Error!")'
     result = list(subprocess_code_interpreter.run(code))
-    assert any("Error!" in output.get("output", "") for output in result)
+    assert any(
+        "Error!" in output.get("output", "") for output in result
+    )
 
 
 def test_subprocess_code_interpreter_run_with_keyboard_interrupt(
@@ -73,7 +88,8 @@ def test_subprocess_code_interpreter_run_with_keyboard_interrupt(
     )
     result = list(subprocess_code_interpreter.run(code))
     assert any(
-        "KeyboardInterrupt" in output.get("output", "") for output in result
+        "KeyboardInterrupt" in output.get("output", "")
+        for output in result
     )
 
 
@@ -115,7 +131,10 @@ def test_subprocess_code_interpreter_run_retry_on_error(
 
     code = 'print("Hello, World!")'
     result = list(subprocess_code_interpreter.run(code))
-    assert any("Hello, World!" in output.get("output", "") for output in result)
+    assert any(
+        "Hello, World!" in output.get("output", "")
+        for output in result
+    )
 
 
 # Add more tests to cover other aspects of the code and edge cases as needed
@@ -127,16 +146,24 @@ def test_subprocess_code_interpreter_line_postprocessor(
     subprocess_code_interpreter,
 ):
     line = "This is a test line"
-    processed_line = subprocess_code_interpreter.line_postprocessor(line)
-    assert processed_line == line  # No processing, should remain the same
+    processed_line = subprocess_code_interpreter.line_postprocessor(
+        line
+    )
+    assert (
+        processed_line == line
+    )  # No processing, should remain the same
 
 
 def test_subprocess_code_interpreter_preprocess_code(
     subprocess_code_interpreter,
 ):
     code = 'print("Hello, World!")'
-    preprocessed_code = subprocess_code_interpreter.preprocess_code(code)
-    assert preprocessed_code == code  # No preprocessing, should remain the same
+    preprocessed_code = subprocess_code_interpreter.preprocess_code(
+        code
+    )
+    assert (
+        preprocessed_code == code
+    )  # No preprocessing, should remain the same
 
 
 def test_subprocess_code_interpreter_detect_active_line(
@@ -151,7 +178,9 @@ def test_subprocess_code_interpreter_detect_end_of_execution(
     subprocess_code_interpreter,
 ):
     line = "Execution completed."
-    end_of_execution = subprocess_code_interpreter.detect_end_of_execution(line)
+    end_of_execution = (
+        subprocess_code_interpreter.detect_end_of_execution(line)
+    )
     assert end_of_execution is True
 
 
@@ -221,7 +250,10 @@ def test_subprocess_code_interpreter_run_with_preprocess_code(
         lambda x: x.upper()
     )  # Modify code in preprocess_code
     result = list(subprocess_code_interpreter.run(code))
-    assert any("Hello, World!" in output.get("output", "") for output in result)
+    assert any(
+        "Hello, World!" in output.get("output", "")
+        for output in result
+    )
 
 
 def test_subprocess_code_interpreter_run_with_exception(
@@ -249,7 +281,9 @@ def test_subprocess_code_interpreter_run_with_active_line(
 def test_subprocess_code_interpreter_run_with_end_of_execution(
     subprocess_code_interpreter, capsys
 ):
-    code = 'print("Hello, World!")'  # Simple code without active line marker
+    code = (  # Simple code without active line marker
+        'print("Hello, World!")'
+    )
     result = list(subprocess_code_interpreter.run(code))
     assert any(output.get("active_line") is None for output in result)
 
@@ -268,5 +302,6 @@ def test_subprocess_code_interpreter_run_with_unicode_characters(
     code = 'print("こんにちは、世界")'  # Contains unicode characters
     result = list(subprocess_code_interpreter.run(code))
     assert any(
-        "こんにちは、世界" in output.get("output", "") for output in result
+        "こんにちは、世界" in output.get("output", "")
+        for output in result
     )

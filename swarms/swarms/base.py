@@ -144,7 +144,9 @@ class AbstractSwarm(ABC):
         pass
 
     @abstractmethod
-    def autoscaler(self, num_workers: int, worker: ["AbstractWorker"]):
+    def autoscaler(
+        self, num_workers: int, worker: ["AbstractWorker"]
+    ):
         """Autoscaler that acts like kubernetes for autonomous agents"""
         pass
 
@@ -159,7 +161,9 @@ class AbstractSwarm(ABC):
         pass
 
     @abstractmethod
-    def assign_task(self, worker: "AbstractWorker", task: Any) -> Dict:
+    def assign_task(
+        self, worker: "AbstractWorker", task: Any
+    ) -> Dict:
         """Assign a task to a worker"""
         pass
 

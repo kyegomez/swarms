@@ -51,7 +51,9 @@ def test_run_no_scores(auto_temp_agent):
         max_workers=auto_temp_agent.max_workers
     ) as executor:
         with patch.object(
-            executor, "submit", side_effect=[None, None, None, None, None, None]
+            executor,
+            "submit",
+            side_effect=[None, None, None, None, None, None],
         ):
             result = auto_temp_agent.run(task, temperature_string)
             assert result == "No valid outputs generated."

@@ -17,5 +17,8 @@ labels = [
 ]
 
 result = clip("swarms.jpeg", labels)
-metadata = {"filename": "images/.jpg".split("/")[-1], "top_probs": result}
+metadata = {
+    "filename": "images/.jpg".split("/")[-1],
+    "top_probs": result,
+}
 clip.plot_image_with_metadata("swarms.jpeg", metadata)

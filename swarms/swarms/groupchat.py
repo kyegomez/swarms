@@ -43,12 +43,15 @@ class GroupChat:
         for agent in self.agents:
             if agent.name in name:
                 return agent
-        raise ValueError(f"No agent found with a name contained in '{name}'.")
+        raise ValueError(
+            f"No agent found with a name contained in '{name}'."
+        )
 
     def next_agent(self, agent: Agent) -> Agent:
         """Return the next agent in the list."""
         return self.agents[
-            (self.agent_names.index(agent.name) + 1) % len(self.agents)
+            (self.agent_names.index(agent.name) + 1)
+            % len(self.agents)
         ]
 
     def select_speaker_msg(self):
@@ -69,8 +72,8 @@ class GroupChat:
         n_agents = len(self.agent_names)
         if n_agents < 3:
             logger.warning(
-                f"GroupChat is underpopulated with {n_agents} agents. Direct"
-                " communication would be more efficient."
+                f"GroupChat is underpopulated with {n_agents} agents."
+                " Direct communication would be more efficient."
             )
 
         name = selector.generate_reply(
@@ -80,9 +83,10 @@ class GroupChat:
                     {
                         "role": "system",
                         "content": (
-                            "Read the above conversation. Then select the next"
-                            f" most suitable role from {self.agent_names} to"
-                            " play. Only return the role."
+                            "Read the above conversation. Then"
+                            " select the next most suitable role"
+                            f" from {self.agent_names} to play. Only"
+                            " return the role."
                         ),
                     }
                 ]
@@ -95,13 +99,18 @@ class GroupChat:
 
     def _participant_roles(self):
         return "\n".join(
-            [f"{agent.name}: {agent.system_message}" for agent in self.agents]
+            [
+                f"{agent.name}: {agent.system_message}"
+                for agent in self.agents
+            ]
         )
 
     def format_history(self, messages: List[Dict]) -> str:
         formatted_messages = []
         for message in messages:
-            formatted_message = f"'{message['role']}:{message['content']}"
+            formatted_message = (
+                f"'{message['role']}:{message['content']}"
+            )
             formatted_messages.append(formatted_message)
         return "\n".join(formatted_messages)
 

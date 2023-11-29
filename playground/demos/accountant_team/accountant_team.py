@@ -81,7 +81,9 @@ class AccountantSwarms:
         super().__init__()
         self.pdf_path = pdf_path
         self.list_pdfs = list_pdfs
-        self.fraud_detection_instructions = fraud_detection_instructions
+        self.fraud_detection_instructions = (
+            fraud_detection_instructions
+        )
         self.summary_agent_instructions = summary_agent_instructions
         self.decision_making_support_agent_instructions = (
             decision_making_support_agent_instructions
@@ -98,7 +100,8 @@ class AccountantSwarms:
 
         # Generate an actionable summary of the document
         summary_agent_output = summary_generator_agent.run(
-            f"{self.summary_agent_instructions}: {fraud_detection_agent_output}"
+            f"{self.summary_agent_instructions}:"
+            f" {fraud_detection_agent_output}"
         )
 
         # Provide decision making support to the accountant
@@ -113,7 +116,9 @@ class AccountantSwarms:
 swarm = AccountantSwarms(
     pdf_path="tesla.pdf",
     fraud_detection_instructions="Detect fraud in the document",
-    summary_agent_instructions="Generate an actionable summary of the document",
+    summary_agent_instructions=(
+        "Generate an actionable summary of the document"
+    ),
     decision_making_support_agent_instructions=(
         "Provide decision making support to the business owner:"
     ),

@@ -38,7 +38,9 @@ def test_llm_bad_model_initialization():
 
 # Mocking the tokenizer and model to test run method
 @patch("swarms.models.huggingface.AutoTokenizer.from_pretrained")
-@patch("swarms.models.huggingface.AutoModelForCausalLM.from_pretrained")
+@patch(
+    "swarms.models.huggingface.AutoModelForCausalLM.from_pretrained"
+)
 def test_llm_run(mock_model, mock_tokenizer, llm_instance):
     mock_model.return_value.generate.return_value = "mocked output"
     mock_tokenizer.return_value.encode.return_value = "mocked input"
@@ -80,7 +82,9 @@ def test_llm_memory_consumption(llm_instance):
 )
 def test_llm_initialization_params(model_id, max_length):
     if max_length:
-        instance = HuggingfaceLLM(model_id=model_id, max_length=max_length)
+        instance = HuggingfaceLLM(
+            model_id=model_id, max_length=max_length
+        )
         assert instance.max_length == max_length
     else:
         instance = HuggingfaceLLM(model_id=model_id)
@@ -141,7 +145,9 @@ def test_llm_run_output_length(mock_run, llm_instance):
 # Test the tokenizer handling special tokens correctly
 @patch("swarms.models.huggingface.HuggingfaceLLM._tokenizer.encode")
 @patch("swarms.models.huggingface.HuggingfaceLLM._tokenizer.decode")
-def test_llm_tokenizer_special_tokens(mock_decode, mock_encode, llm_instance):
+def test_llm_tokenizer_special_tokens(
+    mock_decode, mock_encode, llm_instance
+):
     mock_encode.return_value = "encoded input with special tokens"
     mock_decode.return_value = "decoded output with special tokens"
     result = llm_instance.run("test task with special tokens")
@@ -192,7 +198,9 @@ def test_llm_run_model_exception(mock_generate, llm_instance):
 
 # Test the behavior when GPU is forced but not available
 @patch("torch.cuda.is_available", return_value=False)
-def test_llm_force_gpu_when_unavailable(mock_is_available, llm_instance):
+def test_llm_force_gpu_when_unavailable(
+    mock_is_available, llm_instance
+):
     with pytest.raises(EnvironmentError):
         llm_instance.set_device(
             "cuda"
@@ -251,7 +259,9 @@ def test_llm_caching_mechanism(mock_run, llm_instance):
 @patch("swarms.models.huggingface.HuggingfaceLLM._download_model")
 def test_llm_force_download(mock_download, llm_instance):
     llm_instance.download_model_with_progress(force_download=True)
-    mock_download.assert_called_once_with(llm_instance.model_id, force=True)
+    mock_download.assert_called_once_with(
+        llm_instance.model_id, force=True
+    )
 
 
 # These tests are provided as examples. In real-world scenarios, you will need to adapt these tests to the actual logic of your `HuggingfaceLLM` class.

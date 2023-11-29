@@ -16,12 +16,14 @@ class TestRevChatGPT(unittest.TestCase):
     def test_run_time(self):
         prompt = "Generate a 300 word essay about technology."
         self.model.run(prompt)
-        self.assertLess(self.model.end_time - self.model.start_time, 60)
+        self.assertLess(
+            self.model.end_time - self.model.start_time, 60
+        )
 
     def test_generate_summary(self):
         text = (
-            "This is a sample text to summarize. It has multiple sentences and"
-            " details. The summary should be concise."
+            "This is a sample text to summarize. It has multiple"
+            " sentences and details. The summary should be concise."
         )
         summary = self.model.generate_summary(text)
         self.assertLess(len(summary), len(text) / 2)
@@ -64,7 +66,8 @@ class TestRevChatGPT(unittest.TestCase):
         title = "New Title"
         self.model.chatbot.change_title(convo_id, title)
         self.assertEqual(
-            self.model.chatbot.get_msg_history(convo_id)["title"], title
+            self.model.chatbot.get_msg_history(convo_id)["title"],
+            title,
         )
 
     def test_delete_conversation(self):

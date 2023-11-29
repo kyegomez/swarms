@@ -37,7 +37,9 @@ class DialogueAgent:
             [
                 self.system_message,
                 HumanMessage(
-                    content="\n".join(self.message_history + [self.prefix])
+                    content="\n".join(
+                        self.message_history + [self.prefix]
+                    )
                 ),
             ]
         )
@@ -76,7 +78,9 @@ class DialogueSimulator:
 
     def step(self) -> tuple[str, str]:
         # 1. choose the next speaker
-        speaker_idx = self.select_next_speaker(self._step, self.agents)
+        speaker_idx = self.select_next_speaker(
+            self._step, self.agents
+        )
         speaker = self.agents[speaker_idx]
 
         # 2. next speaker sends message
@@ -114,7 +118,9 @@ class BiddingDialogueAgent(DialogueAgent):
             message_history="\n".join(self.message_history),
             recent_message=self.message_history[-1],
         )
-        bid_string = self.model([SystemMessage(content=prompt)]).content
+        bid_string = self.model(
+            [SystemMessage(content=prompt)]
+        ).content
         return bid_string
 
 
@@ -127,7 +133,8 @@ The presidential candidates are: {', '.join(character_names)}."""
 
 player_descriptor_system_message = SystemMessage(
     content=(
-        "You can add detail to the description of each presidential candidate."
+        "You can add detail to the description of each presidential"
+        " candidate."
     )
 )
 
@@ -156,7 +163,9 @@ Your goal is to be as creative as possible and make the voters think you are the
 """
 
 
-def generate_character_system_message(character_name, character_header):
+def generate_character_system_message(
+    character_name, character_header
+):
     return SystemMessage(content=f"""{character_header}
 You will speak in the style of {character_name}, and exaggerate their personality.
 You will come up with creative ideas related to {topic}.
@@ -183,7 +192,9 @@ character_headers = [
     )
 ]
 character_system_messages = [
-    generate_character_system_message(character_name, character_headers)
+    generate_character_system_message(
+        character_name, character_headers
+    )
     for character_name, character_headers in zip(
         character_names, character_headers
     )
@@ -209,8 +220,8 @@ for (
 class BidOutputParser(RegexParser):
     def get_format_instructions(self) -> str:
         return (
-            "Your response should be an integer delimited by angled brackets,"
-            " like this: <int>."
+            "Your response should be an integer delimited by angled"
+            " brackets, like this: <int>."
         )
 
 
@@ -262,7 +273,9 @@ topic_specifier_prompt = [
         Speak directly to the presidential candidates: {*character_names,}.
         Do not add anything else."""),
 ]
-specified_topic = ChatOpenAI(temperature=1.0)(topic_specifier_prompt).content
+specified_topic = ChatOpenAI(temperature=1.0)(
+    topic_specifier_prompt
+).content
 
 print(f"Original topic:\n{topic}\n")
 print(f"Detailed topic:\n{specified_topic}\n")
@@ -273,7 +286,8 @@ print(f"Detailed topic:\n{specified_topic}\n")
     wait=tenacity.wait_none(),  # No waiting time between retries
     retry=tenacity.retry_if_exception_type(ValueError),
     before_sleep=lambda retry_state: print(
-        f"ValueError occurred: {retry_state.outcome.exception()}, retrying..."
+        f"ValueError occurred: {retry_state.outcome.exception()},"
+        " retrying..."
     ),
     retry_error_callback=lambda retry_state: 0,
 )  # Default value when all retries are exhausted
@@ -286,7 +300,9 @@ def ask_for_bid(agent) -> str:
     return bid
 
 
-def select_next_speaker(step: int, agents: List[DialogueAgent]) -> int:
+def select_next_speaker(
+    step: int, agents: List[DialogueAgent]
+) -> int:
     bids = []
     for agent in agents:
         bid = ask_for_bid(agent)
@@ -309,7 +325,9 @@ def select_next_speaker(step: int, agents: List[DialogueAgent]) -> int:
 
 characters = []
 for character_name, character_system_message, bidding_template in zip(
-    character_names, character_system_messages, character_bidding_templates
+    character_names,
+    character_system_messages,
+    character_bidding_templates,
 ):
     characters.append(
         BiddingDialogueAgent(

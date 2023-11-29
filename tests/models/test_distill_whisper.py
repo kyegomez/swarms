@@ -8,7 +8,10 @@ import pytest
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
 
-from swarms.models.distilled_whisperx import DistilWhisperModel, async_retry
+from swarms.models.distilled_whisperx import (
+    DistilWhisperModel,
+    async_retry,
+)
 
 
 @pytest.fixture
@@ -16,7 +19,9 @@ def distil_whisper_model():
     return DistilWhisperModel()
 
 
-def create_audio_file(data: np.ndarray, sample_rate: int, file_path: str):
+def create_audio_file(
+    data: np.ndarray, sample_rate: int, file_path: str
+):
     data.tofile(file_path)
     return file_path
 
@@ -29,10 +34,18 @@ def test_initialization(distil_whisper_model):
 
 
 def test_transcribe_audio_file(distil_whisper_model):
-    test_data = np.random.rand(16000)  # Simulated audio data (1 second)
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
-        audio_file_path = create_audio_file(test_data, 16000, audio_file.name)
-        transcription = distil_whisper_model.transcribe(audio_file_path)
+    test_data = np.random.rand(
+        16000
+    )  # Simulated audio data (1 second)
+    with tempfile.NamedTemporaryFile(
+        suffix=".wav", delete=False
+    ) as audio_file:
+        audio_file_path = create_audio_file(
+            test_data, 16000, audio_file.name
+        )
+        transcription = distil_whisper_model.transcribe(
+            audio_file_path
+        )
         os.remove(audio_file_path)
 
     assert isinstance(transcription, str)
@@ -41,9 +54,15 @@ def test_transcribe_audio_file(distil_whisper_model):
 
 @pytest.mark.asyncio
 async def test_async_transcribe_audio_file(distil_whisper_model):
-    test_data = np.random.rand(16000)  # Simulated audio data (1 second)
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
-        audio_file_path = create_audio_file(test_data, 16000, audio_file.name)
+    test_data = np.random.rand(
+        16000
+    )  # Simulated audio data (1 second)
+    with tempfile.NamedTemporaryFile(
+        suffix=".wav", delete=False
+    ) as audio_file:
+        audio_file_path = create_audio_file(
+            test_data, 16000, audio_file.name
+        )
         transcription = await distil_whisper_model.async_transcribe(
             audio_file_path
         )
@@ -54,8 +73,12 @@ async def test_async_transcribe_audio_file(distil_whisper_model):
 
 
 def test_transcribe_audio_data(distil_whisper_model):
-    test_data = np.random.rand(16000)  # Simulated audio data (1 second)
-    transcription = distil_whisper_model.transcribe(test_data.tobytes())
+    test_data = np.random.rand(
+        16000
+    )  # Simulated audio data (1 second)
+    transcription = distil_whisper_model.transcribe(
+        test_data.tobytes()
+    )
 
     assert isinstance(transcription, str)
     assert transcription.strip() != ""
@@ -63,7 +86,9 @@ def test_transcribe_audio_data(distil_whisper_model):
 
 @pytest.mark.asyncio
 async def test_async_transcribe_audio_data(distil_whisper_model):
-    test_data = np.random.rand(16000)  # Simulated audio data (1 second)
+    test_data = np.random.rand(
+        16000
+    )  # Simulated audio data (1 second)
     transcription = await distil_whisper_model.async_transcribe(
         test_data.tobytes()
     )
@@ -73,9 +98,15 @@ async def test_async_transcribe_audio_data(distil_whisper_model):
 
 
 def test_real_time_transcribe(distil_whisper_model, capsys):
-    test_data = np.random.rand(16000 * 5)  # Simulated audio data (5 seconds)
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
-        audio_file_path = create_audio_file(test_data, 16000, audio_file.name)
+    test_data = np.random.rand(
+        16000 * 5
+    )  # Simulated audio data (5 seconds)
+    with tempfile.NamedTemporaryFile(
+        suffix=".wav", delete=False
+    ) as audio_file:
+        audio_file_path = create_audio_file(
+            test_data, 16000, audio_file.name
+        )
 
         distil_whisper_model.real_time_transcribe(
             audio_file_path, chunk_duration=1
@@ -92,7 +123,9 @@ def test_real_time_transcribe_audio_file_not_found(
     distil_whisper_model, capsys
 ):
     audio_file_path = "non_existent_audio.wav"
-    distil_whisper_model.real_time_transcribe(audio_file_path, chunk_duration=1)
+    distil_whisper_model.real_time_transcribe(
+        audio_file_path, chunk_duration=1
+    )
 
     captured = capsys.readouterr()
     assert "The audio file was not found." in captured.out
@@ -100,7 +133,9 @@ def test_real_time_transcribe_audio_file_not_found(
 
 @pytest.fixture
 def mock_async_retry():
-    def _mock_async_retry(retries=3, exceptions=(Exception,), delay=1):
+    def _mock_async_retry(
+        retries=3, exceptions=(Exception,), delay=1
+    ):
         def decorator(func):
             @wraps(func)
             async def wrapper(*args, **kwargs):
@@ -110,7 +145,9 @@ def mock_async_retry():
 
         return decorator
 
-    with patch("distil_whisper_model.async_retry", new=_mock_async_retry()):
+    with patch(
+        "distil_whisper_model.async_retry", new=_mock_async_retry()
+    ):
         yield
 
 
@@ -144,15 +181,21 @@ async def test_async_retry_decorator_multiple_attempts():
             return "Success"
 
     mock_async_function.attempts = 0
-    decorated_function = async_retry(max_retries=2)(mock_async_function)
+    decorated_function = async_retry(max_retries=2)(
+        mock_async_function
+    )
     result = await decorated_function()
     assert result == "Success"
 
 
 def test_create_audio_file():
-    test_data = np.random.rand(16000)  # Simulated audio data (1 second)
+    test_data = np.random.rand(
+        16000
+    )  # Simulated audio data (1 second)
     sample_rate = 16000
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as audio_file:
+    with tempfile.NamedTemporaryFile(
+        suffix=".wav", delete=False
+    ) as audio_file:
         audio_file_path = create_audio_file(
             test_data, sample_rate, audio_file.name
         )
@@ -219,8 +262,12 @@ def test_file_not_found(whisper_model, invalid_audio_file_path):
 
 # Asynchronous tests
 @pytest.mark.asyncio
-async def test_async_transcription_success(whisper_model, audio_file_path):
-    transcription = await whisper_model.async_transcribe(audio_file_path)
+async def test_async_transcription_success(
+    whisper_model, audio_file_path
+):
+    transcription = await whisper_model.async_transcribe(
+        audio_file_path
+    )
     assert isinstance(transcription, str)
 
 
@@ -233,8 +280,12 @@ async def test_async_transcription_failure(
 
 
 # Testing real-time transcription simulation
-def test_real_time_transcription(whisper_model, audio_file_path, capsys):
-    whisper_model.real_time_transcribe(audio_file_path, chunk_duration=1)
+def test_real_time_transcription(
+    whisper_model, audio_file_path, capsys
+):
+    whisper_model.real_time_transcribe(
+        audio_file_path, chunk_duration=1
+    )
     captured = capsys.readouterr()
     assert "Starting real-time transcription..." in captured.out
 
@@ -272,10 +323,14 @@ async def test_async_transcribe_with_mocked_model(
 ):
     model_mock, processor_mock = mocked_model
     # Set up what the mock should return when it's called
-    model_mock.return_value.generate.return_value = torch.tensor([[0]])
+    model_mock.return_value.generate.return_value = torch.tensor(
+        [[0]]
+    )
     processor_mock.return_value.batch_decode.return_value = [
         "mocked transcription"
     ]
     model_wrapper = DistilWhisperModel()
-    transcription = await model_wrapper.async_transcribe(audio_file_path)
+    transcription = await model_wrapper.async_transcribe(
+        audio_file_path
+    )
     assert transcription == "mocked transcription"

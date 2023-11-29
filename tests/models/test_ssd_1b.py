@@ -41,7 +41,9 @@ def test_ssd1b_parameterized_task(ssd1b_model, task):
 
 # Example of a test using mocks to isolate units of code
 def test_ssd1b_with_mock(ssd1b_model, mocker):
-    mocker.patch("your_module.StableDiffusionXLPipeline")  # Mock the pipeline
+    mocker.patch(
+        "your_module.StableDiffusionXLPipeline"
+    )  # Mock the pipeline
     task = "A painting of a cat"
     image_url = ssd1b_model(task)
     assert isinstance(image_url, str)
@@ -225,7 +227,9 @@ def test_ssd1b_repr_str(ssd1b_model):
 def test_ssd1b_rate_limited_call(ssd1b_model, mocker):
     task = "A painting of a dog"
     mocker.patch.object(
-        ssd1b_model, "__call__", side_effect=Exception("Rate limit exceeded")
+        ssd1b_model,
+        "__call__",
+        side_effect=Exception("Rate limit exceeded"),
     )
     with pytest.raises(Exception, match="Rate limit exceeded"):
         ssd1b_model.rate_limited_call(task)

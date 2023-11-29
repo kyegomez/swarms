@@ -24,7 +24,9 @@ class TestBingChat(unittest.TestCase):
 
     def test_call(self):
         # Mocking the asynchronous behavior for the purpose of the test
-        self.chat.bot.ask = lambda *args, **kwargs: {"text": "Hello, Test!"}
+        self.chat.bot.ask = lambda *args, **kwargs: {
+            "text": "Hello, Test!"
+        }
         response = self.chat("Test prompt")
         self.assertEqual(response, "Hello, Test!")
 

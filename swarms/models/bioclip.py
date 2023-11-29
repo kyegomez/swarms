@@ -112,11 +112,12 @@ class BioClip:
         template: str = "this is a photo of ",
         context_length: int = 256,
     ):
-        image = torch.stack([self.preprocess_val(Image.open(img_path))]).to(
-            self.device
-        )
+        image = torch.stack(
+            [self.preprocess_val(Image.open(img_path))]
+        ).to(self.device)
         texts = self.tokenizer(
-            [template + l for l in labels], context_length=context_length
+            [template + l for l in labels],
+            context_length=context_length,
         ).to(self.device)
 
         with torch.no_grad():
@@ -128,7 +129,9 @@ class BioClip:
                 .detach()
                 .softmax(dim=-1)
             )
-            sorted_indices = torch.argsort(logits, dim=-1, descending=True)
+            sorted_indices = torch.argsort(
+                logits, dim=-1, descending=True
+            )
             logits = logits.cpu().numpy()
             sorted_indices = sorted_indices.cpu().numpy()
 
@@ -149,7 +152,10 @@ class BioClip:
             metadata["filename"]
             + "\n"
             + "\n".join(
-                [f"{k}: {v*100:.1f}" for k, v in metadata["top_probs"].items()]
+                [
+                    f"{k}: {v*100:.1f}"
+                    for k, v in metadata["top_probs"].items()
+                ]
             )
         )
         ax.set_title(title, fontsize=14)

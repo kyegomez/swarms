@@ -55,7 +55,9 @@ def mock_process_entities_to_detections(entities, image):
 def test_kosmos2_with_mocked_extraction_and_detection(
     kosmos2, sample_image, monkeypatch
 ):
-    monkeypatch.setattr(kosmos2, "extract_entities", mock_extract_entities)
+    monkeypatch.setattr(
+        kosmos2, "extract_entities", mock_extract_entities
+    )
     monkeypatch.setattr(
         kosmos2,
         "process_entities_to_detections",
@@ -73,7 +75,9 @@ def test_kosmos2_with_mocked_extraction_and_detection(
 
 
 # Test Kosmos2 with empty entity extraction
-def test_kosmos2_with_empty_extraction(kosmos2, sample_image, monkeypatch):
+def test_kosmos2_with_empty_extraction(
+    kosmos2, sample_image, monkeypatch
+):
     monkeypatch.setattr(kosmos2, "extract_entities", lambda x: [])
     detections = kosmos2(img=sample_image)
     assert isinstance(detections, Detections)
@@ -219,7 +223,9 @@ def test_kosmos2_with_invalid_hf_api_key(kosmos2, sample_image):
 
 
 # Test Kosmos2 with a very long generated text
-def test_kosmos2_with_long_generated_text(kosmos2, sample_image, monkeypatch):
+def test_kosmos2_with_long_generated_text(
+    kosmos2, sample_image, monkeypatch
+):
     def mock_generate_text(*args, **kwargs):
         return "A" * 10000
 
@@ -246,7 +252,9 @@ def test_kosmos2_with_entities_containing_special_characters(
             )
         ]
 
-    monkeypatch.setattr(kosmos2, "extract_entities", mock_extract_entities)
+    monkeypatch.setattr(
+        kosmos2, "extract_entities", mock_extract_entities
+    )
     detections = kosmos2(img=sample_image)
     assert isinstance(detections, Detections)
     assert (
@@ -267,7 +275,9 @@ def test_kosmos2_with_image_containing_multiple_objects(
             ("entity2", (0.5, 0.6, 0.7, 0.8)),
         ]
 
-    monkeypatch.setattr(kosmos2, "extract_entities", mock_extract_entities)
+    monkeypatch.setattr(
+        kosmos2, "extract_entities", mock_extract_entities
+    )
     detections = kosmos2(img=sample_image)
     assert isinstance(detections, Detections)
     assert (
@@ -285,7 +295,9 @@ def test_kosmos2_with_image_containing_no_objects(
     def mock_extract_entities(text):
         return []
 
-    monkeypatch.setattr(kosmos2, "extract_entities", mock_extract_entities)
+    monkeypatch.setattr(
+        kosmos2, "extract_entities", mock_extract_entities
+    )
     detections = kosmos2(img=sample_image)
     assert isinstance(detections, Detections)
     assert (
@@ -311,7 +323,9 @@ def test_kosmos2_with_valid_youtube_video_url(kosmos2):
 
 # Test Kosmos2 with an invalid YouTube video URL
 def test_kosmos2_with_invalid_youtube_video_url(kosmos2):
-    invalid_youtube_video_url = "https://www.youtube.com/invalid_video"
+    invalid_youtube_video_url = (
+        "https://www.youtube.com/invalid_video"
+    )
     with pytest.raises(Exception):
         kosmos2(video_url=invalid_youtube_video_url)
 

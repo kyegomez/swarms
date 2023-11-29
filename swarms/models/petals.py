@@ -38,6 +38,8 @@ class Petals:
     def __call__(self, prompt):
         """Generate text using the Petals API."""
         params = self._default_params()
-        inputs = self.tokenizer(prompt, return_tensors="pt")["input_ids"]
+        inputs = self.tokenizer(prompt, return_tensors="pt")[
+            "input_ids"
+        ]
         outputs = self.model.generate(inputs, **params)
         return self.tokenizer.decode(outputs[0])

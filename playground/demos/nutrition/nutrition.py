@@ -12,14 +12,15 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 # Define prompts for various tasks
 MEAL_PLAN_PROMPT = (
     "Based on the following user preferences: dietary restrictions as"
-    " vegetarian, preferred cuisines as Italian and Indian, a total caloric"
-    " intake of around 2000 calories per day, and an exclusion of legumes,"
-    " create a detailed weekly meal plan. Include a variety of meals for"
-    " breakfast, lunch, dinner, and optional snacks."
+    " vegetarian, preferred cuisines as Italian and Indian, a total"
+    " caloric intake of around 2000 calories per day, and an"
+    " exclusion of legumes, create a detailed weekly meal plan."
+    " Include a variety of meals for breakfast, lunch, dinner, and"
+    " optional snacks."
 )
 IMAGE_ANALYSIS_PROMPT = (
-    "Identify the items in this fridge, including their quantities and"
-    " condition."
+    "Identify the items in this fridge, including their quantities"
+    " and condition."
 )
 
 
@@ -74,12 +75,15 @@ def generate_integrated_shopping_list(
     meal_plan_output, image_analysis, user_preferences
 ):
     # Prepare the prompt for the LLM
-    fridge_contents = image_analysis["choices"][0]["message"]["content"]
+    fridge_contents = image_analysis["choices"][0]["message"][
+        "content"
+    ]
     prompt = (
-        f"Based on this meal plan: {meal_plan_output}, and the following items"
-        f" in the fridge: {fridge_contents}, considering dietary preferences as"
-        " vegetarian with a preference for Italian and Indian cuisines,"
-        " generate a comprehensive shopping list that includes only the items"
+        f"Based on this meal plan: {meal_plan_output}, and the"
+        f" following items in the fridge: {fridge_contents},"
+        " considering dietary preferences as vegetarian with a"
+        " preference for Italian and Indian cuisines, generate a"
+        " comprehensive shopping list that includes only the items"
         " needed."
     )
 
@@ -124,6 +128,10 @@ print("Integrated Shopping List:", integrated_shopping_list)
 
 with open("nutrition_output.txt", "w") as file:
     file.write("Meal Plan:\n" + meal_plan_output + "\n\n")
-    file.write("Integrated Shopping List:\n" + integrated_shopping_list + "\n")
+    file.write(
+        "Integrated Shopping List:\n"
+        + integrated_shopping_list
+        + "\n"
+    )
 
 print("Outputs have been saved to nutrition_output.txt")

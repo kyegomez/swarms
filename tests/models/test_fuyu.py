@@ -36,7 +36,9 @@ def fuyu_instance():
 # Test using the fixture.
 def test_fuyu_processor_initialization(fuyu_instance):
     assert isinstance(fuyu_instance.processor, FuyuProcessor)
-    assert isinstance(fuyu_instance.image_processor, FuyuImageProcessor)
+    assert isinstance(
+        fuyu_instance.image_processor, FuyuImageProcessor
+    )
 
 
 # Test exception when providing an invalid image path.
@@ -76,9 +78,12 @@ def test_tokenizer_type(fuyu_instance):
 
 def test_processor_has_image_processor_and_tokenizer(fuyu_instance):
     assert (
-        fuyu_instance.processor.image_processor == fuyu_instance.image_processor
+        fuyu_instance.processor.image_processor
+        == fuyu_instance.image_processor
     )
-    assert fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer
+    assert (
+        fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer
+    )
 
 
 def test_model_device_map(fuyu_instance):

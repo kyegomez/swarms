@@ -84,7 +84,9 @@ class PgVectorVectorStore(BaseVectorStore):
 
     """
 
-    connection_string: Optional[str] = field(default=None, kw_only=True)
+    connection_string: Optional[str] = field(
+        default=None, kw_only=True
+    )
     create_engine_params: dict = field(factory=dict, kw_only=True)
     engine: Optional[Engine] = field(default=None, kw_only=True)
     table_name: str = field(kw_only=True)
@@ -104,12 +106,14 @@ class PgVectorVectorStore(BaseVectorStore):
 
         # If an engine is not provided, a connection string is required.
         if connection_string is None:
-            raise ValueError("An engine or connection string is required")
+            raise ValueError(
+                "An engine or connection string is required"
+            )
 
         if not connection_string.startswith("postgresql://"):
             raise ValueError(
-                "The connection string must describe a Postgres database"
-                " connection"
+                "The connection string must describe a Postgres"
+                " database connection"
             )
 
     @engine.validator
@@ -120,7 +124,9 @@ class PgVectorVectorStore(BaseVectorStore):
 
         # If a connection string is not provided, an engine is required.
         if engine is None:
-            raise ValueError("An engine or connection string is required")
+            raise ValueError(
+                "An engine or connection string is required"
+            )
 
     def __attrs_post_init__(self) -> None:
         """If a an engine is provided, it will be used to connect to the database.
@@ -139,10 +145,14 @@ class PgVectorVectorStore(BaseVectorStore):
     ) -> None:
         """Provides a mechanism to initialize the database schema and extensions."""
         if install_uuid_extension:
-            self.engine.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+            self.engine.execute(
+                'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+            )
 
         if install_vector_extension:
-            self.engine.execute('CREATE EXTENSION IF NOT EXISTS "vector";')
+            self.engine.execute(
+                'CREATE EXTENSION IF NOT EXISTS "vector";'
+            )
 
         if create_schema:
             self._model.metadata.create_all(self.engine)
@@ -246,7 +256,9 @@ class PgVectorVectorStore(BaseVectorStore):
             return [
                 BaseVectorStore.QueryResult(
                     id=str(result[0].id),
-                    vector=result[0].vector if include_vectors else None,
+                    vector=(
+                        result[0].vector if include_vectors else None
+                    ),
                     score=result[1],
                     meta=result[0].meta,
                     namespace=result[0].namespace,

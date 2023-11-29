@@ -7,10 +7,10 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 llm = GPT4VisionAPI()
 
 task = (
-    "Analyze this image of an assembly line and identify any issues such as"
-    " misaligned parts, defects, or deviations from the standard assembly"
-    " process. IF there is anything unsafe in the image, explain why it is"
-    " unsafe and how it could be improved."
+    "Analyze this image of an assembly line and identify any issues"
+    " such as misaligned parts, defects, or deviations from the"
+    " standard assembly process. IF there is anything unsafe in the"
+    " image, explain why it is unsafe and how it could be improved."
 )
 img = "assembly_line.jpg"
 

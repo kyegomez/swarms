@@ -11,7 +11,9 @@ class MockAnthropicClient:
     def __init__(self, *args, **kwargs):
         pass
 
-    def completions_create(self, prompt, stop_sequences, stream, **kwargs):
+    def completions_create(
+        self, prompt, stop_sequences, stream, **kwargs
+    ):
         return MockAnthropicResponse()
 
 
@@ -43,7 +45,10 @@ def test_anthropic_init_default_values(anthropic_instance):
     assert anthropic_instance.top_p is None
     assert anthropic_instance.streaming is False
     assert anthropic_instance.default_request_timeout == 600
-    assert anthropic_instance.anthropic_api_url == "https://test.anthropic.com"
+    assert (
+        anthropic_instance.anthropic_api_url
+        == "https://test.anthropic.com"
+    )
     assert anthropic_instance.anthropic_api_key == "test_api_key"
 
 
@@ -168,7 +173,9 @@ def test_anthropic_async_call_method(anthropic_instance):
 
 
 def test_anthropic_async_stream_method(anthropic_instance):
-    async_generator = anthropic_instance.async_stream("Translate to French.")
+    async_generator = anthropic_instance.async_stream(
+        "Translate to French."
+    )
     for token in async_generator:
         assert isinstance(token, str)
 
@@ -192,7 +199,9 @@ def test_anthropic_wrap_prompt(anthropic_instance):
 def test_anthropic_convert_prompt(anthropic_instance):
     prompt = "What is the meaning of life?"
     converted_prompt = anthropic_instance.convert_prompt(prompt)
-    assert converted_prompt.startswith(anthropic_instance.HUMAN_PROMPT)
+    assert converted_prompt.startswith(
+        anthropic_instance.HUMAN_PROMPT
+    )
     assert converted_prompt.endswith(anthropic_instance.AI_PROMPT)
 
 
@@ -226,21 +235,27 @@ def test_anthropic_async_stream_with_stop(anthropic_instance):
         assert isinstance(token, str)
 
 
-def test_anthropic_get_num_tokens_with_count_tokens(anthropic_instance):
+def test_anthropic_get_num_tokens_with_count_tokens(
+    anthropic_instance,
+):
     anthropic_instance.count_tokens = Mock(return_value=10)
     text = "This is a test sentence."
     num_tokens = anthropic_instance.get_num_tokens(text)
     assert num_tokens == 10
 
 
-def test_anthropic_get_num_tokens_without_count_tokens(anthropic_instance):
+def test_anthropic_get_num_tokens_without_count_tokens(
+    anthropic_instance,
+):
     del anthropic_instance.count_tokens
     with pytest.raises(NameError):
         text = "This is a test sentence."
         anthropic_instance.get_num_tokens(text)
 
 
-def test_anthropic_wrap_prompt_without_human_ai_prompt(anthropic_instance):
+def test_anthropic_wrap_prompt_without_human_ai_prompt(
+    anthropic_instance,
+):
     del anthropic_instance.HUMAN_PROMPT
     del anthropic_instance.AI_PROMPT
     prompt = "What is the meaning of life?"

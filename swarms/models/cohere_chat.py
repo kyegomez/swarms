@@ -32,7 +32,9 @@ def _create_retry_decorator(llm) -> Callable[[Any], Any]:
     return retry(
         reraise=True,
         stop=stop_after_attempt(llm.max_retries),
-        wait=wait_exponential(multiplier=1, min=min_seconds, max=max_seconds),
+        wait=wait_exponential(
+            multiplier=1, min=min_seconds, max=max_seconds
+        ),
         retry=(retry_if_exception_type(cohere.error.CohereError)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
@@ -65,7 +67,9 @@ class BaseCohere(Serializable):
 
     client: Any  #: :meta private:
     async_client: Any  #: :meta private:
-    model: Optional[str] = Field(default=None, description="Model name to use.")
+    model: Optional[str] = Field(
+        default=None, description="Model name to use."
+    )
     """Model name to use."""
 
     temperature: float = 0.75

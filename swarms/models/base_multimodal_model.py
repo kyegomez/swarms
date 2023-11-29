@@ -107,7 +107,9 @@ class BaseMultiModalModel:
             image_pil = Image.open(BytesIO(response.content))
             return image_pil
         except requests.RequestException as error:
-            print(f"Error fetching image from {img} and error: {error}")
+            print(
+                f"Error fetching image from {img} and error: {error}"
+            )
             return None
 
     def encode_img(self, img: str):
@@ -142,14 +144,18 @@ class BaseMultiModalModel:
 
         """
         # Instantiate the thread pool executor
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+        with ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
             results = executor.map(self.run, tasks, imgs)
 
         # Print the results for debugging
         for result in results:
             print(result)
 
-    def run_batch(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+    def run_batch(
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
@@ -176,7 +182,9 @@ class BaseMultiModalModel:
         """Process a batch of tasks and images asynchronously with retries"""
         loop = asyncio.get_event_loop()
         futures = [
-            loop.run_in_executor(None, self.run_with_retries, task, img)
+            loop.run_in_executor(
+                None, self.run_with_retries, task, img
+            )
             for task, img in tasks_images
         ]
         return await asyncio.gather(*futures)
@@ -194,7 +202,9 @@ class BaseMultiModalModel:
                 print(f"Error with the request {error}")
                 continue
 
-    def run_batch_with_retries(self, tasks_images: List[Tuple[str, str]]):
+    def run_batch_with_retries(
+        self, tasks_images: List[Tuple[str, str]]
+    ):
         """Run the model with retries"""
         for i in range(self.retries):
             try:

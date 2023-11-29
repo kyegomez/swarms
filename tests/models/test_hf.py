@@ -39,7 +39,9 @@ def hugging_face_llm(
     return HuggingFaceLLM(model_id="test")
 
 
-def test_init(hugging_face_llm, mock_autotokenizer, mock_automodelforcausallm):
+def test_init(
+    hugging_face_llm, mock_autotokenizer, mock_automodelforcausallm
+):
     assert hugging_face_llm.model_id == "test"
     mock_autotokenizer.from_pretrained.assert_called_once_with("test")
     mock_automodelforcausallm.from_pretrained.assert_called_once_with(
@@ -63,7 +65,9 @@ def test_init_with_quantize(
 
     HuggingFaceLLM(model_id="test", quantize=True)
 
-    mock_bitsandbytesconfig.assert_called_once_with(**quantization_config)
+    mock_bitsandbytesconfig.assert_called_once_with(
+        **quantization_config
+    )
     mock_autotokenizer.from_pretrained.assert_called_once_with("test")
     mock_automodelforcausallm.from_pretrained.assert_called_once_with(
         "test", quantization_config=quantization_config

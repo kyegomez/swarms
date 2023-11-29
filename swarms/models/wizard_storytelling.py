@@ -2,7 +2,11 @@ import logging
 
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+)
 
 
 class WizardLLMStoryTeller:
@@ -74,21 +78,27 @@ class WizardLLMStoryTeller:
             bnb_config = BitsAndBytesConfig(**quantization_config)
 
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_id
+            )
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id, quantization_config=bnb_config
             )
 
             self.model  # .to(self.device)
         except Exception as e:
-            self.logger.error(f"Failed to load the model or the tokenizer: {e}")
+            self.logger.error(
+                f"Failed to load the model or the tokenizer: {e}"
+            )
             raise
 
     def load_model(self):
         """Load the model"""
         if not self.model or not self.tokenizer:
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_id
+                )
 
                 bnb_config = (
                     BitsAndBytesConfig(**self.quantization_config)
@@ -104,7 +114,8 @@ class WizardLLMStoryTeller:
                     self.model = DDP(self.model)
             except Exception as error:
                 self.logger.error(
-                    f"Failed to load the model or the tokenizer: {error}"
+                    "Failed to load the model or the tokenizer:"
+                    f" {error}"
                 )
                 raise
 
@@ -124,9 +135,9 @@ class WizardLLMStoryTeller:
         max_length = self.max_length
 
         try:
-            inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(
-                self.device
-            )
+            inputs = self.tokenizer.encode(
+                prompt_text, return_tensors="pt"
+            ).to(self.device)
 
             # self.log.start()
 
@@ -136,7 +147,9 @@ class WizardLLMStoryTeller:
                         output_sequence = []
 
                         outputs = self.model.generate(
-                            inputs, max_length=len(inputs) + 1, do_sample=True
+                            inputs,
+                            max_length=len(inputs) + 1,
+                            do_sample=True,
                         )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
@@ -144,7 +157,8 @@ class WizardLLMStoryTeller:
                         # print token in real-time
                         print(
                             self.tokenizer.decode(
-                                [output_tokens], skip_special_tokens=True
+                                [output_tokens],
+                                skip_special_tokens=True,
                             ),
                             end="",
                             flush=True,
@@ -157,7 +171,9 @@ class WizardLLMStoryTeller:
                     )
 
             del inputs
-            return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return self.tokenizer.decode(
+                outputs[0], skip_special_tokens=True
+            )
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise
@@ -178,9 +194,9 @@ class WizardLLMStoryTeller:
         max_length = self.max_
 
         try:
-            inputs = self.tokenizer.encode(prompt_text, return_tensors="pt").to(
-                self.device
-            )
+            inputs = self.tokenizer.encode(
+                prompt_text, return_tensors="pt"
+            ).to(self.device)
 
             # self.log.start()
 
@@ -190,7 +206,9 @@ class WizardLLMStoryTeller:
                         output_sequence = []
 
                         outputs = self.model.generate(
-                            inputs, max_length=len(inputs) + 1, do_sample=True
+                            inputs,
+                            max_length=len(inputs) + 1,
+                            do_sample=True,
                         )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
@@ -198,7 +216,8 @@ class WizardLLMStoryTeller:
                         # print token in real-time
                         print(
                             self.tokenizer.decode(
-                                [output_tokens], skip_special_tokens=True
+                                [output_tokens],
+                                skip_special_tokens=True,
                             ),
                             end="",
                             flush=True,
@@ -212,7 +231,9 @@ class WizardLLMStoryTeller:
 
             del inputs
 
-            return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return self.tokenizer.decode(
+                outputs[0], skip_special_tokens=True
+            )
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise

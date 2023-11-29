@@ -16,7 +16,9 @@ def mock_image_request():
     img_data = open(TEST_IMAGE_URL, "rb").read()
     mock_resp = Mock()
     mock_resp.raw = img_data
-    with patch.object(requests, "get", return_value=mock_resp) as _fixture:
+    with patch.object(
+        requests, "get", return_value=mock_resp
+    ) as _fixture:
         yield _fixture
 
 
@@ -109,12 +111,16 @@ def kosmos():
 # Mocking the requests.get() method
 @pytest.fixture
 def mock_request_get(monkeypatch):
-    monkeypatch.setattr(requests, "get", lambda url, **kwargs: MockResponse())
+    monkeypatch.setattr(
+        requests, "get", lambda url, **kwargs: MockResponse()
+    )
 
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_multimodal_grounding(kosmos):
-    kosmos.multimodal_grounding("Find the red apple in the image.", IMG_URL1)
+    kosmos.multimodal_grounding(
+        "Find the red apple in the image.", IMG_URL1
+    )
 
 
 @pytest.mark.usefixtures("mock_request_get")
@@ -126,7 +132,9 @@ def test_referring_expression_comprehension(kosmos):
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_referring_expression_generation(kosmos):
-    kosmos.referring_expression_generation("It is on the table.", IMG_URL3)
+    kosmos.referring_expression_generation(
+        "It is on the table.", IMG_URL3
+    )
 
 
 @pytest.mark.usefixtures("mock_request_get")
@@ -146,7 +154,9 @@ def test_grounded_image_captioning_detailed(kosmos):
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_multimodal_grounding_2(kosmos):
-    kosmos.multimodal_grounding("Find the yellow fruit in the image.", IMG_URL2)
+    kosmos.multimodal_grounding(
+        "Find the yellow fruit in the image.", IMG_URL2
+    )
 
 
 @pytest.mark.usefixtures("mock_request_get")

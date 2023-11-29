@@ -10,14 +10,18 @@ from swarms.models.openai_models import (
 from swarms.models.zephyr import Zephyr  # noqa: E402
 from swarms.models.biogpt import BioGPT  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
-from swarms.models.wizard_storytelling import WizardLLMStoryTeller  # noqa: E402
+from swarms.models.wizard_storytelling import (
+    WizardLLMStoryTeller,
+)  # noqa: E402
 from swarms.models.mpt import MPT7B  # noqa: E402
 
 # MultiModal Models
 from swarms.models.idefics import Idefics  # noqa: E402
 from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.nougat import Nougat  # noqa: E402
-from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA  # noqa: E402
+from swarms.models.layoutlm_document_qa import (
+    LayoutLMDocumentQA,
+)  # noqa: E402
 from swarms.models.gpt4_vision_api import GPT4VisionAPI  # noqa: E402
 
 # from swarms.models.gpt4v import GPT4Vision

@@ -3,7 +3,11 @@ from typing import Any, Dict, List, Optional, Union
 import openai
 import requests
 from pydantic import BaseModel, validator
-from tenacity import retry, stop_after_attempt, wait_random_exponential
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 from termcolor import colored
 
 
@@ -100,7 +104,9 @@ class FunctionSpecification(BaseModel):
 
         for req_param in self.required or []:
             if req_param not in params:
-                raise ValueError(f"Missing required parameter: {req_param}")
+                raise ValueError(
+                    f"Missing required parameter: {req_param}"
+                )
 
 
 class OpenAIFunctionCaller:
@@ -220,7 +226,10 @@ class OpenAIFunctionCaller:
             elif message["role"] == "tool":
                 print(
                     colored(
-                        f"function ({message['name']}): {message['content']}\n",
+                        (
+                            f"function ({message['name']}):"
+                            f" {message['content']}\n"
+                        ),
                         role_to_color[message["role"]],
                     )
                 )

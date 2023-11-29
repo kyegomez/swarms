@@ -2,7 +2,11 @@ from typing import List
 from sentence_transformers import SentenceTransformer
 from httpx import RequestError
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams, PointStruct
+from qdrant_client.http.models import (
+    Distance,
+    VectorParams,
+    PointStruct,
+)
 
 
 class Qdrant:
@@ -33,7 +37,9 @@ class Qdrant:
         https: bool = True,
     ):
         try:
-            self.client = QdrantClient(url=host, port=port, api_key=api_key)
+            self.client = QdrantClient(
+                url=host, port=port, api_key=api_key
+            )
             self.collection_name = collection_name
             self._load_embedding_model(model_name)
             self._setup_collection()
@@ -56,7 +62,10 @@ class Qdrant:
         try:
             exists = self.client.get_collection(self.collection_name)
             if exists:
-                print(f"Collection '{self.collection_name}' already exists.")
+                print(
+                    f"Collection '{self.collection_name}' already"
+                    " exists."
+                )
         except Exception as e:
             self.client.create_collection(
                 collection_name=self.collection_name,
@@ -93,7 +102,8 @@ class Qdrant:
                     )
                 else:
                     print(
-                        f"Document at index {i} is missing 'page_content' key"
+                        f"Document at index {i} is missing"
+                        " 'page_content' key"
                     )
             except Exception as e:
                 print(f"Error processing document at index {i}: {e}")
@@ -121,7 +131,9 @@ class Qdrant:
             SearchResult or None: Returns the search results if successful, otherwise None.
         """
         try:
-            query_vector = self.model.encode(query, normalize_embeddings=True)
+            query_vector = self.model.encode(
+                query, normalize_embeddings=True
+            )
             search_result = self.client.search(
                 collection_name=self.collection_name,
                 query_vector=query_vector,
