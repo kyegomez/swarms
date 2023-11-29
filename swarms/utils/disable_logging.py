@@ -1,9 +1,12 @@
 import logging
 import os
 import warnings
-
+import sys
 
 def disable_logging():
+    log_file = open("errors.txt", "w")
+    sys.stderr = log_file
+
     warnings.filterwarnings("ignore", category=UserWarning)
 
     # disable tensorflow warnings
