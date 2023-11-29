@@ -23,6 +23,12 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 
+gpt4_vision_system_prompt = """
+You are an multi-modal autonomous agent. You are given a task and an image. You must generate a response to the task and image.
+
+"""
+
+
 class GPT4VisionAPI:
     """
     GPT-4 Vision API
@@ -67,6 +73,10 @@ class GPT4VisionAPI:
         openai_proxy: str = "https://api.openai.com/v1/chat/completions",
         beautify: bool = False,
         streaming_enabled: Optional[bool] = False,
+        meta_prompt: Optional[bool] = False,
+        system_prompt: Optional[str] = gpt4_vision_system_prompt,
+        *args,
+        **kwargs,
     ):
         super().__init__()
         self.openai_api_key = openai_api_key
@@ -77,6 +87,8 @@ class GPT4VisionAPI:
         self.openai_proxy = openai_proxy
         self.beautify = beautify
         self.streaming_enabled = streaming_enabled
+        self.meta_prompt = meta_prompt
+        self.system_prompt = system_prompt
 
         if self.logging_enabled:
             logging.basicConfig(level=logging.DEBUG)
@@ -84,6 +96,9 @@ class GPT4VisionAPI:
             # Disable debug logs for requests and urllib3
             logging.getLogger("requests").setLevel(logging.WARNING)
             logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+        if self.meta_prompt:
+            self.system_prompt = self.meta_prompt_init()
 
     def encode_image(self, img: str):
         """Encode image to base64."""
@@ -110,8 +125,9 @@ class GPT4VisionAPI:
                 "Authorization": f"Bearer {openai_api_key}",
             }
             payload = {
-                "model": "gpt-4-vision-preview",
+                "model": self.model_name,
                 "messages": [
+                    {"role": "system", "content": [self.system_prompt]},
                     {
                         "role": "user",
                         "content": [
@@ -125,7 +141,7 @@ class GPT4VisionAPI:
                                 },
                             },
                         ],
-                    }
+                    },
                 ],
                 "max_tokens": self.max_tokens,
             }
@@ -233,7 +249,13 @@ class GPT4VisionAPI:
         for img in base64_frames:
             base64.b64decode(img.encode("utf-8"))
 
-    def __call__(self, task: str, img: str):
+    def __call__(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
@@ -242,8 +264,9 @@ class GPT4VisionAPI:
                 "Authorization": f"Bearer {openai_api_key}",
             }
             payload = {
-                "model": "gpt-4-vision-preview",
+                "model": self.model_name,
                 "messages": [
+                    {"role": "system", "content": [self.system_prompt]},
                     {
                         "role": "user",
                         "content": [
@@ -257,7 +280,7 @@ class GPT4VisionAPI:
                                 },
                             },
                         ],
-                    }
+                    },
                 ],
                 "max_tokens": self.max_tokens,
             }
@@ -425,3 +448,17 @@ class GPT4VisionAPI:
             )
         )
         return dashboard
+
+    # def meta_prompt_init(self):
+    #     """Meta Prompt
+
+    #     Returns:
+    #         _type_: _description_
+    #     """
+    #     META_PROMPT = """
+    #     For any labels or markings on an image that you reference in your response, please
+    #     enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for
+    #     example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be
+    #     numbers or letters and typically correspond to specific segments or parts of the image.
+    #     """
+    #     return META_PROMPT

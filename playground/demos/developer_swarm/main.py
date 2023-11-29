@@ -27,8 +27,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 
 TASK = """
-code
-
+CODE
 
 """
 
@@ -38,12 +37,12 @@ llm = OpenAIChat(openai_api_key=api_key, max_tokens=5000)
 
 # Documentation agent
 documentation_agent = Agent(
-    llm=llm, sop=DOCUMENTATION_SOP, max_loops=1, multi_modal=True
+    llm=llm, sop=DOCUMENTATION_SOP, max_loops=1,
 )
 
 
 # Tests agent
-tests_agent = Agent(llm=llm, sop=TEST_SOP, max_loops=2, multi_modal=True)
+tests_agent = Agent(llm=llm, sop=TEST_SOP, max_loops=2,)
 
 
 # Run the documentation agent

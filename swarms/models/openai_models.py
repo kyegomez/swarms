@@ -752,6 +752,21 @@ class OpenAIChat(BaseLLM):
     Any parameters that are valid to be passed to the openai.create call can be passed
     in, even if not explicitly saved on this class.
 
+    Args:
+
+        model_name: The model name to use.
+        model_kwargs: Any additional kwargs to pass to the model.
+        openai_api_key: The OpenAI API key to use.
+        openai_api_base: The OpenAI API base to use.
+        openai_proxy: The OpenAI proxy to use.
+        max_retries: The maximum number of retries to make when generating.
+        prefix_messages: The prefix messages to use.
+        streaming: Whether to stream the results or not.
+        allowed_special: Set of special tokens that are allowed。
+        disallowed_special: Set of special tokens that are not allowed。
+
+
+
     Example:
         .. code-block:: python
 
@@ -760,13 +775,10 @@ class OpenAIChat(BaseLLM):
     """
 
     client: Any  #: :meta private:
-    model_name: str = "gpt-3.5-turbo"
-    """Model name to use."""
+    model_name: str = "gpt-3.5-turbo-1106"
     model_kwargs: Dict[str, Any] = Field(default_factory=dict)
-    """Holds any model parameters valid for `create` call not explicitly specified."""
     openai_api_key: Optional[str] = None
     openai_api_base: Optional[str] = None
-    # to support explicit proxy for OpenAI
     openai_proxy: Optional[str] = None
     max_retries: int = 6
     """Maximum number of retries to make when generating."""
