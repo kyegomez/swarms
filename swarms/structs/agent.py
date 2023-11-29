@@ -5,24 +5,30 @@ import logging
 import random
 import re
 import time
-import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
-from swarms.prompts.agent_system_prompts import FLOW_SYSTEM_PROMPT
+from swarms.memory.qdrant import Qdrant
+# from langchain.document_loaders import CSVLoader
+from langchain.text_splitter import CharacterTextSplitter
+# from langchain.schema.document import Document
+from langchain.docstore.document import Document
+
+from swarms.tools.tool import BaseTool
+from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+from swarms.utils.parse_code import extract_code_in_backticks_in_string
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.utils.pdf_to_text import pdf_to_text
+
 from swarms.prompts.tools import (
     DYNAMIC_STOP_PROMPT,
     DYNAMICAL_TOOL_USAGE,
     SCENARIOS,
 )
-from swarms.tools.tool import BaseTool
-from swarms.utils.code_interpreter import SubprocessCodeInterpreter
-from swarms.utils.parse_code import extract_code_in_backticks_in_string
-from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.prompts.agent_system_prompts import FLOW_SYSTEM_PROMPT
 
 
 def autonomous_agent_prompt(
@@ -70,11 +76,6 @@ def parse_done_token(response: str) -> bool:
     return "<DONE>" in response
 
 
-def agent_id():
-    """Generate an agent id"""
-    return str(uuid.uuid4())
-
-
 class Agent:
     """
     Agent is the structure that provides autonomy to any llm in a reliable and effective fashion.
@@ -100,47 +101,52 @@ class Agent:
         **kwargs (Any): Any additional keyword arguments
 
     Methods:
-        run(task: str, **kwargs: Any): Run the agent on a task
-        run_concurrent(tasks: List[str], **kwargs: Any): Run the agent on a list of tasks concurrently
-        bulk_run(inputs: List[Dict[str, Any]]): Run the agent on a list of inputs
-        from_llm_and_template(llm: Any, template: str): Create AgentStream from LLM and a string template.
-        from_llm_and_template_file(llm: Any, template_file: str): Create AgentStream from LLM and a template file.
-        save(file_path): Save the agent history to a file
-        load(file_path): Load the agent history from a file
-        validate_response(response: str): Validate the response based on certain criteria
-        print_history_and_memory(): Print the entire history and memory of the agent
-        step(task: str, **kwargs): Executes a single step in the agent interaction, generating a response from the language model based on the given input text.
-        graceful_shutdown(): Gracefully shutdown the system saving the state
-        run_with_timeout(task: str, timeout: int): Run the loop but stop if it takes longer than the timeout
-        analyze_feedback(): Analyze the feedback for issues
-        undo_last(): Response the last response and return the previous state
-        add_response_filter(filter_word: str): Add a response filter to filter out certain words from the response
-        apply_reponse_filters(response: str): Apply the response filters to the response
-        filtered_run(task: str): Filtered run
-        interactive_run(max_loops: int): Interactive run mode
-        streamed_generation(prompt: str): Stream the generation of the response
-        get_llm_params(): Extracts and returns the parameters of the llm object for serialization.
-        save_state(file_path: str): Saves the current state of the agent to a JSON file, including the llm parameters.
-        load_state(file_path: str): Loads the state of the agent from a json file and restores the configuration and memory.
-        retry_on_failure(function, retries: int = 3, retry_delay: int = 1): Retry wrapper for LLM calls.
-        run_code(response: str): Run the code in the response
-        construct_dynamic_prompt(): Construct the dynamic prompt
-        extract_tool_commands(text: str): Extract the tool commands from the text
-        parse_and_execute_tools(response: str): Parse and execute the tools
-        execute_tools(tool_name, params): Execute the tool with the provided params
-        truncate_history(): Take the history and truncate it to fit into the model context length
-        add_task_to_memory(task: str): Add the task to the memory
-        add_message_to_memory(message: str): Add the message to the memory
-        add_message_to_memory_and_truncate(message: str): Add the message to the memory and truncate
-        print_dashboard(task: str): Print dashboard
-        activate_autonomous_agent(): Print the autonomous agent activation message
-        dynamic_temperature(): Dynamically change the temperature
-        _check_stopping_condition(response: str): Check if the stopping condition is met
-        format_prompt(template, **kwargs: Any): Format the template with the provided kwargs using f-string interpolation.
-        get_llm_init_params(): Get LLM init params
-        get_tool_description(): Get the tool description
-        find_tool_by_name(name: str): Find a tool by name
-        
+        run: Run the autonomous agent loop
+        run_concurrent: Run the autonomous agent loop concurrently
+        bulk_run: Run the autonomous agent loop in bulk
+        save: Save the agent history to a file
+        load: Load the agent history from a file
+        validate_response: Validate the response based on certain criteria
+        print_history_and_memory: Print the history and memory of the agent
+        step: Execute a single step in the agent interaction
+        graceful_shutdown: Gracefully shutdown the system saving the state
+        run_with_timeout: Run the loop but stop if it takes longer than the timeout
+        analyze_feedback: Analyze the feedback for issues
+        undo_last: Response the last response and return the previous state
+        add_response_filter: Add a response filter to filter out certain words from the response
+        apply_reponse_filters: Apply the response filters to the response
+        filtered_run: Filter the response
+        interactive_run: Interactive run mode
+        streamed_generation: Stream the generation of the response
+        get_llm_params: Extracts and returns the parameters of the llm object for serialization.
+        agent_history_prompt: Generate the agent history prompt
+        add_task_to_memory: Add the task to the memory
+        add_message_to_memory: Add the message to the memory
+        add_message_to_memory_and_truncate: Add the message to the memory and truncate
+        print_dashboard: Print dashboard
+        activate_autonomous_agent: Print the autonomous agent activation message
+        _check_stopping_condition: Check if the stopping condition is met
+        format_prompt: Format the prompt
+        get_llm_init_params: Get the llm init params
+        provide_feedback: Allow users to provide feedback on the responses
+        truncate_history: Take the history and truncate it to fit into the model context length
+        agent_history_prompt: Generate the agent history prompt
+        extract_tool_commands: Extract the tool commands from the text
+        parse_and_execute_tools: Parse and execute the tools
+        execute_tools: Execute the tool with the provided parameters
+        construct_dynamic_prompt: Construct the dynamic prompt
+        get_tool_description: Get the tool description
+        find_tool_by_name: Find a tool by name
+        parse_tool_command: Parse the text for tool usage
+        dynamic_temperature: Dynamically change the temperature
+        _run: Generate a result using the provided keyword args.
+        from_llm_and_template: Create AgentStream from LLM and a string template.
+        from_llm_and_template_file: Create AgentStream from LLM and a template file.
+        save_state: Save the state of the agent
+        load_state: Load the state of the agent
+        run_async: Run the agent asynchronously
+        arun: Run the agent asynchronously
+        run_code: Run the code in the response
 
     Example:
     >>> from swarms.models import OpenAIChat
@@ -160,8 +166,7 @@ class Agent:
 
     def __init__(
         self,
-        id: str = agent_id,
-        llm: Any = None,
+        llm: Any,
         template: Optional[str] = None,
         max_loops=5,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -193,7 +198,6 @@ class Agent:
         *args,
         **kwargs: Any,
     ):
-        self.id = id
         self.llm = llm
         self.template = template
         self.max_loops = max_loops
@@ -225,6 +229,8 @@ class Agent:
         self.pdf_path = pdf_path
         self.list_of_pdf = list_of_pdf
         self.tokenizer = tokenizer
+
+        self.vector_database = Qdrant(api_key="BhG2_yINqNU-aKovSEBadn69Zszhbo5uaqdJ6G_qDkdySjAljvuPqQ", host="https://697ea26c-2881-4e17-8af4-817fcb5862e8.europe-west3-0.gcp.cloud.qdrant.io", collection_name="snake")
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -406,7 +412,6 @@ class Agent:
                 ----------------------------------------
 
                 Agent Configuration:
-                    Agent ID: {self.id}
                     Name: {self.agent_name}
                     Description: {self.agent_description}
                     Standard Operating Procedure: {self.sop}
@@ -455,45 +460,6 @@ class Agent:
                 )
             )
             print(error)
-            
-    def loop_count_print(self, loop_count, max_loops):
-        """loop_count_print summary
-
-        Args:
-            loop_count (_type_): _description_
-            max_loops (_type_): _description_
-        """
-        print(
-            colored(f"\nLoop {loop_count} of {max_loops}", "cyan")
-        )
-        print("\n")
-        
-    def _history(self, user_name: str, task: str) -> str:
-        """Generate the history for the history prompt
-
-        Args:
-            user_name (str): _description_
-            task (str): _description_
-
-        Returns:
-            str: _description_
-        """
-        history = [f"{user_name}: {task}"]
-        return history
-    
-    def _dynamic_prompt_setup(self, dynamic_prompt: str, task: str) -> str:
-        """_dynamic_prompt_setup summary
-
-        Args:
-            dynamic_prompt (str): _description_
-            task (str): _description_
-
-        Returns:
-            str: _description_
-        """
-        dynamic_prompt = dynamic_prompt or self.construct_dynamic_prompt()
-        combined_prompt = f"{dynamic_prompt}\n{task}"
-        return combined_prompt
 
     def run(self, task: Optional[str], img: Optional[str] = None, **kwargs):
         """
@@ -511,11 +477,14 @@ class Agent:
 
         """
         try:
+            # dynamic_prompt = self.construct_dynamic_prompt()
+            # combined_prompt = f"{dynamic_prompt}\n{task}"
+
             # Activate Autonomous agent message
             self.activate_autonomous_agent()
 
             response = task  # or combined_prompt
-            history = self._history(self.user_name, task)
+            history = [f"{self.user_name}: {task}"]
 
             # If dashboard = True then print the dashboard
             if self.dashboard:
@@ -527,7 +496,9 @@ class Agent:
             while self.max_loops == "auto" or loop_count < self.max_loops:
                 # Loop count
                 loop_count += 1
-                self.loop_count_print(loop_count, self.max_loops)
+                print(
+                    colored(f"\nLoop {loop_count} of {self.max_loops}", "blue")
+                )
                 print("\n")
 
                 # Check to see if stopping token is in the output to stop the loop
@@ -543,6 +514,28 @@ class Agent:
 
                 # Preparing the prompt
                 task = self.agent_history_prompt(FLOW_SYSTEM_PROMPT, response)
+
+                # Search vector database 
+                search_results = self.vector_database.search_vectors(query=response)
+
+                # Add search result to context
+                accumulated_search_result_texts = ''
+                for search_result in search_results:
+                    # if search_result.score > 0.66:
+                    if search_result.score > 0.0:
+                        filtered_search_result_text = search_result.payload['content'] + '\n\n'
+                        accumulated_search_result_texts += filtered_search_result_text
+                # print(search_result)
+                print()
+                print('***TASK***')
+                print(task)
+                print()
+                print('***TASK + VECTOR***')
+                # task = accumulated_search_result_texts + task
+                task = task + accumulated_search_result_texts
+                print(task)
+                print('***END TASK + VECTOR***')
+                print()
 
                 attempt = 0
                 while attempt < self.retry_attempts:
@@ -586,6 +579,24 @@ class Agent:
                         time.sleep(self.retry_interval)
                 # Add the response to the history
                 history.append(response)
+
+                # Add the response to vector database
+                def get_text_chunks_langchain(text):
+                    text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+                    docs = [Document(page_content=x) for x in text_splitter.split_text(text)]
+                    return docs
+
+                text = response
+                docs = get_text_chunks_langchain(text)
+
+                # page_content = response
+                # doc = type('obj', (object,), {'page_content' : 'content'})()
+                # doc.page_content = page_content
+                # docs = [doc]
+                print('***DOCS***')
+                print(docs)
+                print('***END DOCS***')
+                self.vector_database.add_vectors(docs)
 
                 time.sleep(self.loop_interval)
             # Add the history to the memory
@@ -1167,14 +1178,14 @@ class Agent:
         ‘‘‘
         """
 
-    # def self_healing(self, **kwargs):
-    #     """
-    #     Self healing by debugging errors and refactoring its own code
+    def self_healing(self, **kwargs):
+        """
+        Self healing by debugging errors and refactoring its own code
 
-    #     Args:
-    #         **kwargs (Any): Any additional keyword arguments
-    #     """
-    #     pass
+        Args:
+            **kwargs (Any): Any additional keyword arguments
+        """
+        pass
 
     # def refactor_code(
     #     self,
@@ -1199,29 +1210,29 @@ class Agent:
     #     # Sort the changes in reverse line order
     #     # explanations.sort(key=lambda x: x["line", reverse=True])
 
-    # def error_prompt_inject(
-    #     self,
-    #     file_path: str,
-    #     args: List,
-    #     error: str,
-    # ):
-    #     with open(file_path, "r") as f:
-    #         file_lines = f.readlines()
+    # # def error_prompt_inject(
+    # #     self,
+    # #     file_path: str,
+    # #     args: List,
+    # #     error: str,
+    # # ):
+    # #     with open(file_path, "r") as f:
+    # #         file_lines = f.readlines()
 
-    #     file_with_lines = []
-    #     for i, line in enumerate(file_lines):
-    #         file_with_lines.append(str(i + 1) + "" + line)
-    #     file_with_lines = "".join(file_with_lines)
+    # #     file_with_lines = []
+    # #     for i, line in enumerate(file_lines):
+    # #         file_with_lines.append(str(i + 1) + "" + line)
+    # #     file_with_lines = "".join(file_with_lines)
 
-    #     prompt = f"""
-    #         Here is the script that needs fixing:\n\n
-    #         {file_with_lines}\n\n
-    #         Here are the arguments it was provided:\n\n
-    #         {args}\n\n
-    #         Here is the error message:\n\n
-    #         {error}\n
-    #         "Please provide your suggested changes, and remember to stick to the "
-    #         exact format as described above.
-    #         """
+    # #     prompt = f"""
+    # #         Here is the script that needs fixing:\n\n
+    # #         {file_with_lines}\n\n
+    # #         Here are the arguments it was provided:\n\n
+    # #         {args}\n\n
+    # #         Here is the error message:\n\n
+    # #         {error}\n
+    # #         "Please provide your suggested changes, and remember to stick to the "
+    # #         exact format as described above.
+    # #         """
 
-    #     print(prompt)
+    # #     # Print(prompt)
