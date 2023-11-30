@@ -154,14 +154,13 @@ class SequentialWorkflow:
             )
 
         # Append the task to the tasks list
-        if self.img:
+        if img:
             self.tasks.append(
                 Task(
                     description=task,
                     agent=agent,
                     args=list(args),
                     kwargs=kwargs,
-                    img=img,
                 )
             )
         else:

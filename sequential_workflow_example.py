@@ -1,10 +1,14 @@
-from swarms.models import OpenAIChat, BioGPT, Anthropic
+import os 
+from swarms.models import OpenAIChat
 from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from dotenv import load_dotenv
 
+load_dotenv()
 
-# Example usage
-api_key = ""  # Your actual API key here
+# Load the environment variables
+api_key = os.getenv("OPENAI_API_KEY")
+
 
 # Initialize the language agent
 llm = OpenAIChat(
@@ -13,19 +17,15 @@ llm = OpenAIChat(
     max_tokens=3000,
 )
 
-biochat = BioGPT()
-
-# Use Anthropic
-anthropic = Anthropic()
 
 # Initialize the agent with the language agent
-agent1 = Agent(llm=llm, max_loops=1, dashboard=False)
+agent1 = Agent(llm=llm, max_loops=1)
 
 # Create another agent for a different task
-agent2 = Agent(llm=llm, max_loops=1, dashboard=False)
+agent2 = Agent(llm=llm, max_loops=1)
 
 # Create another agent for a different task
-agent3 = Agent(llm=biochat, max_loops=1, dashboard=False)
+agent3 = Agent(llm=llm, max_loops=1)
 
 # agent4 = Agent(llm=anthropic, max_loops="auto")
 
