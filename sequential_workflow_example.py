@@ -1,4 +1,4 @@
-import os 
+import os
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
@@ -24,20 +24,19 @@ agent1 = Agent(llm=llm, max_loops=1)
 # Create another agent for a different task
 agent2 = Agent(llm=llm, max_loops=1)
 
-# Create another agent for a different task
-agent3 = Agent(llm=llm, max_loops=1)
-
 # Create the workflow
 workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to the workflow
 workflow.add(
-    agent1, "Generate a 10,000 word blog on health and wellness.", 
+    agent1,
+    "Generate a 10,000 word blog on health and wellness.",
 )
 
 # Suppose the next task takes the output of the first task as input
 workflow.add(
-    agent2, "Summarize the generated blog",
+    agent2,
+    "Summarize the generated blog",
 )
 
 # Run the workflow

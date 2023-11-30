@@ -142,6 +142,7 @@ class SequentialWorkflow:
         Args:
             agent (Union[Callable, Agent]): The model or agent to execute the task.
             task (str): The task description or the initial input for the Agent.
+
             *args: Additional arguments to pass to the task execution.
             **kwargs: Additional keyword arguments to pass to the task execution.
         """

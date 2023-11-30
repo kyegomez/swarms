@@ -9,7 +9,7 @@ from swarms.prompts.logistics import (
     Safety_Agent_Prompt,
     Security_Agent_Prompt,
     Sustainability_Agent_Prompt,
-    Efficiency_Agent_Prompt
+    Efficiency_Agent_Prompt,
 )
 
 load_dotenv()
@@ -22,13 +22,22 @@ factory_image = "factory_image1.jpg"
 
 # Initialize agents with respective prompts
 health_security_agent = Agent(
-    llm=llm, sop=Health_Security_Agent_Prompt, max_loops=3, multi_modal=True
+    llm=llm,
+    sop=Health_Security_Agent_Prompt,
+    max_loops=3,
+    multi_modal=True,
 )
 quality_control_agent = Agent(
-    llm=llm, sop=Quality_Control_Agent_Prompt, max_loops=3, multi_modal=True
+    llm=llm,
+    sop=Quality_Control_Agent_Prompt,
+    max_loops=3,
+    multi_modal=True,
 )
 productivity_agent = Agent(
-    llm=llm, sop=Productivity_Agent_Prompt, max_loops=3, multi_modal=True
+    llm=llm,
+    sop=Productivity_Agent_Prompt,
+    max_loops=3,
+    multi_modal=True,
 )
 safety_agent = Agent(
     llm=llm, sop=Safety_Agent_Prompt, max_loops=3, multi_modal=True
@@ -37,10 +46,16 @@ security_agent = Agent(
     llm=llm, sop=Security_Agent_Prompt, max_loops=3, multi_modal=True
 )
 sustainability_agent = Agent(
-    llm=llm, sop=Sustainability_Agent_Prompt, max_loops=3, multi_modal=True
+    llm=llm,
+    sop=Sustainability_Agent_Prompt,
+    max_loops=3,
+    multi_modal=True,
 )
 efficiency_agent = Agent(
-    llm=llm, sop=Efficiency_Agent_Prompt, max_loops=3, multi_modal=True
+    llm=llm,
+    sop=Efficiency_Agent_Prompt,
+    max_loops=3,
+    multi_modal=True,
 )
 
 # Run agents with respective tasks on the same image
@@ -54,14 +69,17 @@ productivity_analysis = productivity_agent.run(
     "Evaluate factory productivity", factory_image
 )
 safety_analysis = safety_agent.run(
-    "Inspect the factory's adherence to safety standards", factory_image
+    "Inspect the factory's adherence to safety standards",
+    factory_image,
 )
 security_analysis = security_agent.run(
-    "Assess the factory's security measures and systems", factory_image
+    "Assess the factory's security measures and systems",
+    factory_image,
 )
 sustainability_analysis = sustainability_agent.run(
     "Examine the factory's sustainability practices", factory_image
 )
 efficiency_analysis = efficiency_agent.run(
-    "Analyze the efficiency of the factory's manufacturing process", factory_image
+    "Analyze the efficiency of the factory's manufacturing process",
+    factory_image,
 )
