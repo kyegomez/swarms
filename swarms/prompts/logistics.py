@@ -1,4 +1,3 @@
-
 Health_Security_Agent_Prompt = """Conduct a thorough analysis of the factory's working conditions focusing on health and safety standards. Examine the cleanliness
 of the workspace, the adequacy of ventilation systems, the appropriate spacing between workstations, and the availability and use of personal 
 protective equipment by workers. Evaluate the compliance of these aspects with health and safety regulations. Assess the overall environmental 
