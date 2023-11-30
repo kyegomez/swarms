@@ -27,21 +27,17 @@ agent2 = Agent(llm=llm, max_loops=1)
 # Create another agent for a different task
 agent3 = Agent(llm=llm, max_loops=1)
 
-# agent4 = Agent(llm=anthropic, max_loops="auto")
-
 # Create the workflow
 workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to the workflow
 workflow.add(
-    "Generate a 10,000 word blog on health and wellness.", agent1
+    agent1, "Generate a 10,000 word blog on health and wellness.", 
 )
 
 # Suppose the next task takes the output of the first task as input
-workflow.add("Summarize the generated blog", agent2)
-
 workflow.add(
-    "Create a references sheet of materials for the curriculm", agent3
+    agent2, "Summarize the generated blog",
 )
 
 # Run the workflow
