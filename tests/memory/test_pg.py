@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from swarms.memory import PgVectorVectorStore
+from swarms.memory.pg import PgVectorVectorStore
 from dotenv import load_dotenv
 import os
 

@@ -1,6 +1,6 @@
 import os
 from unittest.mock import patch
-from swarms.memory import PineconeVectorStore
+from swarms.memory.pinecone import PineconeVectorStore
 
 api_key = os.getenv("PINECONE_API_KEY") or ""
 
