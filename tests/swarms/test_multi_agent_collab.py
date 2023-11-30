@@ -26,7 +26,7 @@ def test_collaboration_initialization(collaboration):
     assert callable(collaboration.select_next_speaker)
     assert collaboration.max_iters == 10
     assert collaboration.results == []
-    assert collaboration.logging == True
+    assert collaboration.logging
 
 
 def test_reset(collaboration):
@@ -96,13 +96,6 @@ def test_performance(collaboration):
     for agent in collaboration.agents:
         assert agent.name in performance_data
         assert "metrics" in performance_data[agent.name]
-
-
-def test_set_interaction_rules(collaboration):
-    rules = {"rule1": "action1", "rule2": "action2"}
-    collaboration.set_interaction_rules(rules)
-    assert hasattr(collaboration, "interaction_rules")
-    assert collaboration.interaction_rules == rules
 
 
 def test_set_interaction_rules(collaboration):

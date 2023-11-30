@@ -34,7 +34,7 @@ from pydantic import (
     Extra,
     Field,
     create_model,
-    root_validator,
+    model_validator,
     validate_arguments,
 )
 from langchain.schema.runnable import (
@@ -276,7 +276,7 @@ class ChildTool(BaseTool):
                 }
         return tool_input
 
-    @root_validator()
+    @model_validator(mode="after")
     def raise_deprecation(cls, values: Dict) -> Dict:
         """Raise deprecation warning if callback_manager is used."""
         if values.get("callback_manager") is not None:

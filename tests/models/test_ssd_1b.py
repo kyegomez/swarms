@@ -107,11 +107,19 @@ def test_ssd1b_generate_uuid(ssd1b_model):
     assert len(uuid_str) == 36  # UUID format
 
 
-def test_ssd1b_rate_limited_call(ssd1b_model):
+def test_ssd1b_rate_limited_call_connect(ssd1b_model):
     task = "A painting of a dog"
     image_url = ssd1b_model.rate_limited_call(task)
     assert isinstance(image_url, str)
     assert image_url.startswith("https://")
+
+def test_ssd1b_rate_limited_call_ratelimit(ssd1b_model, mocker):
+    task = "A painting of a dog"
+    mocker.patch.object(
+        ssd1b_model, "__call__", side_effect=Exception("Rate limit exceeded")
+    )
+    with pytest.raises(Exception, match="Rate limit exceeded"):
+        ssd1b_model.rate_limited_call(task)
 
 
 # Test cases for additional scenarios and behaviors
