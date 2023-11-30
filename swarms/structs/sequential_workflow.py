@@ -133,7 +133,6 @@ class SequentialWorkflow:
         self,
         agent: Union[Callable, Agent],
         task: Optional[str] = None,
-        img: Optional[str] = None,
         *args,
         **kwargs,
     ) -> None:
@@ -143,7 +142,6 @@ class SequentialWorkflow:
         Args:
             agent (Union[Callable, Agent]): The model or agent to execute the task.
             task (str): The task description or the initial input for the Agent.
-            img (str): The image to understand for the task.
             *args: Additional arguments to pass to the task execution.
             **kwargs: Additional keyword arguments to pass to the task execution.
         """
@@ -154,24 +152,14 @@ class SequentialWorkflow:
             )
 
         # Append the task to the tasks list
-        if img:
-            self.tasks.append(
-                Task(
-                    description=task,
-                    agent=agent,
-                    args=list(args),
-                    kwargs=kwargs,
-                )
+        self.tasks.append(
+            Task(
+                description=task,
+                agent=agent,
+                args=list(args),
+                kwargs=kwargs,
             )
-        else:
-            self.tasks.append(
-                Task(
-                    description=task,
-                    agent=agent,
-                    args=list(args),
-                    kwargs=kwargs,
-                )
-            )
+        )
 
     def reset_workflow(self) -> None:
         """Resets the workflow by clearing the results of each task."""
