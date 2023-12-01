@@ -1,21 +1,22 @@
+# Description: This is an example of how to use the Agent class to run a multi-modal workflow
 import os
-
 from dotenv import load_dotenv
-
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
-from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
-)
 from swarms.structs import Agent
 
+# Load the environment variables
 load_dotenv()
 
+# Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")
 
+# Initialize the language model
 llm = GPT4VisionAPI(
     openai_api_key=api_key,
+    max_tokens=500,
 )
 
+# Initialize the language model
 task = "What is the color of the object?"
 img = "images/swarms.jpeg"
 
@@ -23,10 +24,11 @@ img = "images/swarms.jpeg"
 agent = Agent(
     llm=llm,
     max_loops="auto",
-    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
     autosave=True,
     dashboard=True,
+    multi_modal=True
 )
 
+# Run the workflow on a task
 out = agent.run(task=task, img=img)
 print(out)
