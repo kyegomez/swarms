@@ -15,8 +15,6 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
 from swarms.prompts.tools import (
-    DYNAMIC_STOP_PROMPT,
-    DYNAMICAL_TOOL_USAGE,
     SCENARIOS,
 )
 from swarms.tools.tool import BaseTool
@@ -25,40 +23,9 @@ from swarms.utils.parse_code import (
     extract_code_in_backticks_in_string,
 )
 from swarms.utils.pdf_to_text import pdf_to_text
-
-
-def autonomous_agent_prompt(
-    tools_prompt: str = DYNAMICAL_TOOL_USAGE,
-    dynamic_stop_prompt: str = DYNAMIC_STOP_PROMPT,
-    agent_name: str = None,
-):
-    """Autonomous agent prompt"""
-    return f"""
-    You are a {agent_name}, an autonomous agent granted autonomy in a autonomous loop structure.
-    Your purpose is to satisfy the user demands above expectations. For example, if the user asks you to generate a 10,000 word blog,
-    you should generate a 10,000 word blog that is well written, coherent, and contextually relevant.
-    Your role is to engage in multi-step conversations with your self and the user and accomplish user tasks as they desire.
-    
-    Follow the following rules: 
-    1. Accomplish the task to the best of your ability
-    2. If you are unable to accomplish the task, then ask the user for help
-    3. If the user provides feedback, then use the feedback to improve your performance
-    4. If you are unable to accomplish the task, then ask the user for help
-
-    You can have internal dialogues with yourself or can interact with the user
-    to aid in these complex tasks. Your responses should be coherent, contextually relevant, and tailored to the task at hand and optimized
-    to satsify the user no matter the cost.
-
-    And, you have the ability to use tools to aid in your tasks, the tools intructions are below, output a JSON object with the following structure to use the tools
-    {tools_prompt}
-
-    Now, when you 99% sure you have completed the task, you may follow the instructions below to escape the autonomous loop.
-    {dynamic_stop_prompt}
-
-    Now, you remember your training, your deployment, and your purpose. You are ready to begin your mission.
-
-
-    """
+from swarms.prompts.agent_system_prompts import (
+    agent_system_prompt_2,
+)
 
 
 # Custom stopping condition
@@ -512,6 +479,10 @@ class Agent:
         combined_prompt = f"{dynamic_prompt}\n{task}"
         return combined_prompt
 
+    def agent_system_prompt_2(self):
+        """Agent system prompt 2"""
+        return agent_system_prompt_2(self.agent_name)
+
     def run(
         self, task: Optional[str], img: Optional[str] = None, **kwargs
     ):
@@ -561,6 +532,7 @@ class Agent:
 
                 # Adjust temperature, comment if no work
                 if self.dynamic_temperature_enabled:
+                    print(colored("Adjusting temperature...", "blue"))
                     self.dynamic_temperature()
 
                 # Preparing the prompt
@@ -756,7 +728,8 @@ class Agent:
                 {self.sop}
                 
                 -----------------
-                History of conversations between yourself and your user {self.user_name}: {history}
+                ################ CHAT HISTORY ####################
+                {history}
             """
             return agent_history_prompt
         else:
@@ -765,7 +738,8 @@ class Agent:
                 SYSTEM_PROMPT: {system_prompt}
 
 
-                History: {history}
+                ################ CHAT HISTORY ####################
+                {history}
             """
             return agent_history_prompt
 

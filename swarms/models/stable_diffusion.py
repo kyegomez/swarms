@@ -145,6 +145,8 @@ class StableDiffusion:
 
         # Move the image to the specified folder
         src_image_path = image_paths[0]
-        dst_image_path = os.path.join(folder_path, f"image_{iteration}.jpg")
+        dst_image_path = os.path.join(
+            folder_path, f"image_{iteration}.jpg"
+        )
         shutil.move(src_image_path, dst_image_path)
         return dst_image_path
