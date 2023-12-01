@@ -1,5 +1,5 @@
 # LLMs
-from swarms.models.base import AbstractLLM  # noqa: E402
+from swarms.models.base_llm import AbstractLLM  # noqa: E402
 from swarms.models.anthropic import Anthropic  # noqa: E402
 from swarms.models.petals import Petals  # noqa: E402
 from swarms.models.mistral import Mistral  # noqa: E402
