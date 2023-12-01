@@ -26,7 +26,7 @@ agent = Agent(
     max_loops="auto",
     autosave=True,
     dashboard=True,
-    multi_modal=True
+    multi_modal=True,
 )
 
 # Run the workflow on a task
