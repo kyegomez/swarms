@@ -3,7 +3,7 @@ from concurrent import futures
 from dataclasses import dataclass
 from typing import Optional, Any
 from attr import define, field, Factory
-from swarms.utils.futures import execute_futures_dict
+from swarms.utils.execute_futures import execute_futures_dict
 from griptape.artifacts import TextArtifact
 
 
