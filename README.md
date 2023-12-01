@@ -55,10 +55,10 @@ llm = OpenAIChat(
 )
 
 
-## Initialize the workflow
+## Initialize the Agent
 agent = Agent(llm=llm, max_loops=1, dashboard=True)
 
-# Run the workflow on a task
+# Run the Agent on a task
 out = agent.run("Generate a 10,000 word blog on health and wellness.")
 
 
@@ -129,14 +129,25 @@ for task in workflow.tasks:
 - Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
 
 ```python
-from swarms.structs import Agent
+# Description: This is an example of how to use the Agent class to run a multi-modal workflow
+import os
+from dotenv import load_dotenv
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
-from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
+from swarms.structs import Agent
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = GPT4VisionAPI(
+    openai_api_key=api_key,
+    max_tokens=500,
 )
 
-llm = GPT4VisionAPI()
-
+# Initialize the task
 task = (
     "Analyze this image of an assembly line and identify any issues such as"
     " misaligned parts, defects, or deviations from the standard assembly"
@@ -148,13 +159,15 @@ img = "assembly_line.jpg"
 ## Initialize the workflow
 agent = Agent(
     llm=llm,
-    max_loops='auto'
-    sop=MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
+    max_loops="auto",
+    autosave=True,
     dashboard=True,
+    multi_modal=True
 )
 
-agent.run(task=task, img=img)
-
+# Run the workflow on a task
+out = agent.run(task=task, img=img)
+print(out)
 
 
 ```
