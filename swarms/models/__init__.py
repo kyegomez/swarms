@@ -1,4 +1,5 @@
 # LLMs
+from swarms.models.base import AbstractLLM  # noqa: E402
 from swarms.models.anthropic import Anthropic  # noqa: E402
 from swarms.models.petals import Petals  # noqa: E402
 from swarms.models.mistral import Mistral  # noqa: E402
@@ -31,6 +32,7 @@ from swarms.models.gpt4_vision_api import GPT4VisionAPI  # noqa: E402
 # from swarms.models.kosmos_two import Kosmos  # noqa: E402
 
 __all__ = [
+    "AbstractLLM",
     "Anthropic",
     "Petals",
     "Mistral",
