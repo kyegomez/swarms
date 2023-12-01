@@ -10,7 +10,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
-from swarms.prompts.agent_system_prompts import FLOW_SYSTEM_PROMPT
+from swarms.prompts.agent_system_prompts import (
+    FLOW_SYSTEM_PROMPT,
+    agent_system_prompt_2,
+)
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
@@ -23,11 +26,9 @@ from swarms.utils.parse_code import (
     extract_code_in_backticks_in_string,
 )
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.prompts.agent_system_prompts import (
-    agent_system_prompt_2,
-)
 
 
+# Utils
 # Custom stopping condition
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
