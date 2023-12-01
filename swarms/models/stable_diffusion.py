@@ -2,6 +2,7 @@ import base64
 import os
 import requests
 import uuid
+import shutil
 from dotenv import load_dotenv
 from typing import List
 
@@ -135,3 +136,15 @@ class StableDiffusion:
             image_paths.append(image_path)
 
         return image_paths
+
+    def generate_and_move_image(self, prompt, iteration, folder_path):
+        # Generate the image
+        image_paths = self.run(prompt)
+        if not image_paths:
+            return None
+
+        # Move the image to the specified folder
+        src_image_path = image_paths[0]
+        dst_image_path = os.path.join(folder_path, f"image_{iteration}.jpg")
+        shutil.move(src_image_path, dst_image_path)
+        return dst_image_path
