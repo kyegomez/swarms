@@ -3,7 +3,7 @@ import asyncio
 import base64
 import concurrent.futures
 import time
-from concurrent import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import List, Optional, Tuple
 
