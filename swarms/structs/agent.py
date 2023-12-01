@@ -32,7 +32,7 @@ from swarms.utils.pdf_to_text import pdf_to_text
 # Custom stopping condition
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
-    return "Stop" in response.lower()
+    return "stop" in response.lower()
 
 
 def parse_done_token(response: str) -> bool:
@@ -394,6 +394,7 @@ class Agent:
                     Interactive: {self.interactive}
                     Dashboard: {self.dashboard}
                     Dynamic Temperature: {self.dynamic_temperature_enabled}
+                    Temperature: {self.llm.model_kwargs.get('temperature')}
                     Autosave: {self.autosave}
                     Saved State: {self.saved_state_path}
                     Model Configuration: {model_config}
