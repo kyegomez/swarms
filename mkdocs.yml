@@ -72,7 +72,8 @@ nav:
     - AbstractAgent: "swarms/agents/abstract_agent.md"
     - OmniModalAgent: "swarms/agents/omni_agent.md"
   - swarms.models:
-    - Language:  
+    - Language:
+      - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"
       - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
@@ -82,6 +83,7 @@ nav:
       - MPT7B: "swarms/models/mpt.md"
       - Mistral: "swarms/models/mistral.md"
     - MultiModal:
+      - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"
       - Idefics: "swarms/models/idefics.md"
