@@ -105,6 +105,10 @@ class GPT4VisionAPI:
 
     def encode_image(self, img: str):
         """Encode image to base64."""
+        if not os.path.exists(img):
+            print(f"Image file not found: {img}")
+            return None
+        
         with open(img, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 

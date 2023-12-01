@@ -20,6 +20,7 @@ from swarms.tools.tool import tool
 # Load the environment variables
 load_dotenv()
 
+
 # Define a tool
 @tool
 def search_api(query: str):
