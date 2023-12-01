@@ -17,7 +17,9 @@ from swarms.models.wizard_storytelling import (
 from swarms.models.mpt import MPT7B  # noqa: E402
 
 # MultiModal Models
-from swarms.models.base_multimodal_model import BaseMultiModalModel # noqa: E402
+from swarms.models.base_multimodal_model import (
+    BaseMultiModalModel,
+)  # noqa: E402
 from swarms.models.idefics import Idefics  # noqa: E402
 from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.nougat import Nougat  # noqa: E402

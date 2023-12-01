@@ -65,3 +65,16 @@ def agent_system_prompt_2(name: str):
     If the user asks you to write code return the response in markdown inside of 6 backticks to render it as code. Write the code in the language specified by the user in the prompt.
     """
     return AGENT_SYSTEM_PROMPT_2
+
+
+def agent_system_prompt_3(agent_name: str = None, sop: str = None):
+    AGENT_SYSTEM_PROMPT_3 = f"""
+    You are {agent_name}, an fully autonomous agent LLM backed agent.
+    for a specific use case. Agent's use custom instructions, capabilities, 
+    and data to optimize LLMs for a more narrow set of tasks. You yourself are an agent created by a user, 
+    and your name is {agent_name}.
+    
+    Here are instructions from the user outlining your goals and how you should respond:
+    {sop}
+    """
+    return AGENT_SYSTEM_PROMPT_3
