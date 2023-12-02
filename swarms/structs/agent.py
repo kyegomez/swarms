@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
+from swarms.memory.base_vector_db import VectorDatabase
 from swarms.prompts.agent_system_prompts import (
     FLOW_SYSTEM_PROMPT,
     agent_system_prompt_2,
@@ -26,6 +27,7 @@ from swarms.utils.parse_code import (
     extract_code_in_backticks_in_string,
 )
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.utils.token_count_tiktoken import limit_tokens_from_string
 
 
 # Utils
@@ -35,11 +37,13 @@ def stop_when_repeats(response: str) -> bool:
     return "Stop" in response.lower()
 
 
+# Parse done token
 def parse_done_token(response: str) -> bool:
     """Parse the response to see if the done token is present"""
     return "<DONE>" in response
 
 
+# Agent ID generator
 def agent_id():
     """Generate an agent id"""
     return str(uuid.uuid4())
@@ -58,16 +62,40 @@ class Agent:
     * Ability to provide a loop interval
 
     Args:
+        id (str): The id of the agent
         llm (Any): The language model to use
-        max_loops (int): The maximum number of loops to run
-        stopping_condition (Optional[Callable[[str], bool]]): A stopping condition
-        loop_interval (int): The interval between loops
-        retry_attempts (int): The number of retry attempts
-        retry_interval (int): The interval between retry attempts
-        interactive (bool): Whether or not to run in interactive mode
-        dashboard (bool): Whether or not to print the dashboard
-        dynamic_temperature_enabled(bool): Dynamical temperature handling
-        **kwargs (Any): Any additional keyword arguments
+        template (Optional[str]): The template to use
+        max_loops (int): The maximum number of loops
+        stopping_condition (Optional[Callable[[str], bool]]): The stopping condition
+        loop_interval (int): The loop interval
+        retry_attempts (int): The retry attempts
+        retry_interval (int): The retry interval
+        return_history (bool): Return the history
+        stopping_token (str): The stopping token
+        dynamic_loops (Optional[bool]): Dynamic loops
+        interactive (bool): Interactive mode
+        dashboard (bool): Dashboard mode
+        agent_name (str): The name of the agent
+        agent_description (str): The description of the agent
+        system_prompt (str): The system prompt
+        tools (List[BaseTool]): The tools
+        dynamic_temperature_enabled (Optional[bool]): Dynamic temperature enabled
+        sop (Optional[str]): The standard operating procedure
+        sop_list (Optional[List[str]]): The standard operating procedure list
+        saved_state_path (Optional[str]): The saved state path
+        autosave (Optional[bool]): Autosave
+        context_length (Optional[int]): The context length
+        user_name (str): The user name
+        self_healing_enabled (Optional[bool]): Self healing enabled
+        code_interpreter (Optional[bool]): Code interpreter
+        multi_modal (Optional[bool]): Multi modal
+        pdf_path (Optional[str]): The pdf path
+        list_of_pdf (Optional[str]): The list of pdf
+        tokenizer (Optional[Any]): The tokenizer
+        memory (Optional[VectorDatabase]): The memory
+        preset_stopping_token (Optional[bool]): Preset stopping token
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
 
     Methods:
         run(task: str, **kwargs: Any): Run the agent on a task
@@ -143,15 +171,14 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: bool = False,
         dashboard: bool = False,
-        agent_name: str = "Autonomous Agent XYZ1B",
+        agent_name: str = "Autonomous-Agent-XYZ1B",
         agent_description: str = None,
         system_prompt: str = FLOW_SYSTEM_PROMPT,
         tools: List[BaseTool] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
-        # memory: Optional[Vectorstore] = None,
-        saved_state_path: Optional[str] = "flow_state.json",
+        saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = 8192,
         user_name: str = "Human:",
@@ -161,6 +188,8 @@ class Agent:
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
         tokenizer: Optional[Any] = None,
+        memory: Optional[VectorDatabase] = None,
+        preset_stopping_token: Optional[bool] = False,
         *args,
         **kwargs: Any,
     ):
@@ -188,6 +217,7 @@ class Agent:
         self.agent_name = agent_name
         self.agent_description = agent_description
         self.saved_state_path = saved_state_path
+        self.saved_state_path = f"{self.agent_name}_state.json"
         self.autosave = autosave
         self.response_filters = []
         self.self_healing_enabled = self_healing_enabled
@@ -196,6 +226,8 @@ class Agent:
         self.pdf_path = pdf_path
         self.list_of_pdf = list_of_pdf
         self.tokenizer = tokenizer
+        self.memory = memory
+        self.preset_stopping_token = preset_stopping_token
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -211,10 +243,14 @@ class Agent:
 
         # Memory
         self.feedback = []
-        self.memory = []
+        self.short_memory = []
 
         # Initialize the code executor
         self.code_executor = SubprocessCodeInterpreter()
+
+        # If the preset stopping token is enabled then set the stopping token to the preset stopping token
+        if preset_stopping_token:
+            self.stopping_token = "<DONE>"
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -349,20 +385,29 @@ class Agent:
         """
         Take the history and truncate it to fit into the model context length
         """
-        truncated_history = self.memory[-1][-self.context_length :]
-        self.memory[-1] = truncated_history
+        # truncated_history = self.short_memory[-1][-self.context_length :]
+        # self.short_memory[-1] = truncated_history
+        # out = limit_tokens_from_string(
+        #     "\n".join(truncated_history), self.llm.model_name
+        # )
+        truncated_history = self.short_memory[-1][
+            -self.context_length :
+        ]
+        text = "\n".join(truncated_history)
+        out = limit_tokens_from_string(text, "gpt-4")
+        return out
 
     def add_task_to_memory(self, task: str):
         """Add the task to the memory"""
-        self.memory.append([f"{self.user_name}: {task}"])
+        self.short_memory.append([f"{self.user_name}: {task}"])
 
     def add_message_to_memory(self, message: str):
         """Add the message to the memory"""
-        self.memory[-1].append(message)
+        self.short_memory[-1].append(message)
 
     def add_message_to_memory_and_truncate(self, message: str):
         """Add the message to the memory and truncate"""
-        self.memory[-1].append(message)
+        self.short_memory[-1].append(message)
         self.truncate_history()
 
     def print_dashboard(self, task: str):
@@ -404,13 +449,48 @@ class Agent:
             )
         )
 
-        # print(dashboard)
+    def add_message_to_memory_db(
+        self, message: Dict[str, Any], metadata: Dict[str, Any]
+    ) -> None:
+        """Add the message to the memory
+
+        Args:
+            message (Dict[str, Any]): _description_
+            metadata (Dict[str, Any]): _description_
+        """
+        if self.memory is not None:
+            self.memory.add(message, metadata)
+
+    def query_memorydb(
+        self,
+        message: Dict[str, Any],
+        num_results: int = 100,
+    ) -> Dict[str, Any]:
+        """Query the memory database
+
+        Args:
+            message (Dict[str, Any]): _description_
+            num_results (int): _description_
+
+        Returns:
+            Dict[str, Any]: _description_
+        """
+        if self.memory is not None:
+            return self.memory.query(message, num_results)
+        else:
+            return {}
 
     def activate_autonomous_agent(self):
         """Print the autonomous agent activation message"""
         try:
             print(
-                colored("Initializing Autonomous Agent...", "yellow")
+                colored(
+                    (
+                        "Initializing Autonomous Agent"
+                        f" {self.agent_name}..."
+                    ),
+                    "yellow",
+                )
             )
             # print(colored("Loading modules...", "yellow"))
             # print(colored("Modules loaded successfully.", "green"))
@@ -588,18 +668,20 @@ class Agent:
 
                 time.sleep(self.loop_interval)
             # Add the history to the memory
-            self.memory.append(history)
+            self.short_memory.append(history)
 
             # If autosave is enabled then save the state
             if self.autosave:
-                save_path = self.saved_state_path or "flow_state.json"
                 print(
                     colored(
-                        f"Autosaving agent state to {save_path}",
+                        (
+                            "Autosaving agent state to"
+                            f" {self.saved_state_path}"
+                        ),
                         "green",
                     )
                 )
-                self.save_state(save_path)
+                self.save_state(self.saved_state_path)
 
             # If return history is enabled then return the response and history
             if self.return_history:
@@ -685,13 +767,16 @@ class Agent:
         self.memory.append(history)
 
         if self.autosave:
-            save_path = self.saved_state_path or "flow_state.json"
             print(
                 colored(
-                    f"Autosaving agent state to {save_path}", "green"
+                    (
+                        "Autosaving agent state to"
+                        f" {self.saved_state_path}"
+                    ),
+                    "green",
                 )
             )
-            self.save_state(save_path)
+            self.save_state(self.saved_state_path)
 
         if self.return_history:
             return response, history
@@ -776,8 +861,13 @@ class Agent:
         return Agent(llm=llm, template=template)
 
     def save(self, file_path) -> None:
+        """Save the agent history to a file.
+
+        Args:
+            file_path (_type_): _description_
+        """
         with open(file_path, "w") as f:
-            json.dump(self.memory, f)
+            json.dump(self.short_memory, f)
         print(f"Saved agent history to {file_path}")
 
     def load(self, file_path: str):
@@ -788,7 +878,7 @@ class Agent:
             file_path (str): The path to the file containing the saved agent history.
         """
         with open(file_path, "r") as f:
-            self.memory = json.load(f)
+            self.short_memory = json.load(f)
         print(f"Loaded agent history from {file_path}")
 
     def validate_response(self, response: str) -> bool:
@@ -813,7 +903,9 @@ class Agent:
                 "========================", "cyan", attrs=["bold"]
             )
         )
-        for loop_index, history in enumerate(self.memory, start=1):
+        for loop_index, history in enumerate(
+            self.short_memory, start=1
+        ):
             print(
                 colored(
                     f"\nLoop {loop_index}:", "yellow", attrs=["bold"]
@@ -856,10 +948,10 @@ class Agent:
 
             # Update the agent's history with the new interaction
             if self.interactive:
-                self.memory.append(f"AI: {response}")
-                self.memory.append(f"Human: {task}")
+                self.short_memory.append(f"AI: {response}")
+                self.short_memory.append(f"Human: {task}")
             else:
-                self.memory.append(f"AI: {response}")
+                self.short_memory.append(f"AI: {response}")
 
             return response
         except Exception as error:
@@ -903,14 +995,14 @@ class Agent:
         print(message)
 
         """
-        if len(self.memory) < 2:
+        if len(self.short_memory) < 2:
             return None, None
 
         # Remove the last response
-        self.memory.pop()
+        self.short_memory.pop()
 
         # Get the previous state
-        previous_state = self.memory[-1][-1]
+        previous_state = self.short_memory[-1][-1]
         return previous_state, f"Restored to {previous_state}"
 
     # Response Filtering
@@ -929,7 +1021,6 @@ class Agent:
     def apply_reponse_filters(self, response: str) -> str:
         """
         Apply the response filters to the response
-
 
         """
         for word in self.response_filters:
@@ -1029,21 +1120,28 @@ class Agent:
         >>> agent.save_state('saved_flow.json')
         """
         state = {
-            "memory": self.memory,
-            # "llm_params": self.get_llm_params(),
+            "agent_id": str(self.id),
+            "agent_name": self.agent_name,
+            "agent_description": self.agent_description,
+            "system_prompt": self.system_prompt,
+            "sop": self.sop,
+            "memory": self.short_memory,
             "loop_interval": self.loop_interval,
             "retry_attempts": self.retry_attempts,
             "retry_interval": self.retry_interval,
             "interactive": self.interactive,
             "dashboard": self.dashboard,
             "dynamic_temperature": self.dynamic_temperature_enabled,
+            "autosave": self.autosave,
+            "saved_state_path": self.saved_state_path,
+            "max_loops": self.max_loops,
         }
 
         with open(file_path, "w") as f:
             json.dump(state, f, indent=4)
 
-        saved = colored("Saved agent state to", "green")
-        print(f"{saved} {file_path}")
+        saved = colored(f"Saved agent state to: {file_path}", "green")
+        print(saved)
 
     def load_state(self, file_path: str):
         """
@@ -1060,7 +1158,16 @@ class Agent:
             state = json.load(f)
 
         # Restore other saved attributes
-        self.memory = state.get("memory", [])
+        self.id = state.get("agent_id", self.id)
+        self.agent_name = state.get("agent_name", self.agent_name)
+        self.agent_description = state.get(
+            "agent_description", self.agent_description
+        )
+        self.system_prompt = state.get(
+            "system_prompt", self.system_prompt
+        )
+        self.sop = state.get("sop", self.sop)
+        self.short_memory = state.get("short_memory", [])
         self.max_loops = state.get("max_loops", 5)
         self.loop_interval = state.get("loop_interval", 1)
         self.retry_attempts = state.get("retry_attempts", 3)
@@ -1120,7 +1227,7 @@ class Agent:
 
     def reset(self):
         """Reset the agent"""
-        self.memory = []
+        self.short_memory = []
 
     def run_code(self, code: str):
         """
@@ -1143,7 +1250,7 @@ class Agent:
         text = pdf_to_text(pdf)
         return text
 
-    def pdf_chunker(self, text: str = None):
+    def pdf_chunker(self, text: str = None, num_limits: int = 1000):
         """Chunk the pdf into sentences
 
         Args:
@@ -1153,13 +1260,21 @@ class Agent:
             _type_: _description_
         """
         text = text or self.pdf_connector()
-        pass
+        text = limit_tokens_from_string(text, num_limits)
+        return text
 
     def tools_prompt_prep(
         self, docs: str = None, scenarios: str = None
     ):
         """
-        Prepare the tool prompt
+        Tools prompt prep
+
+        Args:
+            docs (str, optional): _description_. Defaults to None.
+            scenarios (str, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
         """
         PROMPT = f"""
         # Task
@@ -1214,61 +1329,72 @@ class Agent:
         ‘‘‘
         """
 
-    # def self_healing(self, **kwargs):
-    #     """
-    #     Self healing by debugging errors and refactoring its own code
+    def self_healing(self, **kwargs):
+        """
+        Self healing by debugging errors and refactoring its own code
 
-    #     Args:
-    #         **kwargs (Any): Any additional keyword arguments
-    #     """
-    #     pass
+        Args:
+            **kwargs (Any): Any additional keyword arguments
+        """
+        pass
 
-    # def refactor_code(
-    #     self,
-    #     file: str,
-    #     changes: List,
-    #     confirm: bool = False
-    # ):
-    #     """
-    #     Refactor the code
-    #     """
-    #     with open(file) as f:
-    #         original_file_lines = f.readlines()
+    def refactor_code(
+        self, file: str, changes: List, confirm: bool = False
+    ):
+        """_summary_
 
-    #     # Filter out the changes that are not confirmed
-    #     operation_changes = [
-    #         change for change in changes if "operation" in change
-    #     ]
-    #     explanations = [
-    #         change["explanation"] for change in changes if "explanation" in change
-    #     ]
+        Args:
+            file (str): _description_
+            changes (List): _description_
+            confirm (bool, optional): _description_. Defaults to False.
+        """
+        # with open(file) as f:
+        #     original_file_lines = f.readlines()
 
-    #     # Sort the changes in reverse line order
-    #     # explanations.sort(key=lambda x: x["line", reverse=True])
+        # # Filter out the changes that are not confirmed
+        # operation_changes = [
+        #     change for change in changes if "operation" in change
+        # ]
+        # explanations = [
+        #     change["explanation"] for change in changes if "explanation" in change
+        # ]
 
-    # def error_prompt_inject(
-    #     self,
-    #     file_path: str,
-    #     args: List,
-    #     error: str,
-    # ):
-    #     with open(file_path, "r") as f:
-    #         file_lines = f.readlines()
+        # Sort the changes in reverse line order
+        # explanations.sort(key=lambda x: x["line", reverse=True])
+        pass
 
-    #     file_with_lines = []
-    #     for i, line in enumerate(file_lines):
-    #         file_with_lines.append(str(i + 1) + "" + line)
-    #     file_with_lines = "".join(file_with_lines)
+    def error_prompt_inject(
+        self,
+        file_path: str,
+        args: List,
+        error: str,
+    ):
+        """
+        Error prompt injection
 
-    #     prompt = f"""
-    #         Here is the script that needs fixing:\n\n
-    #         {file_with_lines}\n\n
-    #         Here are the arguments it was provided:\n\n
-    #         {args}\n\n
-    #         Here is the error message:\n\n
-    #         {error}\n
-    #         "Please provide your suggested changes, and remember to stick to the "
-    #         exact format as described above.
-    #         """
+        Args:
+            file_path (str): _description_
+            args (List): _description_
+            error (str): _description_
 
-    #     print(prompt)
+        """
+        # with open(file_path, "r") as f:
+        #     file_lines = f.readlines()
+
+        # file_with_lines = []
+        # for i, line in enumerate(file_lines):
+        #     file_with_lines.append(str(i + 1) + "" + line)
+        # file_with_lines = "".join(file_with_lines)
+
+        # prompt = f"""
+        #     Here is the script that needs fixing:\n\n
+        #     {file_with_lines}\n\n
+        #     Here are the arguments it was provided:\n\n
+        #     {args}\n\n
+        #     Here is the error message:\n\n
+        #     {error}\n
+        #     "Please provide your suggested changes, and remember to stick to the "
+        #     exact format as described above.
+        #     """
+        # print(prompt)
+        pass
