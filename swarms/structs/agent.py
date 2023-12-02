@@ -484,7 +484,13 @@ class Agent:
         """Print the autonomous agent activation message"""
         try:
             print(
-                colored("Initializing Autonomous Agent...", "yellow")
+                colored(
+                    (
+                        "Initializing Autonomous Agent"
+                        f" {self.agent_name}..."
+                    ),
+                    "yellow",
+                )
             )
             # print(colored("Loading modules...", "yellow"))
             # print(colored("Modules loaded successfully.", "green"))
