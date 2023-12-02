@@ -13,15 +13,13 @@ challenge_level = user_preferences["challenge_level"]
 # Curriculum Design Prompt
 CURRICULUM_DESIGN_PROMPT = f"""
 Develop a semester-long curriculum tailored to student interests in {subjects}. Focus on incorporating diverse teaching methods suitable for a {learning_style} learning style. 
-The curriculum should challenge students at a {challenge_level} level, integrating both theoretical knowledge and practical applications. Provide a detailed structure, including weekly topics, 
-key objectives, and essential resources needed.
+The curriculum should challenge students at a {challenge_level} level, integrating both theoretical knowledge and practical applications. Provide a detailed structure, including 
+weekly topics, key objectives, and essential resources needed.
 """
 
 # Interactive Learning Session Prompt
 INTERACTIVE_LEARNING_PROMPT = f"""
-You are being given a curriculum from another agent, please design an interactive learning sessions for the {subjects} curriculum that cater to a {learning_style} learning style. Incorporate 
-engaging elements like gamification, interactive quizzes, and hands-on activities. The sessions should dynamically adjust to the student's engagement and understanding, emphasizing key concepts 
-and practical skills.
+Create an interactive lesson for a student of {subjects} that caters to a {learning_style} learning style. Incorporate engaging elements and hands-on activities.
 """
 
 # Sample Lesson Prompt
