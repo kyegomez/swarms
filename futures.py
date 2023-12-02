@@ -1,7 +1,7 @@
 import concurrent.futures
 import time
 import random
-import swarms.utils.execute_futures
+from swarms.utils.futures import execute_futures_dict
 
 
 def f(x):
@@ -10,5 +10,6 @@ def f(x):
 
 
 with concurrent.futures.ThreadPoolExecutor() as executor:
+    """Create a dictionary of futures."""
     fs_dict = {str(i): executor.submit(f, i) for i in range(10)}
-    print(swarms.utils.execute_futures.execute_futures_dict(fs_dict))
+    print(execute_futures_dict(fs_dict))
