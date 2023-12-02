@@ -19,7 +19,7 @@ weekly topics, key objectives, and essential resources needed.
 
 # Interactive Learning Session Prompt
 INTERACTIVE_LEARNING_PROMPT = f"""
-Create an interactive lesson for a student of {subjects} that caters to a {learning_style} learning style. Incorporate engaging elements and hands-on activities.
+Basedon the curriculum, generate an interactive lesson plan for a student of {subjects} that caters to a {learning_style} learning style. Incorporate engaging elements and hands-on activities.
 """
 
 # Sample Lesson Prompt
