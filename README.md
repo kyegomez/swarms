@@ -33,7 +33,6 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 - Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
 
 ```python
-
 import os
 
 from dotenv import load_dotenv
@@ -55,12 +54,12 @@ llm = OpenAIChat(
 )
 
 
-## Initialize the Agent
-agent = Agent(llm=llm, max_loops=1, dashboard=True)
+## Initialize the workflow
+agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
-# Run the Agent on a task
+# Run the workflow on a task
 out = agent.run("Generate a 10,000 word blog on health and wellness.")
-
+print(out)
 
 
 ```

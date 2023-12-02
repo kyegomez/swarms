@@ -216,6 +216,7 @@ class Agent:
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
+        self.saved_state_path = saved_state_path
         self.saved_state_path = f"{self.agent_name}_state.json"
         self.autosave = autosave
         self.response_filters = []

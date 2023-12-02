@@ -2,6 +2,7 @@ import inspect
 from typing import Callable
 from termcolor import colored
 
+
 def scrape_tool_func_docs(fn: Callable) -> str:
     """
     Scrape the docstrings and parameters of a function decorated with `tool` and return a formatted string.
@@ -13,7 +14,6 @@ def scrape_tool_func_docs(fn: Callable) -> str:
         str: A string containing the function's name, documentation string, and a list of its parameters. Each parameter is represented as a line containing the parameter's name, default value, and annotation.
     """
     try:
-            
         # If the function is a tool, get the original function
         if hasattr(fn, "func"):
             fn = fn.func
@@ -33,4 +33,13 @@ def scrape_tool_func_docs(fn: Callable) -> str:
             f" {inspect.getdoc(fn)}\nParameters:\n{parameters_str}"
         )
     except Exception as error:
-        print(colored(f"Error scraping tool function docs {error} try optimizing your inputs with different variables and attempt once more.", "red"))
+        print(
+            colored(
+                (
+                    f"Error scraping tool function docs {error} try"
+                    " optimizing your inputs with different"
+                    " variables and attempt once more."
+                ),
+                "red",
+            )
+        )

@@ -3,6 +3,7 @@ from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 
 # Define a tool by decorating a function with the tool decorator and providing a docstring
 
+
 @tool(return_direct=True)
 def search_api(query: str):
     """Search the web for the query
