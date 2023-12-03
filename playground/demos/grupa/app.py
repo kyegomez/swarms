@@ -1,22 +1,47 @@
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
-from pydantic import BaseModel
 
 from swarms.models import OpenAIChat
 from swarms.prompts.code_interpreter import CODE_INTERPRETER
 from swarms.structs import Agent
-
-
-class AgentInput(BaseModel):
-    feature: str
-    codebase: str
-
-
-app = FastAPI()
+from swarms.prompts.programming import TEST_SOP, DOCUMENTATION_SOP
+from termcolor import colored
 
 load_dotenv()
+
+
+FEATURE = (
+    "Implement an all-new signup system in typescript using supabase"
+)
+CODEBASE = """
+
+
+
+import React, { useState } from 'react';
+import UpperPanel from './UpperPanel';
+import LowerPanel from './LowerPanel';
+
+const MainPanel = () => {
+  const [promptInstructionForLowerPanel, setPromptInstructionForLowerPanel] = useState('');  
+  const [formData, setFormData] = useState('');
+  const [isLoading, setIsLoading] = useState(false);  
+
+  return (
+    <div className="flex h-screen">
+      <UpperPanel setPromptInstructionForLowerPanel={setPromptInstructionForLowerPanel} 
+      isLoading={isLoading}
+      setIsLoading={setIsLoading}      
+      />
+      <LowerPanel promptInstruction={promptInstructionForLowerPanel} isLoading={isLoading} />
+    </div>
+  );
+};
+
+export default MainPanel;
+
+
+"""
 
 # Load the environment variables
 api_key = os.getenv("OPENAI_API_KEY")
@@ -44,10 +69,18 @@ feature_implementer_backend = Agent(
     llm=llm, max_loops=1, sop=CODE_INTERPRETER, autosave=True
 )
 
+# Create another agent for a different task
+tester_agent = Agent(
+    llm=llm, max_loops=1, sop=TEST_SOP, autosave=True
+)
 
-# ##################### FastAPI #####################
+# Create another agent for a different task
+documenting_agent = Agent(
+    llm=llm, max_loops=1, sop=DOCUMENTATION_SOP, autosave=True
+)
 
 
+# Product Agent prompt
 def feature_codebase_product_agentprompt(
     feature: str, codebase: str
 ) -> str:
@@ -58,21 +91,61 @@ def feature_codebase_product_agentprompt(
     return prompt
 
 
-# @app.post("/agent/")
-# async def run_feature_implementer_frontend(item: AgentInput):
-#     agent1_out = feature_implementer_frontend.run(
-#         f"Create the backend code for {item.feature} in markdown"
-#         " based off of this algorithmic pseudocode:"
-#         f" {product_manager_agent.run(feature_codebase_product_agentprompt(item.feature, item.codebase))} write"
-#         f" the logic based on the following codebase: {item.codebase}"
-#     )
-#     return {"output": agent1_out}
-
-def software_gpt(feature: str, codebase: str) -> str:
-    agent1_out = feature_implementer_frontend.run(
-        f"Create the backend code for {feature} in markdown"
-        " based off of this algorithmic pseudocode:"
-        f" {product_manager_agent.run(feature_codebase_product_agentprompt(feature, codebase))} write"
-        f" the logic based on the following codebase: {codebase}"
+# Product Manager Agent
+product_manager_out = product_manager_agent.run(
+    feature_codebase_product_agentprompt(FEATURE, CODEBASE)
+)
+print(
+    colored(
+        (
+            "---------------------------- Product Manager Plan:"
+            f" {product_manager_out}"
+        ),
+        "cyan",
     )
-    print(agent1_out)
+)
+
+# Feature Implementer  Agent
+agent1_out = feature_implementer_frontend.run(
+    f"Create the backend code for {FEATURE} in markdown based off of"
+    f" this algorithmic pseudocode: {product_manager_out} the logic"
+    f" based on the following codebase: {CODEBASE}"
+)
+print(
+    colored(
+        (
+            "--------------------- Feature Implementer Code logic:"
+            f" {agent1_out}"
+        ),
+        "cyan",
+    )
+)
+
+# Tester agent
+tester_agent_out = tester_agent.run(
+    f"Create tests for the following code: {agent1_out}"
+)
+print(
+    colored(
+        (
+            "---------------------------- Tests for the logic:"
+            f" {tester_agent_out}"
+        ),
+        "green",
+    )
+)
+
+
+# Documentation Agent
+documenter_agent_out = documenting_agent.run(
+    f"Document the following code: {agent1_out}"
+)
+print(
+    colored(
+        (
+            "---------------------------- Documentation for the"
+            f" logic: {documenter_agent_out}"
+        ),
+        "yellow",
+    )
+)
