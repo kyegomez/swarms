@@ -15,6 +15,7 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+from pydantic import model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,8 @@ class GooglePalm(BaseLLM, BaseModel):
     """Number of chat completions to generate for each prompt. Note that the API may
        not return the full n completions if duplicates are generated."""
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate api key, python package exists."""
         google_api_key = get_from_dict_or_env(

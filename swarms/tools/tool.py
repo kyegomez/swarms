@@ -30,11 +30,10 @@ from langchain.callbacks.manager import (
 
 from langchain.load.serializable import Serializable
 from pydantic import (
-    BaseModel,
+    model_validator, BaseModel,
     Extra,
     Field,
     create_model,
-    root_validator,
     validate_arguments,
 )
 from langchain.schema.runnable import (
@@ -192,6 +191,8 @@ class ChildTool(BaseTool):
     ] = False
     """Handle the content of the ToolException thrown."""
 
+    # TODO[pydantic]: The `Config` class inherits from another class, please create the `model_config` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     class Config(Serializable.Config):
         """Configuration for this pydantic object."""
 
@@ -276,7 +277,8 @@ class ChildTool(BaseTool):
                 }
         return tool_input
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def raise_deprecation(cls, values: Dict) -> Dict:
         """Raise deprecation warning if callback_manager is used."""
         if values.get("callback_manager") is not None:
