@@ -2,7 +2,7 @@ import concurrent.futures
 import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Union
-import logging
+
 from termcolor import colored
 
 from swarms.structs.agent import Agent
@@ -43,6 +43,7 @@ class Task:
     kwargs: Dict[str, Any] = field(default_factory=dict)
     result: Any = None
     history: List[Any] = field(default_factory=list)
+    # logger = logging.getLogger(__name__)
 
     def execute(self):
         """
@@ -158,14 +159,11 @@ class SequentialWorkflow:
     def reset_workflow(self) -> None:
         """Resets the workflow by clearing the results of each task."""
         try:
-            
             for task in self.tasks:
                 task.result = None
         except Exception as error:
             print(
-                colored(
-                    f"Error resetting workflow: {error}", "red"
-                ),
+                colored(f"Error resetting workflow: {error}", "red"),
             )
 
     def get_task_results(self) -> Dict[str, Any]:
@@ -188,14 +186,17 @@ class SequentialWorkflow:
 
     def remove_task(self, task: str) -> None:
         """Remove tasks from sequential workflow"""
-        try:    
+        try:
             self.tasks = [
-                task for task in self.tasks if task.description != task
+                task
+                for task in self.tasks
+                if task.description != task
             ]
         except Exception as error:
             print(
                 colored(
-                    f"Error removing task from workflow: {error}", "red"
+                    f"Error removing task from workflow: {error}",
+                    "red",
                 ),
             )
 
@@ -235,6 +236,44 @@ class SequentialWorkflow:
             print(
                 colored(
                     f"Error updating task in workflow: {error}", "red"
+                ),
+            )
+
+    def delete_task(self, task: str) -> None:
+        """
+        Delete a task from the workflow.
+
+        Args:
+            task (str): The description of the task to delete.
+
+        Raises:
+            ValueError: If the task is not found in the workflow.
+
+        Examples:
+        >>> from swarms.models import OpenAIChat
+        >>> from swarms.structs import SequentialWorkflow
+        >>> llm = OpenAIChat(openai_api_key="")
+        >>> workflow = SequentialWorkflow(max_loops=1)
+        >>> workflow.add("What's the weather in miami", llm)
+        >>> workflow.add("Create a report on these metrics", llm)
+        >>> workflow.delete_task("What's the weather in miami")
+        >>> workflow.tasks
+        [Task(description='Create a report on these metrics', agent=Agent(llm=OpenAIChat(openai_api_key=''), max_loops=1, dashboard=False), args=[], kwargs={}, result=None, history=[])]
+        """
+        try:
+            for task in self.tasks:
+                if task.description == task:
+                    self.tasks.remove(task)
+                    break
+            else:
+                raise ValueError(
+                    f"Task {task} not found in workflow."
+                )
+        except Exception as error:
+            print(
+                colored(
+                    f"Error deleting task from workflow: {error}",
+                    "red",
                 ),
             )
 
@@ -384,7 +423,6 @@ class SequentialWorkflow:
     def add_objective_to_workflow(self, task: str, **kwargs) -> None:
         """Adds an objective to the workflow."""
         try:
-                
             print(
                 colored(
                     """
@@ -430,7 +468,6 @@ class SequentialWorkflow:
 
         """
         try:
-                
             filepath = filepath or self.restore_state_filepath
 
             with open(filepath, "r") as f:
@@ -538,14 +575,16 @@ class SequentialWorkflow:
                             # Ensure that 'task' is provided in the kwargs
                             if "task" not in task.kwargs:
                                 raise ValueError(
-                                    "The 'task' argument is required for"
-                                    " the Agent agent execution in"
-                                    f" '{task.description}'"
+                                    "The 'task' argument is required"
+                                    " for the Agent agent execution"
+                                    f" in '{task.description}'"
                                 )
                             # Separate the 'task' argument from other kwargs
                             flow_task_arg = task.kwargs.pop("task")
                             task.result = await task.agent.arun(
-                                flow_task_arg, *task.args, **task.kwargs
+                                flow_task_arg,
+                                *task.args,
+                                **task.kwargs,
                             )
                         else:
                             # If it's not a Agent instance, call the agent directly
