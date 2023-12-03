@@ -14,10 +14,8 @@ load_dotenv()
 FEATURE = (
     "Implement an all-new signup system in typescript using supabase"
 )
+
 CODEBASE = """
-
-
-
 import React, { useState } from 'react';
 import UpperPanel from './UpperPanel';
 import LowerPanel from './LowerPanel';
@@ -51,7 +49,7 @@ llm = OpenAIChat(
     model_name="gpt-4",
     openai_api_key=api_key,
     temperature=0.5,
-    max_tokens=2000,
+    max_tokens=4000,
 )
 
 # Product Manager Agent init
