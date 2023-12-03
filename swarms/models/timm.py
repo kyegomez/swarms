@@ -2,17 +2,14 @@ from typing import List
 
 import timm
 import torch
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class TimmModelInfo(BaseModel):
     model_name: str
     pretrained: bool
     in_chans: int
-
-    class Config:
-        # Use strict typing for all fields
-        strict = True
+    model_config = ConfigDict(strict=True)
 
 
 class TimmModel:

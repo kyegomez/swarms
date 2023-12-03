@@ -20,6 +20,8 @@ class Detections(BaseModel):
         ), "All fields must have the same length."
         return values
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator(
         "xyxy", "class_id", "confidence", pre=True, each_item=True
     )
