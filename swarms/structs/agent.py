@@ -252,6 +252,14 @@ class Agent:
         if preset_stopping_token:
             self.stopping_token = "<DONE>"
 
+        # If memory then add the json to the memory vector database
+        if memory:
+            # Add all of the state to the memory
+            self.add_message_to_memory_db(
+                {"message": self.state_to_str()},
+                {"agent_id": self.id},
+            )
+
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
         self.feedback.append(feedback)
@@ -1125,7 +1133,7 @@ class Agent:
             "agent_description": self.agent_description,
             "system_prompt": self.system_prompt,
             "sop": self.sop,
-            "memory": self.short_memory,
+            "short_memory": self.short_memory,
             "loop_interval": self.loop_interval,
             "retry_attempts": self.retry_attempts,
             "retry_interval": self.retry_interval,
@@ -1142,6 +1150,28 @@ class Agent:
 
         saved = colored(f"Saved agent state to: {file_path}", "green")
         print(saved)
+
+    def state_to_str(self):
+        """Transform the JSON into a string"""
+        state = {
+            "agent_id": str(self.id),
+            "agent_name": self.agent_name,
+            "agent_description": self.agent_description,
+            "system_prompt": self.system_prompt,
+            "sop": self.sop,
+            "short_memory": self.short_memory,
+            "loop_interval": self.loop_interval,
+            "retry_attempts": self.retry_attempts,
+            "retry_interval": self.retry_interval,
+            "interactive": self.interactive,
+            "dashboard": self.dashboard,
+            "dynamic_temperature": self.dynamic_temperature_enabled,
+            "autosave": self.autosave,
+            "saved_state_path": self.saved_state_path,
+            "max_loops": self.max_loops,
+        }
+        out = str(state)
+        return out
 
     def load_state(self, file_path: str):
         """
