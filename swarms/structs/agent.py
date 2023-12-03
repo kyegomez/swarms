@@ -13,6 +13,7 @@ from termcolor import colored
 from swarms.memory.base_vector_db import VectorDatabase
 from swarms.prompts.agent_system_prompts import (
     FLOW_SYSTEM_PROMPT,
+    AGENT_SYSTEM_PROMPT_3,
     agent_system_prompt_2,
 )
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
@@ -22,6 +23,7 @@ from swarms.prompts.tools import (
     SCENARIOS,
 )
 from swarms.tools.tool import BaseTool
+from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.parse_code import (
     extract_code_in_backticks_in_string,
@@ -173,7 +175,7 @@ class Agent:
         dashboard: bool = False,
         agent_name: str = "Autonomous-Agent-XYZ1B",
         agent_description: str = None,
-        system_prompt: str = FLOW_SYSTEM_PROMPT,
+        system_prompt: str = AGENT_SYSTEM_PROMPT_3,
         tools: List[BaseTool] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
@@ -212,7 +214,9 @@ class Agent:
         self.context_length = context_length
         self.sop = sop
         self.sop_list = sop_list
+        self.sop_list = []
         self.tools = tools or []
+        self.tool_docs = []
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -229,6 +233,8 @@ class Agent:
         self.memory = memory
         self.preset_stopping_token = preset_stopping_token
 
+        # self.system_prompt = AGENT_SYSTEM_PROMPT_3
+        
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
@@ -259,6 +265,20 @@ class Agent:
                 {"message": self.state_to_str()},
                 {"agent_id": self.id},
             )
+
+        # If tools exist then add the tool docs usage to the sop
+        if self.tools:
+            self.sop_list.append(self.tools_prompt_prep(
+                self.tool_docs, SCENARIOS
+            )
+        )
+            
+    def set_system_prompt(self, system_prompt: str):
+        """Set the system prompt"""
+        self.system_prompt = system_prompt
+        
+    
+            
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -347,19 +367,6 @@ class Agent:
         for tool in self.tools:
             if tool.name == name:
                 return tool
-        return None
-
-    def construct_dynamic_prompt(self):
-        """Construct the dynamic prompt"""
-        tools_description = self.get_tool_description()
-
-        tool_prompt = self.tool_prompt_prep(
-            tools_description, SCENARIOS
-        )
-
-        return tool_prompt
-
-        # return DYNAMICAL_TOOL_USAGE.format(tools=tools_description)
 
     def extract_tool_commands(self, text: str):
         """
@@ -388,14 +395,7 @@ class Agent:
             except Exception as error:
                 print(f"Error parsing JSON command: {error}")
 
-    def parse_and_execute_tools(self, response: str):
-        """Parse and execute the tools"""
-        json_commands = self.extract_tool_commands(response)
-        for command in json_commands:
-            tool_name = command.get("tool")
-            params = command.get("parmas", {})
-            self.execute_tool(tool_name, params)
-
+    
     def execute_tools(self, tool_name, params):
         """Execute the tool with the provided params"""
         tool = self.tool_find_by_name(tool_name)
@@ -403,6 +403,16 @@ class Agent:
             # Execute the tool with the provided parameters
             tool_result = tool.run(**params)
             print(tool_result)
+            
+    
+    def parse_and_execute_tools(self, response: str):
+        """Parse and execute the tools"""
+        json_commands = self.extract_tool_commands(response)
+        for command in json_commands:
+            tool_name = command.get("tool")
+            params = command.get("parmas", {})
+            self.execute_tools(tool_name, params)
+
 
     def truncate_history(self):
         """
@@ -447,6 +457,12 @@ class Agent:
         self.short_memory[-1].append(message)
         self.truncate_history()
 
+    def parse_tool_docs(self):
+        """Parse the tool docs"""
+        for tool in self.tools:
+            docs = self.tool_docs.append(scrape_tool_func_docs(tool))
+        return str(docs)
+
     def print_dashboard(self, task: str):
         """Print dashboard"""
         model_config = self.get_llm_init_params()
@@ -486,43 +502,6 @@ class Agent:
             )
         )
 
-    def add_message_to_memory_db(
-        self, message: Dict[str, Any], metadata: Dict[str, Any]
-    ) -> None:
-        """Add the message to the memory
-
-        Args:
-            message (Dict[str, Any]): _description_
-            metadata (Dict[str, Any]): _description_
-        """
-        try:
-            if self.memory is not None:
-                self.memory.add(message, metadata)
-        except Exception as error:
-            print(
-                colored(
-                    f"Error adding message to memory: {error}", "red"
-                )
-            )
-
-    def query_memorydb(
-        self,
-        message: Dict[str, Any],
-        num_results: int = 100,
-    ) -> Dict[str, Any]:
-        """Query the memory database
-
-        Args:
-            message (Dict[str, Any]): _description_
-            num_results (int): _description_
-
-        Returns:
-            Dict[str, Any]: _description_
-        """
-        if self.memory is not None:
-            return self.memory.query(message, num_results)
-        else:
-            return {}
 
     def activate_autonomous_agent(self):
         """Print the autonomous agent activation message"""
@@ -536,8 +515,6 @@ class Agent:
                     "yellow",
                 )
             )
-            # print(colored("Loading modules...", "yellow"))
-            # print(colored("Modules loaded successfully.", "green"))
             print(
                 colored(
                     "Autonomous Agent Activated.",
@@ -662,7 +639,7 @@ class Agent:
 
                 # Preparing the prompt
                 task = self.agent_history_prompt(
-                    FLOW_SYSTEM_PROMPT, response
+                    AGENT_SYSTEM_PROMPT_3, response
                 )
 
                 attempt = 0
@@ -736,111 +713,6 @@ class Agent:
             print(f"Error running agent: {error}")
             raise
 
-    async def arun(self, task: str, **kwargs):
-        """
-        Run the autonomous agent loop aschnronously
-
-        Args:
-            task (str): The initial task to run
-
-        Agent:
-        1. Generate a response
-        2. Check stopping condition
-        3. If stopping condition is met, stop
-        4. If stopping condition is not met, generate a response
-        5. Repeat until stopping condition is met or max_loops is reached
-
-        """
-        try:
-            # Activate Autonomous agent message
-            self.activate_autonomous_agent()
-
-            response = task
-            history = [f"{self.user_name}: {task}"]
-
-            # If dashboard = True then print the dashboard
-            if self.dashboard:
-                self.print_dashboard(task)
-
-            loop_count = 0
-            # for i in range(self.max_loops):
-            while (
-                self.max_loops == "auto"
-                or loop_count < self.max_loops
-            ):
-                loop_count += 1
-                print(
-                    colored(
-                        f"\nLoop {loop_count} of {self.max_loops}",
-                        "blue",
-                    )
-                )
-                print("\n")
-
-                if self._check_stopping_condition(
-                    response
-                ) or parse_done_token(response):
-                    break
-
-                # Adjust temperature, comment if no work
-                if self.dynamic_temperature_enabled:
-                    self.dynamic_temperature()
-
-                # Preparing the prompt
-                task = self.agent_history_prompt(
-                    FLOW_SYSTEM_PROMPT, response
-                )
-
-                attempt = 0
-                while attempt < self.retry_attempts:
-                    try:
-                        response = self.llm(
-                            task**kwargs,
-                        )
-                        if self.interactive:
-                            print(f"AI: {response}")
-                            history.append(f"AI: {response}")
-                            response = input("You: ")
-                            history.append(f"Human: {response}")
-                        else:
-                            print(f"AI: {response}")
-                            history.append(f"AI: {response}")
-                            print(response)
-                        break
-                    except Exception as e:
-                        logging.error(
-                            f"Error generating response: {e}"
-                        )
-                        attempt += 1
-                        time.sleep(self.retry_interval)
-                history.append(response)
-                time.sleep(self.loop_interval)
-            self.memory.append(history)
-
-            if self.autosave:
-                print(
-                    colored(
-                        (
-                            "Autosaving agent state to"
-                            f" {self.saved_state_path}"
-                        ),
-                        "green",
-                    )
-                )
-                self.save_state(self.saved_state_path)
-
-            if self.return_history:
-                return response, history
-
-            return response
-        except Exception as error:
-            print(
-                colored(
-                    f"Error asynchronous running agent: {error}",
-                    "red",
-                )
-            )
-
     def _run(self, **kwargs: Any) -> str:
         """Generate a result using the provided keyword args."""
         try:
@@ -853,7 +725,7 @@ class Agent:
 
     def agent_history_prompt(
         self,
-        system_prompt: str = FLOW_SYSTEM_PROMPT,
+        system_prompt: str = AGENT_SYSTEM_PROMPT_3,
         history=None,
     ):
         """
@@ -944,7 +816,7 @@ class Agent:
         try:
             with open(file_path, "w") as f:
                 json.dump(self.short_memory, f)
-            print(f"Saved agent history to {file_path}")
+            # print(f"Saved agent history to {file_path}")
         except Exception as error:
             print(
                 colored(f"Error saving agent history: {error}", "red")
@@ -1320,8 +1192,6 @@ class Agent:
         SYSTEM_PROMPT: {self.system_prompt}
 
         History: {history}
-
-        Your response:
         """
         response = self.llm(prompt, **kwargs)
         return {"role": self.agent_name, "content": response}
@@ -1385,7 +1255,7 @@ class Agent:
         return text
 
     def tools_prompt_prep(
-        self, docs: str = None, scenarios: str = None
+        self, docs: str = None, scenarios: str = SCENARIOS
     ):
         """
         Tools prompt prep
@@ -1401,10 +1271,9 @@ class Agent:
         # Task
         You will be provided with a list of APIs. These APIs will have a
         description and a list of parameters and return types for each tool. Your
-        task involves creating 3 varied, complex, and detailed user scenarios
-        that require at least 5 API calls to complete involving at least 3
-        different APIs. One of these APIs will be explicitly provided and the
-        other two will be chosen by you.
+        task involves creating varied, complex, and detailed user scenarios
+        that require to call API calls. You must select what api to call based on 
+        the context of the task and the scenario.
 
         For instance, given the APIs: SearchHotels, BookHotel, CancelBooking,
         GetNFLNews. Given that GetNFLNews is explicitly provided, your scenario
@@ -1429,8 +1298,8 @@ class Agent:
 
         Note that this scenario does not use all the APIs given and re-uses the "
         GetNBANews" API. Re-using APIs is allowed, but each scenario should
-        involve at least 3 different APIs. Note that API usage is also included
-        in the scenario, but exact parameters are not necessary. You must use a
+        involve as many different APIs as the user demands. Note that API usage is also included
+        in the scenario, but exact parameters ar necessary. You must use a
         different combination of APIs for each scenario. All APIs must be used in
         at least one scenario. You can only use the APIs provided in the APIs
         section.
@@ -1438,7 +1307,10 @@ class Agent:
         Note that API calls are not explicitly mentioned and their uses are
         included in parentheses. This behaviour should be mimicked in your
         response.
-        Deliver your response in this format:
+        
+        Output the tool usage in a strict json format with the function name and input to 
+        the function. For example, Deliver your response in this format:
+        
         ‘‘‘
         {scenarios}
         ‘‘‘
@@ -1450,73 +1322,3 @@ class Agent:
         ‘‘‘
         """
         return PROMPT
-
-    def self_healing(self, **kwargs):
-        """
-        Self healing by debugging errors and refactoring its own code
-
-        Args:
-            **kwargs (Any): Any additional keyword arguments
-        """
-        pass
-
-    def refactor_code(
-        self, file: str, changes: List, confirm: bool = False
-    ):
-        """_summary_
-
-        Args:
-            file (str): _description_
-            changes (List): _description_
-            confirm (bool, optional): _description_. Defaults to False.
-        """
-        # with open(file) as f:
-        #     original_file_lines = f.readlines()
-
-        # # Filter out the changes that are not confirmed
-        # operation_changes = [
-        #     change for change in changes if "operation" in change
-        # ]
-        # explanations = [
-        #     change["explanation"] for change in changes if "explanation" in change
-        # ]
-
-        # Sort the changes in reverse line order
-        # explanations.sort(key=lambda x: x["line", reverse=True])
-        pass
-
-    def error_prompt_inject(
-        self,
-        file_path: str,
-        args: List,
-        error: str,
-    ):
-        """
-        Error prompt injection
-
-        Args:
-            file_path (str): _description_
-            args (List): _description_
-            error (str): _description_
-
-        """
-        # with open(file_path, "r") as f:
-        #     file_lines = f.readlines()
-
-        # file_with_lines = []
-        # for i, line in enumerate(file_lines):
-        #     file_with_lines.append(str(i + 1) + "" + line)
-        # file_with_lines = "".join(file_with_lines)
-
-        # prompt = f"""
-        #     Here is the script that needs fixing:\n\n
-        #     {file_with_lines}\n\n
-        #     Here are the arguments it was provided:\n\n
-        #     {args}\n\n
-        #     Here is the error message:\n\n
-        #     {error}\n
-        #     "Please provide your suggested changes, and remember to stick to the "
-        #     exact format as described above.
-        #     """
-        # print(prompt)
-        pass
