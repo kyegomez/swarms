@@ -56,7 +56,7 @@ pydantic = "2.*"
 tenacity = "*"
 Pillow = "*"
 chromadb = "*"
-opencv-python-headless = "*"
+opencv-python-headless
 tabulate = "*"
 termcolor = "*"
 black = "*"
