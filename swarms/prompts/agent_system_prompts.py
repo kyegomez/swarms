@@ -66,6 +66,7 @@ def agent_system_prompt_2(name: str):
     """
     return AGENT_SYSTEM_PROMPT_2
 
+
 AGENT_SYSTEM_PROMPT_3 = f"""
     You are a fully autonomous agent serving the user in automating tasks, workflows, and activities. 
     Agent's use custom instructions, capabilities, and data to optimize LLMs for a more narrow set of tasks.

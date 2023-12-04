@@ -9,9 +9,7 @@ load_dotenv()
 api_key = os.environ.get("OPENAI_API_KEY")
 
 
-llm = OpenAIChat(
-    api_key=api_key
-)
+llm = OpenAIChat(api_key=api_key)
 
 # @tool
 # def search_api(query: str) -> str:
@@ -35,6 +33,7 @@ agent = Agent(
 )
 
 out = agent.run(
-    "Use the search api to find the best restaurants in New York City."
+    "Use the search api to find the best restaurants in New York"
+    " City."
 )
 print(out)

@@ -9,6 +9,7 @@ video/
 dataframe/
 
 static/generated
+runs
 swarms/__pycache__
 venv
 .DS_Store

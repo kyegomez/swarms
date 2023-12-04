@@ -29,6 +29,7 @@ def extract_tool_commands(self, text: str):
         except Exception as error:
             print(f"Error parsing JSON command: {error}")
 
+
 def parse_and_execute_tools(response: str):
     """Parse and execute the tools"""
     json_commands = extract_tool_commands(response)
@@ -37,6 +38,7 @@ def parse_and_execute_tools(response: str):
         params = command.get("parmas", {})
         execute_tools(tool_name, params)
 
+
 def execute_tools(self, tool_name, params):
     """Execute the tool with the provided params"""
     tool = self.tool_find_by_name(tool_name)
@@ -44,4 +46,3 @@ def execute_tools(self, tool_name, params):
         # Execute the tool with the provided parameters
         tool_result = tool.run(**params)
         print(tool_result)
-

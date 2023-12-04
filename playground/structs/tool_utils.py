@@ -13,7 +13,7 @@ def search_api(query: str) -> str:
         str: _description_
     """
     print(f"Searching API for {query}")
-    
-    
+
+
 tool_docs = scrape_tool_func_docs(search_api)
 print(tool_docs)
