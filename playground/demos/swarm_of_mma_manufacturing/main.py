@@ -13,16 +13,19 @@ Efficiency agent: Agent that monitors the efficiency of the factory: input image
 Agent:
 health security agent -> quality control agent -> productivity agent -> safety agent -> security agent -> sustainability agent -> efficiency agent 
 """
-from swarms.structs import Agent
 import os
+
 from dotenv import load_dotenv
+from termcolor import colored
+
 from swarms.models import GPT4VisionAPI
+from swarms.structs import Agent
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
-
-llm = GPT4VisionAPI(openai_api_key=api_key)
+# GPT4VisionAPI
+llm = GPT4VisionAPI(openai_api_key=api_key, max_tokens=2000)
 
 assembly_line = (
     "playground/demos/swarm_of_mma_manufacturing/assembly_line.jpg"
@@ -81,41 +84,73 @@ efficiency_prompt = tasks["efficiency"]
 health_security_agent = Agent(
     llm=llm,
     sop_list=health_safety_prompt,
-    max_loops=2,
+    max_loops=1,
     multi_modal=True,
 )
 
 # Quality control agent
 productivity_check_agent = Agent(
-    llm=llm, sop=productivity_prompt, max_loops=2, multi_modal=True
+    llm=llm,
+    sop=productivity_prompt,
+    max_loops=1,
+    multi_modal=True,
+    autosave=True,
 )
 
 # Security agent
 security_check_agent = Agent(
-    llm=llm, sop=security_prompt, max_loops=2, multi_modal=True
+    llm=llm,
+    sop=security_prompt,
+    max_loops=1,
+    multi_modal=True,
+    autosave=True,
 )
 
 # Efficiency agent
 efficiency_check_agent = Agent(
-    llm=llm, sop=efficiency_prompt, max_loops=2, multi_modal=True
+    llm=llm,
+    sop=efficiency_prompt,
+    max_loops=1,
+    multi_modal=True,
+    autosave=True,
 )
 
+print(colored("Running the agents...", "green"))
 
+
+print(colored("Running health check agent initializing...", "cyan"))
 # Add the first task to the health_security_agent
 health_check = health_security_agent.run(
     "Analyze the safety of this factory", robots
 )
 
+
+print(
+    colored(
+        "--------------- Productivity agents initializing...", "green"
+    )
+)
 # Add the third task to the productivity_check_agent
 productivity_check = productivity_check_agent.run(
     health_check, assembly_line
 )
 
+print(
+    colored(
+        "--------------- Security agents initializing...", "green"
+    )
+)
 # Add the fourth task to the security_check_agent
-security_check = security_check_agent.add(
+security_check = security_check_agent.run(
     productivity_check, red_robots
 )
 
+
+print(
+    colored(
+        "--------------- Efficiency agents initializing...", "cyan"
+    )
+)
 # Add the fifth task to the efficiency_check_agent
 efficiency_check = efficiency_check_agent.run(
     security_check, tesla_assembly_line

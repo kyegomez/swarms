@@ -1,18 +1,4 @@
-"""
-TODO:
-- Add a method to update the arguments of a task
-- Add a method to get the results of each task
-- Add a method to get the results of a specific task
-- Add a method to get the results of the workflow
-- Add a method to get the results of the workflow as a dataframe
-
-
-- Add a method to run the workflow in parallel with a pool of workers and a queue and a dashboard
-- Add a dashboard to visualize the workflow
-- Add async support
-- Add context manager support
-- Add workflow history
-"""
+import concurrent.futures
 import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -57,6 +43,7 @@ class Task:
     kwargs: Dict[str, Any] = field(default_factory=dict)
     result: Any = None
     history: List[Any] = field(default_factory=list)
+    # logger = logging.getLogger(__name__)
 
     def execute(self):
         """
@@ -118,11 +105,11 @@ class SequentialWorkflow:
 
     """
 
+    name: str = None
+    description: str = None
     tasks: List[Task] = field(default_factory=list)
     max_loops: int = 1
     autosave: bool = False
-    name: str = (None,)
-    description: str = (None,)
     saved_state_filepath: Optional[str] = (
         "sequential_workflow_state.json"
     )
@@ -146,26 +133,38 @@ class SequentialWorkflow:
             *args: Additional arguments to pass to the task execution.
             **kwargs: Additional keyword arguments to pass to the task execution.
         """
-        # If the agent is a Agent instance, we include the task in kwargs for Agent.run()
-        if isinstance(agent, Agent):
-            kwargs["task"] = (
-                task  # Set the task as a keyword argument for Agent
-            )
+        try:
+            # If the agent is a Agent instance, we include the task in kwargs for Agent.run()
+            if isinstance(agent, Agent):
+                kwargs["task"] = (
+                    task  # Set the task as a keyword argument for Agent
+                )
 
-        # Append the task to the tasks list
-        self.tasks.append(
-            Task(
-                description=task,
-                agent=agent,
-                args=list(args),
-                kwargs=kwargs,
+            # Append the task to the tasks list
+            self.tasks.append(
+                Task(
+                    description=task,
+                    agent=agent,
+                    args=list(args),
+                    kwargs=kwargs,
+                )
             )
-        )
+        except Exception as error:
+            print(
+                colored(
+                    f"Error adding task to workflow: {error}", "red"
+                ),
+            )
 
     def reset_workflow(self) -> None:
         """Resets the workflow by clearing the results of each task."""
-        for task in self.tasks:
-            task.result = None
+        try:
+            for task in self.tasks:
+                task.result = None
+        except Exception as error:
+            print(
+                colored(f"Error resetting workflow: {error}", "red"),
+            )
 
     def get_task_results(self) -> Dict[str, Any]:
         """
@@ -174,13 +173,32 @@ class SequentialWorkflow:
         Returns:
             Dict[str, Any]: The results of each task in the workflow
         """
-        return {task.description: task.result for task in self.tasks}
+        try:
+            return {
+                task.description: task.result for task in self.tasks
+            }
+        except Exception as error:
+            print(
+                colored(
+                    f"Error getting task results: {error}", "red"
+                ),
+            )
 
     def remove_task(self, task: str) -> None:
         """Remove tasks from sequential workflow"""
-        self.tasks = [
-            task for task in self.tasks if task.description != task
-        ]
+        try:
+            self.tasks = [
+                task
+                for task in self.tasks
+                if task.description != task
+            ]
+        except Exception as error:
+            print(
+                colored(
+                    f"Error removing task from workflow: {error}",
+                    "red",
+                ),
+            )
 
     def update_task(self, task: str, **updates) -> None:
         """
@@ -205,12 +223,95 @@ class SequentialWorkflow:
         {'max_tokens': 1000}
 
         """
-        for task in self.tasks:
-            if task.description == task:
-                task.kwargs.update(updates)
-                break
-        else:
-            raise ValueError(f"Task {task} not found in workflow.")
+        try:
+            for task in self.tasks:
+                if task.description == task:
+                    task.kwargs.update(updates)
+                    break
+            else:
+                raise ValueError(
+                    f"Task {task} not found in workflow."
+                )
+        except Exception as error:
+            print(
+                colored(
+                    f"Error updating task in workflow: {error}", "red"
+                ),
+            )
+
+    def delete_task(self, task: str) -> None:
+        """
+        Delete a task from the workflow.
+
+        Args:
+            task (str): The description of the task to delete.
+
+        Raises:
+            ValueError: If the task is not found in the workflow.
+
+        Examples:
+        >>> from swarms.models import OpenAIChat
+        >>> from swarms.structs import SequentialWorkflow
+        >>> llm = OpenAIChat(openai_api_key="")
+        >>> workflow = SequentialWorkflow(max_loops=1)
+        >>> workflow.add("What's the weather in miami", llm)
+        >>> workflow.add("Create a report on these metrics", llm)
+        >>> workflow.delete_task("What's the weather in miami")
+        >>> workflow.tasks
+        [Task(description='Create a report on these metrics', agent=Agent(llm=OpenAIChat(openai_api_key=''), max_loops=1, dashboard=False), args=[], kwargs={}, result=None, history=[])]
+        """
+        try:
+            for task in self.tasks:
+                if task.description == task:
+                    self.tasks.remove(task)
+                    break
+            else:
+                raise ValueError(
+                    f"Task {task} not found in workflow."
+                )
+        except Exception as error:
+            print(
+                colored(
+                    f"Error deleting task from workflow: {error}",
+                    "red",
+                ),
+            )
+
+    def concurrent_run(self):
+        """
+        Concurrently run the workflow using a pool of workers.
+
+        Examples:
+        >>> from swarms.models import OpenAIChat
+        >>> from swarms.structs import SequentialWorkflow
+        >>> llm = OpenAIChat(openai_api_key="")
+        >>> workflow = SequentialWorkflow(max_loops=1)
+
+        """
+        try:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures_to_task = {
+                    executor.submit(task.run): task
+                    for task in self.tasks
+                }
+                results = []
+                for future in concurrent.futures.as_completed(
+                    futures_to_task
+                ):
+                    task = futures_to_task[future]
+
+                    try:
+                        result = future.result()
+                    except Exception as error:
+                        print(f"Error running workflow: {error}")
+                    else:
+                        results.append(result)
+                        print(
+                            f"Task {task} completed successfully with"
+                            f" result: {result}"
+                        )
+        except Exception as error:
+            print(colored(f"Error running workflow: {error}", "red"))
 
     def save_workflow_state(
         self,
@@ -232,26 +333,35 @@ class SequentialWorkflow:
         >>> workflow.add("Create a report on these metrics", llm)
         >>> workflow.save_workflow_state("sequential_workflow_state.json")
         """
-        filepath = filepath or self.saved_state_filepath
+        try:
+            filepath = filepath or self.saved_state_filepath
 
-        with open(filepath, "w") as f:
-            # Saving the state as a json for simplicuty
-            state = {
-                "tasks": [
-                    {
-                        "description": task.description,
-                        "args": task.args,
-                        "kwargs": task.kwargs,
-                        "result": task.result,
-                        "history": task.history,
-                    }
-                    for task in self.tasks
-                ],
-                "max_loops": self.max_loops,
-            }
-            json.dump(state, f, indent=4)
+            with open(filepath, "w") as f:
+                # Saving the state as a json for simplicuty
+                state = {
+                    "tasks": [
+                        {
+                            "description": task.description,
+                            "args": task.args,
+                            "kwargs": task.kwargs,
+                            "result": task.result,
+                            "history": task.history,
+                        }
+                        for task in self.tasks
+                    ],
+                    "max_loops": self.max_loops,
+                }
+                json.dump(state, f, indent=4)
+        except Exception as error:
+            print(
+                colored(
+                    f"Error saving workflow state: {error}",
+                    "red",
+                )
+            )
 
     def workflow_bootup(self, **kwargs) -> None:
+        """Boots up the workflow."""
         print(
             colored(
                 """
@@ -312,22 +422,30 @@ class SequentialWorkflow:
 
     def add_objective_to_workflow(self, task: str, **kwargs) -> None:
         """Adds an objective to the workflow."""
-        print(
-            colored(
-                """
-                Adding Objective to Workflow...""",
-                "green",
-                attrs=["bold", "underline"],
+        try:
+            print(
+                colored(
+                    """
+                    Adding Objective to Workflow...""",
+                    "green",
+                    attrs=["bold", "underline"],
+                )
             )
-        )
 
-        task = Task(
-            description=task,
-            agent=kwargs["agent"],
-            args=list(kwargs["args"]),
-            kwargs=kwargs["kwargs"],
-        )
-        self.tasks.append(task)
+            task = Task(
+                description=task,
+                agent=kwargs["agent"],
+                args=list(kwargs["args"]),
+                kwargs=kwargs["kwargs"],
+            )
+            self.tasks.append(task)
+        except Exception as error:
+            print(
+                colored(
+                    f"Error adding objective to workflow: {error}",
+                    "red",
+                )
+            )
 
     def load_workflow_state(
         self, filepath: str = None, **kwargs
@@ -349,22 +467,30 @@ class SequentialWorkflow:
         >>> workflow.load_workflow_state("sequential_workflow_state.json")
 
         """
-        filepath = filepath or self.restore_state_filepath
+        try:
+            filepath = filepath or self.restore_state_filepath
 
-        with open(filepath, "r") as f:
-            state = json.load(f)
-            self.max_loops = state["max_loops"]
-            self.tasks = []
-            for task_state in state["tasks"]:
-                task = Task(
-                    description=task_state["description"],
-                    agent=task_state["agent"],
-                    args=task_state["args"],
-                    kwargs=task_state["kwargs"],
-                    result=task_state["result"],
-                    history=task_state["history"],
+            with open(filepath, "r") as f:
+                state = json.load(f)
+                self.max_loops = state["max_loops"]
+                self.tasks = []
+                for task_state in state["tasks"]:
+                    task = Task(
+                        description=task_state["description"],
+                        agent=task_state["agent"],
+                        args=task_state["args"],
+                        kwargs=task_state["kwargs"],
+                        result=task_state["result"],
+                        history=task_state["history"],
+                    )
+                    self.tasks.append(task)
+        except Exception as error:
+            print(
+                colored(
+                    f"Error loading workflow state: {error}",
+                    "red",
                 )
-                self.tasks.append(task)
+            )
 
     def run(self) -> None:
         """
@@ -439,43 +565,58 @@ class SequentialWorkflow:
             ValueError: If a Agent instance is used as a task and the 'task' argument is not provided.
 
         """
-        for _ in range(self.max_loops):
-            for task in self.tasks:
-                # Check if the current task can be executed
-                if task.result is None:
-                    # Check if the agent is a Agent and a 'task' argument is needed
-                    if isinstance(task.agent, Agent):
-                        # Ensure that 'task' is provided in the kwargs
-                        if "task" not in task.kwargs:
-                            raise ValueError(
-                                "The 'task' argument is required for"
-                                " the Agent agent execution in"
-                                f" '{task.description}'"
+        try:
+            for _ in range(self.max_loops):
+                for task in self.tasks:
+                    # Check if the current task can be executed
+                    if task.result is None:
+                        # Check if the agent is a Agent and a 'task' argument is needed
+                        if isinstance(task.agent, Agent):
+                            # Ensure that 'task' is provided in the kwargs
+                            if "task" not in task.kwargs:
+                                raise ValueError(
+                                    "The 'task' argument is required"
+                                    " for the Agent agent execution"
+                                    f" in '{task.description}'"
+                                )
+                            # Separate the 'task' argument from other kwargs
+                            flow_task_arg = task.kwargs.pop("task")
+                            task.result = await task.agent.arun(
+                                flow_task_arg,
+                                *task.args,
+                                **task.kwargs,
                             )
-                        # Separate the 'task' argument from other kwargs
-                        flow_task_arg = task.kwargs.pop("task")
-                        task.result = await task.agent.arun(
-                            flow_task_arg, *task.args, **task.kwargs
-                        )
-                    else:
-                        # If it's not a Agent instance, call the agent directly
-                        task.result = await task.agent(
-                            *task.args, **task.kwargs
-                        )
-
-                    # Pass the result as an argument to the next task if it exists
-                    next_task_index = self.tasks.index(task) + 1
-                    if next_task_index < len(self.tasks):
-                        next_task = self.tasks[next_task_index]
-                        if isinstance(next_task.agent, Agent):
-                            # For Agent flows, 'task' should be a keyword argument
-                            next_task.kwargs["task"] = task.result
                         else:
-                            # For other callable flows, the result is added to args
-                            next_task.args.insert(0, task.result)
+                            # If it's not a Agent instance, call the agent directly
+                            task.result = await task.agent(
+                                *task.args, **task.kwargs
+                            )
 
-                    # Autosave the workflow state
-                    if self.autosave:
-                        self.save_workflow_state(
-                            "sequential_workflow_state.json"
-                        )
+                        # Pass the result as an argument to the next task if it exists
+                        next_task_index = self.tasks.index(task) + 1
+                        if next_task_index < len(self.tasks):
+                            next_task = self.tasks[next_task_index]
+                            if isinstance(next_task.agent, Agent):
+                                # For Agent flows, 'task' should be a keyword argument
+                                next_task.kwargs["task"] = task.result
+                            else:
+                                # For other callable flows, the result is added to args
+                                next_task.args.insert(0, task.result)
+
+                        # Autosave the workflow state
+                        if self.autosave:
+                            self.save_workflow_state(
+                                "sequential_workflow_state.json"
+                            )
+        except Exception as e:
+            print(
+                colored(
+                    (
+                        "Error initializing the Sequential workflow:"
+                        f" {e} try optimizing your inputs like the"
+                        " agent class and task description"
+                    ),
+                    "red",
+                    attrs=["bold", "underline"],
+                )
+            )

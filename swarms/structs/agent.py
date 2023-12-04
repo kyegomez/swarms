@@ -10,8 +10,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
+from swarms.memory.base_vector_db import VectorDatabase
 from swarms.prompts.agent_system_prompts import (
     FLOW_SYSTEM_PROMPT,
+    AGENT_SYSTEM_PROMPT_3,
     agent_system_prompt_2,
 )
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
@@ -21,11 +23,13 @@ from swarms.prompts.tools import (
     SCENARIOS,
 )
 from swarms.tools.tool import BaseTool
+from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.parse_code import (
     extract_code_in_backticks_in_string,
 )
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.utils.token_count_tiktoken import limit_tokens_from_string
 
 
 # Utils
@@ -35,11 +39,13 @@ def stop_when_repeats(response: str) -> bool:
     return "stop" in response.lower()
 
 
+# Parse done token
 def parse_done_token(response: str) -> bool:
     """Parse the response to see if the done token is present"""
     return "<DONE>" in response
 
 
+# Agent ID generator
 def agent_id():
     """Generate an agent id"""
     return str(uuid.uuid4())
@@ -58,16 +64,40 @@ class Agent:
     * Ability to provide a loop interval
 
     Args:
+        id (str): The id of the agent
         llm (Any): The language model to use
-        max_loops (int): The maximum number of loops to run
-        stopping_condition (Optional[Callable[[str], bool]]): A stopping condition
-        loop_interval (int): The interval between loops
-        retry_attempts (int): The number of retry attempts
-        retry_interval (int): The interval between retry attempts
-        interactive (bool): Whether or not to run in interactive mode
-        dashboard (bool): Whether or not to print the dashboard
-        dynamic_temperature_enabled(bool): Dynamical temperature handling
-        **kwargs (Any): Any additional keyword arguments
+        template (Optional[str]): The template to use
+        max_loops (int): The maximum number of loops
+        stopping_condition (Optional[Callable[[str], bool]]): The stopping condition
+        loop_interval (int): The loop interval
+        retry_attempts (int): The retry attempts
+        retry_interval (int): The retry interval
+        return_history (bool): Return the history
+        stopping_token (str): The stopping token
+        dynamic_loops (Optional[bool]): Dynamic loops
+        interactive (bool): Interactive mode
+        dashboard (bool): Dashboard mode
+        agent_name (str): The name of the agent
+        agent_description (str): The description of the agent
+        system_prompt (str): The system prompt
+        tools (List[BaseTool]): The tools
+        dynamic_temperature_enabled (Optional[bool]): Dynamic temperature enabled
+        sop (Optional[str]): The standard operating procedure
+        sop_list (Optional[List[str]]): The standard operating procedure list
+        saved_state_path (Optional[str]): The saved state path
+        autosave (Optional[bool]): Autosave
+        context_length (Optional[int]): The context length
+        user_name (str): The user name
+        self_healing_enabled (Optional[bool]): Self healing enabled
+        code_interpreter (Optional[bool]): Code interpreter
+        multi_modal (Optional[bool]): Multi modal
+        pdf_path (Optional[str]): The pdf path
+        list_of_pdf (Optional[str]): The list of pdf
+        tokenizer (Optional[Any]): The tokenizer
+        memory (Optional[VectorDatabase]): The memory
+        preset_stopping_token (Optional[bool]): Preset stopping token
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
 
     Methods:
         run(task: str, **kwargs: Any): Run the agent on a task
@@ -143,15 +173,14 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: bool = False,
         dashboard: bool = False,
-        agent_name: str = "Autonomous Agent XYZ1B",
+        agent_name: str = "Autonomous-Agent-XYZ1B",
         agent_description: str = None,
-        system_prompt: str = FLOW_SYSTEM_PROMPT,
+        system_prompt: str = AGENT_SYSTEM_PROMPT_3,
         tools: List[BaseTool] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
-        # memory: Optional[Vectorstore] = None,
-        saved_state_path: Optional[str] = "flow_state.json",
+        saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = 8192,
         user_name: str = "Human:",
@@ -161,6 +190,8 @@ class Agent:
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
         tokenizer: Optional[Any] = None,
+        memory: Optional[VectorDatabase] = None,
+        preset_stopping_token: Optional[bool] = False,
         *args,
         **kwargs: Any,
     ):
@@ -183,11 +214,14 @@ class Agent:
         self.context_length = context_length
         self.sop = sop
         self.sop_list = sop_list
+        self.sop_list = []
         self.tools = tools or []
+        self.tool_docs = []
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
         self.saved_state_path = saved_state_path
+        self.saved_state_path = f"{self.agent_name}_state.json"
         self.autosave = autosave
         self.response_filters = []
         self.self_healing_enabled = self_healing_enabled
@@ -196,6 +230,10 @@ class Agent:
         self.pdf_path = pdf_path
         self.list_of_pdf = list_of_pdf
         self.tokenizer = tokenizer
+        self.memory = memory
+        self.preset_stopping_token = preset_stopping_token
+
+        # self.system_prompt = AGENT_SYSTEM_PROMPT_3
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -211,10 +249,32 @@ class Agent:
 
         # Memory
         self.feedback = []
-        self.memory = []
+        self.short_memory = []
 
         # Initialize the code executor
         self.code_executor = SubprocessCodeInterpreter()
+
+        # If the preset stopping token is enabled then set the stopping token to the preset stopping token
+        if preset_stopping_token:
+            self.stopping_token = "<DONE>"
+
+        # If memory then add the json to the memory vector database
+        if memory:
+            # Add all of the state to the memory
+            self.add_message_to_memory_db(
+                {"message": self.state_to_str()},
+                {"agent_id": self.id},
+            )
+
+        # If tools exist then add the tool docs usage to the sop
+        if self.tools:
+            self.sop_list.append(
+                self.tools_prompt_prep(self.tool_docs, SCENARIOS)
+            )
+
+    def set_system_prompt(self, system_prompt: str):
+        """Set the system prompt"""
+        self.system_prompt = system_prompt
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -223,9 +283,17 @@ class Agent:
 
     def _check_stopping_condition(self, response: str) -> bool:
         """Check if the stopping condition is met."""
-        if self.stopping_condition:
-            return self.stopping_condition(response)
-        return False
+        try:
+            if self.stopping_condition:
+                return self.stopping_condition(response)
+            return False
+        except Exception as error:
+            print(
+                colored(
+                    f"Error checking stopping condition: {error}",
+                    "red",
+                )
+            )
 
     def dynamic_temperature(self):
         """
@@ -234,12 +302,19 @@ class Agent:
         3. If the temperature is present, then dynamically change the temperature
         4. for every loop you can randomly change the temperature on a scale from 0.0 to 1.0
         """
-        if hasattr(self.llm, "temperature"):
-            # Randomly change the temperature attribute of self.llm object
-            self.llm.temperature = random.uniform(0.0, 1.0)
-        else:
-            # Use a default temperature
-            self.llm.temperature = 0.7
+        try:
+            if hasattr(self.llm, "temperature"):
+                # Randomly change the temperature attribute of self.llm object
+                self.llm.temperature = random.uniform(0.0, 1.0)
+            else:
+                # Use a default temperature
+                self.llm.temperature = 0.7
+        except Exception as error:
+            print(
+                colored(
+                    f"Error dynamically changing temperature: {error}"
+                )
+            )
 
     def format_prompt(self, template, **kwargs: Any) -> str:
         """Format the template with the provided kwargs using f-string interpolation."""
@@ -288,19 +363,6 @@ class Agent:
         for tool in self.tools:
             if tool.name == name:
                 return tool
-        return None
-
-    def construct_dynamic_prompt(self):
-        """Construct the dynamic prompt"""
-        tools_description = self.get_tool_description()
-
-        tool_prompt = self.tool_prompt_prep(
-            tools_description, SCENARIOS
-        )
-
-        return tool_prompt
-
-        # return DYNAMICAL_TOOL_USAGE.format(tools=tools_description)
 
     def extract_tool_commands(self, text: str):
         """
@@ -329,14 +391,6 @@ class Agent:
             except Exception as error:
                 print(f"Error parsing JSON command: {error}")
 
-    def parse_and_execute_tools(self, response: str):
-        """Parse and execute the tools"""
-        json_commands = self.extract_tool_commands(response)
-        for command in json_commands:
-            tool_name = command.get("tool")
-            params = command.get("parmas", {})
-            self.execute_tool(tool_name, params)
-
     def execute_tools(self, tool_name, params):
         """Execute the tool with the provided params"""
         tool = self.tool_find_by_name(tool_name)
@@ -345,25 +399,62 @@ class Agent:
             tool_result = tool.run(**params)
             print(tool_result)
 
+    def parse_and_execute_tools(self, response: str):
+        """Parse and execute the tools"""
+        json_commands = self.extract_tool_commands(response)
+        for command in json_commands:
+            tool_name = command.get("tool")
+            params = command.get("parmas", {})
+            self.execute_tools(tool_name, params)
+
     def truncate_history(self):
         """
         Take the history and truncate it to fit into the model context length
         """
-        truncated_history = self.memory[-1][-self.context_length :]
-        self.memory[-1] = truncated_history
+        # truncated_history = self.short_memory[-1][-self.context_length :]
+        # self.short_memory[-1] = truncated_history
+        # out = limit_tokens_from_string(
+        #     "\n".join(truncated_history), self.llm.model_name
+        # )
+        truncated_history = self.short_memory[-1][
+            -self.context_length :
+        ]
+        text = "\n".join(truncated_history)
+        out = limit_tokens_from_string(text, "gpt-4")
+        return out
 
     def add_task_to_memory(self, task: str):
         """Add the task to the memory"""
-        self.memory.append([f"{self.user_name}: {task}"])
+        try:
+            self.short_memory.append([f"{self.user_name}: {task}"])
+        except Exception as error:
+            print(
+                colored(
+                    f"Error adding task to memory: {error}", "red"
+                )
+            )
 
     def add_message_to_memory(self, message: str):
         """Add the message to the memory"""
-        self.memory[-1].append(message)
+        try:
+            self.short_memory[-1].append(message)
+        except Exception as error:
+            print(
+                colored(
+                    f"Error adding message to memory: {error}", "red"
+                )
+            )
 
     def add_message_to_memory_and_truncate(self, message: str):
         """Add the message to the memory and truncate"""
-        self.memory[-1].append(message)
+        self.short_memory[-1].append(message)
         self.truncate_history()
+
+    def parse_tool_docs(self):
+        """Parse the tool docs"""
+        for tool in self.tools:
+            docs = self.tool_docs.append(scrape_tool_func_docs(tool))
+        return str(docs)
 
     def print_dashboard(self, task: str):
         """Print dashboard"""
@@ -405,16 +496,18 @@ class Agent:
             )
         )
 
-        # print(dashboard)
-
     def activate_autonomous_agent(self):
         """Print the autonomous agent activation message"""
         try:
             print(
-                colored("Initializing Autonomous Agent...", "yellow")
+                colored(
+                    (
+                        "Initializing Autonomous Agent"
+                        f" {self.agent_name}..."
+                    ),
+                    "yellow",
+                )
             )
-            # print(colored("Loading modules...", "yellow"))
-            # print(colored("Modules loaded successfully.", "green"))
             print(
                 colored(
                     "Autonomous Agent Activated.",
@@ -539,7 +632,7 @@ class Agent:
 
                 # Preparing the prompt
                 task = self.agent_history_prompt(
-                    FLOW_SYSTEM_PROMPT, response
+                    AGENT_SYSTEM_PROMPT_3, response
                 )
 
                 attempt = 0
@@ -589,18 +682,20 @@ class Agent:
 
                 time.sleep(self.loop_interval)
             # Add the history to the memory
-            self.memory.append(history)
+            self.short_memory.append(history)
 
             # If autosave is enabled then save the state
             if self.autosave:
-                save_path = self.saved_state_path or "flow_state.json"
                 print(
                     colored(
-                        f"Autosaving agent state to {save_path}",
+                        (
+                            "Autosaving agent state to"
+                            f" {self.saved_state_path}"
+                        ),
                         "green",
                     )
                 )
-                self.save_state(save_path)
+                self.save_state(self.saved_state_path)
 
             # If return history is enabled then return the response and history
             if self.return_history:
@@ -611,104 +706,19 @@ class Agent:
             print(f"Error running agent: {error}")
             raise
 
-    async def arun(self, task: str, **kwargs):
-        """
-        Run the autonomous agent loop aschnronously
-
-        Args:
-            task (str): The initial task to run
-
-        Agent:
-        1. Generate a response
-        2. Check stopping condition
-        3. If stopping condition is met, stop
-        4. If stopping condition is not met, generate a response
-        5. Repeat until stopping condition is met or max_loops is reached
-
-        """
-        # Activate Autonomous agent message
-        self.activate_autonomous_agent()
-
-        response = task
-        history = [f"{self.user_name}: {task}"]
-
-        # If dashboard = True then print the dashboard
-        if self.dashboard:
-            self.print_dashboard(task)
-
-        loop_count = 0
-        # for i in range(self.max_loops):
-        while self.max_loops == "auto" or loop_count < self.max_loops:
-            loop_count += 1
-            print(
-                colored(
-                    f"\nLoop {loop_count} of {self.max_loops}", "blue"
-                )
-            )
-            print("\n")
-
-            if self._check_stopping_condition(
-                response
-            ) or parse_done_token(response):
-                break
-
-            # Adjust temperature, comment if no work
-            if self.dynamic_temperature_enabled:
-                self.dynamic_temperature()
-
-            # Preparing the prompt
-            task = self.agent_history_prompt(
-                FLOW_SYSTEM_PROMPT, response
-            )
-
-            attempt = 0
-            while attempt < self.retry_attempts:
-                try:
-                    response = self.llm(
-                        task**kwargs,
-                    )
-                    if self.interactive:
-                        print(f"AI: {response}")
-                        history.append(f"AI: {response}")
-                        response = input("You: ")
-                        history.append(f"Human: {response}")
-                    else:
-                        print(f"AI: {response}")
-                        history.append(f"AI: {response}")
-                        print(response)
-                    break
-                except Exception as e:
-                    logging.error(f"Error generating response: {e}")
-                    attempt += 1
-                    time.sleep(self.retry_interval)
-            history.append(response)
-            time.sleep(self.loop_interval)
-        self.memory.append(history)
-
-        if self.autosave:
-            save_path = self.saved_state_path or "flow_state.json"
-            print(
-                colored(
-                    f"Autosaving agent state to {save_path}", "green"
-                )
-            )
-            self.save_state(save_path)
-
-        if self.return_history:
-            return response, history
-
-        return response
-
     def _run(self, **kwargs: Any) -> str:
         """Generate a result using the provided keyword args."""
-        task = self.format_prompt(**kwargs)
-        response, history = self._generate(task, task)
-        logging.info(f"Message history: {history}")
-        return response
+        try:
+            task = self.format_prompt(**kwargs)
+            response, history = self._generate(task, task)
+            logging.info(f"Message history: {history}")
+            return response
+        except Exception as error:
+            print(colored(f"Error running agent: {error}", "red"))
 
     def agent_history_prompt(
         self,
-        system_prompt: str = FLOW_SYSTEM_PROMPT,
+        system_prompt: str = AGENT_SYSTEM_PROMPT_3,
         history=None,
     ):
         """
@@ -752,15 +762,29 @@ class Agent:
         Args:
             tasks (List[str]): A list of tasks to run.
         """
-        task_coroutines = [
-            self.run_async(task, **kwargs) for task in tasks
-        ]
-        completed_tasks = await asyncio.gather(*task_coroutines)
-        return completed_tasks
+        try:
+            task_coroutines = [
+                self.run_async(task, **kwargs) for task in tasks
+            ]
+            completed_tasks = await asyncio.gather(*task_coroutines)
+            return completed_tasks
+        except Exception as error:
+            print(
+                colored(
+                    (
+                        f"Error running agent: {error} while running"
+                        " concurrently"
+                    ),
+                    "red",
+                )
+            )
 
     def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
-        """Generate responses for multiple input sets."""
-        return [self.run(**input_data) for input_data in inputs]
+        try:
+            """Generate responses for multiple input sets."""
+            return [self.run(**input_data) for input_data in inputs]
+        except Exception as error:
+            print(colored(f"Error running bulk run: {error}", "red"))
 
     @staticmethod
     def from_llm_and_template(llm: Any, template: str) -> "Agent":
@@ -777,9 +801,19 @@ class Agent:
         return Agent(llm=llm, template=template)
 
     def save(self, file_path) -> None:
-        with open(file_path, "w") as f:
-            json.dump(self.memory, f)
-        print(f"Saved agent history to {file_path}")
+        """Save the agent history to a file.
+
+        Args:
+            file_path (_type_): _description_
+        """
+        try:
+            with open(file_path, "w") as f:
+                json.dump(self.short_memory, f)
+            # print(f"Saved agent history to {file_path}")
+        except Exception as error:
+            print(
+                colored(f"Error saving agent history: {error}", "red")
+            )
 
     def load(self, file_path: str):
         """
@@ -789,7 +823,7 @@ class Agent:
             file_path (str): The path to the file containing the saved agent history.
         """
         with open(file_path, "r") as f:
-            self.memory = json.load(f)
+            self.short_memory = json.load(f)
         print(f"Loaded agent history from {file_path}")
 
     def validate_response(self, response: str) -> bool:
@@ -814,7 +848,9 @@ class Agent:
                 "========================", "cyan", attrs=["bold"]
             )
         )
-        for loop_index, history in enumerate(self.memory, start=1):
+        for loop_index, history in enumerate(
+            self.short_memory, start=1
+        ):
             print(
                 colored(
                     f"\nLoop {loop_index}:", "yellow", attrs=["bold"]
@@ -857,10 +893,10 @@ class Agent:
 
             # Update the agent's history with the new interaction
             if self.interactive:
-                self.memory.append(f"AI: {response}")
-                self.memory.append(f"Human: {task}")
+                self.short_memory.append(f"AI: {response}")
+                self.short_memory.append(f"Human: {task}")
             else:
-                self.memory.append(f"AI: {response}")
+                self.short_memory.append(f"AI: {response}")
 
             return response
         except Exception as error:
@@ -904,14 +940,14 @@ class Agent:
         print(message)
 
         """
-        if len(self.memory) < 2:
+        if len(self.short_memory) < 2:
             return None, None
 
         # Remove the last response
-        self.memory.pop()
+        self.short_memory.pop()
 
         # Get the previous state
-        previous_state = self.memory[-1][-1]
+        previous_state = self.short_memory[-1][-1]
         return previous_state, f"Restored to {previous_state}"
 
     # Response Filtering
@@ -930,7 +966,6 @@ class Agent:
     def apply_reponse_filters(self, response: str) -> str:
         """
         Apply the response filters to the response
-
 
         """
         for word in self.response_filters:
@@ -1029,22 +1064,70 @@ class Agent:
         Example:
         >>> agent.save_state('saved_flow.json')
         """
-        state = {
-            "memory": self.memory,
-            # "llm_params": self.get_llm_params(),
-            "loop_interval": self.loop_interval,
-            "retry_attempts": self.retry_attempts,
-            "retry_interval": self.retry_interval,
-            "interactive": self.interactive,
-            "dashboard": self.dashboard,
-            "dynamic_temperature": self.dynamic_temperature_enabled,
-        }
+        try:
+            state = {
+                "agent_id": str(self.id),
+                "agent_name": self.agent_name,
+                "agent_description": self.agent_description,
+                "system_prompt": self.system_prompt,
+                "sop": self.sop,
+                "short_memory": self.short_memory,
+                "loop_interval": self.loop_interval,
+                "retry_attempts": self.retry_attempts,
+                "retry_interval": self.retry_interval,
+                "interactive": self.interactive,
+                "dashboard": self.dashboard,
+                "dynamic_temperature": (
+                    self.dynamic_temperature_enabled
+                ),
+                "autosave": self.autosave,
+                "saved_state_path": self.saved_state_path,
+                "max_loops": self.max_loops,
+            }
 
-        with open(file_path, "w") as f:
-            json.dump(state, f, indent=4)
+            with open(file_path, "w") as f:
+                json.dump(state, f, indent=4)
 
-        saved = colored("Saved agent state to", "green")
-        print(f"{saved} {file_path}")
+            saved = colored(
+                f"Saved agent state to: {file_path}", "green"
+            )
+            print(saved)
+        except Exception as error:
+            print(
+                colored(f"Error saving agent state: {error}", "red")
+            )
+
+    def state_to_str(self):
+        """Transform the JSON into a string"""
+        try:
+            state = {
+                "agent_id": str(self.id),
+                "agent_name": self.agent_name,
+                "agent_description": self.agent_description,
+                "system_prompt": self.system_prompt,
+                "sop": self.sop,
+                "short_memory": self.short_memory,
+                "loop_interval": self.loop_interval,
+                "retry_attempts": self.retry_attempts,
+                "retry_interval": self.retry_interval,
+                "interactive": self.interactive,
+                "dashboard": self.dashboard,
+                "dynamic_temperature": (
+                    self.dynamic_temperature_enabled
+                ),
+                "autosave": self.autosave,
+                "saved_state_path": self.saved_state_path,
+                "max_loops": self.max_loops,
+            }
+            out = str(state)
+            return out
+        except Exception as error:
+            print(
+                colored(
+                    f"Error transforming state to string: {error}",
+                    "red",
+                )
+            )
 
     def load_state(self, file_path: str):
         """
@@ -1061,7 +1144,16 @@ class Agent:
             state = json.load(f)
 
         # Restore other saved attributes
-        self.memory = state.get("memory", [])
+        self.id = state.get("agent_id", self.id)
+        self.agent_name = state.get("agent_name", self.agent_name)
+        self.agent_description = state.get(
+            "agent_description", self.agent_description
+        )
+        self.system_prompt = state.get(
+            "system_prompt", self.system_prompt
+        )
+        self.sop = state.get("sop", self.sop)
+        self.short_memory = state.get("short_memory", [])
         self.max_loops = state.get("max_loops", 5)
         self.loop_interval = state.get("loop_interval", 1)
         self.retry_attempts = state.get("retry_attempts", 3)
@@ -1093,8 +1185,6 @@ class Agent:
         SYSTEM_PROMPT: {self.system_prompt}
 
         History: {history}
-
-        Your response:
         """
         response = self.llm(prompt, **kwargs)
         return {"role": self.agent_name, "content": response}
@@ -1121,7 +1211,7 @@ class Agent:
 
     def reset(self):
         """Reset the agent"""
-        self.memory = []
+        self.short_memory = []
 
     def run_code(self, code: str):
         """
@@ -1144,7 +1234,7 @@ class Agent:
         text = pdf_to_text(pdf)
         return text
 
-    def pdf_chunker(self, text: str = None):
+    def pdf_chunker(self, text: str = None, num_limits: int = 1000):
         """Chunk the pdf into sentences
 
         Args:
@@ -1154,22 +1244,29 @@ class Agent:
             _type_: _description_
         """
         text = text or self.pdf_connector()
-        pass
+        text = limit_tokens_from_string(text, num_limits)
+        return text
 
     def tools_prompt_prep(
-        self, docs: str = None, scenarios: str = None
+        self, docs: str = None, scenarios: str = SCENARIOS
     ):
         """
-        Prepare the tool prompt
+        Tools prompt prep
+
+        Args:
+            docs (str, optional): _description_. Defaults to None.
+            scenarios (str, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
         """
         PROMPT = f"""
         # Task
         You will be provided with a list of APIs. These APIs will have a
         description and a list of parameters and return types for each tool. Your
-        task involves creating 3 varied, complex, and detailed user scenarios
-        that require at least 5 API calls to complete involving at least 3
-        different APIs. One of these APIs will be explicitly provided and the
-        other two will be chosen by you.
+        task involves creating varied, complex, and detailed user scenarios
+        that require to call API calls. You must select what api to call based on 
+        the context of the task and the scenario.
 
         For instance, given the APIs: SearchHotels, BookHotel, CancelBooking,
         GetNFLNews. Given that GetNFLNews is explicitly provided, your scenario
@@ -1194,8 +1291,8 @@ class Agent:
 
         Note that this scenario does not use all the APIs given and re-uses the "
         GetNBANews" API. Re-using APIs is allowed, but each scenario should
-        involve at least 3 different APIs. Note that API usage is also included
-        in the scenario, but exact parameters are not necessary. You must use a
+        involve as many different APIs as the user demands. Note that API usage is also included
+        in the scenario, but exact parameters ar necessary. You must use a
         different combination of APIs for each scenario. All APIs must be used in
         at least one scenario. You can only use the APIs provided in the APIs
         section.
@@ -1203,7 +1300,10 @@ class Agent:
         Note that API calls are not explicitly mentioned and their uses are
         included in parentheses. This behaviour should be mimicked in your
         response.
-        Deliver your response in this format:
+        
+        Output the tool usage in a strict json format with the function name and input to 
+        the function. For example, Deliver your response in this format:
+        
         ‘‘‘
         {scenarios}
         ‘‘‘
@@ -1214,62 +1314,4 @@ class Agent:
         # Response
         ‘‘‘
         """
-
-    # def self_healing(self, **kwargs):
-    #     """
-    #     Self healing by debugging errors and refactoring its own code
-
-    #     Args:
-    #         **kwargs (Any): Any additional keyword arguments
-    #     """
-    #     pass
-
-    # def refactor_code(
-    #     self,
-    #     file: str,
-    #     changes: List,
-    #     confirm: bool = False
-    # ):
-    #     """
-    #     Refactor the code
-    #     """
-    #     with open(file) as f:
-    #         original_file_lines = f.readlines()
-
-    #     # Filter out the changes that are not confirmed
-    #     operation_changes = [
-    #         change for change in changes if "operation" in change
-    #     ]
-    #     explanations = [
-    #         change["explanation"] for change in changes if "explanation" in change
-    #     ]
-
-    #     # Sort the changes in reverse line order
-    #     # explanations.sort(key=lambda x: x["line", reverse=True])
-
-    # def error_prompt_inject(
-    #     self,
-    #     file_path: str,
-    #     args: List,
-    #     error: str,
-    # ):
-    #     with open(file_path, "r") as f:
-    #         file_lines = f.readlines()
-
-    #     file_with_lines = []
-    #     for i, line in enumerate(file_lines):
-    #         file_with_lines.append(str(i + 1) + "" + line)
-    #     file_with_lines = "".join(file_with_lines)
-
-    #     prompt = f"""
-    #         Here is the script that needs fixing:\n\n
-    #         {file_with_lines}\n\n
-    #         Here are the arguments it was provided:\n\n
-    #         {args}\n\n
-    #         Here is the error message:\n\n
-    #         {error}\n
-    #         "Please provide your suggested changes, and remember to stick to the "
-    #         exact format as described above.
-    #         """
-
-    #     print(prompt)
+        return PROMPT
