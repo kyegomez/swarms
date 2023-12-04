@@ -37,7 +37,7 @@ from langchain.utils.utils import build_extra_kwargs
 from importlib.metadata import version
 
 from packaging.version import parse
-from pydantic import model_validator, ConfigDict
+
 
 logger = logging.getLogger(__name__)
 
@@ -248,9 +248,8 @@ class BaseOpenAI(BaseLLM):
         """Initialize the OpenAI object."""
         data.get("model_name", "")
         return super().__new__(cls)
-    model_config = ConfigDict(populate_by_name=True)
 
-    @model_validator(mode="before")
+  
     @classmethod
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
@@ -261,7 +260,7 @@ class BaseOpenAI(BaseLLM):
         )
         return values
 
-    @model_validator()
+
     @classmethod
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
@@ -757,7 +756,6 @@ class AzureOpenAI(BaseOpenAI):
     openai_api_type: str = ""
     openai_api_version: str = ""
 
-    @model_validator()
     @classmethod
     def validate_azure_settings(cls, values: Dict) -> Dict:
         values["openai_api_version"] = get_from_dict_or_env(
@@ -847,7 +845,6 @@ class OpenAIChat(BaseLLM):
     disallowed_special: Union[Literal["all"], Collection[str]] = "all"
     """Set of special tokens that are not allowed。"""
 
-    @model_validator(mode="before")
     @classmethod
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
@@ -866,7 +863,7 @@ class OpenAIChat(BaseLLM):
         values["model_kwargs"] = extra
         return values
 
-    @model_validator()
+
     @classmethod
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
