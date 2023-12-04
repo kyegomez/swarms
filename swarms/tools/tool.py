@@ -111,9 +111,7 @@ class ChildTool(BaseTool):
     callbacks:  Callbacks = None
     """Callbacks to be called during tool execution."""
     # TODO: I don't know how to remove Field here
-    callback_manager: Optional[BaseCallbackManager] = Field(
-        default=None, exclude=True
-    )
+    callback_manager: Optional[BaseCallbackManager]  = None
     """Deprecated. Please use callbacks instead."""
     tags: Optional[List[str]] = None
     """Optional list of tags associated with the tool. Defaults to None
