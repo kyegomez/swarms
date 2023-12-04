@@ -14,9 +14,10 @@ beautifulsoup4
 google-search-results==2.4.2
 Pillow
 faiss-cpu
-openai
+openai==0.28.0
 attrs
 datasets
+pydantic==1.10.12
 soundfile
 huggingface-hub
 google-generativeai

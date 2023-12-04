@@ -117,19 +117,13 @@ class GPT4VisionAPI:
         pass
 
     # Function to handle vision tasks
-    def run(
-        self,
-        task: Optional[str] = None,
-        img: Optional[str] = None,
-        *args,
-        **kwargs,
-    ):
+    def run(self, img, task):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
             headers = {
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {openai_api_key}",
+                "Authorization": f"Bearer {self.openai_api_key}",
             }
             payload = {
                 "model": self.model_name,
@@ -154,28 +148,24 @@ class GPT4VisionAPI:
                 "max_tokens": self.max_tokens,
             }
             response = requests.post(
-                self.openai_proxy,
-                headers=headers,
-                json=payload,
+                self.openai_proxy, headers=headers, json=payload
             )
 
             out = response.json()
-            content = out["choices"][0]["message"]["content"]
-
-            if self.streaming_enabled:
-                content = self.stream_response(content)
+            if "choices" in out and out["choices"]:
+                content = (
+                    out["choices"][0]
+                    .get("message", {})
+                    .get("content", None)
+                )
+                return content
             else:
-                pass
-
-            if self.beautify:
-                content = colored(content, "cyan")
-                print(content)
-            else:
-                print(content)
+                print("No valid response in 'choices'")
+                return None
 
         except Exception as error:
             print(f"Error with the request: {error}")
-            raise error
+            return None
 
     def video_prompt(self, frames):
         """

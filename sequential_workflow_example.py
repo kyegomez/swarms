@@ -14,12 +14,15 @@ api_key = os.getenv("OPENAI_API_KEY")
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
-    max_tokens=3000,
+    max_tokens=2000,
 )
 
 
 # Initialize the agent with the language agent
-agent1 = Agent(llm=llm, max_loops=1)
+agent1 = Agent(
+    llm=llm,
+    max_loops=1,
+)
 
 # Create another agent for a different task
 agent2 = Agent(llm=llm, max_loops=1)

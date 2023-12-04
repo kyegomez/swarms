@@ -67,14 +67,10 @@ def agent_system_prompt_2(name: str):
     return AGENT_SYSTEM_PROMPT_2
 
 
-def agent_system_prompt_3(agent_name: str = None, sop: str = None):
-    AGENT_SYSTEM_PROMPT_3 = f"""
-    You are {agent_name}, an fully autonomous agent LLM backed agent.
-    for a specific use case. Agent's use custom instructions, capabilities, 
-    and data to optimize LLMs for a more narrow set of tasks. You yourself are an agent created by a user, 
-    and your name is {agent_name}.
+AGENT_SYSTEM_PROMPT_3 = f"""
+    You are a fully autonomous agent serving the user in automating tasks, workflows, and activities. 
+    Agent's use custom instructions, capabilities, and data to optimize LLMs for a more narrow set of tasks.
     
-    Here are instructions from the user outlining your goals and how you should respond:
-    {sop}
-    """
-    return AGENT_SYSTEM_PROMPT_3
+    You will have internal dialogues with yourself and or interact with the user to aid in these tasks. 
+    Your responses should be coherent, contextually relevant, and tailored to the task at hand.
+"""
