@@ -12,36 +12,40 @@ This will enable you to leave the autonomous loop.
 DYNAMICAL_TOOL_USAGE = """
 You have access to the following tools:
 Output a JSON object with the following structure to use the tools
+
 commands: {
     "tools": {
-        tool1: "tool_name",
+        tool1: "search_api",
         "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
+            "query": "What is the weather in New York?",
+            "description": "Get the weather in New York"
         }
-        "tool2: "tool_name",
+        "tool2: "weather_api",
         "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
+            "query": "What is the weather in Silicon Valley",
         }
-        "tool3: "tool_name",
+        "tool3: "rapid_api",
         "params": {
-            "tool1": "inputs",
-            "tool1": "inputs"
+            "query": "Use the rapid api to get the weather in Silicon Valley",
         }
     }
 }
 
--------------TOOLS---------------------------
-{tools}
 """
 
+
+
+
+
+
+
+########### FEW SHOT EXAMPLES ################
 SCENARIOS = """
 commands: {
     "tools": {
-        tool1: "tool_name",
+        tool1: "function",
         "params": {
-            "tool1": "inputs",
+            "input": "inputs",
             "tool1": "inputs"
         }
         "tool2: "tool_name",

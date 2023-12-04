@@ -23,7 +23,7 @@ load_dotenv()
 
 # Define a tool
 @tool
-def search_api(query: str):
+def search_api(query: str, description: str):
     """Search the web for the query
 
     Args:
@@ -34,6 +34,25 @@ def search_api(query: str):
     """
     return f"Search results for {query}"
 
+
+@tool
+def weather_api(query: str,):
+    """_summary_
+
+    Args:
+        query (str): _description_
+    """
+    print(f"Getting the weather for {query}")
+    
+    
+@tool
+def rapid_api(query: str):
+    """_summary_
+
+    Args:
+        query (str): _description_
+    """
+    print(f"Getting the weather for {query}")
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")
