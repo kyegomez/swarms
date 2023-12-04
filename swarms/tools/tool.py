@@ -108,7 +108,7 @@ class ChildTool(BaseTool):
     verbose: bool = False
     """Whether to log the tool's progress."""
 
-    callbacks: 
+    callbacks:  Callbacks = None
     """Callbacks to be called during tool execution."""
     # TODO: I don't know how to remove Field here
     callback_manager: Optional[BaseCallbackManager] = Field(
