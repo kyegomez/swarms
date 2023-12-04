@@ -245,7 +245,7 @@ class _AnthropicCommon(BaseLanguageModel):
 
     anthropic_api_url: Optional[str] = None
 
-    anthropic_api_key: Optional[SecretStr] = None
+    anthropic_api_key: Optional[str] = None
 
     HUMAN_PROMPT: Optional[str] = None
     AI_PROMPT: Optional[str] = None
