@@ -2,6 +2,8 @@
 # ==================================
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
+RUN apt-get update && apt-get -y install libglib2.0-0; apt-get clean
+RUN pip install opencv-contrib-python-headless
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
