@@ -8,6 +8,8 @@ from typing import List
 
 load_dotenv()
 
+stable_api_key = os.environ.get("STABLE_API_KEY")
+
 
 class StableDiffusion:
     """
@@ -45,7 +47,7 @@ class StableDiffusion:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: str = stable_api_key,
         api_host: str = "https://api.stability.ai",
         cfg_scale: int = 7,
         height: int = 1024,

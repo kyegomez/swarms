@@ -234,7 +234,7 @@ class Agent:
         self.preset_stopping_token = preset_stopping_token
 
         # self.system_prompt = AGENT_SYSTEM_PROMPT_3
-        
+
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
@@ -268,17 +268,13 @@ class Agent:
 
         # If tools exist then add the tool docs usage to the sop
         if self.tools:
-            self.sop_list.append(self.tools_prompt_prep(
-                self.tool_docs, SCENARIOS
+            self.sop_list.append(
+                self.tools_prompt_prep(self.tool_docs, SCENARIOS)
             )
-        )
-            
+
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
         self.system_prompt = system_prompt
-        
-    
-            
 
     def provide_feedback(self, feedback: str) -> None:
         """Allow users to provide feedback on the responses."""
@@ -395,7 +391,6 @@ class Agent:
             except Exception as error:
                 print(f"Error parsing JSON command: {error}")
 
-    
     def execute_tools(self, tool_name, params):
         """Execute the tool with the provided params"""
         tool = self.tool_find_by_name(tool_name)
@@ -403,8 +398,7 @@ class Agent:
             # Execute the tool with the provided parameters
             tool_result = tool.run(**params)
             print(tool_result)
-            
-    
+
     def parse_and_execute_tools(self, response: str):
         """Parse and execute the tools"""
         json_commands = self.extract_tool_commands(response)
@@ -412,7 +406,6 @@ class Agent:
             tool_name = command.get("tool")
             params = command.get("parmas", {})
             self.execute_tools(tool_name, params)
-
 
     def truncate_history(self):
         """
@@ -501,7 +494,6 @@ class Agent:
                 "green",
             )
         )
-
 
     def activate_autonomous_agent(self):
         """Print the autonomous agent activation message"""
