@@ -47,7 +47,7 @@ jobs:
             make extended_tests
           fi
         shell: bash
-    name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
