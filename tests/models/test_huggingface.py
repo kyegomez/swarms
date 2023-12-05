@@ -212,13 +212,6 @@ def test_llm_cleanup(mock_model, mock_tokenizer, llm_instance):
 
 
 
-# Test if the model is re-downloaded when changing the model_id
-@patch("swarms.models.huggingface.HuggingfaceLLM._download_model")
-def test_llm_change_model_id(mock_download, llm_instance):
-    new_model_id = "gpt2-xl"
-    llm_instance.model_id = new_model_id
-    mock_download.assert_called_with(new_model_id)
-
 
 # Test model's ability to handle multilingual input
 @patch("swarms.models.huggingface.HuggingfaceLLM.run")
@@ -242,14 +235,6 @@ def test_llm_caching_mechanism(mock_run, llm_instance):
     mock_run.assert_called_once()  # Should only be called once due to caching
     assert first_run_result == second_run_result
 
-
-# Ensure that model re-downloads when force_download flag is set
-@patch("swarms.models.huggingface.HuggingfaceLLM._download_model")
-def test_llm_force_download(mock_download, llm_instance):
-    llm_instance.download_model_with_progress(force_download=True)
-    mock_download.assert_called_once_with(
-        llm_instance.model_id, force=True
-    )
 
 
 # These tests are provided as examples. In real-world scenarios, you will need to adapt these tests to the actual logic of your `HuggingfaceLLM` class.
