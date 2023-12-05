@@ -13,7 +13,7 @@ from cachetools import TTLCache
 from dotenv import load_dotenv
 from openai import OpenAI
 from PIL import Image
-from pydantic import field_validator
+from pydantic import validator
 from termcolor import colored
 
 load_dotenv()
@@ -92,8 +92,7 @@ class Dalle3:
 
         arbitrary_types_allowed = True
 
-    @field_validator("max_retries", "time_seconds")
-    @classmethod
+    @validator("max_retries", "time_seconds")
     def must_be_positive(cls, value):
         if value <= 0:
             raise ValueError("Must be positive")
