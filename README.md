@@ -50,7 +50,9 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # Initialize the language model
 llm = OpenAIChat(
     temperature=0.5,
+    model_name="gpt-4",
     openai_api_key=api_key,
+    max_tokens=4000
 )
 
 
@@ -86,9 +88,10 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize the language agent
 llm = OpenAIChat(
-    openai_api_key=api_key,
     temperature=0.5,
-    max_tokens=3000,
+    model_name="gpt-4",
+    openai_api_key=api_key,
+    max_tokens=4000
 )
 
 
