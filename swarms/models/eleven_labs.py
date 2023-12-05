@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, Dict, Union
 
 from langchain.utils import get_from_dict_or_env
-from pydantic import model_validator
+from pydantic import root_validator
 
 from swarms.tools.tool import BaseTool
 
@@ -59,8 +59,7 @@ class ElevenLabsText2SpeechTool(BaseTool):
         " Italian, French, Portuguese, and Hindi. "
     )
 
-    @model_validator(mode="before")
-    @classmethod
+    @root_validator(pre=True)
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key exists in environment."""
         _ = get_from_dict_or_env(
