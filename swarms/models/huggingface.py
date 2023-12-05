@@ -272,7 +272,7 @@ class HuggingfaceLLM:
         try:
             inputs = self.tokenizer.encode(
                 task, return_tensors="pt"
-            ).to(self.device)
+            )
 
             # self.log.start()
 
@@ -451,7 +451,8 @@ class HuggingfaceLLM:
                 The new device to use for inference.
         """
         self.device = device
-        self.model.to(self.device)
+        if self.model is not None:
+            self.model.to(self.device)
 
     def set_max_length(self, max_length):
         """Set max_length"""
