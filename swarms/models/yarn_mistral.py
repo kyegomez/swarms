@@ -26,7 +26,7 @@ class YarnMistral128:
     ```
     from finetuning_suite import Inference
 
-    model_id = "gpt2-small"
+    model_id = "NousResearch/Nous-Hermes-2-Vision-Alpha"
     inference = Inference(model_id=model_id)
 
     prompt_text = "Once upon a time"

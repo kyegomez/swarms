@@ -36,7 +36,7 @@ def test_encode_image(vision_api):
 
 def test_run_success(vision_api):
     expected_response = {
-        "choices": [{"text": "This is the model's response."}]
+        "This is the model's response."
     }
     with patch(
         "requests.post",
