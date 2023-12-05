@@ -19,7 +19,6 @@ Take a deep breath.
 """
 
 
-
 def autonomous_agent_prompt_v2(
     tools_prompt: str = DYNAMICAL_TOOL_USAGE,
     dynamic_stop_prompt: str = DYNAMIC_STOP_PROMPT,
@@ -42,7 +41,6 @@ def autonomous_agent_prompt_v2(
     """
 
 
-
 def agent_system_prompt_2_v2(name: str):
     AGENT_SYSTEM_PROMPT_2_v2 = f"""
     You are {name}, an elite autonomous agent designed for unparalleled versatility and adaptability in an autonomous loop structure.
@@ -63,10 +61,6 @@ def agent_system_prompt_2_v2(name: str):
     """
 
     return AGENT_SYSTEM_PROMPT_2_v2
-
-
-
-
 
 
 # ORIGINAL PROMPTS
@@ -139,4 +133,3 @@ AGENT_SYSTEM_PROMPT_3 = """
     You will have internal dialogues with yourself and or interact with the user to aid in these tasks. 
     Your responses should be coherent, contextually relevant, and tailored to the task at hand.
 """
-

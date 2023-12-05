@@ -36,15 +36,17 @@ def search_api(query: str, description: str):
 
 
 @tool
-def weather_api(query: str,):
+def weather_api(
+    query: str,
+):
     """_summary_
 
     Args:
         query (str): _description_
     """
     print(f"Getting the weather for {query}")
-    
-    
+
+
 @tool
 def rapid_api(query: str):
     """_summary_
@@ -53,6 +55,7 @@ def rapid_api(query: str):
         query (str): _description_
     """
     print(f"Getting the weather for {query}")
+
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")
