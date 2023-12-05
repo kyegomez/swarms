@@ -7,4 +7,6 @@ model_wrapper = DistilWhisperModel()
 transcription = model_wrapper("path/to/audio.mp3")
 
 # For async usage
-transcription = asyncio.run(model_wrapper.async_transcribe("path/to/audio.mp3"))
+transcription = asyncio.run(
+    model_wrapper.async_transcribe("path/to/audio.mp3")
+)

@@ -49,7 +49,10 @@ class Mistral:
 
         # Check if the specified device is available
         if not torch.cuda.is_available() and device == "cuda":
-            raise ValueError("CUDA is not available. Please choose a different device.")
+            raise ValueError(
+                "CUDA is not available. Please choose a different"
+                " device."
+            )
 
         # Load the model and tokenizer
         self.model = None
@@ -60,17 +63,25 @@ class Mistral:
 
     def load_model(self):
         try:
-            self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name
+            )
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name
+            )
             self.model.to(self.device)
         except Exception as e:
-            raise ValueError(f"Error loading the Mistral model: {str(e)}")
+            raise ValueError(
+                f"Error loading the Mistral model: {str(e)}"
+            )
 
     def run(self, task: str):
         """Run the model on a given task."""
 
         try:
-            model_inputs = self.tokenizer([task], return_tensors="pt").to(self.device)
+            model_inputs = self.tokenizer(
+                [task], return_tensors="pt"
+            ).to(self.device)
             generated_ids = self.model.generate(
                 **model_inputs,
                 max_length=self.max_length,
@@ -78,7 +89,9 @@ class Mistral:
                 temperature=self.temperature,
                 max_new_tokens=self.max_length,
             )
-            output_text = self.tokenizer.batch_decode(generated_ids)[0]
+            output_text = self.tokenizer.batch_decode(generated_ids)[
+                0
+            ]
             return output_text
         except Exception as e:
             raise ValueError(f"Error running the model: {str(e)}")
@@ -87,7 +100,9 @@ class Mistral:
         """Run the model on a given task."""
 
         try:
-            model_inputs = self.tokenizer([task], return_tensors="pt").to(self.device)
+            model_inputs = self.tokenizer(
+                [task], return_tensors="pt"
+            ).to(self.device)
             generated_ids = self.model.generate(
                 **model_inputs,
                 max_length=self.max_length,
@@ -95,7 +110,9 @@ class Mistral:
                 temperature=self.temperature,
                 max_new_tokens=self.max_length,
             )
-            output_text = self.tokenizer.batch_decode(generated_ids)[0]
+            output_text = self.tokenizer.batch_decode(generated_ids)[
+                0
+            ]
             return output_text
         except Exception as e:
             raise ValueError(f"Error running the model: {str(e)}")

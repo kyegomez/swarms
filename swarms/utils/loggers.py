@@ -14,7 +14,9 @@ from swarms.utils.apa import Action, ToolCallStatus
 
 # from autogpt.speech import say_text
 class JsonFileHandler(logging.FileHandler):
-    def __init__(self, filename, mode="a", encoding=None, delay=False):
+    def __init__(
+        self, filename, mode="a", encoding=None, delay=False
+    ):
         """
         Initializes a new instance of the class with the specified file name, mode, encoding, and delay settings.
 
@@ -84,7 +86,9 @@ class Logger:
         log_file = "activity.log"
         error_file = "error.log"
 
-        console_formatter = AutoGptFormatter("%(title_color)s %(message)s")
+        console_formatter = AutoGptFormatter(
+            "%(title_color)s %(message)s"
+        )
 
         # Create a handler for console which simulate typing
         self.typing_console_handler = TypingConsoleHandler()
@@ -113,7 +117,8 @@ class Logger:
         )
         error_handler.setLevel(logging.ERROR)
         error_formatter = AutoGptFormatter(
-            "%(asctime)s %(levelname)s %(module)s:%(funcName)s:%(lineno)d %(title)s"
+            "%(asctime)s %(levelname)s"
+            " %(module)s:%(funcName)s:%(lineno)d %(title)s"
             " %(message_no_color)s"
         )
         error_handler.setFormatter(error_formatter)
@@ -140,7 +145,12 @@ class Logger:
         self.chat_plugins = []
 
     def typewriter_log(
-        self, title="", title_color="", content="", speak_text=False, level=logging.INFO
+        self,
+        title="",
+        title_color="",
+        content="",
+        speak_text=False,
+        level=logging.INFO,
     ):
         """
         Logs a message to the typewriter.
@@ -165,7 +175,9 @@ class Logger:
             content = ""
 
         self.typing_logger.log(
-            level, content, extra={"title": title, "color": title_color}
+            level,
+            content,
+            extra={"title": title, "color": title_color},
         )
 
     def debug(
@@ -255,7 +267,9 @@ class Logger:
             if isinstance(message, list):
                 message = " ".join(message)
         self.logger.log(
-            level, message, extra={"title": str(title), "color": str(title_color)}
+            level,
+            message,
+            extra={"title": str(title), "color": str(title_color)},
         )
 
     def set_level(self, level):
@@ -284,12 +298,15 @@ class Logger:
         if not additionalText:
             additionalText = (
                 "Please ensure you've setup and configured everything"
-                " correctly. Read https://github.com/Torantulino/Auto-GPT#readme to "
-                "double check. You can also create a github issue or join the discord"
-                " and ask there!"
+                " correctly. Read"
+                " https://github.com/Torantulino/Auto-GPT#readme to"
+                " double check. You can also create a github issue or"
+                " join the discord and ask there!"
             )
 
-        self.typewriter_log("DOUBLE CHECK CONFIGURATION", Fore.YELLOW, additionalText)
+        self.typewriter_log(
+            "DOUBLE CHECK CONFIGURATION", Fore.YELLOW, additionalText
+        )
 
     def log_json(self, data: Any, file_name: str) -> None:
         """
@@ -358,16 +375,24 @@ class TypingConsoleHandler(logging.StreamHandler):
             transfer_enter = "<ENTER>"
             msg_transfered = str(msg).replace("\n", transfer_enter)
             transfer_space = "<4SPACE>"
-            msg_transfered = str(msg_transfered).replace("    ", transfer_space)
+            msg_transfered = str(msg_transfered).replace(
+                "    ", transfer_space
+            )
             words = msg_transfered.split()
-            words = [word.replace(transfer_enter, "\n") for word in words]
-            words = [word.replace(transfer_space, "    ") for word in words]
+            words = [
+                word.replace(transfer_enter, "\n") for word in words
+            ]
+            words = [
+                word.replace(transfer_space, "    ") for word in words
+            ]
 
             for i, word in enumerate(words):
                 print(word, end="", flush=True)
                 if i < len(words) - 1:
                     print(" ", end="", flush=True)
-                typing_speed = random.uniform(min_typing_speed, max_typing_speed)
+                typing_speed = random.uniform(
+                    min_typing_speed, max_typing_speed
+                )
                 time.sleep(typing_speed)
                 # type faster after each word
                 min_typing_speed = min_typing_speed * 0.95
@@ -425,7 +450,9 @@ class AutoGptFormatter(logging.Formatter):
         record.title = getattr(record, "title", "")
 
         if hasattr(record, "msg"):
-            record.message_no_color = remove_color_codes(getattr(record, "msg"))
+            record.message_no_color = remove_color_codes(
+                getattr(record, "msg")
+            )
         else:
             record.message_no_color = ""
         return super().format(record)
@@ -459,8 +486,12 @@ def print_action_base(action: Action):
         None
     """
     if action.content != "":
-        logger.typewriter_log(f"content:", Fore.YELLOW, f"{action.content}")
-    logger.typewriter_log(f"Thought:", Fore.YELLOW, f"{action.thought}")
+        logger.typewriter_log(
+            f"content:", Fore.YELLOW, f"{action.content}"
+        )
+    logger.typewriter_log(
+        f"Thought:", Fore.YELLOW, f"{action.thought}"
+    )
     if len(action.plan) > 0:
         logger.typewriter_log(
             f"Plan:",
@@ -469,7 +500,9 @@ def print_action_base(action: Action):
         for line in action.plan:
             line = line.lstrip("- ")
             logger.typewriter_log("- ", Fore.GREEN, line.strip())
-    logger.typewriter_log(f"Criticism:", Fore.YELLOW, f"{action.criticism}")
+    logger.typewriter_log(
+        f"Criticism:", Fore.YELLOW, f"{action.criticism}"
+    )
 
 
 def print_action_tool(action: Action):
@@ -483,15 +516,21 @@ def print_action_tool(action: Action):
         None
     """
     logger.typewriter_log(f"Tool:", Fore.BLUE, f"{action.tool_name}")
-    logger.typewriter_log(f"Tool Input:", Fore.BLUE, f"{action.tool_input}")
+    logger.typewriter_log(
+        f"Tool Input:", Fore.BLUE, f"{action.tool_input}"
+    )
 
-    output = action.tool_output if action.tool_output != "" else "None"
+    output = (
+        action.tool_output if action.tool_output != "" else "None"
+    )
     logger.typewriter_log(f"Tool Output:", Fore.BLUE, f"{output}")
 
     color = Fore.RED
     if action.tool_output_status == ToolCallStatus.ToolCallSuccess:
         color = Fore.GREEN
-    elif action.tool_output_status == ToolCallStatus.InputCannotParsed:
+    elif (
+        action.tool_output_status == ToolCallStatus.InputCannotParsed
+    ):
         color = Fore.YELLOW
 
     logger.typewriter_log(

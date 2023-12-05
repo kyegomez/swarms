@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 class TaskInput(BaseModel):
     __root__: Any = Field(
         ...,
-        description="The input parameters for the task. Any value is allowed.",
+        description=(
+            "The input parameters for the task. Any value is allowed."
+        ),
         example='{\n"debug": false,\n"mode": "benchmarks"\n}',
     )
 
@@ -25,7 +27,9 @@ class Artifact(BaseModel):
     )
     relative_path: Optional[str] = Field(
         None,
-        description="Relative path of the artifact in the agent's workspace",
+        description=(
+            "Relative path of the artifact in the agent's workspace"
+        ),
         example="python/code/",
     )
 
@@ -34,7 +38,9 @@ class ArtifactUpload(BaseModel):
     file: bytes = Field(..., description="File to upload")
     relative_path: Optional[str] = Field(
         None,
-        description="Relative path of the artifact in the agent's workspace",
+        description=(
+            "Relative path of the artifact in the agent's workspace"
+        ),
         example="python/code/",
     )
 
@@ -42,7 +48,10 @@ class ArtifactUpload(BaseModel):
 class StepInput(BaseModel):
     __root__: Any = Field(
         ...,
-        description="Input parameters for the task step. Any value is allowed.",
+        description=(
+            "Input parameters for the task step. Any value is"
+            " allowed."
+        ),
         example='{\n"file_to_refactor": "models.py"\n}',
     )
 
@@ -50,7 +59,10 @@ class StepInput(BaseModel):
 class StepOutput(BaseModel):
     __root__: Any = Field(
         ...,
-        description="Output that the task step has produced. Any value is allowed.",
+        description=(
+            "Output that the task step has produced. Any value is"
+            " allowed."
+        ),
         example='{\n"tokens": 7894,\n"estimated_cost": "0,24$"\n}',
     )
 
@@ -59,7 +71,9 @@ class TaskRequestBody(BaseModel):
     input: Optional[str] = Field(
         None,
         description="Input prompt for the task.",
-        example="Write the words you receive to the file 'output.txt'.",
+        example=(
+            "Write the words you receive to the file 'output.txt'."
+        ),
     )
     additional_input: Optional[TaskInput] = None
 
@@ -82,7 +96,9 @@ class Task(TaskRequestBody):
 
 class StepRequestBody(BaseModel):
     input: Optional[str] = Field(
-        None, description="Input prompt for the step.", example="Washington"
+        None,
+        description="Input prompt for the step.",
+        example="Washington",
     )
     additional_input: Optional[StepInput] = None
 
@@ -105,21 +121,28 @@ class Step(StepRequestBody):
         example="6bb1801a-fd80-45e8-899a-4dd723cc602e",
     )
     name: Optional[str] = Field(
-        None, description="The name of the task step.", example="Write to file"
+        None,
+        description="The name of the task step.",
+        example="Write to file",
     )
-    status: Status = Field(..., description="The status of the task step.")
+    status: Status = Field(
+        ..., description="The status of the task step."
+    )
     output: Optional[str] = Field(
         None,
         description="Output of the task step.",
         example=(
-            "I am going to use the write_to_file command and write Washington to a file"
-            " called output.txt <write_to_file('output.txt', 'Washington')"
+            "I am going to use the write_to_file command and write"
+            " Washington to a file called output.txt"
+            " <write_to_file('output.txt', 'Washington')"
         ),
     )
     additional_output: Optional[StepOutput] = None
     artifacts: List[Artifact] = Field(
-        [], description="A list of artifacts that the step has produced."
+        [],
+        description="A list of artifacts that the step has produced.",
     )
     is_last: Optional[bool] = Field(
-        False, description="Whether this is the last step in the task."
+        False,
+        description="Whether this is the last step in the task.",
     )

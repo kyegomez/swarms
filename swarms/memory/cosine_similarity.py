@@ -18,8 +18,8 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
     Y = np.array(Y)
     if X.shape[1] != Y.shape[1]:
         raise ValueError(
-            f"Number of columns in X and Y must be the same. X has shape {X.shape} "
-            f"and Y has shape {Y.shape}."
+            "Number of columns in X and Y must be the same. X has"
+            f" shape {X.shape} and Y has shape {Y.shape}."
         )
     try:
         import simsimd as simd
@@ -32,8 +32,9 @@ def cosine_similarity(X: Matrix, Y: Matrix) -> np.ndarray:
         return Z
     except ImportError:
         logger.info(
-            "Unable to import simsimd, defaulting to NumPy implementation. If you want "
-            "to use simsimd please install with `pip install simsimd`."
+            "Unable to import simsimd, defaulting to NumPy"
+            " implementation. If you want to use simsimd please"
+            " install with `pip install simsimd`."
         )
         X_norm = np.linalg.norm(X, axis=1)
         Y_norm = np.linalg.norm(Y, axis=1)
@@ -67,9 +68,15 @@ def cosine_similarity_top_k(
     score_array = cosine_similarity(X, Y)
     score_threshold = score_threshold or -1.0
     score_array[score_array < score_threshold] = 0
-    top_k = min(top_k or len(score_array), np.count_nonzero(score_array))
-    top_k_idxs = np.argpartition(score_array, -top_k, axis=None)[-top_k:]
-    top_k_idxs = top_k_idxs[np.argsort(score_array.ravel()[top_k_idxs])][::-1]
+    top_k = min(
+        top_k or len(score_array), np.count_nonzero(score_array)
+    )
+    top_k_idxs = np.argpartition(score_array, -top_k, axis=None)[
+        -top_k:
+    ]
+    top_k_idxs = top_k_idxs[
+        np.argsort(score_array.ravel()[top_k_idxs])
+    ][::-1]
     ret_idxs = np.unravel_index(top_k_idxs, score_array.shape)
     scores = score_array.ravel()[top_k_idxs].tolist()
     return list(zip(*ret_idxs)), scores  # type: ignore

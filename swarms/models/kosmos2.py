@@ -20,7 +20,9 @@ class Detections(BaseModel):
         ), "All fields must have the same length."
         return values
 
-    @validator("xyxy", "class_id", "confidence", pre=True, each_item=True)
+    @validator(
+        "xyxy", "class_id", "confidence", pre=True, each_item=True
+    )
     def check_not_empty(cls, v):
         if isinstance(v, list) and len(v) == 0:
             raise ValueError("List must not be empty")
@@ -69,19 +71,25 @@ class Kosmos2(BaseModel):
         image = Image.open(img)
         prompt = "<grounding>An image of"
 
-        inputs = self.processor(text=prompt, images=image, return_tensors="pt")
-        outputs = self.model.generate(**inputs, use_cache=True, max_new_tokens=64)
+        inputs = self.processor(
+            text=prompt, images=image, return_tensors="pt"
+        )
+        outputs = self.model.generate(
+            **inputs, use_cache=True, max_new_tokens=64
+        )
 
-        generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[
-            0
-        ]
+        generated_text = self.processor.batch_decode(
+            outputs, skip_special_tokens=True
+        )[0]
 
         # The actual processing of generated_text to entities would go here
         # For the purpose of this example, assume a mock function 'extract_entities' exists:
         entities = self.extract_entities(generated_text)
 
         # Convert entities to detections format
-        detections = self.process_entities_to_detections(entities, image)
+        detections = self.process_entities_to_detections(
+            entities, image
+        )
         return detections
 
     def extract_entities(
@@ -99,7 +107,9 @@ class Kosmos2(BaseModel):
         if not entities:
             return Detections.empty()
 
-        class_ids = [0] * len(entities)  # Replace with actual class ID extraction logic
+        class_ids = [0] * len(
+            entities
+        )  # Replace with actual class ID extraction logic
         xyxys = [
             (
                 e[1][0] * image.width,
@@ -111,7 +121,9 @@ class Kosmos2(BaseModel):
         ]
         confidences = [1.0] * len(entities)  # Placeholder confidence
 
-        return Detections(xyxy=xyxys, class_id=class_ids, confidence=confidences)
+        return Detections(
+            xyxy=xyxys, class_id=class_ids, confidence=confidences
+        )
 
 
 # Usage:

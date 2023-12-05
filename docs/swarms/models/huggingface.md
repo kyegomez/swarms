@@ -96,7 +96,7 @@ Here are three ways to use the `HuggingfaceLLM` class:
 from swarms.models import HuggingfaceLLM
 
 # Initialize the HuggingfaceLLM instance with a model ID
-model_id = "gpt2-small"
+model_id = "NousResearch/Nous-Hermes-2-Vision-Alpha"
 inference = HuggingfaceLLM(model_id=model_id)
 
 # Generate text based on a prompt
@@ -116,7 +116,7 @@ custom_config = {
     "quantization_config": {"load_in_4bit": True},
     "verbose": True
 }
-inference = HuggingfaceLLM(model_id="gpt2-small", **custom_config)
+inference = HuggingfaceLLM(model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config)
 
 # Generate text based on a prompt
 prompt_text = "Tell me a joke"

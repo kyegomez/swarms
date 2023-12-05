@@ -13,7 +13,8 @@ def _import_elevenlabs() -> Any:
         import elevenlabs
     except ImportError as e:
         raise ImportError(
-            "Cannot import elevenlabs, please install `pip install elevenlabs`."
+            "Cannot import elevenlabs, please install `pip install"
+            " elevenlabs`."
         ) from e
     return elevenlabs
 
@@ -52,16 +53,18 @@ class ElevenLabsText2SpeechTool(BaseTool):
 
     name: str = "eleven_labs_text2speech"
     description: str = (
-        "A wrapper around Eleven Labs Text2Speech. "
-        "Useful for when you need to convert text to speech. "
-        "It supports multiple languages, including English, German, Polish, "
-        "Spanish, Italian, French, Portuguese, and Hindi. "
+        "A wrapper around Eleven Labs Text2Speech. Useful for when"
+        " you need to convert text to speech. It supports multiple"
+        " languages, including English, German, Polish, Spanish,"
+        " Italian, French, Portuguese, and Hindi. "
     )
 
     @root_validator(pre=True)
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key exists in environment."""
-        _ = get_from_dict_or_env(values, "eleven_api_key", "ELEVEN_API_KEY")
+        _ = get_from_dict_or_env(
+            values, "eleven_api_key", "ELEVEN_API_KEY"
+        )
 
         return values
 
@@ -79,7 +82,9 @@ class ElevenLabsText2SpeechTool(BaseTool):
                 f.write(speech)
             return f.name
         except Exception as e:
-            raise RuntimeError(f"Error while running ElevenLabsText2SpeechTool: {e}")
+            raise RuntimeError(
+                f"Error while running ElevenLabsText2SpeechTool: {e}"
+            )
 
     def play(self, speech_file: str) -> None:
         """Play the text as speech."""
@@ -93,12 +98,16 @@ class ElevenLabsText2SpeechTool(BaseTool):
         """Stream the text as speech as it is generated.
         Play the text in your speakers."""
         elevenlabs = _import_elevenlabs()
-        speech_stream = elevenlabs.generate(text=query, model=self.model, stream=True)
+        speech_stream = elevenlabs.generate(
+            text=query, model=self.model, stream=True
+        )
         elevenlabs.stream(speech_stream)
 
     def save(self, speech_file: str, path: str) -> None:
         """Save the speech file to a path."""
-        raise NotImplementedError("Saving not implemented for this tool.")
+        raise NotImplementedError(
+            "Saving not implemented for this tool."
+        )
 
     def __str__(self):
         return "ElevenLabsText2SpeechTool"

@@ -10,10 +10,14 @@ class Message:
     Messages are the inputs and outputs of ChatModels.
     """
 
-    def __init__(self, content: str, role: str, additional_kwargs: Dict = None):
+    def __init__(
+        self, content: str, role: str, additional_kwargs: Dict = None
+    ):
         self.content = content
         self.role = role
-        self.additional_kwargs = additional_kwargs if additional_kwargs else {}
+        self.additional_kwargs = (
+            additional_kwargs if additional_kwargs else {}
+        )
 
     @abstractmethod
     def get_type(self) -> str:
@@ -65,7 +69,10 @@ class SystemMessage(Message):
     """
 
     def __init__(
-        self, content: str, role: str = "System", additional_kwargs: Dict = None
+        self,
+        content: str,
+        role: str = "System",
+        additional_kwargs: Dict = None,
     ):
         super().__init__(content, role, additional_kwargs)
 
@@ -97,7 +104,9 @@ class ChatMessage(Message):
     A Message that can be assigned an arbitrary speaker (i.e. role).
     """
 
-    def __init__(self, content: str, role: str, additional_kwargs: Dict = None):
+    def __init__(
+        self, content: str, role: str, additional_kwargs: Dict = None
+    ):
         super().__init__(content, role, additional_kwargs)
 
     def get_type(self) -> str:
@@ -105,12 +114,17 @@ class ChatMessage(Message):
 
 
 def get_buffer_string(
-    messages: Sequence[Message], human_prefix: str = "Human", ai_prefix: str = "AI"
+    messages: Sequence[Message],
+    human_prefix: str = "Human",
+    ai_prefix: str = "AI",
 ) -> str:
     string_messages = []
     for m in messages:
         message = f"{m.role}: {m.content}"
-        if isinstance(m, AIMessage) and "function_call" in m.additional_kwargs:
+        if (
+            isinstance(m, AIMessage)
+            and "function_call" in m.additional_kwargs
+        ):
             message += f"{m.additional_kwargs['function_call']}"
         string_messages.append(message)
 

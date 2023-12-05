@@ -22,55 +22,46 @@ Swarms is a modular framework that enables reliable and useful multi-agent colla
 ---
 
 ## Usage
-### Example in Colab:
 
-<a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
+Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a> Run example in Colab, using your OpenAI API key. 
+</a>
 
-### `Flow` Example
+### `Agent` Example
 - Reliable Structure that provides LLMS autonomy
 - Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
-- Enterprise Grade + Production Grade: `Flow` is designed and optimized for automating real-world tasks at scale!
+- Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
 
 ```python
+import os
 
+from dotenv import load_dotenv
+
+# Import the OpenAIChat model and the Agent struct
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 
-api_key = ""
+# Load the environment variables
+load_dotenv()
 
-# Initialize the language model, this model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
 llm = OpenAIChat(
-    # model_name="gpt-4"
-    openai_api_key=api_key,
     temperature=0.5,
-    # max_tokens=100,
+    model_name="gpt-4",
+    openai_api_key=api_key,
+    max_tokens=4000
 )
+
 
 ## Initialize the workflow
-flow = Flow(
-    llm=llm,
-    max_loops=2,
-    dashboard=True,
-    # stopping_condition=None,  # You can define a stopping condition as needed.
-    # loop_interval=1,
-    # retry_attempts=3,
-    # retry_interval=1,
-    # interactive=False,  # Set to 'True' for interactive mode.
-    # dynamic_temperature=False,  # Set to 'True' for dynamic temperature handling.
-)
+agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
-# out = flow.load_state("flow_state.json")
-# temp = flow.dynamic_temperature()
-# filter = flow.add_response_filter("Trump")
-out = flow.run("Generate a 10,000 word blog on health and wellness.")
-# out = flow.validate_response(out)
-# out = flow.analyze_feedback(out)
-# out = flow.print_history_and_memory()
-# # out = flow.save_state("flow_state.json")
-# print(out)
-
+# Run the workflow on a task
+out = agent.run("Generate a 10,000 word blog on health and wellness.")
+print(out)
 
 
 ```
@@ -80,52 +71,51 @@ out = flow.run("Generate a 10,000 word blog on health and wellness.")
 ### `SequentialWorkflow`
 - A Sequential swarm of autonomous agents where each agent's outputs are fed into the next agent
 - Save and Restore Workflow states!
-- Integrate Flow's with various LLMs and Multi-Modality Models
+- Integrate Agent's with various LLMs and Multi-Modality Models
 
 ```python
-from swarms.models import OpenAIChat, BioGPT, Anthropic
-from swarms.structs import Flow
+import os 
+from swarms.models import OpenAIChat
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Load the environment variables
+api_key = os.getenv("OPENAI_API_KEY")
 
 
-# Example usage
-api_key = (
-    ""  # Your actual API key here
-)
-
-# Initialize the language flow
+# Initialize the language agent
 llm = OpenAIChat(
-    openai_api_key=api_key,
     temperature=0.5,
-    max_tokens=3000,
+    model_name="gpt-4",
+    openai_api_key=api_key,
+    max_tokens=4000
 )
 
-biochat = BioGPT()
 
-# Use Anthropic
-anthropic = Anthropic()
-
-# Initialize the agent with the language flow
-agent1 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize the agent with the language agent
+agent1 = Agent(llm=llm, max_loops=1)
 
 # Create another agent for a different task
-agent2 = Flow(llm=llm, max_loops=1, dashboard=False)
+agent2 = Agent(llm=llm, max_loops=1)
 
 # Create another agent for a different task
-agent3 = Flow(llm=biochat, max_loops=1, dashboard=False)
-
-# agent4 = Flow(llm=anthropic, max_loops="auto")
+agent3 = Agent(llm=llm, max_loops=1)
 
 # Create the workflow
 workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to the workflow
-workflow.add("Generate a 10,000 word blog on health and wellness.", agent1)
+workflow.add(
+    agent1, "Generate a 10,000 word blog on health and wellness.", 
+)
 
 # Suppose the next task takes the output of the first task as input
-workflow.add("Summarize the generated blog", agent2)
-
-workflow.add("Create a references sheet of materials for the curriculm", agent3)
+workflow.add(
+    agent2, "Summarize the generated blog",
+)
 
 # Run the workflow
 workflow.run()
@@ -133,6 +123,54 @@ workflow.run()
 # Output the results
 for task in workflow.tasks:
     print(f"Task: {task.description}, Result: {task.result}")
+
+
+```
+
+## `Multi Modal Autonomous Agents`
+- Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
+
+```python
+# Description: This is an example of how to use the Agent class to run a multi-modal workflow
+import os
+from dotenv import load_dotenv
+from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarms.structs import Agent
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = GPT4VisionAPI(
+    openai_api_key=api_key,
+    max_tokens=500,
+)
+
+# Initialize the task
+task = (
+    "Analyze this image of an assembly line and identify any issues such as"
+    " misaligned parts, defects, or deviations from the standard assembly"
+    " process. IF there is anything unsafe in the image, explain why it is"
+    " unsafe and how it could be improved."
+)
+img = "assembly_line.jpg"
+
+## Initialize the workflow
+agent = Agent(
+    llm=llm,
+    max_loops="auto",
+    autosave=True,
+    dashboard=True,
+    multi_modal=True
+)
+
+# Run the workflow on a task
+out = agent.run(task=task, img=img)
+print(out)
+
 
 ```
 
@@ -213,8 +251,16 @@ Swarms framework is not just a tool but a robust, scalable, and secure partner i
 - For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
 
 
-## Contribute
-- We're always looking for contributors to help us improve and expand this project. If you're interested, please check out our [Contributing Guidelines](CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1)
+## 🫶 Contributions:
+
+Swarms is an open-source project, and contributions are welcome. If you want to contribute, you can create new features, fix bugs, or improve the infrastructure. Please refer to the [CONTRIBUTING.md](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1) file in the repository for more information on how to contribute.
+
+To see how to contribute, visit [Contribution guidelines](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md)
+
+<a href="https://github.com/kyegomez/swarms/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
+</a>
+
 
 ## Community
 - [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)

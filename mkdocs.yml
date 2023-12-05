@@ -6,9 +6,6 @@ copyright: "&copy; APAC Corp, Inc."
 extra_css:
   - docs/assets/css/extra.css
 extra:
-  # analytics:
-  #   provider: google
-  #   property: G-QM8EDPSCB6
   social:
     - icon: fontawesome/solid/house
       link: assets/img/SwarmsLogoIcon.png
@@ -75,7 +72,8 @@ nav:
     - AbstractAgent: "swarms/agents/abstract_agent.md"
     - OmniModalAgent: "swarms/agents/omni_agent.md"
   - swarms.models:
-    - Language:  
+    - Language:
+      - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"
       - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
@@ -85,6 +83,7 @@ nav:
       - MPT7B: "swarms/models/mpt.md"
       - Mistral: "swarms/models/mistral.md"
     - MultiModal:
+      - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"
       - Idefics: "swarms/models/idefics.md"
@@ -99,20 +98,18 @@ nav:
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - AutoScaler: "swarms/swarms/autoscaler.md"
-    - Flow: "swarms/structs/flow.md"
+    - Agent: "swarms/structs/agent.md"
     - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
   - swarms.memory:
     - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
-  # - swarms.chunkers: 
-  #   - BaseChunker: "swarms/chunkers/basechunker.md"
-  #   - PdfChunker: "swarms/chunkers/pdf_chunker.md"
 - Guides:
     - Overview: "examples/index.md"
     - Agents:
-      - Flow: "examples/flow.md"
-      - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
+      - Agent: "examples/flow.md"
       - OmniAgent: "examples/omni_agent.md"
+    - Swarms:
+      - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
     - 2O+ Autonomous Agent Blogs: "examples/ideas.md"
 - Applications:
     - CustomerSupport: 

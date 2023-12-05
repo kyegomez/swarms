@@ -74,7 +74,9 @@ class Serializable(BaseModel, ABC):
         super().__init__(**kwargs)
         self._lc_kwargs = kwargs
 
-    def to_json(self) -> Union[SerializedConstructor, SerializedNotImplemented]:
+    def to_json(
+        self,
+    ) -> Union[SerializedConstructor, SerializedNotImplemented]:
         if not self.lc_serializable:
             return self.to_json_not_implemented()
 
@@ -93,7 +95,10 @@ class Serializable(BaseModel, ABC):
                 break
 
             # Get a reference to self bound to each class in the MRO
-            this = cast(Serializable, self if cls is None else super(cls, self))
+            this = cast(
+                Serializable,
+                self if cls is None else super(cls, self),
+            )
 
             secrets.update(this.lc_secrets)
             lc_kwargs.update(this.lc_attributes)
@@ -101,7 +106,9 @@ class Serializable(BaseModel, ABC):
         # include all secrets, even if not specified in kwargs
         # as these secrets may be passed as an environment variable instead
         for key in secrets.keys():
-            secret_value = getattr(self, key, None) or lc_kwargs.get(key)
+            secret_value = getattr(self, key, None) or lc_kwargs.get(
+                key
+            )
             if secret_value is not None:
                 lc_kwargs.update({key: secret_value})
 
@@ -109,9 +116,11 @@ class Serializable(BaseModel, ABC):
             "lc": 1,
             "type": "constructor",
             "id": [*self.lc_namespace, self.__class__.__name__],
-            "kwargs": lc_kwargs
-            if not secrets
-            else _replace_secrets(lc_kwargs, secrets),
+            "kwargs": (
+                lc_kwargs
+                if not secrets
+                else _replace_secrets(lc_kwargs, secrets)
+            ),
         }
 
     def to_json_not_implemented(self) -> SerializedNotImplemented:
@@ -153,7 +162,10 @@ def to_json_not_implemented(obj: object) -> SerializedNotImplemented:
         if hasattr(obj, "__name__"):
             _id = [*obj.__module__.split("."), obj.__name__]
         elif hasattr(obj, "__class__"):
-            _id = [*obj.__class__.__module__.split("."), obj.__class__.__name__]
+            _id = [
+                *obj.__class__.__module__.split("."),
+                obj.__class__.__name__,
+            ]
     except Exception:
         pass
     return {

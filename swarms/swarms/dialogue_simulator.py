@@ -16,14 +16,19 @@ class DialogueSimulator:
     Usage:
     ------
     >>> from swarms import DialogueSimulator
-    >>> from swarms.structs.flow import Flow
-    >>> agents = Flow()
-    >>> agents1 = Flow()
+    >>> from swarms.structs.agent import Agent
+    >>> agents = Agent()
+    >>> agents1 = Agent()
     >>> model = DialogueSimulator([agents, agents1], max_iters=10, name="test")
     >>> model.run("test")
     """
 
-    def __init__(self, agents: List[Callable], max_iters: int = 10, name: str = None):
+    def __init__(
+        self,
+        agents: List[Callable],
+        max_iters: int = 10,
+        name: str = None,
+    ):
         self.agents = agents
         self.max_iters = max_iters
         self.name = name
@@ -45,7 +50,8 @@ class DialogueSimulator:
 
                 for receiver in self.agents:
                     message_history = (
-                        f"Speaker Name: {speaker.name} and message: {speaker_message}"
+                        f"Speaker Name: {speaker.name} and message:"
+                        f" {speaker_message}"
                     )
                     receiver.run(message_history)
 
@@ -56,7 +62,10 @@ class DialogueSimulator:
             print(f"Error running dialogue simulator: {error}")
 
     def __repr__(self):
-        return f"DialogueSimulator({self.agents}, {self.max_iters}, {self.name})"
+        return (
+            f"DialogueSimulator({self.agents}, {self.max_iters},"
+            f" {self.name})"
+        )
 
     def save_state(self):
         """Save the state of the dialogue simulator"""

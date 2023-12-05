@@ -65,7 +65,9 @@ class GPT4Vision:
     model: str = "gpt-4-vision-preview"
     backoff_factor: float = 2.0
     timeout_seconds: int = 10
-    openai_api_key: Optional[str] = None or os.getenv("OPENAI_API_KEY")
+    openai_api_key: Optional[str] = None or os.getenv(
+        "OPENAI_API_KEY"
+    )
     # 'Low' or 'High' for respesctively fast or high quality, but high more token usage
     quality: str = "low"
     # Max tokens to use for the API request, the maximum might be 3,000 but we don't know
@@ -131,9 +133,14 @@ class GPT4Vision:
             return out
         except openai.OpenAIError as e:
             # logger.error(f"OpenAI API error: {e}")
-            return f"OpenAI API error: Could not process the image. {e}"
+            return (
+                f"OpenAI API error: Could not process the image. {e}"
+            )
         except Exception as e:
-            return f"Unexpected error occurred while processing the image. {e}"
+            return (
+                "Unexpected error occurred while processing the"
+                f" image. {e}"
+            )
 
     def clean_output(self, output: str):
         # Regex pattern to find the Choice object representation in the output
@@ -182,20 +189,30 @@ class GPT4Vision:
             return print(response.choices[0])
         except openai.OpenAIError as e:
             # logger.error(f"OpenAI API error: {e}")
-            return f"OpenAI API error: Could not process the image. {e}"
+            return (
+                f"OpenAI API error: Could not process the image. {e}"
+            )
         except Exception as e:
-            return f"Unexpected error occurred while processing the image. {e}"
+            return (
+                "Unexpected error occurred while processing the"
+                f" image. {e}"
+            )
 
-    def run_batch(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+    def run_batch(
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self.run, task, img) for task, img in tasks_images
+                executor.submit(self.run, task, img)
+                for task, img in tasks_images
             ]
             results = [future.result() for future in futures]
         return results
 
-    async def run_batch_async(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+    async def run_batch_async(
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images asynchronously"""
         loop = asyncio.get_event_loop()
         futures = [
@@ -210,7 +227,9 @@ class GPT4Vision:
         """Process a batch of tasks and images asynchronously with retries"""
         loop = asyncio.get_event_loop()
         futures = [
-            loop.run_in_executor(None, self.run_with_retries, task, img)
+            loop.run_in_executor(
+                None, self.run_with_retries, task, img
+            )
             for task, img in tasks_images
         ]
         return await asyncio.gather(*futures)
@@ -237,7 +256,9 @@ class GPT4Vision:
     def health_check(self):
         """Health check for the GPT4Vision model"""
         try:
-            response = requests.get("https://api.openai.com/v1/engines")
+            response = requests.get(
+                "https://api.openai.com/v1/engines"
+            )
             return response.status_code == 200
         except requests.RequestException as error:
             print(f"Health check failed: {error}")

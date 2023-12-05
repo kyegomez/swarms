@@ -1,6 +1,6 @@
 ERROR_PROMPT = (
-    "An error has occurred for the following text: \n{promptedQuery} Please explain"
-    " this error.\n {e}"
+    "An error has occurred for the following text: \n{promptedQuery}"
+    " Please explain this error.\n {e}"
 )
 
 IMAGE_PROMPT = """

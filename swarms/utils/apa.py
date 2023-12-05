@@ -102,7 +102,9 @@ class Action:
     tool_name: str = ""
     tool_input: dict = field(default_factory=lambda: {})
 
-    tool_output_status: ToolCallStatus = ToolCallStatus.ToolCallSuccess
+    tool_output_status: ToolCallStatus = (
+        ToolCallStatus.ToolCallSuccess
+    )
     tool_output: str = ""
 
     def to_json(self):
@@ -124,7 +126,9 @@ class Action:
 @dataclass
 class userQuery:
     task: str
-    additional_information: List[str] = field(default_factory=lambda: [])
+    additional_information: List[str] = field(
+        default_factory=lambda: []
+    )
     refine_prompt: str = field(default_factory=lambda: "")
 
     def print_self(self):
@@ -144,7 +148,9 @@ class Singleton(abc.ABCMeta, type):
     def __call__(cls, *args, **kwargs):
         """Call method for the singleton metaclass."""
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(Singleton, cls).__call__(
+                *args, **kwargs
+            )
         return cls._instances[cls]
 
 

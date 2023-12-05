@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 
 def get_buffer_string(
-    messages: Sequence[BaseMessage], human_prefix: str = "Human", ai_prefix: str = "AI"
+    messages: Sequence[BaseMessage],
+    human_prefix: str = "Human",
+    ai_prefix: str = "AI",
 ) -> str:
     """Convert sequence of Messages to strings and concatenate them into one string.
 
@@ -51,7 +53,10 @@ def get_buffer_string(
         else:
             raise ValueError(f"Got unsupported message type: {m}")
         message = f"{role}: {m.content}"
-        if isinstance(m, AIMessage) and "function_call" in m.additional_kwargs:
+        if (
+            isinstance(m, AIMessage)
+            and "function_call" in m.additional_kwargs
+        ):
             message += f"{m.additional_kwargs['function_call']}"
         string_messages.append(message)
 
@@ -98,8 +103,8 @@ class BaseMessageChunk(BaseMessage):
                 merged[k] = v
             elif not isinstance(merged[k], type(v)):
                 raise ValueError(
-                    f'additional_kwargs["{k}"] already exists in this message,'
-                    " but with a different type."
+                    f'additional_kwargs["{k}"] already exists in this'
+                    " message, but with a different type."
                 )
             elif isinstance(merged[k], str):
                 merged[k] += v
@@ -107,7 +112,8 @@ class BaseMessageChunk(BaseMessage):
                 merged[k] = self._merge_kwargs_dict(merged[k], v)
             else:
                 raise ValueError(
-                    f"Additional kwargs key {k} already exists in this message."
+                    f"Additional kwargs key {k} already exists in"
+                    " this message."
                 )
         return merged
 

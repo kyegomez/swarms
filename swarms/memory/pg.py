@@ -84,27 +84,36 @@ class PgVectorVectorStore(BaseVectorStore):
 
     """
 
-    connection_string: Optional[str] = field(default=None, kw_only=True)
+    connection_string: Optional[str] = field(
+        default=None, kw_only=True
+    )
     create_engine_params: dict = field(factory=dict, kw_only=True)
     engine: Optional[Engine] = field(default=None, kw_only=True)
     table_name: str = field(kw_only=True)
     _model: any = field(
-        default=Factory(lambda self: self.default_vector_model(), takes_self=True)
+        default=Factory(
+            lambda self: self.default_vector_model(), takes_self=True
+        )
     )
 
     @connection_string.validator
-    def validate_connection_string(self, _, connection_string: Optional[str]) -> None:
+    def validate_connection_string(
+        self, _, connection_string: Optional[str]
+    ) -> None:
         # If an engine is provided, the connection string is not used.
         if self.engine is not None:
             return
 
         # If an engine is not provided, a connection string is required.
         if connection_string is None:
-            raise ValueError("An engine or connection string is required")
+            raise ValueError(
+                "An engine or connection string is required"
+            )
 
         if not connection_string.startswith("postgresql://"):
             raise ValueError(
-                "The connection string must describe a Postgres database connection"
+                "The connection string must describe a Postgres"
+                " database connection"
             )
 
     @engine.validator
@@ -115,7 +124,9 @@ class PgVectorVectorStore(BaseVectorStore):
 
         # If a connection string is not provided, an engine is required.
         if engine is None:
-            raise ValueError("An engine or connection string is required")
+            raise ValueError(
+                "An engine or connection string is required"
+            )
 
     def __attrs_post_init__(self) -> None:
         """If a an engine is provided, it will be used to connect to the database.
@@ -134,10 +145,14 @@ class PgVectorVectorStore(BaseVectorStore):
     ) -> None:
         """Provides a mechanism to initialize the database schema and extensions."""
         if install_uuid_extension:
-            self.engine.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+            self.engine.execute(
+                'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+            )
 
         if install_vector_extension:
-            self.engine.execute('CREATE EXTENSION IF NOT EXISTS "vector";')
+            self.engine.execute(
+                'CREATE EXTENSION IF NOT EXISTS "vector";'
+            )
 
         if create_schema:
             self._model.metadata.create_all(self.engine)
@@ -148,7 +163,7 @@ class PgVectorVectorStore(BaseVectorStore):
         vector_id: Optional[str] = None,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Inserts or updates a vector in the collection."""
         with Session(self.engine) as session:
@@ -208,7 +223,7 @@ class PgVectorVectorStore(BaseVectorStore):
         namespace: Optional[str] = None,
         include_vectors: bool = False,
         distance_metric: str = "cosine_distance",
-        **kwargs
+        **kwargs,
     ) -> list[BaseVectorStore.QueryResult]:
         """Performs a search on the collection to find vectors similar to the provided input vector,
         optionally filtering to only those that match the provided namespace.
@@ -241,7 +256,9 @@ class PgVectorVectorStore(BaseVectorStore):
             return [
                 BaseVectorStore.QueryResult(
                     id=str(result[0].id),
-                    vector=result[0].vector if include_vectors else None,
+                    vector=(
+                        result[0].vector if include_vectors else None
+                    ),
                     score=result[1],
                     meta=result[0].meta,
                     namespace=result[0].namespace,
