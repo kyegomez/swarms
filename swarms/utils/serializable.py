@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Any, Dict, List, Literal, TypedDict, Union, cast
 
-from pydantic import ConfigDict, BaseModel, PrivateAttr
+from pydantic import BaseModel, PrivateAttr
 
 
 class BaseSerialized(TypedDict):
@@ -64,7 +64,9 @@ class Serializable(BaseModel, ABC):
         constructor.
         """
         return {}
-    model_config = ConfigDict(extra="ignore")
+
+    class Config:
+        extra = "ignore"
 
     _lc_kwargs = PrivateAttr(default_factory=dict)
 

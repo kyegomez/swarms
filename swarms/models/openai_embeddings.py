@@ -16,7 +16,7 @@ from typing import (
 )
 
 import numpy as np
-from pydantic import model_validator, ConfigDict, BaseModel, Field
+from pydantic import BaseModel, Extra, Field, root_validator
 from tenacity import (
     AsyncRetrying,
     before_sleep_log,
@@ -186,7 +186,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
 
     """
 
-    client: Any = None  #: :meta private:
+    client: Any  #: :meta private:
     model: str = "text-embedding-ada-002"
     deployment: str = model  # to support Azure OpenAI Service custom deployment names
     openai_api_version: Optional[str] = None
@@ -227,10 +227,13 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     """Whether to show a progress bar when embedding."""
     model_kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""
-    model_config = ConfigDict(extra="forbid")
 
-    @model_validator(mode="before")
-    @classmethod
+    class Config:
+        """Configuration for this pydantic object."""
+
+        extra = Extra.forbid
+
+    @root_validator(pre=True)
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
         all_required_field_names = get_pydantic_field_names(cls)
@@ -261,8 +264,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         values["model_kwargs"] = extra
         return values
 
-    @model_validator()
-    @classmethod
+    @root_validator()
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
         values["openai_api_key"] = get_from_dict_or_env(

@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "2.5.8"
+version = "2.5.7"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -52,11 +52,11 @@ ratelimit = "*"
 beautifulsoup4 = "*"
 cohere = "*"
 huggingface-hub = "*"
-pydantic = "2.*"
+pydantic = "1.10.12"
 tenacity = "*"
 Pillow = "*"
 chromadb = "*"
-opencv-python-headless
+opencv-python-headless = "*"
 tabulate = "*"
 termcolor = "*"
 black = "*"

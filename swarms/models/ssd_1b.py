@@ -9,7 +9,7 @@ import backoff
 import torch
 from diffusers import StableDiffusionXLPipeline
 from PIL import Image
-from pydantic import field_validator
+from pydantic import validator
 from termcolor import colored
 from cachetools import TTLCache
 
@@ -72,8 +72,7 @@ class SSD1B:
 
         arbitrary_types_allowed = True
 
-    @field_validator("max_retries", "time_seconds")
-    @classmethod
+    @validator("max_retries", "time_seconds")
     def must_be_positive(cls, value):
         if value <= 0:
             raise ValueError("Must be positive")
