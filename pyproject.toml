@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "2.5.7"
+version = "2.6.0"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -34,6 +34,7 @@ google-generativeai = "*"
 langchain-experimental = "*"
 playwright = "*"
 duckduckgo-search = "*"
+opencv-python-headless = "*"
 faiss-cpu = "*"
 backoff = "*"
 marshmallow = "*"
