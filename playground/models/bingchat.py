@@ -2,6 +2,8 @@ from swarms.models.bing_chat import BingChat
 from swarms.workers.worker import Worker
 from swarms.tools.autogpt import EdgeGPTTool, tool
 from swarms.models import OpenAIChat
+from langchain.llms import VLLM
+
 import os
 
 api_key = os.getenv("OPENAI_API_KEY")
