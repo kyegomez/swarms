@@ -16,7 +16,7 @@ from langchain.callbacks.manager import (
 from langchain.llms.base import LLM
 from langchain.llms.utils import enforce_stop_tokens
 from langchain.load.serializable import Serializable
-from pydantic import model_validator, ConfigDict, Field
+from pydantic import Extra, Field, root_validator
 from langchain.utils import get_from_dict_or_env
 
 logger = logging.getLogger(__name__)
@@ -85,8 +85,7 @@ class BaseCohere(Serializable):
     user_agent: str = "langchain"
     """Identifier for the application making the request."""
 
-    @model_validator()
-    @classmethod
+    @root_validator()
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
         try:
@@ -146,7 +145,11 @@ class Cohere(LLM, BaseCohere):
 
     max_retries: int = 10
     """Maximum number of retries to make when generating."""
-    model_config = ConfigDict(extra="forbid")
+
+    class Config:
+        """Configuration for this pydantic object."""
+
+        extra = Extra.forbid
 
     @property
     def _default_params(self) -> Dict[str, Any]:

@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import openai
 import requests
-from pydantic import field_validator, BaseModel
+from pydantic import BaseModel, validator
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -78,8 +78,7 @@ class FunctionSpecification(BaseModel):
     parameters: Dict[str, Any]
     required: Optional[List[str]] = None
 
-    @field_validator("parameters")
-    @classmethod
+    @validator("parameters")
     def check_parameters(cls, params):
         if not isinstance(params, dict):
             raise ValueError("Parameters must be a dictionary.")

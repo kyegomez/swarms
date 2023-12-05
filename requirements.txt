@@ -17,7 +17,7 @@ faiss-cpu
 openai==0.28.0
 attrs
 datasets
-pydantic>2
+pydantic==1.10.12
 soundfile
 huggingface-hub
 google-generativeai
