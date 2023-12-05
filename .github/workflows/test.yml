@@ -10,6 +10,7 @@ on:
 env:
   POETRY_VERSION: "1.4.2"
 
+jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -46,7 +47,7 @@ env:
             make extended_tests
           fi
         shell: bash
-    name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
