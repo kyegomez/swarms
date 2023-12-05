@@ -7,7 +7,10 @@ api_key = ""
 swarm = HierarchicalSwarm(api_key)
 
 # Define an objective
-objective = "Find 20 potential customers for a HierarchicalSwarm based AI Agent automation infrastructure"
+objective = (
+    "Find 20 potential customers for a HierarchicalSwarm based AI"
+    " Agent automation infrastructure"
+)
 
 # Run HierarchicalSwarm
 swarm.run(objective)

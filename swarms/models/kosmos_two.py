@@ -18,38 +18,31 @@ def is_overlapping(rect1, rect2):
 
 class Kosmos:
     """
+    Kosmos model by Yen-Chun Shieh
 
-    Args:
+    Parameters
+    ----------
+    model_name : str
+        Path to the pretrained model
 
+    Examples
+    --------
+    >>> kosmos = Kosmos()
+    >>> kosmos("Hello, my name is", "path/to/image.png")
 
-    # Initialize Kosmos
-    kosmos = Kosmos()
-
-    # Perform multimodal grounding
-    kosmos.multimodal_grounding("Find the red apple in the image.", "https://example.com/apple.jpg")
-
-    # Perform referring expression comprehension
-    kosmos.referring_expression_comprehension("Show me the green bottle.", "https://example.com/bottle.jpg")
-
-    # Generate referring expressions
-    kosmos.referring_expression_generation("It is on the table.", "https://example.com/table.jpg")
-
-    # Perform grounded visual question answering
-    kosmos.grounded_vqa("What is the color of the car?", "https://example.com/car.jpg")
-
-    # Generate grounded image caption
-    kosmos.grounded_image_captioning("https://example.com/beach.jpg")
     """
 
     def __init__(
         self,
         model_name="ydshieh/kosmos-2-patch14-224",
+        *args,
+        **kwargs,
     ):
         self.model = AutoModelForVision2Seq.from_pretrained(
-            model_name, trust_remote_code=True
+            model_name, trust_remote_code=True, *args, **kwargs
         )
         self.processor = AutoProcessor.from_pretrained(
-            model_name, trust_remote_code=True
+            model_name, trust_remote_code=True, *args, **kwargs
         )
 
     def get_image(self, url):
@@ -58,7 +51,9 @@ class Kosmos:
 
     def run(self, prompt, image):
         """Run Kosmos"""
-        inputs = self.processor(text=prompt, images=image, return_tensors="pt")
+        inputs = self.processor(
+            text=prompt, images=image, return_tensors="pt"
+        )
         generated_ids = self.model.generate(
             pixel_values=inputs["pixel_values"],
             input_ids=inputs["input_ids"][:, :-1],
@@ -72,13 +67,15 @@ class Kosmos:
             generated_ids,
             skip_special_tokens=True,
         )[0]
-        processed_text, entities = self.processor.post_process_generation(
-            generated_texts
+        processed_text, entities = (
+            self.processor.post_process_generation(generated_texts)
         )
 
     def __call__(self, prompt, image):
         """Run call"""
-        inputs = self.processor(text=prompt, images=image, return_tensors="pt")
+        inputs = self.processor(
+            text=prompt, images=image, return_tensors="pt"
+        )
         generated_ids = self.model.generate(
             pixel_values=inputs["pixel_values"],
             input_ids=inputs["input_ids"][:, :-1],
@@ -92,8 +89,8 @@ class Kosmos:
             generated_ids,
             skip_special_tokens=True,
         )[0]
-        processed_text, entities = self.processor.post_process_generation(
-            generated_texts
+        processed_text, entities = (
+            self.processor.post_process_generation(generated_texts)
         )
 
     # tasks
@@ -124,7 +121,9 @@ class Kosmos:
         prompt = "<grounding> Describe this image in detail"
         self.run(prompt, image_url)
 
-    def draw_entity_boxes_on_image(image, entities, show=False, save_path=None):
+    def draw_entity_boxes_on_image(
+        image, entities, show=False, save_path=None
+    ):
         """_summary_
         Args:
             image (_type_): image or image path
@@ -145,19 +144,23 @@ class Kosmos:
         elif isinstance(image, torch.Tensor):
             # pdb.set_trace()
             image_tensor = image.cpu()
-            reverse_norm_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073])[
-                :, None, None
-            ]
-            reverse_norm_std = torch.tensor([0.26862954, 0.26130258, 0.27577711])[
-                :, None, None
-            ]
-            image_tensor = image_tensor * reverse_norm_std + reverse_norm_mean
+            reverse_norm_mean = torch.tensor(
+                [0.48145466, 0.4578275, 0.40821073]
+            )[:, None, None]
+            reverse_norm_std = torch.tensor(
+                [0.26862954, 0.26130258, 0.27577711]
+            )[:, None, None]
+            image_tensor = (
+                image_tensor * reverse_norm_std + reverse_norm_mean
+            )
             pil_img = T.ToPILImage()(image_tensor)
             image_h = pil_img.height
             image_w = pil_img.width
             image = np.array(pil_img)[:, :, [2, 1, 0]]
         else:
-            raise ValueError(f"invaild image format, {type(image)} for {image}")
+            raise ValueError(
+                f"invaild image format, {type(image)} for {image}"
+            )
 
         if len(entities) == 0:
             return image
@@ -186,9 +189,15 @@ class Kosmos:
                 )
                 # draw bbox
                 # random color
-                color = tuple(np.random.randint(0, 255, size=3).tolist())
+                color = tuple(
+                    np.random.randint(0, 255, size=3).tolist()
+                )
                 new_image = cv2.rectangle(
-                    new_image, (orig_x1, orig_y1), (orig_x2, orig_y2), color, box_line
+                    new_image,
+                    (orig_x1, orig_y1),
+                    (orig_x2, orig_y2),
+                    color,
+                    box_line,
                 )
 
                 l_o, r_o = (
@@ -199,7 +208,12 @@ class Kosmos:
                 x1 = orig_x1 - l_o
                 y1 = orig_y1 - l_o
 
-                if y1 < text_height + text_offset_original + 2 * text_spaces:
+                if (
+                    y1
+                    < text_height
+                    + text_offset_original
+                    + 2 * text_spaces
+                ):
                     y1 = (
                         orig_y1
                         + r_o
@@ -211,33 +225,57 @@ class Kosmos:
 
                 # add text background
                 (text_width, text_height), _ = cv2.getTextSize(
-                    f"  {entity_name}", cv2.FONT_HERSHEY_COMPLEX, text_size, text_line
+                    f"  {entity_name}",
+                    cv2.FONT_HERSHEY_COMPLEX,
+                    text_size,
+                    text_line,
                 )
                 text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2 = (
                     x1,
-                    y1 - (text_height + text_offset_original + 2 * text_spaces),
+                    y1
+                    - (
+                        text_height
+                        + text_offset_original
+                        + 2 * text_spaces
+                    ),
                     x1 + text_width,
                     y1,
                 )
 
                 for prev_bbox in previous_bboxes:
                     while is_overlapping(
-                        (text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2), prev_bbox
+                        (
+                            text_bg_x1,
+                            text_bg_y1,
+                            text_bg_x2,
+                            text_bg_y2,
+                        ),
+                        prev_bbox,
                     ):
                         text_bg_y1 += (
-                            text_height + text_offset_original + 2 * text_spaces
+                            text_height
+                            + text_offset_original
+                            + 2 * text_spaces
                         )
                         text_bg_y2 += (
-                            text_height + text_offset_original + 2 * text_spaces
+                            text_height
+                            + text_offset_original
+                            + 2 * text_spaces
                         )
-                        y1 += text_height + text_offset_original + 2 * text_spaces
+                        y1 += (
+                            text_height
+                            + text_offset_original
+                            + 2 * text_spaces
+                        )
 
                         if text_bg_y2 >= image_h:
                             text_bg_y1 = max(
                                 0,
                                 image_h
                                 - (
-                                    text_height + text_offset_original + 2 * text_spaces
+                                    text_height
+                                    + text_offset_original
+                                    + 2 * text_spaces
                                 ),
                             )
                             text_bg_y2 = image_h
@@ -270,7 +308,9 @@ class Kosmos:
                     cv2.LINE_AA,
                 )
                 # previous_locations.append((x1, y1))
-                previous_bboxes.append((text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2))
+                previous_bboxes.append(
+                    (text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2)
+                )
 
         pil_image = Image.fromarray(new_image[:, :, [2, 1, 0]])
         if save_path:

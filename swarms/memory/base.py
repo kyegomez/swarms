@@ -3,14 +3,12 @@ from concurrent import futures
 from dataclasses import dataclass
 from typing import Optional, Any
 from attr import define, field, Factory
-from swarms.utils.futures import execute_futures_dict
+from swarms.utils.execute_futures import execute_futures_dict
 from griptape.artifacts import TextArtifact
 
 
 @define
 class BaseVectorStore(ABC):
-    """ """
-
     DEFAULT_QUERY_COUNT = 5
 
     @dataclass
@@ -30,19 +28,24 @@ class BaseVectorStore(ABC):
 
     embedding_driver: Any
     futures_executor: futures.Executor = field(
-        default=Factory(lambda: futures.ThreadPoolExecutor()), kw_only=True
+        default=Factory(lambda: futures.ThreadPoolExecutor()),
+        kw_only=True,
     )
 
     def upsert_text_artifacts(
         self,
         artifacts: dict[str, list[TextArtifact]],
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         execute_futures_dict(
             {
                 namespace: self.futures_executor.submit(
-                    self.upsert_text_artifact, a, namespace, meta, **kwargs
+                    self.upsert_text_artifact,
+                    a,
+                    namespace,
+                    meta,
+                    **kwargs,
                 )
                 for namespace, artifact_list in artifacts.items()
                 for a in artifact_list
@@ -54,7 +57,7 @@ class BaseVectorStore(ABC):
         artifact: TextArtifact,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         if not meta:
             meta = {}
@@ -64,10 +67,16 @@ class BaseVectorStore(ABC):
         if artifact.embedding:
             vector = artifact.embedding
         else:
-            vector = artifact.generate_embedding(self.embedding_driver)
+            vector = artifact.generate_embedding(
+                self.embedding_driver
+            )
 
         return self.upsert_vector(
-            vector, vector_id=artifact.id, namespace=namespace, meta=meta, **kwargs
+            vector,
+            vector_id=artifact.id,
+            namespace=namespace,
+            meta=meta,
+            **kwargs,
         )
 
     def upsert_text(
@@ -76,14 +85,14 @@ class BaseVectorStore(ABC):
         vector_id: Optional[str] = None,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         return self.upsert_vector(
             self.embedding_driver.embed_string(string),
             vector_id=vector_id,
             namespace=namespace,
             meta=meta if meta else {},
-            **kwargs
+            **kwargs,
         )
 
     @abstractmethod
@@ -93,16 +102,20 @@ class BaseVectorStore(ABC):
         vector_id: Optional[str] = None,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         ...
 
     @abstractmethod
-    def load_entry(self, vector_id: str, namespace: Optional[str] = None) -> Entry:
+    def load_entry(
+        self, vector_id: str, namespace: Optional[str] = None
+    ) -> Entry:
         ...
 
     @abstractmethod
-    def load_entries(self, namespace: Optional[str] = None) -> list[Entry]:
+    def load_entries(
+        self, namespace: Optional[str] = None
+    ) -> list[Entry]:
         ...
 
     @abstractmethod
@@ -112,6 +125,6 @@ class BaseVectorStore(ABC):
         count: Optional[int] = None,
         namespace: Optional[str] = None,
         include_vectors: bool = False,
-        **kwargs
+        **kwargs,
     ) -> list[QueryResult]:
         ...

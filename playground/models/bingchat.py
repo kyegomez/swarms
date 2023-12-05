@@ -24,7 +24,9 @@ llm = OpenAIChat(
 )
 
 # Initialize the Worker with the custom tool
-worker = Worker(llm=llm, ai_name="EdgeGPT Worker", external_tools=[edgegpt])
+worker = Worker(
+    llm=llm, ai_name="EdgeGPT Worker", external_tools=[edgegpt]
+)
 
 # Use the worker to process a task
 task = "Hello, my name is ChatGPT"

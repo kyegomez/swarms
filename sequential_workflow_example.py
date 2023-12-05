@@ -1,44 +1,48 @@
-from swarms.models import OpenAIChat, BioGPT, Anthropic
-from swarms.structs import Flow
+import os
+from swarms.models import OpenAIChat
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Load the environment variables
+api_key = os.getenv("OPENAI_API_KEY")
 
 
-# Example usage
-api_key = ""  # Your actual API key here
-
-# Initialize the language flow
+# Initialize the language agent
+# Initialize the language model
 llm = OpenAIChat(
-    openai_api_key=api_key,
     temperature=0.5,
-    max_tokens=3000,
+    model_name="gpt-4",
+    openai_api_key=api_key,
+    max_tokens=4000
 )
 
-biochat = BioGPT()
 
-# Use Anthropic
-anthropic = Anthropic()
-
-# Initialize the agent with the language flow
-agent1 = Flow(llm=llm, max_loops=1, dashboard=False)
-
-# Create another agent for a different task
-agent2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize the agent with the language agent
+agent1 = Agent(
+    llm=llm,
+    max_loops=1,
+)
 
 # Create another agent for a different task
-agent3 = Flow(llm=biochat, max_loops=1, dashboard=False)
-
-# agent4 = Flow(llm=anthropic, max_loops="auto")
+agent2 = Agent(llm=llm, max_loops=1)
 
 # Create the workflow
 workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to the workflow
-workflow.add("Generate a 10,000 word blog on health and wellness.", agent1)
+workflow.add(
+    agent1,
+    "Generate a 10,000 word blog on health and wellness.",
+)
 
 # Suppose the next task takes the output of the first task as input
-workflow.add("Summarize the generated blog", agent2)
-
-workflow.add("Create a references sheet of materials for the curriculm", agent3)
+workflow.add(
+    agent2,
+    "Summarize the generated blog",
+)
 
 # Run the workflow
 workflow.run()

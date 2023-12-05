@@ -1,18 +1,6 @@
-import logging
-import os
-import warnings
+from swarms.utils.disable_logging import disable_logging
 
-warnings.filterwarnings("ignore", category=UserWarning)
-
-# disable tensorflow warnings
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-
-try:
-    log = logging.getLogger("pytorch")
-    log.propagate = False
-    log.setLevel(logging.ERROR)
-except Exception as error:
-    print(f"Pytorch logging not disabled: {error}")
+disable_logging()
 
 from swarms.agents import *  # noqa: E402, F403
 from swarms.swarms import *  # noqa: E402, F403

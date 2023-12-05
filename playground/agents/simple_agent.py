@@ -1,5 +1,5 @@
 from swarms.agents.simple_agent import SimpleAgent
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.models import OpenAIChat
 
 api_key = ""
@@ -9,8 +9,8 @@ llm = OpenAIChat(
     temperature=0.5,
 )
 
-# Initialize the flow
-flow = Flow(
+# Initialize the agent
+agent = Agent(
     llm=llm,
     max_loops=5,
 )
@@ -18,7 +18,7 @@ flow = Flow(
 
 agent = SimpleAgent(
     name="Optimus Prime",
-    flow=flow,
+    agent=agent,
     # Memory
 )
 

@@ -7,7 +7,7 @@ repos:
     rev: 'v0.0.255'
     hooks:
       - id: ruff
-        args: [--fix]
+        args: [----unsafe-fixes]
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.6.3
     hooks:

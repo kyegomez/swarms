@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from typing import Dict, List
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 
 logger = logging.getLogger(__name__)
 
@@ -12,19 +12,19 @@ class GroupChat:
     A group chat class that contains a list of agents and the maximum number of rounds.
 
     Args:
-        agents: List[Flow]
+        agents: List[Agent]
         messages: List[Dict]
         max_round: int
         admin_name: str
 
     Usage:
     >>> from swarms import GroupChat
-    >>> from swarms.structs.flow import Flow
-    >>> agents = Flow()
+    >>> from swarms.structs.agent import Agent
+    >>> agents = Agent()
 
     """
 
-    agents: List[Flow]
+    agents: List[Agent]
     messages: List[Dict]
     max_round: int = 10
     admin_name: str = "Admin"  # the name of the admin agent
@@ -38,16 +38,21 @@ class GroupChat:
         """Reset the group chat."""
         self.messages.clear()
 
-    def agent_by_name(self, name: str) -> Flow:
+    def agent_by_name(self, name: str) -> Agent:
         """Find an agent whose name is contained within the given 'name' string."""
         for agent in self.agents:
             if agent.name in name:
                 return agent
-        raise ValueError(f"No agent found with a name contained in '{name}'.")
+        raise ValueError(
+            f"No agent found with a name contained in '{name}'."
+        )
 
-    def next_agent(self, agent: Flow) -> Flow:
+    def next_agent(self, agent: Agent) -> Agent:
         """Return the next agent in the list."""
-        return self.agents[(self.agent_names.index(agent.name) + 1) % len(self.agents)]
+        return self.agents[
+            (self.agent_names.index(agent.name) + 1)
+            % len(self.agents)
+        ]
 
     def select_speaker_msg(self):
         """Return the message for selecting the next speaker."""
@@ -59,7 +64,7 @@ class GroupChat:
         Then select the next role from {self.agent_names} to play. Only return the role.
         """
 
-    def select_speaker(self, last_speaker: Flow, selector: Flow):
+    def select_speaker(self, last_speaker: Agent, selector: Agent):
         """Select the next speaker."""
         selector.update_system_message(self.select_speaker_msg())
 
@@ -67,8 +72,8 @@ class GroupChat:
         n_agents = len(self.agent_names)
         if n_agents < 3:
             logger.warning(
-                f"GroupChat is underpopulated with {n_agents} agents. Direct"
-                " communication would be more efficient."
+                f"GroupChat is underpopulated with {n_agents} agents."
+                " Direct communication would be more efficient."
             )
 
         name = selector.generate_reply(
@@ -78,8 +83,9 @@ class GroupChat:
                     {
                         "role": "system",
                         "content": (
-                            "Read the above conversation. Then select the next most"
-                            f" suitable role from {self.agent_names} to play. Only"
+                            "Read the above conversation. Then"
+                            " select the next most suitable role"
+                            f" from {self.agent_names} to play. Only"
                             " return the role."
                         ),
                     }
@@ -93,13 +99,18 @@ class GroupChat:
 
     def _participant_roles(self):
         return "\n".join(
-            [f"{agent.name}: {agent.system_message}" for agent in self.agents]
+            [
+                f"{agent.name}: {agent.system_message}"
+                for agent in self.agents
+            ]
         )
 
     def format_history(self, messages: List[Dict]) -> str:
         formatted_messages = []
         for message in messages:
-            formatted_message = f"'{message['role']}:{message['content']}"
+            formatted_message = (
+                f"'{message['role']}:{message['content']}"
+            )
             formatted_messages.append(formatted_message)
         return "\n".join(formatted_messages)
 
@@ -110,23 +121,25 @@ class GroupChatManager:
 
     Args:
         groupchat: GroupChat
-        selector: Flow
+        selector: Agent
 
     Usage:
     >>> from swarms import GroupChatManager
-    >>> from swarms.structs.flow import Flow
-    >>> agents = Flow()
+    >>> from swarms.structs.agent import Agent
+    >>> agents = Agent()
     >>> output = GroupChatManager(agents, lambda x: x)
 
 
     """
 
-    def __init__(self, groupchat: GroupChat, selector: Flow):
+    def __init__(self, groupchat: GroupChat, selector: Agent):
         self.groupchat = groupchat
         self.selector = selector
 
     def __call__(self, task: str):
-        self.groupchat.messages.append({"role": self.selector.name, "content": task})
+        self.groupchat.messages.append(
+            {"role": self.selector.name, "content": task}
+        )
         for i in range(self.groupchat.max_round):
             speaker = self.groupchat.select_speaker(
                 last_speaker=self.selector, selector=self.selector

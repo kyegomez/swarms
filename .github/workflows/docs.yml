@@ -1,4 +1,4 @@
-name: Docs WorkFlow
+name: Docs WorkAgent
 
 on:
   push:

@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "2.3.9"
+version = "2.6.0"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -18,22 +18,23 @@ classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.6"
+    "Programming Language :: Python :: 3.10"
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8.1"
-transformers = "*"
+python = "^3.9.1"
+torch = "2.1.1"
+transformers = "2.10"
 openai = "0.28.0"
 langchain = "*"
 asyncio = "*"
 nest_asyncio = "*"
 einops = "*"
 google-generativeai = "*"
-torch = "*"
 langchain-experimental = "*"
 playwright = "*"
 duckduckgo-search = "*"
+opencv-python-headless = "*"
 faiss-cpu = "*"
 backoff = "*"
 marshmallow = "*"
@@ -52,7 +53,7 @@ ratelimit = "*"
 beautifulsoup4 = "*"
 cohere = "*"
 huggingface-hub = "*"
-pydantic = "*"
+pydantic = "1.10.12"
 tenacity = "*"
 Pillow = "*"
 chromadb = "*"
@@ -67,7 +68,7 @@ torchvision = "*"
 rich = "*"
 
 [tool.poetry.group.lint.dependencies]
-ruff = "^0.0.249"
+ruff = ">=0.0.249,<0.1.7"
 types-toml = "^0.10.8.1"
 types-redis = "^4.3.21.6"
 types-pytz = "^2023.3.0.0"
@@ -77,11 +78,18 @@ mypy-protobuf = "^3.0.0"
 
 
 [tool.autopep8]
-max_line_length = 120
+max_line_length = 70
 ignore = "E501,W6"  # or ["E501", "W6"]
 in-place = true
 recursive = true
 aggressive = 3
 
 [tool.ruff]
-line-length = 120
+line-length = 70
+
+[tool.black]
+line-length = 70
+target-version = ['py38']
+preview = true
+
+

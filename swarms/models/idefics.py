@@ -66,7 +66,9 @@ class Idefics:
         max_length=100,
     ):
         self.device = (
-            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+            device
+            if device
+            else ("cuda" if torch.cuda.is_available() else "cpu")
         )
         self.model = IdeficsForVisionText2Text.from_pretrained(
             checkpoint,
@@ -98,10 +100,14 @@ class Idefics:
         """
         inputs = (
             self.processor(
-                prompts, add_end_of_utterance_token=False, return_tensors="pt"
+                prompts,
+                add_end_of_utterance_token=False,
+                return_tensors="pt",
             ).to(self.device)
             if batched_mode
-            else self.processor(prompts[0], return_tensors="pt").to(self.device)
+            else self.processor(prompts[0], return_tensors="pt").to(
+                self.device
+            )
         )
 
         exit_condition = self.processor.tokenizer(
@@ -109,7 +115,8 @@ class Idefics:
         ).input_ids
 
         bad_words_ids = self.processor.tokenizer(
-            ["<image>", "<fake_token_around_image"], add_special_tokens=False
+            ["<image>", "<fake_token_around_image"],
+            add_special_tokens=False,
         ).input_ids
 
         generated_ids = self.model.generate(
@@ -143,10 +150,14 @@ class Idefics:
         """
         inputs = (
             self.processor(
-                prompts, add_end_of_utterance_token=False, return_tensors="pt"
+                prompts,
+                add_end_of_utterance_token=False,
+                return_tensors="pt",
             ).to(self.device)
             if batched_mode
-            else self.processor(prompts[0], return_tensors="pt").to(self.device)
+            else self.processor(prompts[0], return_tensors="pt").to(
+                self.device
+            )
         )
 
         exit_condition = self.processor.tokenizer(
@@ -154,7 +165,8 @@ class Idefics:
         ).input_ids
 
         bad_words_ids = self.processor.tokenizer(
-            ["<image>", "<fake_token_around_image"], add_special_tokens=False
+            ["<image>", "<fake_token_around_image"],
+            add_special_tokens=False,
         ).input_ids
 
         generated_ids = self.model.generate(

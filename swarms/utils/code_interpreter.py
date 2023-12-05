@@ -116,14 +116,24 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
                     # Most of the time it doesn't matter, but we should figure out why it happens frequently with:
                     # applescript
                     yield {"output": traceback.format_exc()}
-                    yield {"output": f"Retrying... ({retry_count}/{max_retries})"}
+                    yield {
+                        "output": (
+                            "Retrying..."
+                            f" ({retry_count}/{max_retries})"
+                        )
+                    }
                     yield {"output": "Restarting process."}
 
                 self.start_process()
 
                 retry_count += 1
                 if retry_count > max_retries:
-                    yield {"output": "Maximum retries reached. Could not execute code."}
+                    yield {
+                        "output": (
+                            "Maximum retries reached. Could not"
+                            " execute code."
+                        )
+                    }
                     return
 
         while True:
@@ -132,7 +142,9 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
             else:
                 time.sleep(0.1)
             try:
-                output = self.output_queue.get(timeout=0.3)  # Waits for 0.3 seconds
+                output = self.output_queue.get(
+                    timeout=0.3
+                )  # Waits for 0.3 seconds
                 yield output
             except queue.Empty:
                 if self.done.is_set():

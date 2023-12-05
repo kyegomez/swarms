@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Swarms framework is a Python library designed to facilitate the creation and management of a simulated group chat environment. This environment can be used for a variety of purposes, such as training conversational agents, role-playing games, or simulating dialogues for machine learning purposes. The core functionality revolves around managing the flow of messages between different agents within the chat, as well as handling the selection and responses of these agents based on the conversation's context.
+The Swarms framework is a Python library designed to facilitate the creation and management of a simulated group chat environment. This environment can be used for a variety of purposes, such as training conversational agents, role-playing games, or simulating dialogues for machine learning purposes. The core functionality revolves around managing the agent of messages between different agents within the chat, as well as handling the selection and responses of these agents based on the conversation's context.
 
 ### Purpose
 
@@ -13,7 +13,7 @@ The purpose of the Swarms framework, and specifically the `GroupChat` and `Group
 ### Key Features
 
 - **Agent Interaction**: Allows multiple agents to communicate within a group chat scenario.
-- **Message Management**: Handles the storage and flow of messages within the group chat.
+- **Message Management**: Handles the storage and agent of messages within the group chat.
 - **Role Play**: Enables agents to assume specific roles and interact accordingly.
 - **Conversation Context**: Maintains the context of the conversation for appropriate responses by agents.
 
@@ -29,7 +29,7 @@ The `GroupChat` class is the backbone of the Swarms framework's chat simulation.
 
 | Parameter  | Type                | Description                                                  | Default Value |
 |------------|---------------------|--------------------------------------------------------------|---------------|
-| agents     | List[Flow]          | List of agent flows participating in the group chat.         | None          |
+| agents     | List[Agent]          | List of agent flows participating in the group chat.         | None          |
 | messages   | List[Dict]          | List of message dictionaries exchanged in the group chat.    | None          |
 | max_round  | int                 | Maximum number of rounds/messages allowed in the group chat. | 10            |
 | admin_name | str                 | The name of the admin agent in the group chat.               | "Admin"       |
@@ -38,10 +38,10 @@ The `GroupChat` class is the backbone of the Swarms framework's chat simulation.
 
 - `agent_names`: Returns a list of the names of the agents in the group chat.
 - `reset()`: Clears all messages from the group chat.
-- `agent_by_name(name: str) -> Flow`: Finds and returns an agent by name.
-- `next_agent(agent: Flow) -> Flow`: Returns the next agent in the list.
+- `agent_by_name(name: str) -> Agent`: Finds and returns an agent by name.
+- `next_agent(agent: Agent) -> Agent`: Returns the next agent in the list.
 - `select_speaker_msg() -> str`: Returns the message for selecting the next speaker.
-- `select_speaker(last_speaker: Flow, selector: Flow) -> Flow`: Logic to select the next speaker based on the last speaker and the selector agent.
+- `select_speaker(last_speaker: Agent, selector: Agent) -> Agent`: Logic to select the next speaker based on the last speaker and the selector agent.
 - `_participant_roles() -> str`: Returns a string listing all participant roles.
 - `format_history(messages: List[Dict]) -> str`: Formats the history of messages for display or processing.
 
@@ -50,10 +50,10 @@ The `GroupChat` class is the backbone of the Swarms framework's chat simulation.
 #### Example 1: Initializing a GroupChat
 
 ```python
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 from swarms.groupchat import GroupChat
 
-# Assuming Flow objects (flow1, flow2, flow3) are initialized and configured
+# Assuming Agent objects (flow1, flow2, flow3) are initialized and configured
 agents = [flow1, flow2, flow3]
 group_chat = GroupChat(agents=agents, messages=[], max_round=10)
 ```
@@ -67,8 +67,8 @@ group_chat.reset()
 #### Example 3: Selecting a Speaker
 
 ```python
-last_speaker = agents[0]  # Assuming this is a Flow object representing the last speaker
-selector = agents[1]  # Assuming this is a Flow object with the selector role
+last_speaker = agents[0]  # Assuming this is a Agent object representing the last speaker
+selector = agents[1]  # Assuming this is a Agent object with the selector role
 
 next_speaker = group_chat.select_speaker(last_speaker, selector)
 ```
@@ -86,7 +86,7 @@ The `GroupChatManager` class acts as a controller for the `GroupChat` instance. 
 | Parameter  | Type        | Description                                          |
 |------------|-------------|------------------------------------------------------|
 | groupchat  | GroupChat   | The GroupChat instance that the manager will handle. |
-| selector   | Flow        | The Flow object that selects the next speaker.       |
+| selector   | Agent        | The Agent object that selects the next speaker.       |
 
 #### Methods
 
@@ -98,7 +98,7 @@ The `GroupChatManager` class acts as a controller for the `GroupChat` instance. 
 
 ```python
 from swarms.groupchat import GroupChat, GroupChatManager
-from swarms.structs.flow import Flow
+from swarms.structs.agent import Agent
 
 # Initialize your agents and group chat as shown in previous examples
 chat_manager = GroupChatManager(groupchat=group_chat, selector=manager)
@@ -132,7 +132,7 @@ By leveraging the framework's features, users can create complex interaction sce
 
 **Q: Can the Swarms framework handle real-time interactions between agents?**
 
-A: The Swarms framework is designed to simulate group chat environments. While it does not handle real-time interactions as they would occur on a network, it can simulate the flow of conversation in a way that mimics real-time communication.
+A: The Swarms framework is designed to simulate group chat environments. While it does not handle real-time interactions as they would occur on a network, it can simulate the agent of conversation in a way that mimics real-time communication.
 
 **Q: Is the Swarms framework capable of natural language processing?**
 
@@ -152,7 +152,7 @@ A: The framework is can be integrated with any chat services. However, it could 
 
 **Q: How does the `GroupChatManager` select the next speaker?**
 
-A: The `GroupChatManager` uses a selection mechanism, which is typically based on the conversation's context and the roles of the agents, to determine the next speaker. The specifics of this mechanism can be customized to match the desired flow of the conversation.
+A: The `GroupChatManager` uses a selection mechanism, which is typically based on the conversation's context and the roles of the agents, to determine the next speaker. The specifics of this mechanism can be customized to match the desired agent of the conversation.
 
 **Q: Can I contribute to the Swarms framework or suggest features?**
 

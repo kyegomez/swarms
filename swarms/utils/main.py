@@ -36,7 +36,9 @@ def cut_dialogue_history(history_memory, keep_last_n_words=500):
         paragraphs = history_memory.split("\n")
         last_n_tokens = n_tokens
         while last_n_tokens >= keep_last_n_words:
-            last_n_tokens = last_n_tokens - len(paragraphs[0].split(" "))
+            last_n_tokens = last_n_tokens - len(
+                paragraphs[0].split(" ")
+            )
             paragraphs = paragraphs[1:]
         return "\n" + "\n".join(paragraphs)
 
@@ -51,14 +53,20 @@ def get_new_image_name(org_img_name, func_name="update"):
         most_org_file_name = name_split[0]
         recent_prev_file_name = name_split[0]
         new_file_name = "{}_{}_{}_{}.png".format(
-            this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
+            this_new_uuid,
+            func_name,
+            recent_prev_file_name,
+            most_org_file_name,
         )
     else:
         assert len(name_split) == 4
         most_org_file_name = name_split[3]
         recent_prev_file_name = name_split[0]
         new_file_name = "{}_{}_{}_{}.png".format(
-            this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
+            this_new_uuid,
+            func_name,
+            recent_prev_file_name,
+            most_org_file_name,
         )
     return os.path.join(head, new_file_name)
 
@@ -73,14 +81,20 @@ def get_new_dataframe_name(org_img_name, func_name="update"):
         most_org_file_name = name_split[0]
         recent_prev_file_name = name_split[0]
         new_file_name = "{}_{}_{}_{}.csv".format(
-            this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
+            this_new_uuid,
+            func_name,
+            recent_prev_file_name,
+            most_org_file_name,
         )
     else:
         assert len(name_split) == 4
         most_org_file_name = name_split[3]
         recent_prev_file_name = name_split[0]
         new_file_name = "{}_{}_{}_{}.csv".format(
-            this_new_uuid, func_name, recent_prev_file_name, most_org_file_name
+            this_new_uuid,
+            func_name,
+            recent_prev_file_name,
+            most_org_file_name,
         )
     return os.path.join(head, new_file_name)
 
@@ -187,7 +201,11 @@ class ANSI:
         self.args = []
 
     def join(self) -> str:
-        return ANSI.ESCAPE + ";".join([str(a) for a in self.args]) + ANSI.CLOSE
+        return (
+            ANSI.ESCAPE
+            + ";".join([str(a) for a in self.args])
+            + ANSI.CLOSE
+        )
 
     def wrap(self, text: str) -> str:
         return self.join() + text + ANSI(Style.reset()).join()
@@ -201,7 +219,9 @@ def dim_multiline(message: str) -> str:
     lines = message.split("\n")
     if len(lines) <= 1:
         return lines[0]
-    return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(Color.black().bright())
+    return lines[0] + ANSI("\n... ".join([""] + lines[1:])).to(
+        Color.black().bright()
+    )
 
 
 # +=============================> ANSI Ending
@@ -227,7 +247,9 @@ class AbstractUploader(ABC):
 
 
 class S3Uploader(AbstractUploader):
-    def __init__(self, accessKey: str, secretKey: str, region: str, bucket: str):
+    def __init__(
+        self, accessKey: str, secretKey: str, region: str, bucket: str
+    ):
         self.accessKey = accessKey
         self.secretKey = secretKey
         self.region = region
@@ -334,11 +356,15 @@ class BaseHandler:
 
 
 class FileHandler:
-    def __init__(self, handlers: Dict[FileType, BaseHandler], path: Path):
+    def __init__(
+        self, handlers: Dict[FileType, BaseHandler], path: Path
+    ):
         self.handlers = handlers
         self.path = path
 
-    def register(self, filetype: FileType, handler: BaseHandler) -> "FileHandler":
+    def register(
+        self, filetype: FileType, handler: BaseHandler
+    ) -> "FileHandler":
         self.handlers[filetype] = handler
         return self
 
@@ -356,11 +382,20 @@ class FileHandler:
 
     def handle(self, url: str) -> str:
         try:
-            if url.startswith(os.environ.get("SERVER", "http://localhost:8000")):
+            if url.startswith(
+                os.environ.get("SERVER", "http://localhost:8000")
+            ):
                 local_filepath = url[
-                    len(os.environ.get("SERVER", "http://localhost:8000")) + 1 :
+                    len(
+                        os.environ.get(
+                            "SERVER", "http://localhost:8000"
+                        )
+                    )
+                    + 1 :
                 ]
-                local_filename = Path("file") / local_filepath.split("/")[-1]
+                local_filename = (
+                    Path("file") / local_filepath.split("/")[-1]
+                )
                 src = self.path / local_filepath
                 dst = (
                     self.path
@@ -375,11 +410,14 @@ class FileHandler:
             if handler is None:
                 if FileType.from_url(url) == FileType.IMAGE:
                     raise Exception(
-                        f"No handler for {FileType.from_url(url)}. "
-                        "Please set USE_GPU to True in env/settings.py"
+                        f"No handler for {FileType.from_url(url)}."
+                        " Please set USE_GPU to True in"
+                        " env/settings.py"
                     )
                 else:
-                    raise Exception(f"No handler for {FileType.from_url(url)}")
+                    raise Exception(
+                        f"No handler for {FileType.from_url(url)}"
+                    )
             return handler.handle(local_filename)
         except Exception as e:
             raise e

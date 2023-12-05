@@ -87,7 +87,9 @@ class Yi34B200k:
             top_k=self.top_k,
             top_p=self.top_p,
         )
-        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return self.tokenizer.decode(
+            outputs[0], skip_special_tokens=True
+        )
 
 
 # # Example usage

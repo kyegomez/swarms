@@ -34,7 +34,7 @@ Executes the OmniAgent. The agent plans its actions based on the user's input, e
 Facilitates an interactive chat with the agent. It processes user messages, handles exceptions, and returns a response, either in streaming format or as a whole string.
 
 #### 3. `_stream_response(self, response: str)`:
-For streaming mode, this function yields the response token by token, ensuring a smooth output flow.
+For streaming mode, this function yields the response token by token, ensuring a smooth output agent.
 
 ## Examples & Use Cases
 Initialize the `OmniModalAgent` and communicate with it:

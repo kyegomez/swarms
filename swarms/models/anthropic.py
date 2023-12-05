@@ -45,12 +45,20 @@ def xor_args(*arg_groups: Tuple[str, ...]) -> Callable:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             """Validate exactly one arg in each group is not None."""
             counts = [
-                sum(1 for arg in arg_group if kwargs.get(arg) is not None)
+                sum(
+                    1
+                    for arg in arg_group
+                    if kwargs.get(arg) is not None
+                )
                 for arg_group in arg_groups
             ]
-            invalid_groups = [i for i, count in enumerate(counts) if count != 1]
+            invalid_groups = [
+                i for i, count in enumerate(counts) if count != 1
+            ]
             if invalid_groups:
-                invalid_group_names = [", ".join(arg_groups[i]) for i in invalid_groups]
+                invalid_group_names = [
+                    ", ".join(arg_groups[i]) for i in invalid_groups
+                ]
                 raise ValueError(
                     "Exactly one argument in each of the following"
                     " groups must be defined:"
@@ -106,7 +114,10 @@ def mock_now(dt_value):  # type: ignore
 
 
 def guard_import(
-    module_name: str, *, pip_name: Optional[str] = None, package: Optional[str] = None
+    module_name: str,
+    *,
+    pip_name: Optional[str] = None,
+    package: Optional[str] = None,
 ) -> Any:
     """Dynamically imports a module and raises a helpful exception if the module is not
     installed."""
@@ -114,8 +125,9 @@ def guard_import(
         module = importlib.import_module(module_name, package)
     except ImportError:
         raise ImportError(
-            f"Could not import {module_name} python package. "
-            f"Please install it with `pip install {pip_name or module_name}`."
+            f"Could not import {module_name} python package. Please"
+            " install it with `pip install"
+            f" {pip_name or module_name}`."
         )
     return module
 
@@ -129,25 +141,33 @@ def check_package_version(
 ) -> None:
     """Check the version of a package."""
     imported_version = parse(version(package))
-    if lt_version is not None and imported_version >= parse(lt_version):
+    if lt_version is not None and imported_version >= parse(
+        lt_version
+    ):
         raise ValueError(
-            f"Expected {package} version to be < {lt_version}. Received "
-            f"{imported_version}."
+            f"Expected {package} version to be < {lt_version}."
+            f" Received {imported_version}."
         )
-    if lte_version is not None and imported_version > parse(lte_version):
+    if lte_version is not None and imported_version > parse(
+        lte_version
+    ):
         raise ValueError(
-            f"Expected {package} version to be <= {lte_version}. Received "
-            f"{imported_version}."
+            f"Expected {package} version to be <= {lte_version}."
+            f" Received {imported_version}."
         )
-    if gt_version is not None and imported_version <= parse(gt_version):
+    if gt_version is not None and imported_version <= parse(
+        gt_version
+    ):
         raise ValueError(
-            f"Expected {package} version to be > {gt_version}. Received "
-            f"{imported_version}."
+            f"Expected {package} version to be > {gt_version}."
+            f" Received {imported_version}."
         )
-    if gte_version is not None and imported_version < parse(gte_version):
+    if gte_version is not None and imported_version < parse(
+        gte_version
+    ):
         raise ValueError(
-            f"Expected {package} version to be >= {gte_version}. Received "
-            f"{imported_version}."
+            f"Expected {package} version to be >= {gte_version}."
+            f" Received {imported_version}."
         )
 
 
@@ -187,11 +207,14 @@ def build_extra_kwargs(
             )
             extra_kwargs[field_name] = values.pop(field_name)
 
-    invalid_model_kwargs = all_required_field_names.intersection(extra_kwargs.keys())
+    invalid_model_kwargs = all_required_field_names.intersection(
+        extra_kwargs.keys()
+    )
     if invalid_model_kwargs:
         raise ValueError(
-            f"Parameters {invalid_model_kwargs} should be specified explicitly. "
-            "Instead they were passed in as part of `model_kwargs` parameter."
+            f"Parameters {invalid_model_kwargs} should be specified"
+            " explicitly. Instead they were passed in as part of"
+            " `model_kwargs` parameter."
         )
 
     return extra_kwargs
@@ -250,7 +273,9 @@ class _AnthropicCommon(BaseLanguageModel):
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
         values["anthropic_api_key"] = convert_to_secret_str(
-            get_from_dict_or_env(values, "anthropic_api_key", "ANTHROPIC_API_KEY")
+            get_from_dict_or_env(
+                values, "anthropic_api_key", "ANTHROPIC_API_KEY"
+            )
         )
         # Get custom api url from environment.
         values["anthropic_api_url"] = get_from_dict_or_env(
@@ -266,12 +291,16 @@ class _AnthropicCommon(BaseLanguageModel):
             check_package_version("anthropic", gte_version="0.3")
             values["client"] = anthropic.Anthropic(
                 base_url=values["anthropic_api_url"],
-                api_key=values["anthropic_api_key"].get_secret_value(),
+                api_key=values[
+                    "anthropic_api_key"
+                ].get_secret_value(),
                 timeout=values["default_request_timeout"],
             )
             values["async_client"] = anthropic.AsyncAnthropic(
                 base_url=values["anthropic_api_url"],
-                api_key=values["anthropic_api_key"].get_secret_value(),
+                api_key=values[
+                    "anthropic_api_key"
+                ].get_secret_value(),
                 timeout=values["default_request_timeout"],
             )
             values["HUMAN_PROMPT"] = anthropic.HUMAN_PROMPT
@@ -305,9 +334,13 @@ class _AnthropicCommon(BaseLanguageModel):
         """Get the identifying parameters."""
         return {**{}, **self._default_params}
 
-    def _get_anthropic_stop(self, stop: Optional[List[str]] = None) -> List[str]:
+    def _get_anthropic_stop(
+        self, stop: Optional[List[str]] = None
+    ) -> List[str]:
         if not self.HUMAN_PROMPT or not self.AI_PROMPT:
-            raise NameError("Please ensure the anthropic package is loaded")
+            raise NameError(
+                "Please ensure the anthropic package is loaded"
+            )
 
         if stop is None:
             stop = []
@@ -354,8 +387,8 @@ class Anthropic(LLM, _AnthropicCommon):
     def raise_warning(cls, values: Dict) -> Dict:
         """Raise warning that this class is deprecated."""
         warnings.warn(
-            "This Anthropic LLM is deprecated. "
-            "Please use `from langchain.chat_models import ChatAnthropic` instead"
+            "This Anthropic LLM is deprecated. Please use `from"
+            " langchain.chat_models import ChatAnthropic` instead"
         )
         return values
 
@@ -366,18 +399,25 @@ class Anthropic(LLM, _AnthropicCommon):
 
     def _wrap_prompt(self, prompt: str) -> str:
         if not self.HUMAN_PROMPT or not self.AI_PROMPT:
-            raise NameError("Please ensure the anthropic package is loaded")
+            raise NameError(
+                "Please ensure the anthropic package is loaded"
+            )
 
         if prompt.startswith(self.HUMAN_PROMPT):
             return prompt  # Already wrapped.
 
         # Guard against common errors in specifying wrong number of newlines.
-        corrected_prompt, n_subs = re.subn(r"^\n*Human:", self.HUMAN_PROMPT, prompt)
+        corrected_prompt, n_subs = re.subn(
+            r"^\n*Human:", self.HUMAN_PROMPT, prompt
+        )
         if n_subs == 1:
             return corrected_prompt
 
         # As a last resort, wrap the prompt ourselves to emulate instruct-style.
-        return f"{self.HUMAN_PROMPT} {prompt}{self.AI_PROMPT} Sure, here you go:\n"
+        return (
+            f"{self.HUMAN_PROMPT} {prompt}{self.AI_PROMPT} Sure, here"
+            " you go:\n"
+        )
 
     def _call(
         self,
@@ -406,7 +446,10 @@ class Anthropic(LLM, _AnthropicCommon):
         if self.streaming:
             completion = ""
             for chunk in self._stream(
-                prompt=prompt, stop=stop, run_manager=run_manager, **kwargs
+                prompt=prompt,
+                stop=stop,
+                run_manager=run_manager,
+                **kwargs,
             ):
                 completion += chunk.text
             return completion
@@ -434,7 +477,10 @@ class Anthropic(LLM, _AnthropicCommon):
         if self.streaming:
             completion = ""
             async for chunk in self._astream(
-                prompt=prompt, stop=stop, run_manager=run_manager, **kwargs
+                prompt=prompt,
+                stop=stop,
+                run_manager=run_manager,
+                **kwargs,
             ):
                 completion += chunk.text
             return completion
@@ -476,7 +522,10 @@ class Anthropic(LLM, _AnthropicCommon):
         params = {**self._default_params, **kwargs}
 
         for token in self.client.completions.create(
-            prompt=self._wrap_prompt(prompt), stop_sequences=stop, stream=True, **params
+            prompt=self._wrap_prompt(prompt),
+            stop_sequences=stop,
+            stream=True,
+            **params,
         ):
             chunk = GenerationChunk(text=token.completion)
             yield chunk
@@ -517,10 +566,14 @@ class Anthropic(LLM, _AnthropicCommon):
             chunk = GenerationChunk(text=token.completion)
             yield chunk
             if run_manager:
-                await run_manager.on_llm_new_token(chunk.text, chunk=chunk)
+                await run_manager.on_llm_new_token(
+                    chunk.text, chunk=chunk
+                )
 
     def get_num_tokens(self, text: str) -> int:
         """Calculate number of tokens."""
         if not self.count_tokens:
-            raise NameError("Please ensure the anthropic package is loaded")
+            raise NameError(
+                "Please ensure the anthropic package is loaded"
+            )
         return self.count_tokens(text)

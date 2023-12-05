@@ -1,4 +1,7 @@
-from swarms.swarms.multi_agent_debate import MultiAgentDebate, select_speaker
+from swarms.swarms.multi_agent_debate import (
+    MultiAgentDebate,
+    select_speaker,
+)
 from swarms.workers.worker import Worker
 from swarms.models import OpenAIChat
 
@@ -36,7 +39,11 @@ agents = [worker1, worker2, worker3]
 debate = MultiAgentDebate(agents, select_speaker)
 
 # Run task
-task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
+task = (
+    "What were the winning boston marathon times for the past 5 years"
+    " (ending in 2022)? Generate a table of the year, name, country"
+    " of origin, and times."
+)
 results = debate.run(task, max_iters=4)
 
 # Print results

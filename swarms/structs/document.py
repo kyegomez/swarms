@@ -87,5 +87,7 @@ class BaseDocumentTransformer(ABC):
             A list of transformed Documents.
         """
         return await asyncio.get_running_loop().run_in_executor(
-            None, partial(self.transform_documents, **kwargs), documents
+            None,
+            partial(self.transform_documents, **kwargs),
+            documents,
         )

@@ -68,7 +68,9 @@ class Zephyr:
             tokenize=self.tokenize,
             add_generation_prompt=self.add_generation_prompt,
         )
-        outputs = self.pipe(prompt)  # max_new_token=self.max_new_tokens)
+        outputs = self.pipe(
+            prompt
+        )  # max_new_token=self.max_new_tokens)
         print(outputs[0]["generated_text"])
 
     def chat(self, message: str):

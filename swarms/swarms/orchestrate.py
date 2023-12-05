@@ -111,19 +111,25 @@ class Orchestrator:
 
         self.chroma_client = chromadb.Client()
 
-        self.collection = self.chroma_client.create_collection(name=collection_name)
+        self.collection = self.chroma_client.create_collection(
+            name=collection_name
+        )
 
         self.current_tasks = {}
 
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
-        self.executor = ThreadPoolExecutor(max_workers=len(agent_list))
+        self.executor = ThreadPoolExecutor(
+            max_workers=len(agent_list)
+        )
 
         self.embed_func = embed_func if embed_func else self.embed
 
     # @abstractmethod
 
-    def assign_task(self, agent_id: int, task: Dict[str, Any]) -> None:
+    def assign_task(
+        self, agent_id: int, task: Dict[str, Any]
+    ) -> None:
         """Assign a task to a specific agent"""
 
         while True:
@@ -148,13 +154,14 @@ class Orchestrator:
                 )
 
                 logging.info(
-                    f"Task {id(str)} has been processed by agent {id(agent)} with"
+                    f"Task {id(str)} has been processed by agent"
+                    f" {id(agent)} with"
                 )
 
             except Exception as error:
                 logging.error(
-                    f"Failed to process task {id(task)} by agent {id(agent)}. Error:"
-                    f" {error}"
+                    f"Failed to process task {id(task)} by agent"
+                    f" {id(agent)}. Error: {error}"
                 )
             finally:
                 with self.condition:
@@ -175,12 +182,15 @@ class Orchestrator:
 
         try:
             # Query the vector database for documents created by the agents
-            results = self.collection.query(query_texts=[str(agent_id)], n_results=10)
+            results = self.collection.query(
+                query_texts=[str(agent_id)], n_results=10
+            )
 
             return results
         except Exception as e:
             logging.error(
-                f"Failed to retrieve results from agent {agent_id}. Error {e}"
+                f"Failed to retrieve results from agent {agent_id}."
+                f" Error {e}"
             )
             raise
 
@@ -196,7 +206,9 @@ class Orchestrator:
             )
 
         except Exception as e:
-            logging.error(f"Failed to update the vector database. Error: {e}")
+            logging.error(
+                f"Failed to update the vector database. Error: {e}"
+            )
             raise
 
     # @abstractmethod
@@ -209,10 +221,15 @@ class Orchestrator:
         """append the result of the swarm to a specifici collection in the database"""
 
         try:
-            self.collection.add(documents=[result], ids=[str(id(result))])
+            self.collection.add(
+                documents=[result], ids=[str(id(result))]
+            )
 
         except Exception as e:
-            logging.error(f"Failed to append the agent output to database. Error: {e}")
+            logging.error(
+                "Failed to append the agent output to database."
+                f" Error: {e}"
+            )
             raise
 
     def run(self, objective: str):
@@ -226,13 +243,17 @@ class Orchestrator:
 
             results = [
                 self.assign_task(agent_id, task)
-                for agent_id, task in zip(range(len(self.agents)), self.task_queue)
+                for agent_id, task in zip(
+                    range(len(self.agents)), self.task_queue
+                )
             ]
 
             for result in results:
                 self.append_to_db(result)
 
-            logging.info(f"Successfully ran swarms with results: {results}")
+            logging.info(
+                f"Successfully ran swarms with results: {results}"
+            )
             return results
         except Exception as e:
             logging.error(f"An error occured in swarm: {e}")
@@ -255,7 +276,9 @@ class Orchestrator:
 
         """
 
-        message_vector = self.embed(message, self.api_key, self.model_name)
+        message_vector = self.embed(
+            message, self.api_key, self.model_name
+        )
 
         # store the mesage in the vector database
         self.collection.add(
@@ -264,15 +287,21 @@ class Orchestrator:
             ids=[f"{sender_id}_to_{receiver_id}"],
         )
 
-        self.run(objective=f"chat with agent {receiver_id} about {message}")
+        self.run(
+            objective=f"chat with agent {receiver_id} about {message}"
+        )
 
     def add_agents(self, num_agents: int):
         for _ in range(num_agents):
             self.agents.put(self.agent())
-        self.executor = ThreadPoolExecutor(max_workers=self.agents.qsize())
+        self.executor = ThreadPoolExecutor(
+            max_workers=self.agents.qsize()
+        )
 
     def remove_agents(self, num_agents):
         for _ in range(num_agents):
             if not self.agents.empty():
                 self.agents.get()
-        self.executor = ThreadPoolExecutor(max_workers=self.agents.qsize())
+        self.executor = ThreadPoolExecutor(
+            max_workers=self.agents.qsize()
+        )

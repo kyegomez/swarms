@@ -116,7 +116,9 @@ class Dalle3:
         byte_array = byte_stream.getvalue()
         return byte_array
 
-    @backoff.on_exception(backoff.expo, Exception, max_time=max_time_seconds)
+    @backoff.on_exception(
+        backoff.expo, Exception, max_time=max_time_seconds
+    )
     def __call__(self, task: str):
         """
         Text to image conversion using the Dalle3 API
@@ -169,8 +171,8 @@ class Dalle3:
             print(
                 colored(
                     (
-                        f"Error running Dalle3: {error} try optimizing your api key and"
-                        " or try again"
+                        f"Error running Dalle3: {error} try"
+                        " optimizing your api key and or try again"
                     ),
                     "red",
                 )
@@ -198,7 +200,9 @@ class Dalle3:
             with open(full_path, "wb") as file:
                 file.write(response.content)
         else:
-            raise ValueError(f"Failed to download image from {img_url}")
+            raise ValueError(
+                f"Failed to download image from {img_url}"
+            )
 
     def create_variations(self, img: str):
         """
@@ -234,22 +238,28 @@ class Dalle3:
             print(
                 colored(
                     (
-                        f"Error running Dalle3: {error} try optimizing your api key and"
-                        " or try again"
+                        f"Error running Dalle3: {error} try"
+                        " optimizing your api key and or try again"
                     ),
                     "red",
                 )
             )
-            print(colored(f"Error running Dalle3: {error.http_status}", "red"))
-            print(colored(f"Error running Dalle3: {error.error}", "red"))
+            print(
+                colored(
+                    f"Error running Dalle3: {error.http_status}",
+                    "red",
+                )
+            )
+            print(
+                colored(f"Error running Dalle3: {error.error}", "red")
+            )
             raise error
 
     def print_dashboard(self):
         """Print the Dalle3 dashboard"""
         print(
             colored(
-                (
-                    f"""Dalle3 Dashboard: 
+                f"""Dalle3 Dashboard: 
                     --------------------
 
                     Model: {self.model}
@@ -265,13 +275,14 @@ class Dalle3:
                     --------------------
                     
                     
-                    """
-                ),
+                    """,
                 "green",
             )
         )
 
-    def process_batch_concurrently(self, tasks: List[str], max_workers: int = 5):
+    def process_batch_concurrently(
+        self, tasks: List[str], max_workers: int = 5
+    ):
         """
 
         Process a batch of tasks concurrently
@@ -293,10 +304,16 @@ class Dalle3:
         ['https://cdn.openai.com/dall-e/encoded/feats/feats_01J9J5ZKJZJY9.png',
 
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_task = {executor.submit(self, task): task for task in tasks}
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
+            future_to_task = {
+                executor.submit(self, task): task for task in tasks
+            }
             results = []
-            for future in concurrent.futures.as_completed(future_to_task):
+            for future in concurrent.futures.as_completed(
+                future_to_task
+            ):
                 task = future_to_task[future]
                 try:
                     img = future.result()
@@ -307,14 +324,28 @@ class Dalle3:
                     print(
                         colored(
                             (
-                                f"Error running Dalle3: {error} try optimizing your api key and"
-                                " or try again"
+                                f"Error running Dalle3: {error} try"
+                                " optimizing your api key and or try"
+                                " again"
                             ),
                             "red",
                         )
                     )
-                    print(colored(f"Error running Dalle3: {error.http_status}", "red"))
-                    print(colored(f"Error running Dalle3: {error.error}", "red"))
+                    print(
+                        colored(
+                            (
+                                "Error running Dalle3:"
+                                f" {error.http_status}"
+                            ),
+                            "red",
+                        )
+                    )
+                    print(
+                        colored(
+                            f"Error running Dalle3: {error.error}",
+                            "red",
+                        )
+                    )
                     raise error
 
     def _generate_uuid(self):
@@ -329,7 +360,9 @@ class Dalle3:
         """Str method for the Dalle3 class"""
         return f"Dalle3(image_url={self.image_url})"
 
-    @backoff.on_exception(backoff.expo, Exception, max_tries=max_retries)
+    @backoff.on_exception(
+        backoff.expo, Exception, max_tries=max_retries
+    )
     def rate_limited_call(self, task: str):
         """Rate limited call to the Dalle3 API"""
         return self.__call__(task)
