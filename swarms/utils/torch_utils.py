@@ -1,4 +1,4 @@
-import torch 
+import torch
 
 
 def autodetect_device():

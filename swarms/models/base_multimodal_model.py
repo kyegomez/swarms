@@ -84,6 +84,8 @@ class BaseMultiModalModel:
         self.device = device
         self.max_new_tokens = max_new_tokens
         self.retries = retries
+        self.system_prompt = system_prompt
+        self.meta_prompt = meta_prompt
         self.chat_history = []
 
     def __call__(self, task: str, img: str, *args, **kwargs):
@@ -309,3 +311,4 @@ class BaseMultiModalModel:
     def set_max_length(self, max_length):
         """Set max_length"""
         self.max_length = max_length
+

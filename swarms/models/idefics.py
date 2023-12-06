@@ -79,7 +79,7 @@ class Idefics(BaseMultiModalModel):
             str
         ] = "HuggingFaceM4/idefics-9b-instruct",
         device: Callable = autodetect_device,
-        torch_dtype = torch.bfloat16,
+        torch_dtype=torch.bfloat16,
         max_length: int = 100,
         batched_mode: bool = True,
         *args,
