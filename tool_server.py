@@ -25,8 +25,8 @@ def run_tool_server():
     # def load_wikidata_tool():
     #     server.load_tool("wikidata")
 
-    def load_travel_tool():
-        server.load_tool("travel")
+    # def load_travel_tool():
+    #     server.load_tool("travel")
 
     # def load_wolframalpha_tool():
     #     WOLFRAMALPH_APP_ID = os.environ.get("WOLFRAMALPH_APP_ID", None)
@@ -165,7 +165,7 @@ def run_tool_server():
     # load_image_generation_tool()
     # load_hugging_tools()
     load_gradio_tools()
-    load_travel_tool()
+    # load_travel_tool()
 
     server.serve()
 
