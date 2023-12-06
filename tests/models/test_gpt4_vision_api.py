@@ -35,9 +35,7 @@ def test_encode_image(vision_api):
 
 
 def test_run_success(vision_api):
-    expected_response = {
-        "This is the model's response."
-    }
+    expected_response = {"This is the model's response."}
     with patch(
         "requests.post",
         return_value=Mock(json=lambda: expected_response),
