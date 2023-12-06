@@ -86,12 +86,14 @@ class BaseMultiModalModel:
         self.retries = retries
         self.chat_history = []
 
-    @abstractmethod
-    def __call__(self, text: str, img: str):
+    def __call__(self, task: str, img: str, *args, **kwargs):
         """Run the model"""
-        pass
+        return self.run(task, img, *args, **kwargs)
 
-    def run(self, task: str, img: str):
+    @abstractmethod
+    def run(
+        self, task: Optional[str], img: Optional[str], *args, **kwargs
+    ):
         """Run the model"""
         pass
 
@@ -99,7 +101,7 @@ class BaseMultiModalModel:
         """Run the model asynchronously"""
         pass
 
-    def get_img_from_web(self, img: str):
+    def get_img_from_web(self, img: str, *args, **kwargs):
         """Get the image from the web"""
         try:
             response = requests.get(img)
@@ -127,9 +129,7 @@ class BaseMultiModalModel:
         self.chat_history = []
 
     def run_many(
-        self,
-        tasks: List[str],
-        imgs: List[str],
+        self, tasks: List[str], imgs: List[str], *args, **kwargs
     ):
         """
         Run the model on multiple tasks and images all at once using concurrent
@@ -293,3 +293,19 @@ class BaseMultiModalModel:
         numbers or letters and typically correspond to specific segments or parts of the image.
         """
         return META_PROMPT
+
+    def set_device(self, device):
+        """
+        Changes the device used for inference.
+
+        Parameters
+        ----------
+            device : str
+                The new device to use for inference.
+        """
+        self.device = device
+        self.model.to(self.device)
+
+    def set_max_length(self, max_length):
+        """Set max_length"""
+        self.max_length = max_length

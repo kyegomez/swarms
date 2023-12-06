@@ -66,7 +66,11 @@ class HuggingfacePipeline(AbstractLLM):
         except Exception as error:
             print(
                 colored(
-                    f"Error in {self.__class__.__name__} pipeline: {error}",
+                    (
+                        "Error in"
+                        f" {self.__class__.__name__} pipeline:"
+                        f" {error}"
+                    ),
                     "red",
                 )
             )
