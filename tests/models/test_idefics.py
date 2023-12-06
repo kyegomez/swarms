@@ -136,3 +136,66 @@ def test_run_with_empty_prompts(idefics_instance):
         Exception
     ):  # Replace Exception with the actual exception that may arise for an empty prompt.
         idefics_instance.run([])
+
+
+# Test `run` method with batched_mode set to False
+def test_run_batched_mode_false(idefics_instance):
+    task = "User: Test"
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor, patch.object(
+        idefics_instance, "model"
+    ) as mock_model:
+        mock_processor.return_value = {
+            "input_ids": torch.tensor([1, 2, 3])
+        }
+        mock_model.generate.return_value = torch.tensor([1, 2, 3])
+        mock_processor.batch_decode.return_value = ["Test"]
+
+        idefics_instance.batched_mode = False
+        result = idefics_instance.run(task)
+
+    assert result == ["Test"]
+
+# Test `run` method with an exception
+def test_run_with_exception(idefics_instance):
+    task = "User: Test"
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor:
+        mock_processor.side_effect = Exception('Test exception')
+        with pytest.raises(Exception):
+            idefics_instance.run(task)
+
+# Test `set_model_name` method
+def test_set_model_name(idefics_instance):
+    new_model_name = "new_model_name"
+    with patch.object(
+        IdeficsForVisionText2Text, "from_pretrained"
+    ) as mock_from_pretrained, patch.object(
+        AutoProcessor, "from_pretrained"
+    ):
+        idefics_instance.set_model_name(new_model_name)
+
+    assert idefics_instance.model_name == new_model_name
+    mock_from_pretrained.assert_called_with(
+        new_model_name, torch_dtype=torch.bfloat16
+    )
+
+# Test `__init__` method with device set to None
+def test_init_device_none():
+    with patch(
+        "torch.cuda.is_available",
+        return_value=False,
+    ):
+        instance = Idefics(device=None)
+    assert instance.device == "cpu"
+
+# Test `__init__` method with device set to "cuda"
+def test_init_device_cuda():
+    with patch(
+        "torch.cuda.is_available",
+        return_value=True,
+    ):
+        instance = Idefics(device="cuda")
+    assert instance.device == "cuda"
