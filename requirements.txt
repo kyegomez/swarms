@@ -25,6 +25,7 @@ sentencepiece
 PyPDF2
 accelerate
 chromadb
+tensorflow
 optimum
 tiktoken
 tabulate 
