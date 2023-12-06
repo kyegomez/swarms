@@ -25,6 +25,7 @@ sentencepiece
 PyPDF2
 accelerate
 chromadb
+optimum
 tiktoken
 tabulate 
 colored

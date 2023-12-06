@@ -18,7 +18,10 @@ def llm_instance():
 
 # Test for instantiation and attributes
 def test_llm_initialization(llm_instance):
-    assert llm_instance.model_id == "NousResearch/Nous-Hermes-2-Vision-Alpha"
+    assert (
+        llm_instance.model_id
+        == "NousResearch/Nous-Hermes-2-Vision-Alpha"
+    )
     assert llm_instance.max_length == 500
     # ... add more assertions for all default attributes
 
@@ -77,7 +80,10 @@ def test_llm_memory_consumption(llm_instance):
     [
         ("NousResearch/Nous-Hermes-2-Vision-Alpha", 100),
         ("microsoft/Orca-2-13b", 200),
-        ("berkeley-nest/Starling-LM-7B-alpha", None),  # None to check default behavior
+        (
+            "berkeley-nest/Starling-LM-7B-alpha",
+            None,
+        ),  # None to check default behavior
     ],
 )
 def test_llm_initialization_params(model_id, max_length):
@@ -97,7 +103,6 @@ def test_llm_initialization_params(model_id, max_length):
 def test_llm_set_invalid_device(llm_instance):
     with pytest.raises(ValueError):
         llm_instance.set_device("quantum_processor")
-
 
 
 # Mocking external API call to test run method without network
@@ -210,9 +215,6 @@ def test_llm_cleanup(mock_model, mock_tokenizer, llm_instance):
     mock_tokenizer.delete.assert_called_once()
 
 
-
-
-
 # Test model's ability to handle multilingual input
 @patch("swarms.models.huggingface.HuggingfaceLLM.run")
 def test_llm_multilingual_input(mock_run, llm_instance):
@@ -234,7 +236,6 @@ def test_llm_caching_mechanism(mock_run, llm_instance):
     second_run_result = llm_instance.run(input_text)
     mock_run.assert_called_once()  # Should only be called once due to caching
     assert first_run_result == second_run_result
-
 
 
 # These tests are provided as examples. In real-world scenarios, you will need to adapt these tests to the actual logic of your `HuggingfaceLLM` class.

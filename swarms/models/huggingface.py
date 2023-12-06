@@ -270,9 +270,7 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(
-                task, return_tensors="pt"
-            )
+            inputs = self.tokenizer.encode(task, return_tensors="pt")
 
             # self.log.start()
 
