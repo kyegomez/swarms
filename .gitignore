@@ -34,7 +34,7 @@ error.txt
 
 errors.txt
 
-/models/
+models/
 
 # Distribution / packaging
 .Python

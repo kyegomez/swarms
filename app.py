@@ -127,24 +127,17 @@ MAX_SLEEP_TIME = 40
 def download_model(model_url: str, memory_utilization: int):
     # Extract model name from the URL
     model_name = model_url.split('/')[-1]
-    # TODO continue debugging 
-    # response = requests.get(model_url, stream=True)
-    # total_size = int(response.headers.get('content-length', 0))
-    # block_size = 1024 #1 Kibibyte
-    # progress_bar = gr.outputs.Progress_Bar(total_size)
-    # model_data = b""
-    # for data in response.iter_content(block_size):
-        # model_data += data
-        # progress_bar.update(len(data))
-        # yield progress_bar
-    # Save the model data to a file, or load it into a model here
-    vllm_model = LLM(
+    # Download the model using VLLM
+    vllm_model = VLLM(
         model=model_url,
         trust_remote_code=True,
         gpu_memory_utilization=memory_utilization,
+        download_dir="models/"
     )
+    # Add the downloaded model to the available_models list
     available_models.append((model_name, vllm_model))
-    return gr.update(choices=available_models)
+    # Update the dropdown choices with the new available_models list
+    model_chosen.update(choices=available_models)
 
 def load_tools():
     global valid_tools_info
