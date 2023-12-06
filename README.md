@@ -174,6 +174,36 @@ print(out)
 
 ```
 
+
+### `OmniModalAgent`
+- An agent that can understand any modality and conditionally generate any modality.
+
+```python
+from swarms.agents.omni_modal_agent import OmniModalAgent, OpenAIChat
+from swarms.models import OpenAIChat
+from dotenv import load_dotenv
+import os
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = OpenAIChat(
+    temperature=0.5,
+    model_name="gpt-4",
+    openai_api_key=api_key,
+)
+
+
+agent = OmniModalAgent(llm)
+response = agent.run("Generate a video of a swarm of fish and then make an image out of the video")
+print(response)
+```
+
+
 ---
 
 # Features 🤖 
