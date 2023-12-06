@@ -39,9 +39,26 @@ For streaming mode, this function yields the response token by token, ensuring a
 ## Examples & Use Cases
 Initialize the `OmniModalAgent` and communicate with it:
 ```python
-from swarms import OmniModalAgent, OpenAIChat
-llm_instance = OpenAIChat()
-agent = OmniModalAgent(llm_instance)
+from swarms.agents.omni_modal_agent import OmniModalAgent, OpenAIChat
+from swarms.models import OpenAIChat
+from dotenv import load_dotenv
+import os
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = OpenAIChat(
+    temperature=0.5,
+    model_name="gpt-4",
+    openai_api_key=api_key,
+)
+
+
+agent = OmniModalAgent(llm)
 response = agent.run("Translate 'Hello' to French.")
 print(response)
 ```

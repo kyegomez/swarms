@@ -1,4 +1,3 @@
-
 from PIL import Image
 from termcolor import colored
 from transformers import (
@@ -15,7 +14,7 @@ class Fuyu(BaseMultiModalModel):
     """
     Fuyu model by Adept
 
-    
+
     Args:
         BaseMultiModalModel (BaseMultiModalModel): [description]
         model_name (str, optional): [description]. Defaults to "adept/fuyu-8b".
@@ -23,9 +22,9 @@ class Fuyu(BaseMultiModalModel):
         max_new_tokens (int, optional): [description]. Defaults to 500.
         *args: [description]
         **kwargs: [description]
-    
-    
-    
+
+
+
     Examples:
     >>> from swarms.models import Fuyu
     >>> model = Fuyu()
@@ -45,9 +44,7 @@ class Fuyu(BaseMultiModalModel):
         self.device_map = device_map
         self.max_new_tokens = max_new_tokens
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.image_processor = FuyuImageProcessor()
         self.processor = FuyuProcessor(
             image_processor=self.image_processor,

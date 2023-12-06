@@ -311,4 +311,3 @@ class BaseMultiModalModel:
     def set_max_length(self, max_length):
         """Set max_length"""
         self.max_length = max_length
-

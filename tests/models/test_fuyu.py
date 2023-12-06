@@ -1,4 +1,3 @@
-
 from unittest.mock import patch
 
 import pytest
@@ -127,13 +126,13 @@ def test_processor_initialization(fuyu_instance):
     assert isinstance(fuyu_instance.processor, FuyuProcessor)
 
 
-
 # Test `get_img` method with a valid image path
 def test_get_img_valid_path(fuyu_instance):
     with patch("PIL.Image.open") as mock_open:
         mock_open.return_value = "Test image"
         result = fuyu_instance.get_img("valid/path/to/image.png")
     assert result == "Test image"
+
 
 # Test `get_img` method with an invalid image path
 def test_get_img_invalid_path(fuyu_instance):
@@ -142,39 +141,55 @@ def test_get_img_invalid_path(fuyu_instance):
         with pytest.raises(FileNotFoundError):
             fuyu_instance.get_img("invalid/path/to/image.png")
 
+
 # Test `run` method with valid inputs
 def test_run_valid_inputs(fuyu_instance):
-    with patch.object(fuyu_instance, "get_img") as mock_get_img, \
-         patch.object(fuyu_instance, "processor") as mock_processor, \
-         patch.object(fuyu_instance, "model") as mock_model:
+    with patch.object(
+        fuyu_instance, "get_img"
+    ) as mock_get_img, patch.object(
+        fuyu_instance, "processor"
+    ) as mock_processor, patch.object(
+        fuyu_instance, "model"
+    ) as mock_model:
         mock_get_img.return_value = "Test image"
-        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+        mock_processor.return_value = {
+            "input_ids": torch.tensor([1, 2, 3])
+        }
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test text"]
-        result = fuyu_instance.run("Hello, world!", "valid/path/to/image.png")
+        result = fuyu_instance.run(
+            "Hello, world!", "valid/path/to/image.png"
+        )
     assert result == ["Test text"]
+
 
 # Test `run` method with invalid text input
 def test_run_invalid_text_input(fuyu_instance):
     with pytest.raises(Exception):
         fuyu_instance.run(None, "valid/path/to/image.png")
 
+
 # Test `run` method with empty text input
 def test_run_empty_text_input(fuyu_instance):
     with pytest.raises(Exception):
         fuyu_instance.run("", "valid/path/to/image.png")
+
 
 # Test `run` method with very long text input
 def test_run_very_long_text_input(fuyu_instance):
     with pytest.raises(Exception):
         fuyu_instance.run("A" * 10000, "valid/path/to/image.png")
 
+
 # Test `run` method with invalid image path
 def test_run_invalid_image_path(fuyu_instance):
     with patch.object(fuyu_instance, "get_img") as mock_get_img:
         mock_get_img.side_effect = FileNotFoundError
         with pytest.raises(FileNotFoundError):
-            fuyu_instance.run("Hello, world!", "invalid/path/to/image.png")
+            fuyu_instance.run(
+                "Hello, world!", "invalid/path/to/image.png"
+            )
+
 
 # Test `__init__` method with default parameters
 def test_init_default_parameters():
@@ -183,10 +198,10 @@ def test_init_default_parameters():
     assert fuyu_instance.device_map == "auto"
     assert fuyu_instance.max_new_tokens == 500
 
+
 # Test `__init__` method with custom parameters
 def test_init_custom_parameters():
     fuyu_instance = Fuyu("custom/path", "cpu", 1000)
     assert fuyu_instance.pretrained_path == "custom/path"
     assert fuyu_instance.device_map == "cpu"
     assert fuyu_instance.max_new_tokens == 1000
-    
