@@ -157,15 +157,17 @@ def test_run_batched_mode_false(idefics_instance):
 
     assert result == ["Test"]
 
+
 # Test `run` method with an exception
 def test_run_with_exception(idefics_instance):
     task = "User: Test"
     with patch.object(
         idefics_instance, "processor"
     ) as mock_processor:
-        mock_processor.side_effect = Exception('Test exception')
+        mock_processor.side_effect = Exception("Test exception")
         with pytest.raises(Exception):
             idefics_instance.run(task)
+
 
 # Test `set_model_name` method
 def test_set_model_name(idefics_instance):
@@ -182,6 +184,7 @@ def test_set_model_name(idefics_instance):
         new_model_name, torch_dtype=torch.bfloat16
     )
 
+
 # Test `__init__` method with device set to None
 def test_init_device_none():
     with patch(
@@ -190,6 +193,7 @@ def test_init_device_none():
     ):
         instance = Idefics(device=None)
     assert instance.device == "cpu"
+
 
 # Test `__init__` method with device set to "cuda"
 def test_init_device_cuda():
