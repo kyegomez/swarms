@@ -18,7 +18,7 @@ class Fuyu(BaseMultiModalModel):
     
     Args:
         BaseMultiModalModel (BaseMultiModalModel): [description]
-        pretrained_path (str, optional): [description]. Defaults to "adept/fuyu-8b".
+        model_name (str, optional): [description]. Defaults to "adept/fuyu-8b".
         device_map (str, optional): [description]. Defaults to "auto".
         max_new_tokens (int, optional): [description]. Defaults to 500.
         *args: [description]
@@ -30,24 +30,23 @@ class Fuyu(BaseMultiModalModel):
     >>> from swarms.models import Fuyu
     >>> model = Fuyu()
     >>> model.run("Hello, world!", "https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG")
-
     """
 
     def __init__(
         self,
-        pretrained_path: str = "adept/fuyu-8b",
+        model_name: str = "adept/fuyu-8b",
         device_map: str = "auto",
         max_new_tokens: int = 500,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.pretrained_path = pretrained_path
+        self.model_name = model_name
         self.device_map = device_map
         self.max_new_tokens = max_new_tokens
 
         self.tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_path
+            model_name
         )
         self.image_processor = FuyuImageProcessor()
         self.processor = FuyuProcessor(
@@ -56,7 +55,7 @@ class Fuyu(BaseMultiModalModel):
             **kwargs,
         )
         self.model = FuyuForCausalLM.from_pretrained(
-            pretrained_path,
+            model_name,
             device_map=device_map,
             **kwargs,
         )
