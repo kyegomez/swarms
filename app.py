@@ -127,6 +127,7 @@ MAX_SLEEP_TIME = 40
 def download_model(model_url: str):
     # Extract model name from the URL
     model_name = model_url.split('/')[-1]
+    # TODO continue debugging 
     # response = requests.get(model_url, stream=True)
     # total_size = int(response.headers.get('content-length', 0))
     # block_size = 1024 #1 Kibibyte
@@ -155,7 +156,7 @@ def load_tools():
     all_tools_list = sorted(list(valid_tools_info.keys()))
     return gr.update(choices=all_tools_list)
 
-def set_environ(OPENAI_API_KEY: str = "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",
+def set_environ(OPENAI_API_KEY: str = "",
                 WOLFRAMALPH_APP_ID: str = "",
                 WEATHER_API_KEYS: str = "",
                 BING_SUBSCRIPT_KEY: str = "",
