@@ -327,10 +327,6 @@ with gr.Blocks() as demo:
                         buttonChat = gr.Button("Chat")
 
                 memory_utilization = gr.Slider(label="Memory Utilization:", min=0, max=1, step=0.1, default=0.5)
-                iface = gr.Interface(
-                    fn=download_model,
-                    inputs=["text", memory_utilization],
-                )
                 
                 chatbot = gr.Chatbot(show_label=False, visible=True).style(height=600)
                 buttonClear = gr.Button("Clear History")
@@ -341,7 +337,7 @@ with gr.Blocks() as demo:
                     with gr.Column(scale=1):
                         model_url = gr.Textbox(label="VLLM Model URL:", placeholder="URL to download VLLM model from Hugging Face", type="text");
                         buttonDownload = gr.Button("Download Model");
-                        buttonDownload.click(fn=download_model, inputs=[model_url]);
+                        buttonDownload.click(fn=download_model, inputs=[model_url, memory_utilization]);
                         model_chosen = gr.Dropdown(
                             list(available_models), value=DEFAULTMODEL, multiselect=False, label="Model provided",
                             info="Choose the model to solve your question, Default means ChatGPT."

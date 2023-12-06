@@ -1,9 +1,14 @@
+import sys
 from unittest import result
 import gradio_client
 import pytest
 import os
 from unittest.mock import patch, MagicMock
-from app import set_environ, load_tools, download_model
+from swarms.app import set_environ, load_tools, download_model
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Add the parent directory (the root of your project) to the Python path
+sys.path.insert(0, os.path.join(current_dir, '..'))
 
 def test_set_environ():
 

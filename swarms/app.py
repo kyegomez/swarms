@@ -1,14 +1,65 @@
+import os
+import time
+from functools import partial
+from pathlib import Path
+from threading import Lock
+import warnings
+
+from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
+from swarms.modelui.modules.logging_colors import logger
+
+from vllm import LLM 
+
+os.environ['GRADIO_ANALYTICS_ENABLED'] = 'False'
+os.environ['BITSANDBYTES_NOWELCOME'] = '1'
+warnings.filterwarnings('ignore', category=UserWarning, message='TypedStorage is deprecated')
+warnings.filterwarnings('ignore', category=UserWarning, message='Using the update method is deprecated')
+warnings.filterwarnings('ignore', category=UserWarning, message='Field "model_name" has conflict')
+
+with RequestBlocker():
+    import gradio as gr
+
+import matplotlib
+
+matplotlib.use('Agg')  # This fixes LaTeX rendering on some systems
+
+import swarms.modelui.modules.extensions as extensions_module
+from swarms.modelui.modules import (
+    chat,
+    shared,
+    training,
+    ui,
+    ui_chat,
+    ui_default,
+    ui_file_saving,
+    ui_model_menu,
+    ui_notebook,
+    ui_parameters,
+    ui_session,
+    utils
+)
+from swarms.modelui.modules.extensions import apply_extensions
+from swarms.modelui.modules.LoRA import add_lora_to_model
+from swarms.modelui.modules.models import load_model
+from swarms.modelui.modules.models_settings import (
+    get_fallback_settings,
+    get_model_metadata,
+    update_model_parameters
+)
+from swarms.modelui.modules.utils import gradio
+
 import gradio as gr
 from swarms.tools.tools_controller import MTQuestionAnswerer, load_valid_tools
 from swarms.tools.singletool import STQuestionAnswerer
 from langchain.schema import AgentFinish
-import os
 import requests
 
+from swarms.modelui.server import create_interface
 from tool_server import run_tool_server
 from threading import Thread
 from multiprocessing import Process
 import time
+from langchain.llms import VLLM
 
 tool_server_flag = False
 def start_tool_server():
@@ -72,6 +123,29 @@ return_msg = []
 chat_history = ""
 
 MAX_SLEEP_TIME = 40
+
+def download_model(model_url: str, memory_utilization: int):
+    # Extract model name from the URL
+    model_name = model_url.split('/')[-1]
+    # TODO continue debugging 
+    # response = requests.get(model_url, stream=True)
+    # total_size = int(response.headers.get('content-length', 0))
+    # block_size = 1024 #1 Kibibyte
+    # progress_bar = gr.outputs.Progress_Bar(total_size)
+    # model_data = b""
+    # for data in response.iter_content(block_size):
+        # model_data += data
+        # progress_bar.update(len(data))
+        # yield progress_bar
+    # Save the model data to a file, or load it into a model here
+    vllm_model = LLM(
+        model=model_url,
+        trust_remote_code=True,
+        gpu_memory_utilization=memory_utilization,
+    )
+    available_models.append((model_name, vllm_model))
+    return gr.update(choices=available_models)
+
 def load_tools():
     global valid_tools_info
     global all_tools_list
@@ -82,7 +156,7 @@ def load_tools():
     all_tools_list = sorted(list(valid_tools_info.keys()))
     return gr.update(choices=all_tools_list)
 
-def set_environ(OPENAI_API_KEY: str,
+def set_environ(OPENAI_API_KEY: str = "",
                 WOLFRAMALPH_APP_ID: str = "",
                 WEATHER_API_KEYS: str = "",
                 BING_SUBSCRIPT_KEY: str = "",
@@ -96,7 +170,8 @@ def set_environ(OPENAI_API_KEY: str,
                 STEAMSHIP_API_KEY: str = "",
                 HUGGINGFACE_API_KEY: str = "",
                 AMADEUS_ID: str = "",
-                AMADEUS_KEY: str = "",):
+                AMADEUS_KEY: str = "",
+                VLLM_MODEL_URL: str = ""):
     os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
     os.environ["WOLFRAMALPH_APP_ID"] = WOLFRAMALPH_APP_ID
     os.environ["WEATHER_API_KEYS"] = WEATHER_API_KEYS
@@ -206,10 +281,19 @@ def clear_history():
     chat_history = ""
     yield gr.update(visible=True, value=return_msg)
 
+title = 'Swarm Models'
+
+# css/js strings
+css = ui.css
+js = ui.js
+css += apply_extensions('css')
+js += apply_extensions('js')
+
+# with gr.Blocks(css=css, analytics_enabled=False, title=title, theme=ui.theme) as demo:
 with gr.Blocks() as demo:
     with gr.Row():
         with gr.Column(scale=14):
-            gr.Markdown("<h1 align='left'> Swarm Tools </h1>")
+            gr.Markdown("")
         with gr.Column(scale=1):
             gr.Image(show_label=False, show_download_button=False, value="images/swarmslogobanner.png")
 
@@ -242,14 +326,25 @@ with gr.Blocks() as demo:
                     with gr.Column(scale=0.15, min_width=0):
                         buttonChat = gr.Button("Chat")
 
+                memory_utilization = gr.Slider(label="Memory Utilization:", min=0, max=1, step=0.1, default=0.5)
+                iface = gr.Interface(
+                    fn=download_model,
+                    inputs=["text", memory_utilization],
+                )
+                
                 chatbot = gr.Chatbot(show_label=False, visible=True).style(height=600)
                 buttonClear = gr.Button("Clear History")
                 buttonStop = gr.Button("Stop", visible=False)
 
-            with gr.Column(scale=1):
-                model_chosen = gr.Dropdown(
-                    list(available_models), value=DEFAULTMODEL, multiselect=False, label="Model provided",
-                    info="Choose the model to solve your question, Default means ChatGPT."
+            with gr.Column(scale=4):
+                with gr.Row():
+                    with gr.Column(scale=.5):
+                        model_url = gr.Textbox(label="VLLM Model URL:", placeholder="URL to download VLLM model from Hugging Face", type="text");
+                        buttonDownload = gr.Button("Download Model");
+                        buttonDownload.click(fn=download_model, inputs=[model_url]);
+                        model_chosen = gr.Dropdown(
+                            list(available_models), value=DEFAULTMODEL, multiselect=False, label="Model provided",
+                            info="Choose the model to solve your question, Default means ChatGPT."
                 )
                 with gr.Row():
                     tools_search = gr.Textbox(
@@ -297,3 +392,6 @@ with gr.Blocks() as demo:
 
 # demo.queue().launch(share=False, inbrowser=True, server_name="127.0.0.1", server_port=7001)
 demo.queue().launch()
+
+
+
