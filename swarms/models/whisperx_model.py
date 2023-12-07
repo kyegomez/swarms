@@ -2,7 +2,7 @@ import os
 import subprocess
 
 try:
-    import swarms.models.whisperx_model as whisperx_model
+    import whisperx
     from pydub import AudioSegment
     from pytube import YouTube
 except Exception as error:
@@ -66,17 +66,17 @@ class WhisperX:
         compute_type = "float16"
 
         # 1. Transcribe with original Whisper (batched) 🗣️
-        model = whisperx_model.load_model(
+        model = whisperx.load_model(
             "large-v2", device, compute_type=compute_type
         )
-        audio = whisperx_model.load_audio(audio_file)
+        audio = whisperx.load_audio(audio_file)
         result = model.transcribe(audio, batch_size=batch_size)
 
         # 2. Align Whisper output 🔍
-        model_a, metadata = whisperx_model.load_align_model(
+        model_a, metadata = whisperx.load_align_model(
             language_code=result["language"], device=device
         )
-        result = whisperx_model.align(
+        result = whisperx.align(
             result["segments"],
             model_a,
             metadata,
@@ -86,7 +86,7 @@ class WhisperX:
         )
 
         # 3. Assign speaker labels 🏷️
-        diarize_model = whisperx_model.DiarizationPipeline(
+        diarize_model = whisperx.DiarizationPipeline(
             use_auth_token=self.hf_api_key, device=device
         )
         diarize_model(audio_file)
@@ -101,18 +101,18 @@ class WhisperX:
             print("The key 'segments' is not found in the result.")
 
     def transcribe(self, audio_file):
-        model = whisperx_model.load_model(
+        model = whisperx.load_model(
             "large-v2", self.device, self.compute_type
         )
-        audio = whisperx_model.load_audio(audio_file)
+        audio = whisperx.load_audio(audio_file)
         result = model.transcribe(audio, batch_size=self.batch_size)
 
         # 2. Align Whisper output 🔍
-        model_a, metadata = whisperx_model.load_align_model(
+        model_a, metadata = whisperx.load_align_model(
             language_code=result["language"], device=self.device
         )
 
-        result = whisperx_model.align(
+        result = whisperx.align(
             result["segments"],
             model_a,
             metadata,
@@ -122,7 +122,7 @@ class WhisperX:
         )
 
         # 3. Assign speaker labels 🏷️
-        diarize_model = whisperx_model.DiarizationPipeline(
+        diarize_model = whisperx.DiarizationPipeline(
             use_auth_token=self.hf_api_key, device=self.device
         )
 

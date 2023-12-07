@@ -1,14 +1,29 @@
+import subprocess
 import uuid
 from typing import Optional
 from attr import define, field, Factory
 from dataclasses import dataclass
 from swarms.memory.base import BaseVectorStore
-from sqlalchemy.engine import Engine
-from sqlalchemy import create_engine, Column, String, JSON
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Session
-from pgvector.sqlalchemy import Vector
+
+try:
+    from sqlalchemy.engine import Engine
+    from sqlalchemy import create_engine, Column, String, JSON
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.dialects.postgresql import UUID
+    from sqlalchemy.orm import Session
+except ImportError:
+    print("The PgVectorVectorStore requires sqlalchemy to be installed")
+    print("pip install sqlalchemy")
+    subprocess.run(["pip", "install", "sqlalchemy"])
+
+try:
+    
+    from pgvector.sqlalchemy import Vector
+except ImportError:
+    print("The PgVectorVectorStore requires pgvector to be installed")
+    print("pip install pgvector")
+    subprocess.run(["pip", "install", "pgvector"])
+    
 
 
 @define
