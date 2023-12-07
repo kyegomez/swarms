@@ -1,12 +1,29 @@
+import subprocess
 from typing import List
-from sentence_transformers import SentenceTransformer
 from httpx import RequestError
-from qdrant_client import QdrantClient
-from qdrant_client.http.models import (
-    Distance,
-    VectorParams,
-    PointStruct,
-)
+
+try:
+    
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    print("Please install the sentence-transformers package")
+    print("pip install sentence-transformers")
+    print("pip install qdrant-client")
+    subprocess.run(["pip", "install", "sentence-transformers"])
+
+
+try:
+    
+    from qdrant_client import QdrantClient
+    from qdrant_client.http.models import (
+        Distance,
+        VectorParams,
+        PointStruct,
+    )
+except ImportError:
+    print("Please install the qdrant-client package")
+    print("pip install qdrant-client")
+    subprocess.run(["pip", "install", "qdrant-client"])
 
 
 class Qdrant:
