@@ -15,29 +15,29 @@ def build_tool(config) -> Tool:
         description_for_model="Plugin for look up Google Scholar information",
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
 
     KEY = config["subscription_key"]
-    
+
     @tool.get("/search_google_scholar")
     def search_google_scholar(
-               query: str,  
-               engine: str = "google_scholar",  
-               cites: Optional[str] = None,  
-               as_ylo: Optional[int] = None,  
-               as_yhi: Optional[int] = None,  
-               scisbd: Optional[int] = None,  
-               cluster: Optional[str] = None,  
-               hl: Optional[str] = None,  
-               lr: Optional[str] = None,  
-               start: Optional[int] = None,  
-               num: Optional[int] = None,  
-               as_sdt: Optional[str] = None,  
-               safe: Optional[str] = None,  
-               filter: Optional[str] = None,  
-               as_vis: Optional[str] = None,
-               ):
+        query: str,
+        engine: str = "google_scholar",
+        cites: Optional[str] = None,
+        as_ylo: Optional[int] = None,
+        as_yhi: Optional[int] = None,
+        scisbd: Optional[int] = None,
+        cluster: Optional[str] = None,
+        hl: Optional[str] = None,
+        lr: Optional[str] = None,
+        start: Optional[int] = None,
+        num: Optional[int] = None,
+        as_sdt: Optional[str] = None,
+        safe: Optional[str] = None,
+        filter: Optional[str] = None,
+        as_vis: Optional[str] = None,
+    ):
         """
         Search for scholarly articles based on a query according to the google scholar
         :param query: The query to search for.
@@ -73,7 +73,7 @@ def build_tool(config) -> Tool:
             "as_sdt": as_sdt,
             "safe": safe,
             "filter": filter,
-            "as_vis": as_vis
+            "as_vis": as_vis,
         }
 
         search = GoogleSearch(params)
@@ -84,17 +84,17 @@ def build_tool(config) -> Tool:
 
     @tool.get("/search_author")
     def search_author(
-                      author_id: str, 
-                      hl: Optional[str] = None, 
-                      view_op: Optional[str] = None, 
-                      sort: Optional[str] = None, 
-                      citation_id: Optional[str] = None, 
-                      start: Optional[int] = None, 
-                      num: Optional[int] = None, 
-                      no_cache: Optional[bool] = None, 
-                      async_req: Optional[bool] = None, 
-                      output: Optional[str] = None
-                      ):
+        author_id: str,
+        hl: Optional[str] = None,
+        view_op: Optional[str] = None,
+        sort: Optional[str] = None,
+        citation_id: Optional[str] = None,
+        start: Optional[int] = None,
+        num: Optional[int] = None,
+        no_cache: Optional[bool] = None,
+        async_req: Optional[bool] = None,
+        output: Optional[str] = None,
+    ):
         """
         Search for an author using the Google Scholar Author API.
         :param author_id: Required. The ID of an author.
@@ -108,7 +108,7 @@ def build_tool(config) -> Tool:
         :param async_req: Optional. Defines the way you want to submit your search to SerpApi. Default is False.
         :param output: Optional. Defines the final output you want. Default is 'json'.
         :return: Returns the search results of the author basic information.
-        """     
+        """
         params = {
             "engine": "google_scholar_author",
             "author_id": author_id,
@@ -121,9 +121,8 @@ def build_tool(config) -> Tool:
             "num": num,
             "no_cache": no_cache,
             "async": async_req,
-            "output": output
+            "output": output,
         }
-
 
         search = GoogleSearch(params)
         results = search.get_dict()
@@ -133,10 +132,11 @@ def build_tool(config) -> Tool:
 
     @tool.get("/get_citation")
     def get_citation(
-                    q: str, 
-                    no_cache: Optional[bool] = None, 
-                    async_: Optional[bool] = None,
-                    output: Optional[str] = 'json') -> Dict[str, Any]:
+        q: str,
+        no_cache: Optional[bool] = None,
+        async_: Optional[bool] = None,
+        output: Optional[str] = "json",
+    ) -> Dict[str, Any]:
         """
         Function to get citation results from the Google Scholar organic results using the Google Scholar Cite API.
 
@@ -154,11 +154,11 @@ def build_tool(config) -> Tool:
 
         params = {
             "q": q,
-            "engine": 'google_scholar_cite',
+            "engine": "google_scholar_cite",
             "no_cache": no_cache,
             "async": async_,
             "api_key": KEY,
-            "output": output
+            "output": output,
         }
 
         search = GoogleSearch(params)
@@ -168,15 +168,16 @@ def build_tool(config) -> Tool:
         return citation
 
     @tool.get("/get_profile")
-    def get_profile(self,
-                   mauthors: str,
-                   hl: Optional[str] = 'en',
-                   after_author: Optional[str] = None,
-                   before_author: Optional[str] = None,
-                   no_cache: Optional[bool] = False,
-                   _async: Optional[bool] = False,
-                   output: Optional[str] = 'json'
-                   ) -> Dict:
+    def get_profile(
+        self,
+        mauthors: str,
+        hl: Optional[str] = "en",
+        after_author: Optional[str] = None,
+        before_author: Optional[str] = None,
+        no_cache: Optional[bool] = False,
+        _async: Optional[bool] = False,
+        output: Optional[str] = "json",
+    ) -> Dict:
         """
         The getProfile function is used to scrape profile results from the Google Scholar Profiles search page.
 
@@ -202,22 +203,22 @@ def build_tool(config) -> Tool:
             Dict: The Google Scholar Profiles search results.
         """
         params = {
-            'mauthors': mauthors,
-            'engine':'google_scholar_profiles',
-            'hl': hl,
-            'after_author': after_author,
-            'before_author': before_author,
-            'engine': 'google_scholar_profiles',
-            'no_cache': no_cache,
-            'async': _async,
-            'api_key': KEY,
-            'output': output
+            "mauthors": mauthors,
+            "engine": "google_scholar_profiles",
+            "hl": hl,
+            "after_author": after_author,
+            "before_author": before_author,
+            "engine": "google_scholar_profiles",
+            "no_cache": no_cache,
+            "async": _async,
+            "api_key": KEY,
+            "output": output,
         }
-        
+
         search = GoogleSearch(params)
         results = search.get_dict()
-        profile = results['profiles']
+        profile = results["profiles"]
 
         return profile
-    
+
     return tool

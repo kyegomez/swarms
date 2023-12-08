@@ -1,11 +1,10 @@
-
 from swarms.tools.agent.singletool import load_single_tools, STQuestionAnswerer
 
-tool_name, tool_url = 'hugging_tools',  "http://127.0.0.1:8079/tools/hugging_tools/"
+tool_name, tool_url = "hugging_tools", "http://127.0.0.1:8079/tools/hugging_tools/"
 tools_name, tools_config = load_single_tools(tool_name, tool_url)
 print(tools_name, tools_config)
 
-qa =  STQuestionAnswerer()
+qa = STQuestionAnswerer()
 print(tools_config)
 agent = qa.load_tools(tools_name, tools_config)
 

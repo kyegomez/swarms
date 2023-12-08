@@ -15,23 +15,28 @@ def build_tool(config) -> Tool:
         description_for_model="Plugin for look up job information in Linkin, Glassdoor, etc.",
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
 
     BASE_URL = "https://jsearch.p.rapidapi.com"
     KEY = config["subscription_key"]
-    HEADERS = {
-            "X-RapidAPI-Key": KEY,
-            "X-RapidAPI-Host": "zillow-com1.p.rapidapi.com"
-        }
-
+    HEADERS = {"X-RapidAPI-Key": KEY, "X-RapidAPI-Host": "zillow-com1.p.rapidapi.com"}
 
     @tool.get("/basic_job_search")
-    def basic_job_search(query: str, page: int = 1, num_pages: str = "1", date_posted: Optional[str] = None, 
-                         remote_jobs_only: Optional[bool] = None, employment_types: Optional[str] = None, 
-                         job_requirements: Optional[str] = None, job_titles: Optional[str] = None, 
-                         company_types: Optional[str] = None, employer: Optional[str] = None, 
-                         radius: Optional[int] = None, categories: Optional[str] = None) -> dict:
+    def basic_job_search(
+        query: str,
+        page: int = 1,
+        num_pages: str = "1",
+        date_posted: Optional[str] = None,
+        remote_jobs_only: Optional[bool] = None,
+        employment_types: Optional[str] = None,
+        job_requirements: Optional[str] = None,
+        job_titles: Optional[str] = None,
+        company_types: Optional[str] = None,
+        employer: Optional[str] = None,
+        radius: Optional[int] = None,
+        categories: Optional[str] = None,
+    ) -> dict:
         """
         Search for jobs posted on job sites across the web.
 
@@ -50,41 +55,49 @@ def build_tool(config) -> Tool:
         :return: A dictionary with the response from the API.
         """
 
-        querystring = {
-            "query": query,
-            "page": page,
-            "num_pages": num_pages
-        }
+        querystring = {"query": query, "page": page, "num_pages": num_pages}
 
         if date_posted:
-            querystring['date_posted'] = date_posted
+            querystring["date_posted"] = date_posted
         if remote_jobs_only is not None:
-            querystring['remote_jobs_only'] = remote_jobs_only
+            querystring["remote_jobs_only"] = remote_jobs_only
         if employment_types:
-            querystring['employment_types'] = employment_types
+            querystring["employment_types"] = employment_types
         if job_requirements:
-            querystring['job_requirements'] = job_requirements
+            querystring["job_requirements"] = job_requirements
         if job_titles:
-            querystring['job_titles'] = job_titles
+            querystring["job_titles"] = job_titles
         if company_types:
-            querystring['company_types'] = company_types
+            querystring["company_types"] = company_types
         if employer:
-            querystring['employer'] = employer
+            querystring["employer"] = employer
         if radius:
-            querystring['radius'] = radius
+            querystring["radius"] = radius
         if categories:
-            querystring['categories'] = categories
+            querystring["categories"] = categories
 
-        response = requests.get(BASE_URL + "/search", headers=HEADERS, params=querystring)
+        response = requests.get(
+            BASE_URL + "/search", headers=HEADERS, params=querystring
+        )
 
         return response.json()
 
     @tool.get("/search_jobs_with_filters")
-    def search_jobs_with_filters(self, query: str, page: int = 1, num_pages: int = 1, date_posted: str = "all", 
-                    remote_jobs_only: bool = False, employment_types: Optional[str] = None, 
-                    job_requirements: Optional[str] = None, job_titles: Optional[str] = None, 
-                    company_types: Optional[str] = None, employer: Optional[str] = None, 
-                    radius: Optional[int] = None, categories: Optional[str] = None) -> dict:
+    def search_jobs_with_filters(
+        self,
+        query: str,
+        page: int = 1,
+        num_pages: int = 1,
+        date_posted: str = "all",
+        remote_jobs_only: bool = False,
+        employment_types: Optional[str] = None,
+        job_requirements: Optional[str] = None,
+        job_titles: Optional[str] = None,
+        company_types: Optional[str] = None,
+        employer: Optional[str] = None,
+        radius: Optional[int] = None,
+        categories: Optional[str] = None,
+    ) -> dict:
         """
         Search for jobs using the JSearch API.
 
@@ -105,7 +118,7 @@ def build_tool(config) -> Tool:
         Returns:
             dict: The JSON response from the API.
         """
-        
+
         params = {
             "query": query,
             "page": str(page),
@@ -118,42 +131,52 @@ def build_tool(config) -> Tool:
             "company_types": company_types,
             "employer": employer,
             "radius": str(radius) if radius else None,
-            "categories": categories
+            "categories": categories,
         }
-        
+
         # remove None values in the parameters
         params = {k: v for k, v in params.items() if v is not None}
-        
-        response = requests.get(BASE_URL + '/search-filters', headers=HEADERS, params=params)
-        
+
+        response = requests.get(
+            BASE_URL + "/search-filters", headers=HEADERS, params=params
+        )
+
         return response.json()
 
     @tool.get("/get_job_details")
-    def get_job_details(job_ids: Union[str, List[str]], extended_publisher_details: bool = False) -> dict:
+    def get_job_details(
+        job_ids: Union[str, List[str]], extended_publisher_details: bool = False
+    ) -> dict:
         """
         You can get the job_ids from 'basic_job_search' function
         Get all job details, including additional application options / links, employer reviews and estimated salaries for similar jobs.
 
-        :param job_ids: Job Id of the job for which to get details. Batching of up to 20 Job Ids is supported by separating multiple Job Ids by comma (,). 
+        :param job_ids: Job Id of the job for which to get details. Batching of up to 20 Job Ids is supported by separating multiple Job Ids by comma (,).
                         Note that each Job Id in a batch request is counted as a request for quota calculation.
         :param extended_publisher_details: [BETA] Return additional publisher details such as website url and favicon.
         :return: A dictionary with the response from the API.
         """
 
         if isinstance(job_ids, list):
-            job_ids = ','.join(job_ids)
-        
+            job_ids = ",".join(job_ids)
+
         querystring = {
             "job_id": job_ids,
-            "extended_publisher_details": str(extended_publisher_details).lower()
+            "extended_publisher_details": str(extended_publisher_details).lower(),
         }
 
-        response = requests.get(BASE_URL + '/job-details', headers=HEADERS, params=querystring)
+        response = requests.get(
+            BASE_URL + "/job-details", headers=HEADERS, params=querystring
+        )
 
         return response.json()
-    
+
     @tool.get("/get_salary_estimation")
-    def get_salary_estimation(job_title: Optional[str] = None, location: Optional[str] = None, radius: int = 200) -> dict:
+    def get_salary_estimation(
+        job_title: Optional[str] = None,
+        location: Optional[str] = None,
+        radius: int = 200,
+    ) -> dict:
         """
         Get estimated salaries for a jobs around a location.
 
@@ -166,14 +189,16 @@ def build_tool(config) -> Tool:
         querystring = {}
 
         if job_title:
-            querystring['job_title'] = job_title
+            querystring["job_title"] = job_title
         if location:
-            querystring['location'] = location
+            querystring["location"] = location
         if radius:
-            querystring['radius'] = radius
+            querystring["radius"] = radius
 
-        response = requests.get(BASE_URL + "/estimated-salary", headers=HEADERS, params=querystring)
+        response = requests.get(
+            BASE_URL + "/estimated-salary", headers=HEADERS, params=querystring
+        )
 
         return response.json()
-    
+
     return tool

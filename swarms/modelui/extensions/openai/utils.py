@@ -18,23 +18,30 @@ def float_list_to_base64(float_array: np.ndarray) -> str:
     encoded_bytes = base64.b64encode(bytes_array)
 
     # Turn raw base64 encoded bytes into ASCII
-    ascii_string = encoded_bytes.decode('ascii')
+    ascii_string = encoded_bytes.decode("ascii")
     return ascii_string
 
 
 def debug_msg(*args, **kwargs):
     from extensions.openai.script import params
-    if os.environ.get("OPENEDAI_DEBUG", params.get('debug', 0)):
+
+    if os.environ.get("OPENEDAI_DEBUG", params.get("debug", 0)):
         print(*args, **kwargs)
 
 
-def _start_cloudflared(port: int, tunnel_id: str, max_attempts: int = 3, on_start: Optional[Callable[[str], None]] = None):
+def _start_cloudflared(
+    port: int,
+    tunnel_id: str,
+    max_attempts: int = 3,
+    on_start: Optional[Callable[[str], None]] = None,
+):
     try:
         from flask_cloudflared import _run_cloudflared
     except ImportError:
-        print('You should install flask_cloudflared manually')
+        print("You should install flask_cloudflared manually")
         raise Exception(
-            'flask_cloudflared not installed. Make sure you installed the requirements.txt for this extension.')
+            "flask_cloudflared not installed. Make sure you installed the requirements.txt for this extension."
+        )
 
     for _ in range(max_attempts):
         try:
@@ -51,4 +58,4 @@ def _start_cloudflared(port: int, tunnel_id: str, max_attempts: int = 3, on_star
             traceback.print_exc()
             time.sleep(3)
 
-        raise Exception('Could not start cloudflared.')
+        raise Exception("Could not start cloudflared.")

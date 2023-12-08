@@ -26,7 +26,9 @@ class MultimodalEmbedder:
     def __init__(self, params: dict):
         pipeline, source = load_pipeline(params)
         self.pipeline = pipeline
-        logger.info(f'Multimodal: loaded pipeline {self.pipeline.name()} from pipelines/{source} ({self.pipeline.__class__.__name__})')
+        logger.info(
+            f"Multimodal: loaded pipeline {self.pipeline.name()} from pipelines/{source} ({self.pipeline.__class__.__name__})"
+        )
 
     def _split_prompt(self, prompt: str, load_images: bool = False) -> List[PromptPart]:
         """Splits a prompt into a list of `PromptParts` to separate image data from text.
@@ -36,26 +38,39 @@ class MultimodalEmbedder:
         parts: List[PromptPart] = []
         curr = 0
         while True:
-            match = re.search(r'<img src="data:image/jpeg;base64,([A-Za-z0-9+/=]+)">', prompt[curr:])
+            match = re.search(
+                r'<img src="data:image/jpeg;base64,([A-Za-z0-9+/=]+)">', prompt[curr:]
+            )
             if match is None:
                 # no more image tokens, append the rest of the prompt
                 if curr > 0:
                     # add image end token after last image
-                    parts.append(PromptPart(text=self.pipeline.image_end() + prompt[curr:]))
+                    parts.append(
+                        PromptPart(text=self.pipeline.image_end() + prompt[curr:])
+                    )
                 else:
                     parts.append(PromptPart(text=prompt))
                 break
             # found an image, append image start token to the text
             if match.start() > 0:
-                parts.append(PromptPart(text=prompt[curr:curr + match.start()] + self.pipeline.image_start()))
+                parts.append(
+                    PromptPart(
+                        text=prompt[curr : curr + match.start()]
+                        + self.pipeline.image_start()
+                    )
+                )
             else:
                 parts.append(PromptPart(text=self.pipeline.image_start()))
             # append the image
-            parts.append(PromptPart(
-                text=match.group(0),
-                image=Image.open(BytesIO(base64.b64decode(match.group(1)))) if load_images else None,
-                is_image=True
-            ))
+            parts.append(
+                PromptPart(
+                    text=match.group(0),
+                    image=Image.open(BytesIO(base64.b64decode(match.group(1))))
+                    if load_images
+                    else None,
+                    is_image=True,
+                )
+            )
             curr += match.end()
         return parts
 
@@ -79,10 +94,15 @@ class MultimodalEmbedder:
     def _encode_single_text(self, part: PromptPart, add_bos_token: bool) -> PromptPart:
         """Encode a single prompt `part` to `input_ids`. Returns a `PromptPart`"""
         if part.is_image:
-            placeholders = torch.ones((self.pipeline.num_image_embeds())) * self.pipeline.placeholder_token_id()
+            placeholders = (
+                torch.ones((self.pipeline.num_image_embeds()))
+                * self.pipeline.placeholder_token_id()
+            )
             part.input_ids = placeholders.to(shared.model.device, dtype=torch.int64)
         else:
-            part.input_ids = encode(part.text, add_bos_token=add_bos_token)[0].to(shared.model.device, dtype=torch.int64)
+            part.input_ids = encode(part.text, add_bos_token=add_bos_token)[0].to(
+                shared.model.device, dtype=torch.int64
+            )
         return part
 
     @staticmethod
@@ -102,7 +122,9 @@ class MultimodalEmbedder:
         """
         encoded: List[PromptPart] = []
         for i, part in enumerate(parts):
-            encoded.append(self._encode_single_text(part, i == 0 and state['add_bos_token']))
+            encoded.append(
+                self._encode_single_text(part, i == 0 and state["add_bos_token"])
+            )
 
         # truncation:
         max_len = get_max_prompt_length(state)
@@ -120,10 +142,20 @@ class MultimodalEmbedder:
                 # don't truncate image embeddings, just remove the image, otherwise generation will be broken
                 removed_images += 1
                 encoded = encoded[1:]
-            elif len(encoded) > 1 and encoded[0].text.endswith(self.pipeline.image_start()):
+            elif len(encoded) > 1 and encoded[0].text.endswith(
+                self.pipeline.image_start()
+            ):
                 # see if we can keep image_start token
-                len_image_start = len(encode(self.pipeline.image_start(), add_bos_token=state['add_bos_token'])[0])
-                if self._len_in_tokens_prompt_parts(encoded[1:]) + len_image_start > max_len:
+                len_image_start = len(
+                    encode(
+                        self.pipeline.image_start(),
+                        add_bos_token=state["add_bos_token"],
+                    )[0]
+                )
+                if (
+                    self._len_in_tokens_prompt_parts(encoded[1:]) + len_image_start
+                    > max_len
+                ):
                     # we can't -> remove this text, and the image
                     encoded = encoded[2:]
                     removed_images += 1
@@ -138,7 +170,9 @@ class MultimodalEmbedder:
 
         # notify user if we truncated an image
         if removed_images > 0:
-            logger.warning(f"Multimodal: removed {removed_images} image(s) from prompt. Try decreasing max_new_tokens if generation is broken")
+            logger.warning(
+                f"Multimodal: removed {removed_images} image(s) from prompt. Try decreasing max_new_tokens if generation is broken"
+            )
 
         return encoded
 
@@ -149,13 +183,15 @@ class MultimodalEmbedder:
         for i, embeds in zip(image_indicies, embedded):
             parts[i].embedding = embeds
         # embed text
-        for (i, part) in enumerate(parts):
+        for i, part in enumerate(parts):
             if not part.is_image:
                 parts[i].embedding = self.pipeline.embed_tokens(part.input_ids)
         return parts
 
-    def _remove_old_images(self, parts: List[PromptPart], params: dict) -> List[PromptPart]:
-        if params['add_all_images_to_prompt']:
+    def _remove_old_images(
+        self, parts: List[PromptPart], params: dict
+    ) -> List[PromptPart]:
+        if params["add_all_images_to_prompt"]:
             return parts
         already_added = False
         for i, part in reversed(list(enumerate(parts))):

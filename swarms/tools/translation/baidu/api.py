@@ -13,7 +13,7 @@ def build_tool(config) -> Tool:
         description_for_model="Plugin for translating text from one language to another.",
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="shihaoliang0828@gmail.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
     subscription_key = os.getenv("BAIDU_TRANSLATE_KEY", None)
     if subscription_key is None:
@@ -21,28 +21,28 @@ def build_tool(config) -> Tool:
     secret_key = os.getenv("BAIDU_SECRET_KEY", None)
     if secret_key is None:
         raise Exception("BAIDU_SECRET_KEY is not set")
-    endpoint = 'https://fanyi-api.baidu.com/api/trans/vip/translate'
-    fromLang = 'auto'
-    salt = random.randint(32768,65536)
-    header = {'Content-Type': 'application/x-www-form-urlencoded'}
-    
+    endpoint = "https://fanyi-api.baidu.com/api/trans/vip/translate"
+    fromLang = "auto"
+    salt = random.randint(32768, 65536)
+    header = {"Content-Type": "application/x-www-form-urlencoded"}
+
     @tool.get("/get_translation")
-    def get_translation(text:str, tgt_lang:str) -> str:
+    def get_translation(text: str, tgt_lang: str) -> str:
         sign = subscription_key + text + str(salt) + secret_key
         md = hashlib.md5()
-        md.update(sign.encode(encoding='utf-8'))
-        sign =md.hexdigest()
+        md.update(sign.encode(encoding="utf-8"))
+        sign = md.hexdigest()
         data = {
             "appid": subscription_key,
             "q": text,
             "from": fromLang,
             "to": tgt_lang,
             "salt": salt,
-            "sign": sign
+            "sign": sign,
         }
-        response = requests.post(endpoint, params= data, headers= header)
+        response = requests.post(endpoint, params=data, headers=header)
         text = response.json()
-        results = text['trans_result'][0]['dst']
+        results = text["trans_result"][0]["dst"]
         return results
-    
+
     return tool

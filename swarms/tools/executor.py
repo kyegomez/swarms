@@ -6,8 +6,8 @@ from langchain.input import get_color_mapping
 from langchain.schema import AgentAction, AgentFinish
 from .translator import Translator
 
-class AgentExecutorWithTranslation(AgentExecutor):
 
+class AgentExecutorWithTranslation(AgentExecutor):
     translator: Translator = Translator()
 
     def prep_outputs(
@@ -25,8 +25,8 @@ class AgentExecutorWithTranslation(AgentExecutor):
                 outputs = self.translator(outputs)
             return outputs
 
-class Executor(AgentExecutorWithTranslation):
 
+class Executor(AgentExecutorWithTranslation):
     def _call(self, inputs: Dict[str, str]) -> Dict[str, Any]:
         """Run text through and get agent response."""
         # Construct a mapping of tool name to tool for easy lookup
@@ -57,14 +57,22 @@ class Executor(AgentExecutorWithTranslation):
                         tool_logo = tool.tool_logo_md
                 if isinstance(output[1], types.GeneratorType):
                     logo = f"{tool_logo}" if tool_logo is not None else ""
-                    yield (AgentAction("", agent_action.tool_input, agent_action.log), f"Further use other tool {logo} to answer the question.")
+                    yield (
+                        AgentAction("", agent_action.tool_input, agent_action.log),
+                        f"Further use other tool {logo} to answer the question.",
+                    )
                     for out in output[1]:
                         yield out
                     next_step_output[i] = (agent_action, out)
                 else:
                     for tool in self.tools:
                         if tool.name == agent_action.tool:
-                            yield (AgentAction(tool_logo, agent_action.tool_input, agent_action.log), output[1])
+                            yield (
+                                AgentAction(
+                                    tool_logo, agent_action.tool_input, agent_action.log
+                                ),
+                                output[1],
+                            )
 
             intermediate_steps.extend(next_step_output)
             if len(next_step_output) == 1:
@@ -85,8 +93,6 @@ class Executor(AgentExecutorWithTranslation):
     def __call__(
         self, inputs: Union[Dict[str, Any], Any], return_only_outputs: bool = False
     ) -> Dict[str, Any]:
-
-
         """Run the logic of this chain and add to output if desired.
 
         Args:

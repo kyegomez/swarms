@@ -10,6 +10,7 @@ from typing import Dict, Optional
 
 class PythonREPL:
     """Simulates a standalone Python REPL."""
+
     def __init__(self) -> None:
         self.globals: Optional[Dict] = globals()
         self.locals: Optional[Dict] = None
@@ -28,6 +29,7 @@ class PythonREPL:
         print(output)
         return output
 
+
 def build_tool(config) -> Tool:
     tool = Tool(
         "Python REPL",
@@ -41,20 +43,17 @@ def build_tool(config) -> Tool:
         ),
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
-    
+
     python_repl = PythonREPL()
     sanitize_input: bool = True
 
-        
     @tool.get("/run_python")
-    def run_python(query : str):
-        '''Run python code in a REPL.
-        '''
+    def run_python(query: str):
+        """Run python code in a REPL."""
         if sanitize_input:
             query = query.strip().strip("```")
         return python_repl.run(query)
-    
-        
+
     return tool

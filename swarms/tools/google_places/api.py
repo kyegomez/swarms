@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import googlemaps
 
+
 class GooglePlacesAPIWrapper:
     def __init__(self, subscription_key) -> None:
         self.gplaces_api_key: str = subscription_key
@@ -81,13 +82,13 @@ def build_tool(config) -> Tool:
         ),
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
     api_wrapper = GooglePlacesAPIWrapper(config["subscription_key"])
-    
+
     @tool.get("/search_places")
-    def search_places(query : str):
+    def search_places(query: str):
         """Run Places search."""
         return str(api_wrapper.run(query))
-    
+
     return tool

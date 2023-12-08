@@ -17,7 +17,7 @@ def build_tool(config) -> Tool:
         description_for_model="Plugin for providing tutorial for a given objective.",
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="xin.cong@outlook.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
     prompt = PromptTemplate.from_template(
         "You are a planner who is an expert at coming up with a todo list for a given objective. Come up with a todo list for this objective: {objective}"

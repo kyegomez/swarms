@@ -22,17 +22,26 @@ from swarms.tools.tools.db_diag.example_generate import bm25
 
 import warnings
 
-def obtain_values_of_metrics(start_time, end_time, metrics):
 
-    if end_time - start_time > 11000*3:     # maximum resolution of 11,000 points per timeseries
-        #raise Exception("The time range is too large, please reduce the time range")
-        warnings.warn("The time range ({}, {}) is too large, please reduce the time range".format(start_time, end_time))
+def obtain_values_of_metrics(start_time, end_time, metrics):
+    if (
+        end_time - start_time > 11000 * 3
+    ):  # maximum resolution of 11,000 points per timeseries
+        # raise Exception("The time range is too large, please reduce the time range")
+        warnings.warn(
+            "The time range ({}, {}) is too large, please reduce the time range".format(
+                start_time, end_time
+            )
+        )
 
     required_values = {}
 
     print(" ====> metrics: ", metrics)
     for metric in metrics:
-        metric_values = prometheus('api/v1/query_range', {'query': metric, 'start': start_time, 'end': end_time, 'step': '3'})
+        metric_values = prometheus(
+            "api/v1/query_range",
+            {"query": metric, "start": start_time, "end": end_time, "step": "3"},
+        )
         if metric_values["data"]["result"] != []:
             metric_values = metric_values["data"]["result"][0]["values"]
         else:
@@ -45,15 +54,22 @@ def obtain_values_of_metrics(start_time, end_time, metrics):
 
     return required_values
 
-def find_abnormal_metrics(start_time, end_time, monitoring_metrics, resource):
 
+def find_abnormal_metrics(start_time, end_time, monitoring_metrics, resource):
     resource_keys = ["memory", "cpu", "disk", "network"]
 
     abnormal_metrics = []
     for metric_name in monitoring_metrics:
-
         interval_time = 5
-        metric_values = prometheus('api/v1/query_range', {'query': metric_name, 'start': start_time-interval_time*60, 'end': end_time+interval_time*60, 'step': '3'})
+        metric_values = prometheus(
+            "api/v1/query_range",
+            {
+                "query": metric_name,
+                "start": start_time - interval_time * 60,
+                "end": end_time + interval_time * 60,
+                "step": "3",
+            },
+        )
 
         if metric_values["data"]["result"] != []:
             metric_values = metric_values["data"]["result"][0]["values"]
@@ -61,7 +77,6 @@ def find_abnormal_metrics(start_time, end_time, monitoring_metrics, resource):
             continue
 
         if detect_anomalies(np.array([float(value) for _, value in metric_values])):
-            
             success = True
             for key in resource_keys:
                 if key in metric_name and key != resource:
@@ -81,36 +96,58 @@ def build_db_diag_tool(config) -> Tool:
         description_for_model="Plugin for diagnosing the bottlenecks of a database based on relevant metrics",
         logo_url="https://commons.wikimedia.org/wiki/File:Postgresql_elephant.svg",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
 
-    #URL_CURRENT_WEATHER= "http://api.weatherapi.com/v1/current.json"
-    #URL_FORECAST_WEATHER = "http://api.weatherapi.com/v1/forecast.json"
+    # URL_CURRENT_WEATHER= "http://api.weatherapi.com/v1/current.json"
+    # URL_FORECAST_WEATHER = "http://api.weatherapi.com/v1/forecast.json"
 
-    URL_PROMETHEUS = 'http://8.131.229.55:9090/'
-    prometheus_metrics = {"cpu_usage": "avg(rate(process_cpu_seconds_total{instance=\"172.27.58.65:9187\"}[5m]) * 1000)", 
-                          "cpu_metrics": ["node_scrape_collector_duration_seconds{instance=\"172.27.58.65:9100\"}", "node_procs_running{instance=\"172.27.58.65:9100\"}", "node_procs_blocked{instance=\"172.27.58.65:9100\"}", "node_entropy_available_bits{instance=\"172.27.58.65:9100\"}", "node_load1{instance=\"172.27.58.65:9100\"}", "node_load5{instance=\"172.27.58.65:9100\"}", "node_load15{instance=\"172.27.58.65:9100\"}"], 
-                          "memory_usage": "node_memory_MemTotal_bytes{instance=~\"172.27.58.65:9100\"} - (node_memory_Cached_bytes{instance=~\"172.27.58.65:9100\"} + node_memory_Buffers_bytes{instance=~\"172.27.58.65:9100\"} + node_memory_MemFree_bytes{instance=~\"172.27.58.65:9100\"})",
-                          "memory_metrics": ["node_memory_Inactive_anon_bytes{instance=\"172.27.58.65:9100\"}", "node_memory_MemFree_bytes{instance=\"172.27.58.65:9100\"}", "node_memory_Dirty_bytes{instance=\"172.27.58.65:9100\"}", "pg_stat_activity_count{datname=~\"(imdbload|postgres|sysbench|template0|template1|tpcc|tpch)\", instance=~\"172.27.58.65:9187\", state=\"active\"} !=0"],
-                          "network_metrics": ["node_sockstat_TCP_tw{instance=\"172.27.58.65:9100\"}", "node_sockstat_TCP_orphan{instance=\"172.27.58.65:9100\"}"]}
-    # "node_sockstat_TCP_tw{instance=\"172.27.58.65:9100\"}", 
+    URL_PROMETHEUS = "http://8.131.229.55:9090/"
+    prometheus_metrics = {
+        "cpu_usage": 'avg(rate(process_cpu_seconds_total{instance="172.27.58.65:9187"}[5m]) * 1000)',
+        "cpu_metrics": [
+            'node_scrape_collector_duration_seconds{instance="172.27.58.65:9100"}',
+            'node_procs_running{instance="172.27.58.65:9100"}',
+            'node_procs_blocked{instance="172.27.58.65:9100"}',
+            'node_entropy_available_bits{instance="172.27.58.65:9100"}',
+            'node_load1{instance="172.27.58.65:9100"}',
+            'node_load5{instance="172.27.58.65:9100"}',
+            'node_load15{instance="172.27.58.65:9100"}',
+        ],
+        "memory_usage": 'node_memory_MemTotal_bytes{instance=~"172.27.58.65:9100"} - (node_memory_Cached_bytes{instance=~"172.27.58.65:9100"} + node_memory_Buffers_bytes{instance=~"172.27.58.65:9100"} + node_memory_MemFree_bytes{instance=~"172.27.58.65:9100"})',
+        "memory_metrics": [
+            'node_memory_Inactive_anon_bytes{instance="172.27.58.65:9100"}',
+            'node_memory_MemFree_bytes{instance="172.27.58.65:9100"}',
+            'node_memory_Dirty_bytes{instance="172.27.58.65:9100"}',
+            'pg_stat_activity_count{datname=~"(imdbload|postgres|sysbench|template0|template1|tpcc|tpch)", instance=~"172.27.58.65:9187", state="active"} !=0',
+        ],
+        "network_metrics": [
+            'node_sockstat_TCP_tw{instance="172.27.58.65:9100"}',
+            'node_sockstat_TCP_orphan{instance="172.27.58.65:9100"}',
+        ],
+    }
+    # "node_sockstat_TCP_tw{instance=\"172.27.58.65:9100\"}",
 
     # load knowlege extractor
-    knowledge_matcher = KnowledgeExtraction("/swarms.tools/tools/db_diag/root_causes_dbmind.jsonl")
+    knowledge_matcher = KnowledgeExtraction(
+        "/swarms.tools/tools/db_diag/root_causes_dbmind.jsonl"
+    )
 
     # load db settings
     script_path = os.path.abspath(__file__)
     script_dir = os.path.dirname(script_path)
-    config = get_conf(script_dir + '/my_config.ini', 'postgresql')
+    config = get_conf(script_dir + "/my_config.ini", "postgresql")
     dbargs = DBArgs("postgresql", config=config)  # todo assign database name
 
     # send request to database
     db = Database(dbargs, timeout=-1)
 
-    server_config = get_conf(script_dir + '/my_config.ini', 'benchserver')
+    server_config = get_conf(script_dir + "/my_config.ini", "benchserver")
 
     monitoring_metrics = []
-    with open(str(os.getcwd()) + "/swarms/tools/db_diag/database_monitoring_metrics", 'r') as f:
+    with open(
+        str(os.getcwd()) + "/swarms/tools/db_diag/database_monitoring_metrics", "r"
+    ) as f:
         monitoring_metrics = f.read()
     monitoring_metrics = eval(monitoring_metrics)
 
@@ -124,7 +161,11 @@ def build_db_diag_tool(config) -> Tool:
 
         try:
             # Connect to the remote server
-            ssh.connect(server_config["server_address"], username=server_config["username"], password=server_config["password"])
+            ssh.connect(
+                server_config["server_address"],
+                username=server_config["username"],
+                password=server_config["password"],
+            )
 
             # Create an SFTP client
             sftp = ssh.open_sftp()
@@ -139,20 +180,22 @@ def build_db_diag_tool(config) -> Tool:
             required_tp = -1
             # Read the contents of each file
             for filename in files:
-                remote_filepath = server_config["remote_directory"] + '/' + filename
+                remote_filepath = server_config["remote_directory"] + "/" + filename
 
                 if "trigger_time_log" not in filename:
                     continue
-                
+
                 tp = filename.split("_")[0]
-                
+
                 if tp.isdigit():
                     tp = int(tp)
                     if required_tp < tp:
                         required_tp = tp
                         required_file_name = filename
-                        
-            file_content = sftp.open(server_config["remote_directory"] + '/' + required_file_name).read()
+
+            file_content = sftp.open(
+                server_config["remote_directory"] + "/" + required_file_name
+            ).read()
             file_content = file_content.decode()
             tps = file_content.split("\n")[0]
             start_time = tps.split(";")[0]
@@ -166,10 +209,19 @@ def build_db_diag_tool(config) -> Tool:
         return {"start_time": start_time, "end_time": end_time}
 
     @tool.get("/whether_is_abnormal_metric")
-    def whether_is_abnormal_metric(start_time:int, end_time:int, metric_name : str="cpu_usage"):
-
+    def whether_is_abnormal_metric(
+        start_time: int, end_time: int, metric_name: str = "cpu_usage"
+    ):
         interval_time = 5
-        metric_values = prometheus('api/v1/query_range', {'query': prometheus_metrics[metric_name], 'start': start_time-interval_time*60, 'end': end_time+interval_time*60, 'step': '3'})
+        metric_values = prometheus(
+            "api/v1/query_range",
+            {
+                "query": prometheus_metrics[metric_name],
+                "start": start_time - interval_time * 60,
+                "end": end_time + interval_time * 60,
+                "step": "3",
+            },
+        )
         # prometheus('api/v1/query_range', {'query': '100 - (avg(irate(node_cpu_seconds_total{instance=~"172.27.58.65:9100",mode="idle"}[1m])) * 100)', 'start': '1684412385', 'end': '1684413285', 'step': '3'})
         # print(" === metric_values", metric_values)
 
@@ -178,7 +230,7 @@ def build_db_diag_tool(config) -> Tool:
         else:
             raise Exception("No metric values found for the given time range")
 
-        #is_abnormal = detect_anomalies(np.array([float(value) for _, value in metric_values]))
+        # is_abnormal = detect_anomalies(np.array([float(value) for _, value in metric_values]))
         is_abnormal = True
 
         if is_abnormal:
@@ -186,19 +238,18 @@ def build_db_diag_tool(config) -> Tool:
         else:
             return "The metric is normal"
 
-
     @tool.get("/cpu_diagnosis_agent")
-    def cpu_diagnosis_agent(start_time : int, end_time : int):
-
+    def cpu_diagnosis_agent(start_time: int, end_time: int):
         # live_tuples\n- dead_tuples\n- table_size
 
         cpu_metrics = prometheus_metrics["cpu_metrics"]
-        cpu_metrics = cpu_metrics # + find_abnormal_metrics(start_time, end_time, monitoring_metrics, 'cpu')
+        cpu_metrics = cpu_metrics  # + find_abnormal_metrics(start_time, end_time, monitoring_metrics, 'cpu')
 
         print("==== cpu_metrics", cpu_metrics)
 
-
-        detailed_cpu_metrics = obtain_values_of_metrics(start_time, end_time, cpu_metrics)
+        detailed_cpu_metrics = obtain_values_of_metrics(
+            start_time, end_time, cpu_metrics
+        )
 
         docs_str = knowledge_matcher.match(detailed_cpu_metrics)
 
@@ -206,10 +257,12 @@ def build_db_diag_tool(config) -> Tool:
 
 Next output the analysis of potential causes of the high CPU usage based on the CPU relevant metric values,
 
-{}""".format(detailed_cpu_metrics, docs_str)
+{}""".format(
+            detailed_cpu_metrics, docs_str
+        )
 
         print(prompt)
-        
+
         # response = openai.Completion.create(
         # model="text-davinci-003",
         # prompt=prompt,
@@ -240,14 +293,15 @@ Next output the analysis of potential causes of the high CPU usage based on the 
         return {"diagnose": output_analysis, "knowledge": docs_str}
 
     @tool.get("/memory_diagnosis_agent")
-    def memory_diagnosis_agent(start_time : int, end_time : int):
-
+    def memory_diagnosis_agent(start_time: int, end_time: int):
         memory_metrics = prometheus_metrics["memory_metrics"]
 
         memory_metrics = prometheus_metrics["memory_metrics"]
-        memory_metrics = memory_metrics # + find_abnormal_metrics(start_time, end_time, monitoring_metrics, 'memory')
+        memory_metrics = memory_metrics  # + find_abnormal_metrics(start_time, end_time, monitoring_metrics, 'memory')
 
-        detailed_memory_metrics = obtain_values_of_metrics(start_time, end_time, memory_metrics)
+        detailed_memory_metrics = obtain_values_of_metrics(
+            start_time, end_time, memory_metrics
+        )
 
         openai.api_key = os.environ["OPENAI_API_KEY"]
 
@@ -255,11 +309,11 @@ Next output the analysis of potential causes of the high CPU usage based on the 
         slow_queries = db.obtain_historical_slow_queries()
 
         slow_query_state = ""
-        for i,query in enumerate(slow_queries):
-            slow_query_state += str(i+1) + '. ' + str(query) + "\n"
+        for i, query in enumerate(slow_queries):
+            slow_query_state += str(i + 1) + ". " + str(query) + "\n"
 
         print(slow_query_state)
-        
+
         # TODO: need a similarity match function to match the top-K examples
         # 1. get the categories of incoming metrics. Such as "The abnormal metrics include A, B, C, D"
         # 2. embedding the metrics
@@ -279,7 +333,9 @@ Output the analysis of potential causes of the high memory usage based on the me
 {}
 
 Note: include the important slow queries in the output.
-""".format(detailed_memory_metrics, slow_query_state, docs_str)
+""".format(
+            detailed_memory_metrics, slow_query_state, docs_str
+        )
 
         # print(prompt)
 

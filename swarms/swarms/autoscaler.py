@@ -12,38 +12,39 @@ from swarms.utils.decorators import error_decorator, log_decorator, timing_decor
 
 class AutoScaler:
     """
-    The AutoScaler is like a kubernetes pod, that autoscales an agent or worker or boss!
+        The AutoScaler is like a kubernetes pod, that autoscales an agent or worker or boss!
 
-    Wraps around a structure like SequentialWorkflow 
-    and or Flow and parallelizes them on multiple threads so they're split across devices 
-    and you can use them like that
-    Args:
+        Wraps around a structure like SequentialWorkflow
+        and or Flow and parallelizes them on multiple threads so they're split across devices
+        and you can use them like that
+        Args:
 
-#         initial_agents (int, optional): Number of initial agents. Defaults to 10.
-#         scale_up_factor (int, optional): Scale up factor. Defaults to 1.
-#         idle_threshold (float, optional): Idle threshold. Defaults to 0.2.
-#         busy_threshold (float, optional): Busy threshold. Defaults to 0.7.
-#         agent ([type], optional): Agent. Defaults to None.
+    #         initial_agents (int, optional): Number of initial agents. Defaults to 10.
+    #         scale_up_factor (int, optional): Scale up factor. Defaults to 1.
+    #         idle_threshold (float, optional): Idle threshold. Defaults to 0.2.
+    #         busy_threshold (float, optional): Busy threshold. Defaults to 0.7.
+    #         agent ([type], optional): Agent. Defaults to None.
 
 
-#     Methods:
-#         add_task: Add task to queue
-#         scale_up: Scale up
-#         scale_down: Scale down
-#         monitor_and_scale: Monitor and scale
-#         start: Start scaling
-#         del_agent: Delete an agent
+    #     Methods:
+    #         add_task: Add task to queue
+    #         scale_up: Scale up
+    #         scale_down: Scale down
+    #         monitor_and_scale: Monitor and scale
+    #         start: Start scaling
+    #         del_agent: Delete an agent
 
-#     Usage
-#     ```
-#     # usage of usage
-#     auto_scaler = AutoScaler(agent=YourCustomAgent)
-#     auto_scaler.start()
+    #     Usage
+    #     ```
+    #     # usage of usage
+    #     auto_scaler = AutoScaler(agent=YourCustomAgent)
+    #     auto_scaler.start()
 
-#     for i in range(100):
-#     auto_scaler.add_task9f"task {I}})
-#     ```
-#     """
+    #     for i in range(100):
+    #     auto_scaler.add_task9f"task {I}})
+    #     ```
+    #"""
+
 
 #     @log_decorator
 #     @error_decorator

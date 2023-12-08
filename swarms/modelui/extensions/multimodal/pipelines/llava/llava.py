@@ -41,19 +41,35 @@ class LLaVA_v0_Pipeline(AbstractMultimodalPipeline):
     def _load_models(self):
         start_ts = time.time()
 
-        logger.info(f"LLaVA - Loading CLIP from {self.CLIP_REPO} as {self.clip_dtype} on {self.clip_device}...")
-        image_processor = CLIPImageProcessor.from_pretrained(self.CLIP_REPO, torch_dtype=self.clip_dtype)
-        vision_tower = CLIPVisionModel.from_pretrained(self.CLIP_REPO, torch_dtype=self.clip_dtype).to(self.clip_device)
+        logger.info(
+            f"LLaVA - Loading CLIP from {self.CLIP_REPO} as {self.clip_dtype} on {self.clip_device}..."
+        )
+        image_processor = CLIPImageProcessor.from_pretrained(
+            self.CLIP_REPO, torch_dtype=self.clip_dtype
+        )
+        vision_tower = CLIPVisionModel.from_pretrained(
+            self.CLIP_REPO, torch_dtype=self.clip_dtype
+        ).to(self.clip_device)
 
-        logger.info(f"LLaVA - Loading projector from {self.llava_projector_repo()} as {self.projector_dtype} on {self.projector_device}...")
-        projector_path = hf_hub_download(self.llava_projector_repo(), self.llava_projector_filename())
+        logger.info(
+            f"LLaVA - Loading projector from {self.llava_projector_repo()} as {self.projector_dtype} on {self.projector_device}..."
+        )
+        projector_path = hf_hub_download(
+            self.llava_projector_repo(), self.llava_projector_filename()
+        )
         mm_projector = self.build_mm_projector()
         projector_data = torch.load(projector_path)
-        projector_data = {k[19:]: v for k, v in projector_data.items() if k.startswith('model.mm_projector.')}
+        projector_data = {
+            k[19:]: v
+            for k, v in projector_data.items()
+            if k.startswith("model.mm_projector.")
+        }
         mm_projector.load_state_dict(projector_data)
         mm_projector = mm_projector.to(self.projector_device)
 
-        logger.info(f"LLaVA supporting models loaded, took {time.time() - start_ts:.2f} seconds")
+        logger.info(
+            f"LLaVA supporting models loaded, took {time.time() - start_ts:.2f} seconds"
+        )
         return image_processor, vision_tower, mm_projector
 
     def build_mm_projector(self) -> torch.nn.Module:
@@ -65,7 +81,9 @@ class LLaVA_v0_Pipeline(AbstractMultimodalPipeline):
             modules.append(torch.nn.Linear(projector_shape[0], projector_shape[1]))
             for i in range(2, len(projector_shape)):
                 modules.append(torch.nn.GELU())
-                modules.append(torch.nn.Linear(projector_shape[i-1], projector_shape[i]))
+                modules.append(
+                    torch.nn.Linear(projector_shape[i - 1], projector_shape[i])
+                )
             return torch.nn.Sequential(*modules)
 
     @staticmethod
@@ -82,29 +100,37 @@ class LLaVA_v0_Pipeline(AbstractMultimodalPipeline):
 
     @staticmethod
     def embed_tokens(input_ids: torch.Tensor) -> torch.Tensor:
-        for attr in ['', 'model', 'model.model', 'model.model.model']:
-            tmp = getattr(shared.model, attr, None) if attr != '' else shared.model
-            if tmp is not None and hasattr(tmp, 'embed_tokens'):
+        for attr in ["", "model", "model.model", "model.model.model"]:
+            tmp = getattr(shared.model, attr, None) if attr != "" else shared.model
+            if tmp is not None and hasattr(tmp, "embed_tokens"):
                 func = tmp.embed_tokens
                 break
         else:
-            raise ValueError('The embed_tokens method has not been found for this loader.')
+            raise ValueError(
+                "The embed_tokens method has not been found for this loader."
+            )
 
         return func(input_ids).to(shared.model.device, dtype=shared.model.dtype)
 
     @staticmethod
     def placeholder_embeddings() -> torch.Tensor:
-        return LLaVA_v0_Pipeline.embed_tokens(encode("<im_patch>"*256, add_bos_token=False)[0])
+        return LLaVA_v0_Pipeline.embed_tokens(
+            encode("<im_patch>" * 256, add_bos_token=False)[0]
+        )
 
     def embed_images(self, images: List[Image.Image]) -> torch.Tensor:
-        images = self.image_processor(images, return_tensors='pt')['pixel_values']
+        images = self.image_processor(images, return_tensors="pt")["pixel_values"]
         images = images.to(self.clip_device, dtype=self.clip_dtype)
 
         with torch.no_grad():
             image_forward_outs = self.vision_tower(images, output_hidden_states=True)
             select_hidden_state_layer = -2
-            select_hidden_state = image_forward_outs.hidden_states[select_hidden_state_layer]
-            image_features = select_hidden_state[:, 1:].to(self.projector_device, dtype=self.projector_dtype)
+            select_hidden_state = image_forward_outs.hidden_states[
+                select_hidden_state_layer
+            ]
+            image_features = select_hidden_state[:, 1:].to(
+                self.projector_device, dtype=self.projector_dtype
+            )
             image_features = self.mm_projector(image_features)
         return image_features.to(shared.model.device, dtype=shared.model.dtype)
 
@@ -200,7 +226,9 @@ class LLaVA_LLaMA_2_13B_Pipeline(LLaVA_v0_13B_Pipeline):
 
     @staticmethod
     def placeholder_embeddings() -> torch.Tensor:
-        return LLaVA_v0_Pipeline.embed_tokens(encode("<unk>"*256, add_bos_token=False)[0])
+        return LLaVA_v0_Pipeline.embed_tokens(
+            encode("<unk>" * 256, add_bos_token=False)[0]
+        )
 
 
 class LLaVA_v1_5_13B_Pipeline(LLaVA_v0_13B_Pipeline):
@@ -240,14 +268,19 @@ class LLaVA_v1_5_13B_Pipeline(LLaVA_v0_13B_Pipeline):
     def embed_images(self, images: List[Image.Image]) -> torch.Tensor:
         # pad it to square first
         images = [
-            expand2square(image, tuple(int(x*255) for x in self.image_processor.image_mean))
+            expand2square(
+                image, tuple(int(x * 255) for x in self.image_processor.image_mean)
+            )
             for image in images
         ]
         return super().embed_images(images)
 
     @staticmethod
     def placeholder_embeddings() -> torch.Tensor:
-        return LLaVA_v0_Pipeline.embed_tokens(encode("<unk>"*576, add_bos_token=False)[0])
+        return LLaVA_v0_Pipeline.embed_tokens(
+            encode("<unk>" * 576, add_bos_token=False)[0]
+        )
+
 
 class LLaVA_v1_5_7B_Pipeline(LLaVA_v1_5_13B_Pipeline):
     @staticmethod
@@ -257,6 +290,7 @@ class LLaVA_v1_5_7B_Pipeline(LLaVA_v1_5_13B_Pipeline):
     @staticmethod
     def llava_projector_shape() -> Tuple[int, int]:
         return (1024, 4096, 4096)
+
     @staticmethod
     def llava_projector_repo() -> str:
         return "liuhaotian/llava-v1.5-7b"

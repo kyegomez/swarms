@@ -4,24 +4,23 @@ import json
 
 
 def prometheus(url, params):
-    res = requests.get(url='http://8.131.229.55:9090/' + url, params=params)
+    res = requests.get(url="http://8.131.229.55:9090/" + url, params=params)
     # print(json.dumps(res.json()))
 
-    #return json.dumps(res.json())
+    # return json.dumps(res.json())
     return res.json()
 
 
 def detect_anomalies(data, significance_level=0.05):
-
-    # assume the workload is steadily running 
+    # assume the workload is steadily running
 
     """
     Detects anomalies in the given data using the KS test algorithm.
-    
+
     Args:
         data (numpy.ndarray): 1-D array of data values.
         significance_level (float): Level of significance for the KS test (default: 0.05).
-    
+
     Returns:
         numpy.ndarray: Boolean array indicating anomalies (True) and non-anomalies (False).
     """
@@ -57,5 +56,5 @@ def detect_anomalies(data, significance_level=0.05):
 
     if max_value > mean:
         anomalies = True
-    
+
     return anomalies

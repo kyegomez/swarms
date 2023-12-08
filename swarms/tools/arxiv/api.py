@@ -18,24 +18,21 @@ def build_tool(config) -> Tool:
         ),
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
 
     arxiv_exceptions: Any  # :meta private:
     top_k_results: int = 3
     ARXIV_MAX_QUERY_LENGTH = 300
     doc_content_chars_max: int = 4000
-    
+
     @tool.get("/get_arxiv_article_information")
-    def get_arxiv_article_information(query : str):
-        '''Run Arxiv search and get the article meta information.
-        '''
-        param = {
-            "q": query
-        } 
+    def get_arxiv_article_information(query: str):
+        """Run Arxiv search and get the article meta information."""
+        param = {"q": query}
         try:
             results = arxiv.Search(  # type: ignore
-                query[: ARXIV_MAX_QUERY_LENGTH], max_results = top_k_results
+                query[:ARXIV_MAX_QUERY_LENGTH], max_results=top_k_results
             ).results()
         except arxiv_exceptions as ex:
             return f"Arxiv exception: {ex}"
@@ -46,8 +43,8 @@ def build_tool(config) -> Tool:
             for result in results
         ]
         if docs:
-            return "\n\n".join(docs)[: doc_content_chars_max]
+            return "\n\n".join(docs)[:doc_content_chars_max]
         else:
             return "No good Arxiv Result was found"
-    
+
     return tool

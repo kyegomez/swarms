@@ -52,7 +52,7 @@ def get_single(value_type, file):
         value_length = struct.unpack("<Q", file.read(8))[0]
         value = file.read(value_length)
         try:
-            value = value.decode('utf-8')
+            value = value.decode("utf-8")
         except:
             pass
     else:
@@ -65,14 +65,16 @@ def get_single(value_type, file):
 
 def load_metadata(fname):
     metadata = {}
-    with open(fname, 'rb') as file:
+    with open(fname, "rb") as file:
         GGUF_MAGIC = struct.unpack("<I", file.read(4))[0]
         GGUF_VERSION = struct.unpack("<I", file.read(4))[0]
         ti_data_count = struct.unpack("<Q", file.read(8))[0]
         kv_data_count = struct.unpack("<Q", file.read(8))[0]
 
         if GGUF_VERSION == 1:
-            raise Exception('You are using an outdated GGUF, please download a new one.')
+            raise Exception(
+                "You are using an outdated GGUF, please download a new one."
+            )
 
         for i in range(kv_data_count):
             key_length = struct.unpack("<Q", file.read(8))[0]

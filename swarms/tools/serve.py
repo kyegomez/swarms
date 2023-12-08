@@ -5,27 +5,29 @@ from .retriever import Retriever
 from typing import List, Dict
 from pydantic import BaseModel
 
+
 class RetrieveRequest(BaseModel):
     query: str
     topk: int = 3
 
-def _bind_tool_server(t : "ToolServer"):
-    """ Add property API to ToolServer.
+
+def _bind_tool_server(t: "ToolServer"):
+    """Add property API to ToolServer.
     t.api is a FastAPI object
     """
-    
-    @t.api.get("/") 
+
+    @t.api.get("/")
     def health():
         return {
             "status": "ok",
         }
-    
+
     @t.api.get("/list")
     def get_tools_list():
         return {
             "tools": t.list_tools(),
         }
-    
+
     @t.api.get("/loaded")
     def get_loaded_tools():
         return {
@@ -56,13 +58,12 @@ def _bind_tool_server(t : "ToolServer"):
     @t.api.post("/retrieve")
     def retrieve(request: RetrieveRequest):
         tool_list = t.retrieve(request.query, request.topk)
-        return {
-            "tools": tool_list
-        }
+        return {"tools": tool_list}
+
 
 class ToolServer:
-    """ This class host your own API backend.
-    """
+    """This class host your own API backend."""
+
     def __init__(self) -> None:
         # define the root API server
         self.api = fastapi.FastAPI(
@@ -72,7 +73,7 @@ class ToolServer:
         self.loaded_tools = dict()
         self.retriever = Retriever()
         _bind_tool_server(self)
-    
+
     def load_tool(self, name: str, config: Dict = {}):
         if self.is_loaded(name):
             raise ValueError(f"Tool {name} is already loaded")
@@ -83,15 +84,15 @@ class ToolServer:
             return
         self.loaded_tools[name] = tool.api_info
         self.retriever.add_tool(name, tool.api_info)
-        
+
         # mount sub API server to the root API server, thus can mount all urls of sub API server to /tools/{name} route
         self.api.mount(f"/tools/{name}", tool, name)
         return
-    
-    def is_loaded(self, name : str):
+
+    def is_loaded(self, name: str):
         return name in self.loaded_tools
-    
-    def serve(self, host : str = "0.0.0.0", port : int = 8079):
+
+    def serve(self, host: str = "0.0.0.0", port: int = 8079):
         uvicorn.run(self.api, host=host, port=port)
 
     def list_tools(self) -> List[str]:

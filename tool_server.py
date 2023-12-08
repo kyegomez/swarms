@@ -1,11 +1,12 @@
 from swarms.tools.serve import ToolServer
 
+
 def run_tool_server():
     # def load_weather_tool():
-        # WEATHER_API_KEYS = os.environ.get('WEATHER_API_KEYS', None)
-        # if not WEATHER_API_KEYS:
-            # raise RuntimeError("WEATHER_API_KEYS not provided, please register one from https://www.weatherapi.com/ and add it to environment variables.")
-        # server.load_tool("weather", {"subscription_key": WEATHER_API_KEYS})
+    # WEATHER_API_KEYS = os.environ.get('WEATHER_API_KEYS', None)
+    # if not WEATHER_API_KEYS:
+    # raise RuntimeError("WEATHER_API_KEYS not provided, please register one from https://www.weatherapi.com/ and add it to environment variables.")
+    # server.load_tool("weather", {"subscription_key": WEATHER_API_KEYS})
 
     # def load_database_tool():
     #     server.load_tool("database")
@@ -55,15 +56,16 @@ def run_tool_server():
     #         raise RuntimeError("Bing map key not provided, please register one from https://www.bingmapsportal.com/ and add it to environment variables.")
     #     server.load_tool("bing_map", {"subscription_key": BING_MAP_KEY})
 
-        # baidu map tool
-        # BAIDU_SECRET_KEY = os.environ.get('BAIDU_SECRET_KEY', None)
-        # BAIDU_MAP_KEY = os.environ.get('BAIDU_MAP_KEY', None)
-        # if not BAIDU_SECRET_KEY or not BAIDU_MAP_KEY:
-        #     raise RuntimeError("Baidu map key not provided, please register one from https://lbsyun.baidu.com/apiconsole/key and add it to environment variables.")
-        # server.load_tool("baidu_map", {"subscription_key": BAIDU_MAP_KEY, "baidu_secret_key": BAIDU_SECRET_KEY})
+    # baidu map tool
+    # BAIDU_SECRET_KEY = os.environ.get('BAIDU_SECRET_KEY', None)
+    # BAIDU_MAP_KEY = os.environ.get('BAIDU_MAP_KEY', None)
+    # if not BAIDU_SECRET_KEY or not BAIDU_MAP_KEY:
+    #     raise RuntimeError("Baidu map key not provided, please register one from https://lbsyun.baidu.com/apiconsole/key and add it to environment variables.")
+    # server.load_tool("baidu_map", {"subscription_key": BAIDU_MAP_KEY, "baidu_secret_key": BAIDU_SECRET_KEY})
 
     # def load_rapidapi_tool():
     #     RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY', None)
+    #     if not RAPIDAPI_KEY:
     #     if not RAPIDAPI_KEY:
     #         raise RuntimeError("RAPIDAPI_KEY not provided, please register one from https://rapidapi.com/ and add it to environment variables.")
     #     server.load_tool("zillow", {"subscription_key": RAPIDAPI_KEY})
@@ -136,7 +138,7 @@ def run_tool_server():
     print(server.list_tools())
 
     # tool_choice = input("Enter 'ALL' to load all tools, or enter the specific tools you want to load (comma-separated): ")
-    
+
     # load_weather_tool()
     # load_database_tool()
     # load_db_diag_tool()
@@ -168,6 +170,7 @@ def run_tool_server():
     # load_travel_tool()
 
     server.serve()
+
 
 if __name__ == "__main__":
     run_tool_server()

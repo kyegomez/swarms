@@ -95,8 +95,8 @@ class AutoGPT:
                 memory=self.memory,
                 user_input=user_input,
             )
-            pos = assistant_reply.find('{')
-            if pos>0:
+            pos = assistant_reply.find("{")
+            if pos > 0:
                 assistant_reply = assistant_reply[pos:]
             # Print Assistant thoughts
             print(assistant_reply)
@@ -106,7 +106,7 @@ class AutoGPT:
             # Get command name and arguments
             action = self.output_parser.parse(assistant_reply)
             tools = {t.name: t for t in self.tools}
-            
+
             if action.name == FINISH_NAME:
                 return action.args["response"]
             if action.name in tools:
@@ -116,12 +116,15 @@ class AutoGPT:
                     tmp_json = action.args.copy()
                     tmp_json["history context"] = str(history_rec[-5:])[-500:]
                     tmp_json["user message"] = goals[0]
-                    json_args = str(tmp_json).replace("\'", "\"")
+                    json_args = str(tmp_json).replace("'", '"')
                     observation = tool.run(json_args)
                 except ValidationError as e:
                     observation = f"Error in args: {str(e)}"
                 result = f"Command {tool.name} returned: {observation}"
-                if result.find('using the given APIs')==-1 and result.lower().find('no answer')==-1:
+                if (
+                    result.find("using the given APIs") == -1
+                    and result.lower().find("no answer") == -1
+                ):
                     history_rec.append(f"Tool {action.name} returned: {observation}")
             elif action.name == "ERROR":
                 result = f"Error: {action.args}. "

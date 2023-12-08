@@ -16,19 +16,17 @@ def build_tool(config) -> Tool:
         ),
         logo_url="https://scenex.jina.ai/SceneX%20-%20Light.svg",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
 
     scenex_api_key = config["subscription_key"]
     scenex_api_url: str = (
         "https://us-central1-causal-diffusion.cloudfunctions.net/describe"
     )
-    
-    
+
     @tool.get("/describe_image")
-    def describe_image(image : str):
-        '''Get the text description of an image.
-        '''
+    def describe_image(image: str):
+        """Get the text description of an image."""
         headers = {
             "x-api-key": f"token {scenex_api_key}",
             "content-type": "application/json",
@@ -51,5 +49,5 @@ def build_tool(config) -> Tool:
             return "No description found."
 
         return description
-            
+
     return tool

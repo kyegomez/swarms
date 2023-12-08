@@ -63,17 +63,14 @@ def _get_default_logging_level():
 
 
 def _get_library_name() -> str:
-
     return __name__.split(".")[0]
 
 
 def _get_library_root_logger() -> logging.Logger:
-
     return logging.getLogger(_get_library_name())
 
 
 def _configure_library_root_logger() -> None:
-
     global _default_handler
 
     with _lock:
@@ -83,7 +80,8 @@ def _configure_library_root_logger() -> None:
         _default_handler = logging.StreamHandler()  # Set sys.stderr as stream.
         _default_handler.flush = sys.stderr.flush
         formatter = logging.Formatter(
-            "\033[1;31m[%(levelname)s|(SWARMSTools)%(module)s:%(lineno)d]%(asctime)s >> \033[0m %(message)s")
+            "\033[1;31m[%(levelname)s|(SWARMSTools)%(module)s:%(lineno)d]%(asctime)s >> \033[0m %(message)s"
+        )
         _default_handler.setFormatter(formatter)
 
         # Apply our default configuration to the library root logger.
@@ -91,12 +89,10 @@ def _configure_library_root_logger() -> None:
         library_root_logger.addHandler(_default_handler)
         library_root_logger.setLevel(_get_default_logging_level())
 
-        
         library_root_logger.propagate = False
 
 
 def _reset_library_root_logger() -> None:
-
     global _default_handler
 
     with _lock:
@@ -111,7 +107,6 @@ def _reset_library_root_logger() -> None:
 
 def get_log_levels_dict():
     return log_levels
-
 
 
 def get_verbosity() -> int:
@@ -235,7 +230,9 @@ def enable_explicit_format() -> None:
     handlers = _get_library_root_logger().handlers
 
     for handler in handlers:
-        formatter = logging.Formatter("[%(levelname)s|%(filename)s:%(lineno)s] %(asctime)s >> %(message)s")
+        formatter = logging.Formatter(
+            "[%(levelname)s|%(filename)s:%(lineno)s] %(asctime)s >> %(message)s"
+        )
         handler.setFormatter(formatter)
 
 
@@ -264,7 +261,7 @@ def warning_advice(self, *args, **kwargs):
 logging.Logger.warning_advice = warning_advice
 
 
-def get_logger(name: Optional[str] = None, verbosity='info') -> logging.Logger:
+def get_logger(name: Optional[str] = None, verbosity="info") -> logging.Logger:
     """
     Return a logger with the specified name.
     This function is not supposed to be directly accessed unless you are writing a custom transformers module.

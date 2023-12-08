@@ -11,6 +11,7 @@ from uuid import uuid4
 
 import pexpect
 
+
 def _lazy_import_pexpect() -> pexpect:
     """Import pexpect only when needed."""
     if platform.system() == "Windows":
@@ -24,6 +25,7 @@ def _lazy_import_pexpect() -> pexpect:
             " To install, run `pip install pexpect`."
         )
     return pexpect
+
 
 class BashProcess:
     """Executes bash commands and returns the output."""
@@ -128,33 +130,32 @@ def get_platform() -> str:
         return "MacOS"
     return system
 
+
 def get_default_bash_process() -> BashProcess:
     """Get file path from string."""
     return BashProcess(return_err_output=True)
 
 
 def build_tool(config) -> Tool:
-    
     tool = Tool(
         "Terminal",
         "Tool to run shell commands.",
         name_for_model="Terminal",
-        description_for_model = f"Run shell commands on this {get_platform()} machine.",
+        description_for_model=f"Run shell commands on this {get_platform()} machine.",
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
-    
+
     process: BashProcess = get_default_bash_process()
     """Bash process to run commands."""
-    
-        
+
     @tool.get("/shell_run")
     def shell_run(commands: str):
-        '''Run commands and return final output. 
-           Queries to shell_run must ALWAYS have this structure: {\"commands\": query}.\n",
-           and query should be a command string.
-        '''
+        """Run commands and return final output.
+        Queries to shell_run must ALWAYS have this structure: {\"commands\": query}.\n",
+        and query should be a command string.
+        """
         return process.run(commands)
-            
+
     return tool

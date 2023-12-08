@@ -5,19 +5,18 @@ from swarms.modelui.modules import shared
 
 sampler = None
 grammar = None
-grammar_string = ''
+grammar_string = ""
 
 
 class GrammarLogitsProcessor(LogitsProcessor):
     def __init__(self, string):
-
         global sampler, grammar, grammar_string
 
         if string != grammar_string:
             grammar_string = string
-            if string.strip() != '':
-                string = string.strip() + '\n'
-                sampler = GrammarSampler(string, 'root', shared.tokenizer)
+            if string.strip() != "":
+                string = string.strip() + "\n"
+                sampler = GrammarSampler(string, "root", shared.tokenizer)
             else:
                 sampler = None
 

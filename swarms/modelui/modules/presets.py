@@ -6,32 +6,32 @@ import yaml
 
 def default_preset():
     return {
-        'temperature': 1,
-        'temperature_last': False,
-        'top_p': 1,
-        'min_p': 0,
-        'top_k': 0,
-        'repetition_penalty': 1,
-        'presence_penalty': 0,
-        'frequency_penalty': 0,
-        'repetition_penalty_range': 0,
-        'typical_p': 1,
-        'tfs': 1,
-        'top_a': 0,
-        'epsilon_cutoff': 0,
-        'eta_cutoff': 0,
-        'guidance_scale': 1,
-        'penalty_alpha': 0,
-        'mirostat_mode': 0,
-        'mirostat_tau': 5,
-        'mirostat_eta': 0.1,
-        'do_sample': True,
-        'encoder_repetition_penalty': 1,
-        'no_repeat_ngram_size': 0,
-        'min_length': 0,
-        'num_beams': 1,
-        'length_penalty': 1,
-        'early_stopping': False,
+        "temperature": 1,
+        "temperature_last": False,
+        "top_p": 1,
+        "min_p": 0,
+        "top_k": 0,
+        "repetition_penalty": 1,
+        "presence_penalty": 0,
+        "frequency_penalty": 0,
+        "repetition_penalty_range": 0,
+        "typical_p": 1,
+        "tfs": 1,
+        "top_a": 0,
+        "epsilon_cutoff": 0,
+        "eta_cutoff": 0,
+        "guidance_scale": 1,
+        "penalty_alpha": 0,
+        "mirostat_mode": 0,
+        "mirostat_tau": 5,
+        "mirostat_eta": 0.1,
+        "do_sample": True,
+        "encoder_repetition_penalty": 1,
+        "no_repeat_ngram_size": 0,
+        "min_length": 0,
+        "num_beams": 1,
+        "length_penalty": 1,
+        "early_stopping": False,
     }
 
 
@@ -41,14 +41,14 @@ def presets_params():
 
 def load_preset(name):
     generate_params = default_preset()
-    if name not in ['None', None, '']:
-        with open(Path(f'swarms/modelui/presets/{name}.yaml'), 'r') as infile:
+    if name not in ["None", None, ""]:
+        with open(Path(f"swarms/modelui/presets/{name}.yaml"), "r") as infile:
             preset = yaml.safe_load(infile)
 
         for k in preset:
             generate_params[k] = preset[k]
 
-    generate_params['temperature'] = min(1.99, generate_params['temperature'])
+    generate_params["temperature"] = min(1.99, generate_params["temperature"])
     return generate_params
 
 

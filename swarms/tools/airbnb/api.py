@@ -15,31 +15,42 @@ def build_tool(config) -> Tool:
         description_for_model="Plugin for look up rental and housing information",
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
 
     BASE_URL = "https://airbnb19.p.rapidapi.com/api/v1"
     KEY = config["subscription_key"]
-    HEADERS = {
-            "X-RapidAPI-Key": KEY,
-            "X-RapidAPI-Host": "airbnb19.p.rapidapi.com"
-        }
-
+    HEADERS = {"X-RapidAPI-Key": KEY, "X-RapidAPI-Host": "airbnb19.p.rapidapi.com"}
 
     @tool.get("/ssearch_property")
-    def search_property(_id: str, display_name: Optional[str] = None, 
-                        total_records: Optional[str] = '10', currency: Optional[str] = 'USD', 
-                        offset: Optional[str] = None, category: Optional[str] = None, 
-                        adults: Optional[int] = 1, children: Optional[int] = None, 
-                        infants: Optional[int] = None, pets: Optional[int] = None, 
-                        checkin: Optional[str] = None, checkout: Optional[str] = None, 
-                        priceMin: Optional[int] = None, priceMax: Optional[int] = None, 
-                        minBedrooms: Optional[int] = None, minBeds: Optional[int] = None, 
-                        minBathrooms: Optional[int] = None, property_type: Optional[List[str]] = None, 
-                        host_languages: Optional[List[str]] = None, amenities: Optional[List[str]] = None, 
-                        type_of_place: Optional[List[str]] = None, top_tier_stays: Optional[List[str]] = None, 
-                        self_check_in: Optional[bool] = None, instant_book: Optional[bool] = None, 
-                        super_host: Optional[bool] = None, languageId: Optional[str] = None) -> dict:
+    def search_property(
+        _id: str,
+        display_name: Optional[str] = None,
+        total_records: Optional[str] = "10",
+        currency: Optional[str] = "USD",
+        offset: Optional[str] = None,
+        category: Optional[str] = None,
+        adults: Optional[int] = 1,
+        children: Optional[int] = None,
+        infants: Optional[int] = None,
+        pets: Optional[int] = None,
+        checkin: Optional[str] = None,
+        checkout: Optional[str] = None,
+        priceMin: Optional[int] = None,
+        priceMax: Optional[int] = None,
+        minBedrooms: Optional[int] = None,
+        minBeds: Optional[int] = None,
+        minBathrooms: Optional[int] = None,
+        property_type: Optional[List[str]] = None,
+        host_languages: Optional[List[str]] = None,
+        amenities: Optional[List[str]] = None,
+        type_of_place: Optional[List[str]] = None,
+        top_tier_stays: Optional[List[str]] = None,
+        self_check_in: Optional[bool] = None,
+        instant_book: Optional[bool] = None,
+        super_host: Optional[bool] = None,
+        languageId: Optional[str] = None,
+    ) -> dict:
         """
         This function takes various parameters to search properties on Airbnb.
 
@@ -77,48 +88,65 @@ def build_tool(config) -> Tool:
         """
 
         params = {
-            'id': _id,
-            'display_name': display_name,
-            'totalRecords': total_records,
-            'currency': currency,
-            'offset': offset,
-            'category': category,
-            'adults': adults,
-            'children': children,
-            'infants': infants,
-            'pets': pets,
-            'checkin': checkin,
-            'checkout': checkout,
-            'priceMin': priceMin,
-            'priceMax': priceMax,
-            'minBedrooms': minBedrooms,
-            'minBeds': minBeds,
-            'minBathrooms': minBathrooms,
-            'property_type': property_type,
-            'host_languages': host_languages,
-            'amenities': amenities,
-            'type_of_place': type_of_place,
-            'top_tier_stays': top_tier_stays,
-            'self_check_in': self_check_in,
-            'instant_book': instant_book,
-            'super_host': super_host,
-            'languageId': languageId
+            "id": _id,
+            "display_name": display_name,
+            "totalRecords": total_records,
+            "currency": currency,
+            "offset": offset,
+            "category": category,
+            "adults": adults,
+            "children": children,
+            "infants": infants,
+            "pets": pets,
+            "checkin": checkin,
+            "checkout": checkout,
+            "priceMin": priceMin,
+            "priceMax": priceMax,
+            "minBedrooms": minBedrooms,
+            "minBeds": minBeds,
+            "minBathrooms": minBathrooms,
+            "property_type": property_type,
+            "host_languages": host_languages,
+            "amenities": amenities,
+            "type_of_place": type_of_place,
+            "top_tier_stays": top_tier_stays,
+            "self_check_in": self_check_in,
+            "instant_book": instant_book,
+            "super_host": super_host,
+            "languageId": languageId,
         }
-        response = requests.get(f"{BASE_URL}/searchPropertyByPlace", headers=HEADERS, params=params)
-        return response.json()['data'][0]
+        response = requests.get(
+            f"{BASE_URL}/searchPropertyByPlace", headers=HEADERS, params=params
+        )
+        return response.json()["data"][0]
 
     @tool.get("/search_property_by_coordinates")
-    def search_property_by_coordinates(neLat: float, neLng: float, swLat: float, swLng: float,
-                                   currency: Optional[str] = 'USD', nextPageCursor: Optional[str] = None,
-                                   totalRecords: Optional[str] = None, infants: Optional[int] = None,
-                                   adults: Optional[int] = 1, children: Optional[int] = None,
-                                   pets: Optional[int] = None, checkin: Optional[str] = None,
-                                   checkout: Optional[str] = None, priceMin: Optional[int] = None,
-                                   priceMax: Optional[int] = None, minBedrooms: Optional[int] = None,
-                                   minBeds: Optional[int] = None, minBathrooms: Optional[int] = None,
-                                   property_type: Optional[List[str]] = None, host_languages: Optional[List[str]] = None,
-                                   amenities: Optional[List[str]] = None, type_of_place: Optional[List[str]] = None,
-                                   top_tier_stays: Optional[List[str]] = None, super_host: Optional[bool] = None) -> dict:
+    def search_property_by_coordinates(
+        neLat: float,
+        neLng: float,
+        swLat: float,
+        swLng: float,
+        currency: Optional[str] = "USD",
+        nextPageCursor: Optional[str] = None,
+        totalRecords: Optional[str] = None,
+        infants: Optional[int] = None,
+        adults: Optional[int] = 1,
+        children: Optional[int] = None,
+        pets: Optional[int] = None,
+        checkin: Optional[str] = None,
+        checkout: Optional[str] = None,
+        priceMin: Optional[int] = None,
+        priceMax: Optional[int] = None,
+        minBedrooms: Optional[int] = None,
+        minBeds: Optional[int] = None,
+        minBathrooms: Optional[int] = None,
+        property_type: Optional[List[str]] = None,
+        host_languages: Optional[List[str]] = None,
+        amenities: Optional[List[str]] = None,
+        type_of_place: Optional[List[str]] = None,
+        top_tier_stays: Optional[List[str]] = None,
+        super_host: Optional[bool] = None,
+    ) -> dict:
         """
         This function takes GEO coordinates and various other parameters to search properties on Airbnb.
 
@@ -128,39 +156,43 @@ def build_tool(config) -> Tool:
         swLat (float): Latitude of the southwestern corner of the search area.
         swLng (float): Longitude of the southwestern corner of the search area.
         Other parameters are the same as search_property function.
-        
+
         Returns:
         dict: A dictionary that contains the search results.
         """
 
         params = {
-            'neLat': neLat,
-            'neLng': neLng,
-            'swLat': swLat,
-            'swLng': swLng,
-            'currency': currency,
-            'nextPageCursor': nextPageCursor,
-            'totalRecords': totalRecords,
-            'infants': infants,
-            'adults': adults,
-            'children': children,
-            'pets': pets,
-            'checkin': checkin,
-            'checkout': checkout,
-            'priceMin': priceMin,
-            'priceMax': priceMax,
-            'minBedrooms': minBedrooms,
-            'minBeds': minBeds,
-            'minBathrooms': minBathrooms,
-            'property_type': property_type,
-            'host_languages': host_languages,
-            'amenities': amenities,
-            'type_of_place': type_of_place,
-            'top_tier_stays': top_tier_stays,
-            'super_host': super_host
+            "neLat": neLat,
+            "neLng": neLng,
+            "swLat": swLat,
+            "swLng": swLng,
+            "currency": currency,
+            "nextPageCursor": nextPageCursor,
+            "totalRecords": totalRecords,
+            "infants": infants,
+            "adults": adults,
+            "children": children,
+            "pets": pets,
+            "checkin": checkin,
+            "checkout": checkout,
+            "priceMin": priceMin,
+            "priceMax": priceMax,
+            "minBedrooms": minBedrooms,
+            "minBeds": minBeds,
+            "minBathrooms": minBathrooms,
+            "property_type": property_type,
+            "host_languages": host_languages,
+            "amenities": amenities,
+            "type_of_place": type_of_place,
+            "top_tier_stays": top_tier_stays,
+            "super_host": super_host,
         }
-        response = requests.get(f"https://airbnb19.p.rapidapi.com/api/v2/searchPropertyByGEO", headers=HEADERS, params=params)
-        return response.json()['data']['list'][0]
+        response = requests.get(
+            f"https://airbnb19.p.rapidapi.com/api/v2/searchPropertyByGEO",
+            headers=HEADERS,
+            params=params,
+        )
+        return response.json()["data"]["list"][0]
 
     @tool.get("/search_destination")
     def search_destination(self, query: str, country: Optional[str] = None) -> dict:
@@ -175,15 +207,19 @@ def build_tool(config) -> Tool:
         dict: A dictionary that contains the search results. including ID information for a destination
         """
 
-        params = {
-            'query': query,
-            'country': country
-        }
-        response = requests.get(f"{BASE_URL}/searchDestination", headers=HEADERS, params=params)
+        params = {"query": query, "country": country}
+        response = requests.get(
+            f"{BASE_URL}/searchDestination", headers=HEADERS, params=params
+        )
         return response.json()
 
     @tool.get("/property_by_coordinates")
-    def property_by_coordinates(long: float, lat: float, d: Optional[float] = None, includeSold: Optional[bool] = None):
+    def property_by_coordinates(
+        long: float,
+        lat: float,
+        d: Optional[float] = None,
+        includeSold: Optional[bool] = None,
+    ):
         """
         Search property by coordinates.
 
@@ -205,18 +241,24 @@ def build_tool(config) -> Tool:
 
         # Remove parameters that are None
         params = {k: v for k, v in params.items() if v is not None}
-        url = BASE_URL + '/propertyByCoordinates'
+        url = BASE_URL + "/propertyByCoordinates"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
         return response.json()
-    
+
     @tool.get("/get_property_details")
-    def get_property_details(propertyId: int, currency: Optional[str] = 'USD',
-                         checkIn: Optional[str] = None, checkOut: Optional[str] = None,
-                         adults: Optional[int] = 1, children: Optional[int] = None,
-                         infants: Optional[int] = None, pets: Optional[int] = None,
-                         languageId: Optional[str] = None) -> dict:
+    def get_property_details(
+        propertyId: int,
+        currency: Optional[str] = "USD",
+        checkIn: Optional[str] = None,
+        checkOut: Optional[str] = None,
+        adults: Optional[int] = 1,
+        children: Optional[int] = None,
+        infants: Optional[int] = None,
+        pets: Optional[int] = None,
+        languageId: Optional[str] = None,
+    ) -> dict:
         """
         This function retrieves the details of a property given its ID.
 
@@ -236,17 +278,21 @@ def build_tool(config) -> Tool:
         """
 
         params = {
-            'propertyId': propertyId,
-            'currency': currency,
-            'checkIn': checkIn,
-            'checkOut': checkOut,
-            'adults': adults,
-            'children': children,
-            'infants': infants,
-            'pets': pets,
-            'languageId': languageId
+            "propertyId": propertyId,
+            "currency": currency,
+            "checkIn": checkIn,
+            "checkOut": checkOut,
+            "adults": adults,
+            "children": children,
+            "infants": infants,
+            "pets": pets,
+            "languageId": languageId,
         }
-        response = requests.get(f"https://airbnb19.p.rapidapi.com/api/v2/getPropertyDetails", headers=HEADERS, params=params)
+        response = requests.get(
+            f"https://airbnb19.p.rapidapi.com/api/v2/getPropertyDetails",
+            headers=HEADERS,
+            params=params,
+        )
         return response.json()
 
     @tool.get("/check_availability")
@@ -261,9 +307,11 @@ def build_tool(config) -> Tool:
         dict: A dictionary that contains the availability of the property.
         """
         params = {
-            'propertyId': propertyId,
+            "propertyId": propertyId,
         }
-        response = requests.get(f"{BASE_URL}/checkAvailability", headers=HEADERS, params=params)
+        response = requests.get(
+            f"{BASE_URL}/checkAvailability", headers=HEADERS, params=params
+        )
         return response.json()
 
     @tool.get("/get_property_reviews")
@@ -278,11 +326,13 @@ def build_tool(config) -> Tool:
         dict: A dictionary that contains the reviews of the property.
         """
         params = {
-            'propertyId': propertyId,
+            "propertyId": propertyId,
         }
-        response = requests.get(f"{BASE_URL}/getPropertyReviews", headers=HEADERS, params=params)
+        response = requests.get(
+            f"{BASE_URL}/getPropertyReviews", headers=HEADERS, params=params
+        )
         return response.json()
-    
+
     @tool.get("/get_property_checkout_price")
     def get_property_checkout_price(propertyId: int, checkIn: str) -> dict:
         """
@@ -295,11 +345,10 @@ def build_tool(config) -> Tool:
         Returns:
         dict: A dictionary that contains the checkout price of the property.
         """
-        params = {
-            'propertyId': propertyId,
-            'checkIn': checkIn
-        }
-        response = requests.get(f"{BASE_URL}/getPropertyCheckoutPrice", headers=HEADERS, params=params)
+        params = {"propertyId": propertyId, "checkIn": checkIn}
+        response = requests.get(
+            f"{BASE_URL}/getPropertyCheckoutPrice", headers=HEADERS, params=params
+        )
         return response.json()
-    
+
     return tool

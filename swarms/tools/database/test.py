@@ -1,11 +1,13 @@
 from swarms.tools.agent.singletool import load_single_tools, STQuestionAnswerer
 
-tool_name, tool_url = 'database',  "http://127.0.0.1:8079/tools/database/"
+tool_name, tool_url = "database", "http://127.0.0.1:8079/tools/database/"
 tool_name, tool_config = load_single_tools(tool_name, tool_url)
 print(tool_name, tool_config)
-stqa =  STQuestionAnswerer()
+stqa = STQuestionAnswerer()
 
-agent = stqa.load_tools(tool_name, tool_config, prompt_type="autogpt") # langchain: react-with-tool-description
+agent = stqa.load_tools(
+    tool_name, tool_config, prompt_type="autogpt"
+)  # langchain: react-with-tool-description
 
 # 394
 text = "Retrieve the comments of suppliers, size of parts, and supply cost of part-supplier combinations where the available quantity of the part is 6331, the type of the part is greater than 'LARGE POLISHED NICKEL', and the retail price of the part is less than 1758.76. The results should be sorted in descending order based on the comments of the suppliers."
@@ -33,11 +35,13 @@ text = "Retrieve the comments of suppliers, size of parts, and supply cost of pa
 # text = "Retrieve the order priority from the \"orders\" table where the order priority is greater than '3-MEDIUM', the total price is greater than 130861.55, the comment is less than 'finally pending packages sleep along the furiously special', the customer key is less than or equal to 16480, the ship priority is less than or equal to 0, and the order date is not equal to '1997-02-20', and sort the results in ascending order based on the order priority." # 12
 
 # rewrite
-#text = "SELECT s_comment FROM part As p,partsupp As ps,supplier As s WHERE p.p_partkey = ps.ps_partkey AND s.s_suppkey = ps.ps_suppkey AND ps.ps_availqty = 6331 AND p.p_type > 'LARGE POLISHED NICKEL' AND p.p_retailprice < 1758.76 ORDER BY s_comment DESC;"
+# text = "SELECT s_comment FROM part As p,partsupp As ps,supplier As s WHERE p.p_partkey = ps.ps_partkey AND s.s_suppkey = ps.ps_suppkey AND ps.ps_availqty = 6331 AND p.p_type > 'LARGE POLISHED NICKEL' AND p.p_retailprice < 1758.76 ORDER BY s_comment DESC;"
 # text = "Retrieve the comments of suppliers. The results should be sorted in descending order based on the comments of the suppliers"
 text = "Retrieve the comments in the supplier table where the p\_partkey column in the part table matches the ps\_partkey column in the partsupp table, the ps\_availqty column in the partsupp table equals 6331, the p_type column in the part table is greater than 'LARGE POLISHED NICKEL', and the p\_retailprice column in the part table is less than 1758.76."
 
-agent.run([""" First get the database schema via get_database_schema. Next generate the sql query exactly based on the schema and the following description:
+agent.run(
+    [
+        """ First get the database schema via get_database_schema. Next generate the sql query exactly based on the schema and the following description:
 \"{}\" 
 
 Next rewrite the SQL query and output the total number of rows in the database results of the rewritten SQL query.
@@ -47,10 +51,14 @@ Note. 1) Only obtain the database schema once;
 3) Do not use any image in the output; 
 4) The db_name is tpch10x; 
 5) Count the rows of query results by your own and do not output the whole query results.
-""".format(text)])
+""".format(
+            text
+        )
+    ]
+)
 
 # # unit test: get_database_schema
-# agent.run([""" 
+# agent.run(["""
 # Fetch the database schema from a postgresql database named tpch10x.\"
 # """])
 
@@ -60,13 +68,13 @@ Note. 1) Only obtain the database schema once;
 
 
 # # unit test: select_database_data
-# agent(""" 
-# Output the total number of rows in the query results from a postgresql database based on the following description: 
+# agent("""
+# Output the total number of rows in the query results from a postgresql database based on the following description:
 
 # \"Retrieve all the data from the 'customer' table and limit the output to only the first 2 rows.\"
 # """)
 
-''' output (autogpt)
+""" output (autogpt)
 > Entering new LLMChain chain...
 Prompt after formatting:
 System: You are Tom, Assistant
@@ -145,4 +153,4 @@ Human: Determine which next command to use, and respond using the format specifi
     }
 }
 
-'''
+"""

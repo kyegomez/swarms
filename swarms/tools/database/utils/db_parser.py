@@ -2,6 +2,7 @@ import argparse
 import configparser
 import logging
 
+
 def get_conf(conf_file, server_name):
     conf = configparser.ConfigParser()
     conf.read(conf_file)
@@ -10,12 +11,10 @@ def get_conf(conf_file, server_name):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(
-        description="Instruction Induction.")
+    parser = argparse.ArgumentParser(description="Instruction Induction.")
 
-    parser.add_argument("--db_conf", type=str,
-                        default = '../database/configs/config.ini')
-    
+    parser.add_argument("--db_conf", type=str, default="../database/configs/config.ini")
+
     """ 
     parser.add_argument("--train_data", type=str,
                         default="./data/raw/train/rules.json")
@@ -46,7 +45,6 @@ def get_parser():
     parser.add_argument("--storage_budget", type=int, default=500) # limit storage space of built indexes
     """
 
-
     return parser
 
 
@@ -54,8 +52,9 @@ def set_logger(log_file):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s: - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
+        "%(asctime)s - %(name)s - %(levelname)s: - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     # log to file
     fh = logging.FileHandler(log_file)

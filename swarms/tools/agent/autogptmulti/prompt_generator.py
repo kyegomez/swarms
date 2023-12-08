@@ -27,7 +27,12 @@ class PromptGenerator:
                 "text": "thought",
                 "reasoning": "reasoning",
             },
-            "command": {"name": "command name", "args": {"goal": "the detailed description and necessary information of the subtask that you hope current command can achieve"}},
+            "command": {
+                "name": "command name",
+                "args": {
+                    "goal": "the detailed description and necessary information of the subtask that you hope current command can achieve"
+                },
+            },
         }
 
     def add_constraint(self, constraint: str) -> None:
@@ -108,10 +113,10 @@ class PromptGenerator:
         """
         formatted_response_format = json.dumps(self.response_format, indent=4)
         prompt_string = (
-            #f"Constraints:\n{self._generate_numbered_list(self.constraints)}\n\n"
+            # f"Constraints:\n{self._generate_numbered_list(self.constraints)}\n\n"
             f"Commands:\n"
             f"{self._generate_numbered_list(self.commands, item_type='command')}\n\n"
-            #f"Resources:\n{self._generate_numbered_list(self.resources)}\n\n"
+            # f"Resources:\n{self._generate_numbered_list(self.resources)}\n\n"
             f"Performance Evaluation:\n"
             f"{self._generate_numbered_list(self.performance_evaluation)}\n\n"
             f"You should only respond in JSON format as described below "

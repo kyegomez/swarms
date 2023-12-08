@@ -66,12 +66,17 @@ def generate_html():
             container_html = '<div class="character-container">'
             image_html = "<div class='placeholder'></div>"
 
-            for path in [Path(f"characters/{character}.{extension}") for extension in ['png', 'jpg', 'jpeg']]:
+            for path in [
+                Path(f"characters/{character}.{extension}")
+                for extension in ["png", "jpg", "jpeg"]
+            ]:
                 if path.exists():
                     image_html = f'<img src="file/{get_image_cache(path)}">'
                     break
 
-            container_html += f'{image_html} <span class="character-name">{character}</span>'
+            container_html += (
+                f'{image_html} <span class="character-name">{character}</span>'
+            )
             container_html += "</div>"
             cards.append([container_html, character])
 
@@ -79,23 +84,24 @@ def generate_html():
 
 
 def select_character(evt: gr.SelectData):
-    return (evt.value[1])
+    return evt.value[1]
 
 
 def custom_js():
-    path_to_js = Path(__file__).parent.resolve() / 'script.js'
-    return open(path_to_js, 'r').read()
+    path_to_js = Path(__file__).parent.resolve() / "script.js"
+    return open(path_to_js, "r").read()
 
 
 def ui():
-    with gr.Accordion("Character gallery", open=False, elem_id='gallery-extension'):
+    with gr.Accordion("Character gallery", open=False, elem_id="gallery-extension"):
         update = gr.Button("Refresh")
         gr.HTML(value="<style>" + generate_css() + "</style>")
-        gallery = gr.Dataset(components=[gr.HTML(visible=False)],
-                             label="",
-                             samples=generate_html(),
-                             elem_classes=["character-gallery"],
-                             samples_per_page=50
-                             )
+        gallery = gr.Dataset(
+            components=[gr.HTML(visible=False)],
+            label="",
+            samples=generate_html(),
+            elem_classes=["character-gallery"],
+            samples_per_page=50,
+        )
     update.click(generate_html, [], gallery)
-    gallery.select(select_character, None, gradio['character_menu'])
+    gallery.select(select_character, None, gradio["character_menu"])

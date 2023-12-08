@@ -4,12 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import torch
-from exllamav2 import (
-    ExLlamaV2,
-    ExLlamaV2Cache,
-    ExLlamaV2Cache_8bit,
-    ExLlamaV2Config
-)
+from exllamav2 import ExLlamaV2, ExLlamaV2Cache, ExLlamaV2Cache_8bit, ExLlamaV2Config
 from torch.nn import CrossEntropyLoss
 from transformers import GenerationConfig, PretrainedConfig, PreTrainedModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
@@ -21,14 +16,14 @@ try:
     import flash_attn
 except ModuleNotFoundError:
     logger.warning(
-        'You are running ExLlamaV2 without flash-attention. This will cause the VRAM usage '
-        'to be a lot higher than it could be.\n'
-        'Try installing flash-attention following the instructions here: '
-        'https://github.com/Dao-AILab/flash-attention#installation-and-features'
+        "You are running ExLlamaV2 without flash-attention. This will cause the VRAM usage "
+        "to be a lot higher than it could be.\n"
+        "Try installing flash-attention following the instructions here: "
+        "https://github.com/Dao-AILab/flash-attention#installation-and-features"
     )
     pass
 except Exception:
-    logger.warning('Failed to load flash-attention due to the following error:\n')
+    logger.warning("Failed to load flash-attention due to the following error:\n")
     traceback.print_exc()
 
 
@@ -66,20 +61,22 @@ class Exllamav2HF(PreTrainedModel):
         pass
 
     def prepare_inputs_for_generation(self, input_ids, **kwargs):
-        return {'input_ids': input_ids, **kwargs}
+        return {"input_ids": input_ids, **kwargs}
 
     @property
     def device(self) -> torch.device:
         return torch.device(0)
 
     def __call__(self, *args, **kwargs):
-        use_cache = kwargs.get('use_cache', True)
-        labels = kwargs.get('labels', None)
-        past_key_values = kwargs.get('past_key_values', None)
+        use_cache = kwargs.get("use_cache", True)
+        labels = kwargs.get("labels", None)
+        past_key_values = kwargs.get("past_key_values", None)
 
         if len(args) > 0:
             if not shared.args.cfg_cache:
-                logger.error("Please enable the cfg-cache option to use CFG with ExLlamav2_HF.")
+                logger.error(
+                    "Please enable the cfg-cache option to use CFG with ExLlamav2_HF."
+                )
                 return
 
             input_ids = args[0]
@@ -87,7 +84,7 @@ class Exllamav2HF(PreTrainedModel):
             past_seq = self.past_seq_negative
             ex_cache = self.ex_cache_negative
         else:
-            input_ids = kwargs['input_ids']
+            input_ids = kwargs["input_ids"]
             is_negative = False
             past_seq = self.past_seq
             ex_cache = self.ex_cache
@@ -103,7 +100,9 @@ class Exllamav2HF(PreTrainedModel):
         if labels is None:
             if past_seq is not None:
                 min_length = min(past_seq.shape[0], seq_tensor.shape[0])
-                indices = torch.nonzero(~torch.eq(past_seq[:min_length], seq_tensor[:min_length]))
+                indices = torch.nonzero(
+                    ~torch.eq(past_seq[:min_length], seq_tensor[:min_length])
+                )
                 if len(indices) > 0:
                     longest_prefix = indices[0].item()
                 else:
@@ -113,7 +112,12 @@ class Exllamav2HF(PreTrainedModel):
                     reset = False
                     ex_cache.current_seq_len = longest_prefix
                     if len(seq_tensor) - longest_prefix > 1:
-                        self.ex_model.forward(seq_tensor[longest_prefix:-1].view(1, -1), ex_cache, preprocess_only=True, loras=self.loras)
+                        self.ex_model.forward(
+                            seq_tensor[longest_prefix:-1].view(1, -1),
+                            ex_cache,
+                            preprocess_only=True,
+                            loras=self.loras,
+                        )
                     elif len(seq_tensor) == longest_prefix:
                         # Very tricky: if the prefix we are reusing *is* the input_ids, then we have to back up the cache pointer by one,
                         # because we feed input_ids[-1] to forward() below, but that last token is already in the cache!
@@ -122,12 +126,25 @@ class Exllamav2HF(PreTrainedModel):
             if reset:
                 ex_cache.current_seq_len = 0
                 if len(seq_tensor) > 1:
-                    self.ex_model.forward(seq_tensor[:-1].view(1, -1), ex_cache, preprocess_only=True, loras=self.loras)
+                    self.ex_model.forward(
+                        seq_tensor[:-1].view(1, -1),
+                        ex_cache,
+                        preprocess_only=True,
+                        loras=self.loras,
+                    )
 
-            logits = self.ex_model.forward(seq_tensor[-1:].view(1, -1), ex_cache, loras=self.loras).to(input_ids.device).float()
+            logits = (
+                self.ex_model.forward(
+                    seq_tensor[-1:].view(1, -1), ex_cache, loras=self.loras
+                )
+                .to(input_ids.device)
+                .float()
+            )
         else:
             ex_cache.current_seq_len = 0
-            logits = self.ex_model.forward(seq_tensor.view(1, -1), ex_cache, last_id_only=False, loras=self.loras).float()
+            logits = self.ex_model.forward(
+                seq_tensor.view(1, -1), ex_cache, last_id_only=False, loras=self.loras
+            ).float()
 
         if is_negative:
             self.past_seq_negative = seq_tensor
@@ -147,15 +164,26 @@ class Exllamav2HF(PreTrainedModel):
             shift_labels = shift_labels.to(shift_logits.device)
             loss = loss_fct(shift_logits, shift_labels)
 
-        return CausalLMOutputWithPast(logits=logits, past_key_values=seq if use_cache else None, loss=loss)
+        return CausalLMOutputWithPast(
+            logits=logits, past_key_values=seq if use_cache else None, loss=loss
+        )
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path: Optional[Union[str, os.PathLike]], *model_args, **kwargs):
-        assert len(model_args) == 0 and len(kwargs) == 0, "extra args is currently not supported"
+    def from_pretrained(
+        cls,
+        pretrained_model_name_or_path: Optional[Union[str, os.PathLike]],
+        *model_args,
+        **kwargs,
+    ):
+        assert (
+            len(model_args) == 0 and len(kwargs) == 0
+        ), "extra args is currently not supported"
         if isinstance(pretrained_model_name_or_path, str):
             pretrained_model_name_or_path = Path(pretrained_model_name_or_path)
 
-        pretrained_model_name_or_path = Path(f'{shared.args.model_dir}') / Path(pretrained_model_name_or_path)
+        pretrained_model_name_or_path = Path(f"{shared.args.model_dir}") / Path(
+            pretrained_model_name_or_path
+        )
 
         config = ExLlamaV2Config()
         config.model_dir = str(pretrained_model_name_or_path)

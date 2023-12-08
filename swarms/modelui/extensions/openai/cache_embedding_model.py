@@ -7,5 +7,7 @@ import os
 
 import sentence_transformers
 
-st_model = os.environ.get("OPENEDAI_EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2")
+st_model = os.environ.get(
+    "OPENEDAI_EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2"
+)
 model = sentence_transformers.SentenceTransformer(st_model)

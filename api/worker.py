@@ -3,6 +3,7 @@ from celery import Celery
 from celery.result import AsyncResult
 
 from api.container import agent_manager
+
 # from env import settings
 
 celery_broker = os.environ["CELERY_BROKER_URL"]

@@ -10,7 +10,8 @@ import gradio as gr
 import numpy as np
 import logging
 import hashlib
-logging.getLogger('optuna').setLevel(logging.WARNING)
+
+logging.getLogger("optuna").setLevel(logging.WARNING)
 
 import extensions.superboogav2.parameters as parameters
 
@@ -27,11 +28,15 @@ def _markdown_hyperparams():
     for param_name, param_value in Parameters.getInstance().hyperparameters.items():
         # Escape any markdown syntax
         param_name = re.sub(r"([_*\[\]()~`>#+-.!])", r"\\\1", param_name)
-        param_value_default = re.sub(r"([_*\[\]()~`>#+-.!])", r"\\\1", str(param_value['default'])) if param_value['default'] else ' '
-        
-        res.append('* {}: **{}**'.format(param_name, param_value_default))
+        param_value_default = (
+            re.sub(r"([_*\[\]()~`>#+-.!])", r"\\\1", str(param_value["default"]))
+            if param_value["default"]
+            else " "
+        )
 
-    return '\n'.join(res)
+        res.append("* {}: **{}**".format(param_name, param_value_default))
+
+    return "\n".join(res)
 
 
 # Convert numpy types to python types.
@@ -49,13 +54,15 @@ def _convert_np_types(params):
 # Set the default values for the hyperparameters.
 def _set_hyperparameters(params):
     for param_name, param_value in params.items():
-        if param_name in Parameters.getInstance().hyperparameters: 
-            Parameters.getInstance().hyperparameters[param_name]['default'] = param_value
+        if param_name in Parameters.getInstance().hyperparameters:
+            Parameters.getInstance().hyperparameters[param_name][
+                "default"
+            ] = param_value
 
 
 # Check if the parameter is for optimization.
 def _is_optimization_param(val):
-    is_opt = val.get('should_optimize', False) # Either does not exist or is false
+    is_opt = val.get("should_optimize", False)  # Either does not exist or is false
     return is_opt
 
 
@@ -67,7 +74,7 @@ def _get_params_hash(params):
 
 def optimize(collector, progress=gr.Progress()):
     # Inform the user that something is happening.
-    progress(0, desc=f'Setting Up...')
+    progress(0, desc=f"Setting Up...")
 
     # Track the current step
     current_step = 0
@@ -86,7 +93,7 @@ def optimize(collector, progress=gr.Progress()):
         params = {}
         for key, val in Parameters.getInstance().hyperparameters.items():
             if _is_optimization_param(val):
-                params[key] = trial.suggest_categorical(key, val['categories'])
+                params[key] = trial.suggest_categorical(key, val["categories"])
 
         _set_hyperparameters(params)
 
@@ -97,13 +104,15 @@ def optimize(collector, progress=gr.Progress()):
             return scores_cache[params_hash]
 
         # Benchmark the current set of parameters.
-        score, max_score = benchmark(Path("extensions/superboogav2/benchmark_texts/questions.json"), collector)
+        score, max_score = benchmark(
+            Path("extensions/superboogav2/benchmark_texts/questions.json"), collector
+        )
 
         # Cache the score
         scores_cache[params_hash] = score
 
         result = json.dumps(_convert_np_types(params), indent=4)
-        result += f'\nScore: {score}/{max_score}'
+        result += f"\nScore: {score}/{max_score}"
 
         logger.debug(result)
 
@@ -114,22 +123,29 @@ def optimize(collector, progress=gr.Progress()):
         best_score = max(best_score, score)
 
         # Update the progress
-        progress(current_step / parameters.get_optimization_steps(), desc=f'Optimizing... {current_step}/{parameters.get_optimization_steps()}')
+        progress(
+            current_step / parameters.get_optimization_steps(),
+            desc=f"Optimizing... {current_step}/{parameters.get_optimization_steps()}",
+        )
 
         return -score
 
     # Run the optimization.
     study = optuna.create_study()
-    study.optimize(objective_function, n_trials=int(parameters.get_optimization_steps()))
+    study.optimize(
+        objective_function, n_trials=int(parameters.get_optimization_steps())
+    )
 
     best_params = study.best_params
     _set_hyperparameters(best_params)
 
     # Convert results to a markdown string.
-    str_result = f"## Best parameters:\n\n{_markdown_hyperparams()}\n\n## Score:\n\n{best_score}"
+    str_result = (
+        f"## Best parameters:\n\n{_markdown_hyperparams()}\n\n## Score:\n\n{best_score}"
+    )
 
     # Save to JSON file
-    with open('best_params.json', 'w') as fp:
+    with open("best_params.json", "w") as fp:
         json.dump(_convert_np_types(best_params), fp, indent=4)
 
     return str_result

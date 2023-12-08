@@ -6,17 +6,11 @@ from modules.utils import get_available_models
 
 
 def get_current_model_info():
-    return {
-        'model_name': shared.model_name,
-        'lora_names': shared.lora_names
-    }
+    return {"model_name": shared.model_name, "lora_names": shared.lora_names}
 
 
 def list_models():
-    result = {
-        "object": "list",
-        "data": []
-    }
+    result = {"object": "list", "data": []}
 
     for model in get_dummy_models() + get_available_models()[1:]:
         result["data"].append(model_info_dict(model))
@@ -25,18 +19,13 @@ def list_models():
 
 
 def model_info_dict(model_name: str) -> dict:
-    return {
-        "id": model_name,
-        "object": "model",
-        "created": 0,
-        "owned_by": "user"
-    }
+    return {"id": model_name, "object": "model", "created": 0, "owned_by": "user"}
 
 
 def get_dummy_models() -> list:
     return [  # these are expected by so much, so include some here as a dummy
-        'gpt-3.5-turbo',
-        'text-embedding-ada-002',
+        "gpt-3.5-turbo",
+        "text-embedding-ada-002",
     ]
 
 
@@ -63,7 +52,11 @@ def _load_model(data):
         for k in settings:
             if k in shared.settings:
                 shared.settings[k] = settings[k]
-                if k == 'truncation_length':
-                    logger.info(f"TRUNCATION LENGTH (UPDATED): {shared.settings['truncation_length']}")
-                elif k == 'instruction_template':
-                    logger.info(f"INSTRUCTION TEMPLATE (UPDATED): {shared.settings['instruction_template']}")
+                if k == "truncation_length":
+                    logger.info(
+                        f"TRUNCATION LENGTH (UPDATED): {shared.settings['truncation_length']}"
+                    )
+                elif k == "instruction_template":
+                    logger.info(
+                        f"INSTRUCTION TEMPLATE (UPDATED): {shared.settings['instruction_template']}"
+                    )

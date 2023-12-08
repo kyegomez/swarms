@@ -10,21 +10,26 @@ embeddings_params_initialized = False
 
 
 def initialize_embedding_params():
-    '''
+    """
     using 'lazy loading' to avoid circular import
     so this function will be executed only once
-    '''
+    """
     global embeddings_params_initialized
     if not embeddings_params_initialized:
         from extensions.openai.script import params
 
         global st_model, embeddings_model, embeddings_device
 
-        st_model = os.environ.get("OPENEDAI_EMBEDDING_MODEL", params.get('embedding_model', 'all-mpnet-base-v2'))
+        st_model = os.environ.get(
+            "OPENEDAI_EMBEDDING_MODEL",
+            params.get("embedding_model", "all-mpnet-base-v2"),
+        )
         embeddings_model = None
         # OPENEDAI_EMBEDDING_DEVICE: auto (best or cpu), cpu, cuda, ipu, xpu, mkldnn, opengl, opencl, ideep, hip, ve, fpga, ort, xla, lazy, vulkan, mps, meta, hpu, mtia, privateuseone
-        embeddings_device = os.environ.get("OPENEDAI_EMBEDDING_DEVICE", params.get('embedding_device', 'cpu'))
-        if embeddings_device.lower() == 'auto':
+        embeddings_device = os.environ.get(
+            "OPENEDAI_EMBEDDING_DEVICE", params.get("embedding_device", "cpu")
+        )
+        if embeddings_device.lower() == "auto":
             embeddings_device = None
 
         embeddings_params_initialized = True
@@ -34,7 +39,9 @@ def load_embedding_model(model: str):
     try:
         from sentence_transformers import SentenceTransformer
     except ModuleNotFoundError:
-        logger.error("The sentence_transformers module has not been found. Please install it manually with pip install -U sentence-transformers.")
+        logger.error(
+            "The sentence_transformers module has not been found. Please install it manually with pip install -U sentence-transformers."
+        )
         raise ModuleNotFoundError
 
     initialize_embedding_params()
@@ -45,7 +52,9 @@ def load_embedding_model(model: str):
         print(f"Loaded embedding model: {model}")
     except Exception as e:
         embeddings_model = None
-        raise ServiceUnavailableError(f"Error: Failed to load embedding model: {model}", internal_message=repr(e))
+        raise ServiceUnavailableError(
+            f"Error: Failed to load embedding model: {model}", internal_message=repr(e)
+        )
 
 
 def get_embeddings_model():
@@ -66,17 +75,27 @@ def get_embeddings_model_name() -> str:
 def get_embeddings(input: list) -> np.ndarray:
     model = get_embeddings_model()
     debug_msg(f"embedding model : {model}")
-    embedding = model.encode(input, convert_to_numpy=True, normalize_embeddings=True, convert_to_tensor=False)
-    debug_msg(f"embedding result : {embedding}")  # might be too long even for debug, use at you own will
+    embedding = model.encode(
+        input, convert_to_numpy=True, normalize_embeddings=True, convert_to_tensor=False
+    )
+    debug_msg(
+        f"embedding result : {embedding}"
+    )  # might be too long even for debug, use at you own will
     return embedding
 
 
 def embeddings(input: list, encoding_format: str) -> dict:
     embeddings = get_embeddings(input)
     if encoding_format == "base64":
-        data = [{"object": "embedding", "embedding": float_list_to_base64(emb), "index": n} for n, emb in enumerate(embeddings)]
+        data = [
+            {"object": "embedding", "embedding": float_list_to_base64(emb), "index": n}
+            for n, emb in enumerate(embeddings)
+        ]
     else:
-        data = [{"object": "embedding", "embedding": emb.tolist(), "index": n} for n, emb in enumerate(embeddings)]
+        data = [
+            {"object": "embedding", "embedding": emb.tolist(), "index": n}
+            for n, emb in enumerate(embeddings)
+        ]
 
     response = {
         "object": "list",
@@ -85,8 +104,10 @@ def embeddings(input: list, encoding_format: str) -> dict:
         "usage": {
             "prompt_tokens": 0,
             "total_tokens": 0,
-        }
+        },
     }
 
-    debug_msg(f"Embeddings return size: {len(embeddings[0])}, number: {len(embeddings)}")
+    debug_msg(
+        f"Embeddings return size: {len(embeddings[0])}, number: {len(embeddings)}"
+    )
     return response

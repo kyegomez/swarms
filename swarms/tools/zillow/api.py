@@ -15,44 +15,65 @@ def build_tool(config) -> Tool:
         description_for_model="Plugin for look up real estate information",
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
 
     BASE_URL = "https://zillow-com1.p.rapidapi.com"
     KEY = config["subscription_key"]
-    HEADERS = {
-            "X-RapidAPI-Key": KEY,
-            "X-RapidAPI-Host": "zillow-com1.p.rapidapi.com"
-        }
-
+    HEADERS = {"X-RapidAPI-Key": KEY, "X-RapidAPI-Host": "zillow-com1.p.rapidapi.com"}
 
     @tool.get("/search_properties")
-    def search_properties(location: str, page: Optional[int] = None, status_type: Optional[str] = None, 
-                          home_type: Optional[str] = None, sort: Optional[str] = None, polygon: Optional[str] = None, 
-                          minPrice: Optional[float] = None, maxPrice: Optional[float] = None, 
-                          rentMinPrice: Optional[float] = None, rentMaxPrice: Optional[float] = None, 
-                          bathsMin: Optional[int] = None, bathsMax: Optional[int] = None, 
-                          bedsMin: Optional[int] = None, bedsMax: Optional[int] = None, 
-                          sqftMin: Optional[int] = None, sqftMax: Optional[int] = None, 
-                          buildYearMin: Optional[int] = None, buildYearMax: Optional[int] = None, 
-                          daysOn: Optional[str] = None, soldInLast: Optional[str] = None, 
-                          isBasementFinished: Optional[int] = None, isBasementUnfinished: Optional[int] = None, 
-                          isPendingUnderContract: Optional[int] = None, isAcceptingBackupOffers: Optional[int] = None, 
-                          isComingSoon: Optional[bool] = None, otherListings: Optional[int] = None, 
-                          isNewConstruction: Optional[bool] = None, keywords: Optional[str] = None, 
-                          lotSizeMin: Optional[str] = None, lotSizeMax: Optional[str] = None, 
-                          saleByAgent: Optional[str] = None, saleByOwner: Optional[str] = None, 
-                          isForSaleForeclosure: Optional[bool] = None, isWaterfront: Optional[bool] = None, 
-                          hasPool: Optional[bool] = None, hasAirConditioning: Optional[bool] = None, 
-                          isCityView: Optional[bool] = None, isMountainView: Optional[bool] = None, 
-                          isWaterView: Optional[bool] = None, isParkView: Optional[bool] = None, 
-                          isOpenHousesOnly: Optional[bool] = None, is3dHome: Optional[bool] = None, 
-                          coordinates: Optional[str] = None, hoa: Optional[float] = None, 
-                          includeHomesWithNoHoaData: Optional[bool] = None, isAuction: Optional[bool] = None):
-
+    def search_properties(
+        location: str,
+        page: Optional[int] = None,
+        status_type: Optional[str] = None,
+        home_type: Optional[str] = None,
+        sort: Optional[str] = None,
+        polygon: Optional[str] = None,
+        minPrice: Optional[float] = None,
+        maxPrice: Optional[float] = None,
+        rentMinPrice: Optional[float] = None,
+        rentMaxPrice: Optional[float] = None,
+        bathsMin: Optional[int] = None,
+        bathsMax: Optional[int] = None,
+        bedsMin: Optional[int] = None,
+        bedsMax: Optional[int] = None,
+        sqftMin: Optional[int] = None,
+        sqftMax: Optional[int] = None,
+        buildYearMin: Optional[int] = None,
+        buildYearMax: Optional[int] = None,
+        daysOn: Optional[str] = None,
+        soldInLast: Optional[str] = None,
+        isBasementFinished: Optional[int] = None,
+        isBasementUnfinished: Optional[int] = None,
+        isPendingUnderContract: Optional[int] = None,
+        isAcceptingBackupOffers: Optional[int] = None,
+        isComingSoon: Optional[bool] = None,
+        otherListings: Optional[int] = None,
+        isNewConstruction: Optional[bool] = None,
+        keywords: Optional[str] = None,
+        lotSizeMin: Optional[str] = None,
+        lotSizeMax: Optional[str] = None,
+        saleByAgent: Optional[str] = None,
+        saleByOwner: Optional[str] = None,
+        isForSaleForeclosure: Optional[bool] = None,
+        isWaterfront: Optional[bool] = None,
+        hasPool: Optional[bool] = None,
+        hasAirConditioning: Optional[bool] = None,
+        isCityView: Optional[bool] = None,
+        isMountainView: Optional[bool] = None,
+        isWaterView: Optional[bool] = None,
+        isParkView: Optional[bool] = None,
+        isOpenHousesOnly: Optional[bool] = None,
+        is3dHome: Optional[bool] = None,
+        coordinates: Optional[str] = None,
+        hoa: Optional[float] = None,
+        includeHomesWithNoHoaData: Optional[bool] = None,
+        isAuction: Optional[bool] = None,
+    ):
         """
         Function to search properties based on a set of parameters.
-        
+
         Parameters:
         location (str): Location details, address, county, neighborhood or Zip code.
         page (int): Page number if at the previous response totalPages > 1.
@@ -100,7 +121,7 @@ def build_tool(config) -> Tool:
         hoa (float): Maximum HOA.
         includeHomesWithNoHoaData (bool): Whether to include homes with no HOA data.
         isAuction (bool): Whether the property is for auction.
-        
+
         Returns:
         A response object from the Zillow API.
         """
@@ -150,21 +171,29 @@ def build_tool(config) -> Tool:
             "coordinates": coordinates,
             "hoa": hoa,
             "includeHomesWithNoHoaData": includeHomesWithNoHoaData,
-            "isAuction": isAuction
+            "isAuction": isAuction,
         }
 
         # Remove parameters that are None
         params = {k: v for k, v in params.items() if v is not None}
-        url = BASE_URL + '/propertyExtendedSearch'
+        url = BASE_URL + "/propertyExtendedSearch"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
         return response.json()
 
     @tool.get("/rent_estimate")
-    def rent_estimate(propertyType: str, address: Optional[str] = None, long: Optional[float] = None, lat: Optional[float] = None, 
-                      d: Optional[float] = None, beds: Optional[int] = None, baths: Optional[int] = None, 
-                      sqftMin: Optional[int] = None, sqftMax: Optional[int] = None):
+    def rent_estimate(
+        propertyType: str,
+        address: Optional[str] = None,
+        long: Optional[float] = None,
+        lat: Optional[float] = None,
+        d: Optional[float] = None,
+        beds: Optional[int] = None,
+        baths: Optional[int] = None,
+        sqftMin: Optional[int] = None,
+        sqftMax: Optional[int] = None,
+    ):
         """
         Estimate rent for a property.
 
@@ -196,7 +225,7 @@ def build_tool(config) -> Tool:
 
         # Remove parameters that are None
         params = {k: v for k, v in params.items() if v is not None}
-        url = BASE_URL + '/rentEstimate'
+        url = BASE_URL + "/rentEstimate"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
@@ -221,14 +250,19 @@ def build_tool(config) -> Tool:
 
         # Remove parameters that are None
         params = {k: v for k, v in params.items() if v is not None}
-        url = BASE_URL + '/property'
+        url = BASE_URL + "/property"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
         return response.json()
 
     @tool.get("/property_by_coordinates")
-    def property_by_coordinates(long: float, lat: float, d: Optional[float] = None, includeSold: Optional[bool] = None):
+    def property_by_coordinates(
+        long: float,
+        lat: float,
+        d: Optional[float] = None,
+        includeSold: Optional[bool] = None,
+    ):
         """
         Search property by coordinates.
 
@@ -250,12 +284,12 @@ def build_tool(config) -> Tool:
 
         # Remove parameters that are None
         params = {k: v for k, v in params.items() if v is not None}
-        url = BASE_URL + '/propertyByCoordinates'
+        url = BASE_URL + "/propertyByCoordinates"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
         return response.json()
-    
+
     @tool.get("/property_by_mls")
     def property_by_mls(mls: str):
         """
@@ -270,7 +304,7 @@ def build_tool(config) -> Tool:
         params = {
             "mls": mls,
         }
-        url = BASE_URL + '/propertyByMls'
+        url = BASE_URL + "/propertyByMls"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
@@ -290,14 +324,16 @@ def build_tool(config) -> Tool:
         params = {
             "q": q,
         }
-        url = BASE_URL + '/locationSuggestions'
+        url = BASE_URL + "/locationSuggestions"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
         return response.json()
 
     @tool.get("/similar_property")
-    def similar_property(zpid: Optional[int]=None, property_url: Optional[str]=None):
+    def similar_property(
+        zpid: Optional[int] = None, property_url: Optional[str] = None
+    ):
         """
         Get similar properties for sale. Either zpid or property_url is a required parameter.
 
@@ -317,14 +353,16 @@ def build_tool(config) -> Tool:
             params["zpid"] = zpid
         if property_url:
             params["property_url"] = property_url
-        url = BASE_URL + '/similarProperty'
+        url = BASE_URL + "/similarProperty"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
         return response.json()
-    
+
     @tool.get("/similar_for_rent")
-    def similar_for_rent(zpid: Optional[int]=None, property_url: Optional[str]=None):
+    def similar_for_rent(
+        zpid: Optional[int] = None, property_url: Optional[str] = None
+    ):
         """
         Get similar properties for rent. Either zpid or property_url is a required parameter.
 
@@ -344,10 +382,10 @@ def build_tool(config) -> Tool:
             params["zpid"] = zpid
         if property_url:
             params["property_url"] = property_url
-        url = BASE_URL + '/similarForRent'
+        url = BASE_URL + "/similarForRent"
         # Send GET request to Zillow API endpoint
         response = requests.get(url, headers=HEADERS, params=params)
 
         return response.json()
-    
+
     return tool

@@ -9,6 +9,7 @@ import extensions.superboogav2.parameters as parameters
 from .data_processor import process_and_add_to_collector
 from .utils import create_metadata_source
 
+
 def _download_single(url):
     response = requests.get(url, timeout=5)
     if response.status_code == 200:
@@ -39,16 +40,18 @@ def _download_urls(urls, threads=1):
 
 
 def feed_url_into_collector(urls, collector):
-    all_text = ''
-    cumulative = ''
+    all_text = ""
+    cumulative = ""
 
-    urls = urls.strip().split('\n')
-    cumulative += f'Loading {len(urls)} URLs with {parameters.get_num_threads()} threads...\n\n'
+    urls = urls.strip().split("\n")
+    cumulative += (
+        f"Loading {len(urls)} URLs with {parameters.get_num_threads()} threads...\n\n"
+    )
     yield cumulative
     for update, contents in _download_urls(urls, threads=parameters.get_num_threads()):
         yield cumulative + update
 
-    cumulative += 'Processing the HTML sources...'
+    cumulative += "Processing the HTML sources..."
     yield cumulative
     for content in contents:
         soup = BeautifulSoup(content, features="lxml")
@@ -59,7 +62,9 @@ def feed_url_into_collector(urls, collector):
         if parameters.get_is_strong_cleanup():
             strings = [s for s in strings if re.search("[A-Za-z] ", s)]
 
-        text = '\n'.join([s.strip() for s in strings])
+        text = "\n".join([s.strip() for s in strings])
         all_text += text
 
-    process_and_add_to_collector(all_text, collector, False, create_metadata_source('url-download'))
+    process_and_add_to_collector(
+        all_text, collector, False, create_metadata_source("url-download")
+    )

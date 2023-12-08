@@ -9,16 +9,15 @@ from typing import Dict
 from copy import deepcopy
 import os
 
+
 def detect_lang(text: str):
     lang_code = langid.classify(text)[0]
     lang_name = languages.get(part1=lang_code[:2]).name
     return lang_name
 
-class Translator:
 
-    def __init__(self,
-                 openai_api_key: str = None,
-                 model_name: str = "gpt-3.5-turbo"):
+class Translator:
+    def __init__(self, openai_api_key: str = None, model_name: str = "gpt-3.5-turbo"):
         self.openai_api_key = openai_api_key
         self.model_name = model_name
         self.init_flag = False
@@ -49,21 +48,19 @@ class Translator:
 
     def create_openai_model(self, openai_api_key: str, model_name: str) -> OpenAI:
         if openai_api_key is None:
-            openai_api_key = os.environ.get('OPENAI_API_KEY')
-        llm = OpenAI(model_name=model_name,
-                     temperature=0.0,
-                     openai_api_key=openai_api_key)
+            openai_api_key = os.environ.get("OPENAI_API_KEY")
+        llm = OpenAI(
+            model_name=model_name, temperature=0.0, openai_api_key=openai_api_key
+        )
         return llm
 
     def create_prompt(self) -> PromptTemplate:
         template = """
         Translate to {language}: {text} => 
         """
-        prompt = PromptTemplate(
-            input_variables=["text", "language"],
-            template=template
-        )
+        prompt = PromptTemplate(input_variables=["text", "language"], template=template)
         return prompt
+
 
 if __name__ == "__main__":
     lang = {
@@ -77,15 +74,15 @@ if __name__ == "__main__":
         },
         "ko": {
             "question": "영화 딥씨에 대해 알려주세요",
-            "answer": "\"Deep Sea\"는 Tian Xiaopeng 감독, Su Xin, Wang Tingwen, Teng Kuixing 등이 출연한 중국 본토의 애니메이션 및 판타지 영화입니다. 시놉시스는 바다 가장 깊은 곳에 모든 비밀이 숨겨져 있다는 것입니다. 현대 소녀(산스케)는 꿈 같은 심해 세계로 방황하지만 그것 때문에 독특한 삶의 여정을 만난다. ![img](https://img3.doubanio.com/view/photo/s_ratio_poster/public/p2635450820.webp)",
+            "answer": '"Deep Sea"는 Tian Xiaopeng 감독, Su Xin, Wang Tingwen, Teng Kuixing 등이 출연한 중국 본토의 애니메이션 및 판타지 영화입니다. 시놉시스는 바다 가장 깊은 곳에 모든 비밀이 숨겨져 있다는 것입니다. 현대 소녀(산스케)는 꿈 같은 심해 세계로 방황하지만 그것 때문에 독특한 삶의 여정을 만난다. ![img](https://img3.doubanio.com/view/photo/s_ratio_poster/public/p2635450820.webp)',
         },
         "en": {
             "question": "Tell me about the movie '深海'",
-            "answer": "\"Deep Sea\" is an animation and fantasy film in mainland China, directed by Tian Xiaopeng, starring Su Xin, Wang Tingwen, Teng Kuixing and others. The synopsis is that in the deepest part of the sea, all secrets are hidden. A modern girl (Sansuke) strays into the dreamy deep sea world, but encounters a unique journey of life because of it. ![img](https://img3.doubanio.com/view/photo/s_ratio_poster/public/p2635450820.webp)",
+            "answer": '"Deep Sea" is an animation and fantasy film in mainland China, directed by Tian Xiaopeng, starring Su Xin, Wang Tingwen, Teng Kuixing and others. The synopsis is that in the deepest part of the sea, all secrets are hidden. A modern girl (Sansuke) strays into the dreamy deep sea world, but encounters a unique journey of life because of it. ![img](https://img3.doubanio.com/view/photo/s_ratio_poster/public/p2635450820.webp)',
         },
         "de": {
             "question": "Erzähl mir von dem Film '深海'",
-            "answer": "\"Deep Sea\" ist ein Animations- und Fantasyfilm in Festlandchina unter der Regie von Tian Xiaopeng mit Su Xin, Wang Tingwen, Teng Kuixing und anderen in den Hauptrollen. Die Zusammenfassung ist, dass im tiefsten Teil des Meeres alle Geheimnisse verborgen sind. Ein modernes Mädchen (Sansuke) verirrt sich in die verträumte Tiefseewelt, trifft dabei aber auf eine einzigartige Lebensreise. ![img](https://img3.doubanio.com/view/photo/s_ratio_poster/public/p2635450820.webp)",
+            "answer": '"Deep Sea" ist ein Animations- und Fantasyfilm in Festlandchina unter der Regie von Tian Xiaopeng mit Su Xin, Wang Tingwen, Teng Kuixing und anderen in den Hauptrollen. Die Zusammenfassung ist, dass im tiefsten Teil des Meeres alle Geheimnisse verborgen sind. Ein modernes Mädchen (Sansuke) verirrt sich in die verträumte Tiefseewelt, trifft dabei aber auf eine einzigartige Lebensreise. ![img](https://img3.doubanio.com/view/photo/s_ratio_poster/public/p2635450820.webp)',
         },
         "fr": {
             "question": "Parlez-moi du film 'Deep Sea'",
@@ -103,20 +100,26 @@ if __name__ == "__main__":
             print(source, "=>", target, end=":\t")
             question = lang[target]["question"]
             answer = lang[source]["answer"]
-            inputs = {
-                "input": question,
-                "output": answer
-            }
+            inputs = {"input": question, "output": answer}
 
             result = translator(inputs)
             translated_answer = result["output"]
 
-            if detect_lang(question) == detect_lang(translated_answer) == languages.get(part1=target).name:
+            if (
+                detect_lang(question)
+                == detect_lang(translated_answer)
+                == languages.get(part1=target).name
+            ):
                 print("Y")
             else:
                 print("N")
                 print("====================")
                 print("Question:\t", detect_lang(question), " - ", question)
                 print("Answer:\t", detect_lang(answer), " - ", answer)
-                print("Translated Anser:\t", detect_lang(translated_answer), " - ", translated_answer)
+                print(
+                    "Translated Anser:\t",
+                    detect_lang(translated_answer),
+                    " - ",
+                    translated_answer,
+                )
                 print("====================")

@@ -11,9 +11,10 @@ from extensions.superboogav2.utils import create_context_text
 
 from .data_processor import preprocess_text
 
+
 def _remove_special_tokens(string):
-    pattern = r'(<\|begin-user-input\|>|<\|end-user-input\|>|<\|injection-point\|>)'
-    return re.sub(pattern, '', string)
+    pattern = r"(<\|begin-user-input\|>|<\|end-user-input\|>|<\|injection-point\|>)"
+    return re.sub(pattern, "", string)
 
 
 def input_modifier_internal(string, collector):
@@ -32,9 +33,13 @@ def input_modifier_internal(string, collector):
         logger.debug(f"Preprocessed User Input: {user_input}")
 
         # Get the most similar chunks
-        results = collector.get_sorted_by_dist(user_input, n_results=parameters.get_chunk_count(), max_token_count=int(parameters.get_max_token_count()))
+        results = collector.get_sorted_by_dist(
+            user_input,
+            n_results=parameters.get_chunk_count(),
+            max_token_count=int(parameters.get_max_token_count()),
+        )
 
         # Make the injection
-        string = string.replace('<|injection-point|>', create_context_text(results))
+        string = string.replace("<|injection-point|>", create_context_text(results))
 
     return _remove_special_tokens(string)

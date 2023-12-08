@@ -40,14 +40,14 @@ from .typing import (
     LoadModelRequest,
     ModelInfoResponse,
     TokenCountResponse,
-    to_dict
+    to_dict,
 )
 
 params = {
-    'embedding_device': 'cpu',
-    'embedding_model': 'sentence-transformers/all-mpnet-base-v2',
-    'sd_webui_url': '',
-    'debug': 0
+    "embedding_device": "cpu",
+    "embedding_model": "sentence-transformers/all-mpnet-base-v2",
+    "sd_webui_url": "",
+    "debug": 0,
 }
 
 
@@ -56,7 +56,9 @@ streaming_semaphore = asyncio.Semaphore(1)
 
 def verify_api_key(authorization: str = Header(None)) -> None:
     expected_api_key = shared.args.api_key
-    if expected_api_key and (authorization is None or authorization != f"Bearer {expected_api_key}"):
+    if expected_api_key and (
+        authorization is None or authorization != f"Bearer {expected_api_key}"
+    ):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
@@ -68,7 +70,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 
@@ -77,15 +79,18 @@ async def options_route():
     return JSONResponse(content="OK")
 
 
-@app.post('/v1/completions', response_model=CompletionResponse)
+@app.post("/v1/completions", response_model=CompletionResponse)
 async def openai_completions(request: Request, request_data: CompletionRequest):
     path = request.url.path
     is_legacy = "/generate" in path
 
     if request_data.stream:
+
         async def generator():
             async with streaming_semaphore:
-                response = OAIcompletions.stream_completions(to_dict(request_data), is_legacy=is_legacy)
+                response = OAIcompletions.stream_completions(
+                    to_dict(request_data), is_legacy=is_legacy
+                )
                 for resp in response:
                     disconnected = await request.is_disconnected()
                     if disconnected:
@@ -96,19 +101,26 @@ async def openai_completions(request: Request, request_data: CompletionRequest):
         return EventSourceResponse(generator())  # SSE streaming
 
     else:
-        response = OAIcompletions.completions(to_dict(request_data), is_legacy=is_legacy)
+        response = OAIcompletions.completions(
+            to_dict(request_data), is_legacy=is_legacy
+        )
         return JSONResponse(response)
 
 
-@app.post('/v1/chat/completions', response_model=ChatCompletionResponse)
-async def openai_chat_completions(request: Request, request_data: ChatCompletionRequest):
+@app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
+async def openai_chat_completions(
+    request: Request, request_data: ChatCompletionRequest
+):
     path = request.url.path
     is_legacy = "/generate" in path
 
     if request_data.stream:
+
         async def generator():
             async with streaming_semaphore:
-                response = OAIcompletions.stream_chat_completions(to_dict(request_data), is_legacy=is_legacy)
+                response = OAIcompletions.stream_chat_completions(
+                    to_dict(request_data), is_legacy=is_legacy
+                )
                 for resp in response:
                     disconnected = await request.is_disconnected()
                     if disconnected:
@@ -119,7 +131,9 @@ async def openai_chat_completions(request: Request, request_data: ChatCompletion
         return EventSourceResponse(generator())  # SSE streaming
 
     else:
-        response = OAIcompletions.chat_completions(to_dict(request_data), is_legacy=is_legacy)
+        response = OAIcompletions.chat_completions(
+            to_dict(request_data), is_legacy=is_legacy
+        )
         return JSONResponse(response)
 
 
@@ -127,26 +141,26 @@ async def openai_chat_completions(request: Request, request_data: ChatCompletion
 @app.get("/v1/models/{model}")
 async def handle_models(request: Request):
     path = request.url.path
-    is_list = request.url.path.split('?')[0].split('#')[0] == '/v1/models'
+    is_list = request.url.path.split("?")[0].split("#")[0] == "/v1/models"
 
     if is_list:
         response = OAImodels.list_models()
     else:
-        model_name = path[len('/v1/models/'):]
+        model_name = path[len("/v1/models/") :]
         response = OAImodels.model_info_dict(model_name)
 
     return JSONResponse(response)
 
 
-@app.get('/v1/billing/usage')
+@app.get("/v1/billing/usage")
 def handle_billing_usage():
-    '''
+    """
     Ex. /v1/dashboard/billing/usage?start_date=2023-05-01&end_date=2023-05-31
-    '''
+    """
     return JSONResponse(content={"total_usage": 0})
 
 
-@app.post('/v1/audio/transcriptions')
+@app.post("/v1/audio/transcriptions")
 async def handle_audio_transcription(request: Request):
     r = sr.Recognizer()
 
@@ -159,13 +173,17 @@ async def handle_audio_transcription(request: Request):
 
     # Create AudioData object
     audio_data = sr.AudioData(raw_data, audio_data.frame_rate, audio_data.sample_width)
-    whipser_language = form.getvalue('language', None)
-    whipser_model = form.getvalue('model', 'tiny')  # Use the model from the form data if it exists, otherwise default to tiny
+    whipser_language = form.getvalue("language", None)
+    whipser_model = form.getvalue(
+        "model", "tiny"
+    )  # Use the model from the form data if it exists, otherwise default to tiny
 
     transcription = {"text": ""}
 
     try:
-        transcription["text"] = r.recognize_whisper(audio_data, language=whipser_language, model=whipser_model)
+        transcription["text"] = r.recognize_whisper(
+            audio_data, language=whipser_language, model=whipser_model
+        )
     except sr.UnknownValueError:
         print("Whisper could not understand audio")
         transcription["text"] = "Whisper could not understand audio UnknownValueError"
@@ -176,19 +194,22 @@ async def handle_audio_transcription(request: Request):
     return JSONResponse(content=transcription)
 
 
-@app.post('/v1/images/generations')
+@app.post("/v1/images/generations")
 async def handle_image_generation(request: Request):
-
-    if not os.environ.get('SD_WEBUI_URL', params.get('sd_webui_url', '')):
-        raise ServiceUnavailableError("Stable Diffusion not available. SD_WEBUI_URL not set.")
+    if not os.environ.get("SD_WEBUI_URL", params.get("sd_webui_url", "")):
+        raise ServiceUnavailableError(
+            "Stable Diffusion not available. SD_WEBUI_URL not set."
+        )
 
     body = await request.json()
-    prompt = body['prompt']
-    size = body.get('size', '1024x1024')
-    response_format = body.get('response_format', 'url')  # or b64_json
-    n = body.get('n', 1)  # ignore the batch limits of max 10
+    prompt = body["prompt"]
+    size = body.get("size", "1024x1024")
+    response_format = body.get("response_format", "url")  # or b64_json
+    n = body.get("n", 1)  # ignore the batch limits of max 10
 
-    response = await OAIimages.generations(prompt=prompt, size=size, response_format=response_format, n=n)
+    response = await OAIimages.generations(
+        prompt=prompt, size=size, response_format=response_format, n=n
+    )
     return JSONResponse(response)
 
 
@@ -248,7 +269,7 @@ async def handle_model_info():
 
 @app.post("/v1/internal/model/load")
 async def handle_load_model(request_data: LoadModelRequest):
-    '''
+    """
     This endpoint is experimental and may change in the future.
 
     The "args" parameter can be used to modify flags like "--load-in-4bit"
@@ -273,7 +294,7 @@ async def handle_load_model(request_data: LoadModelRequest):
       "instruction_template": "Alpaca"
     }
     ```
-    '''
+    """
 
     try:
         OAImodels._load_model(to_dict(request_data))
@@ -290,27 +311,36 @@ async def handle_unload_model():
 
 
 def run_server():
-    server_addr = '0.0.0.0' if shared.args.listen else '127.0.0.1'
-    port = int(os.environ.get('OPENEDAI_PORT', shared.args.api_port))
+    server_addr = "0.0.0.0" if shared.args.listen else "127.0.0.1"
+    port = int(os.environ.get("OPENEDAI_PORT", shared.args.api_port))
 
-    ssl_certfile = os.environ.get('OPENEDAI_CERT_PATH', shared.args.ssl_certfile)
-    ssl_keyfile = os.environ.get('OPENEDAI_KEY_PATH', shared.args.ssl_keyfile)
+    ssl_certfile = os.environ.get("OPENEDAI_CERT_PATH", shared.args.ssl_certfile)
+    ssl_keyfile = os.environ.get("OPENEDAI_KEY_PATH", shared.args.ssl_keyfile)
 
     if shared.args.public_api:
-        def on_start(public_url: str):
-            logger.info(f'OpenAI-compatible API URL:\n\n{public_url}\n')
 
-        _start_cloudflared(port, shared.args.public_api_id, max_attempts=3, on_start=on_start)
+        def on_start(public_url: str):
+            logger.info(f"OpenAI-compatible API URL:\n\n{public_url}\n")
+
+        _start_cloudflared(
+            port, shared.args.public_api_id, max_attempts=3, on_start=on_start
+        )
     else:
         if ssl_keyfile and ssl_certfile:
-            logger.info(f'OpenAI-compatible API URL:\n\nhttps://{server_addr}:{port}\n')
+            logger.info(f"OpenAI-compatible API URL:\n\nhttps://{server_addr}:{port}\n")
         else:
-            logger.info(f'OpenAI-compatible API URL:\n\nhttp://{server_addr}:{port}\n')
+            logger.info(f"OpenAI-compatible API URL:\n\nhttp://{server_addr}:{port}\n")
 
     if shared.args.api_key:
-        logger.info(f'OpenAI API key:\n\n{shared.args.api_key}\n')
+        logger.info(f"OpenAI API key:\n\n{shared.args.api_key}\n")
 
-    uvicorn.run(app, host=server_addr, port=port, ssl_certfile=ssl_certfile, ssl_keyfile=ssl_keyfile)
+    uvicorn.run(
+        app,
+        host=server_addr,
+        port=port,
+        ssl_certfile=ssl_certfile,
+        ssl_keyfile=ssl_keyfile,
+    )
 
 
 def setup():

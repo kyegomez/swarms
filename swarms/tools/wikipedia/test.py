@@ -1,4 +1,3 @@
-
 from swarms.tools.agent.singletool import load_single_tools, STQuestionAnswerer
 import requests
 import json
@@ -9,11 +8,11 @@ import json
 # a = json.loads("{\"entity\": \"Arthur\"s Magazine\"}")
 # print(a)
 
-tool_name, tool_url = 'wikipedia',  "http://127.0.0.1:8079/tools/wikipedia/"
+tool_name, tool_url = "wikipedia", "http://127.0.0.1:8079/tools/wikipedia/"
 tools_name, tools_config = load_single_tools(tool_name, tool_url)
 print(tools_name, tools_config)
 
-qa =  STQuestionAnswerer()
+qa = STQuestionAnswerer()
 
 agent = qa.load_tools(tools_name, tools_config)
 

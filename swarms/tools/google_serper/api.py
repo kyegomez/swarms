@@ -8,6 +8,7 @@ import aiohttp
 from pydantic.main import BaseModel
 from pydantic.class_validators import root_validator
 
+
 class GoogleSerperAPIWrapper:
     def __init__(self, subscription_key) -> None:
         self.k: int = 10
@@ -100,7 +101,6 @@ class GoogleSerperAPIWrapper:
 
 
 def build_tool(config) -> Tool:
-    
     tool = Tool(
         "google_serper",
         "Look up for information from Serper.dev Google Search API",
@@ -112,13 +112,13 @@ def build_tool(config) -> Tool:
         ),
         logo_url="https://your-app-url.com/.well-known/logo.png",
         contact_email="hello@contact.com",
-        legal_info_url="hello@legal.com"
+        legal_info_url="hello@legal.com",
     )
     api_wrapper = GoogleSerperAPIWrapper(config["subscription_key"])
-    
+
     @tool.get("/search_general")
-    def search_general(query : str):
+    def search_general(query: str):
         """Run query through GoogleSearch and parse result."""
         return str(api_wrapper.run(query))
-    
+
     return tool

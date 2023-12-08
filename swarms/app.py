@@ -8,20 +8,26 @@ import warnings
 from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
 from swarms.modelui.modules.logging_colors import logger
 
-from vllm import LLM 
+from vllm import LLM
 
-os.environ['GRADIO_ANALYTICS_ENABLED'] = 'False'
-os.environ['BITSANDBYTES_NOWELCOME'] = '1'
-warnings.filterwarnings('ignore', category=UserWarning, message='TypedStorage is deprecated')
-warnings.filterwarnings('ignore', category=UserWarning, message='Using the update method is deprecated')
-warnings.filterwarnings('ignore', category=UserWarning, message='Field "model_name" has conflict')
+os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
+os.environ["BITSANDBYTES_NOWELCOME"] = "1"
+warnings.filterwarnings(
+    "ignore", category=UserWarning, message="TypedStorage is deprecated"
+)
+warnings.filterwarnings(
+    "ignore", category=UserWarning, message="Using the update method is deprecated"
+)
+warnings.filterwarnings(
+    "ignore", category=UserWarning, message='Field "model_name" has conflict'
+)
 
 with RequestBlocker():
     import gradio as gr
 
 import matplotlib
 
-matplotlib.use('Agg')  # This fixes LaTeX rendering on some systems
+matplotlib.use("Agg")  # This fixes LaTeX rendering on some systems
 
 import swarms.modelui.modules.extensions as extensions_module
 from swarms.modelui.modules import (
@@ -36,18 +42,19 @@ from swarms.modelui.modules import (
     ui_notebook,
     ui_parameters,
     ui_session,
-    utils
+    utils,
 )
+
 from swarms.modelui.modules.extensions import apply_extensions
 from swarms.modelui.modules.LoRA import add_lora_to_model
 from swarms.modelui.modules.models import load_model
 from swarms.modelui.modules.models_settings import (
     get_fallback_settings,
     get_model_metadata,
-    update_model_parameters
+    update_model_parameters,
 )
-from swarms.modelui.modules.utils import gradio
 
+from swarms.modelui.modules.utils import gradio
 import gradio as gr
 from swarms.tools.tools_controller import MTQuestionAnswerer, load_valid_tools
 from swarms.tools.singletool import STQuestionAnswerer
@@ -62,6 +69,8 @@ import time
 from langchain.llms import VLLM
 
 tool_server_flag = False
+
+
 def start_tool_server():
     # server = Thread(target=run_tool_server)
     server = Process(target=run_tool_server)
@@ -124,19 +133,20 @@ chat_history = ""
 
 MAX_SLEEP_TIME = 40
 
+
 def download_model(model_url: str, memory_utilization: int):
     # Extract model name from the URL
-    model_name = model_url.split('/')[-1]
-    # TODO continue debugging 
+    model_name = model_url.split("/")[-1]
+    # TODO continue debugging
     # response = requests.get(model_url, stream=True)
     # total_size = int(response.headers.get('content-length', 0))
     # block_size = 1024 #1 Kibibyte
     # progress_bar = gr.outputs.Progress_Bar(total_size)
     # model_data = b""
     # for data in response.iter_content(block_size):
-        # model_data += data
-        # progress_bar.update(len(data))
-        # yield progress_bar
+    # model_data += data
+    # progress_bar.update(len(data))
+    # yield progress_bar
     # Save the model data to a file, or load it into a model here
     vllm_model = LLM(
         model=model_url,
@@ -145,6 +155,7 @@ def download_model(model_url: str, memory_utilization: int):
     )
     available_models.append((model_name, vllm_model))
     return gr.update(choices=available_models)
+
 
 def load_tools():
     global valid_tools_info
@@ -156,22 +167,25 @@ def load_tools():
     all_tools_list = sorted(list(valid_tools_info.keys()))
     return gr.update(choices=all_tools_list)
 
-def set_environ(OPENAI_API_KEY: str = "",
-                WOLFRAMALPH_APP_ID: str = "",
-                WEATHER_API_KEYS: str = "",
-                BING_SUBSCRIPT_KEY: str = "",
-                ALPHA_VANTAGE_KEY: str = "",
-                BING_MAP_KEY: str = "",
-                BAIDU_TRANSLATE_KEY: str = "",
-                RAPIDAPI_KEY: str = "",
-                SERPER_API_KEY: str = "",
-                GPLACES_API_KEY: str = "",
-                SCENEX_API_KEY: str = "",
-                STEAMSHIP_API_KEY: str = "",
-                HUGGINGFACE_API_KEY: str = "",
-                AMADEUS_ID: str = "",
-                AMADEUS_KEY: str = "",
-                VLLM_MODEL_URL: str = ""):
+
+def set_environ(
+    OPENAI_API_KEY: str = "",
+    WOLFRAMALPH_APP_ID: str = "",
+    WEATHER_API_KEYS: str = "",
+    BING_SUBSCRIPT_KEY: str = "",
+    ALPHA_VANTAGE_KEY: str = "",
+    BING_MAP_KEY: str = "",
+    BAIDU_TRANSLATE_KEY: str = "",
+    RAPIDAPI_KEY: str = "",
+    SERPER_API_KEY: str = "",
+    GPLACES_API_KEY: str = "",
+    SCENEX_API_KEY: str = "",
+    STEAMSHIP_API_KEY: str = "",
+    HUGGINGFACE_API_KEY: str = "",
+    AMADEUS_ID: str = "",
+    AMADEUS_KEY: str = "",
+    VLLM_MODEL_URL: str = "",
+):
     os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
     os.environ["WOLFRAMALPH_APP_ID"] = WOLFRAMALPH_APP_ID
     os.environ["WEATHER_API_KEYS"] = WEATHER_API_KEYS
@@ -192,31 +206,53 @@ def set_environ(OPENAI_API_KEY: str = "",
         time.sleep(MAX_SLEEP_TIME)
     return gr.update(value="OK!")
 
+
 def show_avatar_imgs(tools_chosen):
     if len(tools_chosen) == 0:
         tools_chosen = list(valid_tools_info.keys())
     img_template = '<a href="{}" style="float: left"> <img style="margin:5px" src="{}.png" width="24" height="24" alt="avatar" /> {} </a>'
-    imgs = [valid_tools_info[tool]['avatar'] for tool in tools_chosen if valid_tools_info[tool]['avatar'] != None]
-    imgs = ' '.join([img_template.format(img, img, tool) for img, tool in zip(imgs, tools_chosen)])
-    return [gr.update(value='<span class="">' + imgs + '</span>', visible=True), gr.update(visible=True)]
+    imgs = [
+        valid_tools_info[tool]["avatar"]
+        for tool in tools_chosen
+        if valid_tools_info[tool]["avatar"] != None
+    ]
+    imgs = " ".join(
+        [img_template.format(img, img, tool) for img, tool in zip(imgs, tools_chosen)]
+    )
+    return [
+        gr.update(value='<span class="">' + imgs + "</span>", visible=True),
+        gr.update(visible=True),
+    ]
+
 
 def answer_by_tools(question, tools_chosen, model_chosen):
     global return_msg
-    return_msg += [(question, None), (None, '...')]
+    return_msg += [(question, None), (None, "...")]
     yield [gr.update(visible=True, value=return_msg), gr.update(), gr.update()]
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
-    if len(tools_chosen) == 0:  # if there is no tools chosen, we use all todo (TODO: What if the pool is too large.)
+    if (
+        len(tools_chosen) == 0
+    ):  # if there is no tools chosen, we use all todo (TODO: What if the pool is too large.)
         tools_chosen = list(valid_tools_info.keys())
 
     if len(tools_chosen) == 1:
-        answerer = STQuestionAnswerer(OPENAI_API_KEY.strip(), stream_output=True, llm=model_chosen)
-        agent_executor = answerer.load_tools(tools_chosen[0], valid_tools_info[tools_chosen[0]],
-                                             prompt_type="react-with-tool-description", return_intermediate_steps=True)
+        answerer = STQuestionAnswerer(
+            OPENAI_API_KEY.strip(), stream_output=True, llm=model_chosen
+        )
+        agent_executor = answerer.load_tools(
+            tools_chosen[0],
+            valid_tools_info[tools_chosen[0]],
+            prompt_type="react-with-tool-description",
+            return_intermediate_steps=True,
+        )
     else:
-        answerer = MTQuestionAnswerer(OPENAI_API_KEY.strip(),
-                                      load_valid_tools({k: tools_mappings[k] for k in tools_chosen}),
-                                      stream_output=True, llm=model_chosen)
+        answerer = MTQuestionAnswerer(
+            OPENAI_API_KEY.strip(),
+            load_valid_tools({k: tools_mappings[k] for k in tools_chosen}),
+            stream_output=True,
+            llm=model_chosen,
+        )
 
         agent_executor = answerer.build_runner()
 
@@ -224,12 +260,15 @@ def answer_by_tools(question, tools_chosen, model_chosen):
     chat_history += "Question: " + question + "\n"
     question = chat_history
     for inter in agent_executor(question):
-        if isinstance(inter, AgentFinish): continue
+        if isinstance(inter, AgentFinish):
+            continue
         result_str = []
         return_msg.pop()
         if isinstance(inter, dict):
-            result_str.append("<font color=red>Answer:</font> {}".format(inter['output']))
-            chat_history += "Answer:" + inter['output'] + "\n"
+            result_str.append(
+                "<font color=red>Answer:</font> {}".format(inter["output"])
+            )
+            chat_history += "Answer:" + inter["output"] + "\n"
             result_str.append("...")
         else:
             try:
@@ -237,23 +276,40 @@ def answer_by_tools(question, tools_chosen, model_chosen):
             except:
                 print(inter[0])
                 not_observation = inter[0]
-            if not not_observation.startswith('Thought:'):
+            if not not_observation.startswith("Thought:"):
                 not_observation = "Thought: " + not_observation
             chat_history += not_observation
-            not_observation = not_observation.replace('Thought:', '<font color=green>Thought: </font>')
-            not_observation = not_observation.replace('Action:', '<font color=purple>Action: </font>')
-            not_observation = not_observation.replace('Action Input:', '<font color=purple>Action Input: </font>')
+            not_observation = not_observation.replace(
+                "Thought:", "<font color=green>Thought: </font>"
+            )
+            not_observation = not_observation.replace(
+                "Action:", "<font color=purple>Action: </font>"
+            )
+            not_observation = not_observation.replace(
+                "Action Input:", "<font color=purple>Action Input: </font>"
+            )
             result_str.append("{}".format(not_observation))
-            result_str.append("<font color=blue>Action output:</font>\n{}".format(inter[1]))
+            result_str.append(
+                "<font color=blue>Action output:</font>\n{}".format(inter[1])
+            )
             chat_history += "\nAction output:" + inter[1] + "\n"
             result_str.append("...")
         return_msg += [(None, result) for result in result_str]
         yield [gr.update(visible=True, value=return_msg), gr.update(), gr.update()]
     return_msg.pop()
     if return_msg[-1][1].startswith("<font color=red>Answer:</font> "):
-        return_msg[-1] = (return_msg[-1][0], return_msg[-1][1].replace("<font color=red>Answer:</font> ",
-                                                                       "<font color=green>Final Answer:</font> "))
-    yield [gr.update(visible=True, value=return_msg), gr.update(visible=True), gr.update(visible=False)]
+        return_msg[-1] = (
+            return_msg[-1][0],
+            return_msg[-1][1].replace(
+                "<font color=red>Answer:</font> ",
+                "<font color=green>Final Answer:</font> ",
+            ),
+        )
+    yield [
+        gr.update(visible=True, value=return_msg),
+        gr.update(visible=True),
+        gr.update(visible=False),
+    ]
 
 
 def retrieve(tools_search):
@@ -261,9 +317,7 @@ def retrieve(tools_search):
         return gr.update(choices=all_tools_list)
     else:
         url = "http://127.0.0.1:8079/retrieve"
-        param = {
-            "query": tools_search
-        }
+        param = {"query": tools_search}
         response = requests.post(url, json=param)
         result = response.json()
         retrieved_tools = result["tools"]
@@ -281,13 +335,14 @@ def clear_history():
     chat_history = ""
     yield gr.update(visible=True, value=return_msg)
 
-title = 'Swarm Models'
+
+title = "Swarm Models"
 
 # css/js strings
 css = ui.css
 js = ui.js
-css += apply_extensions('css')
-js += apply_extensions('js')
+css += apply_extensions("css")
+js += apply_extensions("js")
 
 # with gr.Blocks(css=css, analytics_enabled=False, title=title, theme=ui.theme) as demo:
 with gr.Blocks() as demo:
@@ -295,57 +350,118 @@ with gr.Blocks() as demo:
         with gr.Column(scale=14):
             gr.Markdown("")
         with gr.Column(scale=1):
-            gr.Image(show_label=False, show_download_button=False, value="images/swarmslogobanner.png")
+            gr.Image(
+                show_label=False,
+                show_download_button=False,
+                value="images/swarmslogobanner.png",
+            )
 
     with gr.Tab("Key setting"):
-        OPENAI_API_KEY = gr.Textbox(label="OpenAI API KEY:", placeholder="sk-...", type="text")
-        WOLFRAMALPH_APP_ID = gr.Textbox(label="Wolframalpha app id:", placeholder="Key to use wlframalpha", type="text")
-        WEATHER_API_KEYS = gr.Textbox(label="Weather api key:", placeholder="Key to use weather api", type="text")
-        BING_SUBSCRIPT_KEY = gr.Textbox(label="Bing subscript key:", placeholder="Key to use bing search", type="text")
-        ALPHA_VANTAGE_KEY = gr.Textbox(label="Stock api key:", placeholder="Key to use stock api", type="text")
-        BING_MAP_KEY = gr.Textbox(label="Bing map key:", placeholder="Key to use bing map", type="text")
-        BAIDU_TRANSLATE_KEY = gr.Textbox(label="Baidu translation key:", placeholder="Key to use baidu translation", type="text")
-        RAPIDAPI_KEY = gr.Textbox(label="Rapidapi key:", placeholder="Key to use zillow, airbnb and job search", type="text")
-        SERPER_API_KEY = gr.Textbox(label="Serper key:", placeholder="Key to use google serper and google scholar", type="text")
-        GPLACES_API_KEY = gr.Textbox(label="Google places key:", placeholder="Key to use google places", type="text")
-        SCENEX_API_KEY = gr.Textbox(label="Scenex api key:", placeholder="Key to use sceneXplain", type="text")
-        STEAMSHIP_API_KEY = gr.Textbox(label="Steamship api key:", placeholder="Key to use image generation", type="text")
-        HUGGINGFACE_API_KEY = gr.Textbox(label="Huggingface api key:", placeholder="Key to use models in huggingface hub", type="text")
-        AMADEUS_ID = gr.Textbox(label="Amadeus id:", placeholder="Id to use Amadeus", type="text")
-        AMADEUS_KEY = gr.Textbox(label="Amadeus key:", placeholder="Key to use Amadeus", type="text")
+        OPENAI_API_KEY = gr.Textbox(
+            label="OpenAI API KEY:", placeholder="sk-...", type="text"
+        )
+        WOLFRAMALPH_APP_ID = gr.Textbox(
+            label="Wolframalpha app id:",
+            placeholder="Key to use wlframalpha",
+            type="text",
+        )
+        WEATHER_API_KEYS = gr.Textbox(
+            label="Weather api key:", placeholder="Key to use weather api", type="text"
+        )
+        BING_SUBSCRIPT_KEY = gr.Textbox(
+            label="Bing subscript key:",
+            placeholder="Key to use bing search",
+            type="text",
+        )
+        ALPHA_VANTAGE_KEY = gr.Textbox(
+            label="Stock api key:", placeholder="Key to use stock api", type="text"
+        )
+        BING_MAP_KEY = gr.Textbox(
+            label="Bing map key:", placeholder="Key to use bing map", type="text"
+        )
+        BAIDU_TRANSLATE_KEY = gr.Textbox(
+            label="Baidu translation key:",
+            placeholder="Key to use baidu translation",
+            type="text",
+        )
+        RAPIDAPI_KEY = gr.Textbox(
+            label="Rapidapi key:",
+            placeholder="Key to use zillow, airbnb and job search",
+            type="text",
+        )
+        SERPER_API_KEY = gr.Textbox(
+            label="Serper key:",
+            placeholder="Key to use google serper and google scholar",
+            type="text",
+        )
+        GPLACES_API_KEY = gr.Textbox(
+            label="Google places key:",
+            placeholder="Key to use google places",
+            type="text",
+        )
+        SCENEX_API_KEY = gr.Textbox(
+            label="Scenex api key:", placeholder="Key to use sceneXplain", type="text"
+        )
+        STEAMSHIP_API_KEY = gr.Textbox(
+            label="Steamship api key:",
+            placeholder="Key to use image generation",
+            type="text",
+        )
+        HUGGINGFACE_API_KEY = gr.Textbox(
+            label="Huggingface api key:",
+            placeholder="Key to use models in huggingface hub",
+            type="text",
+        )
+        AMADEUS_ID = gr.Textbox(
+            label="Amadeus id:", placeholder="Id to use Amadeus", type="text"
+        )
+        AMADEUS_KEY = gr.Textbox(
+            label="Amadeus key:", placeholder="Key to use Amadeus", type="text"
+        )
         key_set_btn = gr.Button(value="Set keys!")
-
 
     with gr.Tab("Chat with Tool"):
         with gr.Row():
             with gr.Column(scale=4):
                 with gr.Row():
                     with gr.Column(scale=0.85):
-                        txt = gr.Textbox(show_label=False, placeholder="Question here. Use Shift+Enter to add new line.",
-                                         lines=1).style(container=False)
+                        txt = gr.Textbox(
+                            show_label=False,
+                            placeholder="Question here. Use Shift+Enter to add new line.",
+                            lines=1,
+                        ).style(container=False)
                     with gr.Column(scale=0.15, min_width=0):
                         buttonChat = gr.Button("Chat")
 
-                memory_utilization = gr.Slider(label="Memory Utilization:", min=0, max=1, step=0.1, default=0.5)
+                memory_utilization = gr.Slider(
+                    label="Memory Utilization:", min=0, max=1, step=0.1, default=0.5
+                )
                 iface = gr.Interface(
                     fn=download_model,
                     inputs=["text", memory_utilization],
                 )
-                
+
                 chatbot = gr.Chatbot(show_label=False, visible=True).style(height=600)
                 buttonClear = gr.Button("Clear History")
                 buttonStop = gr.Button("Stop", visible=False)
 
             with gr.Column(scale=4):
                 with gr.Row():
-                    with gr.Column(scale=.5):
-                        model_url = gr.Textbox(label="VLLM Model URL:", placeholder="URL to download VLLM model from Hugging Face", type="text");
-                        buttonDownload = gr.Button("Download Model");
-                        buttonDownload.click(fn=download_model, inputs=[model_url]);
+                    with gr.Column(scale=0.5):
+                        model_url = gr.Textbox(
+                            label="VLLM Model URL:",
+                            placeholder="URL to download VLLM model from Hugging Face",
+                            type="text",
+                        )
+                        buttonDownload = gr.Button("Download Model")
+                        buttonDownload.click(fn=download_model, inputs=[model_url])
                         model_chosen = gr.Dropdown(
-                            list(available_models), value=DEFAULTMODEL, multiselect=False, label="Model provided",
-                            info="Choose the model to solve your question, Default means ChatGPT."
-                )
+                            list(available_models),
+                            value=DEFAULTMODEL,
+                            multiselect=False,
+                            label="Model provided",
+                            info="Choose the model to solve your question, Default means ChatGPT.",
+                        )
                 with gr.Row():
                     tools_search = gr.Textbox(
                         lines=1,
@@ -360,38 +476,58 @@ with gr.Blocks() as demo:
                     info="Choose the tools to solve your question.",
                 )
 
-    key_set_btn.click(fn=set_environ, inputs=[
-        OPENAI_API_KEY,
-        WOLFRAMALPH_APP_ID,
-        WEATHER_API_KEYS,
-        BING_SUBSCRIPT_KEY,
-        ALPHA_VANTAGE_KEY,
-        BING_MAP_KEY,
-        BAIDU_TRANSLATE_KEY,
-        RAPIDAPI_KEY,
-        SERPER_API_KEY,
-        GPLACES_API_KEY,
-        SCENEX_API_KEY,
-        STEAMSHIP_API_KEY,
-        HUGGINGFACE_API_KEY,
-        AMADEUS_ID,
-        AMADEUS_KEY,
-    ], outputs=key_set_btn)
+    key_set_btn.click(
+        fn=set_environ,
+        inputs=[
+            OPENAI_API_KEY,
+            WOLFRAMALPH_APP_ID,
+            WEATHER_API_KEYS,
+            BING_SUBSCRIPT_KEY,
+            ALPHA_VANTAGE_KEY,
+            BING_MAP_KEY,
+            BAIDU_TRANSLATE_KEY,
+            RAPIDAPI_KEY,
+            SERPER_API_KEY,
+            GPLACES_API_KEY,
+            SCENEX_API_KEY,
+            STEAMSHIP_API_KEY,
+            HUGGINGFACE_API_KEY,
+            AMADEUS_ID,
+            AMADEUS_KEY,
+        ],
+        outputs=key_set_btn,
+    )
     key_set_btn.click(fn=load_tools, outputs=tools_chosen)
 
     tools_search.change(retrieve, tools_search, tools_chosen)
     buttonSearch.click(clear_retrieve, [], [tools_search, tools_chosen])
 
-    txt.submit(lambda: [gr.update(value=''), gr.update(visible=False), gr.update(visible=True)], [],
-               [txt, buttonClear, buttonStop])
-    inference_event = txt.submit(answer_by_tools, [txt, tools_chosen, model_chosen], [chatbot, buttonClear, buttonStop])
-    buttonChat.click(answer_by_tools, [txt, tools_chosen, model_chosen], [chatbot, buttonClear, buttonStop])
-    buttonStop.click(lambda: [gr.update(visible=True), gr.update(visible=False)], [], [buttonClear, buttonStop],
-                     cancels=[inference_event])
+    txt.submit(
+        lambda: [
+            gr.update(value=""),
+            gr.update(visible=False),
+            gr.update(visible=True),
+        ],
+        [],
+        [txt, buttonClear, buttonStop],
+    )
+    inference_event = txt.submit(
+        answer_by_tools,
+        [txt, tools_chosen, model_chosen],
+        [chatbot, buttonClear, buttonStop],
+    )
+    buttonChat.click(
+        answer_by_tools,
+        [txt, tools_chosen, model_chosen],
+        [chatbot, buttonClear, buttonStop],
+    )
+    buttonStop.click(
+        lambda: [gr.update(visible=True), gr.update(visible=False)],
+        [],
+        [buttonClear, buttonStop],
+        cancels=[inference_event],
+    )
     buttonClear.click(clear_history, [], chatbot)
 
 # demo.queue().launch(share=False, inbrowser=True, server_name="127.0.0.1", server_port=7001)
 demo.queue().launch()
-
-
-
