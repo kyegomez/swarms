@@ -9,10 +9,11 @@ import yaml
 from .apitool import Tool
 from .singletool import STQuestionAnswerer
 from .executor import Executor, AgentExecutorWithTranslation
+from vllm import LLM 
 from swarms.utils import get_logger
+from pathlib import Path
 
 logger = get_logger(__name__)
-
 
 def load_valid_tools(tools_mappings):
     tools_to_config = {}
@@ -31,26 +32,34 @@ def load_valid_tools(tools_mappings):
     return tools_to_config
 
 
+# Read the model/ directory and get the list of models
+model_dir = Path("./models/")
+available_models = ["ChatGPT", "GPT-3.5"] + [f.name for f in model_dir.iterdir() if f.is_dir()]
+
 class MTQuestionAnswerer:
     """Use multiple tools to answer a question. Basically pass a natural question to"""
 
-    def __init__(self, openai_api_key, all_tools, stream_output=False, llm="ChatGPT"):
+    def __init__(self, openai_api_key, all_tools, stream_output=False, llm="ChatGPT", model_path=None):
         if len(openai_api_key) < 3:  # not valid key (TODO: more rigorous checking)
             openai_api_key = os.environ.get("OPENAI_API_KEY")
         self.openai_api_key = openai_api_key
         self.stream_output = stream_output
         self.llm_model = llm
+        self.model_path = model_path
         self.set_openai_api_key(openai_api_key)
         self.load_tools(all_tools)
 
     def set_openai_api_key(self, key):
         logger.info("Using {}".format(self.llm_model))
+
         if self.llm_model == "GPT-3.5":
             self.llm = OpenAI(temperature=0.0, openai_api_key=key)  # use text-darvinci
         elif self.llm_model == "ChatGPT":
             self.llm = OpenAI(
                 model_name="gpt-3.5-turbo", temperature=0.0, openai_api_key=key
             )  # use chatgpt
+        elif self.llm_model in available_models:  # If the selected model is a vLLM model
+            self.llm = LLM(model_path=f"model/{self.llm_model}")  # Load the vLLM model
         else:
             raise RuntimeError("Your model is not available.")
 
