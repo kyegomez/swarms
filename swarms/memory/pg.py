@@ -12,18 +12,18 @@ try:
     from sqlalchemy.dialects.postgresql import UUID
     from sqlalchemy.orm import Session
 except ImportError:
-    print("The PgVectorVectorStore requires sqlalchemy to be installed")
+    print(
+        "The PgVectorVectorStore requires sqlalchemy to be installed"
+    )
     print("pip install sqlalchemy")
     subprocess.run(["pip", "install", "sqlalchemy"])
 
 try:
-    
     from pgvector.sqlalchemy import Vector
 except ImportError:
     print("The PgVectorVectorStore requires pgvector to be installed")
     print("pip install pgvector")
     subprocess.run(["pip", "install", "pgvector"])
-    
 
 
 @define
