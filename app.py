@@ -115,17 +115,16 @@ tools_mappings = {
     "walmart": "http://127.0.0.1:8079/tools/walmart",
 }
 
-# # Load the JSON file
-# with open('swarms/tools/openai.json', 'r') as f:
-#     data = json.load(f)
-# for plugin in data:
-#     url = plugin['manifest']['api']['url'].replace('/.well-known/openapi.yaml', '')
-#     tool_name = plugin['namespace']
-#     tools_mappings[tool_name] = url
-# valid_tools_info = []
+data = json.load(open('swarms/tools/openai.json')) # Load the JSON file
+items = data['items'] # Get the list of items
+
+for plugin in items: # Iterate over items, not data
+    url = plugin['manifest']['api']['url']
+    tool_name = plugin['namespace']
+    tools_mappings[tool_name] = url[:-len('/.well-known/openai.yaml')]
+
+print(tools_mappings)
 all_tools_list = []
-# print(data)
-# print(plugin)
 
 gr.close_all()
 
@@ -150,6 +149,8 @@ def download_model(model_url: str, memory_utilization: int , model_dir: str):
     available_models.append((model_name, vllm_model))
     # Update the dropdown choices with the new available_models list
     model_chosen.update(choices=available_models)
+
+valid_tools_info = {}
 
 def load_tools():
     global valid_tools_info
@@ -369,7 +370,6 @@ with gr.Blocks() as demo:
 
         # iface = gr.Interface(fn=serve_iframe, inputs=[], outputs=gr.outputs.HTML())
 
-        iface.launch()
         key_set_btn.click(fn=set_environ, inputs=[
         OPENAI_API_KEY,
         WOLFRAMALPH_APP_ID,
