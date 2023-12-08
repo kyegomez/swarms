@@ -127,8 +127,7 @@ chat_history = ""
 
 MAX_SLEEP_TIME = 40
 
-def download_model(model_url: str, memory_utilization: int):
-    # Extract model name from the URL
+def download_model(model_url: str, memory_utilization: int , model_dir: str):
     model_name = model_url.split('/')[-1]
     # Download the model using VLLM
     vllm_model = VLLM(

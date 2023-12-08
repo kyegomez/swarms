@@ -1,3 +1,4 @@
+from pathlib import Path
 from langchain.llms import OpenAI
 from langchain import OpenAI, LLMChain, PromptTemplate, SerpAPIWrapper
 from langchain.agents import ZeroShotAgent, AgentExecutor, initialize_agent, Tool
@@ -5,11 +6,13 @@ import importlib
 import json
 import os
 import requests
+from vllm import LLM
 import yaml
 from .apitool import RequestTool
 from .executor import Executor, AgentExecutorWithTranslation
 from swarms.utils import get_logger
 from .BabyagiTools import BabyAGI
+from langchain.llms import VLLM
 # from .models.customllm import CustomLLM
 
 
@@ -62,6 +65,9 @@ def load_single_tools(tool_name, tool_url):
 
     return tool_name, tool_config_json
 
+# Read the model/ directory and get the list of models
+model_dir = Path("./models/")
+available_models = ["ChatGPT", "GPT-3.5"] + [f.name for f in model_dir.iterdir() if f.is_dir()]
 
 class STQuestionAnswerer:
     def __init__(self, openai_api_key="", stream_output=False, llm="ChatGPT"):
@@ -83,6 +89,8 @@ class STQuestionAnswerer:
             self.llm = OpenAI(
                 model_name="gpt-3.5-turbo", temperature=0.0, openai_api_key=key
             )  # use chatgpt
+        elif self.llm_model in available_models:
+            self.llm = VLLM(model=f"models/{self.llm_model}")
         else:
             raise RuntimeError("Your model is not available.")
 

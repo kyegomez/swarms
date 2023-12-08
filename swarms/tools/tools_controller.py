@@ -12,6 +12,7 @@ from .executor import Executor, AgentExecutorWithTranslation
 from vllm import LLM 
 from swarms.utils import get_logger
 from pathlib import Path
+from langchain.llms import VLLM
 
 logger = get_logger(__name__)
 
@@ -45,7 +46,7 @@ class MTQuestionAnswerer:
         self.openai_api_key = openai_api_key
         self.stream_output = stream_output
         self.llm_model = llm
-        self.model_path = model_path
+        self.model = model_path
         self.set_openai_api_key(openai_api_key)
         self.load_tools(all_tools)
 
@@ -59,7 +60,7 @@ class MTQuestionAnswerer:
                 model_name="gpt-3.5-turbo", temperature=0.0, openai_api_key=key
             )  # use chatgpt
         elif self.llm_model in available_models:  # If the selected model is a vLLM model
-            self.llm = LLM(model_path=f"model/{self.llm_model}")  # Load the vLLM model
+            self.llm = VLLM(model=f"models/{self.llm_model}")
         else:
             raise RuntimeError("Your model is not available.")
 
