@@ -115,18 +115,17 @@ tools_mappings = {
     "walmart": "http://127.0.0.1:8079/tools/walmart",
 }
 
-# Load the JSON file
-with open('swarms/tools/openai.json', 'r') as f:
-    data = json.load(f)
-for plugin in data:
-    url = plugin['manifest']['api']['url'].replace('/.well-known/openapi.yaml', '')
-    tool_name = plugin['namespace']
-    tools_mappings[tool_name] = url
-valid_tools_info = []
+# # Load the JSON file
+# with open('swarms/tools/openai.json', 'r') as f:
+#     data = json.load(f)
+# for plugin in data:
+#     url = plugin['manifest']['api']['url'].replace('/.well-known/openapi.yaml', '')
+#     tool_name = plugin['namespace']
+#     tools_mappings[tool_name] = url
+# valid_tools_info = []
 all_tools_list = []
-
-print(data)
-print(plugin)
+# print(data)
+# print(plugin)
 
 gr.close_all()
 
@@ -362,7 +361,16 @@ with gr.Blocks() as demo:
                     info="Choose the tools to solve your question.",
                 )
 
-    key_set_btn.click(fn=set_environ, inputs=[
+            def serve_iframe():
+                return f'hi'
+
+        # def serve_iframe():
+        #     return "<iframe src='http://localhost:8000/shader.html' width='100%' height='400'></iframe>"
+
+        # iface = gr.Interface(fn=serve_iframe, inputs=[], outputs=gr.outputs.HTML())
+
+        iface.launch()
+        key_set_btn.click(fn=set_environ, inputs=[
         OPENAI_API_KEY,
         WOLFRAMALPH_APP_ID,
         WEATHER_API_KEYS,
