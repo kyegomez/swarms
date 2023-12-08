@@ -4,6 +4,7 @@ from functools import partial
 from pathlib import Path
 from threading import Lock
 import warnings
+import json
 
 from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
 from swarms.modelui.modules.logging_colors import logger
@@ -114,8 +115,18 @@ tools_mappings = {
     "walmart": "http://127.0.0.1:8079/tools/walmart",
 }
 
+# Load the JSON file
+with open('swarms/tools/openai.json', 'r') as f:
+    data = json.load(f)
+for plugin in data:
+    url = plugin['manifest']['api']['url'].replace('/.well-known/openapi.yaml', '')
+    tool_name = plugin['namespace']
+    tools_mappings[tool_name] = url
 valid_tools_info = []
 all_tools_list = []
+
+print(data)
+print(plugin)
 
 gr.close_all()
 

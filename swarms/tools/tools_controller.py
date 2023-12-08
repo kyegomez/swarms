@@ -13,8 +13,19 @@ from vllm import LLM
 from swarms.utils import get_logger
 from pathlib import Path
 from langchain.llms import VLLM
+import json
 
 logger = get_logger(__name__)
+
+# with open('/openai.json', 'r') as f:
+#     data = json.load(f)
+
+# tools_mappings = {}
+
+# for plugin in data:
+#     url = plugin['manifest']['api']['url'].replace('/.well-known/openapi.yaml', '')
+#     tool_name = plugin['namespace']
+#     tools_mappings[tool_name] = url
 
 def load_valid_tools(tools_mappings):
     tools_to_config = {}
