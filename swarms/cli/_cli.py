@@ -59,7 +59,7 @@ def run_file():
     parser.add_argument(
         "-z", "--logs", help="Get a deployment's logs"
     )
-    
+
     # Parse the arguments
     args = parser.parse_args()
 
@@ -73,4 +73,3 @@ def run_file():
     except Exception as e:
         print(f"Error executing file '{args.file_name}': {e}")
         sys.exit(1)
-
