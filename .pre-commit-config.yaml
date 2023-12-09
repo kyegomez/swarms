@@ -1,0 +1,18 @@
+repos:
+  - repo: https://github.com/ambv/black
+    rev: 22.3.0
+    hooks:
+    - id: black
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.0.255'
+    hooks:
+      - id: ruff
+        args: [--fix]
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.6.3
+    hooks:
+    - id: nbqa-black
+      additional_dependencies: [ipython==8.12, black]
+    - id: nbqa-ruff 
+      args: ["--ignore=I001"]
+      additional_dependencies: [ipython==8.12, ruff]

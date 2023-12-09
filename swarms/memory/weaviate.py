@@ -1,0 +1,4 @@
+"""
+Weaviate API Client
+
+"""

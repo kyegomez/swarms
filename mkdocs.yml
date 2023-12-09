@@ -1,0 +1,136 @@
+site_name: Swarms Docs
+plugins:
+  - glightbox
+  - search
+copyright: "&copy; APAC Corp, Inc."
+extra_css:
+  - docs/assets/css/extra.css
+extra:
+  # analytics:
+  #   provider: google
+  #   property: G-QM8EDPSCB6
+  social:
+    - icon: fontawesome/solid/house
+      link: assets/img/SwarmsLogoIcon.png
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/qUtxnK2NMf
+    - icon: fontawesome/brands/github
+      link: https://github.com/kyegomez/Swarms/
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/Swarms/
+theme:
+    name: material
+    custom_dir: docs/overrides
+    logo: assets/img/SwarmsLogoIcon.png
+    palette:
+      # Palette toggle for light mode
+    - scheme: default
+      primary: black
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    features:
+        - content.code.copy
+        - content.code.annotate
+        - navigation.tabs
+        - navigation.sections
+        - navigation.expand
+        - navigation.top
+        - announce.dismiss
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - admonition
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed
+  - tables
+  - def_list
+  - footnotes
+nav:
+- Home:
+    - Overview: "index.md"
+    - Contributing: "contributing.md"
+    - Docker Container Setup: "docker_setup.md"
+- Swarms:
+  - Overview: "swarms/index.md"
+  - swarms.swarms:
+    - AbstractSwarm: "swarms/swarms/abstractswarm.md"
+    - AutoScaler: "swarms/swarms/autoscaler.md"
+    - GodMode: "swarms/swarms/godmode.md"
+    - Groupchat: "swarms/swarms/groupchat.md"
+  - swarms.workers:
+    - Overview: "swarms/workers/index.md"
+    - AbstractWorker: "swarms/workers/abstract_worker.md"
+  - swarms.agents:
+    - AbstractAgent: "swarms/agents/abstract_agent.md"
+    - OmniModalAgent: "swarms/agents/omni_agent.md"
+  - swarms.models:
+    - Language:  
+      - Overview: "swarms/models/index.md"
+      - HuggingFaceLLM: "swarms/models/huggingface.md"
+      - Anthropic: "swarms/models/anthropic.md"
+      - OpenAI: "swarms/models/openai.md"
+      - Zephyr: "swarms/models/zephyr.md"
+      - BioGPT: "swarms/models/biogpt.md"
+      - MPT7B: "swarms/models/mpt.md"
+      - Mistral: "swarms/models/mistral.md"
+    - MultiModal:
+      - Fuyu: "swarms/models/fuyu.md"
+      - Vilt: "swarms/models/vilt.md"
+      - Idefics: "swarms/models/idefics.md"
+      - BingChat: "swarms/models/bingchat.md"
+      - Kosmos: "swarms/models/kosmos.md"
+      - Nougat: "swarms/models/nougat.md"
+      - Dalle3: "swarms/models/dalle3.md"
+      - GPT4V: "swarms/models/gpt4v.md"
+      - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
+      - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
+  - swarms.structs:
+    - Overview: "swarms/structs/overview.md"
+    - Workflow: "swarms/structs/workflow.md"
+    - Flow: "swarms/structs/flow.md"
+    - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
+  - swarms.memory:
+    - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
+    - PGVectorStore: "swarms/memory/pg.md"
+  - swarms.chunkers: 
+    - BaseChunker: "swarms/chunkers/basechunker.md"
+    - PdfChunker: "swarms/chunkers/pdf_chunker.md"
+- Guides:
+    - Overview: "examples/index.md"
+    - Agents:
+      - Flow: "examples/flow.md"
+      - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
+      - OmniAgent: "examples/omni_agent.md"
+    - 2O+ Autonomous Agent Blogs: "examples/ideas.md"
+- Applications:
+    - CustomerSupport: 
+      - Overview: "applications/customer_support.md"
+    - Marketing: 
+      - Overview: "applications/marketing_agencies.md" 
+- Corporate:
+    - FAQ: "corporate/faq.md"
+    - Purpose: "corporate/purpose.md"
+    - Roadmap: "corporate/roadmap.md"
+    - Weaknesses: "corporate/failures.md"
+    - Design: "corporate/design.md"
+    - Flywheel: "corporate/flywheel.md"
+    - Bounties: "corporate/bounties.md"
+    - Metric: "corporate/metric.md"
+    - Distribution: "corporate/distribution"
+    - Research: "corporate/research.md"
+    - Demos: "corporate/demos.md"
+    - Architecture: "corporate/architecture.md"
+    - Checklist: "corporate/checklist.md"
+    - Hiring: "corporate/hiring.md"

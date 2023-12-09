@@ -1,0 +1,14 @@
+version: '3'
+services:
+  web_demo:
+    build: .
+    command: python host_local_tools.py
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+  host_local_tools:
+    build: .
+    command: python web_demo.py
+    volumes:
+      - .:/app

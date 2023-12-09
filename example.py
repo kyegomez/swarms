@@ -1,25 +1,37 @@
-from swarms import Swarms
+from swarms.models import OpenAIChat
+from swarms.structs import Flow
+
+# Initialize the language model, this model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
+llm = OpenAIChat(
+    # model_name="gpt-4"
+    # openai_api_key=api_key,
+    temperature=0.5,
+    # max_tokens=100,
+)
 
 
-# Retrieve your API key from the environment or replace with your actual key
-api_key = "sksdsds"
+## Initialize the workflow
+flow = Flow(
+    llm=llm,
+    max_loops=2,
+    dashboard=True,
+    # tools=[search_api]
+    # stopping_condition=None,  # You can define a stopping condition as needed.
+    # loop_interval=1,
+    # retry_attempts=3,
+    # retry_interval=1,
+    # interactive=False,  # Set to 'True' for interactive mode.
+    # dynamic_temperature=False,  # Set to 'True' for dynamic temperature handling.
+)
 
-# Initialize Swarms with your API key
-swarm = Swarms(openai_api_key=api_key)
-
-# Define an objective
-objective = """
-Please make a web GUI for using HTTP API server. 
-The name of it is Swarms. 
-You can check the server code at ./main.py. 
-The server is served on localhost:8000. 
-Users should be able to write text input as 'query' and url array as 'files', and check the response. 
-Users input form should be delivered in JSON format. 
-I want it to have neumorphism-style. Serve it on port 4500.
-
-"""
-
-# Run Swarms
-task = swarm.run_swarms(objective)
-
-print(task)
+# out = flow.load_state("flow_state.json")
+# temp = flow.dynamic_temperature()
+# filter = flow.add_response_filter("Trump")
+out = flow.run(
+    "Generate a 10,000 word blog on mental clarity and the benefits of meditation."
+)
+# out = flow.validate_response(out)
+# out = flow.analyze_feedback(out)
+# out = flow.print_history_and_memory()
+# # out = flow.save_state("flow_state.json")
+# print(out)

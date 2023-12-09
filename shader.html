@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Shader Demo</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://threejs.org/build/three.js"></script>
+    <script>
+        // Star Nest by Pablo Roman Andrioli
+        // License: MIT
+
+        const iterations = 17;
+        const formuparam = 0.53;
+
+        const volsteps = 20;
+        const stepsize = 0.1;
+
+        const zoom = 0.800;
+        const tile = 0.850;
+        const speed = 0.010;
+
+        const brightness = 0.0015;
+        const darkmatter = 0.300;
+        const distfading = 0.730;
+        const saturation = 0.850;
+
+
+        function mainImage(fragColor, fragCoord) {
+	//get coords and direction
+	let uv = fragCoord.xy / iResolution.xy - .5;
+            uv.y *= iResolution.y / iResolution.x;
+	let dir = vec3(uv * zoom, 1.);
+	let time = iTime * speed + .25;
+
+	//mouse rotation
+	let a1 = .5 + iMouse.x / iResolution.x * 2.;
+	let a2 = .8 + iMouse.y / iResolution.y * 2.;
+	let rot1 = mat2(cos(a1), sin(a1), -sin(a1), cos(a1));
+	let rot2 = mat2(cos(a2), sin(a2), -sin(a2), cos(a2));
+            dir.xz *= rot1;
+            dir.xy *= rot2;
+	let from = vec3(1., .5, 0.5);
+            from += vec3(time * 2., time, -2.);
+            from.xz *= rot1;
+            from.xy *= rot2;
+
+	//volumetric rendering
+	let s = 0.1, fade = 1.;
+	let v = vec3(0.);
+            for (let r = 0; r < volsteps; r++) {
+		let p = from + s * dir * .5;
+                p = abs(vec3(tile) - mod(p, vec3(tile * 2.))); // tiling fold
+		let pa, a = pa = 0.;
+                for (let i = 0; i < iterations; i++) {
+                    p = abs(p) / dot(p, p) - formuparam; // the magic formula
+                    a += abs(length(p) - pa); // absolute sum of average change
+                    pa = length(p);
+                }
+		let dm = max(0., darkmatter - a * a * .001); //dark matter
+                a *= a * a; // add contrast
+                if (r > 6) fade *= 1. - dm; // dark matter, don't render near
+                //v+=vec3(dm,dm*.5,0.);
+                v += fade;
+                v += vec3(s, s * s, s * s * s * s) * a * brightness * fade; // coloring based on distance
+                fade *= distfading; // distance fading
+                s += stepsize;
+            }
+            v = mix(vec3(length(v)), v, saturation); //color adjust
+            fragColor = vec4(v * .01, 1.);
+
+        }
+    </script>
+</body>
+
+</html>

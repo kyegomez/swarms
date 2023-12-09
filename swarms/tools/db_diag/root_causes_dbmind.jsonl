@@ -1,0 +1,147 @@
+[
+    {
+        "cause_name": "large_table",
+        "desc": "This function checks whether the query related table is a root cause of performance issues. It considers two aspects: the size of the table and the number of tuples in the table. If the number of live and dead tuples in a table exceeds the tuple_number_threshold or the table size exceeds the table_total_size_threshold, then the table is considered large and added to the detail dictionary. If there are any large tables, then they are considered a root cause of performance issues. If there are no large tables, then they are not a root cause of performance issues.",
+        "metrics": "- live_tuples\n- dead_tuples\n- table_size"
+    },
+    {
+        "cause_name": "many_dead_tuples",
+        "desc": "This function checks whether the query related table has too many dead tuples, which can cause bloat-table and affect query performance. If the table structure is not available or the insert type is not supported, it is not a root cause. The function then collects information about the dead rate, live tuples, dead tuples, and table size of each table and checks if they exceed certain thresholds. If the dead rate of a table exceeds the dead rate threshold, it is considered a root cause. The function also provides suggestions to clean up dead tuples in time to avoid affecting query performance.",
+        "metrics": "- dead_rate\n- live_tuples\n- dead_tuples\n- table_size"
+    },
+    {
+        "cause_name": "heavy_scan_operator",
+        "desc": "This function diagnoses whether there is a heavy scan operator in the query related table. If the table has too many fetched tuples and the hit rate is low, it is considered a root cause. Additionally, if there are expensive sequential scans, index scans, or heap scans, it is also considered a root cause. The function provides details on the heavy scan operator, including the number of fetched tuples, returned rows, and hit rate. It also suggests adjustments to avoid large scans. If there are expensive scans, the function suggests confirming whether the inner table has an index, avoiding count operations, and considering the index filter ability. If there is a heavy scan operator, the function provides details on the operator and suggests adjustments according to business needs. If there are no suggestions, it suggests avoiding heavy scans.",
+        "metrics": "- hit_rate\n- n_tuples_fetched\n- n_tuples_returned\n- n_returned_rows\n- total_cost\n- table\n- name\n- parent\n- cost rate"
+    },
+    {
+        "cause_name": "abnormal_plan_time",
+        "desc": "This function checks for abnormal execution plan generation in slow SQL instances. It calculates the ratio of plan time to execution time and compares it to the plan time rate threshold. If the ratio is greater than or equal to the threshold and the number of hard parses is greater than the number of soft parses, it indicates abnormal plan time. This could be due to the lack of support for PBE in the business. The function suggests modifying the business to support PBE. If the condition is met, it is a root cause of the issue. If not, it is not a root cause.",
+        "metrics": "- n_soft_parse\n- n_hard_parse\n- plan_time\n- exc_time"
+    },
+    {
+        "cause_name": "unused_and_redundant_index",
+        "desc": "This function checks for the presence of unused or redundant indexes in a table that is related to a query. Unused indexes are those that have not been used for a long time, while redundant indexes are those that are not needed for the query. If the table is not large or there are no unused or redundant indexes, or if the query involves a select operation, then the function is not a root cause. Otherwise, the function identifies the unused and redundant indexes and provides suggestions to clean them up. The threshold for identifying unused indexes is not specified in the code.",
+        "metrics": "- Large table\n- Unused index info\n- Redundant index info\n- Select type"
+    },
+    {
+        "cause_name": "update_large_data",
+        "desc": "This function checks whether a table has a large number of tuples updated. If the number of updated tuples is greater than or equal to the specified threshold, it is considered a root cause. The function then provides details on the number of updated tuples and suggests making adjustments to the business. If the number of updated tuples is not above the threshold or if there is no plan parse information available, it is not a root cause.",
+        "metrics": "- n_tuples_updated\n- updated_tuples_threshold\n- live_tuples\n- rows"
+    },
+    {
+        "cause_name": "insert_large_data",
+        "desc": "This function checks whether a query related table has a large number of inserted tuples. If the number of inserted tuples is greater than or equal to the specified threshold (stored in the variable \"inserted_tuples_threshold\"), it is considered a root cause. The function then calculates the ratio of inserted tuples to live tuples and provides a suggestion to make adjustments to the business. If the number of inserted tuples is less than the threshold, the function checks for insert operators and if any of them have a large number of rows inserted (greater than the threshold), it is considered a root cause and a suggestion is provided. If neither of these conditions are met, it is not a root cause.",
+        "metrics": "- n_tuples_inserted\n- inserted_tuples_threshold\n- live_tuples\n- table_structure\n- plan_parse_info\n- rows"
+    },
+    {
+        "cause_name": "delete_large_data",
+        "desc": "This function checks whether a table has too many tuples to be deleted. If the number of deleted tuples is greater than or equal to the specified threshold, it is considered a root cause and will be deleted in the future. If the number of deleted tuples is less than the threshold, the function checks whether there is a delete operation on a table with a large number of tuples. If so, it is also considered a root cause and the suggestion is to make adjustments to the business. If neither condition is met, it is not a root cause.",
+        "metrics": "- n_tuples_deleted\n- deleted_tuples_threshold\n- live_tuples\n- deleted_tuples_rate\n- rows"
+    },
+    {
+        "cause_name": "too_many_index",
+        "desc": "This function checks for the presence of too many indexes in a table, which can negatively impact the performance of insert and update operations. If the table structure is not available or the select type is not appropriate, this is not a root cause. If there are a large number of indexes in the table, the function identifies the related tables and provides details on the number of indexes. In this case, the function is a root cause and suggests that too many indexes can slow down insert, delete, and update statements. The threshold for the number of indexes is determined by the variable \"index_number_threshold\".",
+        "metrics": "- index_number_threshold\n- len(table.index)"
+    },
+    {
+        "cause_name": "disk_spill",
+        "desc": "This is a function that checks whether there is a possibility of disk spill during the execution of SQL. If the plan parse information is not available, it checks whether the sort spill count or hash spill count exceeds the sort rate threshold. If the plan parse information is available, it calculates the total cost of the plan and checks whether the cost rate of the sort or hash operators exceeds the cost rate threshold. If abnormal operator details are found and the sort or hash spill count is greater than 0, it indicates that the SORT/HASH operation may spill to disk. The suggestion is to analyze whether the business needs to adjust the size of the work_mem parameter. If disk spill is detected, it is a root cause, otherwise it is not a root cause.",
+        "metrics": "1. sort_spill_count\n2. hash_spill_count\n3. sort_rate_threshold\n4. cost_rate_threshold\n5. plan_total_cost\n6. rows\n7. _get_operator_cost"
+    },
+    {
+        "cause_name": "vacuum_event",
+        "desc": "This function checks whether the query related table has undergone a vacuum operation, which could potentially be a root cause of slow SQL queries. It first retrieves the probable time interval for an analyze operation from the monitoring module. Then, it creates a dictionary of vacuum information for each table in the table structure, including the schema name, table name, and the time of the last vacuum operation. The function then checks whether the vacuum time falls within the time range of the slow SQL query execution or whether the slow SQL query execution starts within a certain time interval after the vacuum operation. If any table meets these conditions, it is considered a root cause and added to the detail dictionary. If no table meets these conditions, it is not a root cause.",
+        "metrics": "- table_structure\n- slow_sql_param\n- vacuum_delay\n- start_at\n- duration_time"
+    },
+    {
+        "cause_name": "analyze_event",
+        "desc": "This function checks whether the query related table has undergone an analyzing operation. If the table structure is not available, it is not a root cause. Otherwise, it calculates the probable time interval for the analyzing operation and creates a dictionary of table names and their corresponding analyze times. It then checks whether the analyze time falls within the slow SQL instance's start and end time or within the probable time interval before or after the slow SQL instance. If any table satisfies these conditions, it is considered a root cause and added to the 'analyze' key in the detail dictionary. Finally, the function returns True if there is at least one table in the 'analyze' key, otherwise it is not a root cause.",
+        "metrics": "- table_structure\n- slow_sql_param\n- analyze_delay\n- start_at\n- duration_time"
+    },
+    {
+        "cause_name": "workload_contention",
+        "desc": "This code is designed to diagnose workload contention issues in a database system. The function checks for several potential causes of contention, including abnormal CPU and memory resource usage, insufficient space in the database data directory, and excessive connections or thread pool usage. If any of these issues are detected, the function provides a detailed report of the problem and suggests potential solutions. If no issues are found, the function returns \"not a root cause\".",
+        "metrics": "- process_used_memory\n- max_process_memory\n- dynamic_used_memory\n- max_dynamic_memory\n- other_used_memory\n- tps\n- max_connections\n- db_cpu_usage\n- db_mem_usage\n- disk_usage\n- connection\n- thread_pool_rate"
+    },
+    {
+        "cause_name": "cpu_resource_contention",
+        "desc": "This function checks whether there is contention for CPU resources by other processes outside the database. If the maximum CPU usage of these processes exceeds the threshold specified in the variable \"cpu_usage_threshold\", the function sets the \"system_cpu_contention\" key in the \"detail\" dictionary to indicate the current user CPU usage. If this key is set, the function suggests handling exception processes in the system as a solution. If the \"system_cpu_contention\" key is not set, this issue is not a root cause.",
+        "metrics": "- user_cpu_usage\n- system_cpu_contention"
+    },
+    {
+        "cause_name": "io_resource_contention",
+        "desc": "This piece of code checks for IO resource contention in the system. It does so by iterating through the IO utils of each device and checking if the maximum IO utils exceed the disk_ioutils_threshold. If there is contention, the function provides details on the device and the IO utils that exceed the threshold. It also suggests two possible causes of contention: competing processes outside the database and long transactions within the database. If there is contention, it is considered a root cause of the issue. If there is no contention, it is not a root cause.",
+        "metrics": "- IO utilization (IO-Utils)"
+    },
+    {
+        "cause_name": "memory_resource_contention",
+        "desc": "This function checks whether there is contention for memory resources by other processes outside the database. If the maximum system memory usage exceeds the detection threshold specified in the variable \"mem_usage_threshold\", the function sets the \"system_mem_contention\" key in the \"detail\" dictionary to indicate that the current system memory usage is significant. If the \"system_mem_contention\" key exists in the \"detail\" dictionary, the function suggests checking for external processes that may be consuming resources. If the function returns True, it indicates that memory resource contention is a root cause of the problem. If the function returns False, it means that memory resource contention is not a root cause.",
+        "metrics": "- system_mem_usage\n- system_mem_contention"
+    },
+    {
+        "cause_name": "abnormal_network_status",
+        "desc": "This piece of code checks for abnormal network status by analyzing packet loss rate and bandwidth usage. It first checks the receive and transmit drop rates for each device and appends any abnormal rates to a list of details. It then checks the bandwidth usage for each device and appends any abnormal rates to the same list of details. If any abnormal rates are found, the function sets the detail and suggestion attributes accordingly and returns True, indicating that abnormal network status is a root cause. If no abnormal rates are found, the function returns False, indicating that abnormal network status is not a root cause. The thresholds for abnormal packet loss rate and network bandwidth usage are obtained from the monitoring module.",
+        "metrics": "- package_drop_rate_threshold\n- network_bandwidth_usage_threshold"
+    },
+    {
+        "cause_name": "os_resource_contention",
+        "desc": "This function checks for a potential issue where other processes outside the database may be occupying too many handle resources. If the system file descriptor (fds) occupation rate exceeds the detection threshold, it is considered a root cause and the function returns a boolean value of True. The system fds occupation rate is recorded in the diagnosis report along with a suggestion to determine whether the handle resource is occupied by the database or other processes. If the system fds occupation rate is below the tuple_number_threshold, it is not a root cause and the function returns a boolean value of False.",
+        "metrics": "- process_fds_rate\n- handler_occupation_threshold"
+    },
+    {
+        "cause_name": "database_wait_event",
+        "desc": "This function checks if there is a wait event in the database. If there is a wait event, it retrieves the wait status and wait event information and stores it in the detail dictionary. If the detail dictionary already has wait event information, it suggests that there is no root cause for the issue. Otherwise, it suggests that the wait event may be a root cause for the issue. If there is no wait event information, it suggests that there is no root cause for the issue. Therefore, the presence of wait event information is a root cause for the issue, while the absence of wait event information is not a root cause.",
+        "metrics": "- wait_event_info\n- wait_status\n- wait_event\n- detail\n- suggestion"
+    },
+    {
+        "cause_name": "lack_of_statistics",
+        "desc": "This piece of code checks for the presence of updated statistics in the business table. If the statistics have not been updated for a long time, it may lead to a serious decline in the execution plan. The code identifies abnormal tables by comparing the difference in tuples with the tuple_number_threshold. If any abnormal tables are found, the code suggests updating the statistics in a timely manner to help the planner choose the most suitable plan. If no abnormal tables are found, lack of statistics is not a root cause.",
+        "metrics": "- data_changed_delay\n- tuples_diff\n- schema_name\n- table_name"
+    },
+    {
+        "cause_name": "missing_index",
+        "desc": "This function checks for the presence of a required index using a workload-index-recommend interface. If the recommended index information is available, it indicates that a required index is missing and provides a suggestion for the recommended index. If the information is not available, it is not a root cause for the issue.",
+        "metrics": ""
+    },
+    {
+        "cause_name": "poor_join_performance",
+        "desc": "This code diagnoses poor performance in join operations. There are four main situations that can cause poor join performance: 1) when the GUC parameter 'enable_hashjoin' is set to 'off', which can result in the optimizer choosing NestLoop or other join operators even when HashJoin would be more suitable; 2) when the optimizer incorrectly chooses the NestLoop operator, even when 'set_hashjoin' is on; 3) when the join operation involves a large amount of data, which can lead to high execution costs; and 4) when the cost of the join operator is expensive. \n\nIn general, NestLoop is suitable when the inner table has a suitable index or when the tuple of the outer table is small (less than 10000), while HashJoin is suitable for tables with large amounts of data (more than 10000), although index will reduce HashJoin performance to a certain extent. Note that HashJoin requires high memory consumption.\n\nThe code checks for abnormal NestLoop, HashJoin, and MergeJoin operators, and identifies inappropriate join nodes based on the number of rows and cost rate. It also provides suggestions for optimization, such as setting 'enable_hashjoin' to 'on', optimizing SQL structure to reduce JOIN cost, and using temporary tables to filter data. \n\nIf the code finds any poor join performance, it is considered a root cause of the problem. Otherwise, it is not a root cause.",
+        "metrics": "- total_cost\n- cost_rate_threshold\n- nestloop_rows_threshold\n- large_join_threshold"
+    },
+    {
+        "cause_name": "complex_boolean_expression",
+        "desc": "This function checks for a specific issue in SQL queries that can lead to poor performance. The issue occurs when the \"in\" clause in a query is too long, which can cause the query to execute slowly. The function looks for instances of this issue in the SQL query and if it finds one where the length of the \"in\" clause exceeds a certain threshold, it returns a message indicating the issue and provides a suggestion for how to fix it. If the function does not find any instances of this issue, it is not a root cause of the performance problem.",
+        "metrics": "- slow_sql_instance.query\n- expression_number\n- len(expression)\n- monitoring.get_slow_sql_param('large_in_list_threshold')"
+    },
+    {
+        "cause_name": "string_matching",
+        "desc": "This function checks for certain conditions that may cause index columns to fail. These conditions include selecting columns using certain functions or regular expressions, and using the \"order by random()\" operation. If any of these conditions are detected, the function provides suggestions for how to rewrite the query to avoid index failure. If abnormal functions or regulations are detected, the function suggests avoiding using functions or expression operations on indexed columns or creating expression index for it. If the \"order by random()\" operation is detected, the function suggests confirming whether the scene requires this operation. If any of these conditions are detected, the function is a root cause of the index failure. Otherwise, it is not a root cause.",
+        "metrics": "- existing_functions\n- matching_results\n- seq_scan_properties\n- sort_operators"
+    },
+    {
+        "cause_name": "complex_execution_plan",
+        "desc": "This is a function that checks for complex execution plans in SQL statements. The function identifies two cases that may cause complex execution plans: (1) a large number of join or group operations, and (2) a very complex execution plan based on its height. If the function identifies either of these cases, it sets the corresponding details and suggestions for the user. If the number of join operators exceeds the \"complex_operator_threshold\" or the plan height exceeds the \"plan_height_threshold\", the function considers it a root cause of the problem. Otherwise, it is not a root cause.",
+        "metrics": "- complex_boolean_expression\n- plan_parse_info\n- plan_parse_info.height\n- join_operator\n- len(join_operator)"
+    },
+    {
+        "cause_name": "correlated_subquery",
+        "desc": "This piece of code checks for the presence of sub-queries in SQL execution that cannot be promoted. If the execution plan contains the keyword 'SubPlan' and the SQL structure does not support Sublink-Release, the user needs to rewrite the SQL. The function checks for the existence of such sub-queries and provides suggestions for rewriting the statement to support sublink-release. If there are subqueries that cannot be promoted, it is a root cause of the issue. Otherwise, it is not a root cause.",
+        "metrics": "- SubPlan\n- exists_subquery"
+    },
+    {
+        "cause_name": "poor_aggregation_performance",
+        "desc": "This code diagnoses poor aggregation performance in SQL queries. It identifies four potential root causes: (1) when the GUC parameter 'enable_hashagg' is set to 'off', resulting in a higher tendency to use the GroupAgg operator; (2) when the query includes scenarios like 'count(distinct col)', which makes HashAgg unavailable; (3) when the cost of the GroupAgg operator is expensive; and (4) when the cost of the HashAgg operator is expensive. The code checks for these conditions and provides detailed information and suggestions for each potential root cause. If none of these conditions are met, poor aggregation performance is not a root cause.",
+        "metrics": "- total_cost\n- cost_rate_threshold\n- enable_hashagg\n- GroupAggregate\n- HashAggregate\n- Group By Key\n- NDV"
+    },
+    {
+        "cause_name": "abnormal_sql_structure",
+        "desc": "This function checks for a specific issue in the SQL structure that can lead to poor performance. If the rewritten SQL information is present, it indicates that the SQL structure is abnormal and can be a root cause of performance issues. The function provides a detailed description of the issue and suggests a solution to address it. If the rewritten SQL information is not present, it is not a root cause of the performance issue.",
+        "metrics": "\n- rewritten_sql_info"
+    },
+    {
+        "cause_name": "timed_task_conflict",
+        "desc": "This is a function that analyzes various features related to SQL execution and returns a feature vector, system cause details, and suggestions. The features include lock contention, heavy scan operator, abnormal plan time, unused and redundant index, and many others. The function checks if each feature can be obtained and appends the feature value to the feature vector. If a feature cannot be obtained, it logs an error message and appends 0 to the feature vector. The function also sets the system cause and plan details to empty dictionaries. The \"timed_task_conflict\" feature is not a root cause of the issue being diagnosed.",
+        "metrics": "\n- lock_contention\n- many_dead_tuples\n- heavy_scan_operator\n- abnormal_plan_time\n- unused_and_redundant_index\n- update_large_data\n- insert_large_data\n- delete_large_data\n- too_many_index\n- disk_spill\n- vacuum_event\n- analyze_event\n- workload_contention\n- cpu_resource_contention\n- io_resource_contention\n- memory_resource_contention\n- abnormal_network_status\n- os_resource_contention\n- database_wait_event\n- lack_of_statistics\n- missing_index\n- poor_join_performance\n- complex_boolean_expression\n- string_matching\n- complex_execution_plan\n- correlated_subquery\n- poor_aggregation_performance\n- abnormal_sql_structure\n- timed_task_conflict"
+    }
+]

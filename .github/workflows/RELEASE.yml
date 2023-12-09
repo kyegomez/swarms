@@ -19,7 +19,7 @@ jobs:
         && ${{ contains(github.event.pull_request.labels.*.name, 'release') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install poetry
         run: pipx install poetry==$POETRY_VERSION
       - name: Set up Python 3.10
@@ -46,4 +46,8 @@ jobs:
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
         run: |
+<<<<<<< HEAD
           poetry publish
+=======
+          poetry publish
+>>>>>>> model-flow

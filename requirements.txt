@@ -1,86 +1,165 @@
+# faiss-gpu
+griptape
 transformers
-openai
+revChatGPT
+pandas
 langchain
-torch
-torchvision
-asyncio
 nest_asyncio
-bs4
+pegasusx
+google-generativeai 
+EdgeGPT
+langchain-experimental
 playwright
-duckduckgo_search
-faiss-cpu
 wget==3.2
-accelerate==0.17.1
+simpleaichat
+httpx
+torch
+open_clip_torch
+ggl
+beautifulsoup4
+google-search-results==2.4.2
+Pillow
+faiss-cpu
+openai
+attrs
+datasets
+soundfile
+huggingface-hub
+google-generativeai
+sentencepiece
+duckduckgo-search
+agent-protocol
+accelerate
+chromadb
+tiktoken
+tabulate 
+colored
 addict
+backoff
+ratelimit
 albumentations
 basicsr
+termcolor
 controlnet-aux
-diffusers==0.14.0
+diffusers
 einops
-gradio
 imageio
+opencv-python-headless
 imageio-ffmpeg
+invisible-watermark
 kornia
+safetensors
 numpy
 omegaconf
-
 open_clip_torch
-opencv-python
+openai
 prettytable
-
 safetensors
 streamlit
-
 test-tube
 timm
-
 torchmetrics
+transformers
 webdataset
+marshmallow
 yapf
+autopep8
+dalle3
+cohere
+torchvision
+rich
+paramiko
+nltk
+mkdocs
+mkdocs-material
+mkdocs-glightbox
+ratelimit
 
-wolframalpha
-wikipedia==1.4.0
-httpx
+accelerate==0.24.*
+colorama
+datasets
+einops
+exllamav2==0.0.8; platform_system != "Darwin" and platform_machine != "x86_64"
+gradio==3.50.*
+markdown
+numpy==1.24.*
+optimum==1.14.0
+pandas
+peft==0.6.*
+Pillow>=9.5.0
+pyyaml
+requests
+safetensors==0.4.0
+scipy
+sentencepiece
+tensorboard
+transformers==4.35.*
+tqdm
+wandb
 
-ggl
-gradio_tools
-arxiv
+git+https://github.com/oobabooga/torch-grammar.git
 
-google-api-python-client 
-google-auth-httplib2
-beautifulsoup4==4.11.2
+# bitsandbytes
+bitsandbytes==0.41.1; platform_system != "Windows"
+https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.1-py3-none-win_amd64.whl; platform_system == "Windows"
 
-O365
-pytube
-pydub
+# llama-cpp-python (CPU only, AVX2)
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.2.11/llama_cpp_python-0.2.11-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.2.11/llama_cpp_python-0.2.11-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.10"
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.2.11/llama_cpp_python-0.2.11-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.9"
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.2.11/llama_cpp_python-0.2.11-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.8"
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.2.11/llama_cpp_python-0.2.11-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.2.11/llama_cpp_python-0.2.11-cp310-cp310-win_amd64.whl; platform_system == "Windows" and python_version == "3.10"
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.2.11/llama_cpp_python-0.2.11-cp39-cp39-win_amd64.whl; platform_system == "Windows" and python_version == "3.9"
+https://github.com/abetlen/llama-cpp-python/releases/download/v0.2.11/llama_cpp_python-0.2.11-cp38-cp38-win_amd64.whl; platform_system == "Windows" and python_version == "3.8"
 
-llama-index
-fastapi==0.94.1
-pydantic==1.10.6
-
-tenacity==8.2.2
-python-dotenv
-
-boto3
-uvicorn==0.21.1
-python-ptrace==0.9.8
-
-
-jinja2==3.1.2
-python-multipart==0.0.6
-celery==5.2.7
-
-
-redis==4.5.4
-sentencepiece==0.1.97
-bitsandbytes==0.37.2
-
-
-psycopg2-binary==2.9.5
-google-search-results==2.4.2
-black==23.1.0
-
-
-
-Pillow==9.0.0
-selenium
+# CUDA wheels
+https://github.com/jllllll/AutoGPTQ/releases/download/v0.5.1/auto_gptq-0.5.1+cu121-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
+https://github.com/jllllll/AutoGPTQ/releases/download/v0.5.1/auto_gptq-0.5.1+cu121-cp310-cp310-win_amd64.whl; platform_system == "Windows" and python_version == "3.10"
+https://github.com/jllllll/AutoGPTQ/releases/download/v0.5.1/auto_gptq-0.5.1+cu121-cp39-cp39-win_amd64.whl; platform_system == "Windows" and python_version == "3.9"
+https://github.com/jllllll/AutoGPTQ/releases/download/v0.5.1/auto_gptq-0.5.1+cu121-cp38-cp38-win_amd64.whl; platform_system == "Windows" and python_version == "3.8"
+https://github.com/jllllll/AutoGPTQ/releases/download/v0.5.1/auto_gptq-0.5.1+cu121-cp311-cp311-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+https://github.com/jllllll/AutoGPTQ/releases/download/v0.5.1/auto_gptq-0.5.1+cu121-cp310-cp310-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.10"
+https://github.com/jllllll/AutoGPTQ/releases/download/v0.5.1/auto_gptq-0.5.1+cu121-cp39-cp39-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.9"
+https://github.com/jllllll/AutoGPTQ/releases/download/v0.5.1/auto_gptq-0.5.1+cu121-cp38-cp38-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.8"
+https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+cu121-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
+https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+cu121-cp310-cp310-win_amd64.whl; platform_system == "Windows" and python_version == "3.10"
+https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+cu121-cp39-cp39-win_amd64.whl; platform_system == "Windows" and python_version == "3.9"
+https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+cu121-cp38-cp38-win_amd64.whl; platform_system == "Windows" and python_version == "3.8"
+https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+cu121-cp311-cp311-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+cu121-cp310-cp310-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.10"
+https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+cu121-cp39-cp39-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.9"
+https://github.com/jllllll/exllama/releases/download/0.0.18/exllama-0.0.18+cu121-cp38-cp38-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.8"
+https://github.com/turboderp/exllamav2/releases/download/v0.0.8/exllamav2-0.0.8+cu121-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
+https://github.com/turboderp/exllamav2/releases/download/v0.0.8/exllamav2-0.0.8+cu121-cp310-cp310-win_amd64.whl; platform_system == "Windows" and python_version == "3.10"
+https://github.com/turboderp/exllamav2/releases/download/v0.0.8/exllamav2-0.0.8+cu121-cp39-cp39-win_amd64.whl; platform_system == "Windows" and python_version == "3.9"
+https://github.com/turboderp/exllamav2/releases/download/v0.0.8/exllamav2-0.0.8+cu121-cp38-cp38-win_amd64.whl; platform_system == "Windows" and python_version == "3.8"
+https://github.com/turboderp/exllamav2/releases/download/v0.0.8/exllamav2-0.0.8+cu121-cp311-cp311-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+https://github.com/turboderp/exllamav2/releases/download/v0.0.8/exllamav2-0.0.8+cu121-cp310-cp310-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.10"
+https://github.com/turboderp/exllamav2/releases/download/v0.0.8/exllamav2-0.0.8+cu121-cp39-cp39-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.9"
+https://github.com/turboderp/exllamav2/releases/download/v0.0.8/exllamav2-0.0.8+cu121-cp38-cp38-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.8"
+https://github.com/bdashore3/flash-attention/releases/download/2.3.2-2/flash_attn-2.3.2+cu122-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
+https://github.com/bdashore3/flash-attention/releases/download/2.3.2-2/flash_attn-2.3.2+cu122-cp310-cp310-win_amd64.whl; platform_system == "Windows" and python_version == "3.10"
+https://github.com/Dao-AILab/flash-attention/releases/download/v2.3.2/flash_attn-2.3.2+cu122torch2.1cxx11abiFALSE-cp311-cp311-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+https://github.com/Dao-AILab/flash-attention/releases/download/v2.3.2/flash_attn-2.3.2+cu122torch2.1cxx11abiFALSE-cp310-cp310-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.10"
+https://github.com/Dao-AILab/flash-attention/releases/download/v2.3.2/flash_attn-2.3.2+cu122torch2.1cxx11abiFALSE-cp39-cp39-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.9"
+https://github.com/Dao-AILab/flash-attention/releases/download/v2.3.2/flash_attn-2.3.2+cu122torch2.1cxx11abiFALSE-cp38-cp38-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.8"
+https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.11+cu121-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
+https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.11+cu121-cp310-cp310-win_amd64.whl; platform_system == "Windows" and python_version == "3.10"
+https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.11+cu121-cp39-cp39-win_amd64.whl; platform_system == "Windows" and python_version == "3.9"
+https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.11+cu121-cp38-cp38-win_amd64.whl; platform_system == "Windows" and python_version == "3.8"
+https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.11+cu121-cp311-cp311-manylinux_2_31_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.11+cu121-cp310-cp310-manylinux_2_31_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.10"
+https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.11+cu121-cp39-cp39-manylinux_2_31_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.9"
+https://github.com/jllllll/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda-0.2.11+cu121-cp38-cp38-manylinux_2_31_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.8"
+https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+cu121-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
+https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+cu121-cp310-cp310-win_amd64.whl; platform_system == "Windows" and python_version == "3.10"
+https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+cu121-cp39-cp39-win_amd64.whl; platform_system == "Windows" and python_version == "3.9"
+https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+cu121-cp38-cp38-win_amd64.whl; platform_system == "Windows" and python_version == "3.8"
+https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+cu121-cp311-cp311-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+cu121-cp310-cp310-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.10"
+https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+cu121-cp39-cp39-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.9"
+https://github.com/jllllll/GPTQ-for-LLaMa-CUDA/releases/download/0.1.1/gptq_for_llama-0.1.1+cu121-cp38-cp38-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.8"
+https://github.com/jllllll/ctransformers-cuBLAS-wheels/releases/download/AVX2/ctransformers-0.2.27+cu121-py3-none-any.whl
+autoawq==0.1.7; platform_system == "Linux" or platform_system == "Windows"
+mkdocs-glightbox
