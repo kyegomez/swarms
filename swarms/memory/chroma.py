@@ -1,10 +1,13 @@
-from typing import List
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List
 from chromadb.utils import embedding_functions
 from httpx import RequestError
 import chromadb
 
+from swarms.memory.base_vector_db import VectorDatabase
 
-class ChromaClient:
+
+class ChromaClient(VectorDatabase):
     def __init__(
         self,
         collection_name: str = "chromadb-collection",
@@ -90,23 +93,14 @@ class ChromaClient:
             print(f"Error searching vectors: {e}")
             return None
 
-    def search_vectors_formatted(self, query: str, limit: int = 2):
-        """
-        Searches the collection for vectors similar to the query vector.
+    def add(self, vector: Dict[str, Any], metadata: Dict[str, Any]) -> None:
+        pass
 
-        Args:
-            query (str): The query string to be converted into a vector and used for searching.
-            limit (int): The number of search results to return. Defaults to 3.
+    def query(self, vector: Dict[str, Any], num_results: int) -> Dict[str, Any]:
+        pass
 
-        Returns:
-            SearchResult or None: Returns the search results if successful, otherwise None.
-        """
-        try:
-            search_result = self.collection.query(
-                                    query_texts=query,
-                                    n_results=limit,
-                                )
-            return search_result
-        except Exception as e:
-            print(f"Error searching vectors: {e}")
-            return None
+    def delete(self, vector_id: str) -> None:
+        pass
+
+    def update(self, vector_id: str, vector: Dict[str, Any], metadata: Dict[str, Any]) -> None:
+        pass

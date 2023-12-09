@@ -635,6 +635,10 @@ class Agent:
                     AGENT_SYSTEM_PROMPT_3, response
                 )
 
+                # Retreiving long term memory
+                if self.memory:
+                    task = self.agent_memory_prompt(response, task)
+
                 attempt = 0
                 while attempt < self.retry_attempts:
                     try:
@@ -754,6 +758,33 @@ class Agent:
                 {history}
             """
             return agent_history_prompt
+
+    def agent_memory_prompt(
+            self,
+            query,
+            prompt
+    ):
+        """
+        Generate the agent long term memory prompt
+
+        Args:
+            system_prompt (str): The system prompt
+            history (List[str]): The history of the conversation
+
+        Returns:
+            str: The agent history prompt
+        """
+        context_injected_prompt = prompt
+        if self.memory:
+            ltr = self.memory.query(query)
+
+            context_injected_prompt = f"""{prompt}
+                ################ CONTEXT ####################
+                {ltr}
+            """
+
+        return context_injected_prompt
+
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """
