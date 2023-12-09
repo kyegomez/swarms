@@ -1,0 +1,2 @@
+Created a temporary directory at /tmp/tmpy1_589mf
+Writing /tmp/tmpy1_589mf/_remote_module_non_scriptable.py

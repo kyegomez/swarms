@@ -11,3 +11,4 @@ output/*
 
 static/generated
 swarms/__pycache__
+models/
