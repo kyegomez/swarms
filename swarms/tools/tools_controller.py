@@ -17,15 +17,18 @@ import json
 
 logger = get_logger(__name__)
 
-# with open('/openai.json', 'r') as f:
-#     data = json.load(f)
+tools_mappings = {}
 
-# tools_mappings = {}
+# data = json.load(open('openai.json')) 
+# items = data['items'] 
 
-# for plugin in data:
-#     url = plugin['manifest']['api']['url'].replace('/.well-known/openapi.yaml', '')
+# for plugin in items: 
+#     url = plugin['manifest']['api']['url']
 #     tool_name = plugin['namespace']
-#     tools_mappings[tool_name] = url
+#     tools_mappings[tool_name] = url[:-len('/.well-known/openai.yaml')]
+
+# print(tools_mappings)
+# all_tools_list = []
 
 def load_valid_tools(tools_mappings):
     tools_to_config = {}

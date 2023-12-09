@@ -8,6 +8,7 @@ import json
 
 from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
 from swarms.modelui.modules.logging_colors import logger
+from swarms.modelui.server import create_interface
 
 from vllm import LLM 
 
@@ -115,15 +116,17 @@ tools_mappings = {
     "walmart": "http://127.0.0.1:8079/tools/walmart",
 }
 
-data = json.load(open('swarms/tools/openai.json')) # Load the JSON file
-items = data['items'] # Get the list of items
+# data = json.load(open('swarms/tools/openai.json')) # Load the JSON file
+# items = data['items'] # Get the list of items
 
-for plugin in items: # Iterate over items, not data
-    url = plugin['manifest']['api']['url']
-    tool_name = plugin['namespace']
-    tools_mappings[tool_name] = url[:-len('/.well-known/openai.yaml')]
+# for plugin in items: # Iterate over items, not data
+#     url = plugin['manifest']['api']['url']
+#     tool_name = plugin['namespace']
+#     tools_mappings[tool_name] = url[:-len('/.well-known/openai.yaml')]
 
-print(tools_mappings)
+# print(tools_mappings)
+
+valid_tools_info = []
 all_tools_list = []
 
 gr.close_all()
@@ -152,15 +155,21 @@ def download_model(model_url: str, memory_utilization: int , model_dir: str):
 
 valid_tools_info = {}
 
+import gradio as gr
+from swarms.tools.tools_controller import load_valid_tools, tools_mappings
+
 def load_tools():
     global valid_tools_info
     global all_tools_list
     try:
         valid_tools_info = load_valid_tools(tools_mappings)
+        print(f"valid_tools_info: {valid_tools_info}")  # Debugging line
     except BaseException as e:
         print(repr(e))
     all_tools_list = sorted(list(valid_tools_info.keys()))
+    print(f"all_tools_list: {all_tools_list}")  # Debugging line
     return gr.update(choices=all_tools_list)
+
 
 def set_environ(OPENAI_API_KEY: str = "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",
                 WOLFRAMALPH_APP_ID: str = "",
@@ -362,6 +371,8 @@ with gr.Blocks() as demo:
                     info="Choose the tools to solve your question.",
                 )
 
+        with gr.Tab("model"):
+            create_inferance();
             def serve_iframe():
                 return f'hi'
 
