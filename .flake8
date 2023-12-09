@@ -1,2 +1,0 @@
-[flake8]
-extend-ignore = E501, W292, W291, W293

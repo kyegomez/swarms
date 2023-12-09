@@ -192,6 +192,8 @@ class Agent:
         tokenizer: Optional[Any] = None,
         memory: Optional[VectorDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
+        traceback: Any = None,
+        traceback_handlers: Any = None,
         *args,
         **kwargs: Any,
     ):
@@ -232,6 +234,8 @@ class Agent:
         self.tokenizer = tokenizer
         self.memory = memory
         self.preset_stopping_token = preset_stopping_token
+        self.traceback = traceback
+        self.traceback_handlers = traceback_handlers
 
         # self.system_prompt = AGENT_SYSTEM_PROMPT_3
 
