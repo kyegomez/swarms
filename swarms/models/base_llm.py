@@ -185,7 +185,6 @@ class AbstractLLM(ABC):
         self.end_time = time.time()
         return self.end_time - self.start_time
 
-    @abstractmethod
     def generate_summary(self, text: str) -> str:
         """Generate Summary"""
         pass
