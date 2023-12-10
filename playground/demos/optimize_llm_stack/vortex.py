@@ -1,10 +1,12 @@
-import subprocess
 import os
-from swarms.structs import Agent
-from swarms.memory import WeaviateClient
-from swarms.utils.phoenix_handler import phoenix_trace_decorator
-from swarms.models.vllm import vLLM
+import subprocess
+
 from dotenv import load_dotenv
+
+from swarms.memory import WeaviateClient
+from swarms.models.vllm import vLLM
+from swarms.structs import Agent
+from swarms.utils.phoenix_handler import phoenix_trace_decorator
 
 try:
     import modal
