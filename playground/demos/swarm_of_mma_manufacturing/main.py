@@ -20,6 +20,7 @@ from termcolor import colored
 
 from swarms.models import GPT4VisionAPI
 from swarms.structs import Agent
+from swarms.utils.phoenix_handler import phoenix_trace_decorator
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")

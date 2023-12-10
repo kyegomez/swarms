@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "2.6.7"
+version = "2.7.0"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -33,6 +33,7 @@ einops = "*"
 google-generativeai = "*"
 langchain-experimental = "*"
 playwright = "*"
+weaviate-client = "*"
 duckduckgo-search = "*"
 opencv-python-headless = "*"
 faiss-cpu = "*"
@@ -42,9 +43,11 @@ datasets = "*"
 optimum = "*"
 diffusers = "*"
 PyPDF2 = "*"
+vllm = "*"
 accelerate = "*"
 sentencepiece = "*"
 wget = "*"
+arize-phoenix = "*"
 tensorflow = "*"
 httpx = "*"
 tiktoken = "*"
@@ -92,10 +95,5 @@ line-length = 70
 line-length = 70
 target-version = ['py38']
 preview = true
-
-
-[tool.poetry.scripts]
-swarms = "swarms.cli.run_file:run_file"
-
 
 

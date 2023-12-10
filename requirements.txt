@@ -19,11 +19,14 @@ attrs
 datasets
 pydantic==1.10.12
 soundfile
+arize-phoenix
+weaviate-client 
 huggingface-hub
 google-generativeai
 sentencepiece
 PyPDF2
 accelerate
+vllm
 chromadb
 tensorflow
 optimum

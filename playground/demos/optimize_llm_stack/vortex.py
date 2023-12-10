@@ -5,9 +5,8 @@ from dotenv import load_dotenv
 
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
-from swarms.utils.phoenix_handler import phoenix_trace_decorator
-
-import modal
+# from swarms.utils.phoenix_handler import phoenix_trace_decorator
+# import modal
 
 load_dotenv()
 
@@ -15,22 +14,23 @@ load_dotenv()
 llm = OpenAIChat(
     openai_api_key=os.getenv("OPENAI_API_KEY"),
     model_name="gpt-4",
-    max_tokens=4000,
+    max_tokens=1000,
 )
 
 # Modal
-stub = modal.Stub(name="swarms")
+# stub = modal.Stub(name="swarms")
 
 
 # Agent
-@phoenix_trace_decorator(
-    "This function is an agent and is traced by Phoenix."
+# @phoenix_trace_decorator(
+#     "This function is an agent and is traced by Phoenix."
+# )
+# @stub.function(gpu="any")
+agent = Agent(
+    llm=llm,
+    max_loops=2,
+    autosave=True,
+    dashboard=True,
 )
-@stub.function(gpu="any")
-def agent(task: str):
-    agent = Agent(
-        llm=llm,
-        max_loops=1,
-    )
-    out = agent.run(task=task)
-    return out
+out = agent.run("Generate a 5,000 word blog on how swarms of autonomous agents can be used to solve the world's problems.")
+print(out)
