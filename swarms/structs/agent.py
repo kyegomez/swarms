@@ -583,7 +583,10 @@ class Agent:
         return agent_system_prompt_2(self.agent_name)
 
     def run(
-        self, task: Optional[str], img: Optional[str] = None, **kwargs
+        self, 
+        task: Optional[str] = None, 
+        img: Optional[str] = None, 
+        **kwargs
     ):
         """
         Run the autonomous agent loop
@@ -639,9 +642,9 @@ class Agent:
                     AGENT_SYSTEM_PROMPT_3, response
                 )
 
-                # Retreiving long term memory
-                if self.memory:
-                    task = self.agent_memory_prompt(response, task)
+                # # Retreiving long term memory
+                # if self.memory:
+                #     task = self.agent_memory_prompt(response, task)
 
                 attempt = 0
                 while attempt < self.retry_attempts:
@@ -652,11 +655,13 @@ class Agent:
                                 img,
                                 **kwargs,
                             )
+                            print(response)
                         else:
                             response = self.llm(
                                 task,
                                 **kwargs,
                             )
+                            print(response)
 
                         # If code interpreter is enabled then run the code
                         if self.code_interpreter:

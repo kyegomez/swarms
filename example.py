@@ -17,6 +17,7 @@ llm = OpenAIChat(
     temperature=0.5,
     model_name="gpt-4",
     openai_api_key=api_key,
+    max_tokens=1000,
 )
 
 
