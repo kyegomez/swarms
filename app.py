@@ -1,3 +1,7 @@
+import boto3
+from botocore.exceptions import NoCredentialsError
+import tokenize
+import requests
 import os
 import time
 from functools import partial
@@ -63,6 +67,9 @@ from multiprocessing import Process
 import time
 from langchain.llms import VLLM
 
+import yaml
+
+
 tool_server_flag = False
 def start_tool_server():
     # server = Thread(target=run_tool_server)
@@ -76,7 +83,7 @@ DEFAULTMODEL = "ChatGPT"  # "GPT-3.5"
 
 # Read the model/ directory and get the list of models
 model_dir = Path("./models/")
-available_models = ["ChatGPT", "GPT-3.5"] + [f.name for f in model_dir.iterdir() if f.is_dir()]
+available_models = ["ChatGPT", "GPT-3.5", "decapoda-research/llama-13b-hf"] + [f.name for f in model_dir.iterdir() if f.is_dir()]
 
 tools_mappings = {
     "klarna": "https://www.klarna.com/",
@@ -170,7 +177,6 @@ def load_tools():
     print(f"all_tools_list: {all_tools_list}")  # Debugging line
     return gr.update(choices=all_tools_list)
 
-
 def set_environ(OPENAI_API_KEY: str = "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",
                 WOLFRAMALPH_APP_ID: str = "",
                 WEATHER_API_KEYS: str = "",
@@ -186,8 +192,10 @@ def set_environ(OPENAI_API_KEY: str = "sk-vklUMBpFpC4S6KYBrUsxT3BlbkFJYS2biOVyh9
                 HUGGINGFACE_API_KEY: str = "",
                 AMADEUS_ID: str = "",
                 AMADEUS_KEY: str = "",
+                AWS_ACCESS_KEY_ID: str = "",
+                AWS_SECRET_ACCESS_KEY: str = "",
+                AWS_DEFAULT_REGION: str = "",
             ):
-
     os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
     os.environ["WOLFRAMALPH_APP_ID"] = WOLFRAMALPH_APP_ID
     os.environ["WEATHER_API_KEYS"] = WEATHER_API_KEYS
@@ -203,10 +211,26 @@ def set_environ(OPENAI_API_KEY: str = "sk-vklUMBpFpC4S6KYBrUsxT3BlbkFJYS2biOVyh9
     os.environ["HUGGINGFACE_API_KEY"] = HUGGINGFACE_API_KEY
     os.environ["AMADEUS_ID"] = AMADEUS_ID
     os.environ["AMADEUS_KEY"] = AMADEUS_KEY
+    os.environ["AWS_ACCESS_KEY_ID"] = AWS_ACCESS_KEY_ID
+    os.environ["AWS_SECRET_ACCESS_KEY"] = AWS_SECRET_ACCESS_KEY
+    os.environ["AWS_DEFAULT_REGION"] = AWS_DEFAULT_REGION
+    
     if not tool_server_flag:
         start_tool_server()
         time.sleep(MAX_SLEEP_TIME)
-    return gr.update(value="OK!")
+
+    # Check if AWS keys are set and if so, configure AWS
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_DEFAULT_REGION:
+        try:
+            s3 = boto3.client('s3')
+            s3.list_buckets()
+            aws_status = "AWS setup successful"
+        except NoCredentialsError:
+            aws_status = "AWS setup failed: Invalid credentials"
+    else:
+        aws_status = "Keys set successfully"
+
+    return gr.update(value="OK!"), aws_status
 
 def show_avatar_imgs(tools_chosen):
     if len(tools_chosen) == 0:
@@ -296,6 +320,41 @@ def clear_history():
     chat_history = ""
     yield gr.update(visible=True, value=return_msg)
 
+
+# Add this function to fetch the tokenizer from the Hugging Face Model Hub API
+def fetch_tokenizer(model_name: str):
+    response = requests.get(f"https://huggingface.co/{model_name}/resolve/main/tokenizer_config.json")
+    if response.status_code == 200:
+        tokenizer_config = response.json()
+        return tokenizer_config.get("tokenizer_class")
+    else:
+        return "Tokenizer not found for the selected model"
+
+
+# Add this function to handle the button click
+def deploy_on_sky_pilot(model_name: str, tokenizer: str, accelerators: str):
+    # Create serving.yaml for SkyPilot deployment
+    serving_yaml = {
+        "resources": {
+            "accelerators": accelerators
+        },
+        "envs": {
+            "MODEL_NAME": model_name,
+            "TOKENIZER": tokenizer
+        },
+        "setup": "conda create -n vllm python=3.9 -y\nconda activate vllm\ngit clone https://github.com/vllm-project/vllm.git\ncd vllm\npip install .\npip install gradio",
+        "run": "conda activate vllm\necho 'Starting vllm api server...'\npython -u -m vllm.entrypoints.api_server --model $MODEL_NAME --tensor-parallel-size $SKYPILOT_NUM_GPUS_PER_NODE --tokenizer $TOKENIZER 2>&1 | tee api_server.log &\necho 'Waiting for vllm api server to start...'\nwhile ! `cat api_server.log | grep -q 'Uvicorn running on'`; do sleep 1; done\necho 'Starting gradio server...'\npython vllm/examples/gradio_webserver.py"
+    }
+
+    # Write serving.yaml to file
+    with open('serving.yaml', 'w') as f:
+        yaml.dump(serving_yaml, f)
+
+    # Deploy on SkyPilot
+    os.system("sky launch serving.yaml")
+
+# Add this line where you define your Gradio interface
+
 title = 'Swarm Models'
 
 # css/js strings
@@ -328,6 +387,9 @@ with gr.Blocks() as demo:
         HUGGINGFACE_API_KEY = gr.Textbox(label="Huggingface api key:", placeholder="Key to use models in huggingface hub", type="text")
         AMADEUS_ID = gr.Textbox(label="Amadeus id:", placeholder="Id to use Amadeus", type="text")
         AMADEUS_KEY = gr.Textbox(label="Amadeus key:", placeholder="Key to use Amadeus", type="text")
+        AWS_ACCESS_KEY_ID = gr.Textbox(label="AWS Access Key ID:", placeholder="AWS Access Key ID", type="text")
+        AWS_SECRET_ACCESS_KEY = gr.Textbox(label="AWS Secret Access Key:", placeholder="AWS Secret Access Key", type="text")
+        AWS_DEFAULT_REGION = gr.Textbox(label="AWS Default Region:", placeholder="AWS Default Region", type="text")
         key_set_btn = gr.Button(value="Set keys!")
 
 
@@ -356,6 +418,7 @@ with gr.Blocks() as demo:
                         model_chosen = gr.Dropdown(
                             list(available_models), value=DEFAULTMODEL, multiselect=False, label="Model provided",
                             info="Choose the model to solve your question, Default means ChatGPT."
+                        
                 )
                 with gr.Row():
                     tools_search = gr.Textbox(
@@ -366,16 +429,26 @@ with gr.Blocks() as demo:
                     buttonSearch = gr.Button("Reset search condition")
                 tools_chosen = gr.CheckboxGroup(
                     choices=all_tools_list,
-                    value=["chemical-prop"],
+                    # value=["chemical-prop"],
                     label="Tools provided",
                     info="Choose the tools to solve your question.",
                 )
 
-        with gr.Tab("model"):
-            create_inferance();
-            def serve_iframe():
-                return f'hi'
+            tokenizer_output = gr.outputs.Textbox()
+            model_chosen.change(fetch_tokenizer, outputs=tokenizer_output)
+            available_accelerators = ["A100", "V100", "P100", "K80", "T4", "P4"]
+            accelerators = gr.Dropdown(available_accelerators, label="Accelerators:")
+            buttonDeploy = gr.Button("Deploy on SkyPilot")
 
+            buttonDeploy.click(deploy_on_sky_pilot, [model_chosen, tokenizer_output, accelerators])
+
+        # TODO finish integrating model flow
+        # with gr.Tab("model"):
+        #     create_inferance();
+        #     def serve_iframe():
+        #         return f'hi'
+
+        # TODO fix webgl galaxy backgroun
         # def serve_iframe():
         #     return "<iframe src='http://localhost:8000/shader.html' width='100%' height='400'></iframe>"
 
