@@ -11,6 +11,7 @@ from swarms.prompts.logistics import (
     Sustainability_Agent_Prompt,
     Efficiency_Agent_Prompt,
 )
+
 # from swarms.utils.phoenix_handler import phoenix_trace_decorator
 # from swarms.utils.banana_wrapper import banana
 
@@ -33,7 +34,7 @@ health_security_agent = Agent(
     multi_modal=True,
 )
 
-#@phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
+# @phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
 quality_control_agent = Agent(
     llm=llm,
     sop=Quality_Control_Agent_Prompt,
@@ -41,7 +42,7 @@ quality_control_agent = Agent(
     multi_modal=True,
 )
 
-#@phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
+# @phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
 productivity_agent = Agent(
     llm=llm,
     sop=Productivity_Agent_Prompt,
@@ -49,17 +50,17 @@ productivity_agent = Agent(
     multi_modal=True,
 )
 
-#@phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
+# @phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
 safety_agent = Agent(
     llm=llm, sop=Safety_Agent_Prompt, max_loops=1, multi_modal=True
 )
 
-#@phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
+# @phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
 security_agent = Agent(
     llm=llm, sop=Security_Agent_Prompt, max_loops=1, multi_modal=True
 )
 
-#@phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
+# @phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
 sustainability_agent = Agent(
     llm=llm,
     sop=Sustainability_Agent_Prompt,
@@ -67,7 +68,7 @@ sustainability_agent = Agent(
     multi_modal=True,
 )
 
-#@phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
+# @phoenix_trace_decorator("This function is an agent and is traced by Phoenix.")
 efficiency_agent = Agent(
     llm=llm,
     sop=Efficiency_Agent_Prompt,

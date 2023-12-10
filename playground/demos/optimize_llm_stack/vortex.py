@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
+
 # from swarms.utils.phoenix_handler import phoenix_trace_decorator
 # import modal
 
@@ -32,5 +33,8 @@ agent = Agent(
     autosave=True,
     dashboard=True,
 )
-out = agent.run("Generate a 5,000 word blog on how swarms of autonomous agents can be used to solve the world's problems.")
+out = agent.run(
+    "Generate a 5,000 word blog on how swarms of autonomous agents"
+    " can be used to solve the world's problems."
+)
 print(out)

@@ -583,10 +583,10 @@ class Agent:
         return agent_system_prompt_2(self.agent_name)
 
     def run(
-        self, 
-        task: Optional[str] = None, 
-        img: Optional[str] = None, 
-        **kwargs
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        **kwargs,
     ):
         """
         Run the autonomous agent loop
