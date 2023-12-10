@@ -1,4 +1,5 @@
 import boto3
+from transformers import AutoTokenizer
 from botocore.exceptions import NoCredentialsError
 import tokenize
 import requests
@@ -321,15 +322,13 @@ def clear_history():
     yield gr.update(visible=True, value=return_msg)
 
 
-# Add this function to fetch the tokenizer from the Hugging Face Model Hub API
-def fetch_tokenizer(model_name: str):
-    response = requests.get(f"https://huggingface.co/{model_name}/resolve/main/tokenizer_config.json")
-    if response.status_code == 200:
-        tokenizer_config = response.json()
-        return tokenizer_config.get("tokenizer_class")
-    else:
-        return "Tokenizer not found for the selected model"
 
+def fetch_tokenizer(model_name):
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        return f"Tokenizer for {model_name} loaded successfully."
+    except Exception as e:
+        return f"Error loading tokenizer: {str(e)}"
 
 # Add this function to handle the button click
 def deploy_on_sky_pilot(model_name: str, tokenizer: str, accelerators: str):
@@ -340,7 +339,7 @@ def deploy_on_sky_pilot(model_name: str, tokenizer: str, accelerators: str):
         },
         "envs": {
             "MODEL_NAME": model_name,
-            "TOKENIZER": tokenizer
+            "TOKENIZER": AutoTokenizer.from_pretrained(model_name)
         },
         "setup": "conda create -n vllm python=3.9 -y\nconda activate vllm\ngit clone https://github.com/vllm-project/vllm.git\ncd vllm\npip install .\npip install gradio",
         "run": "conda activate vllm\necho 'Starting vllm api server...'\npython -u -m vllm.entrypoints.api_server --model $MODEL_NAME --tensor-parallel-size $SKYPILOT_NUM_GPUS_PER_NODE --tokenizer $TOKENIZER 2>&1 | tee api_server.log &\necho 'Waiting for vllm api server to start...'\nwhile ! `cat api_server.log | grep -q 'Uvicorn running on'`; do sleep 1; done\necho 'Starting gradio server...'\npython vllm/examples/gradio_webserver.py"
@@ -385,6 +384,7 @@ with gr.Blocks() as demo:
         SCENEX_API_KEY = gr.Textbox(label="Scenex api key:", placeholder="Key to use sceneXplain", type="text")
         STEAMSHIP_API_KEY = gr.Textbox(label="Steamship api key:", placeholder="Key to use image generation", type="text")
         HUGGINGFACE_API_KEY = gr.Textbox(label="Huggingface api key:", placeholder="Key to use models in huggingface hub", type="text")
+        HUGGINGFACE_TOKEN = gr.Textbox(label="HuggingFace Token:", placeholder="Token for huggingface", type="text"),
         AMADEUS_ID = gr.Textbox(label="Amadeus id:", placeholder="Id to use Amadeus", type="text")
         AMADEUS_KEY = gr.Textbox(label="Amadeus key:", placeholder="Key to use Amadeus", type="text")
         AWS_ACCESS_KEY_ID = gr.Textbox(label="AWS Access Key ID:", placeholder="AWS Access Key ID", type="text")
@@ -416,10 +416,19 @@ with gr.Blocks() as demo:
                         buttonDownload = gr.Button("Download Model");
                         buttonDownload.click(fn=download_model, inputs=[model_url, memory_utilization]);
                         model_chosen = gr.Dropdown(
-                            list(available_models), value=DEFAULTMODEL, multiselect=False, label="Model provided",
+                            list(available_models),
+                            value=DEFAULTMODEL,
+                            multiselect=False,
+                            label="Model provided",
                             info="Choose the model to solve your question, Default means ChatGPT."
-                        
-                )
+                        )
+                        tokenizer_output = gr.outputs.Textbox(label="Tokenizer")
+                        model_chosen.change(fetch_tokenizer, outputs=tokenizer_output)
+                        available_accelerators = ["A100", "V100", "P100", "K80", "T4", "P4"]
+                        accelerators = gr.Dropdown(available_accelerators, label="Accelerators:")
+                        buttonDeploy = gr.Button("Deploy on SkyPilot")
+
+                        buttonDeploy.click(deploy_on_sky_pilot, [model_chosen, tokenizer_output, accelerators, HUGGINGFACE_TOKEN])
                 with gr.Row():
                     tools_search = gr.Textbox(
                         lines=1,
@@ -434,13 +443,6 @@ with gr.Blocks() as demo:
                     info="Choose the tools to solve your question.",
                 )
 
-            tokenizer_output = gr.outputs.Textbox()
-            model_chosen.change(fetch_tokenizer, outputs=tokenizer_output)
-            available_accelerators = ["A100", "V100", "P100", "K80", "T4", "P4"]
-            accelerators = gr.Dropdown(available_accelerators, label="Accelerators:")
-            buttonDeploy = gr.Button("Deploy on SkyPilot")
-
-            buttonDeploy.click(deploy_on_sky_pilot, [model_chosen, tokenizer_output, accelerators])
 
         # TODO finish integrating model flow
         # with gr.Tab("model"):
@@ -468,6 +470,7 @@ with gr.Blocks() as demo:
         SCENEX_API_KEY,
         STEAMSHIP_API_KEY,
         HUGGINGFACE_API_KEY,
+        HUGGINGFACE_TOKEN,
         AMADEUS_ID,
         AMADEUS_KEY,
     ], outputs=key_set_btn)
