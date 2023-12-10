@@ -39,7 +39,7 @@ class Fuyu(BaseMultiModalModel):
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(model_name=model_name, *args, **kwargs)
         self.model_name = model_name
         self.device_map = device_map
         self.max_new_tokens = max_new_tokens
