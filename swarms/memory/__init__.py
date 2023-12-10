@@ -1,7 +1,8 @@
-# from swarms.memory.pinecone import PineconeVector
-# from swarms.memory.base import BaseVectorStore
-# from swarms.memory.pg import PgVectorVectorStore
-from swarms.memory.weaviate import WeaviateClient
+try:
+    from swarms.memory.weaviate import WeaviateClient
+except ImportError:
+    pass
+
 from swarms.memory.base_vectordb import VectorDatabase
 
 __all__ = [
