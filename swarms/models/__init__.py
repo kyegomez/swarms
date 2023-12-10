@@ -8,7 +8,7 @@ from swarms.models.openai_models import (
     AzureOpenAI,
     OpenAIChat,
 )  # noqa: E402
-
+from swarms.models.vllm import vLLM  # noqa: E402
 # from swarms.models.zephyr import Zephyr  # noqa: E402
 from swarms.models.biogpt import BioGPT  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
@@ -28,6 +28,7 @@ from swarms.models.layoutlm_document_qa import (
     LayoutLMDocumentQA,
 )  # noqa: E402
 from swarms.models.gpt4_vision_api import GPT4VisionAPI  # noqa: E402
+
 
 # from swarms.models.gpt4v import GPT4Vision
 # from swarms.models.dalle3 import Dalle3
