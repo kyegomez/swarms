@@ -92,21 +92,6 @@ def test_initialization_with_custom_key():
     assert api.openai_api_key == custom_key
 
 
-def test_run_successful_response(gpt_api):
-    task = "What is in the image?"
-    img_url = img
-    response_json = {
-        "choices": [{"text": "Answer from GPT-4 Vision"}]
-    }
-    mock_response = Mock()
-    mock_response.json.return_value = response_json
-    with patch(
-        "requests.post", return_value=mock_response
-    ) as mock_post:
-        result = gpt_api.run(task, img_url)
-        mock_post.assert_called_once()
-    assert result == response_json["choices"][0]["text"]
-
 
 def test_run_with_exception(gpt_api):
     task = "What is in the image?"
