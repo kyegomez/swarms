@@ -20,10 +20,10 @@ This documentation provides a comprehensive guide on how to use the Weaviate API
 
 ## Installation
 
-Before using the Weaviate API Client, make sure to install the `weaviate-client` library. You can install it using pip:
+Before using the Weaviate API Client, make sure to install the `swarms` library. You can install it using pip:
 
 ```bash
-pip install weaviate-client
+pip install swarms
 ```
 
 ## Initialization
@@ -46,7 +46,7 @@ To use the Weaviate API Client, you need to initialize an instance of the `Weavi
 Here's an example of how to initialize a WeaviateClient:
 
 ```python
-from weaviate_client import WeaviateClient
+from swarms.memory import WeaviateClient
 
 weaviate_client = WeaviateClient(
     http_host="YOUR_HTTP_HOST",
