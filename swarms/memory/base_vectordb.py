@@ -17,9 +17,7 @@ class VectorDatabase(ABC):
         pass
 
     @abstractmethod
-    def query(
-        self, text: str, num_results: int
-    ) -> Dict[str, Any]:
+    def query(self, text: str, num_results: int) -> Dict[str, Any]:
         """
         Query the database for vectors similar to the given vector.
 

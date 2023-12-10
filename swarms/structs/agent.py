@@ -763,11 +763,7 @@ class Agent:
             """
             return agent_history_prompt
 
-    def agent_memory_prompt(
-            self,
-            query,
-            prompt
-    ):
+    def agent_memory_prompt(self, query, prompt):
         """
         Generate the agent long term memory prompt
 
@@ -788,7 +784,6 @@ class Agent:
             """
 
         return context_injected_prompt
-
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """

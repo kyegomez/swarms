@@ -101,6 +101,7 @@ nav:
     - Agent: "swarms/structs/agent.md"
     - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
   - swarms.memory:
+    - Weaviate: "swarms/memory/weaviate.md"
     - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
 - Guides:
