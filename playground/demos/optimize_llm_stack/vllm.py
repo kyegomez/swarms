@@ -7,7 +7,7 @@ custom_vllm = vLLM(
     trust_remote_code=True,
     revision="abc123",
     temperature=0.7,
-    top_p=0.8
+    top_p=0.8,
 )
 
 # Generate text with custom configuration

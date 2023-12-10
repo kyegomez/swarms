@@ -1,12 +1,14 @@
-import os
-from termcolor import colored
 import logging
+import os
 from typing import Dict, List, Optional
+
 import chromadb
 import tiktoken as tiktoken
 from chromadb.config import Settings
 from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 from dotenv import load_dotenv
+from termcolor import colored
+
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
 
 load_dotenv()

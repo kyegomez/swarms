@@ -80,6 +80,7 @@ nav:
       - OpenAI: "swarms/models/openai.md"
       - Zephyr: "swarms/models/zephyr.md"
       - BioGPT: "swarms/models/biogpt.md"
+      - vLLM: "swarms/models/vllm.md"
       - MPT7B: "swarms/models/mpt.md"
       - Mistral: "swarms/models/mistral.md"
     - MultiModal:

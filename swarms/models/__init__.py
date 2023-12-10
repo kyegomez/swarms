@@ -8,7 +8,12 @@ from swarms.models.openai_models import (
     AzureOpenAI,
     OpenAIChat,
 )  # noqa: E402
-from swarms.models.vllm import vLLM  # noqa: E402
+
+try:
+    from swarms.models.vllm import vLLM  # noqa: E402
+except ImportError:
+    pass
+
 # from swarms.models.zephyr import Zephyr  # noqa: E402
 from swarms.models.biogpt import BioGPT  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
@@ -59,4 +64,5 @@ __all__ = [
     # "Dalle3",
     # "DistilWhisperModel",
     "GPT4VisionAPI",
+    "vLLM",
 ]
