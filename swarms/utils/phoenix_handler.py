@@ -3,14 +3,7 @@ import sys
 import traceback
 import functools
 
-try:
-    import phoenix as px
-except Exception as error:
-    print(f"Error importing phoenix: {error}")
-    print("Please install phoenix: pip install phoenix")
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "arize-mlflow"]
-    )
+import phoenix as px
 
 
 def phoenix_trace_decorator(doc_string):
