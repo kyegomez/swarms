@@ -96,6 +96,7 @@ nav:
       - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
       - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
       - ElevenLabsText2SpeechTool: "swarms/models/elevenlabs.md"
+      - OpenAITTS: "swarms/models/openai_tts.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - AutoScaler: "swarms/swarms/autoscaler.md"
