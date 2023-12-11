@@ -24,7 +24,6 @@ HOST = "localhost"
 PORT = 8000
 
 # TODO fix this test
-
 def test_set_environ():
     @patch("app.LLM")
     def test_download_model(mock_llm):
