@@ -5,6 +5,27 @@ from abc import ABC, abstractmethod
 
 
 class BaseTTSModel(AbstractLLM):
+    """Base class for all TTS models.
+    
+    Args:
+        AbstractLLM (_type_): _description_
+        model_name (_type_): _description_
+        voice (_type_): _description_
+        chunk_size (_type_): _description_
+        save_to_file (bool, optional): _description_. Defaults to False.
+        saved_filepath (Optional[str], optional): _description_. Defaults to None.
+        
+    Raises:
+        NotImplementedError: _description_
+        
+    Methods:
+        save: save the model to a file.
+        load: load the model from a file.
+        run: run the model on the given task.
+        __call__: call the model on the given task.
+        save_to_file: save the speech data to a file.
+    
+    """
     def __init__(
         self,
         model_name,
@@ -18,6 +39,11 @@ class BaseTTSModel(AbstractLLM):
         self.chunk_size = chunk_size
 
     def save(self, filepath: Optional[str] = None):
+        """Save the model to a file.
+
+        Args:
+            filepath (Optional[str], optional): _description_. Defaults to None.
+        """
         pass
 
     def load(self, filepath: Optional[str] = None):
@@ -25,7 +51,23 @@ class BaseTTSModel(AbstractLLM):
 
     @abstractmethod
     def run(self, task: str, *args, **kwargs):
+        """Run the model on the given task.
+
+        Args:
+            task (str): _description_
+        """
         pass
+    
+    def __call__(self, task: str, *args, **kwargs):
+        """Call the model on the given task.
+
+        Args:
+            task (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.run(task, *args, **kwargs)
 
     def save_to_file(self, speech_data, filename):
         """Save the speech data to a file.
