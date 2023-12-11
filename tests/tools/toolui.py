@@ -14,10 +14,11 @@ from swarms.modelui.modules.models import load_model
 from swarms.tools.tool_controller import ToolInfo
 import dotenv
 
-os.environ.get("")
+os.environ.get(".env")
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(current_dir, ".."))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
 
 HOST = "localhost"
 PORT = 8000
