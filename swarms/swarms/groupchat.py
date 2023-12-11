@@ -98,6 +98,11 @@ class GroupChat:
             return self.next_agent(last_speaker)
 
     def _participant_roles(self):
+        """Print the roles of the participants.
+
+        Returns:
+            _type_: _description_
+        """
         return "\n".join(
             [
                 f"{agent.name}: {agent.system_message}"
@@ -106,6 +111,14 @@ class GroupChat:
         )
 
     def format_history(self, messages: List[Dict]) -> str:
+        """Format the history of the messages.
+
+        Args:
+            messages (List[Dict]): _description_
+
+        Returns:
+            str: _description_
+        """
         formatted_messages = []
         for message in messages:
             formatted_message = (
@@ -137,6 +150,14 @@ class GroupChatManager:
         self.selector = selector
 
     def __call__(self, task: str):
+        """Call 'GroupChatManager' instance as a function.
+
+        Args:
+            task (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
         self.groupchat.messages.append(
             {"role": self.selector.name, "content": task}
         )

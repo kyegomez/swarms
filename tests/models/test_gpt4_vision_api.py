@@ -92,7 +92,6 @@ def test_initialization_with_custom_key():
     assert api.openai_api_key == custom_key
 
 
-
 def test_run_with_exception(gpt_api):
     task = "What is in the image?"
     img_url = img
