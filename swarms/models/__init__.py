@@ -8,6 +8,7 @@ from swarms.models.openai_models import (
     AzureOpenAI,
     OpenAIChat,
 )  # noqa: E402
+
 # from swarms.models.vllm import vLLM  # noqa: E402
 
 # from swarms.models.zephyr import Zephyr  # noqa: E402

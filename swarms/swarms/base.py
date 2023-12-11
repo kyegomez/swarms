@@ -23,7 +23,6 @@ from termcolor import colored
 from swarms.structs.agent import Agent
 
 
-
 class AbstractSwarm(ABC):
     """
     Abstract Swarm Class for multi-agent systems
@@ -161,9 +160,7 @@ class AbstractSwarm(ABC):
         pass
 
     # @abstractmethod
-    def assign_task(
-        self, agent: "Agent", task: Any
-    ) -> Dict:
+    def assign_task(self, agent: "Agent", task: Any) -> Dict:
         """Assign a task to a agent"""
         pass
 
