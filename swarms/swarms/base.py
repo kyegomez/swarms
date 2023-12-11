@@ -1,13 +1,27 @@
+"""
+
+Paid    
+    
+# TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI
+# TODO: ADD Universal Communication Layer, a ocean vectorstore instance
+# TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
+# TODO: Add RLHF Data collection, ask user how the swarm is performing
+# TODO: Create an onboarding process if not settings are preconfigured like `from swarms import Swarm, Swarm()` => then initiate onboarding name your swarm + provide purpose + etc
+
+"""
+
 import asyncio
 import concurrent.futures
+import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Callable
-from swarms.structs.agent import Agent
-from swarms.agents.base import AbstractWorker
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
+from typing import Any, Callable, Dict, List, Optional
+
 from termcolor import colored
+
+from swarms.structs.agent import Agent
+
 
 
 class AbstractSwarm(ABC):
@@ -23,23 +37,23 @@ class AbstractSwarm(ABC):
         communicate: Communicate with the swarm through the orchestrator, protocols, and the universal communication layer
         run: Run the swarm
         step: Step the swarm
-        add_worker: Add a worker to the swarm
-        remove_worker: Remove a worker from the swarm
+        add_agent: Add a agent to the swarm
+        remove_agent: Remove a agent from the swarm
         broadcast: Broadcast a message to all agents
         reset: Reset the swarm
         plan: agents must individually plan using a workflow or pipeline
-        direct_message: Send a direct message to a worker
+        direct_message: Send a direct message to a agent
         autoscaler: Autoscaler that acts like kubernetes for autonomous agents
-        get_worker_by_id: Locate a worker by id
-        get_worker_by_name: Locate a worker by name
-        assign_task: Assign a task to a worker
+        get_agent_by_id: Locate a agent by id
+        get_agent_by_name: Locate a agent by name
+        assign_task: Assign a task to a agent
         get_all_tasks: Get all tasks
         get_finished_tasks: Get all finished tasks
         get_pending_tasks: Get all pending tasks
-        pause_worker: Pause a worker
-        resume_worker: Resume a worker
-        stop_worker: Stop a worker
-        restart_worker: Restart worker
+        pause_agent: Pause a agent
+        resume_agent: Resume a agent
+        stop_agent: Stop a agent
+        restart_agent: Restart agent
         scale_up: Scale up the number of agents
         scale_down: Scale down the number of agents
         scale_to: Scale to a specific number of agents
@@ -56,12 +70,6 @@ class AbstractSwarm(ABC):
         arun: Asynchronous run
 
     """
-
-    # TODO: Pass in abstract LLM class that can utilize Hf or Anthropic models, Move away from OPENAI
-    # TODO: ADD Universal Communication Layer, a ocean vectorstore instance
-    # TODO: BE MORE EXPLICIT ON TOOL USE, TASK DECOMPOSITION AND TASK COMPLETETION AND ALLOCATION
-    # TODO: Add RLHF Data collection, ask user how the swarm is performing
-    # TODO: Create an onboarding process if not settings are preconfigured like `from swarms import Swarm, Swarm()` => then initiate onboarding name your swarm + provide purpose + etc
 
     # @abstractmethod
     def __init__(self, agents: List[Agent], max_loops: int = 200):
@@ -101,18 +109,18 @@ class AbstractSwarm(ABC):
         pass
 
     # @abstractmethod
-    def add_worker(self, worker: "AbstractWorker"):
-        """Add a worker to the swarm"""
+    def add_agent(self, agent: "Agent"):
+        """Add a agent to the swarm"""
         pass
 
     # @abstractmethod
-    def remove_worker(self, worker: "AbstractWorker"):
-        """Remove a worker from the swarm"""
+    def remove_agent(self, agent: "Agent"):
+        """Remove a agent from the swarm"""
         pass
 
     # @abstractmethod
     def broadcast(
-        self, message: str, sender: Optional["AbstractWorker"] = None
+        self, message: str, sender: Optional["Agent"] = None
     ):
         """Broadcast a message to all agents"""
         pass
@@ -131,36 +139,36 @@ class AbstractSwarm(ABC):
     def direct_message(
         self,
         message: str,
-        sender: "AbstractWorker",
-        recipient: "AbstractWorker",
+        sender: "Agent",
+        recipient: "Agent",
     ):
-        """Send a direct message to a worker"""
+        """Send a direct message to a agent"""
         pass
 
     # @abstractmethod
-    def autoscaler(self, num_agents: int, worker: ["AbstractWorker"]):
+    def autoscaler(self, num_agents: int, agent: ["Agent"]):
         """Autoscaler that acts like kubernetes for autonomous agents"""
         pass
 
     # @abstractmethod
-    def get_worker_by_id(self, id: str) -> "AbstractWorker":
-        """Locate a worker by id"""
+    def get_agent_by_id(self, id: str) -> "Agent":
+        """Locate a agent by id"""
         pass
 
     # @abstractmethod
-    def get_worker_by_name(self, name: str) -> "AbstractWorker":
-        """Locate a worker by name"""
+    def get_agent_by_name(self, name: str) -> "Agent":
+        """Locate a agent by name"""
         pass
 
     # @abstractmethod
     def assign_task(
-        self, worker: "AbstractWorker", task: Any
+        self, agent: "Agent", task: Any
     ) -> Dict:
-        """Assign a task to a worker"""
+        """Assign a task to a agent"""
         pass
 
     # @abstractmethod
-    def get_all_tasks(self, worker: "AbstractWorker", task: Any):
+    def get_all_tasks(self, agent: "Agent", task: Any):
         """Get all tasks"""
 
     # @abstractmethod
@@ -174,42 +182,42 @@ class AbstractSwarm(ABC):
         pass
 
     # @abstractmethod
-    def pause_worker(self, worker: "AbstractWorker", worker_id: str):
-        """Pause a worker"""
+    def pause_agent(self, agent: "Agent", agent_id: str):
+        """Pause a agent"""
         pass
 
     # @abstractmethod
-    def resume_worker(self, worker: "AbstractWorker", worker_id: str):
-        """Resume a worker"""
+    def resume_agent(self, agent: "Agent", agent_id: str):
+        """Resume a agent"""
         pass
 
     # @abstractmethod
-    def stop_worker(self, worker: "AbstractWorker", worker_id: str):
-        """Stop a worker"""
+    def stop_agent(self, agent: "Agent", agent_id: str):
+        """Stop a agent"""
         pass
 
     # @abstractmethod
-    def restart_worker(self, worker: "AbstractWorker"):
-        """Restart worker"""
+    def restart_agent(self, agent: "Agent"):
+        """Restart agent"""
         pass
 
     # @abstractmethod
-    def scale_up(self, num_worker: int):
+    def scale_up(self, num_agent: int):
         """Scale up the number of agents"""
         pass
 
     # @abstractmethod
-    def scale_down(self, num_worker: int):
+    def scale_down(self, num_agent: int):
         """Scale down the number of agents"""
         pass
 
     # @abstractmethod
-    def scale_to(self, num_worker: int):
+    def scale_to(self, num_agent: int):
         """Scale to a specific number of agents"""
         pass
 
     # @abstractmethod
-    def get_all_agents(self) -> List["AbstractWorker"]:
+    def get_all_agents(self) -> List["Agent"]:
         """Get all agents"""
         pass
 
