@@ -11,6 +11,14 @@ import requests
 from PIL import Image
 from termcolor import colored
 
+try:
+    import cv2
+except ImportError:
+    print(
+        "Error importing cv2 try installing it with `pip install"
+        " opencv-python`"
+    )
+
 
 class BaseMultiModalModel:
     """
@@ -125,6 +133,42 @@ class BaseMultiModalModel:
         """Get the image from the path"""
         image_pil = Image.open(img)
         return image_pil
+
+    def process_video(
+        self,
+        video_path: str = None,
+        type_img: str = ".jpg",
+        *args,
+        **kwargs,
+    ):
+        """Process a video
+
+        Args:
+            video_path (str, optional): _description_. Defaults to None.
+            type_img (str, optional): _description_. Defaults to ".jpg".
+            *args: _description_.
+            **kwargs: _description_.
+
+        """
+        try:
+            video = cv2.VideoCapture(video_path)
+
+            base64Frames = []
+            while video.isOpened():
+                success, frame = video.read()
+                if not success:
+                    break
+                _, buffer = cv2.imencode(type_img, frame)
+                base64Frames.append(
+                    base64.b64encode(buffer).decode("utf-8")
+                )
+
+            video.release()
+            print(len(base64Frames), "frames read")
+            return base64Frames
+        except Exception as error:
+            print(f"Error processing video {error} try again")
+            raise error
 
     def clear_chat_history(self):
         """Clear the chat history"""

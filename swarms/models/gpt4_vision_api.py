@@ -1,16 +1,14 @@
-import asyncio
 import base64
-import concurrent.futures
 import json
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import aiohttp
 import requests
 from dotenv import load_dotenv
 from termcolor import colored
+from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 try:
     import cv2
@@ -32,7 +30,7 @@ You are an multi-modal autonomous agent. You are given a task and an image. You 
 """
 
 
-class GPT4VisionAPI:
+class GPT4VisionAPI(BaseMultiModalModel):
     """
     GPT-4 Vision API
 
@@ -81,7 +79,7 @@ class GPT4VisionAPI:
         *args,
         **kwargs,
     ):
-        super().__init__()
+        super(GPT4VisionAPI).__init__(*args, **kwargs)
         self.openai_api_key = openai_api_key
         self.logging_enabled = logging_enabled
         self.model_name = model_name
@@ -117,7 +115,7 @@ class GPT4VisionAPI:
         pass
 
     # Function to handle vision tasks
-    def run(self, img, task):
+    def run(self, img: str, task: str, *args, **kwargs):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
@@ -245,9 +243,17 @@ class GPT4VisionAPI:
 
         video.release()
         print(len(base64_frames), "frames read.")
+        return base64_frames
 
-        for img in base64_frames:
-            base64.b64decode(img.encode("utf-8"))
+    def run_with_video(
+        self,
+        task: str = None,
+        video: str = None,
+        *args,
+        **kwargs,
+    ):
+        self.video_prompt(self.process_video(video))
+        pass
 
     def __call__(
         self,
@@ -256,7 +262,15 @@ class GPT4VisionAPI:
         *args,
         **kwargs,
     ):
-        """Run the model."""
+        """Call the model
+
+        Args:
+            task (Optional[str], optional): _description_. Defaults to None.
+            img (Optional[str], optional): _description_. Defaults to None.
+
+        Raises:
+            error: _description_
+        """
         try:
             base64_image = self.encode_image(img)
             headers = {
@@ -308,35 +322,6 @@ class GPT4VisionAPI:
         except Exception as error:
             print(f"Error with the request: {error}")
             raise error
-
-    def run_many(
-        self,
-        tasks: List[str],
-        imgs: List[str],
-    ):
-        """
-        Run the model on multiple tasks and images all at once using concurrent
-
-        Args:
-            tasks (List[str]): List of tasks
-            imgs (List[str]): List of image paths
-
-        Returns:
-            List[str]: List of responses
-
-
-        """
-        # Instantiate the thread pool executor
-        with ThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
-            results = executor.map(self.run, tasks, imgs)
-
-        # Print the results for debugging
-        for result in results:
-            print(result)
-
-        return list(results)
 
     async def arun(
         self,
@@ -395,42 +380,6 @@ class GPT4VisionAPI:
         except Exception as error:
             print(f"Error with the request {error}")
             raise error
-
-    def run_batch(
-        self, tasks_images: List[Tuple[str, str]]
-    ) -> List[str]:
-        """Process a batch of tasks and images"""
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(self.run, task, img)
-                for task, img in tasks_images
-            ]
-            results = [future.result() for future in futures]
-        return results
-
-    async def run_batch_async(
-        self, tasks_images: List[Tuple[str, str]]
-    ) -> List[str]:
-        """Process a batch of tasks and images asynchronously"""
-        loop = asyncio.get_event_loop()
-        futures = [
-            loop.run_in_executor(None, self.run, task, img)
-            for task, img in tasks_images
-        ]
-        return await asyncio.gather(*futures)
-
-    async def run_batch_async_with_retries(
-        self, tasks_images: List[Tuple[str, str]]
-    ) -> List[str]:
-        """Process a batch of tasks and images asynchronously with retries"""
-        loop = asyncio.get_event_loop()
-        futures = [
-            loop.run_in_executor(
-                None, self.run_with_retries, task, img
-            )
-            for task, img in tasks_images
-        ]
-        return await asyncio.gather(*futures)
 
     def health_check(self):
         """Health check for the GPT4Vision model"""
