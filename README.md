@@ -302,4 +302,4 @@ To see how to contribute, visit [Contribution guidelines](https://github.com/kye
 Book a discovery call with the Swarms team to learn how to optimize and scale your swarm! [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
 
 # License
-MIT
+Apache License
