@@ -361,7 +361,7 @@ class SequentialWorkflow:
             )
 
     def workflow_bootup(self, **kwargs) -> None:
-        """Boots up the workflow."""
+        """Bootup the workflow."""
         print(
             colored(
                 """

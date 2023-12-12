@@ -32,7 +32,7 @@ vLLM is designed to simplify the process of generating text using language model
 Before using vLLM, you need to install swarms. You can install vLLM using `pip`:
 
 ```bash
-pip install swarms
+pip install swarms vllm
 ```
 
 ### vLLM Class <a name="vllm-class"></a>

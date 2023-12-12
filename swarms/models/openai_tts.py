@@ -1,9 +1,10 @@
 import os
+import subprocess
 import sys
-import openai
+
 import requests
 from dotenv import load_dotenv
-import subprocess
+
 from swarms.models.base_llm import AbstractLLM
 
 try:
