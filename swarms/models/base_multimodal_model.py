@@ -317,13 +317,13 @@ class BaseMultiModalModel:
         content = colored(content, color)
         print(content)
 
-    def stream(self, content: str):
+    def stream_response(self, text: str):
         """Stream the output
 
         Args:
             content (str): _description_
         """
-        for chunk in content:
+        for chunk in text:
             print(chunk)
 
     def meta_prompt(self):
