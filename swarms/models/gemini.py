@@ -74,7 +74,7 @@ class Gemini(BaseMultiModalModel):
     def __init__(
         self,
         model_name: str = "gemini-pro-vision",
-        gemini_api_key: str = None,
+        gemini_api_key: str = get_gemini_api_key_env,
         return_safety: bool = False,
         candidates: bool = False,
         stream: bool = False,
