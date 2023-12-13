@@ -112,10 +112,15 @@ class GPT4VisionAPI(BaseMultiModalModel):
 
     def download_img_then_encode(self, img: str):
         """Download image from URL then encode image to base64 using requests"""
-        pass
+        if not os.path.exists(img):
+            print(f"Image file not found: {img}")
+            return None
+
+        response = requests.get(img)
+        return base64.b64encode(response.content).decode("utf-8")
 
     # Function to handle vision tasks
-    def run(self, img: str, task: str, *args, **kwargs):
+    def run(self, task: str = None, img: str = None, *args, **kwargs):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
@@ -156,13 +161,18 @@ class GPT4VisionAPI(BaseMultiModalModel):
                     .get("message", {})
                     .get("content", None)
                 )
+                if self.streaming_enabled:
+                    content = self.stream_response(content)
                 return content
             else:
                 print("No valid response in 'choices'")
                 return None
 
         except Exception as error:
-            print(f"Error with the request: {error}")
+            print(
+                f"Error with the request: {error}, make sure you"
+                " double check input types and positions"
+            )
             return None
 
     def video_prompt(self, frames):
@@ -207,7 +217,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
         for chunk in content:
             print(chunk)
 
-    def process_video(self, video: str):
+    def process_video(self, video: str = None):
         """
         Process a video into a list of base64 frames
 
@@ -252,8 +262,50 @@ class GPT4VisionAPI(BaseMultiModalModel):
         *args,
         **kwargs,
     ):
-        self.video_prompt(self.process_video(video))
-        pass
+        prompt = self.video_prompt(self.process_video(video))
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {openai_api_key}",
+        }
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": [self.system_prompt],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        (task,),  # task
+                        *map(
+                            lambda x: {"image": x, "resize": 768},
+                            prompt[0::50],
+                        ),
+                    ],
+                },
+            ],
+            "max_tokens": self.max_tokens,
+        }
+        response = requests.post(
+            self.openai_proxy,
+            headers=headers,
+            json=payload,
+        )
+
+        out = response.json()
+        content = out["choices"][0]["message"]["content"]
+
+        if self.streaming_enabled:
+            content = self.stream_response(content)
+        else:
+            pass
+
+        if self.beautify:
+            content = colored(content, "cyan")
+            print(content)
+        else:
+            print(content)
 
     def __call__(
         self,

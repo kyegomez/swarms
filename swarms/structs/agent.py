@@ -163,7 +163,7 @@ class Agent:
         id: str = agent_id,
         llm: Any = None,
         template: Optional[str] = None,
-        max_loops=5,
+        max_loops: int = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
         retry_attempts: int = 3,
@@ -194,6 +194,7 @@ class Agent:
         preset_stopping_token: Optional[bool] = False,
         traceback: Any = None,
         traceback_handlers: Any = None,
+        streaming_on: Optional[bool] = False,
         *args,
         **kwargs: Any,
     ):
@@ -236,6 +237,7 @@ class Agent:
         self.preset_stopping_token = preset_stopping_token
         self.traceback = traceback
         self.traceback_handlers = traceback_handlers
+        self.streaming_on = streaming_on
 
         # self.system_prompt = AGENT_SYSTEM_PROMPT_3
 
@@ -489,7 +491,6 @@ class Agent:
                     Interactive: {self.interactive}
                     Dashboard: {self.dashboard}
                     Dynamic Temperature: {self.dynamic_temperature_enabled}
-                    Temperature: {self.llm.model_kwargs.get('temperature')}
                     Autosave: {self.autosave}
                     Saved State: {self.saved_state_path}
                     Model Configuration: {model_config}
@@ -546,6 +547,15 @@ class Agent:
         """
         print(colored(f"\nLoop {loop_count} of {max_loops}", "cyan"))
         print("\n")
+
+    def streaming(self, content: str = None):
+        """prints each chunk of content as it is generated
+
+        Args:
+            content (str, optional): _description_. Defaults to None.
+        """
+        for chunk in content:
+            print(chunk, end="")
 
     def _history(self, user_name: str, task: str) -> str:
         """Generate the history for the history prompt
@@ -720,7 +730,11 @@ class Agent:
             raise
 
     def _run(self, **kwargs: Any) -> str:
-        """Generate a result using the provided keyword args."""
+        """Run the agent on a task
+
+        Returns:
+            str: _description_
+        """
         try:
             task = self.format_prompt(**kwargs)
             response, history = self._generate(task, task)
