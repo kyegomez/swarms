@@ -151,30 +151,30 @@ class Gemini(BaseMultiModalModel):
             str: output from the model
         """
         try:
-            if img:
-                # process_img = self.process_img(img, *args, **kwargs)
-                process_img = self.process_img_pil(img)
-                response = self.model.generate_content(
-                    contents=[task, process_img],
-                    generation_config=self.generation_config,
-                    stream=self.stream,
-                    *args,
-                    **kwargs,
-                )
+            # if img:
+            #     # process_img = self.process_img(img, *args, **kwargs)
+            #     process_img = self.process_img_pil(img)
+            #     response = self.model.generate_content(
+            #         contents=[task, process_img],
+            #         generation_config=self.generation_config,
+            #         stream=self.stream,
+            #         *args,
+            #         **kwargs,
+            #     )
 
-                # if self.candidates:
-                #     return response.candidates
-                # elif self.safety:
-                #     return response.safety
-                # else:
-                #     return response.text
+            #     # if self.candidates:
+            #     #     return response.candidates
+            #     # elif self.safety:
+            #     #     return response.safety
+            #     # else:
+            #     #     return response.text
 
-                return response.text
-            else:
-                response = self.model.generate_content(
-                    task, *args, **kwargs
-                )
-                return response.text
+            #     return response.text
+            # else:
+            response = self.model.generate_content(
+                task, *args, **kwargs
+            )
+            return response.text
         except Exception as error:
             print(f"Error running Gemini model: {error}")
             print(f"Please check the task and image: {task}, {img}")
