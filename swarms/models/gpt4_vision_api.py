@@ -161,6 +161,8 @@ class GPT4VisionAPI(BaseMultiModalModel):
                     .get("message", {})
                     .get("content", None)
                 )
+                if self.streaming_enabled:
+                    content = self.stream_response(content)
                 return content
             else:
                 print("No valid response in 'choices'")

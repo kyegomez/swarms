@@ -15,7 +15,6 @@ except ImportError as error:
 
 
 class BaseStructure(ABC):
-    
     def __init__(
         self,
         name: Optional[str] = None,
