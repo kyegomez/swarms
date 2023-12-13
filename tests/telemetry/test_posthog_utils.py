@@ -13,11 +13,13 @@ from swarms.telemetry.posthog_utils import (
 def mock_posthog():
     return Mock()
 
+
 # Mock environment variables
 @pytest.fixture
 def mock_env(monkeypatch):
     monkeypatch.setenv("POSTHOG_API_KEY", "test_api_key")
     monkeypatch.setenv("POSTHOG_HOST", "test_host")
+
 
 # Test the log_activity_posthog decorator
 def test_log_activity_posthog(mock_posthog, mock_env):
@@ -37,6 +39,7 @@ def test_log_activity_posthog(mock_posthog, mock_env):
         "test_user_id", event_name, event_properties
     )
 
+
 # Test a scenario where environment variables are not set
 def test_missing_env_variables(monkeypatch):
     # Unset environment variables
@@ -50,6 +53,7 @@ def test_missing_env_variables(monkeypatch):
 
     # Ensure that calling the test function does not raise errors
     test_function()
+
 
 # Test the Posthog client initialization
 def test_posthog_client_initialization(mock_env):

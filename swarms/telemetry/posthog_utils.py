@@ -10,8 +10,8 @@ load_dotenv()
 
 
 # # Initialize Posthog client
-api_key = os.getenv("POSTHOG_API_KEY")
-host = os.getenv("POSTHOG_HOST")
+api_key = os.getenv("POSTHOG_API_KEY") or None
+host = os.getenv("POSTHOG_HOST") or None
 posthog = Posthog(api_key, host=host)
 posthog.debug = True
 
