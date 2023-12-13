@@ -1,7 +1,8 @@
 import hashlib
 import platform
-import uuid 
-import socket 
+import uuid
+import socket
+
 
 # Helper functions
 def generate_user_id():
@@ -12,6 +13,7 @@ def generate_user_id():
     """
     return str(uuid.uuid4())
 
+
 def get_machine_id():
     """Get machine id
 
@@ -19,9 +21,7 @@ def get_machine_id():
         _type_: _description_
     """
     raw_id = platform.node()
-    hashed_id = hashlib.sha256(
-        raw_id.encode()
-    ).hexdigest()
+    hashed_id = hashlib.sha256(raw_id.encode()).hexdigest()
     return hashed_id
 
 
@@ -39,11 +39,17 @@ def get_system_info():
         "architecture": platform.machine(),
         "hostname": socket.gethostname(),
         "ip_address": socket.gethostbyname(socket.gethostname()),
-        "mac_address": ':'.join(['{:02x}'.format((uuid.getnode() >> elements) & 0xff) for elements in range(0, 2 * 6, 8)][::-1]),
+        "mac_address": ":".join(
+            [
+                "{:02x}".format((uuid.getnode() >> elements) & 0xFF)
+                for elements in range(0, 2 * 6, 8)
+            ][::-1]
+        ),
         "processor": platform.processor(),
-        "python_version": platform.python_version()
+        "python_version": platform.python_version(),
     }
     return info
+
 
 def generate_unique_identifier():
     """Generate unique identifier
@@ -53,8 +59,5 @@ def generate_unique_identifier():
 
     """
     system_info = get_system_info()
-    unique_id = uuid.uuid5(
-        uuid.NAMESPACE_DNS,
-        str(system_info)
-    )
+    unique_id = uuid.uuid5(uuid.NAMESPACE_DNS, str(system_info))
     return str(unique_id)
