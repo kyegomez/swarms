@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from posthog import Posthog
 from swarms.telemetry.user_utils import generate_unique_identifier
+
 # Load environment variables
 load_dotenv()
 
@@ -65,10 +66,13 @@ def log_activity_posthog(event_name: str, **event_properties):
     return decorator_log_activity
 
 
-@log_activity_posthog('function_executed', function_name='my_function')
+@log_activity_posthog(
+    "function_executed", function_name="my_function"
+)
 def my_function():
     # Function logic here
     return "Function executed successfully!"
+
 
 out = my_function()
 print(out)
