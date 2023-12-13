@@ -15,6 +15,52 @@ except ImportError as error:
 
 
 class BaseStructure(ABC):
+    """Base structure.
+
+
+    Attributes:
+        name (Optional[str]): _description_
+        description (Optional[str]): _description_
+        save_metadata (bool): _description_
+        save_artifact_path (Optional[str]): _description_
+        save_metadata_path (Optional[str]): _description_
+        save_error_path (Optional[str]): _description_
+
+    Methods:
+        run: _description_
+        save_to_file: _description_
+        load_from_file: _description_
+        save_metadata: _description_
+        load_metadata: _description_
+        log_error: _description_
+        save_artifact: _description_
+        load_artifact: _description_
+        log_event: _description_
+        run_async: _description_
+        save_metadata_async: _description_
+        load_metadata_async: _description_
+        log_error_async: _description_
+        save_artifact_async: _description_
+        load_artifact_async: _description_
+        log_event_async: _description_
+        asave_to_file: _description_
+        aload_from_file: _description_
+        run_in_thread: _description_
+        save_metadata_in_thread: _description_
+        run_concurrent: _description_
+        compress_data: _description_
+        decompres_data: _description_
+        run_batched: _description_
+        load_config: _description_
+        backup_data: _description_
+        monitor_resources: _description_
+        run_with_resources: _description_
+        run_with_resources_batched: _description_
+
+    Examples:
+
+    """
+
     def __init__(
         self,
         name: Optional[str] = None,

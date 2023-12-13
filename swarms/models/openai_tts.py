@@ -61,6 +61,8 @@ class OpenAITTS(AbstractLLM):
         chunk_size=1024 * 1024,
         autosave: bool = False,
         saved_filepath: str = None,
+        *args,
+        **kwargs,
     ):
         super().__init__()
         self.model_name = model_name
