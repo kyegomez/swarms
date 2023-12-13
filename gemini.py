@@ -1,9 +1,7 @@
 from swarms.models.gemini import Gemini
 
 # Initialize the model
-model = Gemini(
-    gemini_api_key="A",
-)
+model = Gemini()
 
 # Establish the prompt and image
 task = "What is your name"

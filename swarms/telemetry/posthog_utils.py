@@ -9,22 +9,13 @@ from swarms.telemetry.user_utils import generate_unique_identifier
 load_dotenv()
 
 
-# Initialize Posthog client
-def init_posthog(debug: bool = True, *args, **kwargs):
-    """Initialize Posthog client.
+# # Initialize Posthog client
+api_key = os.getenv("POSTHOG_API_KEY")
+host = os.getenv("POSTHOG_HOST")
+posthog = Posthog(api_key, host=host)
+posthog.debug = True
 
-    Args:
-        debug (bool, optional): Whether to enable debug mode. Defaults to True.
-
-    """
-    api_key = os.getenv("POSTHOG_API_KEY")
-    host = os.getenv("POSTHOG_HOST")
-    posthog = Posthog(api_key, host=host, *args, **kwargs)
-
-    if debug:
-        posthog.debug = True
-
-    return posthog
+# return posthog
 
 
 def log_activity_posthog(event_name: str, **event_properties):
@@ -55,7 +46,7 @@ def log_activity_posthog(event_name: str, **event_properties):
             distinct_user_id = generate_unique_identifier()
 
             # Capture the event
-            init_posthog.capture(
+            posthog.capture(
                 distinct_user_id, event_name, event_properties
             )
 
@@ -66,13 +57,13 @@ def log_activity_posthog(event_name: str, **event_properties):
     return decorator_log_activity
 
 
-@log_activity_posthog(
-    "function_executed", function_name="my_function"
-)
-def my_function():
-    # Function logic here
-    return "Function executed successfully!"
+# @log_activity_posthog(
+#     "function_executed", function_name="my_function"
+# )
+# def my_function():
+#     # Function logic here
+#     return "Function executed successfully!"
 
 
-out = my_function()
-print(out)
+# out = my_function()
+# print(out)
