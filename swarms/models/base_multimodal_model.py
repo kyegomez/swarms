@@ -1,6 +1,8 @@
 import asyncio
 import base64
 import concurrent.futures
+import logging
+import os
 import time
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
@@ -96,10 +98,6 @@ class BaseMultiModalModel:
         self.meta_prompt = meta_prompt
         self.chat_history = []
 
-    def __call__(self, task: str, img: str, *args, **kwargs):
-        """Run the model"""
-        return self.run(task, img, *args, **kwargs)
-
     @abstractmethod
     def run(
         self, task: Optional[str], img: Optional[str], *args, **kwargs
@@ -107,7 +105,21 @@ class BaseMultiModalModel:
         """Run the model"""
         pass
 
-    async def arun(self, task: str, img: str):
+    def __call__(
+        self, task: str = None, img: str = None, *args, **kwargs
+    ):
+        """Call the model
+
+        Args:
+            task (str): _description_
+            img (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.run(task, img, *args, **kwargs)
+
+    async def arun(self, task: str, img: str, *args, **kwargs):
         """Run the model asynchronously"""
         pass
 
