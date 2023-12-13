@@ -7,6 +7,7 @@ from swarms.telemetry.user_utils import (
     get_system_info,
 )
 
+
 # Helper functions tests
 def test_generate_user_id():
     # Generate user IDs and ensure they are UUID strings
