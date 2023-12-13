@@ -3,11 +3,14 @@ import subprocess as sp
 from pathlib import Path
 
 from dotenv import load_dotenv
+from PIL import Image
+
 
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 try:
     import google.generativeai as genai
+    from google.generativeai.types import GenerationConfig
 except ImportError as error:
     print(f"Error importing google.generativeai: {error}")
     print("Please install the google.generativeai package")
@@ -39,13 +42,24 @@ class Gemini(BaseMultiModalModel):
     """Gemini model
 
     Args:
-        BaseMultiModalModel (class): Base multimodal model class
-        model_name (str, optional): model name. Defaults to "gemini-pro".
-        gemini_api_key (str, optional): Gemini API key. Defaults to None.
+        model_name (str, optional): _description_. Defaults to "gemini-pro".
+        gemini_api_key (str, optional): _description_. Defaults to get_gemini_api_key_env.
+        return_safety (bool, optional): _description_. Defaults to False.
+        candidates (bool, optional): _description_. Defaults to False.
+        stream (bool, optional): _description_. Defaults to False.
+        candidate_count (int, optional): _description_. Defaults to 1.
+        stop_sequence ([type], optional): _description_. Defaults to ['x'].
+        max_output_tokens (int, optional): _description_. Defaults to 100.
+        temperature (float, optional): _description_. Defaults to 0.9.
 
     Methods:
-        run: run the Gemini model
-        process_img: process the image
+        run: Run the Gemini model
+        process_img: Process the image
+        chat: Chat with the Gemini model
+        list_models: List the Gemini models
+        stream_tokens: Stream the tokens
+        process_img_pil: Process img
+
 
 
     Examples:
@@ -59,19 +73,66 @@ class Gemini(BaseMultiModalModel):
 
     def __init__(
         self,
-        model_name: str = "gemini-pro",
-        gemini_api_key: str = get_gemini_api_key_env,
+        model_name: str = "gemini-pro-vision",
+        gemini_api_key: str = None,
+        return_safety: bool = False,
+        candidates: bool = False,
+        stream: bool = False,
+        candidate_count: int = 1,
+        stop_sequence=["x"],
+        max_output_tokens: int = 100,
+        temperature: float = 0.9,
         *args,
         **kwargs,
     ):
         super().__init__(model_name, *args, **kwargs)
         self.model_name = model_name
         self.gemini_api_key = gemini_api_key
+        self.safety = return_safety
+        self.candidates = candidates
+        self.stream = stream
+        self.candidate_count = candidate_count
+        self.stop_sequence = stop_sequence
+        self.max_output_tokens = max_output_tokens
+        self.temperature = temperature
+
+        # Prepare the generation config
+        self.generation_config = GenerationConfig(
+            candidate_count=candidate_count,
+            # stop_sequence=stop_sequence,
+            max_output_tokens=max_output_tokens,
+            temperature=temperature,
+        )
 
         # Initialize the model
         self.model = genai.GenerativeModel(
             model_name, *args, **kwargs
         )
+
+        # Check for the key
+        if self.gemini_api_key is None:
+            raise ValueError("Please provide a Gemini API key")
+
+    def system_prompt(
+        self,
+        system_prompt: str = None,
+        task: str = None,
+        *args,
+        **kwargs,
+    ):
+        """System prompt
+
+        Args:
+            system_prompt (str, optional): _description_. Defaults to None.
+        """
+        PROMPT = f"""
+        
+        {system_prompt}
+        
+        {task}
+        
+        """
+        return PROMPT
 
     def run(
         self,
@@ -91,18 +152,33 @@ class Gemini(BaseMultiModalModel):
         """
         try:
             if img:
-                process_img = self.process_img(img, *args, **kwargs)
+                # process_img = self.process_img(img, *args, **kwargs)
+                process_img = self.process_img_pil(img)
                 response = self.model.generate_content(
-                    content=[task, process_img], *args, **kwargs
+                    contents=[task, process_img],
+                    generation_config=self.generation_config,
+                    stream=self.stream,
+                    *args,
+                    **kwargs,
                 )
+
+                # if self.candidates:
+                #     return response.candidates
+                # elif self.safety:
+                #     return response.safety
+                # else:
+                #     return response.text
+
                 return response.text
             else:
                 response = self.model.generate_content(
                     task, *args, **kwargs
                 )
-                return response
+                return response.text
         except Exception as error:
             print(f"Error running Gemini model: {error}")
+            print(f"Please check the task and image: {task}, {img}")
+            raise error
 
     def process_img(
         self,
@@ -158,3 +234,35 @@ class Gemini(BaseMultiModalModel):
         response1 = response.text
         print(response1)
         response = chat.send_message(img, *args, **kwargs)
+
+    def list_models(self) -> str:
+        """List the Gemini models
+
+        Returns:
+            str: _description_
+        """
+        for m in genai.list_models():
+            if "generateContent" in m.supported_generation_methods:
+                print(m.name)
+
+    def stream_tokens(self, content: str = None):
+        """Stream the tokens
+
+        Args:
+            content (t, optional): _description_. Defaults to None.
+        """
+        for chunk in content:
+            print(chunk.text)
+            print("_" * 80)
+
+    def process_img_pil(self, img: str = None):
+        """Process img
+
+        Args:
+            img (str, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        img = Image.open(img)
+        return img

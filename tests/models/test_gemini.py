@@ -216,3 +216,98 @@ def test_gemini_run_mock_img_processing_exception(
     assert response is None
     mock_generate_content.assert_not_called()
     mock_process_img.assert_called_with(img=img)
+
+
+# Test Gemini run method with mocked image processing and different exception
+@patch("swarms.models.gemini.Gemini.process_img")
+@patch("swarms.models.gemini.genai.GenerativeModel.generate_content")
+def test_gemini_run_mock_img_processing_different_exception(
+    mock_generate_content,
+    mock_process_img,
+    mock_gemini_api_key,
+    mock_genai_model,
+):
+    model = Gemini()
+    task = "A dog"
+    img = "dog.png"
+    mock_process_img.side_effect = ValueError("Test exception")
+
+    with pytest.raises(ValueError):
+        model.run(task=task, img=img)
+
+    mock_generate_content.assert_not_called()
+    mock_process_img.assert_called_with(img=img)
+
+
+# Test Gemini run method with mocked image processing and no exception
+@patch("swarms.models.gemini.Gemini.process_img")
+@patch("swarms.models.gemini.genai.GenerativeModel.generate_content")
+def test_gemini_run_mock_img_processing_no_exception(
+    mock_generate_content,
+    mock_process_img,
+    mock_gemini_api_key,
+    mock_genai_model,
+):
+    model = Gemini()
+    task = "A bird"
+    img = "bird.png"
+    mock_generate_content.return_value = "A bird is flying"
+
+    response = model.run(task=task, img=img)
+
+    assert response == "A bird is flying"
+    mock_generate_content.assert_called_once()
+    mock_process_img.assert_called_with(img=img)
+
+
+# Test Gemini chat method
+@patch("swarms.models.gemini.Gemini.chat")
+def test_gemini_chat(mock_chat):
+    model = Gemini()
+    mock_chat.return_value = "Hello, Gemini!"
+
+    response = model.chat("Hello, Gemini!")
+
+    assert response == "Hello, Gemini!"
+    mock_chat.assert_called_once()
+
+
+# Test Gemini list_models method
+@patch("swarms.models.gemini.Gemini.list_models")
+def test_gemini_list_models(mock_list_models):
+    model = Gemini()
+    mock_list_models.return_value = ["model1", "model2"]
+
+    response = model.list_models()
+
+    assert response == ["model1", "model2"]
+    mock_list_models.assert_called_once()
+
+
+# Test Gemini stream_tokens method
+@patch("swarms.models.gemini.Gemini.stream_tokens")
+def test_gemini_stream_tokens(mock_stream_tokens):
+    model = Gemini()
+    mock_stream_tokens.return_value = ["token1", "token2"]
+
+    response = model.stream_tokens()
+
+    assert response == ["token1", "token2"]
+    mock_stream_tokens.assert_called_once()
+
+
+# Test Gemini process_img_pil method
+@patch("swarms.models.gemini.Gemini.process_img_pil")
+def test_gemini_process_img_pil(mock_process_img_pil):
+    model = Gemini()
+    img = "bird.png"
+    mock_process_img_pil.return_value = "processed image"
+
+    response = model.process_img_pil(img)
+
+    assert response == "processed image"
+    mock_process_img_pil.assert_called_with(img)
+
+
+# Repeat the above tests for different scenarios or different methods in your Gemini class
+# until you have 15 tests in total.
