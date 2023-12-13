@@ -1,2 +1,12 @@
-Created a temporary directory at /tmp/tmpy1_589mf
-Writing /tmp/tmpy1_589mf/_remote_module_non_scriptable.py
+Traceback (most recent call last):
+  File "/home/zack/code/swarms/app.py", line 15, in <module>
+    from swarms.modelui.modules.block_requests import OpenMonkeyPatch, RequestBlocker
+  File "/home/zack/code/swarms/swarms/__init__.py", line 6, in <module>
+    from swarms.swarms import *  # noqa: E402, F403
+  File "/home/zack/code/swarms/swarms/swarms/__init__.py", line 1, in <module>
+    from swarms.structs.autoscaler import AutoScaler
+  File "/home/zack/code/swarms/swarms/structs/__init__.py", line 1, in <module>
+    from swarms.structs.agent import Agent
+  File "/home/zack/code/swarms/swarms/structs/agent.py", line 25, in <module>
+    from swarms.tools.tool import BaseTool
+ImportError: cannot import name 'BaseTool' from 'swarms.tools.tool' (/home/zack/code/swarms/swarms/tools/tool.py)

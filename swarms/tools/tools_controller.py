@@ -19,17 +19,6 @@ logger = get_logger(__name__)
 
 tools_mappings = {}
 
-# data = json.load(open('openai.json')) 
-# items = data['items'] 
-
-# for plugin in items: 
-#     url = plugin['manifest']['api']['url']
-#     tool_name = plugin['namespace']
-#     tools_mappings[tool_name] = url[:-len('/.well-known/openai.yaml')]
-
-# print(tools_mappings)
-# all_tools_list = []
-
 def load_valid_tools(tools_mappings):
     tools_to_config = {}
     for key in tools_mappings:
@@ -46,14 +35,10 @@ def load_valid_tools(tools_mappings):
 
     return tools_to_config
 
-
-# Read the model/ directory and get the list of models
 model_dir = Path("./models/")
 available_models = ["ChatGPT", "GPT-3.5"] + [f.name for f in model_dir.iterdir() if f.is_dir()]
 
 class MTQuestionAnswerer:
-    """Use multiple tools to answer a question. Basically pass a natural question to"""
-
     def __init__(self, openai_api_key, all_tools, stream_output=False, llm="ChatGPT", model_path=None):
         if len(openai_api_key) < 3:  # not valid key (TODO: more rigorous checking)
             openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -106,12 +91,9 @@ class MTQuestionAnswerer:
                 .replace("}", "}}"),
                 func=subagent,
             )
-            tool.tool_logo_md = tool_logo_md
             self.tools_pool.append(tool)
 
-    def build_runner(
-        self,
-    ):
+    def build_runner(self):
         from langchain.vectorstores import FAISS
         from langchain.docstore import InMemoryDocstore
         from langchain.embeddings import OpenAIEmbeddings
@@ -125,7 +107,6 @@ class MTQuestionAnswerer:
             embeddings_model.embed_query, index, InMemoryDocstore({}), {}
         )
 
-        # TODO refactor to use the flow
         from swarms.tools.agent.autogptmulti.agent import AutoGPT
         from langchain.chat_models import ChatOpenAI
 
@@ -136,6 +117,8 @@ class MTQuestionAnswerer:
             llm=ChatOpenAI(temperature=0),
             memory=vectorstore.as_retriever(),
         )
+
+
         '''
         # You can modify the prompt to improve the model's performance, or modify the tool's doc
         prefix = """Answer the following questions as best you can. In this level, you are calling the tools in natural language format, since the tools are actually an intelligent agent like you, but they expert only in one area. Several things to remember. (1) Remember to follow the format of passing natural language as the Action Input. (2) DO NOT use your imagination, only use concrete information given by the tools. (3) If the observation contains images or urls which has useful information, YOU MUST INCLUDE ALL USEFUL IMAGES and links in your Answer and Final Answers using format ![img](url). BUT DO NOT provide any imaginary links. (4) The information in your Final Answer should include ALL the informations returned by the tools. (5) If a user's query is a language other than English, please translate it to English without tools, and translate it back to the source language in Final Answer. You have access to the following tools (Only use these tools we provide you):"""

@@ -19,18 +19,25 @@ from swarms.prompts.agent_system_prompts import (
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
-from swarms.prompts.tools import (
-    SCENARIOS,
-)
-from swarms.tools.tool import BaseTool
-from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
-from swarms.utils.code_interpreter import SubprocessCodeInterpreter
-from swarms.utils.parse_code import (
-    extract_code_in_backticks_in_string,
-)
-from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.utils.token_count_tiktoken import limit_tokens_from_string
+from swarms.prompts.tools import SCENARIOS
 
+#TODO temp removed to test new tool system revert fro old system and rename tool.old to tools
+# from swarms.prompts.tools import (
+#     SCENARIOS,
+# )
+# from swarms.tools.tool import BaseTool
+# from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
+# from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+# from swarms.utils.parse_code import (
+#     extract_code_in_backticks_in_string,
+# )
+# from swarms.utils.pdf_to_text import pdf_to_text
+# from swarms.utils.token_count_tiktoken import limit_tokens_from_string
+
+from swarms.tools.tools_controller import load_valid_tools, tools_mappings
+from swarms.utils import pdf_to_text
+from swarms.utils.parse_code import extract_code_in_backticks_in_string
+from swarms.utils.token_count_tiktoken import limit_tokens_from_string
 
 # Utils
 # Custom stopping condition
@@ -176,7 +183,7 @@ class Agent:
         agent_name: str = "Autonomous-Agent-XYZ1B",
         agent_description: str = None,
         system_prompt: str = AGENT_SYSTEM_PROMPT_3,
-        tools: List[BaseTool] = None,
+        # tools: List[BaseTool] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
@@ -344,72 +351,72 @@ class Agent:
 
         return "\n".join(params_str_list)
 
-    def get_tool_description(self):
-        """Get the tool description"""
-        if self.tools:
-            try:
-                tool_descriptions = []
-                for tool in self.tools:
-                    description = f"{tool.name}: {tool.description}"
-                    tool_descriptions.append(description)
-                return "\n".join(tool_descriptions)
-            except Exception as error:
-                print(
-                    f"Error getting tool description: {error} try"
-                    " adding a description to the tool or removing"
-                    " the tool"
-                )
-        else:
-            return "No tools available"
+    #TODO deprecated moving to new system delete if not used
+    # def get_tool_description(self):
+    #     """Get the tool description"""
+    #     if self.tools:
+    #         try:
+    #             tool_descriptions = []
+    #             for tool in self.tools:
+    #                 description = f"{tool.name}: {tool.description}"
+    #                 tool_descriptions.append(description)
+    #             return "\n".join(tool_descriptions)
+    #         except Exception as error:
+    #             print(
+    #                 f"Error getting tool description: {error} try"
+    #                 " adding a description to the tool or removing"
+    #                 " the tool"
+    #             )
+    #     else:
+    #         return "No tools available"
+# def find_tool_by_name(self, name: str):
+#         """Find a tool by name"""
+#         for tool in self.tools:
+#             if tool.name == name:
+#                 return tool
 
-    def find_tool_by_name(self, name: str):
-        """Find a tool by name"""
-        for tool in self.tools:
-            if tool.name == name:
-                return tool
+    # def extract_tool_commands(self, text: str):
+    #     """
+    #     Extract the tool commands from the text
 
-    def extract_tool_commands(self, text: str):
-        """
-        Extract the tool commands from the text
+    #     Example:
+    #     ```json
+    #     {
+    #         "tool": "tool_name",
+    #         "params": {
+    #             "tool1": "inputs",
+    #             "param2": "value2"
+    #         }
+    #     }
+    #     ```
 
-        Example:
-        ```json
-        {
-            "tool": "tool_name",
-            "params": {
-                "tool1": "inputs",
-                "param2": "value2"
-            }
-        }
-        ```
+    #     """
+    #     # Regex to find JSON like strings
+    #     pattern = r"```json(.+?)```"
+    #     matches = re.findall(pattern, text, re.DOTALL)
+    #     json_commands = []
+    #     for match in matches:
+    #         try:
+    #             json_commands = json.loads(match)
+    #             json_commands.append(json_commands)
+    #         except Exception as error:
+    #             print(f"Error parsing JSON command: {error}")
 
-        """
-        # Regex to find JSON like strings
-        pattern = r"```json(.+?)```"
-        matches = re.findall(pattern, text, re.DOTALL)
-        json_commands = []
-        for match in matches:
-            try:
-                json_commands = json.loads(match)
-                json_commands.append(json_commands)
-            except Exception as error:
-                print(f"Error parsing JSON command: {error}")
+    # def execute_tools(self, tool_name, params):
+    #     """Execute the tool with the provided params"""
+    #     tool = self.tool_find_by_name(tool_name)
+    #     if tool:
+    #         # Execute the tool with the provided parameters
+    #         tool_result = tool.run(**params)
+    #         print(tool_result)
 
-    def execute_tools(self, tool_name, params):
-        """Execute the tool with the provided params"""
-        tool = self.tool_find_by_name(tool_name)
-        if tool:
-            # Execute the tool with the provided parameters
-            tool_result = tool.run(**params)
-            print(tool_result)
-
-    def parse_and_execute_tools(self, response: str):
-        """Parse and execute the tools"""
-        json_commands = self.extract_tool_commands(response)
-        for command in json_commands:
-            tool_name = command.get("tool")
-            params = command.get("parmas", {})
-            self.execute_tools(tool_name, params)
+    # def parse_and_execute_tools(self, response: str):
+    #     """Parse and execute the tools"""
+    #     json_commands = self.extract_tool_commands(response)
+    #     for command in json_commands:
+    #         tool_name = command.get("tool")
+    #         params = command.get("parmas", {})
+    #         self.execute_tools(tool_name, params)
 
     def truncate_history(self):
         """
@@ -454,11 +461,11 @@ class Agent:
         self.short_memory[-1].append(message)
         self.truncate_history()
 
-    def parse_tool_docs(self):
-        """Parse the tool docs"""
-        for tool in self.tools:
-            docs = self.tool_docs.append(scrape_tool_func_docs(tool))
-        return str(docs)
+    # def parse_tool_docs(self):
+    #     """Parse the tool docs"""
+    #     for tool in self.tools:
+    #         docs = self.tool_docs.append(scrape_tool_func_docs(tool))
+    #     return str(docs)
 
     def print_dashboard(self, task: str):
         """Print dashboard"""
@@ -1213,16 +1220,17 @@ class Agent:
 
     def generate_reply(self, history: str, **kwargs) -> str:
         """
-        Generate a response based on initial or task
+        Generate a reply using the LLM and the tools.
         """
-        prompt = f"""
+        # Generate a response using the LLM
+        response = self.llm.generate_reply(history, **kwargs)
 
-        SYSTEM_PROMPT: {self.system_prompt}
+        # Execute the tools
+        for tool in self.tools:
+            if tool.command in response:
+                response = tool.execute(response)
 
-        History: {history}
-        """
-        response = self.llm(prompt, **kwargs)
-        return {"role": self.agent_name, "content": response}
+        return response
 
     def update_system_prompt(self, system_prompt: str):
         """Upddate the system message"""
@@ -1350,3 +1358,4 @@ class Agent:
         ‘‘‘
         """
         return PROMPT
+
