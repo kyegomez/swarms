@@ -46,12 +46,4 @@ jobs:
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-<<<<<<< HEAD
-<<<<<<< HEAD
           poetry publish
-=======
-          poetry publish
->>>>>>> model-flow
-=======
-          poetry publish
->>>>>>> master
