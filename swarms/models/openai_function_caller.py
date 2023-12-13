@@ -3,7 +3,11 @@ from typing import Any, Dict, List, Optional, Union
 import openai
 import requests
 from pydantic import BaseModel, validator
-from tenacity import retry, stop_after_attempt, wait_random_exponential
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 from termcolor import colored
 
 
@@ -100,7 +104,9 @@ class FunctionSpecification(BaseModel):
 
         for req_param in self.required or []:
             if req_param not in params:
-                raise ValueError(f"Missing required parameter: {req_param}")
+                raise ValueError(
+                    f"Missing required parameter: {req_param}"
+                )
 
 
 class OpenAIFunctionCaller:
@@ -146,7 +152,8 @@ class OpenAIFunctionCaller:
         self.messages.append({"role": role, "content": content})
 
     @retry(
-        wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3)
+        wait=wait_random_exponential(multiplier=1, max=40),
+        stop=stop_after_attempt(3),
     )
     def chat_completion_request(
         self,
@@ -194,17 +201,22 @@ class OpenAIFunctionCaller:
             elif message["role"] == "user":
                 print(
                     colored(
-                        f"user: {message['content']}\n", role_to_color[message["role"]]
+                        f"user: {message['content']}\n",
+                        role_to_color[message["role"]],
                     )
                 )
-            elif message["role"] == "assistant" and message.get("function_call"):
+            elif message["role"] == "assistant" and message.get(
+                "function_call"
+            ):
                 print(
                     colored(
                         f"assistant: {message['function_call']}\n",
                         role_to_color[message["role"]],
                     )
                 )
-            elif message["role"] == "assistant" and not message.get("function_call"):
+            elif message["role"] == "assistant" and not message.get(
+                "function_call"
+            ):
                 print(
                     colored(
                         f"assistant: {message['content']}\n",
@@ -214,7 +226,10 @@ class OpenAIFunctionCaller:
             elif message["role"] == "tool":
                 print(
                     colored(
-                        f"function ({message['name']}): {message['content']}\n",
+                        (
+                            f"function ({message['name']}):"
+                            f" {message['content']}\n"
+                        ),
                         role_to_color[message["role"]],
                     )
                 )

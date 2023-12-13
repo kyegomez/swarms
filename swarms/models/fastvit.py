@@ -10,7 +10,9 @@ from pydantic import BaseModel, StrictFloat, StrictInt, validator
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load the classes for image classification
-with open(os.path.join(os.path.dirname(__file__), "fast_vit_classes.json")) as f:
+with open(
+    os.path.join(os.path.dirname(__file__), "fast_vit_classes.json")
+) as f:
     FASTVIT_IMAGENET_1K_CLASSES = json.load(f)
 
 
@@ -20,7 +22,9 @@ class ClassificationResult(BaseModel):
 
     @validator("class_id", "confidence", pre=True, each_item=True)
     def check_list_contents(cls, v):
-        assert isinstance(v, int) or isinstance(v, float), "must be integer or float"
+        assert isinstance(v, int) or isinstance(
+            v, float
+        ), "must be integer or float"
         return v
 
 
@@ -50,7 +54,9 @@ class FastViT:
             "hf_hub:timm/fastvit_s12.apple_in1k", pretrained=True
         ).to(DEVICE)
         data_config = timm.data.resolve_model_data_config(self.model)
-        self.transforms = timm.data.create_transform(**data_config, is_training=False)
+        self.transforms = timm.data.create_transform(
+            **data_config, is_training=False
+        )
         self.model.eval()
 
     def __call__(
@@ -77,4 +83,6 @@ class FastViT:
         top_classes = top_classes.cpu().numpy().tolist()
         # top_class_labels = [FASTVIT_IMAGENET_1K_CLASSES[i] for i in top_classes] # Uncomment if class labels are needed
 
-        return ClassificationResult(class_id=top_classes, confidence=top_probs)
+        return ClassificationResult(
+            class_id=top_classes, confidence=top_probs
+        )

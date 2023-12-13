@@ -1,174 +1,132 @@
-from __future__ import annotations
-
-import json
-import pprint
-import uuid
-from abc import ABC, abstractmethod
-from enum import Enum
-from typing import Any, List, Optional, Union
-
-from pydantic import BaseModel, Field, StrictStr
-from swarms.artifacts.main import Artifact
-from swarms.artifacts.error_artifact import ErrorArtifact
+from dataclass import dataclass, field
+from swarms.structs.agent import Agent
+from typing import Optional
+from typing import List, Dict, Any, Sequence
 
 
-class BaseTask(ABC):
-    class State(Enum):
-        PENDING = 1
-        EXECUTING = 2
-        FINISHED = 3
+@dataclass
+class Task:
+    """
+    Task is a unit of work that can be executed by a set of agents.
 
-    def __init__(self):
-        self.id: str = uuid.uuid4().hex
-        self.state: BaseTask.State = self.State.PENDING
-        self.parent_ids: List[str] = []
-        self.child_ids: List[str] = []
-        self.output: Optional[Union[Artifact, ErrorArtifact]] = None
-        self.structure = None
+    A task is defined by a task name and a set of agents that can execute the task.
+    The task can also have a set of dependencies, which are the names of other tasks
+    that must be executed before this task can be executed.
 
-    @property
-    @abstractmethod
-    def input(self) -> Any:
-        pass
+    Args:
+        id (str): The name of the task.
+        description (Optional[str]): A description of the task.
+        task (str): The name of the task.
+        result (Any): The result of the task.
+        agents (Sequence[Agent]): A list of agents that can execute the task.
+        dependencies (List[str], optional): A list of task names that must be executed before this task can be executed. Defaults to [].
+        args (List[Any], optional): A list of arguments to pass to the agents. Defaults to field(default_factory=list).
+        kwargs (List[Any], optional): A list of keyword arguments to pass to the agents. Defaults to field(default_factory=list).
 
-    @property
-    def parents(self) -> List[BaseTask]:
-        return [self.structure.find_task(parent_id) for parent_id in self.parent_ids]
+    Methods:
+        execute: Executes the task by passing the results of the parent tasks to the agents.
 
-    @property
-    def children(self) -> List[BaseTask]:
-        return [self.structure.find_task(child_id) for child_id in self.child_ids]
+    Examples:
+    import os
+    from swarms.models import OpenAIChat
+    from swarms.structs import Agent
+    from swarms.structs.sequential_workflow import SequentialWorkflow
+    from dotenv import load_dotenv
 
-    def __rshift__(self, child: BaseTask) -> BaseTask:
-        return self.add_child(child)
+    load_dotenv()
 
-    def __lshift__(self, child: BaseTask) -> BaseTask:
-        return self.add_parent(child)
-
-    def preprocess(self, structure) -> BaseTask:
-        self.structure = structure
-        return self
-
-    def add_child(self, child: BaseTask) -> BaseTask:
-        if self.structure:
-            child.structure = self.structure
-        elif child.structure:
-            self.structure = child.structure
-
-        if child not in self.structure.tasks:
-            self.structure.tasks.append(child)
-
-        if self not in self.structure.tasks:
-            self.structure.tasks.append(self)
-
-        if child.id not in self.child_ids:
-            self.child_ids.append(child.id)
-
-        if self.id not in child.parent_ids:
-            child.parent_ids.append(self.id)
-
-        return child
-
-    def add_parent(self, parent: BaseTask) -> BaseTask:
-        if self.structure:
-            parent.structure = self.structure
-        elif parent.structure:
-            self.structure = parent.structure
-
-        if parent not in self.structure.tasks:
-            self.structure.tasks.append(parent)
-
-        if self not in self.structure.tasks:
-            self.structure.tasks.append(self)
-
-        if parent.id not in self.parent_ids:
-            self.parent_ids.append(parent.id)
-
-        if self.id not in parent.child_ids:
-            parent.child_ids.append(self.id)
-
-        return parent
-
-    def is_pending(self) -> bool:
-        return self.state == self.State.PENDING
-
-    def is_finished(self) -> bool:
-        return self.state == self.State.FINISHED
-
-    def is_executing(self) -> bool:
-        return self.state == self.State.EXECUTING
-
-    def before_run(self) -> None:
-        pass
-
-    def after_run(self) -> None:
-        pass
-
-    def execute(self) -> Optional[Union[Artifact, ErrorArtifact]]:
-        try:
-            self.state = self.State.EXECUTING
-            self.before_run()
-            self.output = self.run()
-            self.after_run()
-        except Exception as e:
-            self.output = ErrorArtifact(str(e))
-        finally:
-            self.state = self.State.FINISHED
-            return self.output
-
-    def can_execute(self) -> bool:
-        return self.state == self.State.PENDING and all(
-            parent.is_finished() for parent in self.parents
-        )
-
-    def reset(self) -> BaseTask:
-        self.state = self.State.PENDING
-        self.output = None
-        return self
-
-    @abstractmethod
-    def run(self) -> Optional[Union[Artifact, ErrorArtifact]]:
-        pass
+    # Load the environment variables
+    api_key = os.getenv("OPENAI_API_KEY")
 
 
-class Task(BaseModel):
-    input: Optional[StrictStr] = Field(None, description="Input prompt for the task")
-    additional_input: Optional[Any] = Field(
-        None, description="Input parameters for the task. Any value is allowed"
+    # Initialize the language agent
+    llm = OpenAIChat(
+        openai_api_key=api_key,
+        temperature=0.5,
+        max_tokens=3000,
     )
-    task_id: StrictStr = Field(..., description="ID of the task")
 
-    class Config:
-        allow_population_by_field_name = True
-        validate_assignment = True
 
-    def to_str(self) -> str:
-        return pprint.pformat(self.dict(by_alias=True))
+    # Initialize the agent with the language agent
+    agent1 = Agent(llm=llm, max_loops=1)
 
-    def to_json(self) -> str:
-        return json.dumps(self.dict(by_alias=True, exclude_none=True))
+    # Create another agent for a different task
+    agent2 = Agent(llm=llm, max_loops=1)
 
-    @classmethod
-    def from_json(cls, json_str: str) -> "Task":
-        return cls.parse_raw(json_str)
+    # Create the workflow
+    workflow = SequentialWorkflow(max_loops=1)
 
-    def to_dict(self) -> dict:
-        _dict = self.dict(by_alias=True, exclude_none=True)
-        if self.artifacts:
-            _dict["artifacts"] = [
-                artifact.dict(by_alias=True, exclude_none=True)
-                for artifact in self.artifacts
-            ]
-        return _dict
+    # Add tasks to the workflow
+    workflow.add(
+        agent1, "Generate a 10,000 word blog on health and wellness.",
+    )
 
-    @classmethod
-    def from_dict(cls, obj: dict) -> "Task":
-        if obj is None:
-            return None
-        if not isinstance(obj, dict):
-            raise ValueError("Input must be a dictionary.")
-        if "artifacts" in obj:
-            obj["artifacts"] = [
-                Artifact.parse_obj(artifact) for artifact in obj["artifacts"]
-            ]
-        return cls.parse_obj(obj)
+    # Suppose the next task takes the output of the first task as input
+    workflow.add(
+        agent2, "Summarize the generated blog",
+    )
+
+    # Run the workflow
+    workflow.run()
+
+    # Output the results
+    for task in workflow.tasks:
+        print(f"Task: {task.description}, Result: {task.result}")
+
+    """
+
+    def __init__(
+        self,
+        id: str,
+        description: Optional[str],
+        task: str,
+        result: Any,
+        agents: Sequence[Agent],
+        dependencies: List[str] = [],
+        args: List[Any] = field(default_factory=list),
+        kwargs: List[Any] = field(default_factory=list),
+    ):
+        self.id = id
+        self.description = description
+        self.task = task
+        self.result = result
+        self.agents = agents
+        self.dependencies = dependencies
+        self.results = []
+        self.args = args
+        self.kwargs = kwargs
+
+    def execute(self, parent_results: Dict[str, Any]):
+        """Executes the task by passing the results of the parent tasks to the agents.
+
+        Args:
+            parent_results (Dict[str, Any]): A dictionary of task names and their results.
+
+        Examples:
+        """
+        args = [parent_results[dep] for dep in self.dependencies]
+        for agent in self.agents:
+            if isinstance(agent, Agent):
+                if "prompt" in self.kwargs:
+                    self.kwargs["prompt"] += (
+                        f"\n\nPrevious output: {self.results[-1]}"
+                        if self.results
+                        else ""
+                    )
+                else:
+                    self.kwargs["prompt"] = (
+                        f"Main task: {self.description}"
+                        + (
+                            f"\n\nPrevious output: {self.results[-1]}"
+                            if self.results
+                            else ""
+                        )
+                    )
+                result = agent.run(
+                    self.description, *args, **self.kwargs
+                )
+            else:
+                result = agent(self.description, *args, **self.kwargs)
+            self.results.append(result)
+            args = [result]
+            self.history.append(result)

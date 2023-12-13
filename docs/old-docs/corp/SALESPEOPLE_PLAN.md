@@ -74,7 +74,7 @@ Ultimately, the key is to adopt a long-term perspective, just like Jeff Bezos. I
 
 # Open Source Salesperson Onboarding Experience
 
-Creating an efficient, streamlined, and effective onboarding experience for open source salespeople is essential to minimize time and maximize engagement. Drawing inspiration from the simplicity and user-focus of Steve Jobs, this document proposes an onboarding flow that is effortless, engaging, and educational.
+Creating an efficient, streamlined, and effective onboarding experience for open source salespeople is essential to minimize time and maximize engagement. Drawing inspiration from the simplicity and user-focus of Steve Jobs, this document proposes an onboarding agent that is effortless, engaging, and educational.
 
 ## Landing Page
 

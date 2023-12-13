@@ -34,7 +34,9 @@ class TimmModel:
         """Retrieve the list of supported models from timm."""
         return timm.list_models()
 
-    def _create_model(self, model_info: TimmModelInfo) -> torch.nn.Module:
+    def _create_model(
+        self, model_info: TimmModelInfo
+    ) -> torch.nn.Module:
         """
         Create a model instance from timm with specified parameters.
 

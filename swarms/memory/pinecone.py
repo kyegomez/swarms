@@ -1,12 +1,12 @@
 from typing import Optional
-from swarms.memory.vector_stores.base import BaseVector
+from swarms.memory.base import BaseVectorStore
 import pinecone
 from attr import define, field
 from swarms.utils.hash import str_to_hash
 
 
 @define
-class PineconeVectorStoreStore(BaseVector):
+class PineconeVectorStoreStore(BaseVectorStore):
     """
     PineconeVectorStore is a vector storage driver that uses Pinecone as the underlying storage engine.
 
@@ -24,11 +24,11 @@ class PineconeVectorStoreStore(BaseVector):
     Methods:
         upsert_vector(vector: list[float], vector_id: Optional[str] = None, namespace: Optional[str] = None, meta: Optional[dict] = None, **kwargs) -> str:
             Upserts a vector into the index.
-        load_entry(vector_id: str, namespace: Optional[str] = None) -> Optional[BaseVector.Entry]:
+        load_entry(vector_id: str, namespace: Optional[str] = None) -> Optional[BaseVectorStore.Entry]:
             Loads a single vector from the index.
-        load_entries(namespace: Optional[str] = None) -> list[BaseVector.Entry]:
+        load_entries(namespace: Optional[str] = None) -> list[BaseVectorStore.Entry]:
             Loads all vectors from the index.
-        query(query: str, count: Optional[int] = None, namespace: Optional[str] = None, include_vectors: bool = False, include_metadata=True, **kwargs) -> list[BaseVector.QueryResult]:
+        query(query: str, count: Optional[int] = None, namespace: Optional[str] = None, include_vectors: bool = False, include_metadata=True, **kwargs) -> list[BaseVectorStore.QueryResult]:
             Queries the index for vectors similar to the given query string.
         create_index(name: str, **kwargs) -> None:
             Creates a new index.
@@ -108,10 +108,12 @@ class PineconeVectorStoreStore(BaseVector):
         vector_id: Optional[str] = None,
         namespace: Optional[str] = None,
         meta: Optional[dict] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Upsert vector"""
-        vector_id = vector_id if vector_id else str_to_hash(str(vector))
+        vector_id = (
+            vector_id if vector_id else str_to_hash(str(vector))
+        )
 
         params = {"namespace": namespace} | kwargs
 
@@ -121,15 +123,17 @@ class PineconeVectorStoreStore(BaseVector):
 
     def load_entry(
         self, vector_id: str, namespace: Optional[str] = None
-    ) -> Optional[BaseVector.Entry]:
+    ) -> Optional[BaseVectorStore.Entry]:
         """Load entry"""
-        result = self.index.fetch(ids=[vector_id], namespace=namespace).to_dict()
+        result = self.index.fetch(
+            ids=[vector_id], namespace=namespace
+        ).to_dict()
         vectors = list(result["vectors"].values())
 
         if len(vectors) > 0:
             vector = vectors[0]
 
-            return BaseVector.Entry(
+            return BaseVectorStore.Entry(
                 id=vector["id"],
                 meta=vector["metadata"],
                 vector=vector["values"],
@@ -138,7 +142,9 @@ class PineconeVectorStoreStore(BaseVector):
         else:
             return None
 
-    def load_entries(self, namespace: Optional[str] = None) -> list[BaseVector.Entry]:
+    def load_entries(
+        self, namespace: Optional[str] = None
+    ) -> list[BaseVectorStore.Entry]:
         """Load entries"""
         # This is a hacky way to query up to 10,000 values from Pinecone. Waiting on an official API for fetching
         # all values from a namespace:
@@ -152,7 +158,7 @@ class PineconeVectorStoreStore(BaseVector):
         )
 
         return [
-            BaseVector.Entry(
+            BaseVectorStore.Entry(
                 id=r["id"],
                 vector=r["values"],
                 meta=r["metadata"],
@@ -169,13 +175,17 @@ class PineconeVectorStoreStore(BaseVector):
         include_vectors: bool = False,
         # PineconeVectorStoreStorageDriver-specific params:
         include_metadata=True,
-        **kwargs
-    ) -> list[BaseVector.QueryResult]:
+        **kwargs,
+    ) -> list[BaseVectorStore.QueryResult]:
         """Query vectors"""
         vector = self.embedding_driver.embed_string(query)
 
         params = {
-            "top_k": count if count else BaseVector.DEFAULT_QUERY_COUNT,
+            "top_k": (
+                count
+                if count
+                else BaseVectorStore.DEFAULT_QUERY_COUNT
+            ),
             "namespace": namespace,
             "include_values": include_vectors,
             "include_metadata": include_metadata,
@@ -184,7 +194,7 @@ class PineconeVectorStoreStore(BaseVector):
         results = self.index.query(vector, **params)
 
         return [
-            BaseVector.QueryResult(
+            BaseVectorStore.QueryResult(
                 id=r["id"],
                 vector=r["values"],
                 score=r["score"],
@@ -196,6 +206,9 @@ class PineconeVectorStoreStore(BaseVector):
 
     def create_index(self, name: str, **kwargs) -> None:
         """Create index"""
-        params = {"name": name, "dimension": self.embedding_driver.dimensions} | kwargs
+        params = {
+            "name": name,
+            "dimension": self.embedding_driver.dimensions,
+        } | kwargs
 
         pinecone.create_index(**params)

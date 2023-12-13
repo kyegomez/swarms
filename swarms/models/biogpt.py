@@ -34,7 +34,12 @@ advantage of BioGPT on biomedical literature to generate fluent descriptions for
 """
 
 import torch
-from transformers import pipeline, set_seed, BioGptTokenizer, BioGptForCausalLM
+from transformers import (
+    pipeline,
+    set_seed,
+    BioGptTokenizer,
+    BioGptForCausalLM,
+)
 
 
 class BioGPT:
@@ -85,8 +90,12 @@ class BioGPT:
         self.do_sample = do_sample
         self.min_length = min_length
 
-        self.model = BioGptForCausalLM.from_pretrained(self.model_name)
-        self.tokenizer = BioGptTokenizer.from_pretrained(self.model_name)
+        self.model = BioGptForCausalLM.from_pretrained(
+            self.model_name
+        )
+        self.tokenizer = BioGptTokenizer.from_pretrained(
+            self.model_name
+        )
 
     def __call__(self, text: str):
         """
@@ -103,7 +112,9 @@ class BioGPT:
         """
         set_seed(42)
         generator = pipeline(
-            "text-generation", model=self.model, tokenizer=self.tokenizer
+            "text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
         )
         out = generator(
             text,
@@ -154,9 +165,11 @@ class BioGPT:
                 min_length=self.min_length,
                 max_length=self.max_length,
                 num_beams=num_beams,
-                early_stopping=early_stopping
+                early_stopping=early_stopping,
             )
-        return self.tokenizer.decode(beam_output[0], skip_special_tokens=True)
+        return self.tokenizer.decode(
+            beam_output[0], skip_special_tokens=True
+        )
 
     # Feature 1: Set a new tokenizer and model
     def set_pretrained_model(self, model_name):
@@ -167,8 +180,12 @@ class BioGPT:
             model_name (str): Name of the pretrained model.
         """
         self.model_name = model_name
-        self.model = BioGptForCausalLM.from_pretrained(self.model_name)
-        self.tokenizer = BioGptTokenizer.from_pretrained(self.model_name)
+        self.model = BioGptForCausalLM.from_pretrained(
+            self.model_name
+        )
+        self.tokenizer = BioGptTokenizer.from_pretrained(
+            self.model_name
+        )
 
     # Feature 2: Get the model's config details
     def get_config(self):

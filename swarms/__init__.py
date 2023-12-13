@@ -1,11 +1,8 @@
-import os
-import warnings
+from swarms.utils.disable_logging import disable_logging
 
-warnings.filterwarnings("ignore", category=UserWarning)
+disable_logging()
 
-# # disable tensorflow warnings
-# os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-# from swarms.agents import *  # noqa: E402, F403
-# from swarms.swarms import *  # noqa: E402, F403
-# from swarms.structs import *  # noqa: E402, F403
-# from swarms.models import *  # noqa: E402, F403
+from swarms.agents import *  # noqa: E402, F403
+from swarms.swarms import *  # noqa: E402, F403
+from swarms.structs import *  # noqa: E402, F403
+from swarms.models import *  # noqa: E402, F403

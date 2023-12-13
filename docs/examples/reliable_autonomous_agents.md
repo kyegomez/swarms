@@ -70,13 +70,13 @@ Let’s start by importing the necessary modules and initializing the OpenAIChat
 
 ```python
 from swarms.models import OpenAIChat
-from swarms.structs import Flow
+from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Replace "YOUR_API_KEY" with your actual OpenAI API key
 api_key = "YOUR_API_KEY"
 
-# Initialize the language model flow (e.g., GPT-3)
+# Initialize the language model agent (e.g., GPT-3)
 llm = OpenAIChat(
     openai_api_key=api_key,
     temperature=0.5,
@@ -87,13 +87,13 @@ We have initialized the OpenAIChat model, which will be used as a callable objec
 Creating a SequentialWorkflow
 To create a SequentialWorkflow, follow these steps:
 
-# Initialize Flows for individual tasks
-flow1 = Flow(llm=llm, max_loops=1, dashboard=False)
-flow2 = Flow(llm=llm, max_loops=1, dashboard=False)
+# Initialize Agents for individual tasks
+flow1 = Agent(llm=llm, max_loops=1, dashboard=False)
+flow2 = Agent(llm=llm, max_loops=1, dashboard=False)
 # Create the Sequential Workflow
 workflow = SequentialWorkflow(max_loops=1)
 ``````
-In this code snippet, we have initialized two Flow instances (flow1 and flow2) representing individual tasks within our workflow. These flows will use the OpenAIChat model we initialized earlier. We then create a SequentialWorkflow instance named workflow with a maximum loop count of 1. The max_loops parameter determines how many times the entire workflow can be run, and we set it to 1 for this example.
+In this code snippet, we have initialized two Agent instances (flow1 and flow2) representing individual tasks within our workflow. These flows will use the OpenAIChat model we initialized earlier. We then create a SequentialWorkflow instance named workflow with a maximum loop count of 1. The max_loops parameter determines how many times the entire workflow can be run, and we set it to 1 for this example.
 
 Adding Tasks to the SequentialWorkflow
 Now that we have created the SequentialWorkflow, let’s add tasks to it. In our example, we’ll create two tasks: one for generating a 10,000-word blog on “health and wellness” and another for summarizing the generated blog.
@@ -104,7 +104,7 @@ workflow.add("Generate a 10,000 word blog on health and wellness.", flow1)
 
 `workflow.add("Summarize the generated blog", flow2)`
 
-The workflow.add() method is used to add tasks to the workflow. Each task is described using a human-readable description, such as "Generate a 10,000 word blog on health and wellness," and is associated with a flow (callable object) that will be executed as the task. In our example, flow1 and flow2 represent the tasks.
+The workflow.add() method is used to add tasks to the workflow. Each task is described using a human-readable description, such as "Generate a 10,000 word blog on health and wellness," and is associated with a agent (callable object) that will be executed as the task. In our example, flow1 and flow2 represent the tasks.
 
 Running the SequentialWorkflow
 With tasks added to the SequentialWorkflow, we can now run the workflow sequentially using the workflow.run() method.

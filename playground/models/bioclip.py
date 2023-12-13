@@ -1,6 +1,8 @@
 from swarms.models.bioclip import BioClip
 
-clip = BioClip("hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224")
+clip = BioClip(
+    "hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224"
+)
 
 labels = [
     "adenocarcinoma histopathology",
@@ -15,5 +17,8 @@ labels = [
 ]
 
 result = clip("swarms.jpeg", labels)
-metadata = {"filename": "images/.jpg".split("/")[-1], "top_probs": result}
+metadata = {
+    "filename": "images/.jpg".split("/")[-1],
+    "top_probs": result,
+}
 clip.plot_image_with_metadata("swarms.jpeg", metadata)

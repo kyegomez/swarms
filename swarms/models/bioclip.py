@@ -98,7 +98,9 @@ class BioClip:
         ) = open_clip.create_model_and_transforms(model_path)
         self.tokenizer = open_clip.get_tokenizer(model_path)
         self.device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+            torch.device("cuda")
+            if torch.cuda.is_available()
+            else torch.device("cpu")
         )
         self.model.to(self.device)
         self.model.eval()
@@ -110,19 +112,26 @@ class BioClip:
         template: str = "this is a photo of ",
         context_length: int = 256,
     ):
-        image = torch.stack([self.preprocess_val(Image.open(img_path))]).to(self.device)
+        image = torch.stack(
+            [self.preprocess_val(Image.open(img_path))]
+        ).to(self.device)
         texts = self.tokenizer(
-            [template + l for l in labels], context_length=context_length
+            [template + l for l in labels],
+            context_length=context_length,
         ).to(self.device)
 
         with torch.no_grad():
-            image_features, text_features, logit_scale = self.model(image, texts)
+            image_features, text_features, logit_scale = self.model(
+                image, texts
+            )
             logits = (
                 (logit_scale * image_features @ text_features.t())
                 .detach()
                 .softmax(dim=-1)
             )
-            sorted_indices = torch.argsort(logits, dim=-1, descending=True)
+            sorted_indices = torch.argsort(
+                logits, dim=-1, descending=True
+            )
             logits = logits.cpu().numpy()
             sorted_indices = sorted_indices.cpu().numpy()
 
@@ -142,7 +151,12 @@ class BioClip:
         title = (
             metadata["filename"]
             + "\n"
-            + "\n".join([f"{k}: {v*100:.1f}" for k, v in metadata["top_probs"].items()])
+            + "\n".join(
+                [
+                    f"{k}: {v*100:.1f}"
+                    for k, v in metadata["top_probs"].items()
+                ]
+            )
         )
         ax.set_title(title, fontsize=14)
         plt.tight_layout()

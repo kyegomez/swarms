@@ -7,7 +7,11 @@ from typing import List, Tuple
 import torch
 from termcolor import colored
 from torch.nn.parallel import DistributedDataParallel as DDP
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+)
 
 
 class HuggingfaceLLM:
@@ -23,17 +27,92 @@ class HuggingfaceLLM:
         verbose (bool, optional): Whether to print verbose logs. Defaults to False.
         logger (logging.Logger, optional): The logger to use. Defaults to a basic logger.
 
-    # Usage
-    ```
-    from swarms.models import HuggingfaceLLM
+    Methods:
+        run(task: str, max_length: int = 500) -> str:
+            Generate a response based on the prompt text.
 
-    model_id = "NousResearch/Yarn-Mistral-7b-128k"
-    inference = HuggingfaceLLM(model_id=model_id)
+        __call__(task: str, max_length: int = 500) -> str:
+            Generate a response based on the prompt text.
 
-    task = "Once upon a time"
-    generated_text = inference(task)
-    print(generated_text)
-    ```
+        save_model(path: str):
+            Save the model to a given path.
+
+        gpu_available() -> bool:
+            Check if GPU is available.
+
+        memory_consumption() -> dict:
+            Get the memory consumption of the GPU.
+
+        print_dashboard(task: str):
+            Print dashboard.
+
+        set_device(device: str):
+            Changes the device used for inference.
+
+        set_max_length(max_length: int):
+            Set max_length.
+
+        set_verbose(verbose: bool):
+            Set verbose.
+
+        set_distributed(distributed: bool):
+            Set distributed.
+
+        set_decoding(decoding: bool):
+            Set decoding.
+
+        set_max_workers(max_workers: int):
+            Set max_workers.
+
+        set_repitition_penalty(repitition_penalty: float):
+            Set repitition_penalty.
+
+        set_no_repeat_ngram_size(no_repeat_ngram_size: int):
+            Set no_repeat_ngram_size.
+
+        set_temperature(temperature: float):
+            Set temperature.
+
+        set_top_k(top_k: int):
+            Set top_k.
+
+        set_top_p(top_p: float):
+            Set top_p.
+
+        set_quantize(quantize: bool):
+            Set quantize.
+
+        set_quantization_config(quantization_config: dict):
+            Set quantization_config.
+
+        set_model_id(model_id: str):
+            Set model_id.
+
+        set_model(model):
+            Set model.
+
+        set_tokenizer(tokenizer):
+            Set tokenizer.
+
+        set_logger(logger):
+            Set logger.
+
+
+    Examples:
+        >>> llm = HuggingfaceLLM(
+        ...     model_id="EleutherAI/gpt-neo-2.7B",
+        ...     device="cuda",
+        ...     max_length=500,
+        ...     quantize=True,
+        ...     quantization_config={
+        ...         "load_in_4bit": True,
+        ...         "bnb_4bit_use_double_quant": True,
+        ...         "bnb_4bit_quant_type": "nf4",
+        ...         "bnb_4bit_compute_dtype": torch.bfloat16,
+        ...     },
+        ... )
+        >>> llm("Generate a 10,000 word blog on mental clarity and the benefits of meditation.")
+        'Generate a 10,000 word
     """
 
     def __init__(
@@ -58,7 +137,9 @@ class HuggingfaceLLM:
     ):
         self.logger = logging.getLogger(__name__)
         self.device = (
-            device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+            device
+            if device
+            else ("cuda" if torch.cuda.is_available() else "cpu")
         )
         self.model_id = model_id
         self.max_length = max_length
@@ -96,14 +177,25 @@ class HuggingfaceLLM:
                 self.model_id, *args, **kwargs
             )
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id, quantization_config=bnb_config, *args, **kwargs
+                self.model_id,
+                quantization_config=bnb_config,
+                *args,
+                **kwargs,
             )
 
             self.model  # .to(self.device)
         except Exception as e:
             # self.logger.error(f"Failed to load the model or the tokenizer: {e}")
             # raise
-            print(colored(f"Failed to load the model and or the tokenizer: {e}", "red"))
+            print(
+                colored(
+                    (
+                        "Failed to load the model and or the"
+                        f" tokenizer: {e}"
+                    ),
+                    "red",
+                )
+            )
 
     def print_error(self, error: str):
         """Print error"""
@@ -117,7 +209,9 @@ class HuggingfaceLLM:
         """Load the model"""
         if not self.model or not self.tokenizer:
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_id
+                )
 
                 bnb_config = (
                     BitsAndBytesConfig(**self.quantization_config)
@@ -132,20 +226,28 @@ class HuggingfaceLLM:
                 if self.distributed:
                     self.model = DDP(self.model)
             except Exception as error:
-                self.logger.error(f"Failed to load the model or the tokenizer: {error}")
+                self.logger.error(
+                    "Failed to load the model or the tokenizer:"
+                    f" {error}"
+                )
                 raise
 
     def concurrent_run(self, tasks: List[str], max_workers: int = 5):
         """Concurrently generate text for a list of prompts."""
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
             results = list(executor.map(self.run, tasks))
         return results
 
-    def run_batch(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+    def run_batch(
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self.run, task, img) for task, img in tasks_images
+                executor.submit(self.run, task, img)
+                for task, img in tasks_images
             ]
             results = [future.result() for future in futures]
         return results
@@ -168,7 +270,7 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(task, return_tensors="pt")
 
             # self.log.start()
 
@@ -178,7 +280,9 @@ class HuggingfaceLLM:
                         output_sequence = []
 
                         outputs = self.model.generate(
-                            inputs, max_length=len(inputs) + 1, do_sample=True
+                            inputs,
+                            max_length=len(inputs) + 1,
+                            do_sample=True,
                         )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
@@ -186,7 +290,8 @@ class HuggingfaceLLM:
                         # print token in real-time
                         print(
                             self.tokenizer.decode(
-                                [output_tokens], skip_special_tokens=True
+                                [output_tokens],
+                                skip_special_tokens=True,
                             ),
                             end="",
                             flush=True,
@@ -199,13 +304,16 @@ class HuggingfaceLLM:
                     )
 
             del inputs
-            return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return self.tokenizer.decode(
+                outputs[0], skip_special_tokens=True
+            )
         except Exception as e:
             print(
                 colored(
                     (
-                        f"HuggingfaceLLM could not generate text because of error: {e},"
-                        " try optimizing your arguments"
+                        "HuggingfaceLLM could not generate text"
+                        f" because of error: {e}, try optimizing your"
+                        " arguments"
                     ),
                     "red",
                 )
@@ -230,7 +338,9 @@ class HuggingfaceLLM:
         self.print_dashboard(task)
 
         try:
-            inputs = self.tokenizer.encode(task, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.encode(
+                task, return_tensors="pt"
+            ).to(self.device)
 
             # self.log.start()
 
@@ -240,7 +350,9 @@ class HuggingfaceLLM:
                         output_sequence = []
 
                         outputs = self.model.generate(
-                            inputs, max_length=len(inputs) + 1, do_sample=True
+                            inputs,
+                            max_length=len(inputs) + 1,
+                            do_sample=True,
                         )
                         output_tokens = outputs[0][-1]
                         output_sequence.append(output_tokens.item())
@@ -248,7 +360,8 @@ class HuggingfaceLLM:
                         # print token in real-time
                         print(
                             self.tokenizer.decode(
-                                [output_tokens], skip_special_tokens=True
+                                [output_tokens],
+                                skip_special_tokens=True,
                             ),
                             end="",
                             flush=True,
@@ -262,7 +375,9 @@ class HuggingfaceLLM:
 
             del inputs
 
-            return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return self.tokenizer.decode(
+                outputs[0], skip_special_tokens=True
+            )
         except Exception as e:
             self.logger.error(f"Failed to generate the text: {e}")
             raise
@@ -334,7 +449,8 @@ class HuggingfaceLLM:
                 The new device to use for inference.
         """
         self.device = device
-        self.model.to(self.device)
+        if self.model is not None:
+            self.model.to(self.device)
 
     def set_max_length(self, max_length):
         """Set max_length"""
@@ -343,3 +459,63 @@ class HuggingfaceLLM:
     def clear_chat_history(self):
         """Clear chat history"""
         self.chat_history = []
+
+    def set_verbose(self, verbose):
+        """Set verbose"""
+        self.verbose = verbose
+
+    def set_distributed(self, distributed):
+        """Set distributed"""
+        self.distributed = distributed
+
+    def set_decoding(self, decoding):
+        """Set decoding"""
+        self.decoding = decoding
+
+    def set_max_workers(self, max_workers):
+        """Set max_workers"""
+        self.max_workers = max_workers
+
+    def set_repitition_penalty(self, repitition_penalty):
+        """Set repitition_penalty"""
+        self.repitition_penalty = repitition_penalty
+
+    def set_no_repeat_ngram_size(self, no_repeat_ngram_size):
+        """Set no_repeat_ngram_size"""
+        self.no_repeat_ngram_size = no_repeat_ngram_size
+
+    def set_temperature(self, temperature):
+        """Set temperature"""
+        self.temperature = temperature
+
+    def set_top_k(self, top_k):
+        """Set top_k"""
+        self.top_k = top_k
+
+    def set_top_p(self, top_p):
+        """Set top_p"""
+        self.top_p = top_p
+
+    def set_quantize(self, quantize):
+        """Set quantize"""
+        self.quantize = quantize
+
+    def set_quantization_config(self, quantization_config):
+        """Set quantization_config"""
+        self.quantization_config = quantization_config
+
+    def set_model_id(self, model_id):
+        """Set model_id"""
+        self.model_id = model_id
+
+    def set_model(self, model):
+        """Set model"""
+        self.model = model
+
+    def set_tokenizer(self, tokenizer):
+        """Set tokenizer"""
+        self.tokenizer = tokenizer
+
+    def set_logger(self, logger):
+        """Set logger"""
+        self.logger = logger

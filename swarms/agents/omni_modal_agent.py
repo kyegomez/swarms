@@ -18,7 +18,12 @@ from swarms.agents.message import Message
 
 class Step:
     def __init__(
-        self, task: str, id: int, dep: List[int], args: Dict[str, str], tool: BaseTool
+        self,
+        task: str,
+        id: int,
+        dep: List[int],
+        args: Dict[str, str],
+        tool: BaseTool,
     ):
         self.task = task
         self.id = id

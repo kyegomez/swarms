@@ -28,7 +28,7 @@ class LayoutLMDocumentQA:
     ):
         self.model_name = model_name
         self.task_type = task_type
-        self.pipeline = pipeline(task_type, model=self.model_name)
+        self.pipeline = pipeline(task_type, model=model_name)
 
     def __call__(self, task: str, img_path: str):
         """Call for model"""

@@ -36,3 +36,6 @@ from . import agent
 from swarms.tools.tool import Tool
 from swarms.tools.registry import register
 from swarms.tools.serve import ToolServer
+from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
+
+__all__ = ["scrape_tool_func_docs"]

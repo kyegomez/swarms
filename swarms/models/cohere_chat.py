@@ -32,7 +32,9 @@ def _create_retry_decorator(llm) -> Callable[[Any], Any]:
     return retry(
         reraise=True,
         stop=stop_after_attempt(llm.max_retries),
-        wait=wait_exponential(multiplier=1, min=min_seconds, max=max_seconds),
+        wait=wait_exponential(
+            multiplier=1, min=min_seconds, max=max_seconds
+        ),
         retry=(retry_if_exception_type(cohere.error.CohereError)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
@@ -65,7 +67,9 @@ class BaseCohere(Serializable):
 
     client: Any  #: :meta private:
     async_client: Any  #: :meta private:
-    model: Optional[str] = Field(default=None, description="Model name to use.")
+    model: Optional[str] = Field(
+        default=None, description="Model name to use."
+    )
     """Model name to use."""
 
     temperature: float = 0.75
@@ -96,7 +100,9 @@ class BaseCohere(Serializable):
                 values, "cohere_api_key", "COHERE_API_KEY"
             )
             client_name = values["user_agent"]
-            values["client"] = cohere.Client(cohere_api_key, client_name=client_name)
+            values["client"] = cohere.Client(
+                cohere_api_key, client_name=client_name
+            )
             values["async_client"] = cohere.AsyncClient(
                 cohere_api_key, client_name=client_name
             )
@@ -172,17 +178,23 @@ class Cohere(LLM, BaseCohere):
         """Return type of llm."""
         return "cohere"
 
-    def _invocation_params(self, stop: Optional[List[str]], **kwargs: Any) -> dict:
+    def _invocation_params(
+        self, stop: Optional[List[str]], **kwargs: Any
+    ) -> dict:
         params = self._default_params
         if self.stop is not None and stop is not None:
-            raise ValueError("`stop` found in both the input and default params.")
+            raise ValueError(
+                "`stop` found in both the input and default params."
+            )
         elif self.stop is not None:
             params["stop_sequences"] = self.stop
         else:
             params["stop_sequences"] = stop
         return {**params, **kwargs}
 
-    def _process_response(self, response: Any, stop: Optional[List[str]]) -> str:
+    def _process_response(
+        self, response: Any, stop: Optional[List[str]]
+    ) -> str:
         text = response.generations[0].text
         # If stop tokens are provided, Cohere's endpoint returns them.
         # In order to make this consistent with other endpoints, we strip them.

@@ -18,7 +18,7 @@ class Nougat:
     """
     Nougat
 
-    ArgsS:
+    Args:
         model_name_or_path: str, default="facebook/nougat-base"
         min_length: int, default=1
         max_new_tokens: int, default=30
@@ -35,26 +35,35 @@ class Nougat:
         self,
         model_name_or_path="facebook/nougat-base",
         min_length: int = 1,
-        max_new_tokens: int = 30,
+        max_new_tokens: int = 5000,
     ):
         self.model_name_or_path = model_name_or_path
         self.min_length = min_length
         self.max_new_tokens = max_new_tokens
 
-        self.processor = NougatProcessor.from_pretrained(self.model_name_or_path)
-        self.model = VisionEncoderDecoderModel.from_pretrained(self.model_name_or_path)
+        self.processor = NougatProcessor.from_pretrained(
+            self.model_name_or_path
+        )
+        self.model = VisionEncoderDecoderModel.from_pretrained(
+            self.model_name_or_path
+        )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(self.device)
 
-    def get_image(self, img_path: str):
+    def get_image(self, img: str):
         """Get an image from a path"""
-        image = Image.open(img_path)
-        return image
+        img = Image.open(img)
 
-    def __call__(self, img_path: str):
+        if img.mode == "L":
+            img = img.convert("RGB")
+        return img
+
+    def __call__(self, img: str):
         """Call the model with an image_path str as an input"""
-        image = Image.open(img_path)
-        pixel_values = self.processor(image, return_tensors="pt").pixel_values
+        image = Image.open(img)
+        pixel_values = self.processor(
+            image, return_tensors="pt"
+        ).pixel_values
 
         # Generate transcriptions, here we only generate 30 tokens
         outputs = self.model.generate(
@@ -63,13 +72,18 @@ class Nougat:
             max_new_tokens=self.max_new_tokens,
         )
 
-        sequence = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
-        sequence = self.processor.post_process_generation(sequence, fix_markdown=False)
+        sequence = self.processor.batch_decode(
+            outputs, skip_special_tokens=True
+        )[0]
+        sequence = self.processor.post_process_generation(
+            sequence, fix_markdown=False
+        )
 
         out = print(sequence)
         return out
 
     def clean_nougat_output(raw_output):
+        """Clean the output from nougat to be more readable"""
         # Define the pattern to extract the relevant data
         daily_balance_pattern = (
             r"\*\*(\d{2}/\d{2}/\d{4})\*\*\n\n\*\*([\d,]+\.\d{2})\*\*"
@@ -80,7 +94,9 @@ class Nougat:
 
         # Convert the matches to a readable format
         cleaned_data = [
-            "Date: {}, Amount: {}".format(date, amount.replace(",", ""))
+            "Date: {}, Amount: {}".format(
+                date, amount.replace(",", "")
+            )
             for date, amount in matches
         ]
 

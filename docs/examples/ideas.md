@@ -9,8 +9,8 @@
 3. **Integrating Swarms Into Your Enterprise Workflow: A Step-By-Step Tutorial**
    - A practical guide focusing on integrating Swarms into existing enterprise systems.
 
-4. **Swarms’ Flow: Streamlining AI Deployment in Your Business**
-   - Exploring the benefits and technicalities of using the Flow feature to simplify complex AI workflows.
+4. **Swarms’ Agent: Streamlining AI Deployment in Your Business**
+   - Exploring the benefits and technicalities of using the Agent feature to simplify complex AI workflows.
 
 5. **From Zero to Hero: Building Your First Enterprise-Grade AI Agent with Swarms**
    - A beginner-friendly walkthrough for building and deploying an AI agent using Swarms.
@@ -54,8 +54,8 @@
 18. **Swarms for Different Industries: Customizing AI Agents for Niche Markets**
     - Exploring how Swarms can be tailored to fit the needs of various industries such as healthcare, finance, and retail.
 
-19. **Building Intelligent Workflows with Swarms’ Flow**
-    - A tutorial on using the Flow feature to create intelligent, responsive AI-driven workflows.
+19. **Building Intelligent Workflows with Swarms’ Agent**
+    - A tutorial on using the Agent feature to create intelligent, responsive AI-driven workflows.
 
 20. **Troubleshooting Common Issues When Deploying Swarms Autonomous Agents**
     - A problem-solving guide for AI engineers on overcoming common challenges when implementing Swarms agents.

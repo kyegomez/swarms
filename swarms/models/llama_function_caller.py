@@ -121,7 +121,11 @@ class LlamaFunctionCaller:
         )
 
     def add_func(
-        self, name: str, function: Callable, description: str, arguments: List[Dict]
+        self,
+        name: str,
+        function: Callable,
+        description: str,
+        arguments: List[Dict],
     ):
         """
         Adds a new function to the LlamaFunctionCaller.
@@ -166,18 +170,25 @@ class LlamaFunctionCaller:
         prompt = f"{task}\n\n"
 
         # Encode and send to the model
-        inputs = self.tokenizer([prompt], return_tensors="pt").to(self.runtime)
+        inputs = self.tokenizer([prompt], return_tensors="pt").to(
+            self.runtime
+        )
 
         streamer = TextStreamer(self.tokenizer)
 
         if self.streaming:
             out = self.model.generate(
-                **inputs, streamer=streamer, max_new_tokens=self.max_tokens, **kwargs
+                **inputs,
+                streamer=streamer,
+                max_new_tokens=self.max_tokens,
+                **kwargs,
             )
 
             return out
         else:
-            out = self.model.generate(**inputs, max_length=self.max_tokens, **kwargs)
+            out = self.model.generate(
+                **inputs, max_length=self.max_tokens, **kwargs
+            )
             # return self.tokenizer.decode(out[0], skip_special_tokens=True)
             return out
 

@@ -6,7 +6,11 @@ from typing import Union
 
 import torch
 from termcolor import colored
-from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+from transformers import (
+    AutoModelForSpeechSeq2Seq,
+    AutoProcessor,
+    pipeline,
+)
 
 
 def async_retry(max_retries=3, exceptions=(Exception,), delay=1):
@@ -28,7 +32,10 @@ def async_retry(max_retries=3, exceptions=(Exception,), delay=1):
                     retries -= 1
                     if retries <= 0:
                         raise
-                    print(f"Retry after exception: {e}, Attempts remaining: {retries}")
+                    print(
+                        f"Retry after exception: {e}, Attempts"
+                        f" remaining: {retries}"
+                    )
                     await asyncio.sleep(delay)
 
         return wrapper
@@ -62,7 +69,11 @@ class DistilWhisperModel:
 
     def __init__(self, model_id="distil-whisper/distil-large-v2"):
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        self.torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+        self.torch_dtype = (
+            torch.float16
+            if torch.cuda.is_available()
+            else torch.float32
+        )
         self.model_id = model_id
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_id,
@@ -101,7 +112,9 @@ class DistilWhisperModel:
         :return: The transcribed text.
         """
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.transcribe, inputs)
+        return await loop.run_in_executor(
+            None, self.transcribe, inputs
+        )
 
     def real_time_transcribe(self, audio_file_path, chunk_duration=5):
         """
@@ -119,17 +132,27 @@ class DistilWhisperModel:
         try:
             with torch.no_grad():
                 # Load the whole audio file, but process and transcribe it in chunks
-                audio_input = self.processor.audio_file_to_array(audio_file_path)
+                audio_input = self.processor.audio_file_to_array(
+                    audio_file_path
+                )
                 sample_rate = audio_input.sampling_rate
                 len(audio_input.array) / sample_rate
                 chunks = [
-                    audio_input.array[i : i + sample_rate * chunk_duration]
+                    audio_input.array[
+                        i : i + sample_rate * chunk_duration
+                    ]
                     for i in range(
-                        0, len(audio_input.array), sample_rate * chunk_duration
+                        0,
+                        len(audio_input.array),
+                        sample_rate * chunk_duration,
                     )
                 ]
 
-                print(colored("Starting real-time transcription...", "green"))
+                print(
+                    colored(
+                        "Starting real-time transcription...", "green"
+                    )
+                )
 
                 for i, chunk in enumerate(chunks):
                     # Process the current chunk
@@ -139,7 +162,9 @@ class DistilWhisperModel:
                         return_tensors="pt",
                         padding=True,
                     )
-                    processed_inputs = processed_inputs.input_values.to(self.device)
+                    processed_inputs = (
+                        processed_inputs.input_values.to(self.device)
+                    )
 
                     # Generate transcription for the chunk
                     logits = self.model.generate(processed_inputs)
@@ -149,7 +174,9 @@ class DistilWhisperModel:
 
                     # Print the chunk's transcription
                     print(
-                        colored(f"Chunk {i+1}/{len(chunks)}: ", "yellow")
+                        colored(
+                            f"Chunk {i+1}/{len(chunks)}: ", "yellow"
+                        )
                         + transcription
                     )
 
@@ -157,4 +184,9 @@ class DistilWhisperModel:
                     time.sleep(chunk_duration)
 
         except Exception as e:
-            print(colored(f"An error occurred during transcription: {e}", "red"))
+            print(
+                colored(
+                    f"An error occurred during transcription: {e}",
+                    "red",
+                )
+            )
