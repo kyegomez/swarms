@@ -169,9 +169,7 @@ class Gemini(BaseMultiModalModel):
 
 - [Gemini GitHub Repository](https://github.com/swarms/gemini): Explore the Gemini repository for additional information, updates, and examples.
 
-- [Google GenerativeAI
-
- Documentation](https://docs.google.com/document/d/1WZSBw6GsOhOCYm0ArydD_9uy6nPPA1KFIbKPhjj43hA): Dive deeper into the capabilities of the Google GenerativeAI package used by Gemini.
+- [Google GenerativeAI Documentation](https://docs.google.com/document/d/1WZSBw6GsOhOCYm0ArydD_9uy6nPPA1KFIbKPhjj43hA): Dive deeper into the capabilities of the Google GenerativeAI package used by Gemini.
 
 - [Gemini API Documentation](https://gemini-api-docs.example.com): Access the official documentation for the Gemini API to explore advanced features and integrations.
 
