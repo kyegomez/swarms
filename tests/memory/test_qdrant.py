@@ -6,7 +6,7 @@ from swarms.memory.qdrant import Qdrant
 
 @pytest.fixture
 def mock_qdrant_client():
-    with patch("your_module.QdrantClient") as MockQdrantClient:
+    with patch("swarms.memory.Qdrant") as MockQdrantClient:
         yield MockQdrantClient()
 
 
