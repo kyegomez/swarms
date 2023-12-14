@@ -107,6 +107,7 @@ nav:
     - Weaviate: "swarms/memory/weaviate.md"
     - PineconDB: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
+    - ShortTermMemory: "swarms/memory/short_term_memory.md"
   - swarms.utils:
     - phoenix_trace_decorator: "swarms/utils/phoenix_tracer.md"
 - Guides:

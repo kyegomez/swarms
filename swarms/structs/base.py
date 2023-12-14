@@ -79,7 +79,6 @@ class BaseStructure(ABC):
         self.save_metadata_path = save_metadata_path
         self.save_error_path = save_error_path
 
-    @abstractmethod
     def run(self, *args, **kwargs):
         """Run the structure."""
         pass
