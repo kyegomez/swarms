@@ -7,9 +7,7 @@ load_dotenv()
 api_key = os.environ["GEMINI_API_KEY"]
 
 # Initialize the model
-model = Gemini(
-    gemini_api_key="AIzaSyCUMFvG3TwwuZIniSpvDeP2AW5USyJUgJM"
-)
+model = Gemini(gemini_api_key=api_key)
 
 # Establish the prompt and image
 task = "What is your name"
