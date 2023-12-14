@@ -61,6 +61,8 @@ class ChromaDB:
         openai_api_key: str = OPENAI_API_KEY,
         top_results_num: int = 3,
         limit_tokens: Optional[int] = 1000,
+        *args,
+        **kwargs
     ):
         self.metric = metric
         self.RESULTS_STORE_NAME = RESULTS_STORE_NAME
@@ -91,7 +93,7 @@ class ChromaDB:
             embedding_function=embedding_function,
         )
 
-    def add(self, task: Dict, result: str, result_id: str):
+    def add(self, task: Dict, result: str, result_id: str, *args, **kwargs):
         """Adds a result to the ChromaDB collection
 
         Args:
@@ -137,6 +139,8 @@ class ChromaDB:
                         "task": task["task_name"],
                         "result": result,
                     },
+                    *args,
+                    **kwargs
                 )
         except Exception as error:
             print(
@@ -146,6 +150,8 @@ class ChromaDB:
     def query(
         self,
         query: str,
+        *args,
+        **kwargs
     ) -> List[dict]:
         """Queries the ChromaDB collection with a query for the top results
 
@@ -164,6 +170,8 @@ class ChromaDB:
                 query_texts=query,
                 n_results=min(self.top_results_num, count),
                 include=["metadatas"],
+                *args,
+                **kwargs
             )
             out = [item["task"] for item in results["metadatas"][0]]
             out = limit_tokens_from_string(
