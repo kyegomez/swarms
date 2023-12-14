@@ -108,3 +108,59 @@ def test_task_execute_with_mocked_agents(task, mocker):
     parent_results = {}
     task.execute(parent_results)
     assert len(task.results) == 5
+
+
+def test_task_creation():
+    agent = Agent()
+    task = Task(id="1", task="Task1", result=None, agents=[agent])
+    assert task.id == "1"
+    assert task.task == "Task1"
+    assert task.result is None
+    assert task.agents == [agent]
+
+
+def test_task_with_dependencies():
+    agent = Agent()
+    task = Task(
+        id="2",
+        task="Task2",
+        result=None,
+        agents=[agent],
+        dependencies=["Task1"],
+    )
+    assert task.dependencies == ["Task1"]
+
+
+def test_task_with_args():
+    agent = Agent()
+    task = Task(
+        id="3",
+        task="Task3",
+        result=None,
+        agents=[agent],
+        args=["arg1", "arg2"],
+    )
+    assert task.args == ["arg1", "arg2"]
+
+
+def test_task_with_kwargs():
+    agent = Agent()
+    task = Task(
+        id="4",
+        task="Task4",
+        result=None,
+        agents=[agent],
+        kwargs={"kwarg1": "value1"},
+    )
+    assert task.kwargs == {"kwarg1": "value1"}
+
+
+# ... continue creating tests for different scenarios
+
+
+# Test execute method
+def test_execute():
+    agent = Agent()
+    task = Task(id="5", task="Task5", result=None, agents=[agent])
+    # Assuming execute method returns True on successful execution
+    assert task.execute() == True

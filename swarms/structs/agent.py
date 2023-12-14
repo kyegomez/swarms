@@ -264,14 +264,6 @@ class Agent:
         if preset_stopping_token:
             self.stopping_token = "<DONE>"
 
-        # If memory then add the json to the memory vector database
-        if memory:
-            # Add all of the state to the memory
-            self.add_message_to_memory_db(
-                {"message": self.state_to_str()},
-                {"agent_id": self.id},
-            )
-
         # If tools exist then add the tool docs usage to the sop
         if self.tools:
             self.sop_list.append(
