@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "2.8.9"
+version = "2.9.2"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -44,7 +44,7 @@ PyPDF2 = "3.0.1"
 accelerate = "0.22.0"
 sentencepiece = "0.1.98"
 wget = "3.2"
-tensorflow = "2.12.0"
+tensorflow = "2.14.0"
 httpx = "0.24.1"
 tiktoken = "0.4.0"
 safetensors = "0.3.3"

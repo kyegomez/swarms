@@ -1,12 +1,11 @@
-import subprocess
-from typing import Optional, Tuple, List
 from swarms.models.base_llm import AbstractLLM
 
 try:
     from vllm import LLM, SamplingParams
 except ImportError as error:
     print(f"[ERROR] [vLLM] {error}")
-    subprocess.run(["pip", "install", "vllm"])
+    # subprocess.run(["pip", "install", "vllm"])
+    # raise error
     raise error
 
 

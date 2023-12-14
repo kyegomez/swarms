@@ -172,7 +172,7 @@ class Gemini(BaseMultiModalModel):
             #     return response.text
             # else:
             response = self.model.generate_content(
-                task, *args, **kwargs
+                task, stream=self.stream, *args, **kwargs
             )
             return response.text
         except Exception as error:
