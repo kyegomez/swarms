@@ -102,9 +102,13 @@ class Idefics(BaseMultiModalModel):
             model_name, torch_dtype=torch_dtype, *args, **kwargs
         ).to(self.device)
 
-        self.processor = AutoProcessor.from_pretrained(model_name)
+        self.processor = AutoProcessor.from_pretrained(
+            model_name, *args, **kwargs
+        )
 
-    def run(self, task: str, *args, **kwargs) -> str:
+    def run(
+        self, task: str = None, img: str = None, *args, **kwargs
+    ) -> str:
         """
         Generates text based on the provided prompts.
 

@@ -2,8 +2,8 @@ import os
 
 from dotenv import load_dotenv
 
-# Import the OpenAIChat model and the Agent struct
-from swarms.models import OpenAIChat
+from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
 from swarms.structs import Agent
 
 # Load the environment variables
@@ -13,21 +13,23 @@ load_dotenv()
 api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
-llm = OpenAIChat(
-    temperature=0.5,
-    model_name="gpt-4",
+llm = GPT4VisionAPI(
     openai_api_key=api_key,
-    max_tokens=1000,
+    max_tokens=500,
 )
+
+# Initialize the task
+task = "This is an eye test. What do you see?"
+img = "playground/demos/multi_modal_chain_of_thought/eyetest.jpg"
 
 ## Initialize the workflow
 agent = Agent(
     llm=llm,
-    max_loops=1,
+    max_loops=2,
     autosave=True,
-    dashboard=True,
+    sop=VISUAL_CHAIN_OF_THOUGHT,
 )
 
 # Run the workflow on a task
-out = agent.run("Generate a 10,000 word blog on health and wellness.")
+out = agent.run(task=task, img=img)
 print(out)
