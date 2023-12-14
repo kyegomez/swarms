@@ -118,22 +118,45 @@ def test_task_creation():
     assert task.result is None
     assert task.agents == [agent]
 
+
 def test_task_with_dependencies():
     agent = Agent()
-    task = Task(id="2", task="Task2", result=None, agents=[agent], dependencies=["Task1"])
+    task = Task(
+        id="2",
+        task="Task2",
+        result=None,
+        agents=[agent],
+        dependencies=["Task1"],
+    )
     assert task.dependencies == ["Task1"]
+
 
 def test_task_with_args():
     agent = Agent()
-    task = Task(id="3", task="Task3", result=None, agents=[agent], args=["arg1", "arg2"])
+    task = Task(
+        id="3",
+        task="Task3",
+        result=None,
+        agents=[agent],
+        args=["arg1", "arg2"],
+    )
     assert task.args == ["arg1", "arg2"]
+
 
 def test_task_with_kwargs():
     agent = Agent()
-    task = Task(id="4", task="Task4", result=None, agents=[agent], kwargs={"kwarg1": "value1"})
+    task = Task(
+        id="4",
+        task="Task4",
+        result=None,
+        agents=[agent],
+        kwargs={"kwarg1": "value1"},
+    )
     assert task.kwargs == {"kwarg1": "value1"}
 
+
 # ... continue creating tests for different scenarios
+
 
 # Test execute method
 def test_execute():

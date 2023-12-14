@@ -4,8 +4,6 @@ from typing import (
     Callable,
     Dict,
     List,
-    Optional,
-    Sequence,
     Union,
 )
 
