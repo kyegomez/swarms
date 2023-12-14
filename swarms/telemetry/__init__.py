@@ -1,4 +1,5 @@
 from swarms.telemetry.log_all import log_all_calls, log_calls
+
 # from swarms.telemetry.posthog_utils import log_activity_posthog
 from swarms.telemetry.user_utils import (
     generate_user_id,

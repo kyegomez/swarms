@@ -14,5 +14,5 @@ task = "What is your name"
 img = "images/github-banner-swarms.png"
 
 # Run the model
-out = model.run("What is your name?")
+out = model.run("What is your name?", img=img)
 print(out)

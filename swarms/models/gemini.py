@@ -82,6 +82,7 @@ class Gemini(BaseMultiModalModel):
         stop_sequence=["x"],
         max_output_tokens: int = 100,
         temperature: float = 0.9,
+        system_prompt: str = None,
         *args,
         **kwargs,
     ):
@@ -95,6 +96,7 @@ class Gemini(BaseMultiModalModel):
         self.stop_sequence = stop_sequence
         self.max_output_tokens = max_output_tokens
         self.temperature = temperature
+        self.system_prompt = system_prompt
 
         # Prepare the generation config
         self.generation_config = GenerationConfig(
@@ -102,6 +104,8 @@ class Gemini(BaseMultiModalModel):
             # stop_sequence=stop_sequence,
             max_output_tokens=max_output_tokens,
             temperature=temperature,
+            *args,
+            **kwargs,
         )
 
         # Initialize the model
@@ -151,30 +155,30 @@ class Gemini(BaseMultiModalModel):
             str: output from the model
         """
         try:
-            # if img:
-            #     # process_img = self.process_img(img, *args, **kwargs)
-            #     process_img = self.process_img_pil(img)
-            #     response = self.model.generate_content(
-            #         contents=[task, process_img],
-            #         generation_config=self.generation_config,
-            #         stream=self.stream,
-            #         *args,
-            #         **kwargs,
-            #     )
+            if img:
+                # process_img = self.process_img(img, *args, **kwargs)
+                process_img = self.process_img_pil(img)
+                response = self.model.generate_content(
+                    contents=[task, process_img],
+                    generation_config=self.generation_config,
+                    stream=self.stream,
+                    *args,
+                    **kwargs,
+                )
 
-            #     # if self.candidates:
-            #     #     return response.candidates
-            #     # elif self.safety:
-            #     #     return response.safety
-            #     # else:
-            #     #     return response.text
+                # if self.candidates:
+                #     return response.candidates
+                # elif self.safety:
+                #     return response.safety
+                # else:
+                #     return response.text
 
-            #     return response.text
-            # else:
-            response = self.model.generate_content(
-                task, stream=self.stream, *args, **kwargs
-            )
-            return response.text
+                return response.text
+            else:
+                response = self.model.generate_content(
+                    task, stream=self.stream, *args, **kwargs
+                )
+                return response.text
         except Exception as error:
             print(f"Error running Gemini model: {error}")
             print(f"Please check the task and image: {task}, {img}")
