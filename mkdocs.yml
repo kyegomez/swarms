@@ -105,7 +105,7 @@ nav:
     - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
   - swarms.memory:
     - Weaviate: "swarms/memory/weaviate.md"
-    - PineconeVectorStoreStore: "swarms/memory/pinecone.md"
+    - PineconDB: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
   - swarms.utils:
     - phoenix_trace_decorator: "swarms/utils/phoenix_tracer.md"

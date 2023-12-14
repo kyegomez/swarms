@@ -1,4 +1,4 @@
-# `PineconeVectorStoreStore` Documentation
+# `PineconDB` Documentation
 
 ## Table of Contents
 

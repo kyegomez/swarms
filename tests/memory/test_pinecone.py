@@ -1,6 +1,6 @@
 import os
 from unittest.mock import patch
-from swarms.memory.pinecone import PineconeVectorStore
+from swarms.memory.pinecone import PineconDB
 
 api_key = os.getenv("PINECONE_API_KEY") or ""
 
@@ -9,7 +9,7 @@ def test_init():
     with patch("pinecone.init") as MockInit, patch(
         "pinecone.Index"
     ) as MockIndex:
-        store = PineconeVectorStore(
+        store = PineconDB(
             api_key=api_key,
             index_name="test_index",
             environment="test_env",
@@ -21,7 +21,7 @@ def test_init():
 
 def test_upsert_vector():
     with patch("pinecone.init"), patch("pinecone.Index") as MockIndex:
-        store = PineconeVectorStore(
+        store = PineconDB(
             api_key=api_key,
             index_name="test_index",
             environment="test_env",
@@ -37,7 +37,7 @@ def test_upsert_vector():
 
 def test_load_entry():
     with patch("pinecone.init"), patch("pinecone.Index") as MockIndex:
-        store = PineconeVectorStore(
+        store = PineconDB(
             api_key=api_key,
             index_name="test_index",
             environment="test_env",
@@ -48,7 +48,7 @@ def test_load_entry():
 
 def test_load_entries():
     with patch("pinecone.init"), patch("pinecone.Index") as MockIndex:
-        store = PineconeVectorStore(
+        store = PineconDB(
             api_key=api_key,
             index_name="test_index",
             environment="test_env",
@@ -59,7 +59,7 @@ def test_load_entries():
 
 def test_query():
     with patch("pinecone.init"), patch("pinecone.Index") as MockIndex:
-        store = PineconeVectorStore(
+        store = PineconDB(
             api_key=api_key,
             index_name="test_index",
             environment="test_env",
@@ -72,7 +72,7 @@ def test_create_index():
     with patch("pinecone.init"), patch("pinecone.Index"), patch(
         "pinecone.create_index"
     ) as MockCreateIndex:
-        store = PineconeVectorStore(
+        store = PineconDB(
             api_key=api_key,
             index_name="test_index",
             environment="test_env",
