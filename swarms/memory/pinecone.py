@@ -1,12 +1,12 @@
 from typing import Optional
-from swarms.memory.base_vectordb import VectorDatabase
+from swarms.memory.base import BaseVectorStore
 import pinecone
 from attr import define, field
 from swarms.utils.hash import str_to_hash
 
 
 @define
-class PineconDB(VectorDatabase):
+class PineconeVectorStoreStore(BaseVectorStore):
     """
     PineconDB is a vector storage driver that uses Pinecone as the underlying storage engine.
 
@@ -110,17 +110,7 @@ class PineconDB(VectorDatabase):
         meta: Optional[dict] = None,
         **kwargs,
     ) -> str:
-        """Add a vector to the index.
-
-        Args:
-            vector (list[float]): _description_
-            vector_id (Optional[str], optional): _description_. Defaults to None.
-            namespace (Optional[str], optional): _description_. Defaults to None.
-            meta (Optional[dict], optional): _description_. Defaults to None.
-
-        Returns:
-            str: _description_
-        """
+        """Upsert vector"""
         vector_id = (
             vector_id if vector_id else str_to_hash(str(vector))
         )
@@ -131,15 +121,31 @@ class PineconDB(VectorDatabase):
 
         return vector_id
 
-    def load_entries(self, namespace: Optional[str] = None):
-        """Load all entries from the index.
+    def load_entry(
+        self, vector_id: str, namespace: Optional[str] = None
+    ) -> Optional[BaseVectorStore.Entry]:
+        """Load entry"""
+        result = self.index.fetch(
+            ids=[vector_id], namespace=namespace
+        ).to_dict()
+        vectors = list(result["vectors"].values())
 
         Args:
             namespace (Optional[str], optional): _description_. Defaults to None.
 
-        Returns:
-            _type_: _description_
-        """
+            return BaseVectorStore.Entry(
+                id=vector["id"],
+                meta=vector["metadata"],
+                vector=vector["values"],
+                namespace=result["namespace"],
+            )
+        else:
+            return None
+
+    def load_entries(
+        self, namespace: Optional[str] = None
+    ) -> list[BaseVectorStore.Entry]:
+        """Load entries"""
         # This is a hacky way to query up to 10,000 values from Pinecone. Waiting on an official API for fetching
         # all values from a namespace:
         # https://community.pinecone.io/t/is-there-a-way-to-query-all-the-vectors-and-or-metadata-from-a-namespace/797/5
@@ -151,14 +157,15 @@ class PineconDB(VectorDatabase):
             namespace=namespace,
         )
 
-        for result in results["matches"]:
-            entry = {
-                "id": result["id"],
-                "vector": result["values"],
-                "meta": result["metadata"],
-                "namespace": result["namespace"],
-            }
-            return entry
+        return [
+            BaseVectorStore.Entry(
+                id=r["id"],
+                vector=r["values"],
+                meta=r["metadata"],
+                namespace=results["namespace"],
+            )
+            for r in results["matches"]
+        ]
 
     def query(
         self,
@@ -169,23 +176,16 @@ class PineconDB(VectorDatabase):
         # PineconDBStorageDriver-specific params:
         include_metadata=True,
         **kwargs,
-    ):
-        """Query the index for vectors similar to the given query string.
-
-        Args:
-            query (str): _description_
-            count (Optional[int], optional): _description_. Defaults to None.
-            namespace (Optional[str], optional): _description_. Defaults to None.
-            include_vectors (bool, optional): _description_. Defaults to False.
-            include_metadata (bool, optional): _description_. Defaults to True.
-
-        Returns:
-            _type_: _description_
-        """
+    ) -> list[BaseVectorStore.QueryResult]:
+        """Query vectors"""
         vector = self.embedding_driver.embed_string(query)
 
         params = {
-            "top_k": count,
+            "top_k": (
+                count
+                if count
+                else BaseVectorStore.DEFAULT_QUERY_COUNT
+            ),
             "namespace": namespace,
             "include_values": include_vectors,
             "include_metadata": include_metadata,
@@ -193,22 +193,19 @@ class PineconDB(VectorDatabase):
 
         results = self.index.query(vector, **params)
 
-        for r in results["matches"]:
-            entry = {
-                "id": results["id"],
-                "vector": results["values"],
-                "score": results["scores"],
-                "meta": results["metadata"],
-                "namespace": results["namespace"],
-            }
-            return entry
+        return [
+            BaseVectorStore.QueryResult(
+                id=r["id"],
+                vector=r["values"],
+                score=r["score"],
+                meta=r["metadata"],
+                namespace=results["namespace"],
+            )
+            for r in results["matches"]
+        ]
 
     def create_index(self, name: str, **kwargs) -> None:
-        """Create a new index.
-
-        Args:
-            name (str): _description_
-        """
+        """Create index"""
         params = {
             "name": name,
             "dimension": self.embedding_driver.dimensions,

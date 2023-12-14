@@ -29,4 +29,5 @@ agent = Agent(
 )
 
 # Run the workflow on a task
-agent.run("Generate a 10,000 word blog on health and wellness.")
+out = agent.run("Generate a 10,000 word blog on health and wellness.")
+print(out)

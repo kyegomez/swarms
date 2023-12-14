@@ -60,8 +60,8 @@ llm = OpenAIChat(
 agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
 # Run the workflow on a task
-agent.run("Generate a 10,000 word blog on health and wellness.")
-
+out = agent.run("Generate a 10,000 word blog on health and wellness.")
+print(out)
 
 
 ```
@@ -168,7 +168,8 @@ agent = Agent(
 )
 
 # Run the workflow on a task
-agent.run(task=task, img=img)
+out = agent.run(task=task, img=img)
+print(out)
 
 
 ```
@@ -198,7 +199,8 @@ llm = OpenAIChat(
 
 
 agent = OmniModalAgent(llm)
-agent.run("Generate a video of a swarm of fish and then make an image out of the video")
+response = agent.run("Generate a video of a swarm of fish and then make an image out of the video")
+print(response)
 ```
 
 ---

@@ -74,7 +74,7 @@ class Gemini(BaseMultiModalModel):
     def __init__(
         self,
         model_name: str = "gemini-pro-vision",
-        gemini_api_key: str = get_gemini_api_key_env,
+        gemini_api_key: str = None,
         return_safety: bool = False,
         candidates: bool = False,
         stream: bool = False,
@@ -82,7 +82,6 @@ class Gemini(BaseMultiModalModel):
         stop_sequence=["x"],
         max_output_tokens: int = 100,
         temperature: float = 0.9,
-        system_prompt: str = None,
         *args,
         **kwargs,
     ):
@@ -96,7 +95,6 @@ class Gemini(BaseMultiModalModel):
         self.stop_sequence = stop_sequence
         self.max_output_tokens = max_output_tokens
         self.temperature = temperature
-        self.system_prompt = system_prompt
 
         # Prepare the generation config
         self.generation_config = GenerationConfig(
@@ -104,8 +102,6 @@ class Gemini(BaseMultiModalModel):
             # stop_sequence=stop_sequence,
             max_output_tokens=max_output_tokens,
             temperature=temperature,
-            *args,
-            **kwargs,
         )
 
         # Initialize the model
@@ -176,7 +172,7 @@ class Gemini(BaseMultiModalModel):
                 return response.text
             else:
                 response = self.model.generate_content(
-                    task, stream=self.stream, *args, **kwargs
+                    task, *args, **kwargs
                 )
                 return response.text
         except Exception as error:
