@@ -47,7 +47,7 @@ imageio-ffmpeg==0.4.9
 invisible-watermark
 kornia
 safetensors==0.3.3
-numpy==1.25.2
+numpy
 omegaconf==2.3.0
 open_clip_torch==2.20.0
 openai==0.28.0
