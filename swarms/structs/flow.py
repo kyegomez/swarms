@@ -489,8 +489,10 @@ class Flow:
         except Exception as error:
             print(
                 colored(
-                    "Error activating autonomous agent. Try optimizing your"
-                    " parameters...",
+                    (
+                        "Error activating autonomous agent. Try optimizing your"
+                        " parameters..."
+                    ),
                     "red",
                 )
             )
@@ -657,7 +659,7 @@ class Flow:
             while attempt < self.retry_attempts:
                 try:
                     response = self.llm(
-                        task ** kwargs,
+                        task**kwargs,
                     )
                     if self.interactive:
                         print(f"AI: {response}")

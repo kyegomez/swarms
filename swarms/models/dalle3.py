@@ -170,9 +170,12 @@ class Dalle3:
             # Handling exceptions and printing the errors details
             print(
                 colored(
+                    (
                         f"Error running Dalle3: {error} try optimizing your api"
                         " key and or try again"
                     ),
+                    "red",
+                )
             )
             raise error
 
@@ -320,8 +323,10 @@ class Dalle3:
                 except Exception as error:
                     print(
                         colored(
+                            (
                                 f"Error running Dalle3: {error} try optimizing"
                                 " your api key and or try again"
+                            ),
                             "red",
                         )
                     )

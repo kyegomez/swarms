@@ -533,9 +533,11 @@ class SequentialWorkflow:
         except Exception as e:
             print(
                 colored(
-                    f"Error initializing the Sequential workflow: {e} try"
-                    " optimizing your inputs like the flow class and task"
-                    " description",
+                    (
+                        f"Error initializing the Sequential workflow: {e} try"
+                        " optimizing your inputs like the flow class and task"
+                        " description"
+                    ),
                     "red",
                     attrs=["bold", "underline"],
                 )

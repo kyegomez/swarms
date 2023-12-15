@@ -10,7 +10,7 @@ img = "images/swarms.jpeg"
 ## Initialize the workflow
 flow = Flow(
     llm=llm,
-    max_loops='auto',
+    max_loops="auto",
     dashboard=True,
 )
 
