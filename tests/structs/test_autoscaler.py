@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from pytest import patch
+from unittest.mock import patch
 
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
