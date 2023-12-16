@@ -1,7 +1,8 @@
 import unittest
 import os
 from unittest.mock import patch
-from langchain import HuggingFaceHub, ChatOpenAI
+from langchain import HuggingFaceHub
+from langchain.chat_models import ChatOpenAI
 
 from swarms.models.llm import LLM
 
