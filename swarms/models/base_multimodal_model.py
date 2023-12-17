@@ -1,8 +1,6 @@
 import asyncio
 import base64
 import concurrent.futures
-import logging
-import os
 import time
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
@@ -69,7 +67,7 @@ class BaseMultiModalModel:
 
     def __init__(
         self,
-        model_name: Optional[str],
+        model_name: Optional[str] = None,
         temperature: Optional[int] = 0.5,
         max_tokens: Optional[int] = 500,
         max_workers: Optional[int] = 10,
@@ -100,7 +98,7 @@ class BaseMultiModalModel:
 
     @abstractmethod
     def run(
-        self, task: Optional[str], img: Optional[str], *args, **kwargs
+        self, task: Optional[str] = None, img: Optional[str] = None, *args, **kwargs
     ):
         """Run the model"""
         pass
