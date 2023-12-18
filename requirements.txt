@@ -69,3 +69,12 @@ mkdocs
 mkdocs-material
 mkdocs-glightbox
 pre-commit==3.2.2
+sqlalchemy
+pgvector
+qdrant-client
+vllm
+whisperx
+pytube
+pydub
+arize-mlflow
+sentence-transformers

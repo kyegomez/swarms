@@ -65,6 +65,15 @@ open_clip_torch = "2.20.0"
 soundfile = "0.12.1"
 torchvision = "0.16.1"
 rich = "13.5.2"
+sqlalchemy = "*"
+pgvector = "*"
+qdrant-client = "*"
+vllm = "*"
+whisperx = "*"
+pytube = "*"
+pydub = "*"
+arize-mlflow = "*"
+sentence-transformers = "*"
 
 
 [tool.poetry.group.lint.dependencies]
