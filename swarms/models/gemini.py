@@ -98,7 +98,7 @@ class Gemini(BaseMultiModalModel):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.system_prompt = system_prompt
-        
+
         # Configure the API key
         genai.configure(api_key=gemini_api_key, transport=transport)
 
@@ -121,9 +121,8 @@ class Gemini(BaseMultiModalModel):
         if self.gemini_api_key is None:
             raise ValueError("Please provide a Gemini API key")
 
-    def system_prompt(
+    def system_prompt_prep(
         self,
-        system_prompt: str = None,
         task: str = None,
         *args,
         **kwargs,
@@ -135,7 +134,9 @@ class Gemini(BaseMultiModalModel):
         """
         PROMPT = f"""
         
-        {system_prompt}
+        {self.system_prompt}
+        
+        ######
         
         {task}
         
@@ -159,28 +160,21 @@ class Gemini(BaseMultiModalModel):
             str: output from the model
         """
         try:
+            prepare_prompt = self.system_prompt_prep(task)
             if img:
                 # process_img = self.process_img(img, *args, **kwargs)
                 process_img = self.process_img_pil(img)
                 response = self.model.generate_content(
-                    contents=[task, process_img],
+                    contents=[prepare_prompt, process_img],
                     generation_config=self.generation_config,
                     stream=self.stream,
                     *args,
                     **kwargs,
                 )
-
-                # if self.candidates:
-                #     return response.candidates
-                # elif self.safety:
-                #     return response.safety
-                # else:
-                #     return response.text
-
                 return response.text
             else:
                 response = self.model.generate_content(
-                    task, stream=self.stream, *args, **kwargs
+                    prepare_prompt, stream=self.stream, *args, **kwargs
                 )
                 return response.text
         except Exception as error:

@@ -98,7 +98,11 @@ class BaseMultiModalModel:
 
     @abstractmethod
     def run(
-        self, task: Optional[str] = None, img: Optional[str] = None, *args, **kwargs
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
     ):
         """Run the model"""
         pass

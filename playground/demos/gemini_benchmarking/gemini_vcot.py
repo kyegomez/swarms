@@ -16,7 +16,7 @@ llm = Gemini(
     gemini_api_key=api_key,
     temperature=0.5,
     max_tokens=1000,
-    system_prompt=VISUAL_CHAIN_OF_THOUGHT
+    system_prompt=VISUAL_CHAIN_OF_THOUGHT,
 )
 
 # Initialize the task
