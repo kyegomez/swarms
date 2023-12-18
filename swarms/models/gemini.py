@@ -79,6 +79,7 @@ class Gemini(BaseMultiModalModel):
         candidates: bool = False,
         stream: bool = False,
         candidate_count: int = 1,
+        transport: str = "rest",
         stop_sequence=["x"],
         max_tokens: int = 100,
         temperature: float = 0.9,
@@ -97,12 +98,15 @@ class Gemini(BaseMultiModalModel):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.system_prompt = system_prompt
+        
+        # Configure the API key
+        genai.configure(api_key=gemini_api_key, transport=transport)
 
         # Prepare the generation config
         self.generation_config = GenerationConfig(
             candidate_count=candidate_count,
             # stop_sequence=stop_sequence,
-            max_tokens=max_tokens,
+            max_output_tokens=max_tokens,
             temperature=temperature,
             *args,
             **kwargs,
