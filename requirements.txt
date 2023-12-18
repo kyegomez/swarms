@@ -73,7 +73,6 @@ sqlalchemy
 pgvector
 qdrant-client
 vllm
-whisperx
 pytube
 pydub
 arize-mlflow
