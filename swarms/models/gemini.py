@@ -49,7 +49,7 @@ class Gemini(BaseMultiModalModel):
         stream (bool, optional): _description_. Defaults to False.
         candidate_count (int, optional): _description_. Defaults to 1.
         stop_sequence ([type], optional): _description_. Defaults to ['x'].
-        max_output_tokens (int, optional): _description_. Defaults to 100.
+        max_tokens (int, optional): _description_. Defaults to 100.
         temperature (float, optional): _description_. Defaults to 0.9.
 
     Methods:
@@ -80,7 +80,7 @@ class Gemini(BaseMultiModalModel):
         stream: bool = False,
         candidate_count: int = 1,
         stop_sequence=["x"],
-        max_output_tokens: int = 100,
+        max_tokens: int = 100,
         temperature: float = 0.9,
         system_prompt: str = None,
         *args,
@@ -94,7 +94,7 @@ class Gemini(BaseMultiModalModel):
         self.stream = stream
         self.candidate_count = candidate_count
         self.stop_sequence = stop_sequence
-        self.max_output_tokens = max_output_tokens
+        self.max_tokens = max_tokens
         self.temperature = temperature
         self.system_prompt = system_prompt
 
@@ -102,7 +102,7 @@ class Gemini(BaseMultiModalModel):
         self.generation_config = GenerationConfig(
             candidate_count=candidate_count,
             # stop_sequence=stop_sequence,
-            max_output_tokens=max_output_tokens,
+            max_tokens=max_tokens,
             temperature=temperature,
             *args,
             **kwargs,
