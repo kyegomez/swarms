@@ -71,7 +71,8 @@ qdrant-client = "*"
 vllm = "*"
 pytube = "*"
 pydub = "*"
-arize-mlflow = "*"
+arize = "*"
+mlflow = "*"
 sentence-transformers = "*"
 
 
