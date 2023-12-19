@@ -1,8 +1,6 @@
 # Import necessary modules and functions for testing
-import functools
 import subprocess
 import sys
-import traceback
 
 import pytest
 

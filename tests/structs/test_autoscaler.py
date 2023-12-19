@@ -23,18 +23,18 @@ def test_autoscaler_init():
     assert autoscaler.scale_up_factor == 1
     assert autoscaler.idle_threshold == 0.2
     assert autoscaler.busy_threshold == 0.7
-    assert autoscaler.autoscale == True
+    assert autoscaler.autoscale is True
     assert autoscaler.min_agents == 1
     assert autoscaler.max_agents == 5
-    assert autoscaler.custom_scale_strategy == None
+    assert autoscaler.custom_scale_strategy is None
     assert len(autoscaler.agents_pool) == 5
-    assert autoscaler.task_queue.empty() == True
+    assert autoscaler.task_queue.empty() is True
 
 
 def test_autoscaler_add_task():
     autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.add_task("task1")
-    assert autoscaler.task_queue.empty() == False
+    assert autoscaler.task_queue.empty() is False
 
 
 def test_autoscaler_run():
@@ -75,7 +75,7 @@ def test_autoscaler_get_agent_by_id():
 def test_autoscaler_get_agent_by_id_not_found():
     autoscaler = AutoScaler(initial_agents=5, agent=agent)
     agent = autoscaler.get_agent_by_id("fake_id")
-    assert agent == None
+    assert agent is None
 
 
 @patch("swarms.swarms.Agent.is_healthy")

@@ -3,8 +3,6 @@ import queue
 import threading
 from time import sleep
 from typing import Callable, Dict, List, Optional
-import asyncio
-import concurrent.futures
 
 from termcolor import colored
 

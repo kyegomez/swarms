@@ -12,7 +12,6 @@ from termcolor import colored
 
 from swarms.memory.base_vectordb import VectorDatabase
 from swarms.prompts.agent_system_prompts import (
-    FLOW_SYSTEM_PROMPT,
     AGENT_SYSTEM_PROMPT_3,
     agent_system_prompt_2,
 )

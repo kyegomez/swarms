@@ -1,5 +1,4 @@
 # Import necessary modules and define fixtures if needed
-import os
 import pytest
 import torch
 from PIL import Image
@@ -156,7 +155,6 @@ def test_clip_inference_performance(
 def test_clip_preprocessing_pipelines(
     clip_instance, sample_image_path
 ):
-    labels = ["label1", "label2"]
     image = Image.open(sample_image_path)
 
     # Test preprocessing for training

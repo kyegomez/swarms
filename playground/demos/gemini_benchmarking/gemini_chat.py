@@ -21,5 +21,8 @@ model = Gemini(
 )
 
 
-out = model.chat("Create the code for a react component that displays a name", img=img)
+out = model.chat(
+    "Create the code for a react component that displays a name",
+    img=img,
+)
 print(out)

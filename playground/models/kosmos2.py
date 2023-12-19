@@ -1,4 +1,4 @@
-from swarms.models.kosmos2 import Kosmos2, Detections
+from swarms.models.kosmos2 import Kosmos2
 from PIL import Image
 
 
