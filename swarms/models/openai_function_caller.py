@@ -234,10 +234,10 @@ class OpenAIFunctionCaller:
                     )
                 )
 
-    def call(self, prompt: str) -> Dict:
-        response = openai.Completion.create(
+    def call(self, task: str, *args, **kwargs) -> Dict:
+        return openai.Completion.create(
             engine=self.model,
-            prompt=prompt,
+            prompt=task,
             max_tokens=self.max_tokens,
             temperature=self.temperature,
             top_p=self.top_p,
@@ -253,9 +253,10 @@ class OpenAIFunctionCaller:
             user=self.user,
             messages=self.messages,
             timeout_sec=self.timeout_sec,
+            *args,
+            **kwargs,
         )
-        return response
 
-    def run(self, prompt: str) -> str:
-        response = self.call(prompt)
+    def run(self, task: str, *args, **kwargs) -> str:
+        response = self.call(task, *args, **kwargs)
         return response["choices"][0]["text"].strip()

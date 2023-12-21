@@ -103,6 +103,7 @@ nav:
     - AutoScaler: "swarms/swarms/autoscaler.md"
     - Agent: "swarms/structs/agent.md"
     - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
+    - Conversation: "swarms/structs/conversation.md"
   - swarms.memory:
     - Weaviate: "swarms/memory/weaviate.md"
     - PineconDB: "swarms/memory/pinecone.md"
