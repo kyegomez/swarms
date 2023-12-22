@@ -7,6 +7,24 @@ from swarms.structs.base import BaseStructure
 
 
 class Conversation(BaseStructure):
+    """
+    Conversation class
+    
+    
+    Attributes:
+        time_enabled (bool): whether to enable time
+        conversation_history (list): list of messages in the conversation
+        
+    
+    Examples:
+    >>> conv = Conversation()
+    >>> conv.add("user", "Hello, world!")
+    >>> conv.add("assistant", "Hello, user!")
+    >>> conv.display_conversation()
+    user: Hello, world!
+    
+    
+    """
     def __init__(self, time_enabled: bool = False, *args, **kwargs):
         super().__init__()
         self.time_enabled = time_enabled
