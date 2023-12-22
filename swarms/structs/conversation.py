@@ -9,22 +9,23 @@ from swarms.structs.base import BaseStructure
 class Conversation(BaseStructure):
     """
     Conversation class
-    
-    
+
+
     Attributes:
         time_enabled (bool): whether to enable time
         conversation_history (list): list of messages in the conversation
-        
-    
+
+
     Examples:
     >>> conv = Conversation()
     >>> conv.add("user", "Hello, world!")
     >>> conv.add("assistant", "Hello, user!")
     >>> conv.display_conversation()
     user: Hello, world!
-    
-    
+
+
     """
+
     def __init__(self, time_enabled: bool = False, *args, **kwargs):
         super().__init__()
         self.time_enabled = time_enabled
@@ -186,6 +187,7 @@ class Conversation(BaseStructure):
         # Load the conversation history from a JSON file
         with open(filename, "r") as f:
             self.conversation_history = json.load(f)
+        
 
     def search_keyword_in_conversation(self, keyword: str):
         """Search for a keyword in the conversation history
