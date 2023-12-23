@@ -11,7 +11,7 @@ try:
 except ImportError as error:
     print("pip install weaviate-client")
 
-class WeaviateClient(VectorDatabase):
+class WeaviateDB(VectorDatabase):
     """
 
     Weaviate API Client
@@ -36,7 +36,7 @@ class WeaviateClient(VectorDatabase):
         delete: Delete an object from a specified collection.
 
     Examples:
-    >>> from swarms.memory import WeaviateClient
+    >>> from swarms.memory import WeaviateDB
     """
 
     def __init__(
@@ -77,7 +77,7 @@ class WeaviateClient(VectorDatabase):
         )
 
         # If additional headers are provided, add them to the connection params.
-        self.client = weaviate.WeaviateClient(
+        self.client = weaviate.WeaviateDB(
             connection_params=connection_params,
             auth_client_secret=auth_client_secret,
             additional_headers=additional_headers,
