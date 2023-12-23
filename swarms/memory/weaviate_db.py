@@ -11,6 +11,7 @@ try:
 except ImportError as error:
     print("pip install weaviate-client")
 
+
 class WeaviateDB(VectorDatabase):
     """
 
@@ -179,4 +180,3 @@ class WeaviateDB(VectorDatabase):
         except Exception as error:
             print(f"Error deleting object: {error}")
             raise
-

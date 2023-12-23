@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from swarms.memory.weaviate_db import WeaviateDB
+from swarms.memory import WeaviateDB
 
 
 # Define fixture for a WeaviateDB instance with mocked methods
