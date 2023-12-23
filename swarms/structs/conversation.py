@@ -187,7 +187,6 @@ class Conversation(BaseStructure):
         # Load the conversation history from a JSON file
         with open(filename, "r") as f:
             self.conversation_history = json.load(f)
-        
 
     def search_keyword_in_conversation(self, keyword: str):
         """Search for a keyword in the conversation history

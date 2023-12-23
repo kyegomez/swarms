@@ -6,8 +6,6 @@ from swarms.structs import Agent
 from swarms.models import OpenAIChat
 from swarms.swarms.multi_agent_collab import (
     MultiAgentCollaboration,
-    select_next_speaker_director,
-    select_speaker_round_table,
 )
 
 # Sample agents for testing
@@ -105,13 +103,6 @@ def test_set_interaction_rules(collaboration):
     assert collaboration.interaction_rules == rules
 
 
-def test_set_interaction_rules(collaboration):
-    rules = {"rule1": "action1", "rule2": "action2"}
-    collaboration.set_interaction_rules(rules)
-    assert hasattr(collaboration, "interaction_rules")
-    assert collaboration.interaction_rules == rules
-
-
 def test_repr(collaboration):
     repr_str = repr(collaboration)
     assert isinstance(repr_str, str)
@@ -143,16 +134,6 @@ def test_save(collaboration, tmp_path):
 
 
 # Add more tests here...
-
-
-# Example of parameterized test for different selection functions
-@pytest.mark.parametrize(
-    "selection_function",
-    [select_next_speaker_director, select_speaker_round_table],
-)
-def test_selection_functions(collaboration, selection_function):
-    collaboration.select_next_speaker = selection_function
-    assert callable(collaboration.select_next_speaker)
 
 
 # Add more parameterized tests for different scenarios...

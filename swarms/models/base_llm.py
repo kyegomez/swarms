@@ -5,7 +5,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from swarms.utils.llm_metrcs_decorator import metrics_decorator
+from swarms.utils.llm_metrics_decorator import metrics_decorator
 
 
 def count_tokens(text: str) -> int:

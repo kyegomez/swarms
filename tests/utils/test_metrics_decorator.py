@@ -1,5 +1,5 @@
 import time
-from swarms.utils.llm_metrcs_decorator import metrics_decorator
+from swarms.utils.llm_metrics_decorator import metrics_decorator
 
 
 def test_metrics_decorator():
