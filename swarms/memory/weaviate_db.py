@@ -8,7 +8,7 @@ from swarms.memory.base_vectordb import VectorDatabase
 
 try:
     import weaviate
-except ImportError as error:
+except ImportError:
     print("pip install weaviate-client")
 
 

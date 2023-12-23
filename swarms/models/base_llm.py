@@ -395,7 +395,7 @@ class AbstractLLM(ABC):
             float: _description_
         """
         start_time = time.time()
-        tokens = self.track_resource_utilization(
+        self.track_resource_utilization(
             prompt
         )  # assuming `generate` is a method that generates tokens
         first_token_time = time.time()
@@ -411,7 +411,7 @@ class AbstractLLM(ABC):
             float: _description_
         """
         start_time = time.time()
-        tokens = self.run(prompt)
+        self.run(prompt)
         end_time = time.time()
         return end_time - start_time
 
@@ -426,6 +426,6 @@ class AbstractLLM(ABC):
         """
         start_time = time.time()
         for prompt in prompts:
-            tokens = self.run(prompt)
+            self.run(prompt)
         end_time = time.time()
         return len(prompts) / (end_time - start_time)

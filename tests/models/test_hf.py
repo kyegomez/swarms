@@ -65,11 +65,11 @@ def test_init_huggingface_llm():
     assert llm.model_id == "test_model"
     assert llm.device == "cuda"
     assert llm.max_length == 1000
-    assert llm.quantize == True
+    assert llm.quantize is True
     assert llm.quantization_config == {"config_key": "config_value"}
-    assert llm.verbose == True
-    assert llm.distributed == True
-    assert llm.decoding == True
+    assert llm.verbose is True
+    assert llm.distributed is True
+    assert llm.decoding is True
     assert llm.max_workers == 3
     assert llm.repitition_penalty == 1.5
     assert llm.no_repeat_ngram_size == 4
@@ -90,7 +90,7 @@ def test_load_model(mock_huggingface_llm):
 # Test running the model
 def test_run(mock_huggingface_llm):
     llm = HuggingfaceLLM(model_id="test_model")
-    result = llm.run("Test prompt")
+    llm.run("Test prompt")
 
     # Ensure that the run function is called
     assert True

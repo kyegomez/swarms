@@ -25,14 +25,14 @@ def test_load_model_torch_no_device_specified(mocker):
     mock_model = MagicMock(spec=torch.nn.Module)
     mocker.patch("torch.load", return_value=mock_model)
     mocker.patch("torch.cuda.is_available", return_value=False)
-    model = load_model_torch("model_path")
+    load_model_torch("model_path")
     mock_model.to.assert_called_once_with(torch.device("cpu"))
 
 
 def test_load_model_torch_device_specified(mocker):
     mock_model = MagicMock(spec=torch.nn.Module)
     mocker.patch("torch.load", return_value=mock_model)
-    model = load_model_torch(
+    load_model_torch(
         "model_path", device=torch.device("cuda")
     )
     mock_model.to.assert_called_once_with(torch.device("cuda"))

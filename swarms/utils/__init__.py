@@ -8,6 +8,9 @@ from swarms.utils.math_eval import math_eval
 from swarms.utils.llm_metrics_decorator import metrics_decorator
 from swarms.utils.device_checker_cuda import check_device
 from swarms.utils.load_model_torch import load_model_torch
+from swarms.utils.prep_torch_model_inference import (
+    prep_torch_inference,
+)
 
 __all__ = [
     "display_markdown_message",
@@ -18,4 +21,5 @@ __all__ = [
     "metrics_decorator",
     "check_device",
     "load_model_torch",
+    "prep_torch_inference",
 ]
