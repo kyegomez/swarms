@@ -17,6 +17,15 @@ class TaskInput(BaseModel):
 
 
 class Artifact(BaseModel):
+    """
+    Represents an artifact.
+
+    Attributes:
+        artifact_id (str): Id of the artifact.
+        file_name (str): Filename of the artifact.
+        relative_path (str, optional): Relative path of the artifact in the agent's workspace.
+    """
+
     artifact_id: str = Field(
         ...,
         description="Id of the artifact",

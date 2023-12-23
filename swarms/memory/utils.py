@@ -26,7 +26,18 @@ def maximal_marginal_relevance(
     lambda_mult: float = 0.5,
     k: int = 4,
 ) -> List[int]:
-    """Calculate maximal marginal relevance."""
+    """
+    Calculate maximal marginal relevance.
+
+    Args:
+        query_embedding (np.ndarray): The embedding of the query.
+        embedding_list (list): List of embeddings to select from.
+        lambda_mult (float, optional): The weight for query score. Defaults to 0.5.
+        k (int, optional): The number of embeddings to select. Defaults to 4.
+
+    Returns:
+        List[int]: List of indices of selected embeddings.
+    """
     if min(k, len(embedding_list)) <= 0:
         return []
     if query_embedding.ndim == 1:

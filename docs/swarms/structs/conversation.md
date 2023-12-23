@@ -1,132 +1,265 @@
-# Conversation Module Documentation
+# Module/Class Name: Conversation
+
+## Introduction
+
+The `Conversation` class is a powerful tool for managing and structuring conversation data in a Python program. It enables you to create, manipulate, and analyze conversations easily. This documentation will provide you with a comprehensive understanding of the `Conversation` class, its attributes, methods, and how to effectively use it.
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Installation](#installation)
-3. [Class: Conversation](#class-conversation)
-   - [Attributes](#attributes)
-   - [Methods](#methods)
-4. [Usage Examples](#usage-examples)
-   - [Example 1: Creating a Conversation](#example-1-creating-a-conversation)
-   - [Example 2: Adding Messages](#example-2-adding-messages)
-   - [Example 3: Displaying and Exporting Conversation](#example-3-displaying-and-exporting-conversation)
-   - [Example 4: Counting Messages by Role](#example-4-counting-messages-by-role)
-   - [Example 5: Loading and Searching](#example-5-loading-and-searching)
-5. [Additional Information](#additional-information)
-6. [References](#references)
+1. **Class Definition**
+   - Overview
+   - Attributes
+
+2. **Methods**
+   - `__init__(self, time_enabled: bool = False, *args, **kwargs)`
+   - `add(self, role: str, content: str, *args, **kwargs)`
+   - `delete(self, index: str)`
+   - `update(self, index: str, role, content)`
+   - `query(self, index: str)`
+   - `search(self, keyword: str)`
+   - `display_conversation(self, detailed: bool = False)`
+   - `export_conversation(self, filename: str)`
+   - `import_conversation(self, filename: str)`
+   - `count_messages_by_role(self)`
+   - `return_history_as_string(self)`
+   - `save_as_json(self, filename: str)`
+   - `load_from_json(self, filename: str)`
+   - `search_keyword_in_conversation(self, keyword: str)`
+   - `pretty_print_conversation(self, messages)`
 
 ---
 
-## 1. Introduction <a name="introduction"></a>
+### 1. Class Definition
 
-The Conversation module provides a versatile and extensible structure for managing and analyzing text-based conversations. Whether you're developing a chatbot, analyzing customer support interactions, or conducting research on dialogues, this module simplifies the process of handling conversation data.
+#### Overview
 
-With the Conversation module, you can add, delete, update, query, and search for messages within a conversation. You can also display, export, and import conversation history, making it an essential tool for various applications.
+The `Conversation` class is designed to manage conversations by keeping track of messages and their attributes. It offers methods for adding, deleting, updating, querying, and displaying messages within the conversation. Additionally, it supports exporting and importing conversations, searching for specific keywords, and more.
 
-## 2. Installation <a name="installation"></a>
+#### Attributes
 
-To use the Conversation module, you need to have Python installed on your system. Additionally, you can install the required dependencies using pip:
+- `time_enabled (bool)`: A flag indicating whether to enable timestamp recording for messages.
+- `conversation_history (list)`: A list that stores messages in the conversation.
 
-```bash
-pip install termcolor
-```
+### 2. Methods
 
-Once you have the dependencies installed, you can import the Conversation module into your Python code.
+#### `__init__(self, time_enabled: bool = False, *args, **kwargs)`
+
+- **Description**: Initializes a new Conversation object.
+- **Parameters**:
+  - `time_enabled (bool)`: If `True`, timestamps will be recorded for each message. Default is `False`.
+
+#### `add(self, role: str, content: str, *args, **kwargs)`
+
+- **Description**: Adds a message to the conversation history.
+- **Parameters**:
+  - `role (str)`: The role of the speaker (e.g., "user," "assistant").
+  - `content (str)`: The content of the message.
+
+#### `delete(self, index: str)`
+
+- **Description**: Deletes a message from the conversation history.
+- **Parameters**:
+  - `index (str)`: The index of the message to delete.
+
+#### `update(self, index: str, role, content)`
+
+- **Description**: Updates a message in the conversation history.
+- **Parameters**:
+  - `index (str)`: The index of the message to update.
+  - `role (_type_)`: The new role of the speaker.
+  - `content (_type_)`: The new content of the message.
+
+#### `query(self, index: str)`
+
+- **Description**: Retrieves a message from the conversation history.
+- **Parameters**:
+  - `index (str)`: The index of the message to query.
+- **Returns**: The message as a string.
+
+#### `search(self, keyword: str)`
+
+- **Description**: Searches for messages containing a specific keyword in the conversation history.
+- **Parameters**:
+  - `keyword (str)`: The keyword to search for.
+- **Returns**: A list of messages that contain the keyword.
+
+#### `display_conversation(self, detailed: bool = False)`
+
+- **Description**: Displays the conversation history.
+- **Parameters**:
+  - `detailed (bool, optional)`: If `True`, provides detailed information about each message. Default is `False`.
+
+#### `export_conversation(self, filename: str)`
+
+- **Description**: Exports the conversation history to a text file.
+- **Parameters**:
+  - `filename (str)`: The name of the file to export to.
+
+#### `import_conversation(self, filename: str)`
+
+- **Description**: Imports a conversation history from a text file.
+- **Parameters**:
+  - `filename (str)`: The name of the file to import from.
+
+#### `count_messages_by_role(self)`
+
+- **Description**: Counts the number of messages by role in the conversation.
+- **Returns**: A dictionary containing the count of messages for each role.
+
+#### `return_history_as_string(self)`
+
+- **Description**: Returns the entire conversation history as a single string.
+- **Returns**: The conversation history as a string.
+
+#### `save_as_json(self, filename: str)`
+
+- **Description**: Saves the conversation history as a JSON file.
+- **Parameters**:
+  - `filename (str)`: The name of the JSON file to save.
+
+#### `load_from_json(self, filename: str)`
+
+- **Description**: Loads a conversation history from a JSON file.
+- **Parameters**:
+  - `filename (str)`: The name of the JSON file to load.
+
+#### `search_keyword_in_conversation(self, keyword: str)`
+
+- **Description**: Searches for a keyword in the conversation history and returns matching messages.
+- **Parameters**:
+  - `keyword (str)`: The keyword to search for.
+- **Returns**: A list of messages containing the keyword.
+
+#### `pretty_print_conversation(self, messages)`
+
+- **Description**: Pretty prints a list of messages with colored role indicators.
+- **Parameters**:
+  - `messages (list)`: A list of messages to print.
+
+## Examples
+
+Here are some usage examples of the `Conversation` class:
+
+### Creating a Conversation
 
 ```python
-from swarms.structs.conversation import Conversation
+from swarms.structs import Conversation
+
+conv = Conversation()
 ```
 
-## 3. Class: Conversation <a name="class-conversation"></a>
-
-The Conversation class is the core of this module. It allows you to create and manipulate conversation histories. Below are the attributes and methods provided by this class.
-
-### Attributes <a name="attributes"></a>
-
-- `time_enabled` (bool): Indicates whether timestamps are enabled for messages in the conversation.
-- `conversation_history` (list): A list that stores the conversation history as a collection of messages.
-
-### Methods <a name="methods"></a>
-
-The Conversation class provides the following methods:
-
-- `add(role: str, content: str, *args, **kwargs)`: Adds a message to the conversation history.
-- `delete(index: str)`: Deletes a message from the conversation history.
-- `update(index: str, role, content)`: Updates a message in the conversation history.
-- `query(index: str)`: Queries a message in the conversation history.
-- `search(keyword: str)`: Searches for messages containing a specific keyword.
-- `display_conversation(detailed: bool = False)`: Displays the conversation history.
-- `export_conversation(filename: str)`: Exports the conversation history to a file.
-- `import_conversation(filename: str)`: Imports a conversation history from a file.
-- `count_messages_by_role()`: Counts the number of messages by role.
-- `return_history_as_string()`: Returns the conversation history as a string.
-- `save_as_json(filename: str)`: Saves the conversation history as a JSON file.
-- `load_from_json(filename: str)`: Loads the conversation history from a JSON file.
-- `search_keyword_in_conversation(keyword: str)`: Searches for a keyword in the conversation history.
-- `pretty_print_conversation(messages)`: Pretty prints the conversation history.
-
-## 4. Usage Examples <a name="usage-examples"></a>
-
-In this section, we'll provide practical examples of how to use the Conversation module to manage and analyze conversation data.
-
-### Example 1: Creating a Conversation <a name="example-1-creating-a-conversation"></a>
-
-Let's start by creating a Conversation object and enabling timestamps for messages:
+### Adding Messages
 
 ```python
-conversation = Conversation(time_enabled=True)
+conv.add("user", "Hello, world!")
+conv.add("assistant", "Hello, user!")
 ```
 
-### Example 2: Adding Messages <a name="example-2-adding-messages"></a>
-
-You can add messages to the conversation using the `add` method. Here's how to add a user message and an assistant response:
+### Displaying the Conversation
 
 ```python
-conversation.add("user", "Hello, how can I help you?")
-conversation.add("assistant", "Hi there! I'm here to assist you.")
+conv.display_conversation()
 ```
 
-### Example 3: Displaying and Exporting Conversation <a name="example-3-displaying-and-exporting-conversation"></a>
-
-You can display the conversation history and export it to a file. Let's see how to do this:
+### Searching for Messages
 
 ```python
-# Display the conversation
-conversation.display_conversation()
-
-# Export the conversation to a file
-conversation.export_conversation("conversation_history.txt")
+result = conv.search("Hello")
 ```
 
-### Example 4: Counting Messages by Role <a name="example-4-counting-messages-by-role"></a>
-
-You can count the number of messages by role (e.g., user, assistant, system) using the `count_messages_by_role` method:
+### Exporting and Importing Conversations
 
 ```python
-message_counts = conversation.count_messages_by_role()
-print(message_counts)
+conv.export_conversation("conversation.txt")
+conv.import_conversation("conversation.txt")
 ```
 
-### Example 5: Loading and Searching <a name="example-5-loading-and-searching"></a>
-
-You can load a conversation from a file and search for messages containing a specific keyword:
+### Counting Messages by Role
 
 ```python
-# Load conversation from a file
-conversation.load_from_json("saved_conversation.json")
-
-# Search for messages containing the keyword "help"
-results = conversation.search("help")
-print(results)
+counts = conv.count_messages_by_role()
 ```
 
-## 5. Additional Information <a name="additional-information"></a>
+### Loading and Saving as JSON
 
-- The Conversation module is designed to provide flexibility and ease of use for managing and analyzing text-based conversations.
-- You can extend the module by adding custom functionality or integrating it into your chatbot or natural language processing applications.
+```python
+conv.save_as_json("conversation.json")
+conv.load_from_json("conversation.json")
+```
 
-## 6. References <a name="references"></a>
+Certainly! Let's continue with more examples and additional information about the `Conversation` class.
 
-For more information on the Conversation module and its usage, refer to the official documentation and examples.
+### Querying a Specific Message
 
+You can retrieve a specific message from the conversation by its index:
+
+```python
+message = conv.query(0)  # Retrieves the first message
+```
+
+### Updating a Message
+
+You can update a message's content or role within the conversation:
+
+```python
+conv.update(0, "user", "Hi there!")  # Updates the first message
+```
+
+### Deleting a Message
+
+If you want to remove a message from the conversation, you can use the `delete` method:
+
+```python
+conv.delete(0)  # Deletes the first message
+```
+
+### Counting Messages by Role
+
+You can count the number of messages by role in the conversation:
+
+```python
+counts = conv.count_messages_by_role()
+# Example result: {'user': 2, 'assistant': 2}
+```
+
+### Exporting and Importing as Text
+
+You can export the conversation to a text file and later import it:
+
+```python
+conv.export_conversation("conversation.txt")  # Export
+conv.import_conversation("conversation.txt")  # Import
+```
+
+### Exporting and Importing as JSON
+
+Conversations can also be saved and loaded as JSON files:
+
+```python
+conv.save_as_json("conversation.json")  # Save as JSON
+conv.load_from_json("conversation.json")  # Load from JSON
+```
+
+### Searching for a Keyword
+
+You can search for messages containing a specific keyword within the conversation:
+
+```python
+results = conv.search_keyword_in_conversation("Hello")
+```
+
+### Pretty Printing
+
+The `pretty_print_conversation` method provides a visually appealing way to display messages with colored role indicators:
+
+```python
+conv.pretty_print_conversation(conv.conversation_history)
+```
+
+These examples demonstrate the versatility of the `Conversation` class in managing and interacting with conversation data. Whether you're building a chatbot, conducting analysis, or simply organizing dialogues, this class offers a robust set of tools to help you accomplish your goals.
+
+## Conclusion
+
+The `Conversation` class is a valuable utility for handling conversation data in Python. With its ability to add, update, delete, search, export, and import messages, you have the flexibility to work with conversations in various ways. Feel free to explore its features and adapt them to your specific projects and applications.
+
+If you have any further questions or need additional assistance, please don't hesitate to ask!

@@ -1,8 +1,9 @@
-import json
 import datetime
+import json
 
 from termcolor import colored
 
+from swarms.memory.base_db import AbstractDatabase
 from swarms.structs.base import BaseStructure
 
 
@@ -23,12 +24,22 @@ class Conversation(BaseStructure):
     >>> conv.display_conversation()
     user: Hello, world!
 
-
     """
 
-    def __init__(self, time_enabled: bool = False, *args, **kwargs):
+    def __init__(
+        self,
+        time_enabled: bool = False,
+        database: AbstractDatabase = None,
+        autosave: bool = True,
+        save_filepath: str = "/runs/conversation.json",
+        *args,
+        **kwargs,
+    ):
         super().__init__()
         self.time_enabled = time_enabled
+        self.database = database
+        self.autosave = autosave
+        self.save_filepath = save_filepath
         self.conversation_history = []
 
     def add(self, role: str, content: str, *args, **kwargs):
@@ -54,6 +65,9 @@ class Conversation(BaseStructure):
             }
 
         self.conversation_history.append(message)
+
+        if self.autosave:
+            self.save_as_json(self.save_filepath)
 
     def delete(self, index: str):
         """Delete a message from the conversation history
@@ -122,7 +136,7 @@ class Conversation(BaseStructure):
                 )
             )
 
-    def export_conversation(self, filename: str):
+    def export_conversation(self, filename: str, *args, **kwargs):
         """Export the conversation history to a file
 
         Args:
@@ -259,3 +273,37 @@ class Conversation(BaseStructure):
                         role_to_color[message["role"]],
                     )
                 )
+
+    def add_to_database(self, *args, **kwargs):
+        """Add the conversation history to the database"""
+        self.database.add("conversation", self.conversation_history)
+
+    def query_from_database(self, query, *args, **kwargs):
+        """Query the conversation history from the database"""
+        return self.database.query("conversation", query)
+
+    def delete_from_database(self, *args, **kwargs):
+        """Delete the conversation history from the database"""
+        self.database.delete("conversation")
+
+    def update_from_database(self, *args, **kwargs):
+        """Update the conversation history from the database"""
+        self.database.update(
+            "conversation", self.conversation_history
+        )
+
+    def get_from_database(self, *args, **kwargs):
+        """Get the conversation history from the database"""
+        return self.database.get("conversation")
+
+    def execute_query_from_database(self, query, *args, **kwargs):
+        """Execute a query on the database"""
+        return self.database.execute_query(query)
+
+    def fetch_all_from_database(self, *args, **kwargs):
+        """Fetch all from the database"""
+        return self.database.fetch_all()
+
+    def fetch_one_from_database(self, *args, **kwargs):
+        """Fetch one from the database"""
+        return self.database.fetch_one()
