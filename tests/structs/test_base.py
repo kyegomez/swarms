@@ -1,7 +1,7 @@
 import pytest
 import os
 from datetime import datetime
-from swarms.swarms.base import BaseStructure
+from swarms.structs.base import BaseStructure
 
 
 class TestBaseStructure:
