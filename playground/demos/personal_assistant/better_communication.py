@@ -56,6 +56,7 @@ def play_audio(file_path):
         # Stop the mixer module and free resources
         pygame.mixer.quit()
 
+
 while True:
     # Listen for user speech
     with sr.Microphone() as source:
@@ -74,7 +75,6 @@ while True:
         print(f"Error: {e}")
         continue
 
-
     # Run the Gemini model on the task
     print("Running GPT4 model...")
     out = llm(task)
@@ -90,7 +90,7 @@ while True:
     # if play_audio.lower() == "yes":
     # Initialize the mixer module
     # Play the audio file
-    
+
     time.sleep(5)
-    
-    playsound('runs/tts_speech.wav')
+
+    playsound("runs/tts_speech.wav")
