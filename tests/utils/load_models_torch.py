@@ -32,9 +32,7 @@ def test_load_model_torch_no_device_specified(mocker):
 def test_load_model_torch_device_specified(mocker):
     mock_model = MagicMock(spec=torch.nn.Module)
     mocker.patch("torch.load", return_value=mock_model)
-    load_model_torch(
-        "model_path", device=torch.device("cuda")
-    )
+    load_model_torch("model_path", device=torch.device("cuda"))
     mock_model.to.assert_called_once_with(torch.device("cuda"))
 
 

@@ -50,7 +50,7 @@ class WeaviateDB(VectorDatabase):
         grpc_secure: Optional[bool] = None,
         auth_client_secret: Optional[Any] = None,
         additional_headers: Optional[Dict[str, str]] = None,
-        additional_config: Optional[weaviate.AdditionalConfig] = None,
+        additional_config: Optional[Any] = None,
         connection_params: Dict[str, Any] = None,
         *args,
         **kwargs,

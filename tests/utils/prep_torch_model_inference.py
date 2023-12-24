@@ -44,7 +44,5 @@ def test_prep_torch_inference_device_specified(mocker):
         "swarms.utils.prep_torch_model_inference.load_model_torch",
         return_value=mock_model,
     )
-    prep_torch_inference(
-        "model_path", device=torch.device("cuda")
-    )
+    prep_torch_inference("model_path", device=torch.device("cuda"))
     mock_model.eval.assert_called_once()

@@ -66,5 +66,5 @@ def check_device(
     return devices
 
 
-devices = check_device()
-logging.info(f"Using device(s): {devices}")
+# devices = check_device()
+# logging.info(f"Using device(s): {devices}")
