@@ -106,7 +106,7 @@ nav:
     - Conversation: "swarms/structs/conversation.md"
   - swarms.memory:
     - Weaviate: "swarms/memory/weaviate.md"
-    - PineconDB: "swarms/memory/pinecone.md"
+    - PineconeDB: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
   - swarms.utils:

@@ -344,9 +344,48 @@ img = "playground/demos/multi_modal_chain_of_thought/eyetest.jpg"
 # Run the workflow on a task
 out = llm.run(task=task, img=img)
 print(out)
+```
 
+
+### `Anthropic`
+```python
+# Import necessary modules and classes
+from swarms.models import Anthropic
+
+# Initialize an instance of the Anthropic class
+model = Anthropic(
+    anthropic_api_key=""
+)
+
+# Using the run method
+completion_1 = model.run("What is the capital of France?")
+print(completion_1)
+
+# Using the __call__ method
+completion_2 = model("How far is the moon from the earth?", stop=["miles", "km"])
+print(completion_2)
 
 ```
+
+
+### `HuggingFaceLLM`
+```python
+from swarms.models import HuggingfaceLLM
+
+# Initialize with custom configuration
+custom_config = {
+    "quantize": True,
+    "quantization_config": {"load_in_4bit": True},
+    "verbose": True
+}
+inference = HuggingfaceLLM(model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config)
+
+# Generate text based on a prompt
+prompt_text = "Create a list of known biggest risks of structural collapse with references"
+generated_text = inference(prompt_text)
+print(generated_text)
+```
+
 ---
 
 # Features 🤖 
