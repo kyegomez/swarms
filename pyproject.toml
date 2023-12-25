@@ -69,8 +69,6 @@ sqlalchemy = "*"
 pgvector = "*"
 qdrant-client = "*"
 vllm = "*"
-pytube = "*"
-pydub = "*"
 sentence-transformers = "*"
 
 
