@@ -83,6 +83,7 @@ nav:
       - vLLM: "swarms/models/vllm.md"
       - MPT7B: "swarms/models/mpt.md"
       - Mistral: "swarms/models/mistral.md"
+      - Mixtral: "swarms/models/mixtral.md"
     - MultiModal:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Fuyu: "swarms/models/fuyu.md"
