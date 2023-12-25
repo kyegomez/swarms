@@ -1,4 +1,3 @@
----
 name: test
 
 on:
@@ -10,6 +9,7 @@ on:
 env:
   POETRY_VERSION: "1.4.2"
 
+jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -30,7 +30,7 @@ env:
           python-version: ${{ matrix.python-version }}
           poetry-version: "1.4.2"
           cache-key: ${{ matrix.test_type }}
-          install-command: |
+          install-command: 
               if [ "${{ matrix.test_type }}" == "core" ]; then
                 echo "Running core tests, installing dependencies with poetry..."
                 poetry install
