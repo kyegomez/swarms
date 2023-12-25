@@ -21,6 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          pip install swarms
           pip install pytest 
 
       - name: Run tests and checks
