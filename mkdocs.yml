@@ -111,7 +111,6 @@ nav:
     - PGVectorStore: "swarms/memory/pg.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
   - swarms.utils:
-    - phoenix_trace_decorator: "swarms/utils/phoenix_tracer.md"
     - math_eval: "swarms/utils/math_eval.md"
 - Guides:
     - Overview: "examples/index.md"
