@@ -22,5 +22,7 @@ model = Gemini(
 
 
 # Run the model
-out = model.run("Create the code for a react component that displays a name")
+out = model.run(
+    "Create the code for a react component that displays a name"
+)
 print(out)

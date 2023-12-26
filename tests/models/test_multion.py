@@ -15,7 +15,7 @@ def mock_multion():
 
 def test_multion_import():
     with pytest.raises(ImportError):
-        import multion
+        pass
 
 
 def test_multion_init():

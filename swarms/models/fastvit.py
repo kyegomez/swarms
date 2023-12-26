@@ -39,14 +39,11 @@ class FastViT:
     Returns:
         ClassificationResult: a pydantic BaseModel containing the class ids and confidences of the model's predictions
 
-
     Example:
         >>> fastvit = FastViT()
         >>> result = fastvit(img="path_to_image.jpg", confidence_threshold=0.5)
 
-
     To use, create a json file called: fast_vit_classes.json
-
     """
 
     def __init__(self):
@@ -62,7 +59,7 @@ class FastViT:
     def __call__(
         self, img: str, confidence_threshold: float = 0.5
     ) -> ClassificationResult:
-        """classifies the input image and returns the top k classes and their probabilities"""
+        """Classifies the input image and returns the top k classes and their probabilities"""
         img = Image.open(img).convert("RGB")
         img_tensor = self.transforms(img).unsqueeze(0).to(DEVICE)
         with torch.no_grad():
@@ -81,7 +78,6 @@ class FastViT:
         # Convert to Python lists and map class indices to labels if needed
         top_probs = top_probs.cpu().numpy().tolist()
         top_classes = top_classes.cpu().numpy().tolist()
-        # top_class_labels = [FASTVIT_IMAGENET_1K_CLASSES[i] for i in top_classes] # Uncomment if class labels are needed
 
         return ClassificationResult(
             class_id=top_classes, confidence=top_probs

@@ -174,7 +174,10 @@ class Gemini(BaseMultiModalModel):
                 return response.text
             else:
                 response = self.model.generate_content(
-                    prepare_prompt, stream=self.stream, *args, **kwargs
+                    prepare_prompt,
+                    stream=self.stream,
+                    *args,
+                    **kwargs,
                 )
                 return response.text
         except Exception as error:

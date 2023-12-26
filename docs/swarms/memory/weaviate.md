@@ -28,7 +28,7 @@ pip install swarms
 
 ## Initialization
 
-To use the Weaviate API Client, you need to initialize an instance of the `WeaviateClient` class. Here are the parameters you can pass to the constructor:
+To use the Weaviate API Client, you need to initialize an instance of the `WeaviateDB` class. Here are the parameters you can pass to the constructor:
 
 | Parameter            | Type           | Description                                                                                                                      |
 |----------------------|----------------|----------------------------------------------------------------------------------------------------------------------------------|
@@ -43,12 +43,12 @@ To use the Weaviate API Client, you need to initialize an instance of the `Weavi
 | `additional_config`  | Optional[weaviate.AdditionalConfig] | Additional configuration for the client. (Optional)                                                                   |
 | `connection_params`  | Dict[str, Any] | Dictionary containing connection parameters. This parameter is used internally and can be ignored in most cases.       |
 
-Here's an example of how to initialize a WeaviateClient:
+Here's an example of how to initialize a WeaviateDB:
 
 ```python
-from swarms.memory import WeaviateClient
+from swarms.memory import WeaviateDB
 
-weaviate_client = WeaviateClient(
+weaviate_client = WeaviateDB(
     http_host="YOUR_HTTP_HOST",
     http_port="YOUR_HTTP_PORT",
     http_secure=True,

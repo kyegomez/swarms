@@ -312,6 +312,97 @@ efficiency_analysis = efficiency_agent.run(
     factory_image,
 )
 ```
+
+### Gemini
+- Deploy Gemini from Google with utmost reliability with our visual chain of thought prompt that enables more reliable responses
+```python
+import os
+
+from dotenv import load_dotenv
+
+from swarms.models import Gemini
+from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("GEMINI_API_KEY")
+
+# Initialize the language model
+llm = Gemini(
+    gemini_api_key=api_key,
+    temperature=0.5,
+    max_tokens=1000,
+    system_prompt=VISUAL_CHAIN_OF_THOUGHT,
+)
+
+# Initialize the task
+task = "This is an eye test. What do you see?"
+img = "playground/demos/multi_modal_chain_of_thought/eyetest.jpg"
+
+# Run the workflow on a task
+out = llm.run(task=task, img=img)
+print(out)
+```
+
+
+### `Anthropic`
+```python
+# Import necessary modules and classes
+from swarms.models import Anthropic
+
+# Initialize an instance of the Anthropic class
+model = Anthropic(
+    anthropic_api_key=""
+)
+
+# Using the run method
+completion_1 = model.run("What is the capital of France?")
+print(completion_1)
+
+# Using the __call__ method
+completion_2 = model("How far is the moon from the earth?", stop=["miles", "km"])
+print(completion_2)
+
+```
+
+
+### `HuggingFaceLLM`
+```python
+from swarms.models import HuggingfaceLLM
+
+# Initialize with custom configuration
+custom_config = {
+    "quantize": True,
+    "quantization_config": {"load_in_4bit": True},
+    "verbose": True
+}
+inference = HuggingfaceLLM(model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config)
+
+# Generate text based on a prompt
+prompt_text = "Create a list of known biggest risks of structural collapse with references"
+generated_text = inference(prompt_text)
+print(generated_text)
+```
+
+### Mixtral
+- Utilize Mixtral in a very simple API,
+- Utilize 4bit quantization for a increased speed and less memory usage
+- Use Flash Attention 2.0 for increased speed and less memory usage
+```python
+from swarms.models import Mixtral
+
+# Initialize the Mixtral model with 4 bit and flash attention!
+mixtral = Mixtral(load_in_4bit=True, use_flash_attention_2=True)
+
+# Generate text for a simple task
+generated_text = mixtral.run("Generate a creative story.")
+
+# Print the generated text
+print(generated_text)
+```
+
 ---
 
 # Features 🤖 

@@ -2,7 +2,7 @@ import argparse
 import sys
 
 
-def run_file():
+def cli():
     parser = argparse.ArgumentParser(description="Swarms CLI")
     parser.add_argument(
         "file_name", help="Python file containing Swarms code to run"

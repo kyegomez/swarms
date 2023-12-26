@@ -1,7 +1,5 @@
 import os
 import subprocess
-import json
-import re
 import requests
 from dotenv import load_dotenv
 

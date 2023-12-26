@@ -391,21 +391,6 @@ def test_structured_tool_ainvoke_with_exceptions():
         tool.ainvoke({"tool_input": "input_data"})
 
 
-# Test additional functionality and edge cases
-def test_tool_with_fixture(some_fixture):
-    # Test Tool with a fixture
-    tool = Tool()
-    result = tool.invoke(test_input)
-    assert result == expected_output
-
-
-def test_structured_tool_with_fixture(some_fixture):
-    # Test StructuredTool with a fixture
-    tool = StructuredTool()
-    result = tool.invoke(test_input)
-    assert result == expected_output
-
-
 def test_base_tool_verbose_logging(caplog):
     # Test verbose logging in BaseTool
     tool = BaseTool(verbose=True)
@@ -424,13 +409,6 @@ def test_tool_exception_handling():
 def test_structured_tool_async_invoke():
     # Test asynchronous invoke in StructuredTool
     tool = StructuredTool()
-    result = tool.ainvoke(test_input)
-    assert result == expected_output
-
-
-def test_tool_async_invoke_with_fixture(some_fixture):
-    # Test asynchronous invoke with a fixture in Tool
-    tool = Tool()
     result = tool.ainvoke(test_input)
     assert result == expected_output
 

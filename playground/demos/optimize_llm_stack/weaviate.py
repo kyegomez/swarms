@@ -1,6 +1,6 @@
-from swarms.memory import WeaviateClient
+from swarms.memory import WeaviateDB
 
-weaviate_client = WeaviateClient(
+weaviate_client = WeaviateDB(
     http_host="YOUR_HTTP_HOST",
     http_port="YOUR_HTTP_PORT",
     http_secure=True,

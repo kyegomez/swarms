@@ -83,6 +83,7 @@ nav:
       - vLLM: "swarms/models/vllm.md"
       - MPT7B: "swarms/models/mpt.md"
       - Mistral: "swarms/models/mistral.md"
+      - Mixtral: "swarms/models/mixtral.md"
     - MultiModal:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Fuyu: "swarms/models/fuyu.md"
@@ -103,9 +104,10 @@ nav:
     - AutoScaler: "swarms/swarms/autoscaler.md"
     - Agent: "swarms/structs/agent.md"
     - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
+    - Conversation: "swarms/structs/conversation.md"
   - swarms.memory:
     - Weaviate: "swarms/memory/weaviate.md"
-    - PineconDB: "swarms/memory/pinecone.md"
+    - PineconeDB: "swarms/memory/pinecone.md"
     - PGVectorStore: "swarms/memory/pg.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
   - swarms.utils:

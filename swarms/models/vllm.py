@@ -1,12 +1,19 @@
+import torch
 from swarms.models.base_llm import AbstractLLM
+import subprocess
 
-try:
-    from vllm import LLM, SamplingParams
-except ImportError as error:
-    print(f"[ERROR] [vLLM] {error}")
-    # subprocess.run(["pip", "install", "vllm"])
-    # raise error
-    raise error
+if torch.cuda.is_available() or torch.cuda.device_count() > 0:
+    # Download vllm with pip
+    try:
+        subprocess.run(["pip", "install", "vllm"])
+        from vllm import LLM, SamplingParams
+    except Exception as error:
+        print(f"[ERROR] [vLLM] {error}")
+        raise error
+else:
+    from swarms.models.huggingface import HuggingfaceLLM as LLM
+
+    SamplingParams = None
 
 
 class vLLM(AbstractLLM):
@@ -83,8 +90,9 @@ class vLLM(AbstractLLM):
             _type_: _description_
         """
         try:
-            outputs = self.llm.generate(task, self.sampling_params)
-            return outputs
+            return self.llm.generate(
+                task, self.sampling_params, *args, **kwargs
+            )
         except Exception as error:
             print(f"[ERROR] [vLLM] [run] {error}")
             raise error

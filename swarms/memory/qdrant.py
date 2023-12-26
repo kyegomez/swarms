@@ -82,7 +82,7 @@ class Qdrant:
                     f"Collection '{self.collection_name}' already"
                     " exists."
                 )
-        except Exception as e:
+        except Exception:
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(
