@@ -108,7 +108,11 @@ class BaseMultiModalModel:
         pass
 
     def __call__(
-        self, task: str = None, img: str = None, *args, **kwargs
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
     ):
         """Call the model
 

@@ -48,7 +48,7 @@ def test_run_success(vision_api):
 def test_run_request_error(vision_api):
     with patch(
         "requests.post", side_effect=RequestException("Request Error")
-    ) as mock_post:
+    ):
         with pytest.raises(RequestException):
             vision_api.run("What is this?", img)
 
@@ -58,7 +58,7 @@ def test_run_response_error(vision_api):
     with patch(
         "requests.post",
         return_value=Mock(json=lambda: expected_response),
-    ) as mock_post:
+    ):
         with pytest.raises(RuntimeError):
             vision_api.run("What is this?", img)
 
@@ -153,7 +153,7 @@ async def test_arun_request_error(vision_api):
         "aiohttp.ClientSession.post",
         new_callable=AsyncMock,
         side_effect=Exception("Request Error"),
-    ) as mock_post:
+    ):
         with pytest.raises(Exception):
             await vision_api.arun("What is this?", img)
 
@@ -181,7 +181,7 @@ def test_run_many_success(vision_api):
 def test_run_many_request_error(vision_api):
     with patch(
         "requests.post", side_effect=RequestException("Request Error")
-    ) as mock_post:
+    ):
         tasks = ["What is this?", "What is that?"]
         imgs = [img, img]
         with pytest.raises(RequestException):
@@ -196,7 +196,7 @@ async def test_arun_json_decode_error(vision_api):
         return_value=AsyncMock(
             json=AsyncMock(side_effect=ValueError)
         ),
-    ) as mock_post:
+    ):
         with pytest.raises(ValueError):
             await vision_api.arun("What is this?", img)
 
@@ -210,7 +210,7 @@ async def test_arun_api_error(vision_api):
         return_value=AsyncMock(
             json=AsyncMock(return_value=error_response)
         ),
-    ) as mock_post:
+    ):
         with pytest.raises(Exception, match="API Error"):
             await vision_api.arun("What is this?", img)
 
@@ -224,7 +224,7 @@ async def test_arun_unexpected_response(vision_api):
         return_value=AsyncMock(
             json=AsyncMock(return_value=unexpected_response)
         ),
-    ) as mock_post:
+    ):
         with pytest.raises(Exception, match="Unexpected response"):
             await vision_api.arun("What is this?", img)
 
@@ -247,6 +247,6 @@ async def test_arun_timeout(vision_api):
         "aiohttp.ClientSession.post",
         new_callable=AsyncMock,
         side_effect=asyncio.TimeoutError,
-    ) as mock_post:
+    ):
         with pytest.raises(asyncio.TimeoutError):
             await vision_api.arun("What is this?", img)

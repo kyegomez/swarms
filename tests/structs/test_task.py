@@ -1,4 +1,3 @@
-import os
 from unittest.mock import Mock
 
 import pytest
@@ -163,4 +162,4 @@ def test_execute():
     agent = Agent()
     task = Task(id="5", task="Task5", result=None, agents=[agent])
     # Assuming execute method returns True on successful execution
-    assert task.execute() == True
+    assert task.execute() is True

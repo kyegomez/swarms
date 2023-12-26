@@ -1,9 +1,11 @@
-import os
+import asyncio
 import logging
+import os
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, List
-import asyncio
+from typing import List, Optional
+
+from swarms.utils.llm_metrics_decorator import metrics_decorator
 
 
 def count_tokens(text: str) -> int:
@@ -118,6 +120,7 @@ class AbstractLLM(ABC):
         }
 
     @abstractmethod
+    @metrics_decorator
     def run(self, task: Optional[str] = None, *args, **kwargs) -> str:
         """generate text using language model"""
         pass
@@ -381,3 +384,48 @@ class AbstractLLM(ABC):
         TOKENS: {_num_tokens}
         Tokens/SEC: {_time_for_generation}
         """
+
+    def time_to_first_token(self, prompt: str) -> float:
+        """Time to first token
+
+        Args:
+            prompt (str): _description_
+
+        Returns:
+            float: _description_
+        """
+        start_time = time.time()
+        self.track_resource_utilization(
+            prompt
+        )  # assuming `generate` is a method that generates tokens
+        first_token_time = time.time()
+        return first_token_time - start_time
+
+    def generation_latency(self, prompt: str) -> float:
+        """generation latency
+
+        Args:
+            prompt (str): _description_
+
+        Returns:
+            float: _description_
+        """
+        start_time = time.time()
+        self.run(prompt)
+        end_time = time.time()
+        return end_time - start_time
+
+    def throughput(self, prompts: List[str]) -> float:
+        """throughput
+
+        Args:
+            prompts (): _description_
+
+        Returns:
+            float: _description_
+        """
+        start_time = time.time()
+        for prompt in prompts:
+            self.run(prompt)
+        end_time = time.time()
+        return len(prompts) / (end_time - start_time)

@@ -1,4 +1,4 @@
-# `PineconDB` Documentation
+# `PineconeDB` Documentation
 
 ## Table of Contents
 

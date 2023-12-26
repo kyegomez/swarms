@@ -1,4 +1,3 @@
-import pytest
 from swarms.memory.short_term_memory import ShortTermMemory
 import threading
 
