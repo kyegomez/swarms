@@ -94,7 +94,7 @@ class ZeroscopeTTV:
                 width=self.width,
                 num_frames=self.num_frames,
                 *args,
-                **kwargs
+                **kwargs,
             ).frames
             video_path = export_to_video(video_frames)
             return video_path

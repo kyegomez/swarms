@@ -11,6 +11,7 @@ from swarms.utils.load_model_torch import load_model_torch
 from swarms.utils.prep_torch_model_inference import (
     prep_torch_inference,
 )
+from swarms.utils.find_img_path import find_image_path
 
 __all__ = [
     "display_markdown_message",
@@ -22,4 +23,5 @@ __all__ = [
     "check_device",
     "load_model_torch",
     "prep_torch_inference",
+    "find_image_path",
 ]

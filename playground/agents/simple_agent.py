@@ -1,26 +1,43 @@
-from swarms.agents.simple_agent import SimpleAgent
-from swarms.structs import Agent
-from swarms.models import OpenAIChat
+import os
 
-api_key = ""
+from dotenv import load_dotenv
 
-llm = OpenAIChat(
-    openai_api_key=api_key,
-    temperature=0.5,
+from swarms import (
+    OpenAIChat,
+    Conversation,
+    # display_markdown_message,
 )
 
-# Initialize the agent
-agent = Agent(
-    llm=llm,
-    max_loops=5,
-)
+conv = Conversation()
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = OpenAIChat(openai_api_key=api_key, model_name="gpt-4")
+
+# Run the language model in a loop
+def interactive_conversation(llm):
+    conv = Conversation()
+    while True:
+        user_input = input("User: ")
+        conv.add("user", user_input)
+        if user_input.lower() == "quit":
+            break
+        task = (
+            conv.return_history_as_string()
+        )  # Get the conversation history
+        out = llm(task)
+        conv.add("assistant", out)
+        print(
+            f"Assistant: {out}", #color="cyan"
+        )
+    conv.display_conversation()
+    conv.export_conversation("conversation.txt")
 
 
-agent = SimpleAgent(
-    name="Optimus Prime",
-    agent=agent,
-    # Memory
-)
-
-out = agent.run("Generate a 10,000 word blog on health and wellness.")
-print(out)
+# Replace with your LLM instance
+interactive_conversation(llm)
