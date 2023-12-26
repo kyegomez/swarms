@@ -313,7 +313,7 @@ efficiency_analysis = efficiency_agent.run(
 )
 ```
 
-### Gemini
+### `Gemini`
 - Deploy Gemini from Google with utmost reliability with our visual chain of thought prompt that enables more reliable responses
 ```python
 import os
@@ -386,7 +386,7 @@ generated_text = inference(prompt_text)
 print(generated_text)
 ```
 
-### Mixtral
+### `Mixtral`
 - Utilize Mixtral in a very simple API,
 - Utilize 4bit quantization for a increased speed and less memory usage
 - Use Flash Attention 2.0 for increased speed and less memory usage
@@ -401,6 +401,62 @@ generated_text = mixtral.run("Generate a creative story.")
 
 # Print the generated text
 print(generated_text)
+```
+
+
+### `Dalle3`
+```python
+from swarms import Dalle3
+
+# Create an instance of the Dalle3 class with high quality
+dalle3 = Dalle3(quality="high")
+
+# Define a text prompt
+task = "A high-quality image of a sunset"
+
+# Generate a high-quality image from the text prompt
+image_url = dalle3(task)
+
+# Print the generated image URL
+print(image_url)
+```
+
+
+### `GPT4Vision`
+```python
+from swarms.models import GPT4VisionAPI
+
+# Initialize with default API key and custom max_tokens
+api = GPT4VisionAPI(max_tokens=1000)
+
+# Define the task and image URL
+task = "Describe the scene in the image."
+img = "https://i.imgur.com/4P4ZRxU.jpeg"
+
+# Run the GPT-4 Vision model
+response = api.run(task, img)
+
+# Print the model's response
+print(response)
+```
+
+
+### Text to Video with `ZeroscopeTTV`
+
+```python
+# Import the model
+from swarms import ZeroscopeTTV
+
+# Initialize the model
+zeroscope = ZeroscopeTTV()
+
+# Specify the task
+task = "A person is walking on the street."
+
+# Generate the video!
+video_path = zeroscope(task)
+print(video_path)
+
 ```
 
 ---

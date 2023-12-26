@@ -99,6 +99,7 @@ nav:
       - ElevenLabsText2SpeechTool: "swarms/models/elevenlabs.md"
       - OpenAITTS: "swarms/models/openai_tts.md"
       - Gemini: "swarms/models/gemini.md"
+      - ZeroscopeTTV: "swarms/models/zeroscope.md"
   - swarms.structs:
     - Overview: "swarms/structs/overview.md"
     - AutoScaler: "swarms/swarms/autoscaler.md"
