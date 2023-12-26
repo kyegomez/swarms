@@ -18,6 +18,7 @@ venv
 swarms/agents/.DS_Store
 
 _build
+conversation.txt
 stderr_log.txt
 
 .vscode

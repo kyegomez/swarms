@@ -5,10 +5,11 @@ from dotenv import load_dotenv
 from swarms import (
     OpenAIChat,
     Conversation,
-    # display_markdown_message,
 )
 
-conv = Conversation()
+conv = Conversation(
+    time_enabled=True,
+)
 
 # Load the environment variables
 load_dotenv()
@@ -19,10 +20,11 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # Initialize the language model
 llm = OpenAIChat(openai_api_key=api_key, model_name="gpt-4")
 
+
 # Run the language model in a loop
-def interactive_conversation(llm):
+def interactive_conversation(llm, iters: int = 10):
     conv = Conversation()
-    while True:
+    for i in range(iters):
         user_input = input("User: ")
         conv.add("user", user_input)
         if user_input.lower() == "quit":
@@ -33,10 +35,10 @@ def interactive_conversation(llm):
         out = llm(task)
         conv.add("assistant", out)
         print(
-            f"Assistant: {out}", #color="cyan"
+            f"Assistant: {out}",
         )
-    conv.display_conversation()
-    conv.export_conversation("conversation.txt")
+        conv.display_conversation()
+        conv.export_conversation("conversation.txt")
 
 
 # Replace with your LLM instance

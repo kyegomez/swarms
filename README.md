@@ -464,6 +464,7 @@ print(video_path)
 - Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our models
 - Reliable conversational structure to hold messages together with dynamic handling for long context conversations and interactions with auto chunking
 - Reliable, this simple system will always provide responses you want.
+
 ```python
 import os
 
@@ -474,7 +475,9 @@ from swarms import (
     Conversation,
 )
 
-conv = Conversation()
+conv = Conversation(
+    time_enabled=True,
+)
 
 # Load the environment variables
 load_dotenv()
@@ -499,7 +502,7 @@ def interactive_conversation(llm):
         out = llm(task)
         conv.add("assistant", out)
         print(
-            f"Assistant: {out}", #color="cyan"
+            f"Assistant: {out}",
         )
     conv.display_conversation()
     conv.export_conversation("conversation.txt")
