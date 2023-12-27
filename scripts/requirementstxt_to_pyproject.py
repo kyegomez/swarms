@@ -10,10 +10,7 @@ def update_pyproject_versions(pyproject_path):
         print(f"Error: The file '{pyproject_path}' was not found.")
         return
     except toml.TomlDecodeError:
-        print(
-            f"Error: The file '{pyproject_path}' is not a valid TOML"
-            " file."
-        )
+        print(f"Error: The file '{pyproject_path}' is not a valid TOML file.")
         return
 
     dependencies = (

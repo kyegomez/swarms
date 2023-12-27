@@ -63,7 +63,7 @@ nav:
   - Overview: "swarms/index.md"
   - swarms.swarms:
     - AbstractSwarm: "swarms/swarms/abstractswarm.md"
-    - GodMode: "swarms/swarms/godmode.md"
+    - ModelParallelizer: "swarms/swarms/ModelParallelizer.md"
     - Groupchat: "swarms/swarms/groupchat.md"
   - swarms.workers:
     - Overview: "swarms/workers/index.md"

@@ -1,4 +1,5 @@
-from swarms import Conversation, AbstractLLM
+from swarms.structs.conversation import Conversation
+from swarms.models.base_llm import AbstractLLM
 
 
 # Run the language model in a loop for n iterations

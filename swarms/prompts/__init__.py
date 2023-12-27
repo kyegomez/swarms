@@ -6,7 +6,7 @@ from swarms.prompts.operations_agent_prompt import (
     OPERATIONS_AGENT_PROMPT,
 )
 from swarms.prompts.product_agent_prompt import PRODUCT_AGENT_PROMPT
-
+from swarms.prompts.documentation import DOCUMENTATION_WRITER_SOP
 
 __all__ = [
     "CODE_INTERPRETER",
@@ -15,4 +15,5 @@ __all__ = [
     "LEGAL_AGENT_PROMPT",
     "OPERATIONS_AGENT_PROMPT",
     "PRODUCT_AGENT_PROMPT",
+    "DOCUMENTATION_WRITER_SOP"
 ]

@@ -11,17 +11,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class GodMode:
+class ModelParallelizer:
     """
-    GodMode
+    ModelParallelizer
     -----
 
     Architecture:
     How it works:
-    1. GodMode receives a task from the user.
-    2. GodMode distributes the task to all LLMs.
-    3. GodMode collects the responses from all LLMs.
-    4. GodMode prints the responses from all LLMs.
+    1. ModelParallelizer receives a task from the user.
+    2. ModelParallelizer distributes the task to all LLMs.
+    3. ModelParallelizer collects the responses from all LLMs.
+    4. ModelParallelizer prints the responses from all LLMs.
 
     Parameters:
     llms: list of LLMs
@@ -31,7 +31,7 @@ class GodMode:
     print_responses(task): print responses from all LLMs
 
     Usage:
-    god_mode = GodMode(llms)
+    god_mode = ModelParallelizer(llms)
     god_mode.run(task)
     god_mode.print_responses(task)
 

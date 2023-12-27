@@ -13,18 +13,13 @@ def get_package_versions(requirements_path, output_path):
 
     for requirement in requirements:
         # Skip empty lines and comments
-        if (
-            requirement.strip() == ""
-            or requirement.strip().startswith("#")
-        ):
+        if requirement.strip() == "" or requirement.strip().startswith("#"):
             continue
 
         # Extract package name
         package_name = requirement.split("==")[0].strip()
         try:
-            version = pkg_resources.get_distribution(
-                package_name
-            ).version
+            version = pkg_resources.get_distribution(package_name).version
             package_versions.append(f"{package_name}=={version}")
         except pkg_resources.DistributionNotFound:
             package_versions.append(f"{package_name}: not installed")
