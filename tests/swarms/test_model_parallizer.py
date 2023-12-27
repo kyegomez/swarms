@@ -113,13 +113,13 @@ def test_summary(capsys):
 def test_enable_load_balancing():
     mp = ModelParallelizer([huggingface_llm])
     mp.enable_load_balancing()
-    assert mp.load_balancing == True
+    assert mp.load_balancing is True
 
 
 def test_disable_load_balancing():
     mp = ModelParallelizer([huggingface_llm])
     mp.disable_load_balancing()
-    assert mp.load_balancing == False
+    assert mp.load_balancing is False
 
 
 def test_concurrent_run():

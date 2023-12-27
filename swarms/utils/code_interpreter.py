@@ -206,10 +206,10 @@ class SubprocessCodeInterpreter:
                 self.output_queue.put({"output": line})
 
 
-interpreter = SubprocessCodeInterpreter()
-interpreter.start_cmd = "python3"
-for output in interpreter.run("""
-print("hello")
-print("world")
-"""):
-    print(output)
+# interpreter = SubprocessCodeInterpreter()
+# interpreter.start_cmd = "python3"
+# for output in interpreter.run("""
+# print("hello")
+# print("world")
+# """):
+#     print(output)

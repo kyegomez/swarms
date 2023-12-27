@@ -31,7 +31,7 @@ def check_for_update():
         BOOL: Flag to indicate if there is an update
     """
     # Fetch the latest version from the PyPI API
-    response = requests.get(f"https://pypi.org/pypi/swarms/json")
+    response = requests.get("https://pypi.org/pypi/swarms/json")
     latest_version = response.json()["info"]["version"]
 
     # Get the current version using pkg_resources

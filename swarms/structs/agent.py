@@ -25,7 +25,7 @@ from swarms.tools.tool import BaseTool
 from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.parse_code import (
-    extract_code_in_backticks_in_string,
+    extract_code_from_markdown,
 )
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
@@ -1257,7 +1257,7 @@ class Agent:
         """
         text -> parse_code by looking for code inside 6 backticks `````-> run_code
         """
-        parsed_code = extract_code_in_backticks_in_string(code)
+        parsed_code = extract_code_from_markdown(code)
         run_code = self.code_executor.run(parsed_code)
         return run_code
 
