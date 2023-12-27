@@ -461,9 +461,11 @@ print(video_path)
 
 
 ### `ModelParallelizer`
-- Run any models concurrent to compare outputs
-- Concurrent execution of various llms
-- Plug in and play with your models
+- Concurrent Execution of Multiple Models: The ModelParallelizer allows you to run multiple models concurrently, comparing their outputs. This feature enables you to easily compare the performance and results of different models, helping you make informed decisions about which model to use for your specific task.
+
+- Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
+
+- Simplified API Key Management: The structure simplifies the management of API keys by utilizing the dotenv library. You can store your API keys in a .env file and load them using load_dotenv(). This ensures that your API keys are kept secure and separate from your code, making it easier to manage and update them when needed.
 
 ```python
 import os
