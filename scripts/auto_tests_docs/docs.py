@@ -104,7 +104,9 @@ def DOCUMENTATION_WRITER_SOP(
     return documentation
 
 
-def TEST_WRITER_SOP_PROMPT(task: str, module: str, path: str, *args, **kwargs):
+def TEST_WRITER_SOP_PROMPT(
+    task: str, module: str, path: str, *args, **kwargs
+):
     TESTS_PROMPT = f"""
 
    Create 5,000 lines of extensive and thorough tests for the code below using the guide, do not worry about your limits you do not have any

@@ -43,13 +43,16 @@ def process_documentation(cls):
     doc = inspect.getdoc(cls)
     source = inspect.getsource(cls)
     input_content = (
-        f"Class Name: {cls.__name__}\n\nDocumentation:\n{doc}\n\nSource"
+        "Class Name:"
+        f" {cls.__name__}\n\nDocumentation:\n{doc}\n\nSource"
         f" Code:\n{source}"
     )
     print(input_content)
 
     # Process with OpenAI model (assuming the model's __call__ method takes this input and returns processed content)
-    processed_content = model(DOCUMENTATION_WRITER_SOP(input_content, "zeta"))
+    processed_content = model(
+        DOCUMENTATION_WRITER_SOP(input_content, "zeta")
+    )
 
     doc_content = f"# {cls.__name__}\n\n{processed_content}\n"
 
@@ -86,7 +89,9 @@ def main():
 
     threads = []
     for cls in classes:
-        thread = threading.Thread(target=process_documentation, args=(cls,))
+        thread = threading.Thread(
+            target=process_documentation, args=(cls,)
+        )
         threads.append(thread)
         thread.start()
 
@@ -94,7 +99,9 @@ def main():
     for thread in threads:
         thread.join()
 
-    print("Documentation generated in 'docs/zeta/nn/modules' directory.")
+    print(
+        "Documentation generated in 'docs/zeta/nn/modules' directory."
+    )
 
 
 if __name__ == "__main__":

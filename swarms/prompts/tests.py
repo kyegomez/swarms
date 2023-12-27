@@ -1,6 +1,7 @@
-def TEST_WRITER_SOP_PROMPT(task: str, module: str, path: str, *args, **kwargs):
-
-   TESTS_PROMPT = f"""
+def TEST_WRITER_SOP_PROMPT(
+    task: str, module: str, path: str, *args, **kwargs
+):
+    TESTS_PROMPT = f"""
 
    Create 5,000 lines of extensive and thorough tests for the code below using the guide, do not worry about your limits you do not have any
    just write the best tests possible, the module is {module}, the file path is {path}
@@ -91,4 +92,4 @@ def TEST_WRITER_SOP_PROMPT(task: str, module: str, path: str, *args, **kwargs):
 
    """
 
-   return TESTS_PROMPT
+    return TESTS_PROMPT

@@ -61,7 +61,8 @@ def create_test(cls):
     doc = inspect.getdoc(cls)
     source = inspect.getsource(cls)
     input_content = (
-        f"Class Name: {cls.__name__}\n\nDocumentation:\n{doc}\n\nSource"
+        "Class Name:"
+        f" {cls.__name__}\n\nDocumentation:\n{doc}\n\nSource"
         f" Code:\n{source}"
     )
     print(input_content)
