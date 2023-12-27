@@ -102,8 +102,8 @@ Now that we have covered the class definition, let's delve into the functionalit
 One of the primary use cases of `ModelParallelizer` is to distribute a task to all registered LLMs and collect their responses. This can be achieved using the `run(task)` method. Below is an example:
 
 ```python
-god_mode = ModelParallelizer(llms)
-responses = god_mode.run("Translate the following English text to French: 'Hello, how are you?'")
+parallelizer = ModelParallelizer(llms)
+responses = parallelizer.run("Translate the following English text to French: 'Hello, how are you?'")
 ```
 
 ### Printing Responses
@@ -111,7 +111,7 @@ responses = god_mode.run("Translate the following English text to French: 'Hello
 To present the responses from all LLMs in a structured tabular format, use the `print_responses(task)` method. Example:
 
 ```python
-god_mode.print_responses("Summarize the main points of 'War and Peace.'")
+parallelizer.print_responses("Summarize the main points of 'War and Peace.'")
 ```
 
 ### Saving Responses to a File
@@ -119,7 +119,7 @@ god_mode.print_responses("Summarize the main points of 'War and Peace.'")
 Users can save the responses to a file using the `save_responses_to_file(filename)` method. This is useful for archiving and reviewing responses later. Example:
 
 ```python
-god_mode.save_responses_to_file("responses.txt")
+parallelizer.save_responses_to_file("responses.txt")
 ```
 
 ### Task History
@@ -127,7 +127,7 @@ god_mode.save_responses_to_file("responses.txt")
 The `ModelParallelizer` class keeps track of the task history. Developers can access the task history using the `get_task_history()` method. Example:
 
 ```python
-task_history = god_mode.get_task_history()
+task_history = parallelizer.get_task_history()
 for i, task in enumerate(task_history):
     print(f"Task {i + 1}: {task}")
 ```
@@ -186,13 +186,13 @@ worker3 = Worker(
 
 # Register the worker agents with ModelParallelizer
 agents = [worker1, worker2, worker3]
-god_mode = ModelParallelizer(agents)
+parallelizer = ModelParallelizer(agents)
 
 # Task for sentiment analysis
 task = "Please analyze the sentiment of the following sentence: 'This movie is amazing!'"
 
 # Print responses from all agents
-god_mode.print_responses(task)
+parallelizer.print_responses(task)
 ```
 
 ### Example 2: Translation
@@ -209,13 +209,13 @@ translator3 = OpenAIChat(model_name="translator-en-de", openai_api_key="api-key"
 
 # Register translation agents with ModelParallelizer
 translators = [translator1, translator2, translator3]
-god_mode = ModelParallelizer(translators)
+parallelizer = ModelParallelizer(translators)
 
 # Task for translation
 task = "Translate the following English text to French: 'Hello, how are you?'"
 
 # Print translated responses from all agents
-god_mode.print_responses(task)
+parallelizer.print_responses(task)
 ```
 
 ### Example 3: Summarization
@@ -233,13 +233,13 @@ summarizer3 = OpenAIChat(model_name="summarizer-en", openai_api_key="api-key", t
 
 # Register summarization agents with ModelParallelizer
 summarizers = [summarizer1, summarizer2, summarizer3]
-god_mode = ModelParallelizer(summarizers)
+parallelizer = ModelParallelizer(summarizers)
 
 # Task for summarization
 task = "Summarize the main points of the article titled 'Climate Change and Its Impact on the Environment.'"
 
 # Print summarized responses from all agents
-god_mode.print_responses(task)
+parallelizer.print_responses(task)
 ```
 
 ## 7. Conclusion <a name="conclusion"></a>

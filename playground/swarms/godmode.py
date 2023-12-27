@@ -1,16 +1,33 @@
+import os
+
+from dotenv import load_dotenv
+
+from swarms.models import Anthropic, Gemini, Mixtral, OpenAIChat
 from swarms.swarms import ModelParallelizer
-from swarms.models import OpenAIChat
 
-api_key = ""
+load_dotenv()
 
-llm = OpenAIChat(openai_api_key=api_key)
+# API Keys
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+openai_api_key = os.getenv("OPENAI_API_KEY")
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
+# Initialize the models
+llm = OpenAIChat(openai_api_key=openai_api_key)
+anthropic = Anthropic(anthropic_api_key=anthropic_api_key)
+mixtral = Mixtral()
+gemini = Gemini(gemini_api_key=gemini_api_key)
 
-llms = [llm, llm, llm]
+# Initialize the parallelizer
+llms = [llm, anthropic, mixtral, gemini]
+parallelizer = ModelParallelizer(llms)
 
-god_mode = ModelParallelizer(llms)
-
+# Set the task
 task = "Generate a 10,000 word blog on health and wellness."
 
-out = god_mode.run(task)
-god_mode.print_responses(task)
+# Run the task
+out = parallelizer.run(task)
+
+# Print the responses 1 by 1
+for i in range(len(out)):
+    print(f"Response from LLM {i}: {out[i]}")

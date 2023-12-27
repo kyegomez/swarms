@@ -31,9 +31,9 @@ class ModelParallelizer:
     print_responses(task): print responses from all LLMs
 
     Usage:
-    god_mode = ModelParallelizer(llms)
-    god_mode.run(task)
-    god_mode.print_responses(task)
+    parallelizer = ModelParallelizer(llms)
+    parallelizer.run(task)
+    parallelizer.print_responses(task)
 
 
     """
