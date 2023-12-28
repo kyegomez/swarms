@@ -3,9 +3,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms.models import OpenAIChat
-from swarms.structs import Agent
-from swarms.structs.swarm_net import SwarmNetwork
+from swarms import OpenAIChat, Agent, SwarmNetwork
 
 # Load the environment variables
 load_dotenv()
