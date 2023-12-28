@@ -465,7 +465,6 @@ print(video_path)
 
 - Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
 
-- Simplified API Key Management: The structure simplifies the management of API keys by utilizing the dotenv library. You can store your API keys in a .env file and load them using load_dotenv(). This ensures that your API keys are kept secure and separate from your code, making it easier to manage and update them when needed.
 
 ```python
 import os
