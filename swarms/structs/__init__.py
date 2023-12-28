@@ -8,6 +8,7 @@ from swarms.structs.schemas import (
     ArtifactUpload,
     StepInput,
 )
+from swarms.structs.swarm_net import SwarmNetwork
 
 __all__ = [
     "Agent",
@@ -18,4 +19,5 @@ __all__ = [
     "Artifact",
     "ArtifactUpload",
     "StepInput",
+    "SwarmNetwork",
 ]

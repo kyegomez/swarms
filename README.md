@@ -557,6 +557,67 @@ interactive_conversation(llm)
 
 ```
 
+
+### `SwarmNetwork`
+- Efficient Task Management: SwarmNetwork's intelligent agent pool and task queue management system ensures tasks are distributed evenly across agents. This leads to efficient use of resources and faster task completion.
+
+- Scalability: SwarmNetwork can dynamically scale the number of agents based on the number of pending tasks. This means it can handle an increase in workload by adding more agents, and conserve resources when the workload is low by reducing the number of agents.
+
+- Versatile Deployment Options: With SwarmNetwork, each agent can be run on its own thread, process, container, machine, or even cluster. This provides a high degree of flexibility and allows for deployment that best suits the user's needs and infrastructure.
+
+```python
+import os
+
+from dotenv import load_dotenv
+
+# Import the OpenAIChat model and the Agent struct
+from swarms.models import OpenAIChat
+from swarms.structs import Agent
+from swarms.structs.swarm_net import SwarmNetwork
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = OpenAIChat(
+    temperature=0.5,
+    openai_api_key=api_key,
+)
+
+## Initialize the workflow
+agent = Agent(llm=llm, max_loops=1, agent_name="Social Media Manager")
+agent2 = Agent(llm=llm, max_loops=1, agent_name=" Product Manager")
+agent3 = Agent(llm=llm, max_loops=1, agent_name="SEO Manager")
+
+
+# Load the swarmnet with the agents
+swarmnet = SwarmNetwork(
+    agents=[agent, agent2, agent3],
+)
+
+# List the agents in the swarm network
+out = swarmnet.list_agents()
+print(out)
+
+# Run the workflow on a task
+out = swarmnet.run_single_agent(
+    agent2.id, "Generate a 10,000 word blog on health and wellness."
+)
+print(out)
+
+
+# Run all the agents in the swarm network on a task
+out = swarmnet.run_many_agents(
+    "Generate a 10,000 word blog on health and wellness."
+)
+print(out)
+
+
+```
+
 ---
 
 # Features 🤖 

@@ -1,4 +1,7 @@
+import sched
+import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import (
     Any,
     Callable,
@@ -10,23 +13,36 @@ from typing import (
 from swarms.structs.agent import Agent
 
 
-# Define a generic Task that can handle different types of callable objects
 @dataclass
 class Task:
     """
     Task class for running a task in a sequential workflow.
 
-
-    Args:
-        description (str): The description of the task.
-        agent (Union[Callable, Agent]): The model or agent to execute the task.
-        args (List[Any]): Additional arguments to pass to the task execution.
-        kwargs (Dict[str, Any]): Additional keyword arguments to pass to the task execution.
-        result (Any): The result of the task execution.
-        history (List[Any]): The history of the task execution.
+    Attributes:
+        description (str): Description of the task.
+        agent (Union[Callable, Agent]): Agent or callable object to run the task.
+        args (List[Any]): Arguments to pass to the agent or callable object.
+        kwargs (Dict[str, Any]): Keyword arguments to pass to the agent or callable object.
+        result (Any): Result of the task.
+        history (List[Any]): History of the task.
+        schedule_time (datetime): Time to schedule the task.
+        scheduler (sched.scheduler): Scheduler to schedule the task.
+        trigger (Callable): Trigger to run the task.
+        action (Callable): Action to run the task.
+        condition (Callable): Condition to run the task.
+        priority (int): Priority of the task.
+        dependencies (List[Task]): List of tasks that need to be completed before this task can be executed.
 
     Methods:
-        execute: Execute the task.
+        execute: Execute the task by calling the agent or model with the arguments and keyword arguments.
+        handle_scheduled_task: Handles the execution of a scheduled task.
+        set_trigger: Sets the trigger for the task.
+        set_action: Sets the action for the task.
+        set_condition: Sets the condition for the task.
+        is_completed: Checks whether the task has been completed.
+        add_dependency: Adds a task to the list of dependencies.
+        set_priority: Sets the priority of the task.
+        check_dependency_completion: Checks whether all the dependencies have been completed.
 
 
     Examples:
@@ -45,34 +61,134 @@ class Task:
     kwargs: Dict[str, Any] = field(default_factory=dict)
     result: Any = None
     history: List[Any] = field(default_factory=list)
-    # logger = logging.getLogger(__name__)
+    schedule_time: datetime = None
+    scheduler = sched.scheduler(time.time, time.sleep)
+    trigger: Callable = None
+    action: Callable = None
+    condition: Callable = None
+    priority: int = 0
+    dependencies: List["Task"] = field(default_factory=list)
 
     def execute(self):
         """
-        Execute the task.
+        Execute the task by calling the agent or model with the arguments and
+        keyword arguments.
 
-        Raises:
-            ValueError: If a Agent instance is used as a task and the 'task' argument is not provided.
+        Examples:
+        >>> from swarms.structs import Task, Agent
+        >>> from swarms.models import OpenAIChat
+        >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
+        >>> task = Task(description="What's the weather in miami", agent=agent)
+        >>> task.execute()
+        >>> task.result
+
         """
-        if isinstance(self.agent, Agent):
-            # Add a prompt to notify the Agent of the sequential workflow
-            if "prompt" in self.kwargs:
-                self.kwargs["prompt"] += (
-                    f"\n\nPrevious output: {self.result}"
-                    if self.result
-                    else ""
-                )
-            else:
-                self.kwargs["prompt"] = (
-                    f"Main task: {self.description}"
-                    + (
-                        f"\n\nPrevious output: {self.result}"
-                        if self.result
-                        else ""
-                    )
-                )
-            self.result = self.agent.run(*self.args, **self.kwargs)
-        else:
-            self.result = self.agent(*self.args, **self.kwargs)
 
-        self.history.append(self.result)
+        try:
+            if isinstance(self.agent, Agent):
+                if self.condition is None or self.condition():
+                    self.result = self.agent.run(
+                        *self.args, **self.kwargs
+                    )
+                    self.history.append(self.result)
+
+                    if self.action is not None:
+                        self.action()
+            else:
+                self.result = self.agent.run(
+                    *self.args, **self.kwargs
+                )
+
+            self.history.append(self.result)
+        except Exception as error:
+            print(f"[ERROR][Task] {error}")
+
+    def handle_scheduled_task(self):
+        """
+        Handles the execution of a scheduled task.
+
+        If the schedule time is not set or has already passed, the task is executed immediately.
+        Otherwise, the task is scheduled to be executed at the specified schedule time.
+        """
+        try:
+            if (
+                self.schedule_time is None
+                or self.schedule_time <= datetime.now()
+            ):
+                self.execute()
+
+            else:
+                delay = (
+                    self.schedule_time - datetime.now()
+                ).total_seconds()
+                self.scheduler.enter(delay, 1, self.execute)
+                self.scheduler_run()
+        except Exception as error:
+            print(f"[ERROR][Task] {error}")
+
+    def set_trigger(self, trigger: Callable):
+        """
+        Sets the trigger for the task.
+
+        Args:
+            trigger (Callable): The trigger to set.
+        """
+        self.trigger = trigger
+
+    def set_action(self, action: Callable):
+        """
+        Sets the action for the task.
+
+        Args:
+            action (Callable): The action to set.
+        """
+        self.action = action
+
+    def set_condition(self, condition: Callable):
+        """
+        Sets the condition for the task.
+
+        Args:
+            condition (Callable): The condition to set.
+        """
+        self.condition = condition
+
+    def is_completed(self):
+        """Is the task completed?
+
+        Returns:
+            _type_: _description_
+        """
+        return self.result is not None
+
+    def add_dependency(self, task):
+        """Adds a task to the list of dependencies.
+
+        Args:
+            task (_type_): _description_
+        """
+        self.dependencies.append(task)
+
+    def set_priority(self, priority: int):
+        """Sets the priority of the task.
+
+        Args:
+            priority (int): _description_
+        """
+        self.priority = priority
+
+    def check_dependency_completion(self):
+        """
+        Checks whether all the dependencies have been completed.
+
+        Returns:
+            bool: True if all the dependencies have been completed, False otherwise.
+        """
+        try:
+            for task in self.dependencies:
+                if not task.is_completed():
+                    return False
+        except Exception as error:
+            print(
+                f"[ERROR][Task][check_dependency_completion] {error}"
+            )
