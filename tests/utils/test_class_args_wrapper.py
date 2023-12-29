@@ -2,11 +2,10 @@ import pytest
 from io import StringIO
 from contextlib import redirect_stdout
 from swarms.utils.class_args_wrapper import print_class_parameters
-from swarms.structs import Agent, Autoscaler
+from swarms.structs.agent import Agent
+from swarms.structs.autoscaler import Autoscaler
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from swarms.utils.class_args_wrapper import print_class_parameters
-from swarms.structs import Agent, Autoscaler
 
 app = FastAPI()
 

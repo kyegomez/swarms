@@ -65,6 +65,7 @@ open_clip_torch = "2.20.0"
 soundfile = "0.12.1"
 torchvision = "0.16.1"
 rich = "13.5.2"
+peft = "*"
 
 
 [tool.poetry.group.lint.dependencies]

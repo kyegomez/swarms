@@ -69,3 +69,4 @@ mkdocs
 mkdocs-material
 mkdocs-glightbox
 pre-commit==3.2.2
+peft
