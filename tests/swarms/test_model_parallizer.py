@@ -3,7 +3,6 @@ from swarms.swarms.model_parallizer import ModelParallelizer
 from swarms.models import (
     HuggingfaceLLM,
     Mixtral,
-    Dalle3,
     GPT4VisionAPI,
     ZeroscopeTTV,
 )
@@ -19,7 +18,6 @@ huggingface_llm = HuggingfaceLLM(
     **custom_config,
 )
 mixtral = Mixtral(load_in_4bit=True, use_flash_attention_2=True)
-dalle3 = Dalle3(quality="high")
 gpt4_vision_api = GPT4VisionAPI(max_tokens=1000)
 zeroscope_ttv = ZeroscopeTTV()
 
@@ -29,7 +27,6 @@ def test_init():
         [
             huggingface_llm,
             mixtral,
-            dalle3,
             gpt4_vision_api,
             zeroscope_ttv,
         ]
@@ -51,7 +48,6 @@ def test_run_all():
         [
             huggingface_llm,
             mixtral,
-            dalle3,
             gpt4_vision_api,
             zeroscope_ttv,
         ]
