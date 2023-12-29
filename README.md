@@ -27,7 +27,7 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
-### `Agent` Example
+### `Agent`
 - Reliable Structure that provides LLMS autonomy
 - Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
 - Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
@@ -127,337 +127,6 @@ for task in workflow.tasks:
 
 ```
 
-## `Multi Modal Autonomous Agents`
-- Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
-
-```python
-# Description: This is an example of how to use the Agent class to run a multi-modal workflow
-import os
-from dotenv import load_dotenv
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
-from swarms.structs import Agent
-
-# Load the environment variables
-load_dotenv()
-
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
-
-# Initialize the language model
-llm = GPT4VisionAPI(
-    openai_api_key=api_key,
-    max_tokens=500,
-)
-
-# Initialize the task
-task = (
-    "Analyze this image of an assembly line and identify any issues such as"
-    " misaligned parts, defects, or deviations from the standard assembly"
-    " process. IF there is anything unsafe in the image, explain why it is"
-    " unsafe and how it could be improved."
-)
-img = "assembly_line.jpg"
-
-## Initialize the workflow
-agent = Agent(
-    llm=llm,
-    max_loops="auto",
-    autosave=True,
-    dashboard=True,
-    multi_modal=True
-)
-
-# Run the workflow on a task
-agent.run(task=task, img=img)
-
-
-```
-
-
-### `OmniModalAgent`
-- An agent that can understand any modality and conditionally generate any modality.
-
-```python
-from swarms.agents.omni_modal_agent import OmniModalAgent, OpenAIChat
-from swarms.models import OpenAIChat
-from dotenv import load_dotenv
-import os
-
-# Load the environment variables
-load_dotenv()
-
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
-
-# Initialize the language model
-llm = OpenAIChat(
-    temperature=0.5,
-    model_name="gpt-4",
-    openai_api_key=api_key,
-)
-
-
-agent = OmniModalAgent(llm)
-agent.run("Generate a video of a swarm of fish and then make an image out of the video")
-```
-
----
-
-### Multi-Agent Swarm for Logistics
-- Swarms is a framework designed for real-world deployment here is a demo presenting a fully ready to use Swarm for a vast array of logistics tasks.
-- Swarms is designed to be modular and reliable for real-world deployments.
-- Swarms is the first framework that unleases multi-modal autonomous agents in the real world.
-
-```python
-from swarms.structs import Agent
-import os
-from dotenv import load_dotenv
-from swarms.models import GPT4VisionAPI
-from swarms.prompts.logistics import (
-    Health_Security_Agent_Prompt,
-    Quality_Control_Agent_Prompt,
-    Productivity_Agent_Prompt,
-    Safety_Agent_Prompt,
-    Security_Agent_Prompt,
-    Sustainability_Agent_Prompt,
-    Efficiency_Agent_Prompt,
-)
-
-# Load ENV
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-
-# GPT4VisionAPI 
-llm = GPT4VisionAPI(openai_api_key=api_key)
-
-# Image for analysis
-factory_image = "factory_image1.jpg"
-
-# Initialize agents with respective prompts
-health_security_agent = Agent(
-    llm=llm,
-    sop=Health_Security_Agent_Prompt,
-    max_loops=1,
-    multi_modal=True,
-)
-
-# Quality control agent
-quality_control_agent = Agent(
-    llm=llm,
-    sop=Quality_Control_Agent_Prompt,
-    max_loops=1,
-    multi_modal=True,
-)
-
-
-# Productivity Agent
-productivity_agent = Agent(
-    llm=llm,
-    sop=Productivity_Agent_Prompt,
-    max_loops=1,
-    multi_modal=True,
-)
-
-# Initiailize safety agent
-safety_agent = Agent(
-    llm=llm, sop=Safety_Agent_Prompt, max_loops=1, multi_modal=True
-)
-
-# Init the security agent
-security_agent = Agent(
-    llm=llm, sop=Security_Agent_Prompt, max_loops=1, multi_modal=True
-)
-
-
-# Initialize sustainability agent
-sustainability_agent = Agent(
-    llm=llm,
-    sop=Sustainability_Agent_Prompt,
-    max_loops=1,
-    multi_modal=True,
-)
-
-
-# Initialize efficincy agent
-efficiency_agent = Agent(
-    llm=llm,
-    sop=Efficiency_Agent_Prompt,
-    max_loops=1,
-    multi_modal=True,
-)
-
-# Run agents with respective tasks on the same image
-health_analysis = health_security_agent.run(
-    "Analyze the safety of this factory", factory_image
-)
-quality_analysis = quality_control_agent.run(
-    "Examine product quality in the factory", factory_image
-)
-productivity_analysis = productivity_agent.run(
-    "Evaluate factory productivity", factory_image
-)
-safety_analysis = safety_agent.run(
-    "Inspect the factory's adherence to safety standards",
-    factory_image,
-)
-security_analysis = security_agent.run(
-    "Assess the factory's security measures and systems",
-    factory_image,
-)
-sustainability_analysis = sustainability_agent.run(
-    "Examine the factory's sustainability practices", factory_image
-)
-efficiency_analysis = efficiency_agent.run(
-    "Analyze the efficiency of the factory's manufacturing process",
-    factory_image,
-)
-```
-
-### `Gemini`
-- Deploy Gemini from Google with utmost reliability with our visual chain of thought prompt that enables more reliable responses
-```python
-import os
-
-from dotenv import load_dotenv
-
-from swarms.models import Gemini
-from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
-
-# Load the environment variables
-load_dotenv()
-
-# Get the API key from the environment
-api_key = os.environ.get("GEMINI_API_KEY")
-
-# Initialize the language model
-llm = Gemini(
-    gemini_api_key=api_key,
-    temperature=0.5,
-    max_tokens=1000,
-    system_prompt=VISUAL_CHAIN_OF_THOUGHT,
-)
-
-# Initialize the task
-task = "This is an eye test. What do you see?"
-img = "playground/demos/multi_modal_chain_of_thought/eyetest.jpg"
-
-# Run the workflow on a task
-out = llm.run(task=task, img=img)
-print(out)
-```
-
-
-### `Anthropic`
-```python
-# Import necessary modules and classes
-from swarms.models import Anthropic
-
-# Initialize an instance of the Anthropic class
-model = Anthropic(
-    anthropic_api_key=""
-)
-
-# Using the run method
-completion_1 = model.run("What is the capital of France?")
-print(completion_1)
-
-# Using the __call__ method
-completion_2 = model("How far is the moon from the earth?", stop=["miles", "km"])
-print(completion_2)
-
-```
-
-
-### `HuggingFaceLLM`
-```python
-from swarms.models import HuggingfaceLLM
-
-# Initialize with custom configuration
-custom_config = {
-    "quantize": True,
-    "quantization_config": {"load_in_4bit": True},
-    "verbose": True
-}
-inference = HuggingfaceLLM(model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config)
-
-# Generate text based on a prompt
-prompt_text = "Create a list of known biggest risks of structural collapse with references"
-generated_text = inference(prompt_text)
-print(generated_text)
-```
-
-### `Mixtral`
-- Utilize Mixtral in a very simple API,
-- Utilize 4bit quantization for a increased speed and less memory usage
-- Use Flash Attention 2.0 for increased speed and less memory usage
-```python
-from swarms.models import Mixtral
-
-# Initialize the Mixtral model with 4 bit and flash attention!
-mixtral = Mixtral(load_in_4bit=True, use_flash_attention_2=True)
-
-# Generate text for a simple task
-generated_text = mixtral.run("Generate a creative story.")
-
-# Print the generated text
-print(generated_text)
-```
-
-
-### `Dalle3`
-```python
-from swarms import Dalle3
-
-# Create an instance of the Dalle3 class with high quality
-dalle3 = Dalle3(quality="high")
-
-# Define a text prompt
-task = "A high-quality image of a sunset"
-
-# Generate a high-quality image from the text prompt
-image_url = dalle3(task)
-
-# Print the generated image URL
-print(image_url)
-```
-
-
-### `GPT4Vision`
-```python
-from swarms.models import GPT4VisionAPI
-
-# Initialize with default API key and custom max_tokens
-api = GPT4VisionAPI(max_tokens=1000)
-
-# Define the task and image URL
-task = "Describe the scene in the image."
-img = "https://i.imgur.com/4P4ZRxU.jpeg"
-
-# Run the GPT-4 Vision model
-response = api.run(task, img)
-
-# Print the model's response
-print(response)
-```
-
-
-### Text to Video with `ZeroscopeTTV`
-
-```python
-# Import the model
-from swarms import ZeroscopeTTV
-
-# Initialize the model
-zeroscope = ZeroscopeTTV()
-
-# Specify the task
-task = "A person is walking on the street."
-
-# Generate the video!
-video_path = zeroscope(task)
-print(video_path)
-
-```
 
 
 ### `ModelParallelizer`
@@ -614,6 +283,385 @@ print(out)
 
 ```
 
+
+### `Task`
+Task Execution: The Task structure allows for the execution of tasks by an assigned agent. The run method is used to execute the task. It's like a Zapier for LLMs
+
+- Task Description: Each Task can have a description, providing a human-readable explanation of what the task is intended to do.
+- Task Scheduling: Tasks can be scheduled for execution at a specific time using the schedule_time attribute.
+- Task Triggers: The set_trigger method allows for the setting of a trigger function that is executed before the task.
+- Task Actions: The set_action method allows for the setting of an action function that is executed after the task.
+- Task Conditions: The set_condition method allows for the setting of a condition function. The task will only be executed if this function returns True.
+- Task Dependencies: The add_dependency method allows for the addition of dependencies to the task. The task will only be executed if all its dependencies have been completed.
+- Task Priority: The set_priority method allows for the setting of the task's priority. Tasks with higher priority will be executed before tasks with lower priority.
+- Task History: The history attribute is a list that keeps track of all the results of the task execution. This can be useful for debugging and for tasks that need to be executed multiple times.
+
+```python
+from swarms.structs import Task, Agent
+from swarms.models import OpenAIChat
+from dotenv import load_dotenv
+import os
+
+
+# Load the environment variables
+load_dotenv()
+
+
+# Define a function to be used as the action
+def my_action():
+    print("Action executed")
+
+
+# Define a function to be used as the condition
+def my_condition():
+    print("Condition checked")
+    return True
+
+
+# Create an agent
+agent = Agent(
+    llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
+    max_loops=1,
+    dashboard=False,
+)
+
+# Create a task
+task = Task(description="What's the weather in miami", agent=agent)
+
+# Set the action and condition
+task.set_action(my_action)
+task.set_condition(my_condition)
+
+# Execute the task
+print("Executing task...")
+task.run()
+
+# Check if the task is completed
+if task.is_completed():
+    print("Task completed")
+else:
+    print("Task not completed")
+
+# Output the result of the task
+print(f"Task result: {task.result}")
+
+
+```
+
+---
+
+
+## Real-World Deployment
+
+### Multi-Agent Swarm for Logistics
+- Swarms is a framework designed for real-world deployment here is a demo presenting a fully ready to use Swarm for a vast array of logistics tasks.
+- Swarms is designed to be modular and reliable for real-world deployments.
+- Swarms is the first framework that unleases multi-modal autonomous agents in the real world.
+
+```python
+from swarms.structs import Agent
+import os
+from dotenv import load_dotenv
+from swarms.models import GPT4VisionAPI
+from swarms.prompts.logistics import (
+    Health_Security_Agent_Prompt,
+    Quality_Control_Agent_Prompt,
+    Productivity_Agent_Prompt,
+    Safety_Agent_Prompt,
+    Security_Agent_Prompt,
+    Sustainability_Agent_Prompt,
+    Efficiency_Agent_Prompt,
+)
+
+# Load ENV
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+# GPT4VisionAPI 
+llm = GPT4VisionAPI(openai_api_key=api_key)
+
+# Image for analysis
+factory_image = "factory_image1.jpg"
+
+# Initialize agents with respective prompts
+health_security_agent = Agent(
+    llm=llm,
+    sop=Health_Security_Agent_Prompt,
+    max_loops=1,
+    multi_modal=True,
+)
+
+# Quality control agent
+quality_control_agent = Agent(
+    llm=llm,
+    sop=Quality_Control_Agent_Prompt,
+    max_loops=1,
+    multi_modal=True,
+)
+
+
+# Productivity Agent
+productivity_agent = Agent(
+    llm=llm,
+    sop=Productivity_Agent_Prompt,
+    max_loops=1,
+    multi_modal=True,
+)
+
+# Initiailize safety agent
+safety_agent = Agent(
+    llm=llm, sop=Safety_Agent_Prompt, max_loops=1, multi_modal=True
+)
+
+# Init the security agent
+security_agent = Agent(
+    llm=llm, sop=Security_Agent_Prompt, max_loops=1, multi_modal=True
+)
+
+
+# Initialize sustainability agent
+sustainability_agent = Agent(
+    llm=llm,
+    sop=Sustainability_Agent_Prompt,
+    max_loops=1,
+    multi_modal=True,
+)
+
+
+# Initialize efficincy agent
+efficiency_agent = Agent(
+    llm=llm,
+    sop=Efficiency_Agent_Prompt,
+    max_loops=1,
+    multi_modal=True,
+)
+
+# Run agents with respective tasks on the same image
+health_analysis = health_security_agent.run(
+    "Analyze the safety of this factory", factory_image
+)
+quality_analysis = quality_control_agent.run(
+    "Examine product quality in the factory", factory_image
+)
+productivity_analysis = productivity_agent.run(
+    "Evaluate factory productivity", factory_image
+)
+safety_analysis = safety_agent.run(
+    "Inspect the factory's adherence to safety standards",
+    factory_image,
+)
+security_analysis = security_agent.run(
+    "Assess the factory's security measures and systems",
+    factory_image,
+)
+sustainability_analysis = sustainability_agent.run(
+    "Examine the factory's sustainability practices", factory_image
+)
+efficiency_analysis = efficiency_agent.run(
+    "Analyze the efficiency of the factory's manufacturing process",
+    factory_image,
+)
+```
+---
+
+
+## `Multi Modal Autonomous Agents`
+- Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
+
+```python
+# Description: This is an example of how to use the Agent class to run a multi-modal workflow
+import os
+from dotenv import load_dotenv
+from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarms.structs import Agent
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = GPT4VisionAPI(
+    openai_api_key=api_key,
+    max_tokens=500,
+)
+
+# Initialize the task
+task = (
+    "Analyze this image of an assembly line and identify any issues such as"
+    " misaligned parts, defects, or deviations from the standard assembly"
+    " process. IF there is anything unsafe in the image, explain why it is"
+    " unsafe and how it could be improved."
+)
+img = "assembly_line.jpg"
+
+## Initialize the workflow
+agent = Agent(
+    llm=llm,
+    max_loops="auto",
+    autosave=True,
+    dashboard=True,
+    multi_modal=True
+)
+
+# Run the workflow on a task
+agent.run(task=task, img=img)
+
+
+```
+
+---
+
+## Multi-Modal Model APIs
+
+### `Gemini`
+- Deploy Gemini from Google with utmost reliability with our visual chain of thought prompt that enables more reliable responses
+```python
+import os
+
+from dotenv import load_dotenv
+
+from swarms.models import Gemini
+from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("GEMINI_API_KEY")
+
+# Initialize the language model
+llm = Gemini(
+    gemini_api_key=api_key,
+    temperature=0.5,
+    max_tokens=1000,
+    system_prompt=VISUAL_CHAIN_OF_THOUGHT,
+)
+
+# Initialize the task
+task = "This is an eye test. What do you see?"
+img = "playground/demos/multi_modal_chain_of_thought/eyetest.jpg"
+
+# Run the workflow on a task
+out = llm.run(task=task, img=img)
+print(out)
+```
+
+
+### `Anthropic`
+```python
+# Import necessary modules and classes
+from swarms.models import Anthropic
+
+# Initialize an instance of the Anthropic class
+model = Anthropic(
+    anthropic_api_key=""
+)
+
+# Using the run method
+completion_1 = model.run("What is the capital of France?")
+print(completion_1)
+
+# Using the __call__ method
+completion_2 = model("How far is the moon from the earth?", stop=["miles", "km"])
+print(completion_2)
+
+```
+
+
+### `HuggingFaceLLM`
+```python
+from swarms.models import HuggingfaceLLM
+
+# Initialize with custom configuration
+custom_config = {
+    "quantize": True,
+    "quantization_config": {"load_in_4bit": True},
+    "verbose": True
+}
+inference = HuggingfaceLLM(model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config)
+
+# Generate text based on a prompt
+prompt_text = "Create a list of known biggest risks of structural collapse with references"
+generated_text = inference(prompt_text)
+print(generated_text)
+```
+
+### `Mixtral`
+- Utilize Mixtral in a very simple API,
+- Utilize 4bit quantization for a increased speed and less memory usage
+- Use Flash Attention 2.0 for increased speed and less memory usage
+```python
+from swarms.models import Mixtral
+
+# Initialize the Mixtral model with 4 bit and flash attention!
+mixtral = Mixtral(load_in_4bit=True, use_flash_attention_2=True)
+
+# Generate text for a simple task
+generated_text = mixtral.run("Generate a creative story.")
+
+# Print the generated text
+print(generated_text)
+```
+
+
+### `Dalle3`
+```python
+from swarms import Dalle3
+
+# Create an instance of the Dalle3 class with high quality
+dalle3 = Dalle3(quality="high")
+
+# Define a text prompt
+task = "A high-quality image of a sunset"
+
+# Generate a high-quality image from the text prompt
+image_url = dalle3(task)
+
+# Print the generated image URL
+print(image_url)
+```
+
+
+### `GPT4Vision`
+```python
+from swarms.models import GPT4VisionAPI
+
+# Initialize with default API key and custom max_tokens
+api = GPT4VisionAPI(max_tokens=1000)
+
+# Define the task and image URL
+task = "Describe the scene in the image."
+img = "https://i.imgur.com/4P4ZRxU.jpeg"
+
+# Run the GPT-4 Vision model
+response = api.run(task, img)
+
+# Print the model's response
+print(response)
+```
+
+
+### Text to Video with `ZeroscopeTTV`
+
+```python
+# Import the model
+from swarms import ZeroscopeTTV
+
+# Initialize the model
+zeroscope = ZeroscopeTTV()
+
+# Specify the task
+task = "A person is walking on the street."
+
+# Generate the video!
+video_path = zeroscope(task)
+print(video_path)
+
+```
+
+
 ---
 
 # Features 🤖 
@@ -688,7 +736,7 @@ Swarms framework is not just a tool but a robust, scalable, and secure partner i
 
 
 ## Documentation
-- For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
+- Out documentation is located here at: [swarms.apac.ai](https://swarms.apac.ai)
 
 
 ## 🫶 Contributions:
@@ -709,7 +757,7 @@ To see how to contribute, visit [Contribution guidelines](https://github.com/kye
 
 
 ## Discovery Call
-Book a discovery call with the Swarms team to learn how to optimize and scale your swarm! [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
+Book a discovery call to learn how Swarms can lower your operating costs by 40% with swarms of autonomous agents in lightspeed. [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
 
 # License
 Apache License

@@ -21,12 +21,16 @@ class Team(BaseModel):
     """
 
     tasks: Optional[List[Task]] = Field(description="List of tasks")
-    agents: Optional[List[Agent]] = Field(description="List of agents in this Team.")
+    agents: Optional[List[Agent]] = Field(
+        description="List of agents in this Team."
+    )
     architecture = Field(
-        description="architecture that the Team will follow.", default="sequential"
+        description="architecture that the Team will follow.",
+        default="sequential",
     )
     verbose: bool = Field(
-        description="Verbose mode for the Agent Execution", default=False
+        description="Verbose mode for the Agent Execution",
+        default=False,
     )
     config: Optional[Json] = Field(
         description="Configuration of the Team.", default=None
@@ -37,19 +41,27 @@ class Team(BaseModel):
         if not values.get("config") and (
             not values.get("agents") and not values.get("tasks")
         ):
-            raise ValueError("Either agents and task need to be set or config.")
+            raise ValueError(
+                "Either agents and task need to be set or config."
+            )
 
         if values.get("config"):
             config = json.loads(values.get("config"))
             if not config.get("agents") or not config.get("tasks"):
-                raise ValueError("Config should have agents and tasks.")
+                raise ValueError(
+                    "Config should have agents and tasks."
+                )
 
-            values["agents"] = [Agent(**agent) for agent in config["agents"]]
+            values["agents"] = [
+                Agent(**agent) for agent in config["agents"]
+            ]
 
             tasks = []
             for task in config["tasks"]:
                 task_agent = [
-                    agt for agt in values["agents"] if agt.role == task["agent"]
+                    agt
+                    for agt in values["agents"]
+                    if agt.role == task["agent"]
                 ][0]
                 del task["agent"]
                 tasks.append(Task(**task, agent=task_agent))
