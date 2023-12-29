@@ -103,6 +103,12 @@ class Task:
         except Exception as error:
             print(f"[ERROR][Task] {error}")
 
+    def run(self):
+        self.execute()
+
+    def __call__(self):
+        self.execute()
+
     def handle_scheduled_task(self):
         """
         Handles the execution of a scheduled task.

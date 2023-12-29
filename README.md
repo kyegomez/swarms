@@ -614,6 +614,71 @@ print(out)
 
 ```
 
+
+### `Task`
+Task Execution: The Task structure allows for the execution of tasks by an assigned agent. The run method is used to execute the task. It's like a Zapier for LLMs
+
+- Task Description: Each Task can have a description, providing a human-readable explanation of what the task is intended to do.
+- Task Scheduling: Tasks can be scheduled for execution at a specific time using the schedule_time attribute.
+- Task Triggers: The set_trigger method allows for the setting of a trigger function that is executed before the task.
+- Task Actions: The set_action method allows for the setting of an action function that is executed after the task.
+- Task Conditions: The set_condition method allows for the setting of a condition function. The task will only be executed if this function returns True.
+- Task Dependencies: The add_dependency method allows for the addition of dependencies to the task. The task will only be executed if all its dependencies have been completed.
+- Task Priority: The set_priority method allows for the setting of the task's priority. Tasks with higher priority will be executed before tasks with lower priority.
+- Task History: The history attribute is a list that keeps track of all the results of the task execution. This can be useful for debugging and for tasks that need to be executed multiple times.
+
+```python
+from swarms.structs import Task, Agent
+from swarms.models import OpenAIChat
+from dotenv import load_dotenv
+import os
+
+
+# Load the environment variables
+load_dotenv()
+
+
+# Define a function to be used as the action
+def my_action():
+    print("Action executed")
+
+
+# Define a function to be used as the condition
+def my_condition():
+    print("Condition checked")
+    return True
+
+
+# Create an agent
+agent = Agent(
+    llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
+    max_loops=1,
+    dashboard=False,
+)
+
+# Create a task
+task = Task(description="What's the weather in miami", agent=agent)
+
+# Set the action and condition
+task.set_action(my_action)
+task.set_condition(my_condition)
+
+# Execute the task
+print("Executing task...")
+task.run()
+
+# Check if the task is completed
+if task.is_completed():
+    print("Task completed")
+else:
+    print("Task not completed")
+
+# Output the result of the task
+print(f"Task result: {task.result}")
+
+
+```
+
 ---
 
 # Features 🤖 
