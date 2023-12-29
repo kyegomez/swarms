@@ -162,5 +162,3 @@ def test_ssd1b_repr_str(ssd1b_model):
     image_url = ssd1b_model(task)
     assert repr(ssd1b_model) == f"SSD1B(image_url={image_url})"
     assert str(ssd1b_model) == f"SSD1B(image_url={image_url})"
-
-

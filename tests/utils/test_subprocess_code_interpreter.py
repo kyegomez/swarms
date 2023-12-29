@@ -75,6 +75,3 @@ def test_handle_stream_output(interpreter, monkeypatch):
 
     monkeypatch.setattr("sys.stdout", mock_readline())
     # More test code needed here to simulate and assert the behavior of handle_stream_output
-
-
-# More tests needed for run method, error handling, and edge cases.

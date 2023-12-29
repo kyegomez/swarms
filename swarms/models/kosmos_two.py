@@ -10,6 +10,7 @@ from transformers import AutoModelForVision2Seq, AutoProcessor
 
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
+
 # utils
 def is_overlapping(rect1, rect2):
     x1, y1, x2, y2 = rect1
