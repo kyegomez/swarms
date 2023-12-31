@@ -1,3 +1,4 @@
+""" This module lists all the data structures used in the swarms package."""
 from swarms.structs.agent import Agent
 from swarms.structs.autoscaler import AutoScaler
 from swarms.structs.base_swarm import AbstractSwarm
@@ -49,4 +50,5 @@ __all__ = [
     "ConcurrentWorkflow",
     "RecursiveWorkflow",
     "NonlinearWorkflow",
+    "BaseStruct",  # from swarms/structs/base.py
 ]
