@@ -34,7 +34,6 @@ class RecursiveWorkflow(BaseStruct):
             self.stop_token is not None
         ), "stop_token cannot be None"
 
-
     def add(self, task: Task, tasks: List[Task] = None):
         """Adds a task to the workflow.
 
@@ -51,7 +50,6 @@ class RecursiveWorkflow(BaseStruct):
         except Exception as error:
             print(f"[ERROR][ConcurrentWorkflow] {error}")
             raise error
-
 
     def run(self):
         """
