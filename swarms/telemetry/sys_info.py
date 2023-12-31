@@ -111,8 +111,8 @@ def interpreter_info(interpreter):
                         + "..."
                         + message["content"][-300:]
                     )
-            except Exception as e:
-                print(str(e), "for message:", message)
+            except KeyError as e:
+                print(f"KeyError {str(e)} for message: {message}")
             messages_to_display.append(message)
 
         return f"""
@@ -136,8 +136,8 @@ def interpreter_info(interpreter):
         System Message: {interpreter.system_message}
 
         """ + "\n\n".join([str(m) for m in messages_to_display])
-    except:
-        return "Error, couldn't get interpreter info"
+    except AttributeError as e:
+        return f"Error, couldn't get interpreter info: {str(e)}"
 
 
 def system_info(interpreter):
