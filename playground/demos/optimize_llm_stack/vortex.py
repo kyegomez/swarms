@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 
-# from swarms.utils.phoenix_handler import phoenix_trace_decorator
 # import modal
 
 load_dotenv()
@@ -22,9 +21,6 @@ llm = OpenAIChat(
 
 
 # Agent
-# @phoenix_trace_decorator(
-#     "This function is an agent and is traced by Phoenix."
-# )
 # @stub.function(gpu="any")
 agent = Agent(
     llm=llm,
