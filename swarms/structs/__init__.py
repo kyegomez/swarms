@@ -1,5 +1,6 @@
 from swarms.structs.agent import Agent
 from swarms.structs.autoscaler import AutoScaler
+from swarms.structs.base import BaseStructure
 from swarms.structs.base_swarm import AbstractSwarm
 from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
@@ -51,4 +52,5 @@ __all__ = [
     "RecursiveWorkflow",
     "NonlinearWorkflow",
     "BaseWorkflow",
+    "BaseStructure"
 ]
