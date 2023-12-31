@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import Mock
-from your_module import interpreter_info, system_info  # replace with your actual module name
+from sys_info import interpreter_info, system_info 
 
 def test_interpreter_info(mocker):
     """Test interpreter_info."""
