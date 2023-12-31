@@ -21,6 +21,7 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
+from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 
 __all__ = [
     "Agent",
@@ -43,4 +44,5 @@ __all__ = [
     "find_token_in_text",
     "extract_key_from_json",
     "extract_tokens_from_text",
+    "ConcurrentWorkflow",
 ]

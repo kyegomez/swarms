@@ -41,6 +41,14 @@ from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
 # from swarms.models.whisperx_model import WhisperX  # noqa: E402
 # from swarms.models.kosmos_two import Kosmos  # noqa: E402
 
+from swarms.models.types import (
+    TextModality,
+    ImageModality,
+    AudioModality,
+    VideoModality,
+    MultimodalData,
+)  # noqa: E402
+
 __all__ = [
     "AbstractLLM",
     "Anthropic",
@@ -49,7 +57,7 @@ __all__ = [
     "OpenAI",
     "AzureOpenAI",
     "OpenAIChat",
-    # "Zephyr",
+    "Zephyr",
     "BaseMultiModalModel",
     "Idefics",
     # "Kosmos",
@@ -70,4 +78,9 @@ __all__ = [
     "Gigabind",
     "Mixtral",
     "ZeroscopeTTV",
+    "TextModality",
+    "ImageModality",
+    "AudioModality",
+    "VideoModality",
+    "MultimodalData",
 ]
