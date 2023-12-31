@@ -1,10 +1,13 @@
 from swarms.structs.agent import Agent
 from swarms.structs.autoscaler import AutoScaler
 from swarms.structs.base_swarm import AbstractSwarm
+from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.groupchat import GroupChat, GroupChatManager
 from swarms.structs.model_parallizer import ModelParallelizer
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
+from swarms.structs.nonlinear_workflow import NonlinearWorkflow
+from swarms.structs.recursive_workflow import RecursiveWorkflow
 from swarms.structs.schemas import (
     Artifact,
     ArtifactUpload,
@@ -21,7 +24,6 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
-from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 
 __all__ = [
     "Agent",
@@ -45,4 +47,6 @@ __all__ = [
     "extract_key_from_json",
     "extract_tokens_from_text",
     "ConcurrentWorkflow",
+    "RecursiveWorkflow",
+    "NonlinearWorkflow",
 ]
