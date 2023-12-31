@@ -11,17 +11,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class GodMode:
+class ModelParallelizer:
     """
-    GodMode
+    ModelParallelizer
     -----
 
     Architecture:
     How it works:
-    1. GodMode receives a task from the user.
-    2. GodMode distributes the task to all LLMs.
-    3. GodMode collects the responses from all LLMs.
-    4. GodMode prints the responses from all LLMs.
+    1. ModelParallelizer receives a task from the user.
+    2. ModelParallelizer distributes the task to all LLMs.
+    3. ModelParallelizer collects the responses from all LLMs.
+    4. ModelParallelizer prints the responses from all LLMs.
 
     Parameters:
     llms: list of LLMs
@@ -31,30 +31,42 @@ class GodMode:
     print_responses(task): print responses from all LLMs
 
     Usage:
-    god_mode = GodMode(llms)
-    god_mode.run(task)
-    god_mode.print_responses(task)
+    parallelizer = ModelParallelizer(llms)
+    parallelizer.run(task)
+    parallelizer.print_responses(task)
 
 
     """
 
     def __init__(
         self,
-        llms: List[Callable],
+        llms: List[Callable] = None,
         load_balancing: bool = False,
         retry_attempts: int = 3,
+        iters: int = None,
+        *args,
+        **kwargs,
     ):
         self.llms = llms
         self.load_balancing = load_balancing
         self.retry_attempts = retry_attempts
+        self.iters = iters
         self.last_responses = None
         self.task_history = []
 
     def run(self, task: str):
         """Run the task string"""
-        with ThreadPoolExecutor() as executor:
-            responses = executor.map(lambda llm: llm(task), self.llms)
-        return list(responses)
+        try:
+            for i in range(self.iters):
+                with ThreadPoolExecutor() as executor:
+                    responses = executor.map(
+                        lambda llm: llm(task), self.llms
+                    )
+                return list(responses)
+        except Exception as error:
+            print(
+                f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
+            )
 
     def print_responses(self, task):
         """Prints the responses in a tabular format"""
@@ -161,22 +173,29 @@ class GodMode:
 
     def concurrent_run(self, task: str) -> List[str]:
         """Synchronously run the task on all llms and collect responses"""
-        with ThreadPoolExecutor() as executor:
-            future_to_llm = {
-                executor.submit(llm, task): llm for llm in self.llms
-            }
-            responses = []
-            for future in as_completed(future_to_llm):
-                try:
-                    responses.append(future.result())
-                except Exception as error:
-                    print(
-                        f"{future_to_llm[future]} generated an"
-                        f" exception: {error}"
-                    )
-        self.last_responses = responses
-        self.task_history.append(task)
-        return responses
+        try:
+            with ThreadPoolExecutor() as executor:
+                future_to_llm = {
+                    executor.submit(llm, task): llm
+                    for llm in self.llms
+                }
+                responses = []
+                for future in as_completed(future_to_llm):
+                    try:
+                        responses.append(future.result())
+                    except Exception as error:
+                        print(
+                            f"{future_to_llm[future]} generated an"
+                            f" exception: {error}"
+                        )
+            self.last_responses = responses
+            self.task_history.append(task)
+            return responses
+        except Exception as error:
+            print(
+                f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
+            )
+            raise error
 
     def add_llm(self, llm: Callable):
         """Add an llm to the god mode"""

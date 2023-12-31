@@ -40,7 +40,7 @@ albumentations
 basicsr
 termcolor==2.2.0
 controlnet-aux
-diffusers==0.17.1
+diffusers
 einops==0.7.0
 imageio==2.25.1
 opencv-python-headless==4.8.1.78
@@ -74,3 +74,4 @@ pgvector
 qdrant-client
 vllm
 sentence-transformers
+peft

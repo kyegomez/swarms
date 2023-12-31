@@ -8,7 +8,7 @@ import torchvision.transforms as T
 from PIL import Image
 from transformers import AutoModelForVision2Seq, AutoProcessor
 
-from swarms.models.base_multimodal_model import BaseMultimodalModel
+from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 
 # utils
@@ -18,7 +18,7 @@ def is_overlapping(rect1, rect2):
     return not (x2 < x3 or x1 > x4 or y2 < y3 or y1 > y4)
 
 
-class Kosmos(BaseMultimodalModel):
+class Kosmos(BaseMultiModalModel):
     """
     Kosmos model by Yen-Chun Shieh
 

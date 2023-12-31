@@ -1,99 +1,78 @@
-# Math Evaluation Decorator Documentation
+# math_eval
 
-## Introduction
-The Math Evaluation Decorator is a utility function that helps you compare the output of two functions, `func1` and `func2`, when given the same input. This decorator is particularly useful for validating whether a generated function produces the same results as a ground truth function. This documentation provides a detailed explanation of the Math Evaluation Decorator, its purpose, usage, and examples.
 
-## Purpose
-The Math Evaluation Decorator serves the following purposes:
-1. To compare the output of two functions, `func1` and `func2`, when given the same input.
-2. To log any errors that may occur during the evaluation.
-3. To provide a warning if the outputs of `func1` and `func2` do not match.
+The `math_eval` function is a python decorator that wraps around a function to run two functions on the same inputs and compare their results. The decorator can be used for testing functions that are expected to have equivalent functionality, or in situations where two different methods are used to calculate or retrieve a value, and the results need to be compared.
 
-## Decorator Definition
+The `math_eval` function in this case accepts two functions as parameters: `func1` and `func2`, and returns a decorator. This returned decorator, when applied to a function, enhances that function to execute both `func1` and `func2`, and compare the results.
+
+This can be particularly useful in situations when you are implementing a new function and wants to compare its behavior and results with that of an existing one under the same set of input parameters. It also logs the results if they do not match which could be quite useful during the debug process.
+
+## Usage Example
+
+Let's say you have two functions: `ground_truth` and `generated_func`, that have similar functionalities or serve the same purpose. You are writing a new function called `test_func`, and you'd like to compare the results of `ground_truth` and `generated_func` when `test_func` is run. Here is how you would use the `math_eval` decorator:
+
 ```python
-def math_eval(func1, func2):
-    """Math evaluation decorator.
-
-    Args:
-        func1 (_type_): The first function to be evaluated.
-        func2 (_type_): The second function to be evaluated.
-
-    Example:
-    >>> @math_eval(ground_truth, generated_func)
-    >>> def test_func(x):
-    >>>     return x
-    >>> result1, result2 = test_func(5)
-    >>> print(f"Result from ground_truth: {result1}")
-    >>> print(f"Result from generated_func: {result2}")
-
-    """
-```
-
-### Parameters
-| Parameter | Type   | Description                                      |
-|-----------|--------|--------------------------------------------------|
-| `func1`   | _type_ | The first function to be evaluated.             |
-| `func2`   | _type_ | The second function to be evaluated.            |
-
-## Usage
-The Math Evaluation Decorator is used as a decorator for a test function that you want to evaluate. Here's how to use it:
-
-1. Define the two functions, `func1` and `func2`, that you want to compare.
-
-2. Create a test function and decorate it with `@math_eval(func1, func2)`.
-
-3. In the test function, provide the input(s) to both `func1` and `func2`.
-
-4. The decorator will compare the outputs of `func1` and `func2` when given the same input(s).
-
-5. Any errors that occur during the evaluation will be logged.
-
-6. If the outputs of `func1` and `func2` do not match, a warning will be generated.
-
-## Examples
-
-### Example 1: Comparing Two Simple Functions
-```python
-# Define the ground truth function
-def ground_truth(x):
-    return x * 2
-
-# Define the generated function
-def generated_func(x):
-    return x - 10
-
-# Create a test function and decorate it
 @math_eval(ground_truth, generated_func)
 def test_func(x):
     return x
-
-# Evaluate the test function with an input
 result1, result2 = test_func(5)
-
-# Print the results
 print(f"Result from ground_truth: {result1}")
 print(f"Result from generated_func: {result2}")
 ```
 
-In this example, the decorator compares the outputs of `ground_truth` and `generated_func` when given the input `5`. If the outputs do not match, a warning will be generated.
+## Parameters
 
-### Example 2: Handling Errors
-If an error occurs in either `func1` or `func2`, the decorator will log the error and set the result to `None`. This ensures that the evaluation continues even if one of the functions encounters an issue.
+| Parameter | Data Type | Description |
+| ---- | ---- | ---- |
+| func1 | Callable | The first function whose result you want to compare. |
+| func2 | Callable | The second function whose result you want to compare. |
 
-## Additional Information and Tips
+The data types for `func1` and `func2` cannot be specified as they can be any python function (or callable object). The decorator verifies that they are callable and exceptions are handled within the decorator function.
 
-- The Math Evaluation Decorator is a powerful tool for comparing the outputs of functions, especially when validating machine learning models or generated code.
+## Return Values
 
-- Ensure that the functions `func1` and `func2` take the same input(s) to ensure a meaningful comparison.
+The `math_eval` function does not return a direct value, since it is a decorator. When applied to a function, it alters the behavior of the wrapped function to return two values:
 
-- Regularly check the logs for any errors or warnings generated during the evaluation.
+1. `result1`: The result of running `func1` with the given input parameters.
+2. `result2`: The result of running `func2` with the given input parameters.
 
-- If the decorator logs a warning about mismatched outputs, investigate and debug the functions accordingly.
+These two return values are provided in that order as a tuple.
 
-## References and Resources
+## Source Code
 
-- For more information on Python decorators, refer to the [Python Decorators Documentation](https://docs.python.org/3/glossary.html#term-decorator).
+Here's how to implement the `math_eval` decorator:
 
-- Explore advanced use cases of the Math Evaluation Decorator in your projects to ensure code correctness and reliability.
+```python
+import functools
+import logging
 
-This comprehensive documentation explains the Math Evaluation Decorator, its purpose, usage, and examples. Use this decorator to compare the outputs of functions and validate code effectively.
+def math_eval(func1, func2):
+    """Math evaluation decorator."""
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                result1 = func1(*args, **kwargs)
+            except Exception as e:
+                logging.error(f"Error in func1: {e}")
+                result1 = None
+
+            try:
+                result2 = func2(*args, **kwargs)
+            except Exception as e:
+                logging.error(f"Error in func2: {e}")
+                result2 = None
+
+            if result1 != result2:
+                logging.warning(
+                    f"Outputs do not match: {result1} != {result2}"
+                )
+
+            return result1, result2
+
+        return wrapper
+
+    return decorator
+```
+Please note that the code is logging exceptions to facilitate debugging, but the actual processing and handling of the exception would depend on how you want your application to respond to exceptions. Therefore, you may want to customize the error handling depending upon your application's requirements.

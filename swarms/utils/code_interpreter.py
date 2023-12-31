@@ -5,22 +5,7 @@ import time
 import traceback
 
 
-class BaseCodeInterpreter:
-    """
-    .run is a generator that yields a dict with attributes: active_line, output
-    """
-
-    def __init__(self):
-        pass
-
-    def run(self, code):
-        pass
-
-    def terminate(self):
-        pass
-
-
-class SubprocessCodeInterpreter(BaseCodeInterpreter):
+class SubprocessCodeInterpreter:
     """
     SubprocessCodeinterpreter is a base class for code interpreters that run code in a subprocess.
 
@@ -43,12 +28,36 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
         self.done = threading.Event()
 
     def detect_active_line(self, line):
+        """Detect if the line is an active line
+
+        Args:
+            line (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return None
 
     def detect_end_of_execution(self, line):
+        """detect if the line is an end of execution line
+
+        Args:
+            line (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return None
 
     def line_postprocessor(self, line):
+        """Line postprocessor
+
+        Args:
+            line (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return line
 
     def preprocess_code(self, code):
@@ -61,9 +70,11 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
         return code
 
     def terminate(self):
+        """terminate the subprocess"""
         self.process.terminate()
 
     def start_process(self):
+        """start the subprocess"""
         if self.process:
             self.terminate()
 
@@ -88,6 +99,14 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
         ).start()
 
     def run(self, code: str):
+        """Run the code in the subprocess
+
+        Args:
+            code (str): _description_
+
+        Yields:
+            _type_: _description_
+        """
         retry_count = 0
         max_retries = 3
 
@@ -157,6 +176,12 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
                     break
 
     def handle_stream_output(self, stream, is_error_stream):
+        """Handle the output from the subprocess
+
+        Args:
+            stream (_type_): _description_
+            is_error_stream (bool): _description_
+        """
         for line in iter(stream.readline, ""):
             if self.debug_mode:
                 print(f"Received output line:\n{line}\n---")
@@ -179,3 +204,12 @@ class SubprocessCodeInterpreter(BaseCodeInterpreter):
                 self.done.set()
             else:
                 self.output_queue.put({"output": line})
+
+
+# interpreter = SubprocessCodeInterpreter()
+# interpreter.start_cmd = "python3"
+# for output in interpreter.run("""
+# print("hello")
+# print("world")
+# """):
+#     print(output)

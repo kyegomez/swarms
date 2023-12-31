@@ -1,4 +1,5 @@
-from typing import Dict, Any, List
+import json
+from typing import Dict, Any, List, Optional
 from swarms.structs.agent import Agent
 
 
@@ -66,3 +67,54 @@ def distribute_tasks(
                 f"No agent found with ID {agent_id}. Task '{task}' is"
                 " not assigned."
             )
+
+
+def find_token_in_text(text: str, token: str = "<DONE>") -> bool:
+    """
+    Parse a block of text for a specific token.
+
+    Args:
+        text (str): The text to parse.
+        token (str): The token to find.
+
+    Returns:
+        bool: True if the token is found in the text, False otherwise.
+    """
+    # Check if the token is in the text
+    if token in text:
+        return True
+    else:
+        return False
+
+
+def extract_key_from_json(
+    json_response: str, key: str
+) -> Optional[str]:
+    """
+    Extract a specific key from a JSON response.
+
+    Args:
+        json_response (str): The JSON response to parse.
+        key (str): The key to extract.
+
+    Returns:
+        Optional[str]: The value of the key if it exists, None otherwise.
+    """
+    response_dict = json.loads(json_response)
+    return response_dict.get(key)
+
+
+def extract_tokens_from_text(
+    text: str, tokens: List[str]
+) -> List[str]:
+    """
+    Extract a list of tokens from a text response.
+
+    Args:
+        text (str): The text to parse.
+        tokens (List[str]): The tokens to extract.
+
+    Returns:
+        List[str]: The tokens that were found in the text.
+    """
+    return [token for token in tokens if token in text]

@@ -27,7 +27,7 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
-### `Agent` Example
+### `Agent`
 - Reliable Structure that provides LLMS autonomy
 - Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
 - Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
@@ -127,15 +127,69 @@ for task in workflow.tasks:
 
 ```
 
-## `Multi Modal Autonomous Agents`
-- Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
+
+
+### `ModelParallelizer`
+- Concurrent Execution of Multiple Models: The ModelParallelizer allows you to run multiple models concurrently, comparing their outputs. This feature enables you to easily compare the performance and results of different models, helping you make informed decisions about which model to use for your specific task.
+
+- Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
+
 
 ```python
-# Description: This is an example of how to use the Agent class to run a multi-modal workflow
 import os
+
 from dotenv import load_dotenv
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
-from swarms.structs import Agent
+
+from swarms.models import Anthropic, Gemini, Mixtral, OpenAIChat
+from swarms.swarms import ModelParallelizer
+
+load_dotenv()
+
+# API Keys
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+openai_api_key = os.getenv("OPENAI_API_KEY")
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+
+# Initialize the models
+llm = OpenAIChat(openai_api_key=openai_api_key)
+anthropic = Anthropic(anthropic_api_key=anthropic_api_key)
+mixtral = Mixtral()
+gemini = Gemini(gemini_api_key=gemini_api_key)
+
+# Initialize the parallelizer
+llms = [llm, anthropic, mixtral, gemini]
+parallelizer = ModelParallelizer(llms)
+
+# Set the task
+task = "Generate a 10,000 word blog on health and wellness."
+
+# Run the task
+out = parallelizer.run(task)
+
+# Print the responses 1 by 1
+for i in range(len(out)):
+    print(f"Response from LLM {i}: {out[i]}")
+```
+
+
+### Simple Conversational Agent
+- Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our models
+- Reliable conversational structure to hold messages together with dynamic handling for long context conversations and interactions with auto chunking
+- Reliable, this simple system will always provide responses you want.
+
+```python
+import os
+
+from dotenv import load_dotenv
+
+from swarms import (
+    OpenAIChat,
+    Conversation,
+)
+
+conv = Conversation(
+    time_enabled=True,
+)
 
 # Load the environment variables
 load_dotenv()
@@ -144,44 +198,48 @@ load_dotenv()
 api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
-llm = GPT4VisionAPI(
-    openai_api_key=api_key,
-    max_tokens=500,
-)
+llm = OpenAIChat(openai_api_key=api_key, model_name="gpt-4")
 
-# Initialize the task
-task = (
-    "Analyze this image of an assembly line and identify any issues such as"
-    " misaligned parts, defects, or deviations from the standard assembly"
-    " process. IF there is anything unsafe in the image, explain why it is"
-    " unsafe and how it could be improved."
-)
-img = "assembly_line.jpg"
+# Run the language model in a loop
+def interactive_conversation(llm):
+    conv = Conversation()
+    while True:
+        user_input = input("User: ")
+        conv.add("user", user_input)
+        if user_input.lower() == "quit":
+            break
+        task = (
+            conv.return_history_as_string()
+        )  # Get the conversation history
+        out = llm(task)
+        conv.add("assistant", out)
+        print(
+            f"Assistant: {out}",
+        )
+    conv.display_conversation()
+    conv.export_conversation("conversation.txt")
 
-## Initialize the workflow
-agent = Agent(
-    llm=llm,
-    max_loops="auto",
-    autosave=True,
-    dashboard=True,
-    multi_modal=True
-)
 
-# Run the workflow on a task
-agent.run(task=task, img=img)
-
+# Replace with your LLM instance
+interactive_conversation(llm)
 
 ```
 
 
-### `OmniModalAgent`
-- An agent that can understand any modality and conditionally generate any modality.
+### `SwarmNetwork`
+- Efficient Task Management: SwarmNetwork's intelligent agent pool and task queue management system ensures tasks are distributed evenly across agents. This leads to efficient use of resources and faster task completion.
+
+- Scalability: SwarmNetwork can dynamically scale the number of agents based on the number of pending tasks. This means it can handle an increase in workload by adding more agents, and conserve resources when the workload is low by reducing the number of agents.
+
+- Versatile Deployment Options: With SwarmNetwork, each agent can be run on its own thread, process, container, machine, or even cluster. This provides a high degree of flexibility and allows for deployment that best suits the user's needs and infrastructure.
 
 ```python
-from swarms.agents.omni_modal_agent import OmniModalAgent, OpenAIChat
-from swarms.models import OpenAIChat
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
+
+# Import the OpenAIChat model and the Agent struct
+from swarms import OpenAIChat, Agent, SwarmNetwork
 
 # Load the environment variables
 load_dotenv()
@@ -192,16 +250,108 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # Initialize the language model
 llm = OpenAIChat(
     temperature=0.5,
-    model_name="gpt-4",
     openai_api_key=api_key,
 )
 
+## Initialize the workflow
+agent = Agent(llm=llm, max_loops=1, agent_name="Social Media Manager")
+agent2 = Agent(llm=llm, max_loops=1, agent_name=" Product Manager")
+agent3 = Agent(llm=llm, max_loops=1, agent_name="SEO Manager")
 
-agent = OmniModalAgent(llm)
-agent.run("Generate a video of a swarm of fish and then make an image out of the video")
+
+# Load the swarmnet with the agents
+swarmnet = SwarmNetwork(
+    agents=[agent, agent2, agent3],
+)
+
+# List the agents in the swarm network
+out = swarmnet.list_agents()
+print(out)
+
+# Run the workflow on a task
+out = swarmnet.run_single_agent(
+    agent2.id, "Generate a 10,000 word blog on health and wellness."
+)
+print(out)
+
+
+# Run all the agents in the swarm network on a task
+out = swarmnet.run_many_agents(
+    "Generate a 10,000 word blog on health and wellness."
+)
+print(out)
+
+```
+
+
+### `Task`
+Task Execution: The Task structure allows for the execution of tasks by an assigned agent. The run method is used to execute the task. It's like a Zapier for LLMs
+
+- Task Description: Each Task can have a description, providing a human-readable explanation of what the task is intended to do.
+- Task Scheduling: Tasks can be scheduled for execution at a specific time using the schedule_time attribute.
+- Task Triggers: The set_trigger method allows for the setting of a trigger function that is executed before the task.
+- Task Actions: The set_action method allows for the setting of an action function that is executed after the task.
+- Task Conditions: The set_condition method allows for the setting of a condition function. The task will only be executed if this function returns True.
+- Task Dependencies: The add_dependency method allows for the addition of dependencies to the task. The task will only be executed if all its dependencies have been completed.
+- Task Priority: The set_priority method allows for the setting of the task's priority. Tasks with higher priority will be executed before tasks with lower priority.
+- Task History: The history attribute is a list that keeps track of all the results of the task execution. This can be useful for debugging and for tasks that need to be executed multiple times.
+
+```python
+from swarms.structs import Task, Agent
+from swarms.models import OpenAIChat
+from dotenv import load_dotenv
+import os
+
+
+# Load the environment variables
+load_dotenv()
+
+
+# Define a function to be used as the action
+def my_action():
+    print("Action executed")
+
+
+# Define a function to be used as the condition
+def my_condition():
+    print("Condition checked")
+    return True
+
+
+# Create an agent
+agent = Agent(
+    llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
+    max_loops=1,
+    dashboard=False,
+)
+
+# Create a task
+task = Task(description="What's the weather in miami", agent=agent)
+
+# Set the action and condition
+task.set_action(my_action)
+task.set_condition(my_condition)
+
+# Execute the task
+print("Executing task...")
+task.run()
+
+# Check if the task is completed
+if task.is_completed():
+    print("Task completed")
+else:
+    print("Task not completed")
+
+# Output the result of the task
+print(f"Task result: {task.result}")
+
+
 ```
 
 ---
+
+
+## Real-World Deployment
 
 ### Multi-Agent Swarm for Logistics
 - Swarms is a framework designed for real-world deployment here is a demo presenting a fully ready to use Swarm for a vast array of logistics tasks.
@@ -312,8 +462,60 @@ efficiency_analysis = efficiency_agent.run(
     factory_image,
 )
 ```
+---
 
-### Gemini
+
+## `Multi Modal Autonomous Agents`
+- Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
+
+```python
+# Description: This is an example of how to use the Agent class to run a multi-modal workflow
+import os
+from dotenv import load_dotenv
+from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarms.structs import Agent
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = GPT4VisionAPI(
+    openai_api_key=api_key,
+    max_tokens=500,
+)
+
+# Initialize the task
+task = (
+    "Analyze this image of an assembly line and identify any issues such as"
+    " misaligned parts, defects, or deviations from the standard assembly"
+    " process. IF there is anything unsafe in the image, explain why it is"
+    " unsafe and how it could be improved."
+)
+img = "assembly_line.jpg"
+
+## Initialize the workflow
+agent = Agent(
+    llm=llm,
+    max_loops="auto",
+    autosave=True,
+    dashboard=True,
+    multi_modal=True
+)
+
+# Run the workflow on a task
+agent.run(task=task, img=img)
+
+
+```
+
+---
+
+## Multi-Modal Model APIs
+
+### `Gemini`
 - Deploy Gemini from Google with utmost reliability with our visual chain of thought prompt that enables more reliable responses
 ```python
 import os
@@ -386,7 +588,7 @@ generated_text = inference(prompt_text)
 print(generated_text)
 ```
 
-### Mixtral
+### `Mixtral`
 - Utilize Mixtral in a very simple API,
 - Utilize 4bit quantization for a increased speed and less memory usage
 - Use Flash Attention 2.0 for increased speed and less memory usage
@@ -402,6 +604,63 @@ generated_text = mixtral.run("Generate a creative story.")
 # Print the generated text
 print(generated_text)
 ```
+
+
+### `Dalle3`
+```python
+from swarms import Dalle3
+
+# Create an instance of the Dalle3 class with high quality
+dalle3 = Dalle3(quality="high")
+
+# Define a text prompt
+task = "A high-quality image of a sunset"
+
+# Generate a high-quality image from the text prompt
+image_url = dalle3(task)
+
+# Print the generated image URL
+print(image_url)
+```
+
+
+### `GPT4Vision`
+```python
+from swarms.models import GPT4VisionAPI
+
+# Initialize with default API key and custom max_tokens
+api = GPT4VisionAPI(max_tokens=1000)
+
+# Define the task and image URL
+task = "Describe the scene in the image."
+img = "https://i.imgur.com/4P4ZRxU.jpeg"
+
+# Run the GPT-4 Vision model
+response = api.run(task, img)
+
+# Print the model's response
+print(response)
+```
+
+
+### Text to Video with `ZeroscopeTTV`
+
+```python
+# Import the model
+from swarms import ZeroscopeTTV
+
+# Initialize the model
+zeroscope = ZeroscopeTTV()
+
+# Specify the task
+task = "A person is walking on the street."
+
+# Generate the video!
+video_path = zeroscope(task)
+print(video_path)
+
+```
+
 
 ---
 
@@ -477,7 +736,7 @@ Swarms framework is not just a tool but a robust, scalable, and secure partner i
 
 
 ## Documentation
-- For documentation, go here, [swarms.apac.ai](https://swarms.apac.ai)
+- Out documentation is located here at: [swarms.apac.ai](https://swarms.apac.ai)
 
 
 ## 🫶 Contributions:
@@ -498,7 +757,7 @@ To see how to contribute, visit [Contribution guidelines](https://github.com/kye
 
 
 ## Discovery Call
-Book a discovery call with the Swarms team to learn how to optimize and scale your swarm! [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
+Book a discovery call to learn how Swarms can lower your operating costs by 40% with swarms of autonomous agents in lightspeed. [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
 
 # License
 Apache License

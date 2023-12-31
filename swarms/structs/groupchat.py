@@ -140,7 +140,6 @@ class GroupChatManager:
     >>> from swarms import GroupChatManager
     >>> from swarms.structs.agent import Agent
     >>> agents = Agent()
-    >>> output = GroupChatManager(agents, lambda x: x)
 
 
     """

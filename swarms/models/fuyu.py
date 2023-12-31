@@ -49,11 +49,11 @@ class Fuyu(BaseMultiModalModel):
         self.processor = FuyuProcessor(
             image_processor=self.image_processor,
             tokenizer=self.tokenizer,
-            **kwargs,
         )
         self.model = FuyuForCausalLM.from_pretrained(
             model_name,
             device_map=device_map,
+            *args,
             **kwargs,
         )
 
@@ -62,7 +62,7 @@ class Fuyu(BaseMultiModalModel):
         image_pil = Image.open(img)
         return image_pil
 
-    def run(self, text: str, img: str, *args, **kwargs):
+    def run(self, text: str = None, img: str = None, *args, **kwargs):
         """Run the pipeline
 
         Args:
@@ -78,8 +78,6 @@ class Fuyu(BaseMultiModalModel):
                 text=text,
                 images=[img],
                 device=self.device_map,
-                *args,
-                **kwargs,
             )
 
             for k, v in model_inputs.items():
@@ -94,8 +92,6 @@ class Fuyu(BaseMultiModalModel):
             text = self.processor.batch_decode(
                 output[:, -7:],
                 skip_special_tokens=True,
-                *args,
-                **kwargs,
             )
             return print(str(text))
         except Exception as error:
