@@ -53,6 +53,7 @@ class SequentialWorkflow:
         self,
         agent: Union[Callable, Agent],
         task: Optional[str] = None,
+        tasks: Optional[List[str]] = None,
         *args,
         **kwargs,
     ) -> None:

@@ -43,13 +43,22 @@ class ConcurrentWorkflow(BaseStruct):
     return_results: bool = False
     use_processes: bool = False
 
-    def add(self, task: Task):
+    def add(self, task: Task, tasks: List[Task] = None):
         """Adds a task to the workflow.
 
         Args:
             task (Task): _description_
+            tasks (List[Task]): _description_
         """
-        self.tasks.append(task)
+        try:
+            if tasks:
+                for task in tasks:
+                    self.tasks.append(task)
+            else:
+                self.tasks.append(task)
+        except Exception as error:
+            print(f"[ERROR][ConcurrentWorkflow] {error}")
+            raise error
 
     def run(self):
         """
