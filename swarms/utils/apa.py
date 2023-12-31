@@ -2,6 +2,7 @@ from enum import Enum, unique, auto
 import abc
 from typing import List, Optional
 import json
+from json.decoder import JSONDecodeError
 from dataclasses import dataclass, field
 
 
