@@ -17,7 +17,6 @@ from swarms.structs.base_swarm import AbstractSwarm
 from swarms.structs.groupchat import GroupChat, GroupChatManager
 
 
-
 __all__ = [
     "Agent",
     "SequentialWorkflow",

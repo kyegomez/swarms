@@ -218,7 +218,6 @@ def test_add_task_exception(mock_put):
     assert str(e.value) == "test error"
 
 
-
 def test_autoscaler_initialization():
     autoscaler = AutoScaler(
         initial_agents=5,
