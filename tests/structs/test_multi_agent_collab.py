@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import Mock
 from swarms.structs import Agent
 from swarms.models import OpenAIChat
-from swarms.swarms.multi_agent_collab import (
+from swarms.structs.multi_agent_collab import (
     MultiAgentCollaboration,
 )
 

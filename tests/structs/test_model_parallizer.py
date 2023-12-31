@@ -1,5 +1,5 @@
 import pytest
-from swarms.swarms.model_parallizer import ModelParallelizer
+from swarms.structs.model_parallizer import ModelParallelizer
 from swarms.models import (
     HuggingfaceLLM,
     Mixtral,

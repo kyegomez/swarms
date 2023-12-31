@@ -10,6 +10,14 @@ from swarms.structs.schemas import (
 )
 from swarms.structs.swarm_net import SwarmNetwork
 
+
+from swarms.structs.model_parallizer import ModelParallelizer
+from swarms.structs.multi_agent_collab import MultiAgentCollaboration
+from swarms.structs.base_swarm import AbstractSwarm
+from swarms.structs.groupchat import GroupChat, GroupChatManager
+
+
+
 __all__ = [
     "Agent",
     "SequentialWorkflow",
@@ -20,4 +28,9 @@ __all__ = [
     "ArtifactUpload",
     "StepInput",
     "SwarmNetwork",
+    "ModelParallelizer",
+    "MultiAgentCollaboration",
+    "AbstractSwarm",
+    "GroupChat",
+    "GroupChatManager",
 ]

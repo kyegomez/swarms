@@ -61,10 +61,6 @@ nav:
     - Docker Container Setup: "docker_setup.md"
 - Swarms:
   - Overview: "swarms/index.md"
-  - swarms.swarms:
-    - AbstractSwarm: "swarms/swarms/abstractswarm.md"
-    - ModelParallelizer: "swarms/swarms/ModelParallelizer.md"
-    - Groupchat: "swarms/swarms/groupchat.md"
   - swarms.workers:
     - Overview: "swarms/workers/index.md"
     - AbstractWorker: "swarms/workers/abstract_worker.md"
@@ -106,6 +102,9 @@ nav:
     - Agent: "swarms/structs/agent.md"
     - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
     - Conversation: "swarms/structs/conversation.md"
+    - AbstractSwarm: "swarms/swarms/abstractswarm.md"
+    - ModelParallelizer: "swarms/swarms/ModelParallelizer.md"
+    - Groupchat: "swarms/swarms/groupchat.md"
   - swarms.memory:
     - Weaviate: "swarms/memory/weaviate.md"
     - PineconeDB: "swarms/memory/pinecone.md"
