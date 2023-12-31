@@ -1,6 +1,7 @@
 from swarms.structs.agent import Agent
 from swarms.structs.autoscaler import AutoScaler
 from swarms.structs.base_swarm import AbstractSwarm
+from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.groupchat import GroupChat, GroupChatManager
@@ -49,4 +50,5 @@ __all__ = [
     "ConcurrentWorkflow",
     "RecursiveWorkflow",
     "NonlinearWorkflow",
+    "BaseWorkflow",
 ]
