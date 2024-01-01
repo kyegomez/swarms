@@ -26,6 +26,7 @@ from swarms.structs.utils import (
     find_agent_by_id,
     find_token_in_text,
     parse_tasks,
+    detect_markdown,
 )
 
 __all__ = [
@@ -57,8 +58,13 @@ __all__ = [
 =======
     "BaseWorkflow",
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> db2dbf3 ([CODE QUALITY])
 =======
     "BaseStructure"
 >>>>>>> a9b3d7d ([CLEANUP][__init__])
+=======
+    "BaseStructure",
+    "detect_markdown",
+>>>>>>> 1df42a3 ([BUGFIX][Conversation] [swarm.tools])
 ]
