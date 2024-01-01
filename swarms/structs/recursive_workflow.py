@@ -1,10 +1,10 @@
 from typing import List
 
-from swarms.structs.base import BaseStruct
+from swarms.structs.base import BaseStructure
 from swarms.structs.task import Task
 
 
-class RecursiveWorkflow(BaseStruct):
+class RecursiveWorkflow(BaseStructure):
     """
     RecursiveWorkflow class for running a task recursively until a stopping condition is met.
 
@@ -34,7 +34,6 @@ class RecursiveWorkflow(BaseStruct):
             self.stop_token is not None
         ), "stop_token cannot be None"
 
-
     def add(self, task: Task, tasks: List[Task] = None):
         """Adds a task to the workflow.
 
@@ -51,7 +50,6 @@ class RecursiveWorkflow(BaseStruct):
         except Exception as error:
             print(f"[ERROR][ConcurrentWorkflow] {error}")
             raise error
-
 
     def run(self):
         """

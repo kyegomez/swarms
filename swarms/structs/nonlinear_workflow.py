@@ -1,8 +1,8 @@
 from swarms.structs.task import Task
-from swarms.structs.base import BaseStruct
+from swarms.structs.base import BaseStructure
 
 
-class NonlinearWorkflow(BaseStruct):
+class NonlinearWorkflow(BaseStructure):
     """
     Represents a Directed Acyclic Graph (DAG) workflow.
 
@@ -24,6 +24,7 @@ class NonlinearWorkflow(BaseStruct):
     >>> workflow.run()
 
     """
+
     def __init__(self, stopping_token: str = "<DONE>"):
         self.tasks = {}
         self.edges = {}
@@ -81,7 +82,7 @@ class NonlinearWorkflow(BaseStruct):
                 for deps in edges.values():
                     for task in ready_tasks:
                         if task in deps:
-                            deps.remove(task)            
+                            deps.remove(task)
         except Exception as error:
             print(f"[ERROR][NonlinearWorkflow] {error}")
             raise error

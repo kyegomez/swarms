@@ -2,12 +2,12 @@ import concurrent.futures
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from swarms.structs.base import BaseStruct
+from swarms.structs.base import BaseStructure
 from swarms.structs.task import Task
 
 
 @dataclass
-class ConcurrentWorkflow(BaseStruct):
+class ConcurrentWorkflow(BaseStructure):
     """
     ConcurrentWorkflow class for running a set of tasks concurrently using N number of autonomous agents.
 
