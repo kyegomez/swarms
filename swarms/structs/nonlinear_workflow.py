@@ -1,8 +1,8 @@
 from swarms.structs.task import Task
-from swarms.structs.base import BaseStruct
+from swarms.structs.base import BaseStructure
 
 
-class NonlinearWorkflow(BaseStruct):
+class NonlinearWorkflow(BaseStructure):
     """
     Represents a Directed Acyclic Graph (DAG) workflow.
 

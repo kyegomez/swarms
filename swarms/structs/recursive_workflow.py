@@ -1,10 +1,10 @@
 from typing import List
 
-from swarms.structs.base import BaseStruct
+from swarms.structs.base import BaseStructure
 from swarms.structs.task import Task
 
 
-class RecursiveWorkflow(BaseStruct):
+class RecursiveWorkflow(BaseStructure):
     """
     RecursiveWorkflow class for running a task recursively until a stopping condition is met.
 
