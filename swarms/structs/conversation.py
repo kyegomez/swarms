@@ -31,7 +31,7 @@ class Conversation(BaseStructure):
         time_enabled: bool = False,
         database: AbstractDatabase = None,
         autosave: bool = True,
-        save_filepath: str = "/runs/conversation.json",
+        save_filepath: str = "runs/conversation.json",
         *args,
         **kwargs,
     ):

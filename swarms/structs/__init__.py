@@ -25,6 +25,7 @@ from swarms.structs.utils import (
     find_agent_by_id,
     find_token_in_text,
     parse_tasks,
+    detect_markdown,
 )
 
 __all__ = [
@@ -52,5 +53,6 @@ __all__ = [
     "RecursiveWorkflow",
     "NonlinearWorkflow",
     "BaseWorkflow",
-    "BaseStructure"
+    "BaseStructure",
+    "detect_markdown",
 ]

@@ -189,7 +189,9 @@ class BaseOpenAI(BaseLLM):
         return True
 
     client: Any = None  #: :meta private:
-    model_name: str = Field(default="text-davinci-003", alias="model")
+    model_name: str = Field(
+        default="gpt-4-1106-preview", alias="model"
+    )
     """Model name to use."""
     temperature: float = 0.7
     """What sampling temperature to use."""
