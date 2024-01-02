@@ -1,3 +1,4 @@
+import re
 import json
 from typing import Dict, Any, List, Optional
 from swarms.structs.agent import Agent
@@ -118,3 +119,21 @@ def extract_tokens_from_text(
         List[str]: The tokens that were found in the text.
     """
     return [token for token in tokens if token in text]
+
+
+def detect_markdown(text: str) -> bool:
+    """
+    Checks if a string contains Markdown code enclosed in six backticks.
+
+    Parameters
+    ----------
+    text : str
+        The text to check.
+
+    Returns
+    -------
+    bool
+        True if the text contains Markdown code enclosed in six backticks, False otherwise.
+    """
+    pattern = r"``````[\s\S]*?``````"
+    return bool(re.search(pattern, text))
