@@ -19,6 +19,7 @@ def block(
     Returns:
         Callable[..., Any]: The transformed function.
     """
+
     def wrapper(*args, **kwargs):
         # Here you can add code to execute the function on various hardwares
         # For now, we'll just call the function normally
