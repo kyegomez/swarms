@@ -28,6 +28,8 @@ from swarms.structs.utils import (
     parse_tasks,
     detect_markdown,
 )
+from swarms.structs.task import Task
+from swarms.structs.block_wrapper import block
 
 __all__ = [
     "Agent",
@@ -66,5 +68,10 @@ __all__ = [
 =======
     "BaseStructure",
     "detect_markdown",
+<<<<<<< HEAD
 >>>>>>> 1df42a3 ([BUGFIX][Conversation] [swarm.tools])
+=======
+    "Task",
+    "block"
+>>>>>>> 8e1a024 ([FEATS] [BlockList] [BlockDict] [block])
 ]
