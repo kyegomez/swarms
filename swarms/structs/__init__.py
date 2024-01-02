@@ -27,6 +27,8 @@ from swarms.structs.utils import (
     parse_tasks,
     detect_markdown,
 )
+from swarms.structs.task import Task
+from swarms.structs.block_wrapper import block
 
 __all__ = [
     "Agent",
@@ -55,4 +57,6 @@ __all__ = [
     "BaseWorkflow",
     "BaseStructure",
     "detect_markdown",
+    "Task",
+    "block"
 ]
