@@ -1,3 +1,6 @@
+""" This module contains a function that scrapes the docstrings and parameters of a function decorated with `tool` and returns a formatted string. """
+# flake8: noqa E501
+
 import inspect
 from typing import Callable
 from termcolor import colored
