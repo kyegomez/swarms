@@ -57,12 +57,11 @@ class ToolAgent(AbstractLLM):
 
         task = "Generate a person's information based on the following schema:"
         agent = ToolAgent(model, tokenizer, json_schema)
-        generated_data = agent(task)
+        generated_data = agent.run(task)
 
         print(generated_data)
 
     """
-
     def __init__(
         self,
         name: str,

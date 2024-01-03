@@ -99,7 +99,7 @@ json_schema = {
 
 task = "Generate a person's information based on the following schema:"
 agent = ToolAgent(model, tokenizer, json_schema)
-generated_data = agent(task)
+generated_data = agent.run(task)
 
 print(generated_data)
 
