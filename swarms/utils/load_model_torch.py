@@ -1,3 +1,6 @@
+""" Load a PyTorch model from a given path and move it to the specified device. """
+# flake8: noqa E501
+
 import torch
 from torch import nn
 
