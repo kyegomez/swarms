@@ -1,3 +1,6 @@
+""" This module contains the SubprocessCodeInterpreter class, which is a base class for code interpreters that run code in a subprocess. """
+# flake8: noqa E501
+
 import subprocess
 import threading
 import queue
