@@ -1,3 +1,6 @@
+""" This module contains the data structure of the APA framework. """
+# flake8: noqa W291
+
 from enum import Enum, unique, auto
 import abc
 from typing import List, Optional
