@@ -59,5 +59,5 @@ __all__ = [
     "BaseStructure",
     "detect_markdown",
     "Task",
-    "block"
+    "block",
 ]
