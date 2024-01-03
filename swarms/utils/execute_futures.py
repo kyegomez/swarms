@@ -1,3 +1,6 @@
+"""Execute a dictionary of futures and return the results. """
+# flake8: noqa E501
+
 from concurrent import futures
 from concurrent.futures import Future
 from typing import TypeVar, Dict
