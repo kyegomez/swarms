@@ -1,3 +1,6 @@
+""" Find the image path from the text """
+# flake8: noqa E501
+
 import os
 import re
 
