@@ -66,6 +66,45 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 
 ```
 
+
+### `ToolAgent`
+
+- Versatility: The ToolAgent class is designed to be flexible and adaptable. It can be used with any model and tokenizer, making it suitable for a wide range of tasks. This versatility means that you can use ToolAgent as a foundation for any tool that requires language model processing.
+
+- Ease of Use: With its simple and intuitive interface, ToolAgent makes it easy to perform complex tasks. Just initialize it with your model, tokenizer, and JSON schema, and then call the run method with your task. This ease of use allows you to focus on your task, not on setting up your tools.
+
+- Customizability: ToolAgent accepts variable length arguments and keyword arguments, allowing you to customize its behavior to suit your needs. Whether you need to adjust the temperature of the model's output, limit the number of tokens, or tweak any other parameter, ToolAgent has you covered. This customizability ensures that ToolAgent can adapt to your specific requirements.
+
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from swarms import ToolAgent
+
+
+model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v2-12b")
+tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v2-12b")
+
+json_schema = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "number"},
+        "is_student": {"type": "boolean"},
+        "courses": {
+            "type": "array",
+            "items": {"type": "string"}
+        }
+    }
+}
+
+task = "Generate a person's information based on the following schema:"
+agent = ToolAgent(model, tokenizer, json_schema)
+generated_data = agent(task)
+
+print(generated_data)
+
+```
+
 ------
 
 ### `SequentialWorkflow`

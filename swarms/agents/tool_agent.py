@@ -35,8 +35,9 @@ class ToolAgent(AbstractLLM):
 
 
     Example:
-        from swarms import ToolAgent
         from transformers import AutoModelForCausalLM, AutoTokenizer
+        from swarms import ToolAgent
+
 
         model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v2-12b")
         tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v2-12b")
@@ -54,9 +55,9 @@ class ToolAgent(AbstractLLM):
             }
         }
 
-        prompt = "Generate a person's information based on the following schema:"
-        agent = ToolAgent(model, tokenizer, json_schema, prompt)
-        generated_data = ToolAgent()
+        task = "Generate a person's information based on the following schema:"
+        agent = ToolAgent(model, tokenizer, json_schema)
+        generated_data = agent(task)
 
         print(generated_data)
 
