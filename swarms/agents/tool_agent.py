@@ -109,3 +109,14 @@ class ToolAgent(AbstractLLM):
         except Exception as error:
             print(f"[Error] [ToolAgent] {error}")
             raise error
+    
+    def __call__(self, task: str, *args, **kwargs):
+        """Call self as a function.
+
+        Args:
+            task (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.run(task, *args, **kwargs)
