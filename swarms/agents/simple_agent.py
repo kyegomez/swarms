@@ -11,6 +11,12 @@ def SimpleAgent(
     Args:
         llm (_type_): _description_
         iters (int, optional): _description_. Defaults to 10.
+
+    Example:
+        >>> from swarms.models import GPT2LM
+        >>> from swarms.agents import SimpleAgent
+        >>> llm = GPT2LM()
+        >>> SimpleAgent(llm, iters=10)
     """
     try:
         conv = Conversation(*args, **kwargs)
