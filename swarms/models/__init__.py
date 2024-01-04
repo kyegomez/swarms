@@ -40,6 +40,7 @@ from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
 # from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
 # from swarms.models.whisperx_model import WhisperX  # noqa: E402
 # from swarms.models.kosmos_two import Kosmos  # noqa: E402
+# from swarms.models.cog_agent import CogAgent  # noqa: E402
 
 from swarms.models.types import (
     TextModality,
@@ -83,4 +84,5 @@ __all__ = [
     "AudioModality",
     "VideoModality",
     "MultimodalData",
+    # "CogAgent"
 ]
