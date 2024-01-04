@@ -68,9 +68,9 @@ rich = "13.5.2"
 sqlalchemy = "*"
 pgvector = "*"
 qdrant-client = "*"
-vllm = "*"
 sentence-transformers = "*"
 peft = "*"
+modelscope = "1.10.0"
 
 
 [tool.poetry.group.lint.dependencies]

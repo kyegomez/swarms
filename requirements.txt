@@ -75,3 +75,4 @@ qdrant-client
 vllm
 sentence-transformers
 peft
+modelscope==1.10.0

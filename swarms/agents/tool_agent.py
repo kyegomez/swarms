@@ -61,6 +61,7 @@ class ToolAgent(AbstractLLM):
 
         print(generated_data)
     """
+
     def __init__(
         self,
         name: str,
@@ -108,7 +109,7 @@ class ToolAgent(AbstractLLM):
         except Exception as error:
             print(f"[Error] [ToolAgent] {error}")
             raise error
-    
+
     def __call__(self, task: str, *args, **kwargs):
         """Call self as a function.
 
