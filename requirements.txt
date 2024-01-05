@@ -20,7 +20,7 @@ pydantic==1.10.12
 soundfile==0.12.1
 arize-phoenix
 weaviate-client==3.25.3
-huggingface-hub==0.16.4
+huggingface-hub==0.19.3
 google-generativeai==0.3.1
 sentencepiece==0.1.98
 requests_mock
