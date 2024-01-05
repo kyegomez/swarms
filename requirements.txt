@@ -1,5 +1,5 @@
 torch==2.1.1
-transformers>2.10==4.35.0
+transformers>2.10==4.36.2
 pandas==1.5.3
 langchain==0.0.333
 nest_asyncio==1.5.6
@@ -72,6 +72,5 @@ pre-commit==3.2.2
 sqlalchemy
 pgvector
 qdrant-client
-sentence-transformers
 peft
 modelscope==1.10.0

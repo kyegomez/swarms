@@ -1,13 +1,11 @@
 import torch
 from swarms.models.base_llm import AbstractLLM
-import subprocess
 
 if torch.cuda.is_available() or torch.cuda.device_count() > 0:
     # Download vllm with pip
     try:
-        subprocess.run(["pip", "install", "vllm"])
         from vllm import LLM, SamplingParams
-    except Exception as error:
+    except ImportError as error:
         print(f"[ERROR] [vLLM] {error}")
         raise error
 else:
