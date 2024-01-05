@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional
 
-from pydantic.v1 import BaseModel, Field, Json, root_validator
+from pydantic import BaseModel, Field, Json, root_validator
 
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
