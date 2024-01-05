@@ -75,8 +75,8 @@ class BlocksList(BaseStructure):
 
     def get_all(self):
         return self.blocks
-    
-    def run_block(self, block: Any, task: str,  *args, **kwargs):
+
+    def run_block(self, block: Any, task: str, *args, **kwargs):
         """Run the block for the specified task.
 
         Args:
