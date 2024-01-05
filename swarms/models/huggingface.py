@@ -3,18 +3,18 @@ import concurrent.futures
 import logging
 from typing import List, Tuple
 
-
 import torch
 from termcolor import colored
-from torch.nn.parallel import DistributedDataParallel as DDP
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
 )
 
+from swarms.models.base_llm import AbstractLLM
 
-class HuggingfaceLLM:
+
+class HuggingfaceLLM(AbstractLLM):
     """
     A class for running inference on a given model.
 
@@ -123,7 +123,6 @@ class HuggingfaceLLM:
         quantize: bool = False,
         quantization_config: dict = None,
         verbose=False,
-        # logger=None,
         distributed=False,
         decoding=False,
         max_workers: int = 5,
@@ -135,6 +134,7 @@ class HuggingfaceLLM:
         *args,
         **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
         self.device = (
             device
@@ -174,16 +174,21 @@ class HuggingfaceLLM:
 
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_id, *args, **kwargs
-            )
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id,
-                quantization_config=bnb_config,
-                *args,
-                **kwargs,
+                self.model_id
             )
 
-            self.model  # .to(self.device)
+            if quantize:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_id,
+                    quantization_config=bnb_config,
+                    *args,
+                    **kwargs,
+                ).to(self.device)
+            else:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_id, *args, **kwargs
+                ).to(self.device)
+
         except Exception as e:
             # self.logger.error(f"Failed to load the model or the tokenizer: {e}")
             # raise
@@ -205,33 +210,6 @@ class HuggingfaceLLM:
         """Ashcnronous generate text for a given prompt"""
         return await asyncio.to_thread(self.run, task)
 
-    def load_model(self):
-        """Load the model"""
-        if not self.model or not self.tokenizer:
-            try:
-                self.tokenizer = AutoTokenizer.from_pretrained(
-                    self.model_id
-                )
-
-                bnb_config = (
-                    BitsAndBytesConfig(**self.quantization_config)
-                    if self.quantization_config
-                    else None
-                )
-
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_id, quantization_config=bnb_config
-                ).to(self.device)
-
-                if self.distributed:
-                    self.model = DDP(self.model)
-            except Exception as error:
-                self.logger.error(
-                    "Failed to load the model or the tokenizer:"
-                    f" {error}"
-                )
-                raise
-
     def concurrent_run(self, tasks: List[str], max_workers: int = 5):
         """Concurrently generate text for a list of prompts."""
         with concurrent.futures.ThreadPoolExecutor(
@@ -252,7 +230,7 @@ class HuggingfaceLLM:
             results = [future.result() for future in futures]
         return results
 
-    def run(self, task: str):
+    def run(self, task: str, *args, **kwargs):
         """
         Generate a response based on the prompt text.
 
@@ -263,20 +241,12 @@ class HuggingfaceLLM:
         Returns:
         - Generated text (str).
         """
-        self.load_model()
-
-        max_length = self.max_length
-
-        self.print_dashboard(task)
-
         try:
             inputs = self.tokenizer.encode(task, return_tensors="pt")
 
-            # self.log.start()
-
             if self.decoding:
                 with torch.no_grad():
-                    for _ in range(max_length):
+                    for _ in range(self.max_length):
                         output_sequence = []
 
                         outputs = self.model.generate(
@@ -300,7 +270,11 @@ class HuggingfaceLLM:
             else:
                 with torch.no_grad():
                     outputs = self.model.generate(
-                        inputs, max_length=max_length, do_sample=True
+                        inputs,
+                        max_length=self.max_length,
+                        do_sample=True,
+                        *args,
+                        **kwargs,
                     )
 
             del inputs
@@ -320,67 +294,8 @@ class HuggingfaceLLM:
             )
             raise
 
-    def __call__(self, task: str):
-        """
-        Generate a response based on the prompt text.
-
-        Args:
-        - task (str): Text to prompt the model.
-        - max_length (int): Maximum length of the response.
-
-        Returns:
-        - Generated text (str).
-        """
-        self.load_model()
-
-        max_length = self.max_length
-
-        self.print_dashboard(task)
-
-        try:
-            inputs = self.tokenizer.encode(
-                task, return_tensors="pt"
-            ).to(self.device)
-
-            # self.log.start()
-
-            if self.decoding:
-                with torch.no_grad():
-                    for _ in range(max_length):
-                        output_sequence = []
-
-                        outputs = self.model.generate(
-                            inputs,
-                            max_length=len(inputs) + 1,
-                            do_sample=True,
-                        )
-                        output_tokens = outputs[0][-1]
-                        output_sequence.append(output_tokens.item())
-
-                        # print token in real-time
-                        print(
-                            self.tokenizer.decode(
-                                [output_tokens],
-                                skip_special_tokens=True,
-                            ),
-                            end="",
-                            flush=True,
-                        )
-                        inputs = outputs
-            else:
-                with torch.no_grad():
-                    outputs = self.model.generate(
-                        inputs, max_length=max_length, do_sample=True
-                    )
-
-            del inputs
-
-            return self.tokenizer.decode(
-                outputs[0], skip_special_tokens=True
-            )
-        except Exception as e:
-            self.logger.error(f"Failed to generate the text: {e}")
-            raise
+    def __call__(self, task: str, *args, **kwargs):
+        return self.run(task, *args, **kwargs)
 
     async def __call_async__(self, task: str, *args, **kwargs) -> str:
         """Call the model asynchronously""" ""

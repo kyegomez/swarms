@@ -8,11 +8,11 @@ device_check = "cuda" if torch.cuda.is_available() else "cpu"
 
 class CogAgent(BaseMultiModalModel):
     """CogAgent
-    
+
     Multi-modal conversational agent that can be used to chat with
     images and text. It is based on the CogAgent model from the
     ModelScope library.
-    
+
     Attributes:
         model_name (str): The name of the model to be used
         tokenizer_name (str): The name of the tokenizer to be used
@@ -21,13 +21,14 @@ class CogAgent(BaseMultiModalModel):
         load_in_4bit (bool): Whether to load in 4-bit
         trust_remote_code (bool): Whether to trust remote code
         device (str): The device to be used
-    
+
     Examples:
         >>> from swarms.models.cog_agent import CogAgent
         >>> cog_agent = CogAgent()
         >>> cog_agent.run("How are you?", "images/1.jpg")
         <s> I'm fine. How are you? </s>
     """
+
     def __init__(
         self,
         model_name: str = "ZhipuAI/cogagent-chat",
@@ -73,8 +74,8 @@ class CogAgent(BaseMultiModalModel):
         Args:
             task (str): The task to be performed
             img (str): The image path
-            
-        """ 
+
+        """
         image = Image.open(img).convert("RGB")
 
         input_by_model = self.model.build_conversation_input_ids(
