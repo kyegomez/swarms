@@ -17,6 +17,7 @@ openai==0.28.0
 attrs==22.2.0
 datasets==2.10.1
 pydantic==1.10.12
+bitsandbytes
 soundfile==0.12.1
 arize-phoenix
 weaviate-client==3.25.3

@@ -36,6 +36,15 @@ class BlocksList(BaseStructure):
         get_by_parent_name(parent_name: str): Get blocks by parent name.
         get_by_parent_type(parent_type: str): Get blocks by parent type.
         get_by_parent_description(parent_description: str): Get blocks by parent description.
+
+
+    Examples:
+    >>> from swarms.structs.block import Block
+    >>> from swarms.structs.blockslist import BlocksList
+    >>> block = Block("block", "A block")
+    >>> blockslist = BlocksList("blockslist", "A list of blocks", [block])
+    >>> blockslist
+
     """
 
     def __init__(
@@ -47,8 +56,10 @@ class BlocksList(BaseStructure):
         **kwargs,
     ):
         super().__init__(name=name, description=description, **kwargs)
-        self.parent = parent
+        self.name = name
+        self.description = description
         self.blocks = blocks
+        self.parent = parent
 
     def add(self, block: Any):
         self.blocks.append(block)
@@ -64,6 +75,26 @@ class BlocksList(BaseStructure):
 
     def get_all(self):
         return self.blocks
+    
+    def run_block(self, block: Any, task: str,  *args, **kwargs):
+        """Run the block for the specified task.
+
+        Args:
+            task (str): The task to be performed by the block.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            The output of the block.
+
+        Raises:
+            Exception: If an error occurs during the execution of the block.
+        """
+        try:
+            return block.run(task, *args, **kwargs)
+        except Exception as error:
+            print(f"[Error] [Block] {error}")
+            raise error
 
     def get_by_name(self, name: str):
         return [block for block in self.blocks if block.name == name]

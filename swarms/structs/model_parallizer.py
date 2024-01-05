@@ -41,14 +41,12 @@ class ModelParallelizer:
     def __init__(
         self,
         llms: List[Callable] = None,
-        load_balancing: bool = False,
         retry_attempts: int = 3,
         iters: int = None,
         *args,
         **kwargs,
     ):
         self.llms = llms
-        self.load_balancing = load_balancing
         self.retry_attempts = retry_attempts
         self.iters = iters
         self.last_responses = None
@@ -150,16 +148,6 @@ class ModelParallelizer:
                 "cyan",
             )
         )
-
-    def enable_load_balancing(self):
-        """Enable load balancing among LLMs."""
-        self.load_balancing = True
-        logger.info("Load balancing enabled.")
-
-    def disable_load_balancing(self):
-        """Disable load balancing."""
-        self.load_balancing = False
-        logger.info("Load balancing disabled.")
 
     async def arun(self, task: str):
         """Asynchronous run the task string"""

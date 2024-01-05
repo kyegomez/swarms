@@ -131,6 +131,7 @@ class HuggingfaceLLM(AbstractLLM):
         temperature: float = 0.7,
         top_k: int = 40,
         top_p: float = 0.8,
+        dtype = torch.bfloat16,
         *args,
         **kwargs,
     ):
@@ -146,7 +147,6 @@ class HuggingfaceLLM(AbstractLLM):
         self.verbose = verbose
         self.distributed = distributed
         self.decoding = decoding
-        self.model, self.tokenizer = None, None
         self.quantize = quantize
         self.quantization_config = quantization_config
         self.max_workers = max_workers
@@ -155,6 +155,7 @@ class HuggingfaceLLM(AbstractLLM):
         self.temperature = temperature
         self.top_k = top_k
         self.top_p = top_p
+        self.dtype = dtype
 
         if self.distributed:
             assert (
@@ -168,39 +169,26 @@ class HuggingfaceLLM(AbstractLLM):
                     "load_in_4bit": True,
                     "bnb_4bit_use_double_quant": True,
                     "bnb_4bit_quant_type": "nf4",
-                    "bnb_4bit_compute_dtype": torch.bfloat16,
+                    "bnb_4bit_compute_dtype": dtype,
                 }
             bnb_config = BitsAndBytesConfig(**quantization_config)
 
-        try:
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_id
-            )
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_id
+        ).to(self.device)
 
-            if quantize:
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_id,
-                    quantization_config=bnb_config,
-                    *args,
-                    **kwargs,
-                ).to(self.device)
-            else:
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_id, *args, **kwargs
-                ).to(self.device)
+        if quantize:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_id,
+                quantization_config=bnb_config,
+                *args,
+                **kwargs,
+            ).to(self.device)
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_id, *args, **kwargs
+            ).to(self.device)
 
-        except Exception as e:
-            # self.logger.error(f"Failed to load the model or the tokenizer: {e}")
-            # raise
-            print(
-                colored(
-                    (
-                        "Failed to load the model and or the"
-                        f" tokenizer: {e}"
-                    ),
-                    "red",
-                )
-            )
 
     def print_error(self, error: str):
         """Print error"""
@@ -276,8 +264,7 @@ class HuggingfaceLLM(AbstractLLM):
                         *args,
                         **kwargs,
                     )
-
-            del inputs
+                    
             return self.tokenizer.decode(
                 outputs[0], skip_special_tokens=True
             )

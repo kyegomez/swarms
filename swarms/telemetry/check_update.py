@@ -40,7 +40,3 @@ def check_for_update():
     return version.parse(latest_version) > version.parse(
         current_version
     )
-
-
-# out = check_for_update()
-# print(out)
