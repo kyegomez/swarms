@@ -1,5 +1,6 @@
-from typing import Callable, Any
 import logging
+from functools import wraps
+from typing import Any, Callable
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ def block(
         Callable[..., Any]: The transformed function.
     """
 
+    @wraps(function)
     def wrapper(*args, **kwargs):
         # Here you can add code to execute the function on various hardwares
         # For now, we'll just call the function normally

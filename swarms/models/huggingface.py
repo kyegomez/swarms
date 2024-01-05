@@ -170,6 +170,7 @@ class HuggingfaceLLM(AbstractLLM):
                     "bnb_4bit_use_double_quant": True,
                     "bnb_4bit_quant_type": "nf4",
                     "bnb_4bit_compute_dtype": dtype,
+                    "bnb_4bit_compute_dtype": dtype,
                 }
             bnb_config = BitsAndBytesConfig(**quantization_config)
 
@@ -188,6 +189,7 @@ class HuggingfaceLLM(AbstractLLM):
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id, *args, **kwargs
             ).to(self.device)
+
 
     def print_error(self, error: str):
         """Print error"""
@@ -263,7 +265,7 @@ class HuggingfaceLLM(AbstractLLM):
                         *args,
                         **kwargs,
                     )
-
+                    
             return self.tokenizer.decode(
                 outputs[0], skip_special_tokens=True
             )
