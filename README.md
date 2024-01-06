@@ -78,7 +78,7 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from swarms import ToolAgent
+from swarms.agents.tool_agent import ToolAgent
 
 
 model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v2-12b")
