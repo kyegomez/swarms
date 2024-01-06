@@ -9,7 +9,7 @@ from swarms.models.openai_models import (
     OpenAIChat,
 )  # noqa: E402
 
-from swarms.models.vllm import vLLM  # noqa: E402
+# from swarms.models.vllm import vLLM  # noqa: E402
 from swarms.models.zephyr import Zephyr  # noqa: E402
 from swarms.models.biogpt import BioGPT  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
@@ -40,6 +40,7 @@ from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
 # from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
 # from swarms.models.whisperx_model import WhisperX  # noqa: E402
 # from swarms.models.kosmos_two import Kosmos  # noqa: E402
+# from swarms.models.cog_agent import CogAgent  # noqa: E402
 
 from swarms.models.types import (
     TextModality,
@@ -72,7 +73,7 @@ __all__ = [
     # "Dalle3",
     # "DistilWhisperModel",
     "GPT4VisionAPI",
-    "vLLM",
+    # "vLLM",
     "OpenAITTS",
     "Gemini",
     "Gigabind",
@@ -83,4 +84,5 @@ __all__ = [
     "AudioModality",
     "VideoModality",
     "MultimodalData",
+    # "CogAgent"
 ]
