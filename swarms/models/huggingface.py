@@ -175,7 +175,7 @@ class HuggingfaceLLM(AbstractLLM):
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_id
-        ).to(self.device)
+        )
 
         if quantize:
             self.model = AutoModelForCausalLM.from_pretrained(
