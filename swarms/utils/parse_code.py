@@ -1,3 +1,5 @@
+""" This module contains functions for parsing code from Markdown files. """
+# flake8: noqa E501
 import re
 
 

@@ -1,3 +1,8 @@
+"""
+    This file contains all the utility functions and classes used in the project.
+    It also contains the code for uploading files to S3 and static folder.
+"""
+# flake8: noqa E501
 import os
 import random
 import shutil
@@ -390,7 +395,7 @@ class FileHandler:
                             "SERVER", "http://localhost:8000"
                         )
                     )
-                    + 1 :
+                    + 1:
                 ]
                 local_filename = (
                     Path("file") / local_filepath.split("/")[-1]

@@ -1,3 +1,5 @@
+""" Serializable base class. """
+# flake8: noqa E501
 from abc import ABC
 from typing import Any, Dict, List, Literal, TypedDict, Union, cast
 

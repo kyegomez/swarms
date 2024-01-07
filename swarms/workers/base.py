@@ -1,3 +1,5 @@
+""" (In preview) An abstract class for AI worker. """
+# flake8: noqa E501
 from typing import Dict, List, Optional, Union
 
 

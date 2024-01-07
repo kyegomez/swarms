@@ -1,7 +1,11 @@
+""" This module contains the data structure of the APA framework. """
+# flake8: noqa W291
+
 from enum import Enum, unique, auto
 import abc
 from typing import List, Optional
 import json
+from json.decoder import JSONDecodeError
 from dataclasses import dataclass, field
 
 
@@ -108,7 +112,8 @@ class Action:
     def to_json(self):
         try:
             tool_output = json.loads(self.tool_output)
-        except:
+        except JSONDecodeError:
+            # print("Failed to decode JSON. Using raw output instead.")
             tool_output = self.tool_output
         return {
             "thought": self.thought,

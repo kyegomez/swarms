@@ -1,4 +1,6 @@
 """Base implementation for tools or skills."""
+# flake8: noqa E501
+
 from __future__ import annotations
 
 import asyncio
