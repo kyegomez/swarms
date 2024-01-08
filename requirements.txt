@@ -21,7 +21,7 @@ bitsandbytes
 soundfile==0.12.1
 arize-phoenix
 weaviate-client==3.25.3
-huggingface-hub==0.16.4
+huggingface-hub
 google-generativeai==0.3.1
 sentencepiece==0.1.98
 requests_mock
