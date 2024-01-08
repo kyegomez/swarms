@@ -15,7 +15,7 @@ Pillow==9.4.0
 faiss-cpu==1.7.4
 openai==0.28.0
 attrs==22.2.0
-datasets==2.10.1
+datasets==2.14.5
 pydantic==1.10.12
 bitsandbytes
 soundfile==0.12.1
