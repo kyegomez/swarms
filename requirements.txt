@@ -75,3 +75,4 @@ pgvector
 qdrant-client
 peft
 modelscope==1.10.0
+toml
