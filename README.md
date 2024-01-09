@@ -882,7 +882,7 @@ Swarms supports various model providers like OpenAI, Huggingface, Anthropic, Goo
 |----------|-----------------------------|-------------|
 | OpenAI | :heavy_check_mark: | OpenAIChat, OpenAITTS, GPT4VisionAPI, Dalle3 |
 | Anthropic | :heavy_check_mark: | Anthropic |
-| Mistral | :heavy_check_mark: | Mistral |
+| Mistral | :heavy_check_mark: | Mistral, Mixtral |
 | Gemini/Palm | :heavy_check_mark: | Gemini |
 | Huggingface | :heavy_check_mark: | HuggingFaceLLM |
 | Modelscope | :heavy_check_mark: | Modelscope |
@@ -968,9 +968,9 @@ Swarms framework is not just a tool but a robust, scalable, and secure partner i
 
 ## 🫶 Contributions:
 
-Swarms is an open-source project, and contributions are welcome. If you want to contribute, you can create new features, fix bugs, or improve the infrastructure. Please refer to the [CONTRIBUTING.md](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1) file in the repository for more information on how to contribute.
+The easiest way to contribute is to pick any issue with the `good first issue` tag 💪. Read the Contributing guidelines [here](/CONTRIBUTING.md). Bug Report? [File here](https://github.com/kyegomez/swarms/gateway/issues) | Feature Request? [File here](https://github.com/Portkey-AI/gateway/issues)
 
-To see how to contribute, visit [Contribution guidelines](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md)
+Swarms is an open-source project, and contributions are VERY welcome. If you want to contribute, you can create new features, fix bugs, or improve the infrastructure. Please refer to the [CONTRIBUTING.md](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1) to participate in Roadmap discussions!
 
 <a href="https://github.com/kyegomez/swarms/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
@@ -978,9 +978,16 @@ To see how to contribute, visit [Contribution guidelines](https://github.com/kye
 
 
 ## Community
+
+Join our growing community around the world, for real-time, ideas, and discussions on Swarms 😊 
+
+- View our official [Blog](https://swarms.apac.ai)
+- Chat live with us on [Discord](https://discord.gg/kS3rwKs3ZC)
+- Follow us on [Twitter](https://twitter.com/kyegomez)
+- Connect with us on [LinkedIn](https://www.linkedin.com/company/the-swarm-corporation)
+- Visit us on [YouTube](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ)
 - [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)
 - Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks [Sign up here](https://lu.ma/5p2jnc2v)
-
 
 
 ## Discovery Call
@@ -993,3 +1000,4 @@ Help us accelerate our backlog by supporting us financially! Note, we're an open
 
 # License
 Apache License
+
