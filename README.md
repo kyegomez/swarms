@@ -875,7 +875,9 @@ print(video_path)
 
 ```
 
-### Supported Models
+----
+
+## Supported Models :heavy_check_mark:
 Swarms supports various model providers like OpenAI, Huggingface, Anthropic, Google, Mistral and many more.
 
 | Provider | Provided :heavy_check_mark: | Module Name |
@@ -961,10 +963,12 @@ The Swarms framework is equipped with a suite of advanced AI capabilities design
 
 Swarms framework is not just a tool but a robust, scalable, and secure partner in your AI journey, ready to tackle the challenges of modern AI applications in a business environment.
 
+---
 
 ## Documentation
-- Out documentation is located here at: [swarms.apac.ai](https://swarms.apac.ai)
+Documentation is located here at: [swarms.apac.ai](https://swarms.apac.ai)
 
+----
 
 ## 🫶 Contributions:
 
@@ -976,10 +980,11 @@ Swarms is an open-source project, and contributions are VERY welcome. If you wan
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
 </a>
 
+--
 
 ## Community
 
-Join our growing community around the world, for real-time, ideas, and discussions on Swarms 😊 
+Join our growing community around the world, for real-time support, ideas, and discussions on Swarms 😊 
 
 - View our official [Blog](https://swarms.apac.ai)
 - Chat live with us on [Discord](https://discord.gg/kS3rwKs3ZC)
@@ -989,6 +994,7 @@ Join our growing community around the world, for real-time, ideas, and discussio
 - [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)
 - Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks [Sign up here](https://lu.ma/5p2jnc2v)
 
+---
 
 ## Discovery Call
 Book a discovery call to learn how Swarms can lower your operating costs by 40% with swarms of autonomous agents in lightspeed. [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
