@@ -148,7 +148,7 @@ class SwarmNetwork(BaseStructure):
         """
         self.logger.info(f"Running task {task} on agent {agent_id}")
         try:
-            for agent in self.agents_pool:
+            for agent in self.agent_pool:
                 if agent.id == agent_id:
                     return agent.run(task, *args, **kwargs)
                 self.logger.info(f"No agent found with ID {agent_id}")
