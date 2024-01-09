@@ -1,4 +1,4 @@
-# LLMs
+############################################ LLMs
 from swarms.models.base_llm import AbstractLLM  # noqa: E402
 from swarms.models.anthropic import Anthropic  # noqa: E402
 from swarms.models.petals import Petals  # noqa: E402
@@ -18,6 +18,10 @@ from swarms.models.wizard_storytelling import (
 )  # noqa: E402
 from swarms.models.mpt import MPT7B  # noqa: E402
 from swarms.models.mixtral import Mixtral  # noqa: E402
+from swarms.models.modelscope_pipeline import ModelScopePipeline
+from swarms.models.modelscope_llm import (
+    ModelScopeAutoModel,
+)  # noqa: E402
 
 ################# MultiModal Models
 from swarms.models.base_multimodal_model import (
@@ -35,12 +39,12 @@ from swarms.models.gemini import Gemini  # noqa: E402
 from swarms.models.gigabind import Gigabind  # noqa: E402
 from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
 
-# from swarms.models.gpt4v import GPT4Vision
+
 # from swarms.models.dalle3 import Dalle3
 # from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
 # from swarms.models.whisperx_model import WhisperX  # noqa: E402
 # from swarms.models.kosmos_two import Kosmos  # noqa: E402
-# from swarms.models.cog_agent import CogAgent  # noqa: E402
+from swarms.models.cog_agent import CogAgent  # noqa: E402
 
 from swarms.models.types import (
     TextModality,
@@ -84,5 +88,7 @@ __all__ = [
     "AudioModality",
     "VideoModality",
     "MultimodalData",
-    # "CogAgent"
+    "CogAgent",
+    "ModelScopePipeline",
+    "ModelScopeAutoModel",
 ]

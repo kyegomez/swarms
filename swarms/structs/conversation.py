@@ -9,20 +9,60 @@ from swarms.structs.base import BaseStructure
 
 class Conversation(BaseStructure):
     """
-    Conversation class
+    A class structure to represent a conversation in a chatbot. This class is used to store the conversation history.
+    And, it can be used to save the conversation history to a file, load the conversation history from a file, and
+    display the conversation history. We can also use this class to add the conversation history to a database, query
+    the conversation history from a database, delete the conversation history from a database, update the conversation
+    history from a database, and get the conversation history from a database.
 
+
+    Args:
+        time_enabled (bool, optional): Whether to enable time. Defaults to False.
+        database (AbstractDatabase, optional): The database to use. Defaults to None.
+        autosave (bool, optional): Whether to autosave. Defaults to True.
+        save_filepath (str, optional): The filepath to save to. Defaults to "runs/conversation.json".
+        *args: Additional arguments.
+        **kwargs: Additional keyword arguments.
 
     Attributes:
-        time_enabled (bool): whether to enable time
-        conversation_history (list): list of messages in the conversation
+        time_enabled (bool): Whether to enable time.
+        database (AbstractDatabase): The database to use.
+        autosave (bool): Whether to autosave.
+        save_filepath (str): The filepath to save to.
+        conversation_history (list): The conversation history.
 
+    Methods:
+        add(role: str, content: str): Add a message to the conversation history.
+        delete(index: str): Delete a message from the conversation history.
+        update(index: str, role, content): Update a message in the conversation history.
+        query(index: str): Query a message in the conversation history.
+        search(keyword: str): Search for a message in the conversation history.
+        display_conversation(detailed: bool = False): Display the conversation history.
+        export_conversation(filename: str): Export the conversation history to a file.
+        import_conversation(filename: str): Import a conversation history from a file.
+        count_messages_by_role(): Count the number of messages by role.
+        return_history_as_string(): Return the conversation history as a string.
+        save_as_json(filename: str): Save the conversation history as a JSON file.
+        load_from_json(filename: str): Load the conversation history from a JSON file.
+        search_keyword_in_conversation(keyword: str): Search for a keyword in the conversation history.
+        pretty_print_conversation(messages): Pretty print the conversation history.
+        add_to_database(): Add the conversation history to the database.
+        query_from_database(query): Query the conversation history from the database.
+        delete_from_database(): Delete the conversation history from the database.
+        update_from_database(): Update the conversation history from the database.
+        get_from_database(): Get the conversation history from the database.
+        execute_query_from_database(query): Execute a query on the database.
+        fetch_all_from_database(): Fetch all from the database.
+        fetch_one_from_database(): Fetch one from the database.
 
     Examples:
-    >>> conv = Conversation()
-    >>> conv.add("user", "Hello, world!")
-    >>> conv.add("assistant", "Hello, user!")
-    >>> conv.display_conversation()
-    user: Hello, world!
+        >>> from swarms import Conversation
+        >>> conversation = Conversation()
+        >>> conversation.add("user", "Hello, how are you?")
+        >>> conversation.add("assistant", "I am doing well, thanks.")
+        >>> conversation.display_conversation()
+        user: Hello, how are you?
+        assistant: I am doing well, thanks.
 
     """
 

@@ -13,28 +13,39 @@ logger = logging.getLogger(__name__)
 
 class ModelParallelizer:
     """
-    ModelParallelizer
-    -----
+    ModelParallelizer, a class that parallelizes the execution of a task
+    across multiple language models. It is a wrapper around the
+    LanguageModel class.
 
-    Architecture:
-    How it works:
-    1. ModelParallelizer receives a task from the user.
-    2. ModelParallelizer distributes the task to all LLMs.
-    3. ModelParallelizer collects the responses from all LLMs.
-    4. ModelParallelizer prints the responses from all LLMs.
+    Args:
+        llms (List[Callable]): A list of language models.
+        retry_attempts (int): The number of retry attempts.
+        iters (int): The number of iterations to run the task.
 
-    Parameters:
-    llms: list of LLMs
+    Attributes:
+        llms (List[Callable]): A list of language models.
+        retry_attempts (int): The number of retry attempts.
+        iters (int): The number of iterations to run the task.
+        last_responses (List[str]): The last responses from the language
+            models.
+        task_history (List[str]): The task history.
 
-    Methods:
-    run(task): distribute task to all LLMs and collect responses
-    print_responses(task): print responses from all LLMs
-
-    Usage:
-    parallelizer = ModelParallelizer(llms)
-    parallelizer.run(task)
-    parallelizer.print_responses(task)
-
+    Examples:
+    >>> from swarms.structs import ModelParallelizer
+    >>> from swarms.llms import OpenAIChat
+    >>> llms = [
+    ...     OpenAIChat(
+    ...         temperature=0.5,
+    ...         openai_api_key="OPENAI_API_KEY",
+    ...     ),
+    ...     OpenAIChat(
+    ...         temperature=0.5,
+    ...         openai_api_key="OPENAI_API_KEY",
+    ...     ),
+    ... ]
+    >>> mp = ModelParallelizer(llms)
+    >>> mp.run("Generate a 10,000 word blog on health and wellness.")
+    ['Generate a 10,000 word blog on health and wellness.', 'Generate a 10,000 word blog on health and wellness.']
 
     """
 

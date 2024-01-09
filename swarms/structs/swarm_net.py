@@ -54,7 +54,7 @@ class SwarmNetwork(BaseStructure):
         agents (List[Agent]): A list of agents in the pool.
         api_enabled (bool): A flag to enable/disable the API.
         logging_enabled (bool): A flag to enable/disable logging.
-        
+
     Example:
         >>> from swarms.structs.agent import Agent
         >>> from swarms.structs.swarm_net import SwarmNetwork
@@ -200,14 +200,11 @@ class SwarmNetwork(BaseStructure):
         """
         self.logger.info("[Listing all active agents]")
         num_agents = len(self.agents)
-        
-        self.logger.info(
-            f"[Number of active agents: {num_agents}]"
-        )
-        
+
+        self.logger.info(f"[Number of active agents: {num_agents}]")
+
         try:
             for agent in self.agents:
-                
                 return self.logger.info(
                     f"[Agent] [ID: {agent.id}] [Name:"
                     f" {agent.agent_name}] [Description:"
