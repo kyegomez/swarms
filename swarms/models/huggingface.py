@@ -173,9 +173,7 @@ class HuggingfaceLLM(AbstractLLM):
                 }
             bnb_config = BitsAndBytesConfig(**quantization_config)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.model_id
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
 
         if quantize:
             self.model = AutoModelForCausalLM.from_pretrained(
