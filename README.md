@@ -875,6 +875,19 @@ print(video_path)
 
 ```
 
+### Supported Models
+Swarms supports various model providers like OpenAI, Huggingface, Anthropic, Google, Mistral and many more.
+
+| Provider | Provided :heavy_check_mark: | Module Name |
+|----------|-----------------------------|-------------|
+| OpenAI | :heavy_check_mark: | OpenAI |
+| Anthropic | :heavy_check_mark: | Anthropic |
+| Mistral | :heavy_check_mark: | Mistral |
+| Gemini/Palm | :heavy_check_mark: | Gemini |
+| Huggingface | :heavy_check_mark: | HuggingFaceLLM |
+| Modelscope | :heavy_check_mark: | Modelscope |
+| Vllm | :heavy_check_mark: | vLLM |
+
 
 ---
 
