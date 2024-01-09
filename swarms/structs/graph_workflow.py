@@ -17,6 +17,13 @@ class GraphWorkflow(BaseStructure):
         add_edge(from_node, to_node): Adds an edge between two nodes in the graph.
         add_conditional_edges(from_node, condition, edge_dict): Adds conditional edges from a node to multiple nodes based on a condition.
         run(): Runs the workflow and returns the graph.
+
+    Examples:
+    >>> from swarms.structs import GraphWorkflow
+    >>> graph = GraphWorkflow()
+    >>> graph.add("start", "Start")
+    >>> graph.add("end", "End")
+    >>> graph.start("start")
     """
 
     def __init__(self):

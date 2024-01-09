@@ -29,6 +29,8 @@ from swarms.structs.utils import (
 )
 from swarms.structs.task import Task
 from swarms.structs.block_wrapper import block
+from swarms.structs.graph_workflow import GraphWorkflow
+
 
 __all__ = [
     "Agent",
@@ -59,4 +61,5 @@ __all__ = [
     "detect_markdown",
     "Task",
     "block",
+    "GraphWorkflow",
 ]

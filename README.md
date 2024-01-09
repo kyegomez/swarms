@@ -875,6 +875,31 @@ print(video_path)
 
 ```
 
+
+### ModelScope
+```python
+from swarms.models import ModelScopeAutoModel
+
+# Initialize the model
+mp = ModelScopeAutoModel(
+    model_name="AI-ModelScope/Mixtral-8x7B-Instruct-v0.1",
+)
+
+mp.run("Generate a 10,000 word blog on health and wellness.")
+```
+
+```python
+
+from swarms import CogAgent
+
+# Initialize CogAgent
+cog_agent = CogAgent()
+
+# Run the model on the tests
+cog_agent.run("Describe this scene", "images/1.jpg")
+
+```
+
 ----
 
 ## Supported Models :heavy_check_mark:
