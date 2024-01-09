@@ -880,7 +880,7 @@ Swarms supports various model providers like OpenAI, Huggingface, Anthropic, Goo
 
 | Provider | Provided :heavy_check_mark: | Module Name |
 |----------|-----------------------------|-------------|
-| OpenAI | :heavy_check_mark: | OpenAI |
+| OpenAI | :heavy_check_mark: | OpenAIChat, OpenAITTS, GPT4VisionAPI, Dalle3 |
 | Anthropic | :heavy_check_mark: | Anthropic |
 | Mistral | :heavy_check_mark: | Mistral |
 | Gemini/Palm | :heavy_check_mark: | Gemini |
