@@ -980,7 +980,7 @@ Swarms is an open-source project, and contributions are VERY welcome. If you wan
   <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
 </a>
 
---
+----
 
 ## Community
 
