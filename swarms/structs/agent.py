@@ -30,6 +30,7 @@ from swarms.utils.parse_code import (
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
 
+from pydantic import BaseModel
 
 # Utils
 # Custom stopping condition
