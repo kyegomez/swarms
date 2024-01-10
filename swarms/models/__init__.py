@@ -46,6 +46,8 @@ from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
 # from swarms.models.kosmos_two import Kosmos  # noqa: E402
 from swarms.models.cog_agent import CogAgent  # noqa: E402
 
+
+############## Types
 from swarms.models.types import (
     TextModality,
     ImageModality,
