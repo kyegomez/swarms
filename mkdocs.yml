@@ -58,7 +58,6 @@ nav:
 - Home:
     - Overview: "index.md"
     - Contributing: "contributing.md"
-    - Docker Container Setup: "docker_setup.md"
 - Swarms:
   - Overview: "swarms/index.md"
   - swarms.workers:
