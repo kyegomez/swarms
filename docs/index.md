@@ -53,7 +53,7 @@ You can install `swarms` with pip in a
 
         ```bash
         # clone repository and navigate to root directory
-        git clone https://github.com/roboflow/swarms.git
+        git clone https://github.com/kyegomez/swarms.git
         cd swarms
 
         # setup python environment and activate it
