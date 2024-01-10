@@ -76,5 +76,5 @@ qdrant-client
 peft
 modelscope==1.10.0
 toml
-grpcio-tools==1.59.3
-grpcio==1.59.3
+grpcio-tools
+grpcio
