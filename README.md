@@ -402,10 +402,10 @@ Task Execution: The Task structure allows for the execution of tasks by an assig
 - Task History: The history attribute is a list that keeps track of all the results of the task execution. This can be useful for debugging and for tasks that need to be executed multiple times.
 
 ```python
+import os
 from swarms.structs import Task, Agent
 from swarms.models import OpenAIChat
 from dotenv import load_dotenv
-import os
 
 
 # Load the environment variables
