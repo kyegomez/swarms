@@ -98,4 +98,4 @@ class ConcurrentWorkflow(BaseStructure):
         Returns:
             _type_: _description_
         """
-        return task.run()
+        return task.execute()
