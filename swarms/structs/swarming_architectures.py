@@ -112,49 +112,49 @@ def power_swarm(agents: List[str], tasks: List[str]):
 
 def log_swarm(agents: List[Agent], tasks: List[str]):
     for i in range(len(agents)):
-        if 2 ** i < len(agents) and tasks:
+        if 2**i < len(agents) and tasks:
             task = tasks.pop(0)
-            agents[2 ** i].run(task)
-            
+            agents[2**i].run(task)
+
 
 def exponential_swarm(agents: List[Agent], tasks: List[str]):
     for i in range(len(agents)):
-        index = min(
-            int(2 ** i),
-            len(agents)-1
-        )
+        index = min(int(2**i), len(agents) - 1)
         if tasks:
             task = tasks.pop(0)
             agents[index].run(task)
-            
+
+
 def geometric_swarm(agents, tasks):
     ratio = 2
     for i in range(range(len(agents))):
-        index = min(int(ratio ** 2), len(agents)-1)
+        index = min(int(ratio**2), len(agents) - 1)
         if tasks:
             task = tasks.pop(0)
             agents[index].run(task)
-            
-            
+
+
 def harmonic_swarm(agents: List[Agent], tasks: List[str]):
     for i in range(1, len(agents) + 1):
-        index = min(int(len(agents)/i), len(agents) -1)
+        index = min(int(len(agents) / i), len(agents) - 1)
         if tasks:
             task = tasks.pop(0)
             agents[index].run(task)
-            
+
+
 def staircase_swarm(agents: List[Agent], task: str):
     step = len(agents) // 5
     for i in range(len(agents)):
         index = (i // step) * step
         agents[index].run(task)
-        
+
 
 def sigmoid_swarm(agents: List[Agent], task: str):
     for i in range(len(agents)):
         index = int(len(agents) / (1 + math.exp(-i)))
         agents[index].run(task)
-        
+
+
 def sinusoidal_swarm(agents: List[Agent], task: str):
     for i in range(len(agents)):
         index = int((math.sin(i) + 1) / 2 * len(agents))

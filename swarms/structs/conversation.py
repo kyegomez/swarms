@@ -1,3 +1,4 @@
+import os
 import datetime
 import json
 
@@ -70,8 +71,8 @@ class Conversation(BaseStructure):
         self,
         time_enabled: bool = False,
         database: AbstractDatabase = None,
-        autosave: bool = True,
-        save_filepath: str = "runs/conversation.json",
+        autosave: bool = None,
+        save_filepath: str = None,
         *args,
         **kwargs,
     ):
@@ -228,6 +229,9 @@ class Conversation(BaseStructure):
         Args:
             filename (str): Save the conversation history as a JSON file
         """
+        # Create the directory if it does not exist
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+
         # Save the conversation history as a JSON file
         with open(filename, "w") as f:
             json.dump(self.conversation_history, f)
