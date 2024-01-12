@@ -18,20 +18,12 @@ class Conversation(BaseStructure):
 
 
     Args:
-        time_enabled (bool, optional): Whether to enable time. Defaults to False.
-        database (AbstractDatabase, optional): The database to use. Defaults to None.
-        autosave (bool, optional): Whether to autosave. Defaults to True.
-        save_filepath (str, optional): The filepath to save to. Defaults to "runs/conversation.json".
-        *args: Additional arguments.
-        **kwargs: Additional keyword arguments.
-
-    Attributes:
-        time_enabled (bool): Whether to enable time.
-        database (AbstractDatabase): The database to use.
-        autosave (bool): Whether to autosave.
-        save_filepath (str): The filepath to save to.
-        conversation_history (list): The conversation history.
-
+        time_enabled (bool): Whether to enable timestamps for the conversation history. Default is False.
+        database (AbstractDatabase): The database to use for storing the conversation history. Default is None.
+        autosave (bool): Whether to autosave the conversation history to a file. Default is None.
+        save_filepath (str): The filepath to save the conversation history to. Default is None.
+        
+    
     Methods:
         add(role: str, content: str): Add a message to the conversation history.
         delete(index: str): Delete a message from the conversation history.
@@ -71,7 +63,7 @@ class Conversation(BaseStructure):
         self,
         time_enabled: bool = False,
         database: AbstractDatabase = None,
-        autosave: bool = None,
+        autosave: bool = False,
         save_filepath: str = None,
         *args,
         **kwargs,
@@ -223,18 +215,17 @@ class Conversation(BaseStructure):
             ]
         )
 
-    def save_as_json(self, filename: str):
+    def save_as_json(self, filename: str = None):
         """Save the conversation history as a JSON file
 
         Args:
             filename (str): Save the conversation history as a JSON file
         """
         # Create the directory if it does not exist
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-
-        # Save the conversation history as a JSON file
-        with open(filename, "w") as f:
-            json.dump(self.conversation_history, f)
+        # os.makedirs(os.path.dirname(filename), exist_ok=True)
+        if filename is not None:
+            with open(filename, "w") as f:
+                json.dump(self.conversation_history, f)
 
     def load_from_json(self, filename: str):
         """Load the conversation history from a JSON file
@@ -243,8 +234,9 @@ class Conversation(BaseStructure):
             filename (str): filename to load from
         """
         # Load the conversation history from a JSON file
-        with open(filename, "r") as f:
-            self.conversation_history = json.load(f)
+        if filename is not None:
+            with open(filename, "r") as f:
+                self.conversation_history = json.load(f)
 
     def search_keyword_in_conversation(self, keyword: str):
         """Search for a keyword in the conversation history
