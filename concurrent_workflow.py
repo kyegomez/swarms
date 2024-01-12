@@ -8,12 +8,13 @@ load_dotenv()
 # Load environment variables
 llm = OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY"))
 agent = Agent(
+    system_prompt=None,
     llm=llm,
     max_loops=1,
 )
 
 # Create a workflow
-workflow = ConcurrentWorkflow(max_workers=5)
+workflow = ConcurrentWorkflow(max_workers=3)
 
 # Create tasks
 task1 = Task(agent=agent, description="What's the weather in miami")
@@ -23,9 +24,7 @@ task2 = Task(
 task3 = Task(agent=agent, description="What's the weather in london")
 
 # Add tasks to the workflow
-workflow.add(task1)
-workflow.add(task2)
-workflow.add(task3)
+workflow.add(tasks=[task1, task2, task3])
 
 # Run the workflow and print each task result
 workflow.run()

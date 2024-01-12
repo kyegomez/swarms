@@ -12,15 +12,12 @@ class ConcurrentWorkflow(BaseStructure):
     ConcurrentWorkflow class for running a set of tasks concurrently using N number of autonomous agents.
 
     Args:
-        max_workers (int): The maximum number of workers to use for concurrent execution.
-        autosave (bool): Whether to autosave the workflow state.
-        saved_state_filepath (Optional[str]): The file path to save the workflow state.
-
-    Attributes:
-        tasks (List[Task]): The list of tasks to execute.
-        max_workers (int): The maximum number of workers to use for concurrent execution.
-        autosave (bool): Whether to autosave the workflow state.
-        saved_state_filepath (Optional[str]): The file path to save the workflow state.
+        max_workers (int): The maximum number of workers to use for the ThreadPoolExecutor.
+        autosave (bool): Whether to save the state of the workflow to a file. Default is False.
+        saved_state_filepath (str): The filepath to save the state of the workflow to. Default is "runs/concurrent_workflow.json".
+        print_results (bool): Whether to print the results of each task. Default is False.
+        return_results (bool): Whether to return the results of each task. Default is False.
+        use_processes (bool): Whether to use processes instead of threads. Default is False.
 
     Examples:
     >>> from swarms.models import OpenAIChat
@@ -33,7 +30,7 @@ class ConcurrentWorkflow(BaseStructure):
     >>> workflow.tasks
     """
 
-    tasks: List[Dict] = field(default_factory=list)
+    task_pool: List[Dict] = field(default_factory=list)
     max_workers: int = 5
     autosave: bool = False
     saved_state_filepath: Optional[str] = (
@@ -43,7 +40,7 @@ class ConcurrentWorkflow(BaseStructure):
     return_results: bool = False
     use_processes: bool = False
 
-    def add(self, task: Task):
+    def add(self, task: Task = None, tasks: List[Task] = None):
         """Adds a task to the workflow.
 
         Args:
@@ -51,7 +48,12 @@ class ConcurrentWorkflow(BaseStructure):
             tasks (List[Task]): _description_
         """
         try:
-            self.tasks.append(task)
+            if tasks:
+                for task in tasks:
+                    self.task_pool.append(task)
+            else:
+                if task:
+                    self.task_pool.append(task)
         except Exception as error:
             print(f"[ERROR][ConcurrentWorkflow] {error}")
             raise error
@@ -72,7 +74,7 @@ class ConcurrentWorkflow(BaseStructure):
         ) as executor:
             futures = {
                 executor.submit(task.execute): task
-                for task in self.tasks
+                for task in self.task_pool
             }
             results = []
 
@@ -88,14 +90,3 @@ class ConcurrentWorkflow(BaseStructure):
                     print(f"Task {task} generated an exception: {e}")
 
         return results if self.return_results else None
-
-    def _execute_task(self, task: Task):
-        """Executes a task.
-
-        Args:
-            task (Task): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        return task.execute()
