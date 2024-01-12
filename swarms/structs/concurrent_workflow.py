@@ -43,7 +43,7 @@ class ConcurrentWorkflow(BaseStructure):
     return_results: bool = False
     use_processes: bool = False
 
-    def add(self, task: Task = None):
+    def add(self, task: Task):
         """Adds a task to the workflow.
 
         Args:
