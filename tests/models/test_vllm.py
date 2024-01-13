@@ -113,7 +113,7 @@ def test_vllm_run_empty_task(vllm_instance):
 # Test initialization with invalid parameters
 def test_vllm_invalid_init():
     with pytest.raises(ValueError):
-        vllm_instance = vLLM(
+        vLLM(
             model_name=None,
             tensor_parallel_size=-1,
             trust_remote_code="invalid",

@@ -1,8 +1,17 @@
 import re
 import json
+from typing import List, Any
 
 
-def extract_tool_commands(self, text: str):
+def tool_find_by_name(tool_name: str, tools: List[Any]):
+    """Find the tool by name"""
+    for tool in tools:
+        if tool.name == tool_name:
+            return tool
+    return None
+
+
+def extract_tool_commands(text: str):
     """
     Extract the tool commands from the text
 
@@ -39,9 +48,9 @@ def parse_and_execute_tools(response: str):
         execute_tools(tool_name, params)
 
 
-def execute_tools(self, tool_name, params):
+def execute_tools(tool_name, params):
     """Execute the tool with the provided params"""
-    tool = self.tool_find_by_name(tool_name)
+    tool = tool_find_by_name(tool_name)
     if tool:
         # Execute the tool with the provided parameters
         tool_result = tool.run(**params)

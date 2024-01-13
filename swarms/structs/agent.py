@@ -12,7 +12,6 @@ from termcolor import colored
 
 from swarms.memory.base_vectordb import VectorDatabase
 from swarms.prompts.agent_system_prompts import (
-    FLOW_SYSTEM_PROMPT,
     AGENT_SYSTEM_PROMPT_3,
     agent_system_prompt_2,
 )
@@ -26,7 +25,7 @@ from swarms.tools.tool import BaseTool
 from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.parse_code import (
-    extract_code_in_backticks_in_string,
+    extract_code_from_markdown,
 )
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
@@ -64,98 +63,95 @@ class Agent:
     * Ability to provide a loop interval
 
     Args:
-        id (str): The id of the agent
         llm (Any): The language model to use
-        template (Optional[str]): The template to use
-        max_loops (int): The maximum number of loops
-        stopping_condition (Optional[Callable[[str], bool]]): The stopping condition
+        template (str): The template to use
+        max_loops (int): The maximum number of loops to run
+        stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
-        retry_attempts (int): The retry attempts
+        retry_attempts (int): The number of retry attempts
         retry_interval (int): The retry interval
         return_history (bool): Return the history
         stopping_token (str): The stopping token
-        dynamic_loops (Optional[bool]): Dynamic loops
-        interactive (bool): Interactive mode
-        dashboard (bool): Dashboard mode
+        dynamic_loops (bool): Enable dynamic loops
+        interactive (bool): Enable interactive mode
+        dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
         system_prompt (str): The system prompt
-        tools (List[BaseTool]): The tools
-        dynamic_temperature_enabled (Optional[bool]): Dynamic temperature enabled
-        sop (Optional[str]): The standard operating procedure
-        sop_list (Optional[List[str]]): The standard operating procedure list
-        saved_state_path (Optional[str]): The saved state path
-        autosave (Optional[bool]): Autosave
-        context_length (Optional[int]): The context length
+        tools (List[BaseTool]): The tools to use
+        dynamic_temperature_enabled (bool): Enable dynamic temperature
+        sop (str): The standard operating procedure
+        sop_list (List[str]): The standard operating procedure list
+        saved_state_path (str): The path to the saved state
+        autosave (bool): Autosave the state
+        context_length (int): The context length
         user_name (str): The user name
-        self_healing_enabled (Optional[bool]): Self healing enabled
-        code_interpreter (Optional[bool]): Code interpreter
-        multi_modal (Optional[bool]): Multi modal
-        pdf_path (Optional[str]): The pdf path
-        list_of_pdf (Optional[str]): The list of pdf
-        tokenizer (Optional[Any]): The tokenizer
-        memory (Optional[VectorDatabase]): The memory
-        preset_stopping_token (Optional[bool]): Preset stopping token
-        *args: Variable length argument list.
-        **kwargs: Arbitrary keyword arguments.
+        self_healing_enabled (bool): Enable self healing
+        code_interpreter (bool): Enable code interpreter
+        multi_modal (bool): Enable multimodal
+        pdf_path (str): The path to the pdf
+        list_of_pdf (str): The list of pdf
+        tokenizer (Any): The tokenizer
+        memory (VectorDatabase): The memory
+        preset_stopping_token (bool): Enable preset stopping token
+        traceback (Any): The traceback
+        traceback_handlers (Any): The traceback handlers
+        streaming_on (bool): Enable streaming
 
     Methods:
-        run(task: str, **kwargs: Any): Run the agent on a task
-        run_concurrent(tasks: List[str], **kwargs: Any): Run the agent on a list of tasks concurrently
-        bulk_run(inputs: List[Dict[str, Any]]): Run the agent on a list of inputs
-        from_llm_and_template(llm: Any, template: str): Create AgentStream from LLM and a string template.
-        from_llm_and_template_file(llm: Any, template_file: str): Create AgentStream from LLM and a template file.
-        save(file_path): Save the agent history to a file
-        load(file_path): Load the agent history from a file
-        validate_response(response: str): Validate the response based on certain criteria
-        print_history_and_memory(): Print the entire history and memory of the agent
-        step(task: str, **kwargs): Executes a single step in the agent interaction, generating a response from the language model based on the given input text.
-        graceful_shutdown(): Gracefully shutdown the system saving the state
-        run_with_timeout(task: str, timeout: int): Run the loop but stop if it takes longer than the timeout
-        analyze_feedback(): Analyze the feedback for issues
-        undo_last(): Response the last response and return the previous state
-        add_response_filter(filter_word: str): Add a response filter to filter out certain words from the response
-        apply_reponse_filters(response: str): Apply the response filters to the response
-        filtered_run(task: str): Filtered run
-        interactive_run(max_loops: int): Interactive run mode
-        streamed_generation(prompt: str): Stream the generation of the response
-        get_llm_params(): Extracts and returns the parameters of the llm object for serialization.
-        save_state(file_path: str): Saves the current state of the agent to a JSON file, including the llm parameters.
-        load_state(file_path: str): Loads the state of the agent from a json file and restores the configuration and memory.
-        retry_on_failure(function, retries: int = 3, retry_delay: int = 1): Retry wrapper for LLM calls.
-        run_code(response: str): Run the code in the response
-        construct_dynamic_prompt(): Construct the dynamic prompt
-        extract_tool_commands(text: str): Extract the tool commands from the text
-        parse_and_execute_tools(response: str): Parse and execute the tools
-        execute_tools(tool_name, params): Execute the tool with the provided params
-        truncate_history(): Take the history and truncate it to fit into the model context length
-        add_task_to_memory(task: str): Add the task to the memory
-        add_message_to_memory(message: str): Add the message to the memory
-        add_message_to_memory_and_truncate(message: str): Add the message to the memory and truncate
-        print_dashboard(task: str): Print dashboard
-        activate_autonomous_agent(): Print the autonomous agent activation message
-        dynamic_temperature(): Dynamically change the temperature
-        _check_stopping_condition(response: str): Check if the stopping condition is met
-        format_prompt(template, **kwargs: Any): Format the template with the provided kwargs using f-string interpolation.
-        get_llm_init_params(): Get LLM init params
-        get_tool_description(): Get the tool description
-        find_tool_by_name(name: str): Find a tool by name
+        run: Run the agent
+        run_concurrent: Run the agent concurrently
+        bulk_run: Run the agent in bulk
+        save: Save the agent
+        load: Load the agent
+        validate_response: Validate the response
+        print_history_and_memory: Print the history and memory
+        step: Step through the agent
+        graceful_shutdown: Gracefully shutdown the agent
+        run_with_timeout: Run the agent with a timeout
+        analyze_feedback: Analyze the feedback
+        undo_last: Undo the last response
+        add_response_filter: Add a response filter
+        apply_response_filters: Apply the response filters
+        filtered_run: Run the agent with filtered responses
+        interactive_run: Run the agent in interactive mode
+        streamed_generation: Stream the generation of the response
+        get_llm_params: Get the llm parameters
+        save_state: Save the state
+        load_state: Load the state
+        get_llm_init_params: Get the llm init parameters
+        get_tool_description: Get the tool description
+        find_tool_by_name: Find a tool by name
+        extract_tool_commands: Extract the tool commands
+        execute_tools: Execute the tools
+        parse_and_execute_tools: Parse and execute the tools
+        truncate_history: Truncate the history
+        add_task_to_memory: Add the task to the memory
+        add_message_to_memory: Add the message to the memory
+        add_message_to_memory_and_truncate: Add the message to the memory and truncate
+        parse_tool_docs: Parse the tool docs
+        print_dashboard: Print the dashboard
+        loop_count_print: Print the loop count
+        streaming: Stream the content
+        _history: Generate the history
+        _dynamic_prompt_setup: Setup the dynamic prompt
+        agent_system_prompt_2: Agent system prompt 2
+        run_async: Run the agent asynchronously
+        run_async_concurrent: Run the agent asynchronously and concurrently
+        run_async_concurrent: Run the agent asynchronously and concurrently
+        construct_dynamic_prompt: Construct the dynamic prompt
+        construct_dynamic_prompt: Construct the dynamic prompt
 
 
-    Example:
+    Examples:
     >>> from swarms.models import OpenAIChat
     >>> from swarms.structs import Agent
-    >>> llm = OpenAIChat(
-    ...     openai_api_key=api_key,
-    ...     temperature=0.5,
-    ... )
-    >>> agent = Agent(
-    ...     llm=llm, max_loops=5,
-    ...     #system_prompt=SYSTEM_PROMPT,
-    ...     #retry_interval=1,
-    ... )
-    >>> agent.run("Generate a 10,000 word blog")
-    >>> agent.save("path/agent.yaml")
+    >>> llm = OpenAIChat()
+    >>> agent = Agent(llm=llm, max_loops=1)
+    >>> response = agent.run("Generate a report on the financials.")
+    >>> print(response)
+    >>> # Generate a report on the financials.
+
     """
 
     def __init__(
@@ -173,7 +169,7 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: bool = False,
         dashboard: bool = False,
-        agent_name: str = "Autonomous-Agent-XYZ1B",
+        agent_name: str = None,
         agent_description: str = None,
         system_prompt: str = AGENT_SYSTEM_PROMPT_3,
         tools: List[BaseTool] = None,
@@ -1258,7 +1254,7 @@ class Agent:
         """
         text -> parse_code by looking for code inside 6 backticks `````-> run_code
         """
-        parsed_code = extract_code_in_backticks_in_string(code)
+        parsed_code = extract_code_from_markdown(code)
         run_code = self.code_executor.run(parsed_code)
         return run_code
 

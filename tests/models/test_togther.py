@@ -1,4 +1,3 @@
-import os
 import requests
 import pytest
 from unittest.mock import patch, Mock

@@ -1,7 +1,9 @@
 import os
 
 from dotenv import load_dotenv
-from pytest import patch
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
@@ -23,18 +25,18 @@ def test_autoscaler_init():
     assert autoscaler.scale_up_factor == 1
     assert autoscaler.idle_threshold == 0.2
     assert autoscaler.busy_threshold == 0.7
-    assert autoscaler.autoscale == True
+    assert autoscaler.autoscale is True
     assert autoscaler.min_agents == 1
     assert autoscaler.max_agents == 5
-    assert autoscaler.custom_scale_strategy == None
+    assert autoscaler.custom_scale_strategy is None
     assert len(autoscaler.agents_pool) == 5
-    assert autoscaler.task_queue.empty() == True
+    assert autoscaler.task_queue.empty() is True
 
 
 def test_autoscaler_add_task():
     autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.add_task("task1")
-    assert autoscaler.task_queue.empty() == False
+    assert autoscaler.task_queue.empty() is False
 
 
 def test_autoscaler_run():
@@ -75,7 +77,7 @@ def test_autoscaler_get_agent_by_id():
 def test_autoscaler_get_agent_by_id_not_found():
     autoscaler = AutoScaler(initial_agents=5, agent=agent)
     agent = autoscaler.get_agent_by_id("fake_id")
-    assert agent == None
+    assert agent is None
 
 
 @patch("swarms.swarms.Agent.is_healthy")
@@ -138,3 +140,140 @@ def test_autoscaler_print_dashboard(mock_print):
     autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.print_dashboard()
     mock_print.assert_called()
+
+
+@patch("swarms.structs.autoscaler.logging")
+def test_check_agent_health_all_healthy(mock_logging):
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    for agent in autoscaler.agents_pool:
+        agent.is_healthy = MagicMock(return_value=True)
+    autoscaler.check_agent_health()
+    mock_logging.warning.assert_not_called()
+
+
+@patch("swarms.structs.autoscaler.logging")
+def test_check_agent_health_some_unhealthy(mock_logging):
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    for i, agent in enumerate(autoscaler.agents_pool):
+        agent.is_healthy = MagicMock(return_value=(i % 2 == 0))
+    autoscaler.check_agent_health()
+    assert mock_logging.warning.call_count == 2
+
+
+@patch("swarms.structs.autoscaler.logging")
+def test_check_agent_health_all_unhealthy(mock_logging):
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    for agent in autoscaler.agents_pool:
+        agent.is_healthy = MagicMock(return_value=False)
+    autoscaler.check_agent_health()
+    assert mock_logging.warning.call_count == 5
+
+
+@patch("swarms.structs.autoscaler.Agent")
+def test_add_agent(mock_agent):
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    initial_count = len(autoscaler.agents_pool)
+    autoscaler.add_agent()
+    assert len(autoscaler.agents_pool) == initial_count + 1
+    mock_agent.assert_called_once()
+
+
+@patch("swarms.structs.autoscaler.Agent")
+def test_remove_agent(mock_agent):
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    initial_count = len(autoscaler.agents_pool)
+    autoscaler.remove_agent()
+    assert len(autoscaler.agents_pool) == initial_count - 1
+
+
+@patch("swarms.structs.autoscaler.AutoScaler.add_agent")
+@patch("swarms.structs.autoscaler.AutoScaler.remove_agent")
+def test_scale(mock_remove_agent, mock_add_agent):
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    autoscaler.scale(10)
+    assert mock_add_agent.call_count == 5
+    assert mock_remove_agent.call_count == 0
+
+    mock_add_agent.reset_mock()
+    mock_remove_agent.reset_mock()
+
+    autoscaler.scale(3)
+    assert mock_add_agent.call_count == 0
+    assert mock_remove_agent.call_count == 2
+
+
+def test_add_task_success():
+    autoscaler = AutoScaler(initial_agents=5)
+    initial_queue_size = autoscaler.task_queue.qsize()
+    autoscaler.add_task("test_task")
+    assert autoscaler.task_queue.qsize() == initial_queue_size + 1
+
+
+@patch("swarms.structs.autoscaler.queue.Queue.put")
+def test_add_task_exception(mock_put):
+    mock_put.side_effect = Exception("test error")
+    autoscaler = AutoScaler(initial_agents=5)
+    with pytest.raises(Exception) as e:
+        autoscaler.add_task("test_task")
+    assert str(e.value) == "test error"
+
+
+def test_autoscaler_initialization():
+    autoscaler = AutoScaler(
+        initial_agents=5,
+        scale_up_factor=2,
+        idle_threshold=0.1,
+        busy_threshold=0.8,
+        agent=agent,
+    )
+    assert isinstance(autoscaler, AutoScaler)
+    assert autoscaler.scale_up_factor == 2
+    assert autoscaler.idle_threshold == 0.1
+    assert autoscaler.busy_threshold == 0.8
+    assert len(autoscaler.agents_pool) == 5
+
+
+def test_autoscaler_add_task():
+    autoscaler = AutoScaler(agent=agent)
+    autoscaler.add_task("task1")
+    assert autoscaler.task_queue.qsize() == 1
+
+
+def test_autoscaler_scale_up():
+    autoscaler = AutoScaler(
+        initial_agents=5, scale_up_factor=2, agent=agent
+    )
+    autoscaler.scale_up()
+    assert len(autoscaler.agents_pool) == 10
+
+
+def test_autoscaler_scale_down():
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    autoscaler.scale_down()
+    assert len(autoscaler.agents_pool) == 4
+
+
+@patch("swarms.swarms.AutoScaler.scale_up")
+@patch("swarms.swarms.AutoScaler.scale_down")
+def test_autoscaler_monitor_and_scale(mock_scale_down, mock_scale_up):
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    autoscaler.add_task("task1")
+    autoscaler.monitor_and_scale()
+    mock_scale_up.assert_called_once()
+    mock_scale_down.assert_called_once()
+
+
+@patch("swarms.swarms.AutoScaler.monitor_and_scale")
+@patch("swarms.swarms.agent.run")
+def test_autoscaler_start(mock_run, mock_monitor_and_scale):
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    autoscaler.add_task("task1")
+    autoscaler.start()
+    mock_run.assert_called_once()
+    mock_monitor_and_scale.assert_called_once()
+
+
+def test_autoscaler_del_agent():
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    autoscaler.del_agent()
+    assert len(autoscaler.agents_pool) == 4

@@ -487,21 +487,21 @@ def print_action_base(action: Action):
     """
     if action.content != "":
         logger.typewriter_log(
-            f"content:", Fore.YELLOW, f"{action.content}"
+            "content:", Fore.YELLOW, f"{action.content}"
         )
     logger.typewriter_log(
-        f"Thought:", Fore.YELLOW, f"{action.thought}"
+        "Thought:", Fore.YELLOW, f"{action.thought}"
     )
     if len(action.plan) > 0:
         logger.typewriter_log(
-            f"Plan:",
+            "Plan:",
             Fore.YELLOW,
         )
         for line in action.plan:
             line = line.lstrip("- ")
             logger.typewriter_log("- ", Fore.GREEN, line.strip())
     logger.typewriter_log(
-        f"Criticism:", Fore.YELLOW, f"{action.criticism}"
+        "Criticism:", Fore.YELLOW, f"{action.criticism}"
     )
 
 
@@ -515,15 +515,15 @@ def print_action_tool(action: Action):
     Returns:
         None
     """
-    logger.typewriter_log(f"Tool:", Fore.BLUE, f"{action.tool_name}")
+    logger.typewriter_log("Tool:", Fore.BLUE, f"{action.tool_name}")
     logger.typewriter_log(
-        f"Tool Input:", Fore.BLUE, f"{action.tool_input}"
+        "Tool Input:", Fore.BLUE, f"{action.tool_input}"
     )
 
     output = (
         action.tool_output if action.tool_output != "" else "None"
     )
-    logger.typewriter_log(f"Tool Output:", Fore.BLUE, f"{output}")
+    logger.typewriter_log("Tool Output:", Fore.BLUE, f"{output}")
 
     color = Fore.RED
     if action.tool_output_status == ToolCallStatus.ToolCallSuccess:
@@ -534,7 +534,7 @@ def print_action_tool(action: Action):
         color = Fore.YELLOW
 
     logger.typewriter_log(
-        f"Tool Call Status:",
+        "Tool Call Status:",
         Fore.BLUE,
         f"{color}{action.tool_output_status.name}{Style.RESET_ALL}",
     )

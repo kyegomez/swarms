@@ -1,31 +1,19 @@
 import re
 
-# def extract_code_in_backticks_in_string(s: str) -> str:
-# """
-# Extracts code blocks from a markdown string.
 
-# Args:
-#     s (str): The markdown string to extract code from.
-
-# Returns:
-#     list: A list of tuples. Each tuple contains the language of the code block (if specified) and the code itself.
-# """
-# pattern = r"```([\w\+\#\-\.\s]*)\n(.*?)```"
-# matches = re.findall(pattern, s, re.DOTALL)
-# out =  [(match[0], match[1].strip()) for match in matches]
-# print(out)
-
-
-def extract_code_in_backticks_in_string(s: str) -> str:
+def extract_code_from_markdown(markdown_content: str):
     """
-    Extracts code blocks from a markdown string.
+    Extracts code blocks from a Markdown string and returns them as a single string.
 
     Args:
-        s (str): The markdown string to extract code from.
+    - markdown_content (str): The Markdown content as a string.
 
     Returns:
-        str: A string containing all the code blocks.
+    - str: A single string containing all the code blocks separated by newlines.
     """
-    pattern = r"```([\w\+\#\-\.\s]*)(.*?)```"
-    matches = re.findall(pattern, s, re.DOTALL)
-    return "\n".join(match[1].strip() for match in matches)
+    # Regular expression for fenced code blocks
+    pattern = r"```(?:\w+\n)?(.*?)```"
+    matches = re.findall(pattern, markdown_content, re.DOTALL)
+
+    # Concatenate all code blocks separated by newlines
+    return "\n".join(code.strip() for code in matches)

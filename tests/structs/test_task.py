@@ -1,4 +1,3 @@
-import os
 from unittest.mock import Mock
 
 import pytest
@@ -10,6 +9,8 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
+import datetime
+from datetime import timedelta
 
 load_dotenv()
 
@@ -163,4 +164,120 @@ def test_execute():
     agent = Agent()
     task = Task(id="5", task="Task5", result=None, agents=[agent])
     # Assuming execute method returns True on successful execution
-    assert task.execute() == True
+    assert task.execute() is True
+
+
+def test_task_execute_with_agent(mocker):
+    mock_agent = mocker.Mock(spec=Agent)
+    mock_agent.run.return_value = "result"
+    task = Task(description="Test task", agent=mock_agent)
+    task.execute()
+    assert task.result == "result"
+    assert task.history == ["result"]
+
+
+def test_task_execute_with_callable(mocker):
+    mock_callable = mocker.Mock()
+    mock_callable.run.return_value = "result"
+    task = Task(description="Test task", agent=mock_callable)
+    task.execute()
+    assert task.result == "result"
+    assert task.history == ["result"]
+
+
+def test_task_execute_with_condition(mocker):
+    mock_agent = mocker.Mock(spec=Agent)
+    mock_agent.run.return_value = "result"
+    condition = mocker.Mock(return_value=True)
+    task = Task(
+        description="Test task", agent=mock_agent, condition=condition
+    )
+    task.execute()
+    assert task.result == "result"
+    assert task.history == ["result"]
+
+
+def test_task_execute_with_condition_false(mocker):
+    mock_agent = mocker.Mock(spec=Agent)
+    mock_agent.run.return_value = "result"
+    condition = mocker.Mock(return_value=False)
+    task = Task(
+        description="Test task", agent=mock_agent, condition=condition
+    )
+    task.execute()
+    assert task.result is None
+    assert task.history == []
+
+
+def test_task_execute_with_action(mocker):
+    mock_agent = mocker.Mock(spec=Agent)
+    mock_agent.run.return_value = "result"
+    action = mocker.Mock()
+    task = Task(
+        description="Test task", agent=mock_agent, action=action
+    )
+    task.execute()
+    assert task.result == "result"
+    assert task.history == ["result"]
+    action.assert_called_once()
+
+
+def test_task_handle_scheduled_task_now(mocker):
+    mock_agent = mocker.Mock(spec=Agent)
+    mock_agent.run.return_value = "result"
+    task = Task(
+        description="Test task",
+        agent=mock_agent,
+        schedule_time=datetime.now(),
+    )
+    task.handle_scheduled_task()
+    assert task.result == "result"
+    assert task.history == ["result"]
+
+
+def test_task_handle_scheduled_task_future(mocker):
+    mock_agent = mocker.Mock(spec=Agent)
+    mock_agent.run.return_value = "result"
+    task = Task(
+        description="Test task",
+        agent=mock_agent,
+        schedule_time=datetime.now() + timedelta(days=1),
+    )
+    with mocker.patch.object(
+        task.scheduler, "enter"
+    ) as mock_enter, mocker.patch.object(
+        task.scheduler, "run"
+    ) as mock_run:
+        task.handle_scheduled_task()
+    mock_enter.assert_called_once()
+    mock_run.assert_called_once()
+
+
+def test_task_set_trigger():
+    task = Task(description="Test task", agent=Agent())
+
+    def trigger():
+        return True
+
+    task.set_trigger(trigger)
+    assert task.trigger == trigger
+
+
+def test_task_set_action():
+    task = Task(description="Test task", agent=Agent())
+
+    def action():
+        return True
+
+    task.set_action(action)
+    assert task.action == action
+
+
+def test_task_set_condition():
+    task = Task(description="Test task", agent=Agent())
+
+    def condition():
+        return True
+
+    task.set_condition(condition)
+    assert task.condition == condition
