@@ -1,4 +1,3 @@
-import os
 import datetime
 import json
 
@@ -22,8 +21,8 @@ class Conversation(BaseStructure):
         database (AbstractDatabase): The database to use for storing the conversation history. Default is None.
         autosave (bool): Whether to autosave the conversation history to a file. Default is None.
         save_filepath (str): The filepath to save the conversation history to. Default is None.
-        
-    
+
+
     Methods:
         add(role: str, content: str): Add a message to the conversation history.
         delete(index: str): Delete a message from the conversation history.
