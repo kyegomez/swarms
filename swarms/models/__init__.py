@@ -22,6 +22,7 @@ from swarms.models.modelscope_pipeline import ModelScopePipeline
 from swarms.models.modelscope_llm import (
     ModelScopeAutoModel,
 )  # noqa: E402
+from swarms.models.together import TogetherModel  # noqa: E402
 
 ################# MultiModal Models
 from swarms.models.base_multimodal_model import (
@@ -93,4 +94,5 @@ __all__ = [
     "CogAgent",
     "ModelScopePipeline",
     "ModelScopeAutoModel",
+    "TogetherModel",
 ]

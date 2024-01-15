@@ -3,9 +3,14 @@ from dataclasses import dataclass
 
 @dataclass
 class BlockDevice:
-    device: str
-    cluster: str
-    description: str
+    """
+    Represents a block device.
+
+    Attributes:
+        device (str): The device name.
+        cluster (str): The cluster name.
+        description (str): A description of the block device.
+    """
 
     def __init__(self, device: str, cluster: str, description: str):
         self.device = device
