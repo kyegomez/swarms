@@ -1,7 +1,7 @@
-from swarms import TogetherModel
+from swarms import TogetherLLM
 
 # Initialize the model with your parameters
-model = TogetherModel(
+model = TogetherLLM(
     model_name="mistralai/Mixtral-8x7B-Instruct-v0.1",
     max_tokens=1000,
 )
