@@ -72,6 +72,7 @@ qdrant-client = "*"
 sentence-transformers = "*"
 peft = "*"
 modelscope = "1.10.0"
+psutil = "*"
 
 
 [tool.poetry.group.lint.dependencies]
