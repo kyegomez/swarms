@@ -69,10 +69,12 @@ class Task:
     priority: int = 0
     dependencies: List["Task"] = field(default_factory=list)
 
-    def execute(self):
+    def execute(self, *args, **kwargs):
         """
         Execute the task by calling the agent or model with the arguments and
-        keyword arguments.
+        keyword arguments. You can add images to the agent by passing the
+        path to the image as a keyword argument.
+
 
         Examples:
         >>> from swarms.structs import Task, Agent
@@ -83,14 +85,13 @@ class Task:
         >>> task.result
 
         """
-
         try:
             if isinstance(self.agent, Agent):
                 if self.condition is None or self.condition():
                     self.result = self.agent.run(
                         task=self.description,
-                        *self.args,
-                        **self.kwargs,
+                        *args,
+                        **kwargs,
                     )
                     self.history.append(self.result)
 
