@@ -54,9 +54,8 @@ class Task:
     >>> task.result
 
     """
-
-    description: str
     agent: Union[Callable, Agent]
+    description: str
     args: List[Any] = field(default_factory=list)
     kwargs: Dict[str, Any] = field(default_factory=dict)
     result: Any = None

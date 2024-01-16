@@ -91,11 +91,13 @@ class ConcurrentWorkflow(BaseStructure):
                 try:
                     result = future.result()
                     if self.print_results:
-                        print(f"Task {task}: {result}")
+                        logger.info(f"Task {task}: {result}")
                     if self.return_results:
                         results.append(result)
                 except Exception as e:
-                    print(f"Task {task} generated an exception: {e}")
+                    logger.error(
+                        f"Task {task} generated an exception: {e}"
+                    )
 
         return results if self.return_results else None
 

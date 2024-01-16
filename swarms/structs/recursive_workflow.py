@@ -33,13 +33,13 @@ class RecursiveWorkflow(BaseStructure):
 
     def __init__(self, stop_token: str = "<DONE>"):
         self.stop_token = stop_token
-        self.task_pool = List[Task]
+        self.task_pool = []
 
         assert (
             self.stop_token is not None
         ), "stop_token cannot be None"
 
-    def add(self, task: Task, tasks: List[Task] = None):
+    def add(self, task: Task = None, tasks: List[Task] = None):
         """Adds a task to the workflow.
 
         Args:
@@ -49,12 +49,13 @@ class RecursiveWorkflow(BaseStructure):
         try:
             if tasks:
                 for task in tasks:
-                    self.task_pool.append(task)
-                    logger.info(
-                        "[INFO][RecursiveWorkflow] Added task"
-                        f" {task} to workflow"
-                    )
-            else:
+                    if isinstance(task, Task):
+                        self.task_pool.append(task)
+                        logger.info(
+                            "[INFO][RecursiveWorkflow] Added task"
+                            f" {task} to workflow"
+                        )
+            elif isinstance(task, Task):
                 self.task_pool.append(task)
                 logger.info(
                     f"[INFO][RecursiveWorkflow] Added task {task} to"
@@ -74,8 +75,8 @@ class RecursiveWorkflow(BaseStructure):
         try:
             for task in self.task_pool:
                 while True:
-                    result = task.execute()
-                    if self.stop_token in result:
+                    result = task.run()
+                    if result is not None and self.stop_token in result:
                         break
                     logger.info(f"{result}")
         except Exception as error:
