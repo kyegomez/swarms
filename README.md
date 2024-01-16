@@ -431,7 +431,7 @@ agent = Agent(
 )
 
 # Create a task
-task = Task(description="What's the weather in miami", agent=agent)
+task = Task(agent, "Create a strategy to cut business costs by 40% this month")
 
 # Set the action and condition
 task.set_action(my_action)
