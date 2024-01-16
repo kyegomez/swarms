@@ -12,6 +12,12 @@ from swarms.utils.prep_torch_model_inference import (
     prep_torch_inference,
 )
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
+from swarms.utils.data_to_text import (
+    csv_to_text,
+    json_to_text,
+    txt_to_text,
+    data_to_text,
+)
 
 
 __all__ = [
@@ -27,4 +33,8 @@ __all__ = [
     "prep_torch_inference",
     "print_class_parameters",
     "check_device",
+    "csv_to_text",
+    "json_to_text",
+    "txt_to_text",
+    "data_to_text",
 ]

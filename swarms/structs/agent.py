@@ -29,6 +29,7 @@ from swarms.utils.parse_code import (
 )
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
+from swarms.utils.data_to_text import data_to_text
 
 
 # Utils
@@ -52,15 +53,10 @@ def agent_id():
 
 class Agent:
     """
-    Agent is the structure that provides autonomy to any llm in a reliable and effective fashion.
-    The agent structure is designed to be used with any llm and provides the following features:
+    Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
+    ingest any type of docs like PDFs, Txts, Markdown, Json, and etc for the agent. Here is a list of features.
 
-    Features:
-    * Interactive, AI generates, then user input
-    * Message history and performance history fed -> into context -> truncate if too long
-    * Ability to save and load flows
-    * Ability to provide feedback on responses
-    * Ability to provide a loop interval
+
 
     Args:
         llm (Any): The language model to use
@@ -191,6 +187,7 @@ class Agent:
         traceback: Any = None,
         traceback_handlers: Any = None,
         streaming_on: Optional[bool] = False,
+        docs: List[str] = None,
         *args,
         **kwargs: Any,
     ):
@@ -234,9 +231,8 @@ class Agent:
         self.traceback = traceback
         self.traceback_handlers = traceback_handlers
         self.streaming_on = streaming_on
-
-        # self.system_prompt = AGENT_SYSTEM_PROMPT_3
-
+        self.docs = docs
+        
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
@@ -265,6 +261,12 @@ class Agent:
             self.sop_list.append(
                 self.tools_prompt_prep(self.tool_docs, SCENARIOS)
             )
+
+        # self.short_memory_test = Conversation(time_enabled=True)
+        
+        # If the docs exist then ingest the docs
+        if self.docs:
+            self.ingest_docs(self.docs)
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -640,10 +642,6 @@ class Agent:
                     AGENT_SYSTEM_PROMPT_3, response
                 )
 
-                # # Retreiving long term memory
-                # if self.memory:
-                #     task = self.agent_memory_prompt(response, task)
-
                 attempt = 0
                 while attempt < self.retry_attempts:
                     try:
@@ -716,6 +714,15 @@ class Agent:
         except Exception as error:
             print(f"Error running agent: {error}")
             raise
+
+    def __call__(self, task: str, img: str = None, *args, **kwargs):
+        """Call the agent
+
+        Args:
+            task (str): _description_
+            img (str, optional): _description_. Defaults to None.
+        """
+        self.run(task, img, *args, **kwargs)
 
     def _run(self, **kwargs: Any) -> str:
         """Run the agent on a task
@@ -822,20 +829,6 @@ class Agent:
             return [self.run(**input_data) for input_data in inputs]
         except Exception as error:
             print(colored(f"Error running bulk run: {error}", "red"))
-
-    @staticmethod
-    def from_llm_and_template(llm: Any, template: str) -> "Agent":
-        """Create AgentStream from LLM and a string template."""
-        return Agent(llm=llm, template=template)
-
-    @staticmethod
-    def from_llm_and_template_file(
-        llm: Any, template_file: str
-    ) -> "Agent":
-        """Create AgentStream from LLM and a template file."""
-        with open(template_file, "r") as f:
-            template = f.read()
-        return Agent(llm=llm, template=template)
 
     def save(self, file_path) -> None:
         """Save the agent history to a file.
@@ -1352,3 +1345,17 @@ class Agent:
         ‘‘‘
         """
         return PROMPT
+
+    def ingest_docs(self, docs: List[str], *args, **kwargs):
+        """Ingest the docs into the memory
+
+        Args:
+            docs (List[str]): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        for doc in docs:
+            data = data_to_text(doc)
+        
+        return self.short_memory.append(data)
