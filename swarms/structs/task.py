@@ -54,6 +54,7 @@ class Task:
     >>> task.result
 
     """
+
     agent: Union[Callable, Agent]
     description: str
     args: List[Any] = field(default_factory=list)
@@ -87,7 +88,9 @@ class Task:
             if isinstance(self.agent, Agent):
                 if self.condition is None or self.condition():
                     self.result = self.agent.run(
-                        *self.args, **self.kwargs
+                        task=self.description,
+                        *self.args,
+                        **self.kwargs,
                     )
                     self.history.append(self.result)
 

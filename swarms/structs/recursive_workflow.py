@@ -76,7 +76,10 @@ class RecursiveWorkflow(BaseStructure):
             for task in self.task_pool:
                 while True:
                     result = task.run()
-                    if result is not None and self.stop_token in result:
+                    if (
+                        result is not None
+                        and self.stop_token in result
+                    ):
                         break
                     logger.info(f"{result}")
         except Exception as error:
