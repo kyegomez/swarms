@@ -199,9 +199,23 @@ class ModelParallelizer:
     def add_llm(self, llm: Callable):
         """Add an llm to the god mode"""
         logger.info(f"[INFO][ModelParallelizer] Adding LLM {llm}")
-        self.llms.append(llm)
+
+        try:
+            self.llms.append(llm)
+        except Exception as error:
+            logger.error(
+                f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
+            )
+            raise error
 
     def remove_llm(self, llm: Callable):
         """Remove an llm from the god mode"""
         logger.info(f"[INFO][ModelParallelizer] Removing LLM {llm}")
-        self.llms.remove(llm)
+
+        try:
+            self.llms.remove(llm)
+        except Exception as error:
+            logger.error(
+                f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
+            )
+            raise error

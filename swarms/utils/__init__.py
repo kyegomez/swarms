@@ -18,6 +18,7 @@ from swarms.utils.data_to_text import (
     txt_to_text,
     data_to_text,
 )
+from swarms.utils.try_except_wrapper import try_except_wrapper
 
 
 __all__ = [
@@ -37,4 +38,5 @@ __all__ = [
     "json_to_text",
     "txt_to_text",
     "data_to_text",
+    "try_except_wrapper",
 ]

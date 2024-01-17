@@ -13,6 +13,7 @@ from typing import (
 from swarms.structs.agent import Agent
 from swarms.utils.logger import logger
 
+
 @dataclass
 class Task:
     """
@@ -69,7 +70,7 @@ class Task:
     priority: int = 0
     dependencies: List["Task"] = field(default_factory=list)
 
-    def execute(self, *args, **kwargs):
+    def execute(self, task: str, img: str = None, *args, **kwargs):
         """
         Execute the task by calling the agent or model with the arguments and
         keyword arguments. You can add images to the agent by passing the
@@ -85,11 +86,13 @@ class Task:
         >>> task.result
 
         """
+        logger.info(f"[INFO][Task] Executing task: {task}")
+        task = self.description or task
         try:
             if isinstance(self.agent, Agent):
                 if self.condition is None or self.condition():
                     self.result = self.agent.run(
-                        task=self.description,
+                        task=task,
                         *args,
                         **kwargs,
                     )
@@ -104,7 +107,7 @@ class Task:
 
             self.history.append(self.result)
         except Exception as error:
-            print(f"[ERROR][Task] {error}")
+            logger.error(f"[ERROR][Task] {error}")
 
     def run(self):
         self.execute()
@@ -119,6 +122,7 @@ class Task:
         If the schedule time is not set or has already passed, the task is executed immediately.
         Otherwise, the task is scheduled to be executed at the specified schedule time.
         """
+        logger.info("[INFO][Task] Handling scheduled task")
         try:
             if (
                 self.schedule_time is None
@@ -193,7 +197,7 @@ class Task:
         Returns:
             bool: True if all the dependencies have been completed, False otherwise.
         """
-        logger.info(f"[INFO][Task] Checking dependency completion")
+        logger.info("[INFO][Task] Checking dependency completion")
         try:
             for task in self.dependencies:
                 if not task.is_completed():
