@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from swarms.structs.agent import Agent
 from swarms.structs.base import BaseStructure
+from swarms.utils.logger import logger  # noqa: F401
 
 
 class SwarmNetwork(BaseStructure):
@@ -168,7 +169,7 @@ class SwarmNetwork(BaseStructure):
                 # self.logger.info(f"No agent found with ID {agent_id}")
             raise ValueError(f"No agent found with ID {agent_id}")
         except Exception as error:
-            print(f"Error running task on agent: {error}")
+            self.logger.error(f"Error running task on agent: {error}")
             raise error
 
     def run_many_agents(
@@ -189,7 +190,7 @@ class SwarmNetwork(BaseStructure):
                 for agent in self.agents
             ]
         except Exception as error:
-            print(f"Error running task on agents: {error}")
+            logger.error(f"Error running task on agents: {error}")
             raise error
 
     def list_agents(self):
@@ -211,7 +212,7 @@ class SwarmNetwork(BaseStructure):
                     f" {agent.agent_description}] [Status] [Running]"
                 )
         except Exception as error:
-            print(f"Error listing agents: {error}")
+            logger.error(f"Error listing agents: {error}")
             raise error
 
     def get_agent(self, agent_id):

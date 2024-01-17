@@ -73,7 +73,7 @@ class ModelParallelizer:
                     )
                 return list(responses)
         except Exception as error:
-            print(
+            logger.error(
                 f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
             )
 
@@ -191,15 +191,17 @@ class ModelParallelizer:
             self.task_history.append(task)
             return responses
         except Exception as error:
-            print(
+            logger.error(
                 f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
             )
             raise error
 
     def add_llm(self, llm: Callable):
         """Add an llm to the god mode"""
+        logger.info(f"[INFO][ModelParallelizer] Adding LLM {llm}")
         self.llms.append(llm)
 
     def remove_llm(self, llm: Callable):
         """Remove an llm from the god mode"""
+        logger.info(f"[INFO][ModelParallelizer] Removing LLM {llm}")
         self.llms.remove(llm)

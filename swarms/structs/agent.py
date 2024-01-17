@@ -232,7 +232,7 @@ class Agent:
         self.traceback_handlers = traceback_handlers
         self.streaming_on = streaming_on
         self.docs = docs
-        
+
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
             self.max_loops = "auto"
@@ -263,7 +263,7 @@ class Agent:
             )
 
         # self.short_memory_test = Conversation(time_enabled=True)
-        
+
         # If the docs exist then ingest the docs
         if self.docs:
             self.ingest_docs(self.docs)
@@ -1357,5 +1357,5 @@ class Agent:
         """
         for doc in docs:
             data = data_to_text(doc)
-        
+
         return self.short_memory.append(data)

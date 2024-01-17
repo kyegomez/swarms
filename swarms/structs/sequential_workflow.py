@@ -7,6 +7,7 @@ from termcolor import colored
 
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
+from swarms.utils.logger import logger
 
 
 # SequentialWorkflow class definition using dataclasses
@@ -83,8 +84,13 @@ class SequentialWorkflow:
                     kwargs=kwargs,
                 )
             )
+
+            logger.info(
+                f"[INFO][SequentialWorkflow] Added task {task} to"
+                " workflow"
+            )
         except Exception as error:
-            print(
+            logger.error(
                 colored(
                     f"Error adding task to workflow: {error}", "red"
                 ),
@@ -96,7 +102,7 @@ class SequentialWorkflow:
             for task in self.tasks:
                 task.result = None
         except Exception as error:
-            print(
+            logger.error(
                 colored(f"Error resetting workflow: {error}", "red"),
             )
 
@@ -112,7 +118,7 @@ class SequentialWorkflow:
                 task.description: task.result for task in self.tasks
             }
         except Exception as error:
-            print(
+            logger.error(
                 colored(
                     f"Error getting task results: {error}", "red"
                 ),
@@ -126,8 +132,12 @@ class SequentialWorkflow:
                 for task in self.tasks
                 if task.description != task
             ]
+            logger.info(
+                f"[INFO][SequentialWorkflow] Removed task {task} from"
+                " workflow"
+            )
         except Exception as error:
-            print(
+            logger.error(
                 colored(
                     f"Error removing task from workflow: {error}",
                     "red",
@@ -166,8 +176,13 @@ class SequentialWorkflow:
                 raise ValueError(
                     f"Task {task} not found in workflow."
                 )
-        except Exception as error:
+
             print(
+                f"[INFO][SequentialWorkflow] Updated task {task} in"
+                " workflow"
+            )
+        except Exception as error:
+            logger.error(
                 colored(
                     f"Error updating task in workflow: {error}", "red"
                 ),
@@ -203,8 +218,13 @@ class SequentialWorkflow:
                 raise ValueError(
                     f"Task {task} not found in workflow."
                 )
-        except Exception as error:
+
             print(
+                f"[INFO][SequentialWorkflow] Deleted task {task} from"
+                " workflow"
+            )
+        except Exception as error:
+            logger.error(
                 colored(
                     f"Error deleting task from workflow: {error}",
                     "red",
@@ -286,8 +306,13 @@ class SequentialWorkflow:
                     "max_loops": self.max_loops,
                 }
                 json.dump(state, f, indent=4)
-        except Exception as error:
+
             print(
+                "[INFO][SequentialWorkflow] Saved workflow state to"
+                f" {filepath}"
+            )
+        except Exception as error:
+            logger.error(
                 colored(
                     f"Error saving workflow state: {error}",
                     "red",
@@ -376,8 +401,13 @@ class SequentialWorkflow:
                 kwargs=kwargs["kwargs"],
             )
             self.tasks.append(task)
-        except Exception as error:
+
             print(
+                f"[INFO][SequentialWorkflow] Added task {task} to"
+                " workflow"
+            )
+        except Exception as error:
+            logger.error(
                 colored(
                     f"Error adding objective to workflow: {error}",
                     "red",
@@ -421,8 +451,13 @@ class SequentialWorkflow:
                         history=task_state["history"],
                     )
                     self.tasks.append(task)
-        except Exception as error:
+
             print(
+                "[INFO][SequentialWorkflow] Loaded workflow state"
+                f" from {filepath}"
+            )
+        except Exception as error:
+            logger.error(
                 colored(
                     f"Error loading workflow state: {error}",
                     "red",
@@ -482,7 +517,7 @@ class SequentialWorkflow:
                                 "sequential_workflow_state.json"
                             )
         except Exception as e:
-            print(
+            logger.error(
                 colored(
                     (
                         "Error initializing the Sequential workflow:"

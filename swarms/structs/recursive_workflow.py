@@ -81,7 +81,7 @@ class RecursiveWorkflow(BaseStructure):
                         and self.stop_token in result
                     ):
                         break
-                    logger.info(f"{result}")
+                    print(f"{result}")
         except Exception as error:
             logger.warning(f"[ERROR][RecursiveWorkflow] {error}")
             raise error

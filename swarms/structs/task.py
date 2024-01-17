@@ -11,7 +11,7 @@ from typing import (
 )
 
 from swarms.structs.agent import Agent
-
+from swarms.utils.logger import logger
 
 @dataclass
 class Task:
@@ -133,7 +133,7 @@ class Task:
                 self.scheduler.enter(delay, 1, self.execute)
                 self.scheduler_run()
         except Exception as error:
-            print(f"[ERROR][Task] {error}")
+            logger.error(f"[ERROR][Task] {error}")
 
     def set_trigger(self, trigger: Callable):
         """
@@ -193,11 +193,12 @@ class Task:
         Returns:
             bool: True if all the dependencies have been completed, False otherwise.
         """
+        logger.info(f"[INFO][Task] Checking dependency completion")
         try:
             for task in self.dependencies:
                 if not task.is_completed():
                     return False
         except Exception as error:
-            print(
+            logger.error(
                 f"[ERROR][Task][check_dependency_completion] {error}"
             )
