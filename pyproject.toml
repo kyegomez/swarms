@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "3.6.7"
+version = "3.6.8"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -72,6 +72,9 @@ qdrant-client = "*"
 sentence-transformers = "*"
 peft = "*"
 psutil = "*"
+ultralytics = "*"
+timm = "*"
+
 
 
 [tool.poetry.group.lint.dependencies]

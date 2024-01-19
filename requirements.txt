@@ -45,7 +45,7 @@ openai==0.28.0
 opencv-python==4.7.0.72
 prettytable==3.9.0
 safetensors==0.3.3
-timm==0.6.13
+timm
 torchmetrics
 webdataset
 marshmallow==3.19.0
@@ -60,3 +60,4 @@ mkdocs-glightbox
 pre-commit==3.2.2
 peft
 psutil
+ultralytics

@@ -40,6 +40,8 @@ from swarms.models.openai_tts import OpenAITTS  # noqa: E402
 from swarms.models.gemini import Gemini  # noqa: E402
 from swarms.models.gigabind import Gigabind  # noqa: E402
 from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
+from swarms.models.timm import TimmModel  # noqa: E402
+from swarms.models.ultralytics_model import UltralyticsModel  # noqa: E402
 
 
 # from swarms.models.dalle3 import Dalle3
@@ -96,4 +98,6 @@ __all__ = [
     # "ModelScopePipeline",
     # "ModelScopeAutoModel",
     "TogetherLLM",
+    "TimmModel",
+    "UltralyticsModel",
 ]

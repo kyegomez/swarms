@@ -26,8 +26,14 @@ class TimmModel(BaseMultiModalModel):
     """
 
     def __init__(
-        self, model_name: str, pretrained: bool, in_chans: int
+        self,
+        model_name: str,
+        pretrained: bool,
+        in_chans: int,
+        *args,
+        **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.model_name = model_name
         self.pretrained = pretrained
         self.in_chans = in_chans
