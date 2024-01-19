@@ -48,7 +48,7 @@ class TimmModel(BaseMultiModalModel):
         Returns:
             The shape of the output from the model.
         """
-        model = timm.create_model(self.model, *args, **kwargs)
+        model = timm.create_model(self.model_name, *args, **kwargs)
         return model(task)
 
     def list_models(self):
