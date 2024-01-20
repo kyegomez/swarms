@@ -3,15 +3,15 @@ from ultralytics import YOLO
 
 
 class UltralyticsModel(BaseMultiModalModel):
-    def __init__(self, model_name: str, *args, **kwargs):
-        """
-        Initializes an instance of the Ultralytics model.
+    """
+    Initializes an instance of the Ultralytics model.
 
-        Args:
-            model_name (str): The name of the model.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-        """
+    Args:
+        model_name (str): The name of the model.
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
+    """
+    def __init__(self, model_name: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model_name = model_name
 
