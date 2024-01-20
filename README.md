@@ -28,15 +28,15 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 </a>
 
 ### `Agent`
-Agent is Swarms plug in and play agent structure! By passing in an LLM you can create a fully autonomous agent with extreme customization and reliability ready for the real-world!
+Agent is Swarms plug in and play agent structure! By passing in an LLM you can create a fully autonomous agent with extreme customization and reliability ready for real-world task automation!
 
-Here are some features:
+Features:
 
-✅ Any LLM/ Any framework
+✅ Any LLM / Any framework
 
-✅ Extremely customize-able with max loops, autosaving, import docs (PDFS, TXT, CSVs, etc)
+✅ Extremely customize-able with max loops, autosaving, import docs (PDFS, TXT, CSVs, etc), tool usage, etc etc
 
-✅ Long term memory database with RAG, also plug in and play with 
+✅ Long term memory database with RAG (ChromaDB, Pinecone, Qdrant)
 
 ```python
 import os
