@@ -109,11 +109,11 @@ class Task:
         except Exception as error:
             logger.error(f"[ERROR][Task] {error}")
 
-    def run(self):
-        self.execute()
+    def run(self, task: str, *args, **kwargs):
+        self.execute(task, *args, **kwargs)
 
-    def __call__(self):
-        self.execute()
+    def __call__(self, task: str, *args, **kwargs):
+        self.execute(task, *args, **kwargs)
 
     def handle_scheduled_task(self):
         """
@@ -206,3 +206,5 @@ class Task:
             logger.error(
                 f"[ERROR][Task][check_dependency_completion] {error}"
             )
+
+
