@@ -250,7 +250,7 @@ workflow.run()
 ### `ModelParallelizer`
 The ModelParallelizer allows you to run multiple models concurrently, comparing their outputs. This feature enables you to easily compare the performance and results of different models, helping you make informed decisions about which model to use for your specific task.
 
-- Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
+Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
 
 
 ```python
@@ -916,18 +916,18 @@ cog_agent.run("Describe this scene", "images/1.jpg")
 
 ----
 
-## Supported Models :heavy_check_mark:
+## Supported Models ✅ 
 Swarms supports various model providers like OpenAI, Huggingface, Anthropic, Google, Mistral and many more.
 
-| Provider | Provided :heavy_check_mark: | Module Name |
+| Provider | Provided ✅  | Module Name |
 |----------|-----------------------------|-------------|
-| OpenAI | :heavy_check_mark: | OpenAIChat, OpenAITTS, GPT4VisionAPI, Dalle3 |
-| Anthropic | :heavy_check_mark: | Anthropic |
-| Mistral | :heavy_check_mark: | Mistral, Mixtral |
-| Gemini/Palm | :heavy_check_mark: | Gemini |
-| Huggingface | :heavy_check_mark: | HuggingFaceLLM |
-| Modelscope | :heavy_check_mark: | Modelscope |
-| Vllm | :heavy_check_mark: | vLLM |
+| OpenAI | ✅  | OpenAIChat, OpenAITTS, GPT4VisionAPI, Dalle3 |
+| Anthropic | ✅  | Anthropic |
+| Mistral | ✅  | Mistral, Mixtral |
+| Gemini/Palm | ✅  | Gemini |
+| Huggingface | ✅  | HuggingFaceLLM |
+| Modelscope | ✅  | Modelscope |
+| Vllm | ✅  | vLLM |
 
 
 ---
