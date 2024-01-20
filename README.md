@@ -28,9 +28,13 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 </a>
 
 ### `Agent`
-- Reliable Structure that provides LLMS autonomy
-- Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
-- Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
+Agent is Swarms plug in and play agent structure! By passing in an LLM you can create a fully autonomous agent with extreme customization and reliability ready for the real-world!
+
+Here are some features:
+
+✅ Any LLM
+✅ Extremely customize-able with max loops, autosaving, import docs (PDFS, TXT, CSVs, etc)
+✅ Long term memory database with RAG, also plug in and play with 
 
 ```python
 import os
@@ -38,8 +42,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms.models import OpenAIChat
-from swarms.structs import Agent
+from swarms import OpenAIChat, Agent
 
 # Load the environment variables
 load_dotenv()
@@ -68,12 +71,13 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 
 
 ### `ToolAgent`
+ToolAgent is an agent that outputs JSON using any model from huggingface. It takes in an example schema with fields and then you provide it with a simple task and it'll output json! Perfect for function calling, parallel, and multi-step tool usage!
 
-- Versatility: The ToolAgent class is designed to be flexible and adaptable. It can be used with any model and tokenizer, making it suitable for a wide range of tasks. This versatility means that you can use ToolAgent as a foundation for any tool that requires language model processing.
+✅ Versatility: The ToolAgent class is designed to be flexible and adaptable. It can be used with any model and tokenizer, making it suitable for a wide range of tasks. This versatility means that you can use ToolAgent as a foundation for any tool that requires language model processing.
 
-- Ease of Use: With its simple and intuitive interface, ToolAgent makes it easy to perform complex tasks. Just initialize it with your model, tokenizer, and JSON schema, and then call the run method with your task. This ease of use allows you to focus on your task, not on setting up your tools.
+✅  Ease of Use: With its simple and intuitive interface, ToolAgent makes it easy to perform complex tasks. Just initialize it with your model, tokenizer, and JSON schema, and then call the run method with your task. This ease of use allows you to focus on your task, not on setting up your tools.
 
-- Customizability: ToolAgent accepts variable length arguments and keyword arguments, allowing you to customize its behavior to suit your needs. Whether you need to adjust the temperature of the model's output, limit the number of tokens, or tweak any other parameter, ToolAgent has you covered. This customizability ensures that ToolAgent can adapt to your specific requirements.
+✅  Customizability: ToolAgent accepts variable length arguments and keyword arguments, allowing you to customize its behavior to suit your needs. Whether you need to adjust the temperature of the model's output, limit the number of tokens, or tweak any other parameter, ToolAgent has you covered. This customizability ensures that ToolAgent can adapt to your specific requirements.
 
 
 ```python
@@ -108,9 +112,12 @@ print(generated_data)
 ------
 
 ### `SequentialWorkflow`
-- A Sequential swarm of autonomous agents where each agent's outputs are fed into the next agent
-- Save and Restore Workflow states!
-- Integrate Agent's with various LLMs and Multi-Modality Models
+Sequential Workflow enables you to sequentially execute tasks with `Agent` and then pass the output into the next agent and onwards until you have specified your max loops. `SequentialWorkflow` is wonderful for real-world business tasks like sending emails, summarizing documents, and analyzing data.
+
+
+✅  Save and Restore Workflow states!
+✅  Multi-Modal Support for Visual Chaining
+✅  Utilizes Agent class
 
 ```python
 import os 
@@ -167,7 +174,9 @@ for task in workflow.tasks:
 
 
 ### `ConcurrentWorkflow`
-- Run all the tasks all at the same time
+`ConcurrentWorkflow` runs all the tasks all at the same time with the inputs you give it!
+
+
 ```python
 import os 
 from dotenv import load_dotenv 
@@ -199,7 +208,7 @@ workflow.run()
 ```
 
 ### `RecursiveWorkflow`
-- Recursively iterate on a workflow until a specific token is detected. 
+`RecursiveWorkflow` will keep executing the tasks until a specific token like <DONE> is located inside the text!
 
 ```python
 import os 
@@ -235,7 +244,7 @@ workflow.run()
 
 
 ### `ModelParallelizer`
-- Concurrent Execution of Multiple Models: The ModelParallelizer allows you to run multiple models concurrently, comparing their outputs. This feature enables you to easily compare the performance and results of different models, helping you make informed decisions about which model to use for your specific task.
+Concurrent Execution of Multiple Models: The ModelParallelizer allows you to run multiple models concurrently, comparing their outputs. This feature enables you to easily compare the performance and results of different models, helping you make informed decisions about which model to use for your specific task.
 
 - Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
 
