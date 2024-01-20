@@ -25,7 +25,6 @@ def test_ultralytics_call():
         assert result == mock_yolo.return_value.return_value
 
 
-
 def test_ultralytics_list_models():
     with patch("swarms.models.YOLO") as mock_yolo:
         model_name = "yolov5s"

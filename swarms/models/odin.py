@@ -3,6 +3,7 @@ from ultraanalytics import YOLO
 from tqdm import tqdm
 from swarms.models.base_llm import AbstractLLM
 
+
 class Odin(AbstractLLM):
     """
     Odin class represents an object detection and tracking model.

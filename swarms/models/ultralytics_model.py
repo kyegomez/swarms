@@ -11,6 +11,7 @@ class UltralyticsModel(BaseMultiModalModel):
         *args: Variable length argument list.
         **kwargs: Arbitrary keyword arguments.
     """
+
     def __init__(self, model_name: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model_name = model_name
