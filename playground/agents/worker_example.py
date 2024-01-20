@@ -11,7 +11,7 @@ worker = Worker(
     name="My Worker",
     role="Worker",
     human_in_the_loop=False,
-    tools = [],
+    tools=[],
     temperature=0.5,
     llm=OpenAIChat(openai_api_key=api_key),
 )

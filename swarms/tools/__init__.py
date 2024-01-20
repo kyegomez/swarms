@@ -7,7 +7,13 @@ from swarms.tools.tool_utils import (
     execute_tools,
 )
 from swarms.tools.tool import BaseTool, Tool, StructuredTool, tool
-
+from swarms.tools.exec_tool import (
+    AgentAction,
+    BaseAgentOutputParser,
+    preprocess_json_input,
+    AgentOutputParser,
+    execute_tool_by_name,
+)
 
 __all__ = [
     "scrape_tool_func_docs",
@@ -20,4 +26,9 @@ __all__ = [
     "Tool",
     "StructuredTool",
     "tool",
+    "AgentAction",
+    "BaseAgentOutputParser",
+    "preprocess_json_input",
+    "AgentOutputParser",
+    "execute_tool_by_name",
 ]

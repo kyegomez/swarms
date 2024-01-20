@@ -28,7 +28,7 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 </a>
 
 ### `Agent`
-Agent is Swarms plug in and play agent structure! By passing in an LLM you can create a fully autonomous agent with extreme customization and reliability ready for real-world task automation!
+A fully plug in and play Autonomous agent powered by an LLM extended by a long term memory database, and equipped with function calling for tool usage! By passing in an LLM you can create a fully autonomous agent with extreme customization and reliability ready for real-world task automation!
 
 Features:
 
@@ -125,9 +125,7 @@ Sequential Workflow enables you to sequentially execute tasks with `Agent` and t
 
 ```python
 import os 
-from swarms.models import OpenAIChat
-from swarms.structs import Agent
-from swarms.structs.sequential_workflow import SequentialWorkflow
+from swarms import OpenAIChat, Agent, SequentialWorkflow 
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -258,8 +256,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import Anthropic, Gemini, Mixtral, OpenAIChat
-from swarms.structs import ModelParallelizer
+from swarms import Anthropic, Gemini, Mixtral, OpenAIChat, ModelParallelizer
 
 load_dotenv()
 
@@ -408,14 +405,11 @@ print(out)
 ### `Task`
 `Task` is a simple structure for task execution with the `Agent`. Imagine zapier for LLM-based workflow automation
 
-- Task Description: Each Task can have a description, providing a human-readable explanation of what the task is intended to do.
-- Task Scheduling: Tasks can be scheduled for execution at a specific time using the schedule_time attribute.
-- Task Triggers: The set_trigger method allows for the setting of a trigger function that is executed before the task.
-- Task Actions: The set_action method allows for the setting of an action function that is executed after the task.
-- Task Conditions: The set_condition method allows for the setting of a condition function. The task will only be executed if this function returns True.
-- Task Dependencies: The add_dependency method allows for the addition of dependencies to the task. The task will only be executed if all its dependencies have been completed.
-- Task Priority: The set_priority method allows for the setting of the task's priority. Tasks with higher priority will be executed before tasks with lower priority.
-- Task History: The history attribute is a list that keeps track of all the results of the task execution. This can be useful for debugging and for tasks that need to be executed multiple times.
+✅ Task is a structure for task execution with the Agent. 
+
+✅ Tasks can have descriptions, scheduling, triggers, actions, conditions, dependencies, priority, and a history. 
+
+✅ The Task structure allows for efficient workflow automation with LLM-based agents.
 
 ```python
 import os
@@ -750,7 +744,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import Gemini
+from swarms import Gemini
 from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
 
 # Load the environment variables
@@ -854,7 +848,7 @@ print(image_url)
 
 ### `GPT4Vision`
 ```python
-from swarms.models import GPT4VisionAPI
+from swarms import GPT4VisionAPI
 
 # Initialize with default API key and custom max_tokens
 api = GPT4VisionAPI(max_tokens=1000)
