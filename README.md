@@ -32,8 +32,10 @@ Agent is Swarms plug in and play agent structure! By passing in an LLM you can c
 
 Here are some features:
 
-✅ Any LLM
+✅ Any LLM/ Any framework
+
 ✅ Extremely customize-able with max loops, autosaving, import docs (PDFS, TXT, CSVs, etc)
+
 ✅ Long term memory database with RAG, also plug in and play with 
 
 ```python
