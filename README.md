@@ -28,9 +28,15 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 </a>
 
 ### `Agent`
-- Reliable Structure that provides LLMS autonomy
-- Extremely Customizeable with stopping conditions, interactivity, dynamical temperature, loop intervals, and so much more
-- Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
+A fully plug in and play Autonomous agent powered by an LLM extended by a long term memory database, and equipped with function calling for tool usage! By passing in an LLM you can create a fully autonomous agent with extreme customization and reliability ready for real-world task automation!
+
+Features:
+
+✅ Any LLM / Any framework
+
+✅ Extremely customize-able with max loops, autosaving, import docs (PDFS, TXT, CSVs, etc), tool usage, etc etc
+
+✅ Long term memory database with RAG (ChromaDB, Pinecone, Qdrant)
 
 ```python
 import os
@@ -38,8 +44,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms.models import OpenAIChat
-from swarms.structs import Agent
+from swarms import OpenAIChat, Agent
 
 # Load the environment variables
 load_dotenv()
@@ -68,12 +73,13 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 
 
 ### `ToolAgent`
+ToolAgent is an agent that outputs JSON using any model from huggingface. It takes in an example schema with fields and then you provide it with a simple task and it'll output json! Perfect for function calling, parallel, and multi-step tool usage!
 
-- Versatility: The ToolAgent class is designed to be flexible and adaptable. It can be used with any model and tokenizer, making it suitable for a wide range of tasks. This versatility means that you can use ToolAgent as a foundation for any tool that requires language model processing.
+✅ Versatility: The ToolAgent class is designed to be flexible and adaptable. It can be used with any model and tokenizer, making it suitable for a wide range of tasks. This versatility means that you can use ToolAgent as a foundation for any tool that requires language model processing.
 
-- Ease of Use: With its simple and intuitive interface, ToolAgent makes it easy to perform complex tasks. Just initialize it with your model, tokenizer, and JSON schema, and then call the run method with your task. This ease of use allows you to focus on your task, not on setting up your tools.
+✅  Ease of Use: With its simple and intuitive interface, ToolAgent makes it easy to perform complex tasks. Just initialize it with your model, tokenizer, and JSON schema, and then call the run method with your task. This ease of use allows you to focus on your task, not on setting up your tools.
 
-- Customizability: ToolAgent accepts variable length arguments and keyword arguments, allowing you to customize its behavior to suit your needs. Whether you need to adjust the temperature of the model's output, limit the number of tokens, or tweak any other parameter, ToolAgent has you covered. This customizability ensures that ToolAgent can adapt to your specific requirements.
+✅  Customizability: ToolAgent accepts variable length arguments and keyword arguments, allowing you to customize its behavior to suit your needs. Whether you need to adjust the temperature of the model's output, limit the number of tokens, or tweak any other parameter, ToolAgent has you covered. This customizability ensures that ToolAgent can adapt to your specific requirements.
 
 
 ```python
@@ -108,15 +114,18 @@ print(generated_data)
 ------
 
 ### `SequentialWorkflow`
-- A Sequential swarm of autonomous agents where each agent's outputs are fed into the next agent
-- Save and Restore Workflow states!
-- Integrate Agent's with various LLMs and Multi-Modality Models
+Sequential Workflow enables you to sequentially execute tasks with `Agent` and then pass the output into the next agent and onwards until you have specified your max loops. `SequentialWorkflow` is wonderful for real-world business tasks like sending emails, summarizing documents, and analyzing data.
+
+
+✅  Save and Restore Workflow states!
+
+✅  Multi-Modal Support for Visual Chaining
+
+✅  Utilizes Agent class
 
 ```python
 import os 
-from swarms.models import OpenAIChat
-from swarms.structs import Agent
-from swarms.structs.sequential_workflow import SequentialWorkflow
+from swarms import OpenAIChat, Agent, SequentialWorkflow 
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -167,7 +176,9 @@ for task in workflow.tasks:
 
 
 ### `ConcurrentWorkflow`
-- Run all the tasks all at the same time
+`ConcurrentWorkflow` runs all the tasks all at the same time with the inputs you give it!
+
+
 ```python
 import os 
 from dotenv import load_dotenv 
@@ -199,7 +210,7 @@ workflow.run()
 ```
 
 ### `RecursiveWorkflow`
-- Recursively iterate on a workflow until a specific token is detected. 
+`RecursiveWorkflow` will keep executing the tasks until a specific token like <DONE> is located inside the text!
 
 ```python
 import os 
@@ -235,9 +246,9 @@ workflow.run()
 
 
 ### `ModelParallelizer`
-- Concurrent Execution of Multiple Models: The ModelParallelizer allows you to run multiple models concurrently, comparing their outputs. This feature enables you to easily compare the performance and results of different models, helping you make informed decisions about which model to use for your specific task.
+The ModelParallelizer allows you to run multiple models concurrently, comparing their outputs. This feature enables you to easily compare the performance and results of different models, helping you make informed decisions about which model to use for your specific task.
 
-- Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
+Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
 
 
 ```python
@@ -245,8 +256,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import Anthropic, Gemini, Mixtral, OpenAIChat
-from swarms.structs import ModelParallelizer
+from swarms import Anthropic, Gemini, Mixtral, OpenAIChat, ModelParallelizer
 
 load_dotenv()
 
@@ -278,7 +288,8 @@ for i in range(len(out)):
 
 
 ### Simple Conversational Agent
-- Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our models
+A Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our models
+
 - Reliable conversational structure to hold messages together with dynamic handling for long context conversations and interactions with auto chunking
 - Reliable, this simple system will always provide responses you want.
 
@@ -332,11 +343,13 @@ interactive_conversation(llm)
 
 
 ### `SwarmNetwork`
-- Efficient Task Management: SwarmNetwork's intelligent agent pool and task queue management system ensures tasks are distributed evenly across agents. This leads to efficient use of resources and faster task completion.
+`SwarmNetwork` provides the infrasturcture for building extremely dense and complex multi-agent applications that span across various types of agents.
 
-- Scalability: SwarmNetwork can dynamically scale the number of agents based on the number of pending tasks. This means it can handle an increase in workload by adding more agents, and conserve resources when the workload is low by reducing the number of agents.
+✅ Efficient Task Management: SwarmNetwork's intelligent agent pool and task queue management system ensures tasks are distributed evenly across agents. This leads to efficient use of resources and faster task completion.
 
-- Versatile Deployment Options: With SwarmNetwork, each agent can be run on its own thread, process, container, machine, or even cluster. This provides a high degree of flexibility and allows for deployment that best suits the user's needs and infrastructure.
+✅ Scalability: SwarmNetwork can dynamically scale the number of agents based on the number of pending tasks. This means it can handle an increase in workload by adding more agents, and conserve resources when the workload is low by reducing the number of agents.
+
+✅ Versatile Deployment Options: With SwarmNetwork, each agent can be run on its own thread, process, container, machine, or even cluster. This provides a high degree of flexibility and allows for deployment that best suits the user's needs and infrastructure.
 
 ```python
 import os
@@ -390,21 +403,17 @@ print(out)
 
 
 ### `Task`
-Task Execution: The Task structure allows for the execution of tasks by an assigned agent. The run method is used to execute the task. It's like a Zapier for LLMs
+`Task` is a simple structure for task execution with the `Agent`. Imagine zapier for LLM-based workflow automation
 
-- Task Description: Each Task can have a description, providing a human-readable explanation of what the task is intended to do.
-- Task Scheduling: Tasks can be scheduled for execution at a specific time using the schedule_time attribute.
-- Task Triggers: The set_trigger method allows for the setting of a trigger function that is executed before the task.
-- Task Actions: The set_action method allows for the setting of an action function that is executed after the task.
-- Task Conditions: The set_condition method allows for the setting of a condition function. The task will only be executed if this function returns True.
-- Task Dependencies: The add_dependency method allows for the addition of dependencies to the task. The task will only be executed if all its dependencies have been completed.
-- Task Priority: The set_priority method allows for the setting of the task's priority. Tasks with higher priority will be executed before tasks with lower priority.
-- Task History: The history attribute is a list that keeps track of all the results of the task execution. This can be useful for debugging and for tasks that need to be executed multiple times.
+✅ Task is a structure for task execution with the Agent. 
+
+✅ Tasks can have descriptions, scheduling, triggers, actions, conditions, dependencies, priority, and a history. 
+
+✅ The Task structure allows for efficient workflow automation with LLM-based agents.
 
 ```python
 import os
-from swarms.structs import Task, Agent
-from swarms.models import OpenAIChat
+from swarms import Task, Agent, OpenAIChat
 from dotenv import load_dotenv
 
 
@@ -568,9 +577,8 @@ print(inference)
 ## Real-World Deployment
 
 ### Multi-Agent Swarm for Logistics
-- Swarms is a framework designed for real-world deployment here is a demo presenting a fully ready to use Swarm for a vast array of logistics tasks.
-- Swarms is designed to be modular and reliable for real-world deployments.
-- Swarms is the first framework that unleases multi-modal autonomous agents in the real world.
+Here's a production grade swarm ready for real-world deployment in a factory and logistics settings like warehouses. This swarm can automate 3 costly and inefficient workflows, safety checks, productivity checks, and warehouse security.
+
 
 ```python
 from swarms.structs import Agent
@@ -680,7 +688,7 @@ efficiency_analysis = efficiency_agent.run(
 
 
 ## `Multi Modal Autonomous Agents`
-- Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
+Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
 
 ```python
 # Description: This is an example of how to use the Agent class to run a multi-modal workflow
@@ -736,7 +744,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import Gemini
+from swarms import Gemini
 from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
 
 # Load the environment variables
@@ -840,7 +848,7 @@ print(image_url)
 
 ### `GPT4Vision`
 ```python
-from swarms.models import GPT4VisionAPI
+from swarms import GPT4VisionAPI
 
 # Initialize with default API key and custom max_tokens
 api = GPT4VisionAPI(max_tokens=1000)
@@ -902,18 +910,18 @@ cog_agent.run("Describe this scene", "images/1.jpg")
 
 ----
 
-## Supported Models :heavy_check_mark:
+## Supported Models ✅ 
 Swarms supports various model providers like OpenAI, Huggingface, Anthropic, Google, Mistral and many more.
 
-| Provider | Provided :heavy_check_mark: | Module Name |
+| Provider | Provided ✅  | Module Name |
 |----------|-----------------------------|-------------|
-| OpenAI | :heavy_check_mark: | OpenAIChat, OpenAITTS, GPT4VisionAPI, Dalle3 |
-| Anthropic | :heavy_check_mark: | Anthropic |
-| Mistral | :heavy_check_mark: | Mistral, Mixtral |
-| Gemini/Palm | :heavy_check_mark: | Gemini |
-| Huggingface | :heavy_check_mark: | HuggingFaceLLM |
-| Modelscope | :heavy_check_mark: | Modelscope |
-| Vllm | :heavy_check_mark: | vLLM |
+| OpenAI | ✅  | OpenAIChat, OpenAITTS, GPT4VisionAPI, Dalle3 |
+| Anthropic | ✅  | Anthropic |
+| Mistral | ✅  | Mistral, Mixtral |
+| Gemini/Palm | ✅  | Gemini |
+| Huggingface | ✅  | HuggingFaceLLM |
+| Modelscope | ✅  | Modelscope |
+| Vllm | ✅  | vLLM |
 
 
 ---
@@ -1028,6 +1036,11 @@ Book a discovery call to learn how Swarms can lower your operating costs by 40% 
 Help us accelerate our backlog by supporting us financially! Note, we're an open source corporation and so all the revenue we generate is through donations at the moment ;)
 
 <a href="https://polar.sh/kyegomez"><img src="https://polar.sh/embed/fund-our-backlog.svg?org=kyegomez" /></a>
+
+## Swarm Newsletter 🤖 🤖 🤖 📧 
+Sign up to the Swarm newsletter to receieve updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊 
+
+[CLICK HERE TO SIGNUP](https://docs.google.com/forms/d/e/1FAIpQLSfqxI2ktPR9jkcIwzvHL0VY6tEIuVPd-P2fOWKnd6skT9j1EQ/viewform?usp=sf_link)
 
 # License
 Apache License

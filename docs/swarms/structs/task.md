@@ -11,8 +11,8 @@
 from swarms.structs import Task, Agent
 from swarms.models import OpenAIChat
 agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
-task = Task(description="What's the weather in miami", agent=agent)
-task.execute()
+task = Task(agent=agent)
+task.execute("What's the weather in miami")
 print(task.result)
 
 # Example 2: Adding a dependency and setting priority
