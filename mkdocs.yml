@@ -60,12 +60,12 @@ nav:
     - Contributing: "contributing.md"
 - Swarms:
   - Overview: "swarms/index.md"
-  - swarms.workers:
-    - Overview: "swarms/workers/index.md"
-    - AbstractWorker: "swarms/workers/abstract_worker.md"
   - swarms.agents:
-    - AbstractAgent: "swarms/agents/abstract_agent.md"
-    - OmniModalAgent: "swarms/agents/omni_agent.md"
+    - Agents:
+      - WorkerAgent: "swarms/utils/workeragent.md"
+      - OmniAgent: "swarms/utils/omni_agent.md"
+      - AbstractAgent: "swarms/utils/abstractagent.md"
+      - ToolAgent: "swarms/utils/toolagent.md"
   - swarms.models:
     - Language:
       - BaseLLM: "swarms/models/base_llm.md"

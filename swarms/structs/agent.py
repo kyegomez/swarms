@@ -1,9 +1,7 @@
 import asyncio
-import inspect
 import json
 import logging
 import random
-import re
 import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -13,23 +11,19 @@ from termcolor import colored
 from swarms.memory.base_vectordb import VectorDatabase
 from swarms.prompts.agent_system_prompts import (
     AGENT_SYSTEM_PROMPT_3,
-    agent_system_prompt_2,
 )
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
-from swarms.prompts.tools import (
-    SCENARIOS,
-)
 from swarms.tools.tool import BaseTool
-from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+from swarms.utils.data_to_text import data_to_text
+from swarms.utils.logger import logger
 from swarms.utils.parse_code import (
     extract_code_from_markdown,
 )
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
-from swarms.utils.data_to_text import data_to_text
 
 
 # Utils
@@ -112,26 +106,17 @@ class Agent:
         filtered_run: Run the agent with filtered responses
         interactive_run: Run the agent in interactive mode
         streamed_generation: Stream the generation of the response
-        get_llm_params: Get the llm parameters
         save_state: Save the state
         load_state: Load the state
-        get_llm_init_params: Get the llm init parameters
-        get_tool_description: Get the tool description
-        find_tool_by_name: Find a tool by name
-        extract_tool_commands: Extract the tool commands
-        execute_tools: Execute the tools
-        parse_and_execute_tools: Parse and execute the tools
         truncate_history: Truncate the history
         add_task_to_memory: Add the task to the memory
         add_message_to_memory: Add the message to the memory
         add_message_to_memory_and_truncate: Add the message to the memory and truncate
-        parse_tool_docs: Parse the tool docs
         print_dashboard: Print the dashboard
         loop_count_print: Print the loop count
         streaming: Stream the content
         _history: Generate the history
         _dynamic_prompt_setup: Setup the dynamic prompt
-        agent_system_prompt_2: Agent system prompt 2
         run_async: Run the agent asynchronously
         run_async_concurrent: Run the agent asynchronously and concurrently
         run_async_concurrent: Run the agent asynchronously and concurrently
@@ -182,7 +167,7 @@ class Agent:
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
         tokenizer: Optional[Any] = None,
-        memory: Optional[VectorDatabase] = None,
+        long_term_memory: Optional[VectorDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Any = None,
         traceback_handlers: Any = None,
@@ -210,9 +195,7 @@ class Agent:
         self.context_length = context_length
         self.sop = sop
         self.sop_list = sop_list
-        self.sop_list = []
-        self.tools = tools or []
-        self.tool_docs = []
+        self.tools = tools
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -226,7 +209,7 @@ class Agent:
         self.pdf_path = pdf_path
         self.list_of_pdf = list_of_pdf
         self.tokenizer = tokenizer
-        self.memory = memory
+        self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.traceback = traceback
         self.traceback_handlers = traceback_handlers
@@ -256,13 +239,7 @@ class Agent:
         if preset_stopping_token:
             self.stopping_token = "<DONE>"
 
-        # If tools exist then add the tool docs usage to the sop
-        if self.tools:
-            self.sop_list.append(
-                self.tools_prompt_prep(self.tool_docs, SCENARIOS)
-            )
-
-        # self.short_memory_test = Conversation(time_enabled=True)
+        # self.short_memory = Conversation(time_enabled=True)
 
         # If the docs exist then ingest the docs
         if self.docs:
@@ -316,93 +293,6 @@ class Agent:
         """Format the template with the provided kwargs using f-string interpolation."""
         return template.format(**kwargs)
 
-    def get_llm_init_params(self) -> str:
-        """Get LLM init params"""
-        init_signature = inspect.signature(self.llm.__init__)
-        params = init_signature.parameters
-        params_str_list = []
-
-        for name, param in params.items():
-            if name == "self":
-                continue
-            if hasattr(self.llm, name):
-                value = getattr(self.llm, name)
-            else:
-                value = self.llm.__dict__.get(name, "Unknown")
-
-            params_str_list.append(
-                f"    {name.capitalize().replace('_', ' ')}: {value}"
-            )
-
-        return "\n".join(params_str_list)
-
-    def get_tool_description(self):
-        """Get the tool description"""
-        if self.tools:
-            try:
-                tool_descriptions = []
-                for tool in self.tools:
-                    description = f"{tool.name}: {tool.description}"
-                    tool_descriptions.append(description)
-                return "\n".join(tool_descriptions)
-            except Exception as error:
-                print(
-                    f"Error getting tool description: {error} try"
-                    " adding a description to the tool or removing"
-                    " the tool"
-                )
-        else:
-            return "No tools available"
-
-    def find_tool_by_name(self, name: str):
-        """Find a tool by name"""
-        for tool in self.tools:
-            if tool.name == name:
-                return tool
-
-    def extract_tool_commands(self, text: str):
-        """
-        Extract the tool commands from the text
-
-        Example:
-        ```json
-        {
-            "tool": "tool_name",
-            "params": {
-                "tool1": "inputs",
-                "param2": "value2"
-            }
-        }
-        ```
-
-        """
-        # Regex to find JSON like strings
-        pattern = r"```json(.+?)```"
-        matches = re.findall(pattern, text, re.DOTALL)
-        json_commands = []
-        for match in matches:
-            try:
-                json_commands = json.loads(match)
-                json_commands.append(json_commands)
-            except Exception as error:
-                print(f"Error parsing JSON command: {error}")
-
-    def execute_tools(self, tool_name, params):
-        """Execute the tool with the provided params"""
-        tool = self.tool_find_by_name(tool_name)
-        if tool:
-            # Execute the tool with the provided parameters
-            tool_result = tool.run(**params)
-            print(tool_result)
-
-    def parse_and_execute_tools(self, response: str):
-        """Parse and execute the tools"""
-        json_commands = self.extract_tool_commands(response)
-        for command in json_commands:
-            tool_name = command.get("tool")
-            params = command.get("parmas", {})
-            self.execute_tools(tool_name, params)
-
     def truncate_history(self):
         """
         Take the history and truncate it to fit into the model context length
@@ -445,12 +335,6 @@ class Agent:
         """Add the message to the memory and truncate"""
         self.short_memory[-1].append(message)
         self.truncate_history()
-
-    def parse_tool_docs(self):
-        """Parse the tool docs"""
-        for tool in self.tools:
-            docs = self.tool_docs.append(scrape_tool_func_docs(tool))
-        return str(docs)
 
     def print_dashboard(self, task: str):
         """Print dashboard"""
@@ -578,14 +462,11 @@ class Agent:
         combined_prompt = f"{dynamic_prompt}\n{task}"
         return combined_prompt
 
-    def agent_system_prompt_2(self):
-        """Agent system prompt 2"""
-        return agent_system_prompt_2(self.agent_name)
-
     def run(
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
+        *args,
         **kwargs,
     ):
         """
@@ -638,9 +519,7 @@ class Agent:
                     self.dynamic_temperature()
 
                 # Preparing the prompt
-                task = self.agent_history_prompt(
-                    AGENT_SYSTEM_PROMPT_3, response
-                )
+                task = self.agent_history_prompt(history=response)
 
                 attempt = 0
                 while attempt < self.retry_attempts:
@@ -662,10 +541,6 @@ class Agent:
                         # If code interpreter is enabled then run the code
                         if self.code_interpreter:
                             self.run_code(response)
-
-                        # If there are any tools then parse and execute them
-                        if self.tools:
-                            self.parse_and_execute_tools(response)
 
                         # If interactive mode is enabled then print the response and get user input
                         if self.interactive:
@@ -712,7 +587,7 @@ class Agent:
 
             return response
         except Exception as error:
-            print(f"Error running agent: {error}")
+            logger.error(f"Error running agent: {error}")
             raise
 
     def __call__(self, task: str, img: str = None, *args, **kwargs):
@@ -740,8 +615,7 @@ class Agent:
 
     def agent_history_prompt(
         self,
-        system_prompt: str = AGENT_SYSTEM_PROMPT_3,
-        history=None,
+        history: str = None,
     ):
         """
         Generate the agent history prompt
@@ -754,7 +628,7 @@ class Agent:
             str: The agent history prompt
         """
         if self.sop:
-            system_prompt = system_prompt or self.system_prompt
+            system_prompt = self.system_prompt
             agent_history_prompt = f"""
                 SYSTEM_PROMPT: {system_prompt}
 
@@ -767,7 +641,7 @@ class Agent:
             """
             return agent_history_prompt
         else:
-            system_prompt = system_prompt or self.system_prompt
+            system_prompt = self.system_prompt
             agent_history_prompt = f"""
                 SYSTEM_PROMPT: {system_prompt}
 
@@ -777,7 +651,7 @@ class Agent:
             """
             return agent_history_prompt
 
-    def agent_memory_prompt(self, query, prompt):
+    def long_term_memory_prompt(self, query: str, prompt: str):
         """
         Generate the agent long term memory prompt
 
@@ -788,16 +662,12 @@ class Agent:
         Returns:
             str: The agent history prompt
         """
-        context_injected_prompt = prompt
-        if self.memory:
-            ltr = self.memory.query(query)
+        ltr = self.long_term_memory.query(query)
 
-            context_injected_prompt = f"""{prompt}
-                ################ CONTEXT ####################
-                {ltr}
-            """
-
-        return context_injected_prompt
+        return f"""{prompt}
+            ################ CONTEXT ####################
+            {ltr}
+        """
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """
@@ -1045,45 +915,6 @@ class Agent:
         print()
         return response
 
-    def get_llm_params(self):
-        """
-        Extracts and returns the parameters of the llm object for serialization.
-        It assumes that the llm object has an __init__ method
-        with parameters that can be used to recreate it.
-        """
-        if not hasattr(self.llm, "__init__"):
-            return None
-
-        init_signature = inspect.signature(self.llm.__init__)
-        params = init_signature.parameters
-        llm_params = {}
-
-        for name, param in params.items():
-            if name == "self":
-                continue
-            if hasattr(self.llm, name):
-                value = getattr(self.llm, name)
-                if isinstance(
-                    value,
-                    (
-                        str,
-                        int,
-                        float,
-                        bool,
-                        list,
-                        dict,
-                        tuple,
-                        type(None),
-                    ),
-                ):
-                    llm_params[name] = value
-                else:
-                    llm_params[name] = str(
-                        value
-                    )  # For non-serializable objects, save their string representation.
-
-        return llm_params
-
     def save_state(self, file_path: str) -> None:
         """
         Saves the current state of the agent to a JSON file, including the llm parameters.
@@ -1277,75 +1108,6 @@ class Agent:
         text = limit_tokens_from_string(text, num_limits)
         return text
 
-    def tools_prompt_prep(
-        self, docs: str = None, scenarios: str = SCENARIOS
-    ):
-        """
-        Tools prompt prep
-
-        Args:
-            docs (str, optional): _description_. Defaults to None.
-            scenarios (str, optional): _description_. Defaults to None.
-
-        Returns:
-            _type_: _description_
-        """
-        PROMPT = f"""
-        # Task
-        You will be provided with a list of APIs. These APIs will have a
-        description and a list of parameters and return types for each tool. Your
-        task involves creating varied, complex, and detailed user scenarios
-        that require to call API calls. You must select what api to call based on 
-        the context of the task and the scenario.
-
-        For instance, given the APIs: SearchHotels, BookHotel, CancelBooking,
-        GetNFLNews. Given that GetNFLNews is explicitly provided, your scenario
-        should articulate something akin to:
-
-        "The user wants to see if the Broncos won their last game (GetNFLNews).
-        They then want to see if that qualifies them for the playoffs and who
-        they will be playing against (GetNFLNews). The Broncos did make it into
-        the playoffs, so the user wants watch the game in person. They want to
-        look for hotels where the playoffs are occurring (GetNBANews +
-        SearchHotels). After looking at the options, the user chooses to book a
-        3-day stay at the cheapest 4-star option (BookHotel)."
-        13
-
-        This scenario exemplifies a scenario using 5 API calls. The scenario is
-        complex, detailed, and concise as desired. The scenario also includes two
-        APIs used in tandem, the required API, GetNBANews to search for the
-        playoffs location and SearchHotels to find hotels based on the returned
-        location. Usage of multiple APIs in tandem is highly desirable and will
-        receive a higher score. Ideally each scenario should contain one or more
-        instances of multiple APIs being used in tandem.
-
-        Note that this scenario does not use all the APIs given and re-uses the "
-        GetNBANews" API. Re-using APIs is allowed, but each scenario should
-        involve as many different APIs as the user demands. Note that API usage is also included
-        in the scenario, but exact parameters ar necessary. You must use a
-        different combination of APIs for each scenario. All APIs must be used in
-        at least one scenario. You can only use the APIs provided in the APIs
-        section.
-        
-        Note that API calls are not explicitly mentioned and their uses are
-        included in parentheses. This behaviour should be mimicked in your
-        response.
-        
-        Output the tool usage in a strict json format with the function name and input to 
-        the function. For example, Deliver your response in this format:
-        
-        ‘‘‘
-        {scenarios}
-        ‘‘‘
-        # APIs
-        ‘‘‘
-        {docs}
-        ‘‘‘
-        # Response
-        ‘‘‘
-        """
-        return PROMPT
-
     def ingest_docs(self, docs: List[str], *args, **kwargs):
         """Ingest the docs into the memory
 
@@ -1359,3 +1121,27 @@ class Agent:
             data = data_to_text(doc)
 
         return self.short_memory.append(data)
+
+    def ingest_pdf(self, pdf: str):
+        """Ingest the pdf into the memory
+
+        Args:
+            pdf (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        text = pdf_to_text(pdf)
+        return self.short_memory.append(text)
+
+    def receieve_mesage(self, name: str, message: str):
+        """Receieve a message"""
+        message = f"{name}: {message}"
+        return self.short_memory.append(message)
+
+    def send_agent_message(
+        self, agent_name: str, message: str, *args, **kwargs
+    ):
+        """Send a message to the agent"""
+        message = f"{agent_name}: {message}"
+        return self.run(message, *args, **kwargs)

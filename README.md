@@ -180,8 +180,8 @@ for task in workflow.tasks:
 
 
 ```python
-import os 
-from dotenv import load_dotenv 
+import os
+from dotenv import load_dotenv
 from swarms import OpenAIChat, Task, ConcurrentWorkflow, Agent
 
 # Load environment variables from .env file
@@ -200,9 +200,7 @@ task2 = Task(agent, "What's the weather in new york")
 task3 = Task(agent, "What's the weather in london")
 
 # Add tasks to the workflow
-workflow.add(task1)
-workflow.add(task2)
-workflow.add(task3)
+workflow.add(tasks=[task1, task2, task3])
 
 # Run the workflow
 workflow.run()
@@ -413,9 +411,10 @@ print(out)
 
 ```python
 import os
-from swarms import Task, Agent, OpenAIChat
+
 from dotenv import load_dotenv
 
+from swarms.structs import Agent, OpenAIChat, Task
 
 # Load the environment variables
 load_dotenv()
@@ -440,7 +439,13 @@ agent = Agent(
 )
 
 # Create a task
-task = Task(agent, "Create a strategy to cut business costs by 40% this month")
+task = Task(
+    description=(
+        "Generate a report on the top 3 biggest expenses for small"
+        " businesses and how businesses can save 20%"
+    ),
+    agent=agent,
+)
 
 # Set the action and condition
 task.set_action(my_action)

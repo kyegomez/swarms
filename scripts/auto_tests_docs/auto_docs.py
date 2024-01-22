@@ -9,20 +9,11 @@ from scripts.auto_tests_docs.docs import DOCUMENTATION_WRITER_SOP
 from swarms import OpenAIChat
 
 ##########
-from swarms.structs.task import Task
-from swarms.structs.swarm_net import SwarmNetwork
-from swarms.structs.nonlinear_workflow import NonlinearWorkflow
-from swarms.structs.recursive_workflow import RecursiveWorkflow
-from swarms.structs.groupchat import GroupChat, GroupChatManager
-from swarms.structs.base_workflow import BaseWorkflow
-from swarms.structs.concurrent_workflow import ConcurrentWorkflow
-from swarms.structs.base import BaseStructure
-from swarms.structs.schemas import (
-    Artifact,
-    ArtifactUpload,
-    StepInput,
-    TaskInput,
-)
+from swarms.agents.base import AbstractAgent
+from swarms.structs.message import Message
+from swarms.agents.omni_modal_agent import OmniModalAgent
+from swarms.agents.tool_agent import ToolAgent
+from swarms.agents.worker_agent import WorkerAgent
 
 ####################
 load_dotenv()
@@ -49,14 +40,14 @@ def process_documentation(cls):
 
     # Process with OpenAI model (assuming the model's __call__ method takes this input and returns processed content)
     processed_content = model(
-        DOCUMENTATION_WRITER_SOP(input_content, "swarms.structs")
+        DOCUMENTATION_WRITER_SOP(input_content, "swarms.agents")
     )
 
     # doc_content = f"# {cls.__name__}\n\n{processed_content}\n"
     doc_content = f"{processed_content}\n"
 
     # Create the directory if it doesn't exist
-    dir_path = "docs/swarms/structs"
+    dir_path = "docs/swarms/agents"
     os.makedirs(dir_path, exist_ok=True)
 
     # Write the processed documentation to a Markdown file
@@ -69,19 +60,11 @@ def process_documentation(cls):
 
 def main():
     classes = [
-        Task,
-        SwarmNetwork,
-        NonlinearWorkflow,
-        RecursiveWorkflow,
-        GroupChat,
-        GroupChatManager,
-        BaseWorkflow,
-        ConcurrentWorkflow,
-        BaseStructure,
-        Artifact,
-        ArtifactUpload,
-        StepInput,
-        TaskInput,
+        AbstractAgent,
+        Message,
+        OmniModalAgent,
+        ToolAgent,
+        WorkerAgent,
     ]
     threads = []
     for cls in classes:
@@ -95,7 +78,7 @@ def main():
     for thread in threads:
         thread.join()
 
-    print("Documentation generated in 'swarms.structs' directory.")
+    print("Documentation generated in 'swarms.agents' directory.")
 
 
 if __name__ == "__main__":

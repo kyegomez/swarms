@@ -32,6 +32,7 @@ from swarms.structs.block_wrapper import block
 from swarms.structs.graph_workflow import GraphWorkflow
 from swarms.structs.step import Step
 from swarms.structs.plan import Plan
+from swarms.structs.message import Message
 
 
 __all__ = [
@@ -66,4 +67,5 @@ __all__ = [
     "GraphWorkflow",
     "Step",
     "Plan",
+    "Message",
 ]
