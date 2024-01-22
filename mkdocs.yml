@@ -111,7 +111,7 @@ nav:
         - sequential_workflow: "swarms/structs/sequential_workflow.md"
         - workflow: "swarms/structs/workflow.md"
         - baseworkflow: "swarms/structs/baseworkflow.md"      
-      - Multi-Agent-Architectures:
+      - Multi Agent Architectures:
         - conversation: "swarms/structs/conversation.md"
         - groupchat: "swarms/structs/groupchat.md"
         - swarmnetwork: "swarms/structs/swarmnetwork.md"

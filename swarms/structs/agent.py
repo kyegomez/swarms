@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import random
 import time
 import uuid
@@ -173,6 +174,7 @@ class Agent:
         traceback_handlers: Any = None,
         streaming_on: Optional[bool] = False,
         docs: List[str] = None,
+        docs_folder: str = None,
         *args,
         **kwargs: Any,
     ):
@@ -215,6 +217,7 @@ class Agent:
         self.traceback_handlers = traceback_handlers
         self.streaming_on = streaming_on
         self.docs = docs
+        self.docs_folder = docs_folder
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -244,6 +247,9 @@ class Agent:
         # If the docs exist then ingest the docs
         if self.docs:
             self.ingest_docs(self.docs)
+
+        if self.docs_folder:
+            self.get_docs_from_doc_folders()
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -1145,3 +1151,14 @@ class Agent:
         """Send a message to the agent"""
         message = f"{agent_name}: {message}"
         return self.run(message, *args, **kwargs)
+
+    def get_docs_from_doc_folders(self):
+        """Get the docs from the files"""
+        # Get the list of files then extract them and add them to the memory
+        files = os.listdir(self.docs_folder)
+
+        # Extract the text from the files
+        for file in files:
+            text = data_to_text(file)
+
+        return self.short_memory.append(text)

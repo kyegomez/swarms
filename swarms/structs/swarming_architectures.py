@@ -1,6 +1,8 @@
 import math
 from typing import List
 from swarms.structs.agent import Agent
+import asyncio
+from swarms.utils.logger import logger
 
 
 def circular_swarm(agents: List[Agent], tasks: List[str]):
@@ -159,3 +161,95 @@ def sinusoidal_swarm(agents: List[Agent], task: str):
     for i in range(len(agents)):
         index = int((math.sin(i) + 1) / 2 * len(agents))
         agents[index].run(task)
+
+
+async def one_to_three(sender: Agent, agents: List[Agent], task: str):
+    """
+    Sends a message from the sender agent to three other agents.
+
+    Args:
+        sender (Agent): The agent sending the message.
+        agents (List[Agent]): The list of agents to receive the message.
+        task (str): The message to be sent.
+
+    Raises:
+        Exception: If there is an error while sending the message.
+
+    Returns:
+        None
+    """
+    try:
+        receive_tasks = []
+        for agent in agents:
+            receive_tasks.append(
+                agent.receive_message(sender.ai_name, task)
+            )
+
+        await asyncio.gather(*receive_tasks)
+    except Exception as error:
+        logger.error(
+            f"[ERROR][CLASS: Agent][METHOD: one_to_three] {error}"
+        )
+        raise error
+
+
+async def broadcast(
+    sender: Agent,
+    agents: List[Agent],
+    task: str,
+):
+    """
+    Broadcasts a message from the sender agent to a list of agents.
+
+    Args:
+        sender (Agent): The agent sending the message.
+        agents (List[Agent]): The list of agents to receive the message.
+        task (str): The message to be broadcasted.
+
+    Raises:
+        Exception: If an error occurs during the broadcast.
+
+    Returns:
+        None
+    """
+    try:
+        receive_tasks = []
+        for agent in agents:
+            receive_tasks.append(
+                agent.receive_message(sender.ai_name, task)
+            )
+
+        await asyncio.gather(*receive_tasks)
+    except Exception as error:
+        logger.error(
+            f"[ERROR][CLASS: Agent][METHOD: broadcast] {error}"
+        )
+        raise error
+
+
+async def one_to_one(
+    sender: Agent,
+    receiver: Agent,
+    task: str,
+):
+    """
+    Sends a message from the sender agent to the receiver agent.
+
+    Args:
+        sender (Agent): The agent sending the message.
+        receiver (Agent): The agent to receive the message.
+        task (str): The message to be sent.
+
+    Raises:
+        Exception: If an error occurs during the message sending.
+
+    Returns:
+        None
+    """
+    try:
+        await receiver.receive_message(sender.ai_name, task)
+    except Exception as error:
+        logger.error(
+            f"[ERROR][CLASS: Agent][METHOD: one_to_one] {error}"
+        )
+        raise error
