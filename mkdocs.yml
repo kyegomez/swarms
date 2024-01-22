@@ -62,10 +62,10 @@ nav:
   - Overview: "swarms/index.md"
   - swarms.agents:
     - Agents:
-      - WorkerAgent: "swarms/utils/workeragent.md"
-      - OmniAgent: "swarms/utils/omni_agent.md"
-      - AbstractAgent: "swarms/utils/abstractagent.md"
-      - ToolAgent: "swarms/utils/toolagent.md"
+      - WorkerAgent: "swarms/agents/workeragent.md"
+      - OmniAgent: "swarms/agents/omni_agent.md"
+      - AbstractAgent: "swarms/agents/abstractagent.md"
+      - ToolAgent: "swarms/agents/toolagent.md"
   - swarms.models:
     - Language:
       - BaseLLM: "swarms/models/base_llm.md"
