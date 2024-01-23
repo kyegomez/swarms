@@ -19,7 +19,9 @@ from swarms.utils.data_to_text import (
     data_to_text,
 )
 from swarms.utils.try_except_wrapper import try_except_wrapper
-
+from swarms.utils.download_weights_from_url import (
+    download_weights_from_url,
+)
 
 __all__ = [
     "SubprocessCodeInterpreter",
@@ -39,4 +41,5 @@ __all__ = [
     "txt_to_text",
     "data_to_text",
     "try_except_wrapper",
+    "download_weights_from_url",
 ]

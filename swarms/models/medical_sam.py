@@ -10,6 +10,10 @@ from skimage import transform
 from torch import Tensor
 
 
+def sam_model_registry():
+    pass
+
+
 @dataclass
 class MedicalSAM:
     """

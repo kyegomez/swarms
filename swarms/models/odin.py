@@ -3,7 +3,10 @@ import supervision as sv
 from ultralytics import YOLO
 from tqdm import tqdm
 from swarms.models.base_llm import AbstractLLM
-from swarms.utils.download_weights_from_url import download_weights_from_url
+from swarms.utils.download_weights_from_url import (
+    download_weights_from_url,
+)
+
 
 class Odin(AbstractLLM):
     """
@@ -13,7 +16,7 @@ class Odin(AbstractLLM):
         source_weights_path (str): The file path to the YOLO model weights.
         confidence_threshold (float): The confidence threshold for object detection.
         iou_threshold (float): The intersection over union (IOU) threshold for object detection.
-        
+
     Example:
     >>> odin = Odin(
     ...     source_weights_path="yolo.weights",
@@ -21,8 +24,8 @@ class Odin(AbstractLLM):
     ...     iou_threshold=0.7,
     ... )
     >>> odin.run(video="input.mp4")
-    
-    
+
+
     """
 
     def __init__(
@@ -35,12 +38,12 @@ class Odin(AbstractLLM):
         self.source_weights_path = source_weights_path
         self.confidence_threshold = confidence_threshold
         self.iou_threshold = iou_threshold
-        
+
         if not os.path.exists(self.source_weights_path):
             download_weights_from_url(
-                url=source_weights_path, save_path=self.source_weights_path
+                url=source_weights_path,
+                save_path=self.source_weights_path,
             )
-    
 
     def run(self, video: str, *args, **kwargs):
         """
@@ -61,9 +64,7 @@ class Odin(AbstractLLM):
         frame_generator = sv.get_video_frames_generator(
             source_path=self.source_video
         )
-        video_info = sv.VideoInfo.from_video(
-            video=video
-        )
+        video_info = sv.VideoInfo.from_video(video=video)
 
         with sv.VideoSink(
             target_path=self.target_video, video_info=video_info
