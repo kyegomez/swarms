@@ -62,3 +62,4 @@ peft
 psutil
 ultralytics
 supervision
+scikit-image

@@ -19,7 +19,7 @@ va = Agent(llm=llm, ai_name="VA")
 
 # Create a company
 company = Company(
-    org_chart = [[dev, va]],
+    org_chart=[[dev, va]],
     shared_instructions="Do your best",
     ceo=ceo,
 )

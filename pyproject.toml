@@ -73,6 +73,7 @@ psutil = "*"
 ultralytics = "*"
 timm = "*"
 supervision = "*"
+scikit-image = "*"
 
 
 

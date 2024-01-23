@@ -5,11 +5,13 @@ from swarms.structs.agent import Agent
 from swarms.utils.logger import logger
 from swarms.structs.conversation import Conversation
 
+
 @dataclass
 class Company:
     """
     Represents a company with a hierarchical organizational structure.
     """
+
     org_chart: List[List[Agent]]
     shared_instructions: str = None
     ceo: Optional[Agent] = None
@@ -171,5 +173,3 @@ class Company:
                 )
                 print(f"{task_description} is being executed")
                 agent.run(task_description)
-
-
