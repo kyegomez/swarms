@@ -14,7 +14,7 @@ from swarms.agents.stopping_conditions import (
     check_success,
 )
 from swarms.agents.tool_agent import ToolAgent
-from swarms.agents.worker_agent import WorkerAgent
+from swarms.agents.worker_agent import Worker
 
 __all__ = [
     "AbstractAgent",
@@ -31,5 +31,5 @@ __all__ = [
     "check_cancelled",
     "check_exit",
     "check_end",
-    "WorkerAgent",
+    "Worker",
 ]

@@ -1,21 +1,23 @@
-from typing import List, Optional, Union, Dict
 from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Union
+
 from swarms.structs.agent import Agent
 from swarms.utils.logger import logger
-
+from swarms.structs.conversation import Conversation
 
 @dataclass
 class Company:
     """
     Represents a company with a hierarchical organizational structure.
     """
-    org_chart: Union[List[Agent], List[List[Agent]]]
+    org_chart: List[List[Agent]]
     shared_instructions: str = None
     ceo: Optional[Agent] = None
     agents: List[Agent] = field(default_factory=list)
     agent_interactions: Dict[str, List[str]] = field(
         default_factory=dict
     )
+    history: Conversation = field(default_factory=Conversation)
 
     def __post_init__(self):
         self._parse_org_chart(self.org_chart)
@@ -81,7 +83,13 @@ class Company:
         Args:
             agent (Agent): The agent to be removed.
         """
-        self.agents.remove(agent)
+        try:
+            self.agents.remove(agent)
+        except Exception as error:
+            logger.error(
+                f"[ERROR][CLASS: Company][METHOD: remove] {error}"
+            )
+            raise error
 
     def _parse_org_chart(
         self, org_chart: Union[List[Agent], List[List[Agent]]]
@@ -96,7 +104,6 @@ class Company:
         Raises:
             ValueError: If more than one CEO is found in the org chart or if an invalid
                 agent is encountered.
-
         """
         try:
             for node in org_chart:
@@ -132,6 +139,16 @@ class Company:
         agent1: Agent,
         agent2: Agent,
     ) -> None:
+        """
+        Initializes the interaction between two agents.
+
+        Args:
+            agent1 (Agent): The first agent involved in the interaction.
+            agent2 (Agent): The second agent involved in the interaction.
+
+        Returns:
+            None
+        """
         if agent1.ai_name not in self.agents_interactions:
             self.agents_interactions[agent1.ai_name] = []
         self.agents_interactions[agent1.ai_name].append(
@@ -154,3 +171,5 @@ class Company:
                 )
                 print(f"{task_description} is being executed")
                 agent.run(task_description)
+
+
