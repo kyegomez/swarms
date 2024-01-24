@@ -4,29 +4,44 @@
 
 **Introduction**
 - Overview of the Company
+
 - Vision and Mission Statement
+
 - Executive Summary
 
 **Corporate Documents**
 - Articles of Incorporation
+
 - Bylaws
+
 - Shareholder Agreements
+
 - Board Meeting Minutes
+
 - Company Structure and Org Chart
 
 **Financial Information**
 - Historical Financial Statements
+  
   - Income Statements
+
   - Balance Sheets
+
   - Cash Flow Statements
+
 - Financial Projections and Forecasts
+
 - Cap Table
+
 - Funding History and Use of Funds
 
 **Products and Services**
 - Detailed Descriptions of Products/Services
+
 - Product Development Roadmap
+
 - User Manuals and Technical Specifications
+
 - Case Studies and Use Cases
 
 
