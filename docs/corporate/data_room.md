@@ -1,8 +1,9 @@
-# Swarms Data Roam
+# Swarms Data Room
 
 ## Table of Contents
 
 **Introduction**
+
 - Overview of the Company
 
 - Vision and Mission Statement
@@ -10,6 +11,7 @@
 - Executive Summary
 
 **Corporate Documents**
+
 - Articles of Incorporation
 
 - Bylaws
@@ -21,6 +23,7 @@
 - Company Structure and Org Chart
 
 **Financial Information**
+
 - Historical Financial Statements
   
   - Income Statements
@@ -36,6 +39,7 @@
 - Funding History and Use of Funds
 
 **Products and Services**
+
 - Detailed Descriptions of Products/Services
 
 - Product Development Roadmap
@@ -70,7 +74,7 @@ Key milestones: get 80K framework users in January 2024, start contracts in targ
 To learn more about our mission, vision, plans for GTM, and much more please refer to the [Swarm Memo here](https://docs.google.com/document/d/1hS_nv_lFjCqLfnJBoF6ULY9roTbSgSuCkvXvSUSc7Lo/edit?usp=sharing)
 
 
-## Product
+## **Product**
 Swarms is an open source framework for developers in python to enable seamless, reliable, and scalable multi-agent orchestration through modularity, customization, and precision.
 
 [Here is the official Swarms Github Page:](https://github.com/kyegomez/swarms)
