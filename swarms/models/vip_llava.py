@@ -2,7 +2,7 @@ from io import BytesIO
 
 import requests
 import torch
-from PIl import Image
+from PIL import Image
 from transformers import (
     AutoProcessor,
     VipLlavaForConditionalGeneration,
