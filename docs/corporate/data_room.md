@@ -81,17 +81,17 @@ Swarms is an open source framework for developers in python to enable seamless, 
 
 ### Product Growth Metrics
 
-- Total Downloads of all time: [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues)
+- Total Downloads of all time: [![Downloads](https://static.pepy.tech/badge/swarms)](https://pepy.tech/project/swarms)
 
 - Click here for Downloads this month: [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
 
-- Total Downloads this week: [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues)
+- Total Downloads this week: [![Downloads](https://static.pepy.tech/badge/swarms/week)](https://pepy.tech/project/swarms)
+- 
+- Github Forks, Forks represent the number of times a user has copied the entire codebase for optimization, contribution, or usage. [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) 
 
-- Click here for Forks which represent the number of times a user has copied the entire codebase for optimization, contribution, or usage. [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) 
+- Github Stars, stars are the number of people that have liked our project, click here for more: [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
 
-- Stars are the number of people that have liked our project, click here for more: [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
-
-- Various Project Statistics such as watchers, number of contributors, date repository was created and much more. [CLICK HERE](https://libraries.io/github/kyegomez/swarms)
+- Pip Module Metrics: Various Project Statistics such as watchers, number of contributors, date repository was created and much more. [CLICK HERE](https://libraries.io/github/kyegomez/swarms)
 
 - Contribution Based Statistics such as number of contributors, number of lines of code changed, and much more [HERE](https://github.com/kyegomez/swarms/graphs/contributors)
 
