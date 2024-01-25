@@ -12,15 +12,18 @@ agent = Agent(llm=llm, max_loops=1)
 # Create a workflow
 workflow = ConcurrentWorkflow(max_workers=5)
 
+task = (
+    "Generate a report on how small businesses spend money and how"
+    " can they cut 40 percent of their costs"
+)
+
 # Create tasks
-task1 = Task(agent, "What's the weather in miami")
-task2 = Task(agent, "What's the weather in new york")
-task3 = Task(agent, "What's the weather in london")
+task1 = Task(agent, task)
+task2 = Task(agent, task)
+task3 = Task(agent, task)
 
 # Add tasks to the workflow
-workflow.add(task1)
-workflow.add(task2)
-workflow.add(task3)
+workflow.add(tasks=[task1, task2, task3])
 
 # Run the workflow
 workflow.run()

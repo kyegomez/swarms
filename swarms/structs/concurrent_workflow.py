@@ -1,6 +1,6 @@
 import concurrent.futures
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 
 from swarms.structs.base import BaseStructure
 from swarms.structs.task import Task
@@ -33,6 +33,7 @@ class ConcurrentWorkflow(BaseStructure):
     """
 
     task_pool: List[Dict] = field(default_factory=list)
+    max_loops: int = 1
     max_workers: int = 5
     autosave: bool = False
     saved_state_filepath: Optional[str] = (
@@ -41,6 +42,7 @@ class ConcurrentWorkflow(BaseStructure):
     print_results: bool = False
     return_results: bool = False
     use_processes: bool = False
+    stopping_condition: Optional[Callable] = None
 
     def add(self, task: Task = None, tasks: List[Task] = None):
         """Adds a task to the workflow.
@@ -66,7 +68,7 @@ class ConcurrentWorkflow(BaseStructure):
             logger.warning(f"[ERROR][ConcurrentWorkflow] {error}")
             raise error
 
-    def run(self):
+    def run(self, *args, **kwargs):
         """
         Executes the tasks in parallel using a ThreadPoolExecutor.
 
@@ -77,27 +79,37 @@ class ConcurrentWorkflow(BaseStructure):
         Returns:
             List[Any]: A list of the results of each task, if return_results is True. Otherwise, returns None.
         """
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
-            futures = {
-                executor.submit(task.execute): task
-                for task in self.task_pool
-            }
-            results = []
+        loop_count = 0
+        while loop_count < self.max_loops:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.max_workers
+            ) as executor:
+                futures = {
+                    executor.submit(task.execute): task
+                    for task in self.task_pool
+                }
+                results = []
 
-            for future in concurrent.futures.as_completed(futures):
-                task = futures[future]
-                try:
-                    result = future.result()
-                    if self.print_results:
-                        logger.info(f"Task {task}: {result}")
-                    if self.return_results:
-                        results.append(result)
-                except Exception as e:
-                    logger.error(
-                        f"Task {task} generated an exception: {e}"
-                    )
+                for future in concurrent.futures.as_completed(
+                    futures
+                ):
+                    task = futures[future]
+                    try:
+                        result = future.result()
+                        if self.print_results:
+                            logger.info(f"Task {task}: {result}")
+                        if self.return_results:
+                            results.append(result)
+                    except Exception as e:
+                        logger.error(
+                            f"Task {task} generated an exception: {e}"
+                        )
+
+            loop_count += 1
+            if self.stopping_condition and self.stopping_condition(
+                results
+            ):
+                break
 
         return results if self.return_results else None
 

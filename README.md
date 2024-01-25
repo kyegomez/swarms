@@ -2,8 +2,7 @@
 
 <div align="center">
 
-Swarms is a modular framework that enables reliable and useful multi-agent collaboration at scale to automate real-world tasks.
-
+A modular framework that enables you to Build, Deploy, and Scale Reliable Autonomous Agents. Get started now below.
 
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)[![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
 
@@ -17,7 +16,7 @@ Swarms is a modular framework that enables reliable and useful multi-agent colla
 ----
 
 ## Installation
-`pip3 install --upgrade swarms`
+`pip3 install -U swarms`
 
 ---
 
@@ -180,8 +179,8 @@ for task in workflow.tasks:
 
 
 ```python
-import os 
-from dotenv import load_dotenv 
+import os
+from dotenv import load_dotenv
 from swarms import OpenAIChat, Task, ConcurrentWorkflow, Agent
 
 # Load environment variables from .env file
@@ -200,9 +199,7 @@ task2 = Task(agent, "What's the weather in new york")
 task3 = Task(agent, "What's the weather in london")
 
 # Add tasks to the workflow
-workflow.add(task1)
-workflow.add(task2)
-workflow.add(task3)
+workflow.add(tasks=[task1, task2, task3])
 
 # Run the workflow
 workflow.run()
@@ -413,9 +410,10 @@ print(out)
 
 ```python
 import os
-from swarms import Task, Agent, OpenAIChat
+
 from dotenv import load_dotenv
 
+from swarms.structs import Agent, OpenAIChat, Task
 
 # Load the environment variables
 load_dotenv()
@@ -440,7 +438,13 @@ agent = Agent(
 )
 
 # Create a task
-task = Task(agent, "Create a strategy to cut business costs by 40% this month")
+task = Task(
+    description=(
+        "Generate a report on the top 3 biggest expenses for small"
+        " businesses and how businesses can save 20%"
+    ),
+    agent=agent,
+)
 
 # Set the action and condition
 task.set_action(my_action)
@@ -908,6 +912,31 @@ cog_agent.run("Describe this scene", "images/1.jpg")
 
 ```
 
+
+### `QwenVLMultiModal`
+A radically simple interface for QwenVLMultiModal comes complete with Quantization to turn it on just set quantize to true!
+
+```python
+from swarms import QwenVLMultiModal
+
+# Instantiate the QwenVLMultiModal model
+model = QwenVLMultiModal(
+    model_name="Qwen/Qwen-VL-Chat",
+    device="cuda",
+    quantize=True,
+)
+
+# Run the model
+response = model(
+    "Hello, how are you?", "https://example.com/image.jpg"
+)
+
+# Print the response
+print(response)
+
+
+```
+
 ----
 
 ## Supported Models ✅ 
@@ -1038,10 +1067,13 @@ Help us accelerate our backlog by supporting us financially! Note, we're an open
 <a href="https://polar.sh/kyegomez"><img src="https://polar.sh/embed/fund-our-backlog.svg?org=kyegomez" /></a>
 
 ## Swarm Newsletter 🤖 🤖 🤖 📧 
-Sign up to the Swarm newsletter to receieve updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊 
+Sign up to the Swarm newsletter to receive  updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊
+
 
 [CLICK HERE TO SIGNUP](https://docs.google.com/forms/d/e/1FAIpQLSfqxI2ktPR9jkcIwzvHL0VY6tEIuVPd-P2fOWKnd6skT9j1EQ/viewform?usp=sf_link)
 
 # License
 Apache License
+
+
 

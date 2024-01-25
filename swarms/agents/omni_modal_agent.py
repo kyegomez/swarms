@@ -10,7 +10,7 @@ from langchain_experimental.autonomous_agents.hugginggpt.task_planner import (
 )
 from transformers import load_tool
 
-from swarms.agents.message import Message
+from swarms.structs.message import Message
 
 
 class OmniModalAgent:

@@ -1,7 +1,7 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from swarms.agents.message import Message
+from swarms.structs.message import Message
 
 
 class Mistral:

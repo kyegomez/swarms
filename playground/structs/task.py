@@ -1,8 +1,8 @@
-from swarms.structs import Task, Agent
-from swarms.models import OpenAIChat
-from dotenv import load_dotenv
 import os
 
+from dotenv import load_dotenv
+
+from swarms.structs import Agent, OpenAIChat, Task
 
 # Load the environment variables
 load_dotenv()
@@ -27,7 +27,13 @@ agent = Agent(
 )
 
 # Create a task
-task = Task(description="What's the weather in miami", agent=agent)
+task = Task(
+    description=(
+        "Generate a report on the top 3 biggest expenses for small"
+        " businesses and how businesses can save 20%"
+    ),
+    agent=agent,
+)
 
 # Set the action and condition
 task.set_action(my_action)

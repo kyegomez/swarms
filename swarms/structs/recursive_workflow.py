@@ -31,7 +31,11 @@ class RecursiveWorkflow(BaseStructure):
     >>> workflow.run()
     """
 
-    def __init__(self, stop_token: str = "<DONE>"):
+    def __init__(
+        self,
+        stop_token: str = "<DONE>",
+        stopping_conditions: callable = None,
+    ):
         self.stop_token = stop_token
         self.task_pool = []
 
