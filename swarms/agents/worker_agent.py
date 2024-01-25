@@ -51,6 +51,7 @@ class Worker:
         tools: List[Any] = None,
         embedding_size: int = 1536,
         search_kwargs: dict = {"k": 8},
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -64,6 +65,7 @@ class Worker:
         self.tools = tools
         self.embedding_size = embedding_size
         self.search_kwargs = search_kwargs
+        self.verbose = verbose
 
         self.setup_tools(external_tools)
         self.setup_memory()
