@@ -86,7 +86,7 @@ Swarms is an open source framework for developers in python to enable seamless, 
 - Click here for Downloads this month: [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
 
 - Total Downloads this week: [![Downloads](https://static.pepy.tech/badge/swarms/week)](https://pepy.tech/project/swarms)
-- 
+
 - Github Forks, Forks represent the number of times a user has copied the entire codebase for optimization, contribution, or usage. [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) 
 
 - Github Stars, stars are the number of people that have liked our project, click here for more: [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
