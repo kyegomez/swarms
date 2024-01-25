@@ -47,6 +47,7 @@ from swarms.models.ultralytics_model import (
 from swarms.models.vip_llava import VipLlavaMultiModal  # noqa: E402
 from swarms.models.llava import LavaMultiModal  # noqa: E402
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
+from swarms.models.clipq import CLIPQ  # noqa: E402
 
 # from swarms.models.dalle3 import Dalle3
 # from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
@@ -110,4 +111,6 @@ __all__ = [
     "VipLlavaMultiModal",
     "LavaMultiModal",
     "QwenVLMultiModal",
+    "CLIPQ",
+    
 ]
