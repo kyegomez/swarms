@@ -1,6 +1,7 @@
 import json
 import yaml
 
+
 def remove_whitespace_from_json(json_string: str) -> str:
     """
     Removes unnecessary whitespace from a JSON string.
@@ -15,12 +16,12 @@ def remove_whitespace_from_json(json_string: str) -> str:
         str: The JSON string with whitespace removed.
     """
     parsed = json.loads(json_string)
-    return json.dumps(parsed, separators=(',', ':'))
+    return json.dumps(parsed, separators=(",", ":"))
+
 
 # # Example usage for JSON
 # json_string = '{"field1": 123, "field2": "example text"}'
 # print(remove_whitespace_from_json(json_string))
-
 
 
 def remove_whitespace_from_yaml(yaml_string: str) -> str:
@@ -39,6 +40,7 @@ def remove_whitespace_from_yaml(yaml_string: str) -> str:
     """
     parsed = yaml.safe_load(yaml_string)
     return yaml.dump(parsed, default_flow_style=True)
+
 
 # # Example usage for YAML
 # yaml_string = """

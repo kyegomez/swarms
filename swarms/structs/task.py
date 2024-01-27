@@ -233,7 +233,7 @@ class Task:
                     if task.description is not None
                     else ""
                 )
-                
+
                 result = (
                     task.result if task.result is not None else ""
                 )

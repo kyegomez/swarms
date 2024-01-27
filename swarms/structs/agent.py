@@ -670,10 +670,15 @@ class Agent:
         """
         ltr = self.long_term_memory.query(query)
 
-        return f"""{prompt}
-            ################ CONTEXT ####################
+        context = f"""
+            {prompt}
+            ####### Long Term Memory ################
             {ltr}
         """
+        return self.short_memory.append([f"{context}"])
+
+    def add_memory(self, message: str):
+        return self.short_memory.append([f"{message}"])
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """

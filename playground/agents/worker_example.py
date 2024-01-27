@@ -18,7 +18,7 @@ worker = Worker(
     tools=[],
     temperature=0.5,
     llm=OpenAIChat(openai_api_key=api_key),
-    verbose = True,
+    verbose=True,
 )
 
 # Running the worker with a prompt

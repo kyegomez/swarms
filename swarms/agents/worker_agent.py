@@ -9,6 +9,7 @@ from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.utils.decorators import error_decorator, timing_decorator
 
+
 class Worker:
     """
     The Worker class represents an autonomous agent that can perform tassks through
@@ -164,7 +165,7 @@ class Worker:
     # @log_decorator
     @error_decorator
     @timing_decorator
-    def run(self, task: str = None, img = None, *args, **kwargs):
+    def run(self, task: str = None, img=None, *args, **kwargs):
         """
         Run the autonomous agent on a given task.
 

@@ -112,5 +112,4 @@ __all__ = [
     "LavaMultiModal",
     "QwenVLMultiModal",
     "CLIPQ",
-    
 ]

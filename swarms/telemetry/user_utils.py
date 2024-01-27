@@ -5,6 +5,7 @@ import socket
 from swarms.telemetry.sys_info import system_info
 from swarms.telemetry.check_update import check_for_package
 
+
 # Helper functions
 def generate_user_id():
     """Generate user id
@@ -75,7 +76,6 @@ def get_local_ip():
     return socket.gethostbyname(socket.gethostname())
 
 
-
 def get_user_device_data():
     data = {
         "ID": generate_user_id(),
@@ -85,5 +85,6 @@ def get_user_device_data():
         "Swarms [Version]": check_for_package("swarms"),
     }
     return data
-    
-# 
+
+
+#

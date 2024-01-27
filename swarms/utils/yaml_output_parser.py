@@ -6,8 +6,10 @@ from pydantic import BaseModel, ValidationError
 
 T = TypeVar("T", bound=BaseModel)
 
+
 class YamlParsingException(Exception):
     """Custom exception for errors in YAML parsing."""
+
 
 class YamlOutputParser:
     """Parse YAML output using a Pydantic model.
@@ -18,8 +20,8 @@ class YamlOutputParser:
     Attributes:
         pydantic_object: A Pydantic model class for parsing and validation.
         pattern: A regex pattern to match YAML code blocks.
-        
-        
+
+
     Examples:
     >>> from pydantic import BaseModel
     >>> from swarms.utils.yaml_output_parser import YamlOutputParser
@@ -31,12 +33,14 @@ class YamlOutputParser:
     >>> text = "```yaml\nname: John\nage: 42\n```"
     >>> model = parser.parse(text)
     >>> model.name
-    
+
     """
 
     def __init__(self, pydantic_object: Type[T]):
         self.pydantic_object = pydantic_object
-        self.pattern = re.compile(r"^```(?:ya?ml)?(?P<yaml>[^`]*)", re.MULTILINE | re.DOTALL)
+        self.pattern = re.compile(
+            r"^```(?:ya?ml)?(?P<yaml>[^`]*)", re.MULTILINE | re.DOTALL
+        )
 
     def parse(self, text: str) -> T:
         """Parse the provided text to extract and validate YAML data.
@@ -59,7 +63,10 @@ class YamlOutputParser:
 
         except (yaml.YAMLError, ValidationError) as e:
             name = self.pydantic_object.__name__
-            msg = f"Failed to parse {name} from text '{text}'. Error: {e}"
+            msg = (
+                f"Failed to parse {name} from text '{text}'."
+                f" Error: {e}"
+            )
             raise YamlParsingException(msg) from e
 
     def get_format_instructions(self) -> str:
@@ -69,8 +76,14 @@ class YamlOutputParser:
             A string containing formatting instructions.
         """
         schema = self.pydantic_object.schema()
-        reduced_schema = {k: v for k, v in schema.items() if k not in ['title', 'type']}
+        reduced_schema = {
+            k: v
+            for k, v in schema.items()
+            if k not in ["title", "type"]
+        }
         schema_str = json.dumps(reduced_schema, indent=4)
 
-        format_instructions = f"YAML Formatting Instructions:\n{schema_str}"
+        format_instructions = (
+            f"YAML Formatting Instructions:\n{schema_str}"
+        )
         return format_instructions
