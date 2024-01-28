@@ -91,7 +91,6 @@ class AbstractVectorDatabase(ABC):
 
         pass
 
-
     @abstractmethod
     def get(self, query: str):
         """

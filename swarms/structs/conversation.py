@@ -75,7 +75,7 @@ class Conversation(BaseStructure):
         self.autosave = autosave
         self.save_filepath = save_filepath
         self.conversation_history = []
-        
+
         # If system prompt is not None, add it to the conversation history
         if self.system_prompt:
             self.add("system", self.system_prompt)
