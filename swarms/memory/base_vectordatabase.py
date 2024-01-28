@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class AbstractDatabase(ABC):
+class AbstractVectorDatabase(ABC):
     """
     Abstract base class for a database.
 
@@ -35,7 +35,7 @@ class AbstractDatabase(ABC):
         pass
 
     @abstractmethod
-    def execute_query(self, query):
+    def query(self, query: str):
         """
         Execute a database query.
 
@@ -77,7 +77,7 @@ class AbstractDatabase(ABC):
         pass
 
     @abstractmethod
-    def add(self, table, data):
+    def add(self, doc: str):
         """
         Add a new record to the database.
 
@@ -91,26 +91,9 @@ class AbstractDatabase(ABC):
 
         pass
 
-    @abstractmethod
-    def query(self, table, condition):
-        """
-        Query the database.
-
-        This method queries the specified table in the database based on the given condition.
-
-        Parameters:
-            table (str): The name of the table.
-            condition (str): The condition to be applied in the query.
-
-        Returns:
-            list: A list of dictionaries representing the query results.
-
-        """
-
-        pass
 
     @abstractmethod
-    def get(self, table, id):
+    def get(self, query: str):
         """
         Get a record from the database.
 
@@ -128,7 +111,7 @@ class AbstractDatabase(ABC):
         pass
 
     @abstractmethod
-    def update(self, table, id, data):
+    def update(self, doc):
         """
         Update a record in the database.
 
@@ -144,7 +127,7 @@ class AbstractDatabase(ABC):
         pass
 
     @abstractmethod
-    def delete(self, table, id):
+    def delete(self, message):
         """
         Delete a record from the database.
 

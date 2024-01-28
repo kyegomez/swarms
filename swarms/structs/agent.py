@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
-from swarms.memory.base_vectordb import VectorDatabase
+from swarms.memory.base_vectordb import AbstractDatabase
 from swarms.prompts.agent_system_prompts import (
     AGENT_SYSTEM_PROMPT_3,
 )
@@ -83,7 +83,7 @@ class Agent:
         pdf_path (str): The path to the pdf
         list_of_pdf (str): The list of pdf
         tokenizer (Any): The tokenizer
-        memory (VectorDatabase): The memory
+        memory (AbstractDatabase): The memory
         preset_stopping_token (bool): Enable preset stopping token
         traceback (Any): The traceback
         traceback_handlers (Any): The traceback handlers
@@ -168,7 +168,7 @@ class Agent:
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
         tokenizer: Optional[Any] = None,
-        long_term_memory: Optional[VectorDatabase] = None,
+        long_term_memory: Optional[AbstractDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Any = None,
         traceback_handlers: Any = None,
@@ -657,7 +657,7 @@ class Agent:
             """
             return agent_history_prompt
 
-    def long_term_memory_prompt(self, query: str, prompt: str):
+    def long_term_memory_prompt(self, query: str):
         """
         Generate the agent long term memory prompt
 
@@ -671,7 +671,7 @@ class Agent:
         ltr = self.long_term_memory.query(query)
 
         context = f"""
-            {prompt}
+            {query}
             ####### Long Term Memory ################
             {ltr}
         """
