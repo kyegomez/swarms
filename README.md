@@ -110,6 +110,56 @@ print(generated_data)
 
 ```
 
+
+### `Worker`
+The `Worker` is a simple all-in-one agent equipped with an LLM, tools, and RAG. Get started below:
+
+✅ Plug in and Play LLM. Utilize any LLM from anywhere and any framework
+
+✅ Reliable RAG: Utilizes FAISS for efficient RAG but it's modular so you can use any DB.
+
+✅ Multi-Step Parallel Function Calling: Use any tool
+
+```python
+# Importing necessary modules
+import os
+from dotenv import load_dotenv
+from swarms import Worker, OpenAIChat, tool
+
+# Loading environment variables from .env file
+load_dotenv()
+
+# Retrieving the OpenAI API key from environment variables
+api_key = os.getenv("OPENAI_API_KEY")
+
+
+# Create a tool
+@tool
+def search_api(query: str):
+    pass
+
+
+# Creating a Worker instance
+worker = Worker(
+    name="My Worker",
+    role="Worker",
+    human_in_the_loop=False,
+    tools=[search_api],
+    temperature=0.5,
+    llm=OpenAIChat(openai_api_key=api_key),
+)
+
+# Running the worker with a prompt
+out = worker.run(
+    "Hello, how are you? Create an image of how your are doing!"
+)
+
+# Printing the output
+print(out)
+
+
+```
+
 ------
 
 ### `SequentialWorkflow`
@@ -774,6 +824,115 @@ out = llm.run(task=task, img=img)
 print(out)
 ```
 
+### `GPT4Vision`
+```python
+from swarms import GPT4VisionAPI
+
+# Initialize with default API key and custom max_tokens
+api = GPT4VisionAPI(max_tokens=1000)
+
+# Define the task and image URL
+task = "Describe the scene in the image."
+img = "https://i.imgur.com/4P4ZRxU.jpeg"
+
+# Run the GPT-4 Vision model
+response = api.run(task, img)
+
+# Print the model's response
+print(response)
+```
+
+### `QwenVLMultiModal`
+A radically simple interface for QwenVLMultiModal comes complete with Quantization to turn it on just set quantize to true!
+
+```python
+from swarms import QwenVLMultiModal
+
+# Instantiate the QwenVLMultiModal model
+model = QwenVLMultiModal(
+    model_name="Qwen/Qwen-VL-Chat",
+    device="cuda",
+    quantize=True,
+)
+
+# Run the model
+response = model(
+    "Hello, how are you?", "https://example.com/image.jpg"
+)
+
+# Print the response
+print(response)
+
+
+```
+
+
+### `Kosmos`
+- Multi-Modal Model from microsoft!
+
+```python
+from swarms import Kosmos
+
+# Initialize the model
+model = Kosmos()
+
+# Generate
+out = model.run("Analyze the reciepts in this image", "docs.jpg")
+
+# Print the output
+print(out)
+
+```
+
+
+### `Idefics`
+- Multi-Modal model from Huggingface team!
+
+```python
+# Import the idefics model from the swarms.models module
+from swarms.models import Idefics
+
+# Create an instance of the idefics model
+model = Idefics()
+
+# Define user input with an image URL and chat with the model
+user_input = (
+    "User: What is in this image?"
+    " https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"
+)
+response = model.chat(user_input)
+print(response)
+
+# Define another user input with an image URL and chat with the model
+user_input = (
+    "User: And who is that?"
+    " https://static.wikia.nocookie.net/asterix/images/2/25/R22b.gif/revision/latest?cb=20110815073052"
+)
+response = model.chat(user_input)
+print(response)
+
+# Set the checkpoint of the model to "new_checkpoint"
+model.set_checkpoint("new_checkpoint")
+
+# Set the device of the model to "cpu"
+model.set_device("cpu")
+
+# Set the maximum length of the chat to 200
+model.set_max_length(200)
+
+# Clear the chat history of the model
+model.clear_chat_history()
+
+
+```
+
+## Radically Simple AI Model APIs
+We provide a vast array of language and multi-modal model APIs for you to generate text, images, music, speech, and even videos. Get started below:
+
+
+
+-----
+
 
 ### `Anthropic`
 ```python
@@ -850,23 +1009,6 @@ print(image_url)
 ```
 
 
-### `GPT4Vision`
-```python
-from swarms import GPT4VisionAPI
-
-# Initialize with default API key and custom max_tokens
-api = GPT4VisionAPI(max_tokens=1000)
-
-# Define the task and image URL
-task = "Describe the scene in the image."
-img = "https://i.imgur.com/4P4ZRxU.jpeg"
-
-# Run the GPT-4 Vision model
-response = api.run(task, img)
-
-# Print the model's response
-print(response)
-```
 
 
 ### Text to Video with `ZeroscopeTTV`
@@ -888,7 +1030,7 @@ print(video_path)
 ```
 
 
-### ModelScope
+<!-- ### ModelScope
 ```python
 from swarms.models import ModelScopeAutoModel
 
@@ -910,32 +1052,9 @@ cog_agent = CogAgent()
 # Run the model on the tests
 cog_agent.run("Describe this scene", "images/1.jpg")
 
-```
+``` -->
 
 
-### `QwenVLMultiModal`
-A radically simple interface for QwenVLMultiModal comes complete with Quantization to turn it on just set quantize to true!
-
-```python
-from swarms import QwenVLMultiModal
-
-# Instantiate the QwenVLMultiModal model
-model = QwenVLMultiModal(
-    model_name="Qwen/Qwen-VL-Chat",
-    device="cuda",
-    quantize=True,
-)
-
-# Run the model
-response = model(
-    "Hello, how are you?", "https://example.com/image.jpg"
-)
-
-# Print the response
-print(response)
-
-
-```
 
 ----
 

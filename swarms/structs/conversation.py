@@ -60,6 +60,7 @@ class Conversation(BaseStructure):
 
     def __init__(
         self,
+        system_prompt: str,
         time_enabled: bool = False,
         database: AbstractDatabase = None,
         autosave: bool = False,
@@ -68,11 +69,16 @@ class Conversation(BaseStructure):
         **kwargs,
     ):
         super().__init__()
+        self.system_prompt = system_prompt
         self.time_enabled = time_enabled
         self.database = database
         self.autosave = autosave
         self.save_filepath = save_filepath
         self.conversation_history = []
+
+        # If system prompt is not None, add it to the conversation history
+        if self.system_prompt:
+            self.add("system", self.system_prompt)
 
     def add(self, role: str, content: str, *args, **kwargs):
         """Add a message to the conversation history

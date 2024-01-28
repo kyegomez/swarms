@@ -47,6 +47,9 @@ from swarms.models.ultralytics_model import (
 from swarms.models.vip_llava import VipLlavaMultiModal  # noqa: E402
 from swarms.models.llava import LavaMultiModal  # noqa: E402
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
+from swarms.models.clipq import CLIPQ  # noqa: E402
+from swarms.models.kosmos_two import Kosmos  # noqa: E402
+from swarms.models.fuyu import Fuyu  # noqa: E402
 
 # from swarms.models.dalle3 import Dalle3
 # from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
@@ -78,7 +81,6 @@ __all__ = [
     "Zephyr",
     "BaseMultiModalModel",
     "Idefics",
-    # "Kosmos",
     "Vilt",
     "Nougat",
     "LayoutLMDocumentQA",
@@ -101,13 +103,13 @@ __all__ = [
     "AudioModality",
     "VideoModality",
     "MultimodalData",
-    # "CogAgent",
-    # "ModelScopePipeline",
-    # "ModelScopeAutoModel",
     "TogetherLLM",
     "TimmModel",
     "UltralyticsModel",
     "VipLlavaMultiModal",
     "LavaMultiModal",
     "QwenVLMultiModal",
+    "CLIPQ",
+    "Kosmos",
+    "Fuyu",
 ]

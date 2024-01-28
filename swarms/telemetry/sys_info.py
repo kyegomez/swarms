@@ -89,7 +89,6 @@ def get_package_mismatches(file_path="pyproject.toml"):
     return "\n" + "\n".join(mismatches)
 
 
-
 def system_info():
     swarms_verison = get_swarms_verison()
     return {
@@ -100,4 +99,3 @@ def system_info():
         "CPU Info": get_cpu_info(),
         "RAM Info": get_ram_info(),
     }
-

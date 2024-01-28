@@ -4,7 +4,7 @@ Weaviate API Client
 
 from typing import Any, Dict, List, Optional
 
-from swarms.memory.base_vectordb import VectorDatabase
+from swarms.memory.base_vectordb import AbstractDatabase
 
 try:
     import weaviate
@@ -12,7 +12,7 @@ except ImportError:
     print("pip install weaviate-client")
 
 
-class WeaviateDB(VectorDatabase):
+class WeaviateDB(AbstractDatabase):
     """
 
     Weaviate API Client

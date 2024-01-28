@@ -51,6 +51,7 @@ class Worker:
         tools: List[Any] = None,
         embedding_size: int = 1536,
         search_kwargs: dict = {"k": 8},
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -64,6 +65,7 @@ class Worker:
         self.tools = tools
         self.embedding_size = embedding_size
         self.search_kwargs = search_kwargs
+        self.verbose = verbose
 
         self.setup_tools(external_tools)
         self.setup_memory()
@@ -163,7 +165,7 @@ class Worker:
     # @log_decorator
     @error_decorator
     @timing_decorator
-    def run(self, task: str = None, *args, **kwargs):
+    def run(self, task: str = None, img=None, *args, **kwargs):
         """
         Run the autonomous agent on a given task.
 

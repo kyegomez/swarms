@@ -80,23 +80,16 @@ Swarms is an open source framework for developers in python to enable seamless, 
 [Here is the official Swarms Github Page:](https://github.com/kyegomez/swarms)
 
 ### Product Growth Metrics
+| Name                             | Description                                                                                                   | Link                                                                                      |
+|----------------------------------|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| Total Downloads of all time      | Total number of downloads for the product over its entire lifespan.                                           | [![Downloads](https://static.pepy.tech/badge/swarms)](https://pepy.tech/project/swarms)   |
+| Downloads this month             | Number of downloads for the product in the current month.                                                     | [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms) |
+| Total Downloads this week        | Total number of downloads for the product in the current week.                                                | [![Downloads](https://static.pepy.tech/badge/swarms/week)](https://pepy.tech/project/swarms) |
+| Github Forks                     | Number of times the product's codebase has been copied for optimization, contribution, or usage.              | [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) |
+| Github Stars                     | Number of users who have 'liked' the project.                                                                 | [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) |
+| Pip Module Metrics               | Various project statistics such as watchers, number of contributors, date repository was created, and more.   | [CLICK HERE](https://libraries.io/github/kyegomez/swarms)                                |
+| Contribution Based Statistics    | Statistics like number of contributors, lines of code changed, etc.                                           | [HERE](https://github.com/kyegomez/swarms/graphs/contributors)                           |
+| Github Community insights        | Insights into the Github community around the product.                                                        | [Github Community insights](https://github.com/kyegomez/swarms/graphs/community)         |
+| Github Traffic Metrics           | Metrics related to traffic, such as views and clones on Github.                                               | [Github Traffic Metrics](https://github.com/kyegomez/swarms/graphs/traffic)               |
+| Issues with the framework        | Current open issues for the product on Github.                                                                | [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) |
 
-- Total Downloads of all time: [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues)
-
-- Click here for Downloads this month: [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
-
-- Total Downloads this week: [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues)
-
-- Click here for Forks which represent the number of times a user has copied the entire codebase for optimization, contribution, or usage. [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) 
-
-- Stars are the number of people that have liked our project, click here for more: [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers)
-
-- Various Project Statistics such as watchers, number of contributors, date repository was created and much more. [CLICK HERE](https://libraries.io/github/kyegomez/swarms)
-
-- Contribution Based Statistics such as number of contributors, number of lines of code changed, and much more [HERE](https://github.com/kyegomez/swarms/graphs/contributors)
-
-- [Github Community insights](https://github.com/kyegomez/swarms/graphs/community)
-
-- [Github Traffic Metrics](https://github.com/kyegomez/swarms/graphs/traffic)
-
-- Issues with the framework or Github Issues: [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues)
