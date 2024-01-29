@@ -63,3 +63,4 @@ psutil
 ultralytics
 supervision
 scikit-image
+pinecone-client
