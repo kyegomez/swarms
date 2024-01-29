@@ -74,6 +74,7 @@ ultralytics = "*"
 timm = "*"
 supervision = "*"
 scikit-image = "*"
+pinecone-client = "*"
 
 
 
