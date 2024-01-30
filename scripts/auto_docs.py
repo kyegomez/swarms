@@ -9,11 +9,18 @@ from scripts.auto_tests_docs.docs import DOCUMENTATION_WRITER_SOP
 from swarms import OpenAIChat
 
 ##########
-from swarms.agents.base import AbstractAgent
-from swarms.structs.message import Message
-from swarms.agents.omni_modal_agent import OmniModalAgent
-from swarms.agents.tool_agent import ToolAgent
-from swarms.agents.worker_agent import WorkerAgent
+from swarms.tokenizers.r_tokenizers import (
+    SentencePieceTokenizer,
+    HuggingFaceTokenizer,
+    Tokenizer,
+)
+from swarms.tokenizers.base_tokenizer import BaseTokenizer
+from swarms.tokenizers.openai_tokenizers import OpenAITokenizer
+from swarms.tokenizers.anthropic_tokenizer import (
+    AnthropicTokenizer,
+)
+from swarms.tokenizers.cohere_tokenizer import CohereTokenizer
+
 
 ####################
 load_dotenv()
@@ -40,14 +47,14 @@ def process_documentation(cls):
 
     # Process with OpenAI model (assuming the model's __call__ method takes this input and returns processed content)
     processed_content = model(
-        DOCUMENTATION_WRITER_SOP(input_content, "swarms.agents")
+        DOCUMENTATION_WRITER_SOP(input_content, "swarms.tokenizers")
     )
 
     # doc_content = f"# {cls.__name__}\n\n{processed_content}\n"
     doc_content = f"{processed_content}\n"
 
     # Create the directory if it doesn't exist
-    dir_path = "docs/swarms/agents"
+    dir_path = "docs/swarms/tokenizers"
     os.makedirs(dir_path, exist_ok=True)
 
     # Write the processed documentation to a Markdown file
@@ -60,11 +67,13 @@ def process_documentation(cls):
 
 def main():
     classes = [
-        AbstractAgent,
-        Message,
-        OmniModalAgent,
-        ToolAgent,
-        WorkerAgent,
+        SentencePieceTokenizer,
+        HuggingFaceTokenizer,
+        Tokenizer,
+        BaseTokenizer,
+        OpenAITokenizer,
+        AnthropicTokenizer,
+        CohereTokenizer,
     ]
     threads = []
     for cls in classes:
@@ -78,7 +87,7 @@ def main():
     for thread in threads:
         thread.join()
 
-    print("Documentation generated in 'swarms.agents' directory.")
+    print("Documentation generated in 'swarms.tokenizers' directory.")
 
 
 if __name__ == "__main__":

@@ -70,6 +70,11 @@ from swarms.models.types import (
     MultimodalData,
 )  # noqa: E402
 
+
+# 3############ Embedding models
+from swarms.models.base_embedding_model import BaseEmbeddingModel
+
+
 __all__ = [
     "AbstractLLM",
     "Anthropic",
@@ -112,4 +117,5 @@ __all__ = [
     "CLIPQ",
     "Kosmos",
     "Fuyu",
+    "BaseEmbeddingModel",
 ]

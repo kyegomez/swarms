@@ -9,14 +9,7 @@ from swarms.models import *  # noqa: E402, F403
 from swarms.telemetry import *  # noqa: E402, F403
 from swarms.utils import *  # noqa: E402, F403
 from swarms.prompts import *  # noqa: E402, F403
-
-
-# telemetry = Telemetry('mongodb://localhost:27017/', 'mydatabase')
-
-# telemetry.log_import('swarms.telemetry.bootup')
-# telemetry.log_import('swarms.agents')
-# telemetry.log_import('swarms.structs')
-# telemetry.log_import('swarms.models')
-# telemetry.log_import('swarms.telemetry')
-# telemetry.log_import('swarms.utils')
-# telemetry.log_import('swarms.prompts')
+from swarms.tokenizers import *  # noqa: E402, F403
+from swarms.loaders import *  # noqa: E402, F403
+from swarms.artifacts import *  # noqa: E402, F403
+from swarms.chunkers import *  # noqa: E402, F403

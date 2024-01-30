@@ -32,6 +32,7 @@ from swarms.utils.remove_json_whitespace import (
     remove_whitespace_from_json,
     remove_whitespace_from_yaml,
 )
+from swarms.utils.exponential_backoff import ExponentialBackoffMixin
 
 __all__ = [
     "SubprocessCodeInterpreter",
@@ -57,4 +58,5 @@ __all__ = [
     "JsonOutputParser",
     "remove_whitespace_from_json",
     "remove_whitespace_from_yaml",
+    "ExponentialBackoffMixin",
 ]

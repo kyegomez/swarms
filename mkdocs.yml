@@ -116,6 +116,15 @@ nav:
         - groupchat: "swarms/structs/groupchat.md"
         - swarmnetwork: "swarms/structs/swarmnetwork.md"
         - groupchatmanager: "swarms/structs/groupchatmanager.md"
+  - swarms.tokenizers:
+    - Language:
+      - Tokenizer: "swarms/tokenizers/tokenizer.md"
+      - CohereTokenizer: "swarms/tokenizers/coheretokenizer.md"
+      - BaseTokenizer: "swarms/tokenizers/basetokenizer.md"
+      - HuggingfaceTokenizer: "swarms/tokenizers/huggingfacetokenizer.md"
+      - SentencepieceTokenizer: "swarms/tokenizers/sentencepiecetokenizer.md"
+      - AnthropicTokenizer: "swarms/tokenizers/anthropictokenizer.md"
+      - OpenaiTokenizer: "swarms/tokenizers/openaitokenizer.md"
   - swarms.memory:
     - Vector Databases:
       - Weaviate: "swarms/memory/weaviate.md"
