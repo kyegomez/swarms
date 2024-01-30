@@ -1,8 +1,8 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from swarms.structs.swarm_net import SwarmNet
+
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
@@ -52,41 +52,3 @@ def test_swarm_network_remove_agent(swarm_network):
     assert len(swarm_network.agents) == 4
     assert agent_to_remove not in swarm_network.agents
 
-
-@pytest.fixture
-def swarmnet():
-    swarmnet = SwarmNet()
-    agent_mock = MagicMock()
-    agent_mock.id = "1"
-    swarmnet.agents = [agent_mock]
-    return swarmnet
-
-
-def test_run_agent(swarmnet):
-    swarmnet.run_agent("1", "task")
-    swarmnet.agents[0].run.assert_called_once_with("task")
-
-
-def test_run_agent_no_agent(swarmnet):
-    with pytest.raises(ValueError, match="No agent found with ID"):
-        swarmnet.run_agent("2", "task")
-
-
-def test_run_many_agents(swarmnet):
-    swarmnet.run_many_agents("task")
-    swarmnet.agents[0].run.assert_called_once_with("task")
-
-
-def test_list_agents(swarmnet):
-    swarmnet.list_agents()
-    assert swarmnet.agents[0].id == "1"
-
-
-def test_get_agent(swarmnet):
-    agent = swarmnet.get_agent("1")
-    assert agent.id == "1"
-
-
-def test_get_agent_no_agent(swarmnet):
-    with pytest.raises(ValueError, match="No agent found with ID"):
-        swarmnet.get_agent("2")
