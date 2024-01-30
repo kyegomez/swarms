@@ -21,6 +21,7 @@ A modular framework that enables you to Build, Deploy, and Scale Reliable Autono
 ---
 
 ## Usage
+With Swarms, you can create structures, such as Agents, Swarms, and Workflows, that are composed of different types of tasks. Let's build a simple creative agent that will dynamically create a 10,000 word blog on health and wellness.
 
 Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>

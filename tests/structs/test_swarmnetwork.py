@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from swarm_net import SwarmNet
+from swarms.structs.swarm_net import SwarmNet
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
