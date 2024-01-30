@@ -83,7 +83,6 @@ class ModelParallelizer:
             responses.append(llm(task))
         return responses
 
-    
     # New Features
     def save_responses_to_file(self, filename):
         """Save responses to file"""

@@ -33,4 +33,17 @@ def disable_logging():
         logger = logging.getLogger(logger_name)
         logger.setLevel(
             logging.WARNING
-        )  # Supress DEBUG and info logs
+        )  # Suppress DEBUG and info logs
+
+    # Create a file handler to log errors to the file
+    file_handler = logging.FileHandler("errors.txt")
+    file_handler.setLevel(logging.ERROR)
+    logging.getLogger().addHandler(file_handler)
+
+    # Create a stream handler to log errors to the terminal
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.ERROR)
+    logging.getLogger().addHandler(stream_handler)
+
+
+disable_logging()

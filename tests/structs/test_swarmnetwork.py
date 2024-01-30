@@ -51,4 +51,3 @@ def test_swarm_network_remove_agent(swarm_network):
     swarm_network.remove_agent(agent_to_remove)
     assert len(swarm_network.agents) == 4
     assert agent_to_remove not in swarm_network.agents
-
