@@ -344,7 +344,6 @@ class Agent:
 
     def print_dashboard(self, task: str):
         """Print dashboard"""
-        model_config = self.get_llm_init_params()
         print(colored("Initializing Agent Dashboard...", "yellow"))
 
         print(
@@ -373,7 +372,6 @@ class Agent:
                     Dynamic Temperature: {self.dynamic_temperature_enabled}
                     Autosave: {self.autosave}
                     Saved State: {self.saved_state_path}
-                    Model Configuration: {model_config}
 
                 ----------------------------------------
                 """,
