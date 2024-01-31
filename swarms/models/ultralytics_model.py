@@ -1,5 +1,6 @@
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 from ultralytics import YOLO
+from typing import List
 
 
 class UltralyticsModel(BaseMultiModalModel):
@@ -12,13 +13,22 @@ class UltralyticsModel(BaseMultiModalModel):
         **kwargs: Arbitrary keyword arguments.
     """
 
-    def __init__(self, model_name: str, *args, **kwargs):
+    def __init__(
+        self, model_name: str = "yolov8n.pt", *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.model_name = model_name
 
-        self.model = YOLO(model_name, *args, **kwargs)
+        try:
+            self.model = YOLO(model_name, *args, **kwargs)
+        except Exception as e:
+            raise ValueError(
+                f"Failed to initialize Ultralytics model: {str(e)}"
+            )
 
-    def __call__(self, task: str, *args, **kwargs):
+    def __call__(
+        self, task: str, tasks: List[str] = None, *args, **kwargs
+    ):
         """
         Calls the Ultralytics model.
 
@@ -30,4 +40,13 @@ class UltralyticsModel(BaseMultiModalModel):
         Returns:
             The result of the model call.
         """
-        return self.model(task, *args, **kwargs)
+        try:
+            if tasks:
+                return self.model([tasks], *args, **kwargs)
+            else:
+                return self.model(task, *args, **kwargs)
+        except Exception as e:
+            raise ValueError(
+                f"Failed to perform task '{task}' with Ultralytics"
+                f" model: {str(e)}"
+            )

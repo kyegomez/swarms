@@ -50,6 +50,8 @@ from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 from swarms.models.clipq import CLIPQ  # noqa: E402
 from swarms.models.kosmos_two import Kosmos  # noqa: E402
 from swarms.models.fuyu import Fuyu  # noqa: E402
+from swarms.models.roboflow_model import RoboflowMultiModal
+from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
 
 # from swarms.models.dalle3 import Dalle3
 # from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
@@ -118,4 +120,6 @@ __all__ = [
     "Kosmos",
     "Fuyu",
     "BaseEmbeddingModel",
+    "RoboflowMultiModal",
+    "SegmentAnythingMarkGenerator",
 ]

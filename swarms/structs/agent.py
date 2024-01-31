@@ -16,6 +16,7 @@ from swarms.prompts.agent_system_prompts import (
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.tokenizers.base_tokenizer import BaseTokenizer
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.data_to_text import data_to_text
@@ -151,7 +152,7 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: bool = False,
         dashboard: bool = False,
-        agent_name: str = None,
+        agent_name: str = "swarm-worker-01",
         agent_description: str = None,
         system_prompt: str = AGENT_SYSTEM_PROMPT_3,
         tools: List[BaseTool] = None,
@@ -167,7 +168,7 @@ class Agent:
         multi_modal: Optional[bool] = None,
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
-        tokenizer: Optional[Any] = None,
+        tokenizer: Optional[BaseTokenizer] = None,
         long_term_memory: Optional[AbstractVectorDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Any = None,
@@ -187,7 +188,7 @@ class Agent:
         self.retry_attempts = retry_attempts
         self.retry_interval = retry_interval
         self.task = None
-        self.stopping_token = stopping_token  # or "<DONE>"
+        self.stopping_token = stopping_token
         self.interactive = interactive
         self.dashboard = dashboard
         self.return_history = return_history
@@ -248,8 +249,13 @@ class Agent:
         if self.docs:
             self.ingest_docs(self.docs)
 
+        # If docs folder exists then get the docs from docs folder
         if self.docs_folder:
             self.get_docs_from_doc_folders()
+
+        # If tokenizer and context length exists then:
+        if self.tokenizer and self.context_length:
+            self.truncate_history()
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -298,22 +304,6 @@ class Agent:
     def format_prompt(self, template, **kwargs: Any) -> str:
         """Format the template with the provided kwargs using f-string interpolation."""
         return template.format(**kwargs)
-
-    def truncate_history(self):
-        """
-        Take the history and truncate it to fit into the model context length
-        """
-        # truncated_history = self.short_memory[-1][-self.context_length :]
-        # self.short_memory[-1] = truncated_history
-        # out = limit_tokens_from_string(
-        #     "\n".join(truncated_history), self.llm.model_name
-        # )
-        truncated_history = self.short_memory[-1][
-            -self.context_length :
-        ]
-        text = "\n".join(truncated_history)
-        out = limit_tokens_from_string(text, "gpt-4")
-        return out
 
     def add_task_to_memory(self, task: str):
         """Add the task to the memory"""
@@ -1154,6 +1144,27 @@ class Agent:
         """Send a message to the agent"""
         message = f"{agent_name}: {message}"
         return self.run(message, *args, **kwargs)
+
+    def truncate_history(self):
+        """
+        Truncates the short-term memory of the agent based on the count of tokens.
+
+        The method counts the tokens in the short-term memory using the tokenizer and
+        compares it with the length of the memory. If the length of the memory is greater
+        than the count, the memory is truncated to match the count.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
+        # Count the short term history with the tokenizer
+        count = self.tokenizer.count_tokens(self.short_memory)
+
+        # Now the logic that truncates the memory if it's more than the count
+        if len(self.short_memory) > count:
+            self.short_memory = self.short_memory[:count]
 
     def get_docs_from_doc_folders(self):
         """Get the docs from the files"""

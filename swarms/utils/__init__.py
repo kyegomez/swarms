@@ -33,6 +33,16 @@ from swarms.utils.remove_json_whitespace import (
     remove_whitespace_from_yaml,
 )
 from swarms.utils.exponential_backoff import ExponentialBackoffMixin
+from swarms.utils.download_img import download_img_from_url
+from swarms.utils.supervision_masking import (
+    FeatureType,
+    compute_mask_iou_vectorized,
+    mask_non_max_suppression,
+    filter_masks_by_relative_area,
+    masks_to_marks,
+    refine_marks,
+)
+from swarms.utils.supervision_visualizer import MarkVisualizer
 
 __all__ = [
     "SubprocessCodeInterpreter",
@@ -59,4 +69,12 @@ __all__ = [
     "remove_whitespace_from_json",
     "remove_whitespace_from_yaml",
     "ExponentialBackoffMixin",
+    "download_img_from_url",
+    "FeatureType",
+    "compute_mask_iou_vectorized",
+    "mask_non_max_suppression",
+    "filter_masks_by_relative_area",
+    "masks_to_marks",
+    "refine_marks",
+    "MarkVisualizer",
 ]

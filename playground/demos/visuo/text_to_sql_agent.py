@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms import Agent, OpenAIChat
+from swarms import Agent, HuggingfaceLLM
 
 # Load the environment variables
 load_dotenv()
@@ -12,19 +12,21 @@ load_dotenv()
 api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
-llm = OpenAIChat(
+llm = HuggingfaceLLM(
+    model_id="codellama/CodeLlama-70b-hf",
+    max_length=4000,
+    quantize=True,
     temperature=0.5,
-    model_name="gpt-4",
-    openai_api_key=api_key,
-    max_tokens=1000,
 )
 
 ## Initialize the workflow
 agent = Agent(
     llm=llm,
-    max_loops=4,
+    max_loops="auto",
+    system_prompt=None,
     autosave=True,
     dashboard=True,
+    tools=[None],
 )
 
 # Run the workflow on a task
