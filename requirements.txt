@@ -1,4 +1,4 @@
-torch==2.1.1
+gitorch==2.1.1
 transformers
 pandas==1.5.3
 langchain==0.0.333
@@ -6,7 +6,6 @@ langchain-experimental==0.0.10
 playwright==1.34.0
 httpx==0.24.1
 open_clip_torch==2.20.0
-ggl==1.1.0
 Pillow==9.4.0
 faiss-cpu==1.7.4
 openai==0.28.0
@@ -33,7 +32,6 @@ einops==0.7.0
 opencv-python-headless==4.8.1.78
 safetensors==0.3.3
 numpy
-omegaconf==2.3.0
 openai==0.28.0
 opencv-python==4.7.0.72
 safetensors==0.3.3
