@@ -1,7 +1,7 @@
 from swarms.models.fuyu import Fuyu
 
-img = "dalle3.jpeg"
-
 fuyu = Fuyu()
 
-fuyu("What is this image", img)
+# This is the default image, you can change it to any image you want
+out = fuyu("What is this image?", "images/swarms.jpeg")
+print(out)

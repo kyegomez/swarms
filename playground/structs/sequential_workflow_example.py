@@ -1,52 +1,48 @@
-import os
-from swarms.models import OpenAIChat
-from swarms.structs import Agent
-from swarms.structs.sequential_workflow import SequentialWorkflow
-from dotenv import load_dotenv
+from swarms import OpenAIChat, Agent, Task, SequentialWorkflow
 
-load_dotenv()
-
-# Load the environment variables
-api_key = os.getenv("OPENAI_API_KEY")
-
-
-# Initialize the language agent
-# Initialize the language model
+# Example usage
 llm = OpenAIChat(
     temperature=0.5,
-    model_name="gpt-4",
-    openai_api_key=api_key,
-    max_tokens=4000,
+    max_tokens=3000,
 )
 
-
-# Initialize the agent with the language agent
+# Initialize the Agent with the language agent
 agent1 = Agent(
+    agent_name="John the writer",
     llm=llm,
-    max_loops=1,
+    max_loops=0,
+    dashboard=False,
+)
+task1 = Task(
+    agent=agent1,
+    description="Write a 1000 word blog about the future of AI",
 )
 
-# Create another agent for a different task
-agent2 = Agent(llm=llm, max_loops=1)
+# Create another Agent for a different task
+agent2 = Agent("Summarizer", llm=llm, max_loops=1, dashboard=False)
+task2 = Task(
+    agent=agent2,
+    description="Summarize the generated blog",
+)
 
 # Create the workflow
-workflow = SequentialWorkflow(max_loops=1)
+workflow = SequentialWorkflow(
+    name="Blog Generation Workflow",
+    description=(
+        "A workflow to generate and summarize a blog about the future"
+        " of AI"
+    ),
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+)
 
 # Add tasks to the workflow
-workflow.add(
-    agent1,
-    "Generate a 10,000 word blog on health and wellness.",
-)
-
-# Suppose the next task takes the output of the first task as input
-workflow.add(
-    agent2,
-    "Summarize the generated blog",
-)
+workflow.add(tasks=[task1, task2])
 
 # Run the workflow
 workflow.run()
 
-# Output the results
-for task in workflow.tasks:
-    print(f"Task: {task.description}, Result: {task.result}")
+# # Output the results
+# for task in workflow.tasks:
+#     print(f"Task: {task.description}, Result: {task.result}")
