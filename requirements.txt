@@ -4,7 +4,6 @@ pandas==1.5.3
 langchain==0.0.333
 langchain-experimental==0.0.10
 playwright==1.34.0
-wget==3.2
 httpx==0.24.1
 open_clip_torch==2.20.0
 ggl==1.1.0
@@ -31,9 +30,7 @@ ratelimit==2.2.1
 termcolor==2.2.0
 diffusers
 einops==0.7.0
-imageio==2.25.1
 opencv-python-headless==4.8.1.78
-imageio-ffmpeg==0.4.9
 safetensors==0.3.3
 numpy
 omegaconf==2.3.0
