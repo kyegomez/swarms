@@ -19,9 +19,7 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
-        test_type:
-          - "core"
-          - "extended"
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -39,12 +37,7 @@ jobs:
                 poetry install -E extended_testing
               fi
       - name: Run ${{matrix.test_type}} tests
-        run: |
-          if [ "${{ matrix.test_type }}" == "core" ]; then
-            make test
-          else
-            make extended_tests
-          fi
+        run: make test
         shell: bash
       - name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
         uses: actions/checkout@v4
@@ -63,12 +56,7 @@ jobs:
                 poetry install -E extended_testing
               fi
       - name: Run ${{matrix.test_type}} tests
-        run: |
-          if [ "${{ matrix.test_type }}" == "core" ]; then
-            make test
-          else
-            make extended_tests
-          fi
+        run: make test
         shell: bash
 
   build:
@@ -80,9 +68,6 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
-        test_type:
-          - "core"
-          - "extended"
     name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
     steps:
       - uses: actions/checkout@v4
@@ -93,18 +78,8 @@ jobs:
           poetry-version: "1.4.2"
           cache-key: ${{ matrix.test_type }}
           install-command: |
-              if [ "${{ matrix.test_type }}" == "core" ]; then
-                echo "Running core tests, installing dependencies with poetry..."
-                poetry install
-              else
-                echo "Running extended tests, installing dependencies with poetry..."
-                poetry install -E extended_testing
-              fi
+              echo "Running core tests, installing dependencies with poetry..."
+              poetry install
       - name: Run ${{matrix.test_type}} tests
-        run: |
-          if [ "${{ matrix.test_type }}" == "core" ]; then
-            make test
-          else
-            make extended_tests
-          fi
+        run: make test
         shell: bash
