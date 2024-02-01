@@ -4,7 +4,9 @@ from swarms import ToolAgent
 
 # Load the pre-trained model and tokenizer
 model = AutoModelForCausalLM.from_pretrained(
-    "databricks/dolly-v2-12b"
+    "databricks/dolly-v2-12b",
+    load_in_4bit=True,
+    device_map="auto",
 )
 tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v2-12b")
 
