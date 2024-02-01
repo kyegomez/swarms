@@ -33,4 +33,4 @@ agent = ToolAgent(
 generated_data = agent.run(task)
 
 # Print the generated data
-print(generated_data)
+print(f"Generated data: {generated_data}")
