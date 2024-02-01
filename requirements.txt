@@ -50,6 +50,6 @@ psutil
 ultralytics
 supervision
 scikit-image
-anthropic = "*"
+anthropic
 pinecone-client
 roboflow
