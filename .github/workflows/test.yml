@@ -46,10 +46,9 @@ jobs:
             make extended_tests
           fi
         shell: bash
-    name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
-      steps:
-        - uses: actions/checkout@v4
-        - name: Set up Python ${{ matrix.python-version }}
+      - name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
+        uses: actions/checkout@v4
+        name: Set up Python ${{ matrix.python-version }}
           uses: "./.github/actions/poetry_setup"
           with:
             python-version: ${{ matrix.python-version }}
@@ -63,7 +62,7 @@ jobs:
                   echo "Running extended tests, installing dependencies with poetry..."
                   poetry install -E extended_testing
                 fi
-        - name: Run ${{matrix.test_type}} tests
+        name: Run ${{matrix.test_type}} tests
           run: |
             if [ "${{ matrix.test_type }}" == "core" ]; then
               make test
