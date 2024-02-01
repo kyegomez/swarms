@@ -48,20 +48,20 @@ jobs:
         shell: bash
       - name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
         uses: actions/checkout@v4
-        name: Set up Python ${{ matrix.python-version }}
-          uses: "./.github/actions/poetry_setup"
-          with:
-            python-version: ${{ matrix.python-version }}
-            poetry-version: "1.4.2"
-            cache-key: ${{ matrix.test_type }}
-            install-command: |
-                if [ "${{ matrix.test_type }}" == "core" ]; then
-                  echo "Running core tests, installing dependencies with poetry..."
-                  poetry install
-                else
-                  echo "Running extended tests, installing dependencies with poetry..."
-                  poetry install -E extended_testing
-                fi
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: "./.github/actions/poetry_setup"
+        with:
+          python-version: ${{ matrix.python-version }}
+          poetry-version: "1.4.2"
+          cache-key: ${{ matrix.test_type }}
+          install-command: |
+              if [ "${{ matrix.test_type }}" == "core" ]; then
+                echo "Running core tests, installing dependencies with poetry..."
+                poetry install
+              else
+                echo "Running extended tests, installing dependencies with poetry..."
+                poetry install -E extended_testing
+              fi
         name: Run ${{matrix.test_type}} tests
           run: |
             if [ "${{ matrix.test_type }}" == "core" ]; then
