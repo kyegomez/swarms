@@ -73,7 +73,7 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
-pytest
+pytest = "*"
 
 
 
