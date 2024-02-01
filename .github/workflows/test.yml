@@ -30,6 +30,7 @@ jobs:
           install-command: 
               echo "Running core tests, installing dependencies with poetry..."
               poetry install
+              pip install pytest
       - name: Run core tests
         run: pytest
         shell: bash
@@ -43,6 +44,7 @@ jobs:
           install-command: |
               echo "Running core tests, installing dependencies with poetry..."
               poetry install
+              pip install pytest
       - name: Run core tests
         run: pytest
         shell: bash
