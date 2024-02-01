@@ -1,3 +1,4 @@
+""" Example of using the OpenAIChat model to generate a blog post. """
 import os
 
 from dotenv import load_dotenv
