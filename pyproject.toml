@@ -74,7 +74,7 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
-python-dotenv
+python-dotenv = "*"
 
 
 
