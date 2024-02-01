@@ -1,6 +1,7 @@
-from swarms.tools.format_tools import Jsonformer
 from typing import Any
+
 from swarms.models.base_llm import AbstractLLM
+from swarms.tools.format_tools import Jsonformer
 
 
 class ToolAgent(AbstractLLM):
@@ -65,15 +66,17 @@ class ToolAgent(AbstractLLM):
         model: Any,
         tokenizer: Any,
         json_schema: Any,
+        max_number_tokens: int = 500,
         *args,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.name = name
         self.description = description
         self.model = model
         self.tokenizer = tokenizer
         self.json_schema = json_schema
+        self.max_number_tokens = max_number_tokens
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -92,10 +95,11 @@ class ToolAgent(AbstractLLM):
         """
         try:
             self.toolagent = Jsonformer(
-                self.model,
-                self.tokenizer,
-                self.json_schema,
-                task,
+                model=self.model,
+                tokenizer=self.tokenizer,
+                json_schema=self.json_schema,
+                prompt=task,
+                max_number_tokens=self.max_number_tokens,
                 *args,
                 **kwargs,
             )
