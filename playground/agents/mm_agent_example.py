@@ -1,8 +1,10 @@
-from swarms.agents import MultiModalAgent
+""" Example of using the MultiModalAgent """
+
+from swarms.agents import OmniModalAgent
 
 load_dict = {"ImageCaptioning": "cuda"}
 
-node = MultiModalAgent(load_dict)
+node = OmniModalAgent(load_dict)
 
 text = node.run_text(
     "What is your name? Generate a picture of yourself"
