@@ -61,8 +61,8 @@ class ToolAgent(AbstractLLM):
 
     def __init__(
         self,
-        name: str = None,
-        description: str = None,
+        name: str = "Function Calling Agent",
+        description: str = "Generates a function based on the input json schema and the task",
         model: Any = None,
         tokenizer: Any = None,
         json_schema: Any = None,
