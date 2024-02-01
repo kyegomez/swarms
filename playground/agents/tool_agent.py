@@ -4,7 +4,9 @@ from swarms import ToolAgent
 
 # Load the pre-trained model and tokenizer
 model = AutoModelForCausalLM.from_pretrained(
-    "databricks/dolly-v2-12b"
+    "databricks/dolly-v2-12b",
+    load_in_4bit=True,
+    device_map="auto",
 )
 tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v2-12b")
 
@@ -26,11 +28,15 @@ task = (
 
 # Create an instance of the ToolAgent class
 agent = ToolAgent(
-    model=model, tokenizer=tokenizer, json_schema=json_schema
+    name="dolly-function-agent",
+    description="Ana gent to create a child data",
+    model=model,
+    tokenizer=tokenizer,
+    json_schema=json_schema,
 )
 
 # Run the agent to generate the person's information
 generated_data = agent.run(task)
 
 # Print the generated data
-print(generated_data)
+print(f"Generated data: {generated_data}")
