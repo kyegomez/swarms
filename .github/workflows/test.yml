@@ -62,14 +62,14 @@ jobs:
                 echo "Running extended tests, installing dependencies with poetry..."
                 poetry install -E extended_testing
               fi
-        name: Run ${{matrix.test_type}} tests
-          run: |
-            if [ "${{ matrix.test_type }}" == "core" ]; then
-              make test
-            else
-              make extended_tests
-            fi
-          shell: bash
+      - name: Run ${{matrix.test_type}} tests
+        run: |
+          if [ "${{ matrix.test_type }}" == "core" ]; then
+            make test
+          else
+            make extended_tests
+          fi
+        shell: bash
 
   build:
     runs-on: ubuntu-latest
