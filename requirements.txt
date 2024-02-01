@@ -19,6 +19,7 @@ accelerate==0.22.0
 chromadb==0.4.14
 tensorflow
 optimum
+toml
 tiktoken==0.4.0
 colored
 addict
