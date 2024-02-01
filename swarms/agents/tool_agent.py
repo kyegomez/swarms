@@ -61,11 +61,11 @@ class ToolAgent(AbstractLLM):
 
     def __init__(
         self,
-        name: str,
-        description: str,
-        model: Any,
-        tokenizer: Any,
-        json_schema: Any,
+        name: str = None,
+        description: str = None,
+        model: Any = None,
+        tokenizer: Any = None,
+        json_schema: Any = None,
         max_number_tokens: int = 500,
         *args,
         **kwargs,

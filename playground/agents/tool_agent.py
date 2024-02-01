@@ -26,7 +26,7 @@ task = (
 
 # Create an instance of the ToolAgent class
 agent = ToolAgent(
-    model=model, tokenizer=tokenizer, json_schema=json_schema
+    name="dolly-function-agent", description="Ana gent to create a child data", model=model, tokenizer=tokenizer, json_schema=json_schema
 )
 
 # Run the agent to generate the person's information
