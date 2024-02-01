@@ -49,7 +49,7 @@ jobs:
       - name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
         uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: "./.github/actions/poetry_setup"
+        uses: "actions/setup-python@v2"
         with:
           python-version: ${{ matrix.python-version }}
           poetry-version: "1.4.2"
