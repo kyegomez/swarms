@@ -17,7 +17,7 @@ requests_mock
 PyPDF2==3.0.1
 accelerate==0.22.0
 chromadb==0.4.14
-tensorflow
+tensorflow==2.12
 optimum
 toml
 tiktoken==0.4.0
