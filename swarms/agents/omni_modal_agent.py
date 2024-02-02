@@ -1,3 +1,5 @@
+""" OmniModalAgent  """
+
 from langchain.base_language import BaseLanguageModel
 from langchain_experimental.autonomous_agents.hugginggpt.repsonse_generator import (
     load_response_generator,
@@ -72,11 +74,11 @@ class OmniModalAgent:
         # self.task_executor = TaskExecutor
         self.history = []
 
-    def run(self, input: str) -> str:
+    def run(self, inputtoagent: str) -> str:
         """Run the OmniAgent"""
         plan = self.chat_planner.plan(
             inputs={
-                "input": input,
+                "input": inputtoagent,
                 "hf_tools": self.tools,
             }
         )
