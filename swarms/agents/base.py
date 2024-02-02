@@ -1,3 +1,5 @@
+""" Base class for AI agents. """
+
 from typing import Dict, List
 
 
