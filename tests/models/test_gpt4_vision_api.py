@@ -10,7 +10,6 @@ from swarms.models.gpt4_vision_api import GPT4VisionAPI
 
 load_dotenv()
 
-
 custom_api_key = os.environ.get("OPENAI_API_KEY")
 img = "images/swarms.jpeg"
 

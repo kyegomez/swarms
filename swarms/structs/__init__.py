@@ -17,8 +17,12 @@ from swarms.structs.recursive_workflow import RecursiveWorkflow
 from swarms.structs.schemas import (
     Artifact,
     ArtifactUpload,
+    Step,
     StepInput,
+    StepOutput,
+    StepRequestBody,
     TaskInput,
+    TaskRequestBody,
 )
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.step import Step
@@ -105,4 +109,7 @@ __all__ = [
     "sigmoid_swarm",
     "staircase_swarm",
     "star_swarm",
+    "StepOutput",
+    "StepRequestBody",
+    "TaskRequestBody",
 ]
