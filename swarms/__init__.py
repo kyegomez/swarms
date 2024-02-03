@@ -1,7 +1,12 @@
 # from swarms.telemetry.main import Telemetry  # noqa: E402, F403
 from swarms.telemetry.bootup import bootup  # noqa: E402, F403
+from swarms.telemetry.user_utils import (
+    get_user_device_data,
+)  # noqa: E402, F403
 
 bootup()
+
+get_user_device_data()
 
 from swarms.agents import *  # noqa: E402, F403
 from swarms.structs import *  # noqa: E402, F403
