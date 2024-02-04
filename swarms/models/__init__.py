@@ -44,7 +44,8 @@ from swarms.models.timm import TimmModel  # noqa: E402
 from swarms.models.ultralytics_model import (
     UltralyticsModel,
 )  # noqa: E402
-from swarms.models.vip_llava import VipLlavaMultiModal  # noqa: E402
+
+# from swarms.models.vip_llava import VipLlavaMultiModal  # noqa: E402
 from swarms.models.llava import LavaMultiModal  # noqa: E402
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 from swarms.models.clipq import CLIPQ  # noqa: E402
@@ -72,10 +73,15 @@ from swarms.models.types import (
     MultimodalData,
 )  # noqa: E402
 
-
 # 3############ Embedding models
 from swarms.models.base_embedding_model import BaseEmbeddingModel
 
+
+##### Utils
+from swarms.models.sampling_params import (
+    SamplingType,
+    SamplingParams,
+)  # noqa: E402
 
 __all__ = [
     "AbstractLLM",
@@ -113,7 +119,7 @@ __all__ = [
     "TogetherLLM",
     "TimmModel",
     "UltralyticsModel",
-    "VipLlavaMultiModal",
+    # "VipLlavaMultiModal",
     "LavaMultiModal",
     "QwenVLMultiModal",
     "CLIPQ",
@@ -122,4 +128,6 @@ __all__ = [
     "BaseEmbeddingModel",
     "RoboflowMultiModal",
     "SegmentAnythingMarkGenerator",
+    "SamplingType",
+    "SamplingParams",
 ]

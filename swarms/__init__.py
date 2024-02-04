@@ -1,6 +1,9 @@
 """ init file for swarms package. """
 # from swarms.telemetry.main import Telemetry  # noqa: E402, F403
 from swarms.telemetry.bootup import bootup  # noqa: E402, F403
+from swarms.telemetry.user_utils import (
+    get_user_device_data,
+)  # noqa: E402, F403
 
 bootup()
 
@@ -14,3 +17,5 @@ from swarms.tokenizers import *  # noqa: E402, F403, C0413
 from swarms.loaders import *  # noqa: E402, F403, C0413
 from swarms.artifacts import *  # noqa: E402, F403, C0413
 from swarms.chunkers import *  # noqa: E402, F403, C0413
+
+get_user_device_data()
