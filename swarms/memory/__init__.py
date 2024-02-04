@@ -5,6 +5,7 @@ from swarms.memory.sqlite import SQLiteDB
 from swarms.memory.weaviate_db import WeaviateDB
 from swarms.memory.visual_memory import VisualShortTermMemory
 from swarms.memory.action_subtask import ActionSubtaskEntry
+from swarms.memory.chroma_db import ChromaDB
 
 __all__ = [
     "AbstractVectorDatabase",
@@ -14,4 +15,5 @@ __all__ = [
     "WeaviateDB",
     "VisualShortTermMemory",
     "ActionSubtaskEntry",
+    "ChromaDB",
 ]

@@ -1,69 +1,67 @@
-import functools
-import os
+import logging
 
 from dotenv import load_dotenv
 from posthog import Posthog
-from swarms.telemetry.user_utils import generate_unique_identifier
+
 
 # Load environment variables
 load_dotenv()
 
-
-# # Initialize Posthog client
-api_key = os.getenv("POSTHOG_API_KEY") or None
-host = os.getenv("POSTHOG_HOST") or None
-posthog = Posthog(api_key, host=host)
-posthog.debug = True
-
-# return posthog
+logger = logging.getLogger(__name__)
 
 
-def log_activity_posthog(event_name: str, **event_properties):
-    """Log activity to Posthog.
+class PosthogWrapper:
+    def __init__(
+        self, api_key, instance_address, debug=False, disabled=False
+    ):
+        self.posthog = Posthog(api_key, host=instance_address)
+        self.posthog.debug = debug
+        self.posthog.disabled = disabled
 
+    def capture_event(self, distinct_id, event_name, properties=None):
+        self.posthog.capture(distinct_id, event_name, properties)
 
-    Args:
-        event_name (str): Name of the event to log.
-        **event_properties: Properties of the event to log.
+    def capture_pageview(self, distinct_id, url):
+        self.posthog.capture(
+            distinct_id, "$pageview", {"$current_url": url}
+        )
 
-    Examples:
-        >>> from swarms.telemetry.posthog_utils import log_activity_posthog
-        >>> @log_activity_posthog("test_event", test_property="test_value")
-        ... def test_function():
-        ...     print("Hello, world!")
-        >>> test_function()
-        Hello, world!
-        >>> # Check Posthog dashboard for event "test_event" with property
-        >>> # "test_property" set to "test_value".
-    """
+    def set_user_properties(
+        self, distinct_id, event_name, properties
+    ):
+        self.posthog.capture(
+            distinct_id, event=event_name, properties=properties
+        )
 
-    def decorator_log_activity(func):
-        @functools.wraps(func)
-        def wrapper_log_activity(*args, **kwargs):
-            result = func(*args, **kwargs)
+    def is_feature_enabled(
+        self, flag_key, distinct_id, send_feature_flag_events=True
+    ):
+        return self.posthog.feature_enabled(
+            flag_key, distinct_id, send_feature_flag_events
+        )
 
-            # Assuming you have a way to get the user id
-            distinct_user_id = generate_unique_identifier()
+    def get_feature_flag_payload(self, flag_key, distinct_id):
+        return self.posthog.get_feature_flag_payload(
+            flag_key, distinct_id
+        )
 
-            # Capture the event
-            posthog.capture(
-                distinct_user_id, event_name, event_properties
-            )
+    def get_feature_flag(self, flag_key, distinct_id):
+        return self.posthog.get_feature_flag(flag_key, distinct_id)
 
-            return result
+    def capture_with_feature_flag(
+        self, distinct_id, event_name, flag_key, variant_key
+    ):
+        self.posthog.capture(
+            distinct_id,
+            event_name,
+            {"$feature/{}".format(flag_key): variant_key},
+        )
 
-        return wrapper_log_activity
-
-    return decorator_log_activity
-
-
-# @log_activity_posthog(
-#     "function_executed", function_name="my_function"
-# )
-# def my_function():
-#     # Function logic here
-#     return "Function executed successfully!"
-
-
-# out = my_function()
-# print(out)
+    def capture_with_feature_flags(
+        self, distinct_id, event_name, send_feature_flags=True
+    ):
+        self.posthog.capture(
+            distinct_id,
+            event_name,
+            send_feature_flags=send_feature_flags,
+        )
