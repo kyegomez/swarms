@@ -29,7 +29,7 @@ class QwenVLMultiModal(BaseMultiModalModel):
     >>> print(response)
     """
 
-    model_name: str = "Qwen/Qwen-VL-Chat"
+    model_name: str = "Qwen/Qwen-VL"
     device: str = "cuda"
     args: tuple = field(default_factory=tuple)
     kwargs: dict = field(default_factory=dict)

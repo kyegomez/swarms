@@ -44,7 +44,8 @@ from swarms.models.timm import TimmModel  # noqa: E402
 from swarms.models.ultralytics_model import (
     UltralyticsModel,
 )  # noqa: E402
-from swarms.models.vip_llava import VipLlavaMultiModal  # noqa: E402
+
+# from swarms.models.vip_llava import VipLlavaMultiModal  # noqa: E402
 from swarms.models.llava import LavaMultiModal  # noqa: E402
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 from swarms.models.clipq import CLIPQ  # noqa: E402
@@ -118,7 +119,7 @@ __all__ = [
     "TogetherLLM",
     "TimmModel",
     "UltralyticsModel",
-    "VipLlavaMultiModal",
+    # "VipLlavaMultiModal",
     "LavaMultiModal",
     "QwenVLMultiModal",
     "CLIPQ",

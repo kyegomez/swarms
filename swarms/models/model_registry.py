@@ -52,3 +52,31 @@ class ModelRegistry:
             for name, model in self.models.items()
             if text in name
         }
+
+    def run_model(
+        self, model_name: str, task: str, img: str, *args, **kwargs
+    ):
+        """
+        Runs the specified model for the given task and image.
+
+        Args:
+            model_name (str): The name of the model to run.
+            task (str): The task to perform using the model.
+            img (str): The image to process.
+            *args: Additional positional arguments to pass to the model's run method.
+            **kwargs: Additional keyword arguments to pass to the model's run method.
+
+        Returns:
+            The result of running the model.
+
+        Raises:
+            ValueError: If the specified model is not found in the model registry.
+        """
+        if model_name not in self.models:
+            raise ValueError(f"Model {model_name} not found")
+
+        # Get the model
+        model = self.models[model_name]
+
+        # Run the model
+        return model.run(task, img, *args, **kwargs)
