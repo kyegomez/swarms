@@ -1,3 +1,5 @@
+""" This module provides a function to wrap a class to inherit from 'Agent'. """
+
 from swarms.structs.agent import Agent
 
 
@@ -14,7 +16,8 @@ def agent_wrapper(ClassToWrap):
         type: The new class that inherits from both 'ClassToWrap' and 'Agent'.
     """
 
-    class WrappedClass(ClassToWrap, Agent):
+    class WrappedClass(ClassToWrap, Agent): # noqa C0103
+        """ A class that inherits from both 'ClassToWrap' and 'Agent'. """
         def __init__(self, *args, **kwargs):
             try:
                 Agent.__init__(self, *args, **kwargs)
