@@ -1,3 +1,4 @@
+""" init file for swarms/agents module. """
 from swarms.agents.base import AbstractAgent
 from swarms.agents.omni_modal_agent import OmniModalAgent
 from swarms.agents.simple_agent import SimpleAgent
