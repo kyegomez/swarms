@@ -1,8 +1,10 @@
-from swarms.structs.conversation import Conversation
-from swarms.models.base_llm import AbstractLLM
 from typing import Any
 import importlib
 import pkgutil
+
+from swarms.structs.conversation import Conversation
+from swarms.models.base_llm import AbstractLLM
+
 import swarms.models
 
 
@@ -16,7 +18,7 @@ def get_llm_by_name(name: str):
     Returns:
         type: The class with the given name, or None if no such class is found.
     """
-    for importer, modname, ispkg in pkgutil.iter_modules(
+    for importer, modname, ispkg in pkgutil.iter_modules( # noqa: W0612
         swarms.models.__path__
     ):
         module = importlib.import_module(f"swarms.models.{modname}")
@@ -26,7 +28,7 @@ def get_llm_by_name(name: str):
 
 
 # Run the language model in a loop for n iterations
-def SimpleAgent(
+def SimpleAgent( #noqa: C0103
     llm: AbstractLLM = None, iters: Any = "automatic", *args, **kwargs
 ):
     """
@@ -39,21 +41,21 @@ def SimpleAgent(
         **kwargs: Additional keyword arguments to pass to the language model.
 
     Raises:
-        Exception: If the language model is not defined or cannot be found.
+        AttributeError: If the language model is not defined or cannot be found.
 
     Returns:
         None
     """
     try:
         if llm is None:
-            raise Exception("Language model not defined")
+            raise AttributeError("Language model not defined")
 
         if isinstance(llm, str):
             llm = get_llm_by_name(llm)
             if llm is None:
-                raise Exception(f"Language model {llm} not found")
+                raise AttributeError(f"Language model {llm} not found")
             llm = llm(*args, **kwargs)
-    except Exception as error:
+    except AttributeError as error:
         print(f"[ERROR][SimpleAgent] {error}")
         raise error
 
@@ -98,7 +100,7 @@ def SimpleAgent(
         print(f"[ERROR][SimpleAgentConversation] {error}")
         raise error
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as exc:
         print("[INFO][SimpleAgentConversation] Keyboard interrupt")
         conv.export_conversation("conversation.txt")
-        raise KeyboardInterrupt
+        raise KeyboardInterrupt from exc
