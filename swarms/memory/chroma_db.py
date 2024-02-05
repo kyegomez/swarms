@@ -5,7 +5,7 @@ from typing import Optional, Callable, List
 
 import chromadb
 from dotenv import load_dotenv
-from chromadb.utils.data_loaders import ImageLoader
+# from chromadb.utils.data import ImageLoader
 from chromadb.utils.embedding_functions import (
     OpenCLIPEmbeddingFunction,
 )
@@ -75,7 +75,7 @@ class ChromaDB:
         if data_loader:
             self.data_loader = data_loader
         else:
-            self.data_loader = ImageLoader()
+            self.data_loader = None
 
         # Embedding model
         if embedding_function:
