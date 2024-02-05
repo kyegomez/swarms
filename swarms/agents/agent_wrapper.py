@@ -3,7 +3,7 @@
 from swarms.structs.agent import Agent
 
 
-def agent_wrapper(ClassToWrap):
+def agent_wrapper(ClassToWrap): # noqa C0103
     """
     This function takes a class 'ClassToWrap' and returns a new class that
     inherits from both 'ClassToWrap' and 'Agent'. The new class overrides

@@ -74,11 +74,11 @@ class OmniModalAgent:
         # self.task_executor = TaskExecutor
         self.history = []
 
-    def run(self, inputtoagent: str) -> str:
+    def run(self, input_to_agent: str) -> str:
         """Run the OmniAgent"""
         plan = self.chat_planner.plan(
             inputs={
-                "input": inputtoagent,
+                "input": input_to_agent,
                 "hf_tools": self.tools,
             }
         )
