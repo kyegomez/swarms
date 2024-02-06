@@ -3,10 +3,10 @@ from swarms import Mistral
 
 # Initialize the model
 model = Mistral(
-    model_name="mistralai/Mistral-7B-v0.1",
+    model_name="miqudev/miqu-1-70b",
     max_length=500,
     use_flash_attention=True,
-    load_in_4bit=True
+    load_in_4bit=True,
 )
 
 # Run the model

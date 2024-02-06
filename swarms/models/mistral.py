@@ -4,6 +4,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from swarms.structs.message import Message
 from swarms.models.base_llm import AbstractLLM
 
+
 class Mistral(AbstractLLM):
     """
     Mistral is an all-new llm
@@ -39,9 +40,9 @@ class Mistral(AbstractLLM):
         max_length: int = 100,
         do_sample: bool = True,
         *args,
-        **kwargs
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.ai_name = ai_name
         self.system_prompt = system_prompt
         self.model_name = model_name
@@ -66,7 +67,7 @@ class Mistral(AbstractLLM):
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name, *args, **kwargs
         )
-        
+
         self.model.to(self.device)
 
     def run(self, task: str, *args, **kwargs):
@@ -82,7 +83,7 @@ class Mistral(AbstractLLM):
                 do_sample=self.do_sample,
                 temperature=self.temperature,
                 max_new_tokens=self.max_length,
-                **kwargs
+                **kwargs,
             )
             output_text = self.tokenizer.batch_decode(generated_ids)[
                 0

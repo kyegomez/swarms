@@ -16,6 +16,7 @@ from swarms.prompts.agent_system_prompts import (
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.structs.conversation import Conversation
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
@@ -176,6 +177,7 @@ class Agent:
         streaming_on: Optional[bool] = False,
         docs: List[str] = None,
         docs_folder: str = None,
+        verbose: bool = False,
         *args,
         **kwargs: Any,
     ):
@@ -219,6 +221,7 @@ class Agent:
         self.streaming_on = streaming_on
         self.docs = docs
         self.docs_folder = docs_folder
+        self.verbose = verbose
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -234,7 +237,6 @@ class Agent:
 
         # Memory
         self.feedback = []
-        self.short_memory = []
 
         # Initialize the code executor
         self.code_executor = SubprocessCodeInterpreter()
@@ -243,7 +245,9 @@ class Agent:
         if preset_stopping_token:
             self.stopping_token = "<DONE>"
 
-        # self.short_memory = Conversation(time_enabled=True)
+        self.short_memory = Conversation(
+            system_prompt=self.system_prompt, time_enabled=True
+        )
 
         # If the docs exist then ingest the docs
         if self.docs:
@@ -256,6 +260,9 @@ class Agent:
         # If tokenizer and context length exists then:
         if self.tokenizer and self.context_length:
             self.truncate_history()
+
+        if verbose:
+            logger.setLevel(logging.DEBUG)
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -308,7 +315,7 @@ class Agent:
     def add_task_to_memory(self, task: str):
         """Add the task to the memory"""
         try:
-            self.short_memory.append([f"{self.user_name}: {task}"])
+            self.short_memory.add(f"{self.user_name}: {task}")
         except Exception as error:
             print(
                 colored(
@@ -319,7 +326,9 @@ class Agent:
     def add_message_to_memory(self, message: str):
         """Add the message to the memory"""
         try:
-            self.short_memory[-1].append(message)
+            self.short_memory.add(
+                role=self.agent_name, content=message
+            )
         except Exception as error:
             print(
                 colored(
@@ -560,7 +569,9 @@ class Agent:
 
                 time.sleep(self.loop_interval)
             # Add the history to the memory
-            self.short_memory.append(history)
+            self.short_memory.add(
+                role=self.agent_name, content=history
+            )
 
             # If autosave is enabled then save the state
             if self.autosave:
@@ -656,17 +667,29 @@ class Agent:
         Returns:
             str: The agent history prompt
         """
-        ltr = self.long_term_memory.query(query)
+        ltr = str(self.long_term_memory.query(query))
 
         context = f"""
             {query}
             ####### Long Term Memory ################
             {ltr}
         """
-        return self.short_memory.append([f"{context}"])
+        return self.short_memory.add(
+            role=self.agent_name, content=context
+        )
 
     def add_memory(self, message: str):
-        return self.short_memory.append([f"{message}"])
+        """Add a memory to the agent
+
+        Args:
+            message (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.short_memory.add(
+            role=self.agent_name, content=message
+        )
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """
@@ -792,10 +815,16 @@ class Agent:
 
             # Update the agent's history with the new interaction
             if self.interactive:
-                self.short_memory.append(f"AI: {response}")
-                self.short_memory.append(f"Human: {task}")
+                self.short_memory.add(
+                    role=self.agent_name, content=response
+                )
+                self.short_memory.add(
+                    role=self.user_name, content=task
+                )
             else:
-                self.short_memory.append(f"AI: {response}")
+                self.short_memory.add(
+                    role=self.agent_name, content=response
+                )
 
             return response
         except Exception as error:
@@ -842,11 +871,11 @@ class Agent:
         if len(self.short_memory) < 2:
             return None, None
 
-        # Remove the last response
-        self.short_memory.pop()
+        # Remove the last response but keep the last state, short_memory is a dict
+        self.short_memory.delete(-1)
 
         # Get the previous state
-        previous_state = self.short_memory[-1][-1]
+        previous_state = self.short_memory[-1]
         return previous_state, f"Restored to {previous_state}"
 
     # Response Filtering
@@ -931,7 +960,9 @@ class Agent:
                 "agent_description": self.agent_description,
                 "system_prompt": self.system_prompt,
                 "sop": self.sop,
-                "short_memory": self.short_memory,
+                "short_memory": (
+                    self.short_memory.return_history_as_string()
+                ),
                 "loop_interval": self.loop_interval,
                 "retry_attempts": self.retry_attempts,
                 "retry_interval": self.retry_interval,
@@ -966,7 +997,9 @@ class Agent:
                 "agent_description": self.agent_description,
                 "system_prompt": self.system_prompt,
                 "sop": self.sop,
-                "short_memory": self.short_memory,
+                "short_memory": (
+                    self.short_memory.return_history_as_string()
+                ),
                 "loop_interval": self.loop_interval,
                 "retry_attempts": self.retry_attempts,
                 "retry_interval": self.retry_interval,
@@ -1071,7 +1104,7 @@ class Agent:
 
     def reset(self):
         """Reset the agent"""
-        self.short_memory = []
+        self.short_memory = {}
 
     def run_code(self, code: str):
         """
@@ -1119,7 +1152,9 @@ class Agent:
         for doc in docs:
             data = data_to_text(doc)
 
-        return self.short_memory.append(data)
+        return self.short_memory.add(
+            role=self.user_name, content=data
+        )
 
     def ingest_pdf(self, pdf: str):
         """Ingest the pdf into the memory
@@ -1131,12 +1166,14 @@ class Agent:
             _type_: _description_
         """
         text = pdf_to_text(pdf)
-        return self.short_memory.append(text)
+        return self.short_memory.add(
+            role=self.user_name, content=text
+        )
 
     def receieve_mesage(self, name: str, message: str):
         """Receieve a message"""
         message = f"{name}: {message}"
-        return self.short_memory.append(message)
+        return self.short_memory.add(role=name, content=message)
 
     def send_agent_message(
         self, agent_name: str, message: str, *args, **kwargs
@@ -1160,7 +1197,9 @@ class Agent:
             None
         """
         # Count the short term history with the tokenizer
-        count = self.tokenizer.count_tokens(self.short_memory)
+        count = self.tokenizer.count_tokens(
+            self.short_memory.return_history_as_string()
+        )
 
         # Now the logic that truncates the memory if it's more than the count
         if len(self.short_memory) > count:
@@ -1175,4 +1214,6 @@ class Agent:
         for file in files:
             text = data_to_text(file)
 
-        return self.short_memory.append(text)
+        return self.short_memory.add(
+            role=self.user_name, content=text
+        )

@@ -2,6 +2,10 @@ import logging
 import os
 import warnings
 import sys
+import logging
+import os
+import warnings
+import sys
 
 
 def disable_logging():
@@ -14,7 +18,7 @@ def disable_logging():
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
     # Set the logging level for the entire module
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.ERROR)
 
     try:
         log = logging.getLogger("pytorch")
@@ -31,9 +35,10 @@ def disable_logging():
         "wandb.docker.auth",
     ]:
         logger = logging.getLogger(logger_name)
-        logger.setLevel(
-            logging.WARNING
-        )  # Suppress DEBUG and info logs
+        logger.setLevel(logging.ERROR)
+
+    # Remove all existing handlers
+    logging.getLogger().handlers = []
 
     # Create a file handler to log errors to the file
     file_handler = logging.FileHandler("errors.txt")
@@ -44,6 +49,3 @@ def disable_logging():
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.ERROR)
     logging.getLogger().addHandler(stream_handler)
-
-
-disable_logging()

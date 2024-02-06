@@ -16,7 +16,7 @@ sentencepiece==0.1.98
 requests_mock
 PyPDF2==3.0.1
 accelerate==0.22.0
-chromadb==0.4.14
+chromadb
 tensorflow
 optimum
 toml
@@ -29,11 +29,9 @@ termcolor==2.2.0
 diffusers
 einops==0.7.0
 opencv-python-headless==4.8.1.78
-safetensors==0.3.3
 numpy
 openai==0.28.0
 opencv-python==4.7.0.72
-safetensors==0.3.3
 timm
 yapf
 autopep8

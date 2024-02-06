@@ -57,6 +57,7 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
+from swarms.structs.tool_json_schema import JSON
 
 __all__ = [
     "Agent",
@@ -112,4 +113,5 @@ __all__ = [
     "StepOutput",
     "StepRequestBody",
     "TaskRequestBody",
+    "JSON",
 ]

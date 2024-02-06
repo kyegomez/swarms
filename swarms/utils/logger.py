@@ -1,16 +1,14 @@
-import logging
+import datetime
 import functools
-
+import logging
 
 logger = logging.getLogger()
 formatter = logging.Formatter("%(message)s")
 
 ch = logging.StreamHandler()
-
 ch.setFormatter(formatter)
 
 logger.addHandler(ch)
-
 logger.setLevel(logging.DEBUG)
 
 
@@ -44,3 +42,41 @@ def log_wrapper(func):
             raise
 
     return wrapper
+
+
+class Logger:
+    """
+    A utility class for logging messages with timestamps and levels.
+
+    Attributes:
+        logger (logging.Logger): The logger object used for logging messages.
+        formatter (logging.Formatter): The formatter object used to format log messages.
+        ch (logging.StreamHandler): The stream handler object used to handle log messages.
+    """
+
+    logger = logging.getLogger(__name__)
+    formatter = logging.Formatter(
+        "[%(asctime)s] %(levelname)s %(message)s"
+    )
+    ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    logger.setLevel(logging.DEBUG)
+
+    @staticmethod
+    def log(level, task, message):
+        """
+        Logs a message with the specified level, task, and message.
+
+        Args:
+            level (int): The logging level of the message.
+            task (str): The task associated with the message.
+            message (str): The message to be logged.
+        """
+        timestamp = datetime.datetime.now().strftime(
+            "%d/%m/%y %H:%M:%S"
+        )
+        formatted_message = (
+            f"[{timestamp}] {level:<8} {task}\n{' ' * 29}{message}"
+        )
+        Logger.logger.log(level, formatted_message)

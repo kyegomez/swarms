@@ -28,6 +28,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 .grit
+swarm-worker-01_state.json
 error.txt
 
 # C extensions

@@ -5,6 +5,7 @@ from typing import Optional, Callable, List
 
 import chromadb
 from dotenv import load_dotenv
+
 # from chromadb.utils.data import ImageLoader
 from chromadb.utils.embedding_functions import (
     OpenCLIPEmbeddingFunction,

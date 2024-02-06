@@ -24,7 +24,10 @@ agent = Agent(
     llm=llm,
     max_loops=4,
     autosave=True,
-    dashboard=True,
+    dashboard=False,
+    # docs_folder="docs",
+    streaming_on=True,
+    verbose=True,
 )
 
 # Run the workflow on a task

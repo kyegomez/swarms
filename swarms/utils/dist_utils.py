@@ -67,9 +67,7 @@ def rowwise_parallelize_linear(
     """
     for name, param in module.named_parameters():
         dist_spec = (
-            [Shard(1)]
-            if name == "weight"
-            else [Replicate()]  # type: ignore[list-item]
+            [Shard(1)] if name == "weight" else [Replicate()]  # type: ignore[list-item]
         )
 
         dist_tensor = distribute_tensor(param, device_mesh, dist_spec)
@@ -84,9 +82,7 @@ def rowwise_parallelize_linear(
     # Weight, bias and scale are registered as buffer in QLinear
     for name, buffer in module.named_buffers():
         dist_spec = (
-            [Shard(1)]
-            if name == "weight"
-            else [Replicate()]  # type: ignore[list-item]
+            [Shard(1)] if name == "weight" else [Replicate()]  # type: ignore[list-item]
         )
 
         dist_tensor = distribute_tensor(

@@ -1,3 +1,5 @@
+# from swarms.telemetry.posthog_utils import posthog
+
 from swarms.telemetry.log_all import log_all_calls, log_calls
 from swarms.telemetry.sys_info import (
     get_cpu_info,
@@ -16,6 +18,25 @@ from swarms.telemetry.user_utils import (
     get_system_info,
     get_user_device_data,
 )
+
+# # Capture data from the user's device
+# posthog.capture(
+#     "User Device Data",
+#     str(get_user_device_data()),
+# )
+
+# # Capture system information
+# posthog.capture(
+#     "System Information",
+#     str(system_info()),
+# )
+
+# # Capture the user's unique identifier
+# posthog.capture(
+#     "User Unique Identifier",
+#     str(generate_unique_identifier()),
+# )
+
 
 __all__ = [
     "log_all_calls",
