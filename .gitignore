@@ -10,6 +10,7 @@ dataframe/
 
 static/generated
 runs
+chroma
 swarms/__pycache__
 venv
 .DS_Store

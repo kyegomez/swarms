@@ -27,6 +27,8 @@ from swarms.utils.parse_code import (
 )
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
+from swarms.tools.exec_tool import execute_tool_by_name
+from swarms.prompts.worker_prompt import worker_tools_sop_promp
 
 
 # Utils
@@ -179,7 +181,7 @@ class Agent:
         docs_folder: str = None,
         verbose: bool = False,
         *args,
-        **kwargs: Any,
+        **kwargs,
     ):
         self.id = id
         self.llm = llm
@@ -263,6 +265,14 @@ class Agent:
 
         if verbose:
             logger.setLevel(logging.DEBUG)
+
+        # If tools are provided then set the tool prompt by adding to sop
+        if self.tools:
+            self.sop = self.sop + worker_tools_sop_promp(
+                self.agent_name, memory=""
+            )
+
+        # If the long term memory is provided then set the long term memory prompt
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -545,6 +555,14 @@ class Agent:
                         if self.code_interpreter:
                             self.run_code(response)
 
+                        # If tools are enabled then execute the tools
+                        if self.tools:
+                            execute_tool_by_name(
+                                response,
+                                self.tools,
+                                self.stopping_condition,
+                            )
+
                         # If interactive mode is enabled then print the response and get user input
                         if self.interactive:
                             print(f"AI: {response}")
@@ -656,7 +674,7 @@ class Agent:
             """
             return agent_history_prompt
 
-    def long_term_memory_prompt(self, query: str):
+    def long_term_memory_prompt(self, query: str, *args, **kwargs):
         """
         Generate the agent long term memory prompt
 
@@ -667,12 +685,10 @@ class Agent:
         Returns:
             str: The agent history prompt
         """
-        ltr = str(self.long_term_memory.query(query))
+        ltr = str(self.long_term_memory.query(query), *args, **kwargs)
 
         context = f"""
-            {query}
-            ####### Long Term Memory ################
-            {ltr}
+            System: This reminds you of these events from your past: [{ltr}]
         """
         return self.short_memory.add(
             role=self.agent_name, content=context

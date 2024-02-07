@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import logging
 import uuid
@@ -10,6 +11,8 @@ from dotenv import load_dotenv
 from chromadb.utils.embedding_functions import (
     OpenCLIPEmbeddingFunction,
 )
+from swarms.utils.data_to_text import data_to_text
+from swarms.utils.markdown_message import display_markdown_message
 
 
 # Load environment variables
@@ -51,6 +54,8 @@ class ChromaDB:
         embedding_function: Callable = None,
         data_loader: Callable = None,
         multimodal: bool = False,
+        docs_folder: str = None,
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
@@ -58,9 +63,12 @@ class ChromaDB:
         self.output_dir = output_dir
         self.limit_tokens = limit_tokens
         self.n_results = n_results
+        self.docs_folder = docs_folder
+        self.verbose = verbose
 
         # Disable ChromaDB logging
-        logging.getLogger("chromadb").setLevel(logging.INFO)
+        if verbose:
+            logging.getLogger("chromadb").setLevel(logging.INFO)
 
         # Create Chroma collection
         chroma_persist_dir = "chroma"
@@ -100,6 +108,19 @@ class ChromaDB:
             *args,
             **kwargs,
         )
+        display_markdown_message(
+            "ChromaDB collection created:"
+            f" {self.collection.name} with metric: {self.metric} and"
+            f" output directory: {self.output_dir}"
+        )
+
+        # If docs
+        if docs_folder:
+            display_markdown_message(
+                f"Traversing directory: {docs_folder}"
+            )
+            self.docs = docs_folder
+            self.traverse_directory()
 
     def add(
         self,
@@ -161,3 +182,32 @@ class ChromaDB:
             return docs[0]
         except Exception as e:
             raise Exception(f"Failed to query documents: {str(e)}")
+
+    def traverse_directory(self):
+        """
+        Traverse through every file in the given directory and its subdirectories,
+        and return the paths of all files.
+        Parameters:
+        - directory_name (str): The name of the directory to traverse.
+        Returns:
+        - list: A list of paths to each file in the directory and its subdirectories.
+        """
+        image_extensions = [
+            ".jpg",
+            ".jpeg",
+            ".png",
+        ]
+        images = []
+        for root, dirs, files in os.walk(self.docs):
+            for file in files:
+                _, ext = os.path.splitext(file)
+                if ext.lower() in image_extensions:
+                    images.append(os.path.join(root, file))
+                else:
+                    data = data_to_text(file)
+                    added_to_db = self.add([data])
+                    print(f"{file} added to Database")
+        if images:
+            added_to_db = self.add(img_urls=[images])
+            print(f"{len(images)} images added to Database ")
+        return added_to_db

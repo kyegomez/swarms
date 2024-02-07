@@ -1,4 +1,9 @@
-def worker_agent_system(name: str, memory: str = None):
+import datetime
+
+time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def worker_tools_sop_promp(name: str, memory: str = None):
     return """
     You are {name}, 
     Your decisions must always be made independently without seeking user assistance. 
@@ -52,7 +57,7 @@ def worker_agent_system(name: str, memory: str = None):
         }
     }
     Ensure the response can be parsed by Python json.loads
-    System: The current time and date is Sat Jan 20 10:39:07 2024
+    System: The current time and date is {time}
     System: This reminds you of these events from your past:
     [{memory}]
     
