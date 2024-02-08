@@ -4,25 +4,21 @@ import re
 import threading
 from swarms import OpenAIChat
 from scripts.auto_tests_docs.docs import TEST_WRITER_SOP_PROMPT
-from zeta.nn.modules._activations import (
-    AccurateGELUActivation,
-    ClippedGELUActivation,
-    FastGELUActivation,
-    GELUActivation,
-    LaplaceActivation,
-    LinearActivation,
-    MishActivation,
-    NewGELUActivation,
-    PytorchGELUTanh,
-    QuickGELUActivation,
-    ReLUSquaredActivation,
+
+#########
+from swarms.tokenizers.r_tokenizers import (
+    SentencePieceTokenizer,
+    HuggingFaceTokenizer,
+    Tokenizer,
 )
-from zeta.nn.modules.dense_connect import DenseBlock
-from zeta.nn.modules.dual_path_block import DualPathBlock
-from zeta.nn.modules.feedback_block import FeedbackBlock
-from zeta.nn.modules.highway_layer import HighwayLayer
-from zeta.nn.modules.multi_scale_block import MultiScaleBlock
-from zeta.nn.modules.recursive_block import RecursiveBlock
+from swarms.tokenizers.base_tokenizer import BaseTokenizer
+from swarms.tokenizers.openai_tokenizers import OpenAITokenizer
+from swarms.tokenizers.anthropic_tokenizer import (
+    AnthropicTokenizer,
+)
+from swarms.tokenizers.cohere_tokenizer import CohereTokenizer
+
+########
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -69,14 +65,16 @@ def create_test(cls):
 
     # Process with OpenAI model (assuming the model's __call__ method takes this input and returns processed content)
     processed_content = model(
-        TEST_WRITER_SOP_PROMPT(input_content, "zeta", "zeta.nn")
+        TEST_WRITER_SOP_PROMPT(
+            input_content, "swarms", "swarms.tokenizers"
+        )
     )
     processed_content = extract_code_from_markdown(processed_content)
 
     doc_content = f"# {cls.__name__}\n\n{processed_content}\n"
 
     # Create the directory if it doesn't exist
-    dir_path = "tests/nn/modules"
+    dir_path = "tests/tokenizers"
     os.makedirs(dir_path, exist_ok=True)
 
     # Write the processed documentation to a Python file
@@ -87,25 +85,14 @@ def create_test(cls):
 
 def main():
     classes = [
-        DenseBlock,
-        HighwayLayer,
-        MultiScaleBlock,
-        FeedbackBlock,
-        DualPathBlock,
-        RecursiveBlock,
-        PytorchGELUTanh,
-        NewGELUActivation,
-        GELUActivation,
-        FastGELUActivation,
-        QuickGELUActivation,
-        ClippedGELUActivation,
-        AccurateGELUActivation,
-        MishActivation,
-        LinearActivation,
-        LaplaceActivation,
-        ReLUSquaredActivation,
+        SentencePieceTokenizer,
+        HuggingFaceTokenizer,
+        Tokenizer,
+        BaseTokenizer,
+        OpenAITokenizer,
+        AnthropicTokenizer,
+        CohereTokenizer,
     ]
-
     threads = []
     for cls in classes:
         thread = threading.Thread(target=create_test, args=(cls,))
@@ -116,7 +103,7 @@ def main():
     for thread in threads:
         thread.join()
 
-    print("Tests generated in 'docs/zeta/nn/modules' directory.")
+    print("Tests generated in 'tests/tokenizers' directory.")
 
 
 if __name__ == "__main__":

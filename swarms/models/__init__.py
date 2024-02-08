@@ -18,10 +18,12 @@ from swarms.models.wizard_storytelling import (
 )  # noqa: E402
 from swarms.models.mpt import MPT7B  # noqa: E402
 from swarms.models.mixtral import Mixtral  # noqa: E402
-from swarms.models.modelscope_pipeline import ModelScopePipeline
-from swarms.models.modelscope_llm import (
-    ModelScopeAutoModel,
-)  # noqa: E402
+
+# from swarms.models.modelscope_pipeline import ModelScopePipeline
+# from swarms.models.modelscope_llm import (
+#     ModelScopeAutoModel,
+# )  # noqa: E402
+from swarms.models.together import TogetherLLM  # noqa: E402
 
 ################# MultiModal Models
 from swarms.models.base_multimodal_model import (
@@ -38,13 +40,28 @@ from swarms.models.openai_tts import OpenAITTS  # noqa: E402
 from swarms.models.gemini import Gemini  # noqa: E402
 from swarms.models.gigabind import Gigabind  # noqa: E402
 from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
+from swarms.models.timm import TimmModel  # noqa: E402
+from swarms.models.ultralytics_model import (
+    UltralyticsModel,
+)  # noqa: E402
 
+# from swarms.models.vip_llava import VipLlavaMultiModal  # noqa: E402
+from swarms.models.llava import LavaMultiModal  # noqa: E402
+from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
+from swarms.models.clipq import CLIPQ  # noqa: E402
+from swarms.models.kosmos_two import Kosmos  # noqa: E402
+from swarms.models.fuyu import Fuyu  # noqa: E402
+from swarms.models.roboflow_model import RoboflowMultiModal
+from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
 
 # from swarms.models.dalle3 import Dalle3
 # from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
 # from swarms.models.whisperx_model import WhisperX  # noqa: E402
 # from swarms.models.kosmos_two import Kosmos  # noqa: E402
-from swarms.models.cog_agent import CogAgent  # noqa: E402
+# from swarms.models.cog_agent import CogAgent  # noqa: E402
+
+
+################# Tokenizers
 
 
 ############## Types
@@ -54,6 +71,16 @@ from swarms.models.types import (
     AudioModality,
     VideoModality,
     MultimodalData,
+)  # noqa: E402
+
+# 3############ Embedding models
+from swarms.models.base_embedding_model import BaseEmbeddingModel
+
+
+##### Utils
+from swarms.models.sampling_params import (
+    SamplingType,
+    SamplingParams,
 )  # noqa: E402
 
 __all__ = [
@@ -67,7 +94,6 @@ __all__ = [
     "Zephyr",
     "BaseMultiModalModel",
     "Idefics",
-    # "Kosmos",
     "Vilt",
     "Nougat",
     "LayoutLMDocumentQA",
@@ -90,7 +116,18 @@ __all__ = [
     "AudioModality",
     "VideoModality",
     "MultimodalData",
-    "CogAgent",
-    "ModelScopePipeline",
-    "ModelScopeAutoModel",
+    "TogetherLLM",
+    "TimmModel",
+    "UltralyticsModel",
+    # "VipLlavaMultiModal",
+    "LavaMultiModal",
+    "QwenVLMultiModal",
+    "CLIPQ",
+    "Kosmos",
+    "Fuyu",
+    "BaseEmbeddingModel",
+    "RoboflowMultiModal",
+    "SegmentAnythingMarkGenerator",
+    "SamplingType",
+    "SamplingParams",
 ]

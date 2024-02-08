@@ -1,4 +1,3 @@
-import os
 import datetime
 import json
 
@@ -6,6 +5,7 @@ from termcolor import colored
 
 from swarms.memory.base_db import AbstractDatabase
 from swarms.structs.base import BaseStructure
+from swarms.tokenizers.base_tokenizer import BaseTokenizer
 
 
 class Conversation(BaseStructure):
@@ -22,8 +22,8 @@ class Conversation(BaseStructure):
         database (AbstractDatabase): The database to use for storing the conversation history. Default is None.
         autosave (bool): Whether to autosave the conversation history to a file. Default is None.
         save_filepath (str): The filepath to save the conversation history to. Default is None.
-        
-    
+
+
     Methods:
         add(role: str, content: str): Add a message to the conversation history.
         delete(index: str): Delete a message from the conversation history.
@@ -61,19 +61,33 @@ class Conversation(BaseStructure):
 
     def __init__(
         self,
+        system_prompt: str,
         time_enabled: bool = False,
         database: AbstractDatabase = None,
         autosave: bool = False,
         save_filepath: str = None,
+        tokenizer: BaseTokenizer = None,
+        context_length: int = 8192,
         *args,
         **kwargs,
     ):
         super().__init__()
+        self.system_prompt = system_prompt
         self.time_enabled = time_enabled
         self.database = database
         self.autosave = autosave
         self.save_filepath = save_filepath
         self.conversation_history = []
+        self.tokenizer = tokenizer
+        self.context_length = context_length
+
+        # If system prompt is not None, add it to the conversation history
+        if self.system_prompt:
+            self.add("system", self.system_prompt)
+
+        # If tokenizer then truncate
+        if tokenizer:
+            self.truncate_memory_with_tokenizer()
 
     def add(self, role: str, content: str, *args, **kwargs):
         """Add a message to the conversation history
@@ -343,3 +357,40 @@ class Conversation(BaseStructure):
     def fetch_one_from_database(self, *args, **kwargs):
         """Fetch one from the database"""
         return self.database.fetch_one()
+
+    def truncate_memory_with_tokenizer(self):
+        """
+        Truncates the conversation history based on the total number of tokens using a tokenizer.
+
+        Returns:
+            None
+        """
+        total_tokens = 0
+        truncated_history = []
+
+        for message in self.conversation_history:
+            role = message.get("role")
+            content = message.get("content")
+            tokens = self.tokenizer.count_tokens(
+                text=content
+            )  # Count the number of tokens
+            count = tokens  # Assign the token count
+            total_tokens += count
+
+            if total_tokens <= self.context_length:
+                truncated_history.append(message)
+            else:
+                remaining_tokens = self.context_length - (
+                    total_tokens - count
+                )
+                truncated_content = content[
+                    :remaining_tokens
+                ]  # Truncate the content based on the remaining tokens
+                truncated_message = {
+                    "role": role,
+                    "content": truncated_content,
+                }
+                truncated_history.append(truncated_message)
+                break
+
+        self.conversation_history = truncated_history

@@ -1,10 +1,11 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from swarms.agents.message import Message
+from swarms.structs.message import Message
+from swarms.models.base_llm import AbstractLLM
 
 
-class Mistral:
+class Mistral(AbstractLLM):
     """
     Mistral is an all-new llm
 
@@ -38,7 +39,10 @@ class Mistral:
         temperature: float = 1.0,
         max_length: int = 100,
         do_sample: bool = True,
+        *args,
+        **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.ai_name = ai_name
         self.system_prompt = system_prompt
         self.model_name = model_name
@@ -46,6 +50,7 @@ class Mistral:
         self.use_flash_attention = use_flash_attention
         self.temperature = temperature
         self.max_length = max_length
+        self.do_sample = do_sample
 
         # Check if the specified device is available
         if not torch.cuda.is_available() and device == "cuda":
@@ -54,28 +59,18 @@ class Mistral:
                 " device."
             )
 
-        # Load the model and tokenizer
-        self.model = None
-        self.tokenizer = None
-        self.load_model()
-
         self.history = []
 
-    def load_model(self):
-        try:
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_name
-            )
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name
-            )
-            self.model.to(self.device)
-        except Exception as e:
-            raise ValueError(
-                f"Error loading the Mistral model: {str(e)}"
-            )
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_name, *args, **kwargs
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_name, *args, **kwargs
+        )
 
-    def run(self, task: str):
+        self.model.to(self.device)
+
+    def run(self, task: str, *args, **kwargs):
         """Run the model on a given task."""
 
         try:
@@ -88,27 +83,7 @@ class Mistral:
                 do_sample=self.do_sample,
                 temperature=self.temperature,
                 max_new_tokens=self.max_length,
-            )
-            output_text = self.tokenizer.batch_decode(generated_ids)[
-                0
-            ]
-            return output_text
-        except Exception as e:
-            raise ValueError(f"Error running the model: {str(e)}")
-
-    def __call__(self, task: str):
-        """Run the model on a given task."""
-
-        try:
-            model_inputs = self.tokenizer(
-                [task], return_tensors="pt"
-            ).to(self.device)
-            generated_ids = self.model.generate(
-                **model_inputs,
-                max_length=self.max_length,
-                do_sample=self.do_sample,
-                temperature=self.temperature,
-                max_new_tokens=self.max_length,
+                **kwargs,
             )
             output_text = self.tokenizer.batch_decode(generated_ids)[
                 0
@@ -159,16 +134,3 @@ class Mistral:
             self.history.append(Message("Agent", error_message))
 
             return error_message
-
-    def _stream_response(self, response: str = None):
-        """
-        Yield the response token by token (word by word)
-
-        Usage:
-        --------------
-        for token in _stream_response(response):
-            print(token)
-
-        """
-        for token in response.split():
-            yield token

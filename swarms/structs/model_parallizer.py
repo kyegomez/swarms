@@ -3,7 +3,6 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Callable, List
 
-from tabulate import tabulate
 from termcolor import colored
 
 # Configure logging
@@ -73,26 +72,9 @@ class ModelParallelizer:
                     )
                 return list(responses)
         except Exception as error:
-            print(
+            logger.error(
                 f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
             )
-
-    def print_responses(self, task):
-        """Prints the responses in a tabular format"""
-        responses = self.run_all(task)
-        table = []
-        for i, response in enumerate(responses):
-            table.append([f"LLM {i+1}", response])
-        print(
-            colored(
-                tabulate(
-                    table,
-                    headers=["LLM", "Response"],
-                    tablefmt="pretty",
-                ),
-                "cyan",
-            )
-        )
 
     def run_all(self, task):
         """Run the task on all LLMs"""
@@ -100,23 +82,6 @@ class ModelParallelizer:
         for llm in self.llms:
             responses.append(llm(task))
         return responses
-
-    def print_arun_all(self, task):
-        """Prints the responses in a tabular format"""
-        responses = self.arun_all(task)
-        table = []
-        for i, response in enumerate(responses):
-            table.append([f"LLM {i+1}", response])
-        print(
-            colored(
-                tabulate(
-                    table,
-                    headers=["LLM", "Response"],
-                    tablefmt="pretty",
-                ),
-                "cyan",
-            )
-        )
 
     # New Features
     def save_responses_to_file(self, filename):
@@ -126,7 +91,7 @@ class ModelParallelizer:
                 [f"LLM {i+1}", response]
                 for i, response in enumerate(self.last_responses)
             ]
-            file.write(tabulate(table, headers=["LLM", "Response"]))
+            file.write(table)
 
     @classmethod
     def load_llms_from_file(cls, filename):
@@ -151,11 +116,7 @@ class ModelParallelizer:
         ]
         print(
             colored(
-                tabulate(
-                    table,
-                    headers=["LLM", "Response"],
-                    tablefmt="pretty",
-                ),
+                table,
                 "cyan",
             )
         )
@@ -191,15 +152,31 @@ class ModelParallelizer:
             self.task_history.append(task)
             return responses
         except Exception as error:
-            print(
+            logger.error(
                 f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
             )
             raise error
 
     def add_llm(self, llm: Callable):
         """Add an llm to the god mode"""
-        self.llms.append(llm)
+        logger.info(f"[INFO][ModelParallelizer] Adding LLM {llm}")
+
+        try:
+            self.llms.append(llm)
+        except Exception as error:
+            logger.error(
+                f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
+            )
+            raise error
 
     def remove_llm(self, llm: Callable):
         """Remove an llm from the god mode"""
-        self.llms.remove(llm)
+        logger.info(f"[INFO][ModelParallelizer] Removing LLM {llm}")
+
+        try:
+            self.llms.remove(llm)
+        except Exception as error:
+            logger.error(
+                f"[ERROR][ModelParallelizer] [ROOT CAUSE] [{error}]"
+            )
+            raise error

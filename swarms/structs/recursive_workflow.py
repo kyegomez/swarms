@@ -3,6 +3,11 @@ from typing import List
 from swarms.structs.base import BaseStructure
 from swarms.structs.task import Task
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class RecursiveWorkflow(BaseStructure):
     """
@@ -26,15 +31,19 @@ class RecursiveWorkflow(BaseStructure):
     >>> workflow.run()
     """
 
-    def __init__(self, stop_token: str = "<DONE>"):
+    def __init__(
+        self,
+        stop_token: str = "<DONE>",
+        stopping_conditions: callable = None,
+    ):
         self.stop_token = stop_token
-        self.tasks = List[Task]
+        self.task_pool = []
 
         assert (
             self.stop_token is not None
         ), "stop_token cannot be None"
 
-    def add(self, task: Task, tasks: List[Task] = None):
+    def add(self, task: Task = None, tasks: List[Task] = None):
         """Adds a task to the workflow.
 
         Args:
@@ -44,11 +53,20 @@ class RecursiveWorkflow(BaseStructure):
         try:
             if tasks:
                 for task in tasks:
-                    self.tasks.append(task)
-            else:
-                self.tasks.append(task)
+                    if isinstance(task, Task):
+                        self.task_pool.append(task)
+                        logger.info(
+                            "[INFO][RecursiveWorkflow] Added task"
+                            f" {task} to workflow"
+                        )
+            elif isinstance(task, Task):
+                self.task_pool.append(task)
+                logger.info(
+                    f"[INFO][RecursiveWorkflow] Added task {task} to"
+                    " workflow"
+                )
         except Exception as error:
-            print(f"[ERROR][ConcurrentWorkflow] {error}")
+            logger.warning(f"[ERROR][RecursiveWorkflow] {error}")
             raise error
 
     def run(self):
@@ -59,11 +77,15 @@ class RecursiveWorkflow(BaseStructure):
             None
         """
         try:
-            for task in self.tasks:
+            for task in self.task_pool:
                 while True:
-                    result = task.execute()
-                    if self.stop_token in result:
+                    result = task.run()
+                    if (
+                        result is not None
+                        and self.stop_token in result
+                    ):
                         break
+                    print(f"{result}")
         except Exception as error:
-            print(f"[ERROR][RecursiveWorkflow] {error}")
+            logger.warning(f"[ERROR][RecursiveWorkflow] {error}")
             raise error

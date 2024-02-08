@@ -4,6 +4,27 @@ from swarms.structs.base import BaseStructure
 
 
 class LoadBalancer(BaseStructure):
+    """
+    A load balancer class that distributes tasks among multiple workers.
+
+    Args:
+        num_workers (int): The number of worker processes to create.
+        agents (Optional[List]): A list of agents to assign to the load balancer.
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
+
+    Attributes:
+        num_workers (int): The number of worker processes.
+        agents (Optional[List]): A list of agents assigned to the load balancer.
+        tasks (List): A list of tasks to be executed.
+        results (List): A list of results from the executed tasks.
+        workers (List): A list of worker processes.
+
+    Methods:
+        add_task: Add a task to the load balancer.
+
+    """
+
     def __init__(
         self,
         num_workers: int = 1,

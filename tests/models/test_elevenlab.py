@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 # Define some test data
 SAMPLE_TEXT = "Hello, this is a test."
 API_KEY = os.environ.get("ELEVEN_API_KEY")

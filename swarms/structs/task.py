@@ -11,6 +11,8 @@ from typing import (
 )
 
 from swarms.structs.agent import Agent
+from swarms.utils.logger import logger
+from swarms.structs.conversation import Conversation
 
 
 @dataclass
@@ -55,10 +57,8 @@ class Task:
 
     """
 
-    description: str
     agent: Union[Callable, Agent]
-    args: List[Any] = field(default_factory=list)
-    kwargs: Dict[str, Any] = field(default_factory=dict)
+    description: str = None
     result: Any = None
     history: List[Any] = field(default_factory=list)
     schedule_time: datetime = None
@@ -68,11 +68,15 @@ class Task:
     condition: Callable = None
     priority: int = 0
     dependencies: List["Task"] = field(default_factory=list)
+    args: List[Any] = field(default_factory=list)
+    kwargs: Dict[str, Any] = field(default_factory=dict)
 
-    def execute(self):
+    def execute(self, *args, **kwargs):
         """
         Execute the task by calling the agent or model with the arguments and
-        keyword arguments.
+        keyword arguments. You can add images to the agent by passing the
+        path to the image as a keyword argument.
+
 
         Examples:
         >>> from swarms.structs import Task, Agent
@@ -83,12 +87,17 @@ class Task:
         >>> task.result
 
         """
-
+        logger.info(
+            f"[INFO][Task] Executing task: {self.description}"
+        )
+        task = self.description
         try:
             if isinstance(self.agent, Agent):
                 if self.condition is None or self.condition():
                     self.result = self.agent.run(
-                        *self.args, **self.kwargs
+                        task=task,
+                        *args,
+                        **kwargs,
                     )
                     self.history.append(self.result)
 
@@ -101,13 +110,13 @@ class Task:
 
             self.history.append(self.result)
         except Exception as error:
-            print(f"[ERROR][Task] {error}")
+            logger.error(f"[ERROR][Task] {error}")
 
-    def run(self):
-        self.execute()
+    def run(self, *args, **kwargs):
+        self.execute(*args, **kwargs)
 
-    def __call__(self):
-        self.execute()
+    def __call__(self, *args, **kwargs):
+        self.execute(*args, **kwargs)
 
     def handle_scheduled_task(self):
         """
@@ -116,6 +125,7 @@ class Task:
         If the schedule time is not set or has already passed, the task is executed immediately.
         Otherwise, the task is scheduled to be executed at the specified schedule time.
         """
+        logger.info("[INFO][Task] Handling scheduled task")
         try:
             if (
                 self.schedule_time is None
@@ -130,7 +140,7 @@ class Task:
                 self.scheduler.enter(delay, 1, self.execute)
                 self.scheduler_run()
         except Exception as error:
-            print(f"[ERROR][Task] {error}")
+            logger.error(f"[ERROR][Task] {error}")
 
     def set_trigger(self, trigger: Callable):
         """
@@ -190,11 +200,61 @@ class Task:
         Returns:
             bool: True if all the dependencies have been completed, False otherwise.
         """
+        logger.info("[INFO][Task] Checking dependency completion")
         try:
             for task in self.dependencies:
                 if not task.is_completed():
                     return False
         except Exception as error:
-            print(
+            logger.error(
                 f"[ERROR][Task][check_dependency_completion] {error}"
             )
+
+    def context(
+        self,
+        task: "Task" = None,
+        context: List["Task"] = None,
+        *args,
+        **kwargs,
+    ):
+        """
+        Set the context for the task.
+
+        Args:
+            context (str): The context to set.
+        """
+        # For sequential workflow, sequentially add the context of the previous task in the list
+        new_context = Conversation(time_enabled=True, *args, **kwargs)
+
+        if context:
+            for task in context:
+                description = (
+                    task.description
+                    if task.description is not None
+                    else ""
+                )
+
+                result = (
+                    task.result if task.result is not None else ""
+                )
+
+                # Add the context of the task to the conversation
+                new_context.add(
+                    task.agent.agent_name, f"{description} {result}"
+                )
+
+        elif task:
+            description = (
+                task.description
+                if task.description is not None
+                else ""
+            )
+            result = task.result if task.result is not None else ""
+            new_context.add(
+                task.agent.agent_name, f"{description} {result}"
+            )
+
+        prompt = new_context.return_history_as_string()
+
+        # Add to history
+        return self.history.append(prompt)

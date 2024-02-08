@@ -22,20 +22,20 @@ def get_pip_version():
     return pip_version
 
 
-def get_oi_version():
+def get_swarms_verison():
     try:
-        oi_version_cmd = (
-            subprocess.check_output(["interpreter", "--version"])
+        swarms_verison_cmd = (
+            subprocess.check_output(["swarms", "--version"])
             .decode()
             .split()[1]
         )
     except Exception as e:
-        oi_version_cmd = str(e)
-    oi_version_pkg = pkg_resources.get_distribution(
-        "open-interpreter"
+        swarms_verison_cmd = str(e)
+    swarms_verison_pkg = pkg_resources.get_distribution(
+        "swarms"
     ).version
-    oi_version = oi_version_cmd, oi_version_pkg
-    return oi_version
+    swarms_verison = swarms_verison_cmd, swarms_verison_pkg
+    return swarms_verison
 
 
 def get_os_version():
@@ -89,70 +89,13 @@ def get_package_mismatches(file_path="pyproject.toml"):
     return "\n" + "\n".join(mismatches)
 
 
-def interpreter_info(interpreter):
-    try:
-        if interpreter.offline and interpreter.llm.api_base:
-            try:
-                curl = subprocess.check_output(
-                    f"curl {interpreter.llm.api_base}"
-                )
-            except Exception as e:
-                curl = str(e)
-        else:
-            curl = "Not local"
-
-        messages_to_display = []
-        for message in interpreter.messages:
-            message = message.copy()
-            try:
-                if len(message["content"]) > 600:
-                    message["content"] = (
-                        message["content"][:300]
-                        + "..."
-                        + message["content"][-300:]
-                    )
-            except Exception as e:
-                print(str(e), "for message:", message)
-            messages_to_display.append(message)
-
-        return f"""
-
-        # Interpreter Info
-        
-        Vision: {interpreter.llm.supports_vision}
-        Model: {interpreter.llm.model}
-        Function calling: {interpreter.llm.supports_functions}
-        Context window: {interpreter.llm.context_window}
-        Max tokens: {interpreter.llm.max_tokens}
-
-        Auto run: {interpreter.auto_run}
-        API base: {interpreter.llm.api_base}
-        Offline: {interpreter.offline}
-
-        Curl output: {curl}
-
-        # Messages
-
-        System Message: {interpreter.system_message}
-
-        """ + "\n\n".join([str(m) for m in messages_to_display])
-    except:
-        return "Error, couldn't get interpreter info"
-
-
-def system_info(interpreter):
-    oi_version = get_oi_version()
-    print(f"""
-        Python Version: {get_python_version()}
-        Pip Version: {get_pip_version()}
-        Open-interpreter Version: cmd:{oi_version[0]}, pkg: {oi_version[1]}
-        OS Version and Architecture: {get_os_version()}
-        CPU Info: {get_cpu_info()}
-        RAM Info: {get_ram_info()}
-        {interpreter_info(interpreter)}
-    """)
-
-    # Removed the following, as it causes `FileNotFoundError: [Errno 2] No such file or directory: 'pyproject.toml'`` on prod
-    # (i think it works on dev, but on prod the pyproject.toml will not be in the cwd. might not be accessible at all)
-    # Package Version Mismatches:
-    # {get_package_mismatches()}
+def system_info():
+    swarms_verison = get_swarms_verison()
+    return {
+        "Python Version": get_python_version(),
+        "Pip Version": get_pip_version(),
+        "Swarms Version": swarms_verison,
+        "OS Version and Architecture": get_os_version(),
+        "CPU Info": get_cpu_info(),
+        "RAM Info": get_ram_info(),
+    }

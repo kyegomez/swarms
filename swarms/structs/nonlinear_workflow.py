@@ -1,5 +1,6 @@
 from swarms.structs.task import Task
 from swarms.structs.base import BaseStructure
+from swarms.utils.logger import logger  # noqa: F401
 
 
 class NonlinearWorkflow(BaseStructure):
@@ -47,6 +48,7 @@ class NonlinearWorkflow(BaseStructure):
         assert task is not None, "Task cannot be None"
         self.tasks[task.name] = task
         self.edges[task.name] = list(dependencies)
+        logger.info(f"[NonlinearWorkflow] [Added task {task.name}]")
 
     def run(self):
         """
@@ -84,5 +86,5 @@ class NonlinearWorkflow(BaseStructure):
                         if task in deps:
                             deps.remove(task)
         except Exception as error:
-            print(f"[ERROR][NonlinearWorkflow] {error}")
+            logger.error(f"[ERROR][NonlinearWorkflow] {error}")
             raise error
