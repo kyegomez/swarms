@@ -54,7 +54,7 @@ huggingface-hub = "*"
 pydantic = "1.10.12"
 tenacity = "8.2.2"
 Pillow = "9.4.0"
-chromadb = "*"
+chromadb = "0.4.14"
 termcolor = "2.2.0"
 black = "23.3.0"
 soundfile = "0.12.1"
@@ -72,7 +72,7 @@ timm = "*"
 supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
-roboflow = "*"
+roboflow = "1.1.4"
 
 
 
