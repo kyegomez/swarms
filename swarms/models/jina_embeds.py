@@ -1,3 +1,4 @@
+import os
 import logging
 
 import torch
@@ -8,73 +9,81 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
+from swarms.models.base_embedding_model import BaseEmbeddingModel
 
 
 def cos_sim(a, b):
     return a @ b.T / (norm(a) * norm(b))
 
 
-class JinaEmbeddings:
+class JinaEmbeddings(BaseEmbeddingModel):
     """
-    A class for running inference on a given model.
+    Jina Embeddings model.
 
-    Attributes:
-        model_id (str): The ID of the model.
-        device (str): The device to run the model on (either 'cuda' or 'cpu').
-        max_length (int): The maximum length of the output sequence.
-        quantize (bool, optional): Whether to use quantization. Defaults to False.
-        quantization_config (dict, optional): The configuration for quantization.
-        verbose (bool, optional): Whether to print verbose logs. Defaults to False.
-        logger (logging.Logger, optional): The logger to use. Defaults to a basic logger.
+    Args:
+        model_id (str): The model id to use. Default is "jinaai/jina-embeddings-v2-base-en".
+        device (str): The device to run the model on. Default is "cuda".
+        huggingface_api_key (str): The Hugging Face API key. Default is None.
+        max_length (int): The maximum length of the response. Default is 500.
+        quantize (bool): Whether to quantize the model. Default is False.
+        quantization_config (dict): The quantization configuration. Default is None.
+        verbose (bool): Whether to print verbose logs. Default is False.
+        distributed (bool): Whether to use distributed processing. Default is False.
+        decoding (bool): Whether to use decoding. Default is False.
+        cos_sim (callable): The cosine similarity function. Default is cos_sim.
 
-    # Usage
-    ```
-    from swarms.models import JinaEmbeddings
+    Methods:
+        run: _description_
 
-    model = JinaEmbeddings()
-
-    embeddings = model("Encode this text")
-
-    print(embeddings)
-
-
-    ```
+    Examples:
+        >>> model = JinaEmbeddings(
+        >>>     max_length=8192,
+        >>>     device="cuda",
+        >>>     quantize=True,
+        >>>     huggingface_api_key="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"
+        >>> )
+        >>> embeddings = model("Encode this super long document text")
     """
 
     def __init__(
         self,
-        model_id: str,
+        model_id: str = "jinaai/jina-embeddings-v2-base-en",
         device: str = None,
+        huggingface_api_key: str = None,
         max_length: int = 500,
         quantize: bool = False,
         quantization_config: dict = None,
         verbose=False,
-        # logger=None,
         distributed=False,
         decoding=False,
-        cos_sim: bool = False,
+        cos_sim: callable = cos_sim,
         *args,
         **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
         self.device = (
             device
             if device
             else ("cuda" if torch.cuda.is_available() else "cpu")
         )
+        self.huggingface_api_key = huggingface_api_key
         self.model_id = model_id
         self.max_length = max_length
         self.verbose = verbose
         self.distributed = distributed
         self.decoding = decoding
         self.model, self.tokenizer = None, None
-        # self.log = Logging()
         self.cos_sim = cos_sim
 
         if self.distributed:
             assert (
                 torch.cuda.device_count() > 1
             ), "You need more than 1 gpu for distributed processing"
+
+        # If API key then set it
+        if self.huggingface_api_key:
+            os.environ["HF_TOKEN"] = self.huggingface_api_key
 
         bnb_config = None
         if quantize:
@@ -101,7 +110,6 @@ class JinaEmbeddings:
             )
             raise
 
-    def load_model(self):
         """Load the model"""
         if not self.model or not self.tokenizer:
             try:
@@ -130,7 +138,7 @@ class JinaEmbeddings:
                 )
                 raise
 
-    def run(self, task: str):
+    def run(self, task: str, *args, **kwargs):
         """
         Generate a response based on the prompt text.
 
@@ -141,13 +149,12 @@ class JinaEmbeddings:
         Returns:
         - Generated text (str).
         """
-        self.load_model()
 
         max_length = self.max_length
 
         try:
             embeddings = self.model.encode(
-                [task], max_length=max_length
+                [task], max_length=max_length, *args, **kwargs
             )
 
             if self.cos_sim:
@@ -181,7 +188,7 @@ class JinaEmbeddings:
         # Wrapping synchronous calls with async
         return self.run(task, *args, **kwargs)
 
-    def __call__(self, task: str):
+    def __call__(self, task: str, *args, **kwargs):
         """
         Generate a response based on the prompt text.
 
@@ -198,7 +205,7 @@ class JinaEmbeddings:
 
         try:
             embeddings = self.model.encode(
-                [task], max_length=max_length
+                [task], max_length=max_length, *args, **kwargs
             )
 
             if self.cos_sim:
@@ -231,3 +238,6 @@ class JinaEmbeddings:
             return {"allocated": allocated, "reserved": reserved}
         else:
             return {"error": "GPU not available"}
+
+    def try_embed_chunk(self, chunk: str) -> list[float]:
+        return super().try_embed_chunk(chunk)

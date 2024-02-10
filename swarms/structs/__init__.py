@@ -58,6 +58,12 @@ from swarms.structs.utils import (
     parse_tasks,
 )
 from swarms.structs.tool_json_schema import JSON
+from swarms.structs.majority_voting import (
+    most_frequent,
+    parse_code_completion,
+    majority_voting,
+)
+
 
 __all__ = [
     "Agent",
@@ -114,4 +120,7 @@ __all__ = [
     "StepRequestBody",
     "TaskRequestBody",
     "JSON",
+    "most_frequent",
+    "parse_code_completion",
+    "majority_voting",
 ]

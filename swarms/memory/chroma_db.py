@@ -119,7 +119,6 @@ class ChromaDB:
             display_markdown_message(
                 f"Traversing directory: {docs_folder}"
             )
-            self.docs = docs_folder
             self.traverse_directory()
 
     def add(
@@ -198,7 +197,7 @@ class ChromaDB:
             ".png",
         ]
         images = []
-        for root, dirs, files in os.walk(self.docs):
+        for root, dirs, files in os.walk(self.docs_folder):
             for file in files:
                 _, ext = os.path.splitext(file)
                 if ext.lower() in image_extensions:

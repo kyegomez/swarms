@@ -24,7 +24,7 @@ memory = ChromaDB(
     metric="cosine",
     n_results=3,
     multimodal=True,
-    docs_folder="images",
+    # docs_folder="images",
     output_dir="results",
 )
 
@@ -61,7 +61,7 @@ agent = Agent(
     autosave=True,
     sop=VISUAL_CHAIN_OF_THOUGHT,
     verbose=True,
-    tools=[make_new_file],
+    # tools=[make_new_file],
     long_term_memory=memory,
 )
 
