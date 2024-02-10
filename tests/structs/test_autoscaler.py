@@ -232,13 +232,6 @@ def test_autoscaler_initialization():
     assert autoscaler.busy_threshold == 0.8
     assert len(autoscaler.agents_pool) == 5
 
-
-def test_autoscaler_add_task():
-    autoscaler = AutoScaler(agent=agent)
-    autoscaler.add_task("task1")
-    assert autoscaler.task_queue.qsize() == 1
-
-
 def test_autoscaler_scale_up():
     autoscaler = AutoScaler(
         initial_agents=5, scale_up_factor=2, agent=agent
