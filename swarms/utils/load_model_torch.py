@@ -38,13 +38,14 @@ def load_model_torch(
     try:
         if model is None:
             model = torch.load(
-                model_path, map_location=map_location, *args, **kwargs
+                model_path, map_location=map_location, weights_only=True, *args, **kwargs
             )
         else:
             model.load_state_dict(
                 torch.load(
                     model_path,
                     map_location=map_location,
+                    weights_only=True,
                     *args,
                     **kwargs,
                 ),
