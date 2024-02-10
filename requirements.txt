@@ -1,6 +1,5 @@
 torch==2.1.1
 transformers==4.37.2
-pandas==1.5.3
 langchain==0.0.333
 langchain-experimental==0.0.10
 httpx==0.24.1
