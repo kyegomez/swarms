@@ -270,3 +270,24 @@ def test_autoscaler_del_agent():
     autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.del_agent()
     assert len(autoscaler.agents_pool) == 4
+
+
+    def test_add_task(self):
+        autoscaler = AutoScaler()
+        autoscaler.add_task("Task 1")
+        assert not autoscaler.task_queue.empty()
+
+    def test_scaling_methods(self):
+        agent = Agent(llm=None, max_loops=1, dashboard=True)
+        autoscaler = AutoScaler(initial_agents=1, agents=[agent], scale_up_factor=2)
+        autoscaler.scale_up()
+        assert len(autoscaler.agents_pool) == 2
+        autoscaler.scale_down()
+        assert len(autoscaler.agents_pool) == 1
+
+
+    def test_print_dashboard(self, capsys):
+        autoscaler = AutoScaler()
+        autoscaler.print_dashboard()
+        captured = capsys.readouterr()
+        assert "Autoscaler Dashboard" in captured.out
