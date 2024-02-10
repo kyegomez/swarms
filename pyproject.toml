@@ -25,7 +25,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0.0"
 torch = "2.1.1"
-transformers = "4.37.1"
+transformers = "4.37.2"
 openai = "0.28.0"
 langchain = "0.0.333"
 asyncio = "3.4.3"
