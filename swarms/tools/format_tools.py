@@ -13,6 +13,23 @@ GENERATION_MARKER = "|GENERATION|"
 
 
 class Jsonformer:
+    """
+    Initializes the FormatTools class.
+
+    Args:
+        model (PreTrainedModel): The pre-trained model.
+        tokenizer (PreTrainedTokenizer): The tokenizer for the model.
+        json_schema (Dict[str, Any]): The JSON schema.
+        prompt (str): The prompt for generation.
+
+    Keyword Args:
+        debug (bool, optional): Whether to enable debug mode. Defaults to False.
+        max_array_length (int, optional): The maximum length of an array. Defaults to 10.
+        max_number_tokens (int, optional): The maximum number of tokens for numbers. Defaults to 6.
+        temperature (float, optional): The temperature for generation. Defaults to 1.0.
+        max_string_token_length (int, optional): The maximum length of a string token. Defaults to 10.
+    """
+
     value: Dict[str, Any] = {}
 
     def __init__(
@@ -57,6 +74,19 @@ class Jsonformer:
     def generate_number(
         self, temperature: Union[float, None] = None, iterations=0
     ):
+        """
+        Generates a number based on the given prompt.
+
+        Args:
+            temperature (float, optional): The temperature value for number generation. Defaults to None.
+            iterations (int, optional): The number of iterations for generating a valid number. Defaults to 0.
+
+        Returns:
+            float: The generated number.
+
+        Raises:
+            ValueError: If a valid number cannot be generated after 3 iterations.
+        """
         prompt = self.get_prompt()
         self.debug("[generate_number]", prompt, is_prompt=True)
         input_tokens = self.tokenizer.encode(
@@ -94,6 +124,12 @@ class Jsonformer:
             )
 
     def generate_boolean(self) -> bool:
+        """
+        Generates a boolean value based on the given prompt.
+
+        Returns:
+            bool: The generated boolean value.
+        """
         prompt = self.get_prompt()
         self.debug("[generate_boolean]", prompt, is_prompt=True)
 
