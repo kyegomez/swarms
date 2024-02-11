@@ -55,4 +55,4 @@ Generate detailed instructions for creating an improved version of this logo.
 # Run the second agent on the task
 instruction_results = agent_instruction.run(task=task_instruction)
 
-.
+..
