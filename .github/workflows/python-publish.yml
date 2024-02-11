@@ -1,4 +1,3 @@
----
 name: Upload Python Package
 
 on:  # yamllint disable-line rule:truthy

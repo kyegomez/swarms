@@ -1,5 +1,4 @@
 import sys
-import os
 
 try:
     import PyPDF2

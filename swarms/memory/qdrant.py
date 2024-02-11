@@ -1,4 +1,3 @@
-import subprocess
 from typing import List
 
 from httpx import RequestError
@@ -8,9 +7,6 @@ try:
 except ImportError:
     print("Please install the sentence-transformers package")
     print("pip install sentence-transformers")
-    print("pip install qdrant-client")
-    subprocess.run(["pip", "install", "sentence-transformers"])
-
 
 try:
     from qdrant_client import QdrantClient
@@ -22,7 +18,6 @@ try:
 except ImportError:
     print("Please install the qdrant-client package")
     print("pip install qdrant-client")
-    subprocess.run(["pip", "install", "qdrant-client"])
 
 
 class Qdrant:
@@ -82,7 +77,7 @@ class Qdrant:
                     f"Collection '{self.collection_name}' already"
                     " exists."
                 )
-        except Exception as e:
+        except Exception:
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(

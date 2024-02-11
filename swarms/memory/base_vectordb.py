@@ -1,58 +1,141 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
 
 
-class VectorDatabase(ABC):
+class AbstractVectorDatabase(ABC):
+    """
+    Abstract base class for a database.
+
+    This class defines the interface for interacting with a database.
+    Subclasses must implement the abstract methods to provide the
+    specific implementation details for connecting to a database,
+    executing queries, and performing CRUD operations.
+
+    """
+
     @abstractmethod
-    def add(
-        self, vector: Dict[str, Any], metadata: Dict[str, Any]
-    ) -> None:
+    def connect(self):
         """
-        add a vector into the database.
+        Connect to the database.
 
-        Args:
-            vector (Dict[str, Any]): The vector to add.
-            metadata (Dict[str, Any]): Metadata associated with the vector.
+        This method establishes a connection to the database.
+
         """
+
         pass
 
     @abstractmethod
-    def query(self, text: str, num_results: int) -> Dict[str, Any]:
+    def close(self):
         """
-        Query the database for vectors similar to the given vector.
+        Close the database connection.
 
-        Args:
-            text (Dict[str, Any]): The vector to compare against.
-            num_results (int): The number of similar vectors to return.
+        This method closes the connection to the database.
+
+        """
+
+        pass
+
+    @abstractmethod
+    def query(self, query: str):
+        """
+        Execute a database query.
+
+        This method executes the given query on the database.
+
+        Parameters:
+            query (str): The query to be executed.
+
+        """
+
+        pass
+
+    @abstractmethod
+    def fetch_all(self):
+        """
+        Fetch all rows from the result set.
+
+        This method retrieves all rows from the result set of a query.
 
         Returns:
-            Dict[str, Any]: The most similar vectors and their associated metadata.
+            list: A list of dictionaries representing the rows.
+
         """
+
         pass
 
     @abstractmethod
-    def delete(self, vector_id: str) -> None:
+    def fetch_one(self):
         """
-        Delete a vector from the database.
+        Fetch one row from the result set.
 
-        Args:
-            vector_id (str): The ID of the vector to delete.
+        This method retrieves one row from the result set of a query.
+
+        Returns:
+            dict: A dictionary representing the row.
+
         """
+
         pass
 
     @abstractmethod
-    def update(
-        self,
-        vector_id: str,
-        vector: Dict[str, Any],
-        metadata: Dict[str, Any],
-    ) -> None:
+    def add(self, doc: str):
         """
-        Update a vector in the database.
+        Add a new record to the database.
 
-        Args:
-            vector_id (str): The ID of the vector to update.
-            vector (Dict[str, Any]): The new vector.
-            metadata (Dict[str, Any]): The new metadata.
+        This method adds a new record to the specified table in the database.
+
+        Parameters:
+            table (str): The name of the table.
+            data (dict): A dictionary representing the data to be added.
+
         """
+
+        pass
+
+    @abstractmethod
+    def get(self, query: str):
+        """
+        Get a record from the database.
+
+        This method retrieves a record from the specified table in the database based on the given ID.
+
+        Parameters:
+            table (str): The name of the table.
+            id (int): The ID of the record to be retrieved.
+
+        Returns:
+            dict: A dictionary representing the retrieved record.
+
+        """
+
+        pass
+
+    @abstractmethod
+    def update(self, doc):
+        """
+        Update a record in the database.
+
+        This method updates a record in the specified table in the database based on the given ID.
+
+        Parameters:
+            table (str): The name of the table.
+            id (int): The ID of the record to be updated.
+            data (dict): A dictionary representing the updated data.
+
+        """
+
+        pass
+
+    @abstractmethod
+    def delete(self, message):
+        """
+        Delete a record from the database.
+
+        This method deletes a record from the specified table in the database based on the given ID.
+
+        Parameters:
+            table (str): The name of the table.
+            id (int): The ID of the record to be deleted.
+
+        """
+
         pass

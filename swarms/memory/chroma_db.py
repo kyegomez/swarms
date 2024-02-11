@@ -1,29 +1,22 @@
-import logging
 import os
-from typing import Dict, List, Optional
+import numpy as np
+import logging
+import uuid
+from typing import Optional, Callable, List
 
 import chromadb
-import tiktoken as tiktoken
-from chromadb.config import Settings
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 from dotenv import load_dotenv
-from termcolor import colored
 
-from swarms.utils.token_count_tiktoken import limit_tokens_from_string
+# from chromadb.utils.data import ImageLoader
+from chromadb.utils.embedding_functions import (
+    OpenCLIPEmbeddingFunction,
+)
+from swarms.utils.data_to_text import data_to_text
+from swarms.utils.markdown_message import display_markdown_message
 
+
+# Load environment variables
 load_dotenv()
-
-# ChromaDB settings
-client = chromadb.Client(Settings(anonymized_telemetry=False))
-
-
-# ChromaDB client
-def get_chromadb_client():
-    return client
-
-
-#  OpenAI API key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 # Results storage using local ChromaDB
@@ -33,10 +26,10 @@ class ChromaDB:
     ChromaDB database
 
     Args:
-        metric (str): _description_
-        RESULTS_STORE_NAME (str): _description_
-        LLM_MODEL (str): _description_
-        openai_api_key (str): _description_
+        metric (str): The similarity metric to use.
+        output (str): The name of the collection to store the results in.
+        limit_tokens (int, optional): The maximum number of tokens to use for the query. Defaults to 1000.
+        n_results (int, optional): The number of results to retrieve. Defaults to 2.
 
     Methods:
         add: _description_
@@ -45,135 +38,175 @@ class ChromaDB:
     Examples:
         >>> chromadb = ChromaDB(
         >>>     metric="cosine",
-        >>>     RESULTS_STORE_NAME="results",
-        >>>     LLM_MODEL="gpt3",
+        >>>     output="results",
+        >>>     llm="gpt3",
         >>>     openai_api_key=OPENAI_API_KEY,
         >>> )
         >>> chromadb.add(task, result, result_id)
-        >>> chromadb.query(query, top_results_num)
     """
 
     def __init__(
         self,
         metric: str,
-        RESULTS_STORE_NAME: str,
-        LLM_MODEL: str,
-        openai_api_key: str = OPENAI_API_KEY,
-        top_results_num: int = 3,
+        output_dir: str,
         limit_tokens: Optional[int] = 1000,
+        n_results: int = 2,
+        embedding_function: Callable = None,
+        data_loader: Callable = None,
+        multimodal: bool = False,
+        docs_folder: str = None,
+        verbose: bool = False,
         *args,
         **kwargs,
     ):
         self.metric = metric
-        self.RESULTS_STORE_NAME = RESULTS_STORE_NAME
-        self.LLM_MODEL = LLM_MODEL
-        self.openai_api_key = openai_api_key
-        self.top_results_num = top_results_num
+        self.output_dir = output_dir
         self.limit_tokens = limit_tokens
+        self.n_results = n_results
+        self.docs_folder = docs_folder
+        self.verbose = verbose
 
         # Disable ChromaDB logging
-        logging.getLogger("chromadb").setLevel(logging.ERROR)
+        if verbose:
+            logging.getLogger("chromadb").setLevel(logging.INFO)
+
         # Create Chroma collection
         chroma_persist_dir = "chroma"
         chroma_client = chromadb.PersistentClient(
             settings=chromadb.config.Settings(
                 persist_directory=chroma_persist_dir,
-            )
+            ),
+            *args,
+            **kwargs,
         )
 
-        # Create embedding function
-        embedding_function = OpenAIEmbeddingFunction(
-            api_key=openai_api_key
-        )
+        # Data loader
+        if data_loader:
+            self.data_loader = data_loader
+        else:
+            self.data_loader = None
+
+        # Embedding model
+        if embedding_function:
+            self.embedding_function = embedding_function
+        else:
+            self.embedding_function = None
+
+        # If multimodal set the embedding model to OpenCLIP
+        if multimodal:
+            self.embedding_function = OpenCLIPEmbeddingFunction()
+
+        # Create ChromaDB client
+        self.client = chromadb.Client()
 
         # Create Chroma collection
         self.collection = chroma_client.get_or_create_collection(
-            name=RESULTS_STORE_NAME,
+            name=output_dir,
             metadata={"hnsw:space": metric},
-            embedding_function=embedding_function,
+            embedding_function=self.embedding_function,
+            data_loader=self.data_loader,
+            *args,
+            **kwargs,
+        )
+        display_markdown_message(
+            "ChromaDB collection created:"
+            f" {self.collection.name} with metric: {self.metric} and"
+            f" output directory: {self.output_dir}"
         )
 
+        # If docs
+        if docs_folder:
+            display_markdown_message(
+                f"Traversing directory: {docs_folder}"
+            )
+            self.traverse_directory()
+
     def add(
-        self, task: Dict, result: str, result_id: str, *args, **kwargs
+        self,
+        document: str,
+        images: List[np.ndarray] = None,
+        img_urls: List[str] = None,
+        *args,
+        **kwargs,
     ):
-        """Adds a result to the ChromaDB collection
-
-        Args:
-            task (Dict): _description_
-            result (str): _description_
-            result_id (str): _description_
         """
-
-        try:
-            # Embed the result
-            embeddings = (
-                self.collection.embedding_function.embed([result])[0]
-                .tolist()
-                .copy()
-            )
-
-            # If the result is a list, flatten it
-            if (
-                len(
-                    self.collection.get(ids=[result_id], include=[])[
-                        "ids"
-                    ]
-                )
-                > 0
-            ):  # Check if the result already exists
-                self.collection.update(
-                    ids=result_id,
-                    embeddings=embeddings,
-                    documents=result,
-                    metadatas={
-                        "task": task["task_name"],
-                        "result": result,
-                    },
-                )
-
-            # If the result is not a list, add it
-            else:
-                self.collection.add(
-                    ids=result_id,
-                    embeddings=embeddings,
-                    documents=result,
-                    metadatas={
-                        "task": task["task_name"],
-                        "result": result,
-                    },
-                    *args,
-                    **kwargs,
-                )
-        except Exception as error:
-            print(
-                colored(f"Error adding to ChromaDB: {error}", "red")
-            )
-
-    def query(self, query: str, *args, **kwargs) -> List[dict]:
-        """Queries the ChromaDB collection with a query for the top results
+        Add a document to the ChromaDB collection.
 
         Args:
-            query (str): _description_
-            top_results_num (int): _description_
+            document (str): The document to be added.
+            condition (bool, optional): The condition to check before adding the document. Defaults to True.
 
         Returns:
-            List[dict]: _description_
+            str: The ID of the added document.
         """
         try:
-            count: int = self.collection.count()
-            if count == 0:
-                return []
-            results = self.collection.query(
-                query_texts=query,
-                n_results=min(self.top_results_num, count),
-                include=["metadatas"],
+            doc_id = str(uuid.uuid4())
+            self.collection.add(
+                ids=[doc_id],
+                documents=[document],
+                images=images,
+                uris=img_urls,
                 *args,
                 **kwargs,
             )
-            out = [item["task"] for item in results["metadatas"][0]]
-            out = limit_tokens_from_string(
-                out, "gpt-4", self.limit_tokens
-            )
-            return out
-        except Exception as error:
-            print(colored(f"Error querying ChromaDB: {error}", "red"))
+            return doc_id
+        except Exception as e:
+            raise Exception(f"Failed to add document: {str(e)}")
+
+    def query(
+        self,
+        query_text: str,
+        query_images: List[np.ndarray],
+        *args,
+        **kwargs,
+    ):
+        """
+        Query documents from the ChromaDB collection.
+
+        Args:
+            query (str): The query string.
+            n_docs (int, optional): The number of documents to retrieve. Defaults to 1.
+
+        Returns:
+            dict: The retrieved documents.
+        """
+        try:
+            docs = self.collection.query(
+                query_texts=[query_text],
+                query_images=query_images,
+                n_results=self.n_docs,
+                *args,
+                **kwargs,
+            )["documents"]
+            return docs[0]
+        except Exception as e:
+            raise Exception(f"Failed to query documents: {str(e)}")
+
+    def traverse_directory(self):
+        """
+        Traverse through every file in the given directory and its subdirectories,
+        and return the paths of all files.
+        Parameters:
+        - directory_name (str): The name of the directory to traverse.
+        Returns:
+        - list: A list of paths to each file in the directory and its subdirectories.
+        """
+        image_extensions = [
+            ".jpg",
+            ".jpeg",
+            ".png",
+        ]
+        images = []
+        for root, dirs, files in os.walk(self.docs_folder):
+            for file in files:
+                _, ext = os.path.splitext(file)
+                if ext.lower() in image_extensions:
+                    images.append(os.path.join(root, file))
+                else:
+                    data = data_to_text(file)
+                    added_to_db = self.add([data])
+                    print(f"{file} added to Database")
+        if images:
+            added_to_db = self.add(img_urls=[images])
+            print(f"{len(images)} images added to Database ")
+        return added_to_db

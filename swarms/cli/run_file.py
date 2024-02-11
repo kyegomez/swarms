@@ -2,7 +2,7 @@ import sys
 import subprocess
 
 
-def run_file():
+def run_file(filename: str):
     """Run a given file.
 
     Usage: swarms run file_name.py

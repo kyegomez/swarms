@@ -58,19 +58,14 @@ nav:
 - Home:
     - Overview: "index.md"
     - Contributing: "contributing.md"
-    - Docker Container Setup: "docker_setup.md"
 - Swarms:
   - Overview: "swarms/index.md"
-  - swarms.swarms:
-    - AbstractSwarm: "swarms/swarms/abstractswarm.md"
-    - GodMode: "swarms/swarms/godmode.md"
-    - Groupchat: "swarms/swarms/groupchat.md"
-  - swarms.workers:
-    - Overview: "swarms/workers/index.md"
-    - AbstractWorker: "swarms/workers/abstract_worker.md"
   - swarms.agents:
-    - AbstractAgent: "swarms/agents/abstract_agent.md"
-    - OmniModalAgent: "swarms/agents/omni_agent.md"
+    - Agents:
+      - WorkerAgent: "swarms/agents/workeragent.md"
+      - OmniAgent: "swarms/agents/omni_agent.md"
+      - AbstractAgent: "swarms/agents/abstractagent.md"
+      - ToolAgent: "swarms/agents/toolagent.md"
   - swarms.models:
     - Language:
       - BaseLLM: "swarms/models/base_llm.md"
@@ -83,6 +78,7 @@ nav:
       - vLLM: "swarms/models/vllm.md"
       - MPT7B: "swarms/models/mpt.md"
       - Mistral: "swarms/models/mistral.md"
+      - Mixtral: "swarms/models/mixtral.md"
     - MultiModal:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Fuyu: "swarms/models/fuyu.md"
@@ -98,18 +94,57 @@ nav:
       - ElevenLabsText2SpeechTool: "swarms/models/elevenlabs.md"
       - OpenAITTS: "swarms/models/openai_tts.md"
       - Gemini: "swarms/models/gemini.md"
+      - ZeroscopeTTV: "swarms/models/zeroscope.md"
   - swarms.structs:
-    - Overview: "swarms/structs/overview.md"
-    - AutoScaler: "swarms/swarms/autoscaler.md"
-    - Agent: "swarms/structs/agent.md"
-    - SequentialWorkflow: 'swarms/structs/sequential_workflow.md'
+      - Foundational Structures:
+        - agent: "swarms/structs/agent.md"
+        - basestructure: "swarms/structs/basestructure.md"
+        - artifactupload: "swarms/structs/artifactupload.md"
+        - taskinput: "swarms/structs/taskinput.md"
+        - stepinput: "swarms/structs/stepinput.md"
+        - artifact: "swarms/structs/artifact.md"
+        - task: "swarms/structs/task.md"
+      - Workflows:
+        - recursiveworkflow: "swarms/structs/recursiveworkflow.md"
+        - concurrentworkflow: "swarms/structs/concurrentworkflow.md"
+        - nonlinearworkflow: "swarms/structs/nonlinearworkflow.md"
+        - sequential_workflow: "swarms/structs/sequential_workflow.md"
+        - workflow: "swarms/structs/workflow.md"
+        - baseworkflow: "swarms/structs/baseworkflow.md"      
+      - Multi Agent Architectures:
+        - conversation: "swarms/structs/conversation.md"
+        - groupchat: "swarms/structs/groupchat.md"
+        - swarmnetwork: "swarms/structs/swarmnetwork.md"
+        - groupchatmanager: "swarms/structs/groupchatmanager.md"
+  - swarms.tokenizers:
+    - Language:
+      - Tokenizer: "swarms/tokenizers/tokenizer.md"
+      - CohereTokenizer: "swarms/tokenizers/coheretokenizer.md"
+      - BaseTokenizer: "swarms/tokenizers/basetokenizer.md"
+      - HuggingfaceTokenizer: "swarms/tokenizers/huggingfacetokenizer.md"
+      - SentencepieceTokenizer: "swarms/tokenizers/sentencepiecetokenizer.md"
+      - AnthropicTokenizer: "swarms/tokenizers/anthropictokenizer.md"
+      - OpenaiTokenizer: "swarms/tokenizers/openaitokenizer.md"
   - swarms.memory:
-    - Weaviate: "swarms/memory/weaviate.md"
-    - PineconDB: "swarms/memory/pinecone.md"
-    - PGVectorStore: "swarms/memory/pg.md"
+    - Vector Databases:
+      - Weaviate: "swarms/memory/weaviate.md"
+      - PineconeDB: "swarms/memory/pinecone.md"
+      - PGVectorStore: "swarms/memory/pg.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
   - swarms.utils:
-    - phoenix_trace_decorator: "swarms/utils/phoenix_tracer.md"
+    - Misc:
+      - pdf_to_text: "swarms/utils/pdf_to_text.md"
+      - load_model_torch: "swarms/utils/load_model_torch.md"
+      - metrics_decorator: "swarms/utils/metrics_decorator.md"
+      - prep_torch_inference: "swarms/utils/prep_torch_inference.md"
+      - find_image_path: "swarms/utils/find_image_path.md"
+      - print_class_parameters: "swarms/utils/print_class_parameters.md"
+      - extract_code_from_markdown: "swarms/utils/extract_code_from_markdown.md"
+      - check_device: "swarms/utils/check_device.md"
+      - display_markdown_message: "swarms/utils/display_markdown_message.md"
+      - phoenix_tracer: "swarms/utils/phoenix_tracer.md"
+      - limit_tokens_from_string: "swarms/utils/limit_tokens_from_string.md"
+      - math_eval: "swarms/utils/math_eval.md"
 - Guides:
     - Overview: "examples/index.md"
     - Agents:
@@ -139,3 +174,5 @@ nav:
     - Checklist: "corporate/checklist.md"
     - Hiring: "corporate/hiring.md"
     - SwarmCloud: "corporate/swarm_cloud.md"
+    - SwarmMemo: "corporate/swarm_memo.md"
+    - Data Room: "corporate/data_room.md"

@@ -1,6 +1,6 @@
-import pytest
 from swarms.memory.short_term_memory import ShortTermMemory
 import threading
+
 
 def test_init():
     memory = ShortTermMemory()
@@ -108,15 +108,20 @@ def test_return_medium_memory_as_str():
 
 def test_thread_safety():
     memory = ShortTermMemory()
+
     def add_messages():
         for _ in range(1000):
             memory.add("user", "Hello, world!")
-    threads = [threading.Thread(target=add_messages) for _ in range(10)]
+
+    threads = [
+        threading.Thread(target=add_messages) for _ in range(10)
+    ]
     for thread in threads:
         thread.start()
     for thread in threads:
         thread.join()
     assert len(memory.get_short_term()) == 10000
+
 
 def test_save_and_load():
     memory1 = ShortTermMemory()

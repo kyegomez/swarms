@@ -1,12 +1,12 @@
 import pytest
 from unittest.mock import Mock, patch
-from swarms.memory.weaviate import WeaviateClient
+from swarms.memory import WeaviateDB
 
 
-# Define fixture for a WeaviateClient instance with mocked methods
+# Define fixture for a WeaviateDB instance with mocked methods
 @pytest.fixture
 def weaviate_client_mock():
-    client = WeaviateClient(
+    client = WeaviateDB(
         http_host="mock_host",
         http_port="mock_port",
         http_secure=False,
@@ -31,7 +31,7 @@ def weaviate_client_mock():
     return client
 
 
-# Define tests for the WeaviateClient class
+# Define tests for the WeaviateDB class
 def test_create_collection(weaviate_client_mock):
     # Test creating a collection
     weaviate_client_mock.create_collection(

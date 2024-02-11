@@ -49,7 +49,7 @@ class Gemini(BaseMultiModalModel):
         stream (bool, optional): _description_. Defaults to False.
         candidate_count (int, optional): _description_. Defaults to 1.
         stop_sequence ([type], optional): _description_. Defaults to ['x'].
-        max_output_tokens (int, optional): _description_. Defaults to 100.
+        max_tokens (int, optional): _description_. Defaults to 100.
         temperature (float, optional): _description_. Defaults to 0.9.
 
     Methods:
@@ -79,8 +79,9 @@ class Gemini(BaseMultiModalModel):
         candidates: bool = False,
         stream: bool = False,
         candidate_count: int = 1,
+        transport: str = "rest",
         stop_sequence=["x"],
-        max_output_tokens: int = 100,
+        max_tokens: int = 100,
         temperature: float = 0.9,
         system_prompt: str = None,
         *args,
@@ -94,15 +95,18 @@ class Gemini(BaseMultiModalModel):
         self.stream = stream
         self.candidate_count = candidate_count
         self.stop_sequence = stop_sequence
-        self.max_output_tokens = max_output_tokens
+        self.max_tokens = max_tokens
         self.temperature = temperature
         self.system_prompt = system_prompt
+
+        # Configure the API key
+        genai.configure(api_key=gemini_api_key, transport=transport)
 
         # Prepare the generation config
         self.generation_config = GenerationConfig(
             candidate_count=candidate_count,
             # stop_sequence=stop_sequence,
-            max_output_tokens=max_output_tokens,
+            max_output_tokens=max_tokens,
             temperature=temperature,
             *args,
             **kwargs,
@@ -117,9 +121,8 @@ class Gemini(BaseMultiModalModel):
         if self.gemini_api_key is None:
             raise ValueError("Please provide a Gemini API key")
 
-    def system_prompt(
+    def system_prompt_prep(
         self,
-        system_prompt: str = None,
         task: str = None,
         *args,
         **kwargs,
@@ -131,7 +134,9 @@ class Gemini(BaseMultiModalModel):
         """
         PROMPT = f"""
         
-        {system_prompt}
+        {self.system_prompt}
+        
+        ######
         
         {task}
         
@@ -155,28 +160,24 @@ class Gemini(BaseMultiModalModel):
             str: output from the model
         """
         try:
+            prepare_prompt = self.system_prompt_prep(task)
             if img:
                 # process_img = self.process_img(img, *args, **kwargs)
                 process_img = self.process_img_pil(img)
                 response = self.model.generate_content(
-                    contents=[task, process_img],
+                    contents=[prepare_prompt, process_img],
                     generation_config=self.generation_config,
                     stream=self.stream,
                     *args,
                     **kwargs,
                 )
-
-                # if self.candidates:
-                #     return response.candidates
-                # elif self.safety:
-                #     return response.safety
-                # else:
-                #     return response.text
-
                 return response.text
             else:
                 response = self.model.generate_content(
-                    task, stream=self.stream, *args, **kwargs
+                    prepare_prompt,
+                    stream=self.stream,
+                    *args,
+                    **kwargs,
                 )
                 return response.text
         except Exception as error:

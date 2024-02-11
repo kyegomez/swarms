@@ -1,35 +1,34 @@
 import asyncio
-import inspect
 import json
 import logging
+import os
 import random
-import re
 import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from termcolor import colored
 
-from swarms.memory.base_vectordb import VectorDatabase
+from swarms.memory.base_vectordb import AbstractVectorDatabase
 from swarms.prompts.agent_system_prompts import (
-    FLOW_SYSTEM_PROMPT,
     AGENT_SYSTEM_PROMPT_3,
-    agent_system_prompt_2,
 )
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
-from swarms.prompts.tools import (
-    SCENARIOS,
-)
+from swarms.structs.conversation import Conversation
+from swarms.tokenizers.base_tokenizer import BaseTokenizer
 from swarms.tools.tool import BaseTool
-from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+from swarms.utils.data_to_text import data_to_text
+from swarms.utils.logger import logger
 from swarms.utils.parse_code import (
-    extract_code_in_backticks_in_string,
+    extract_code_from_markdown,
 )
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
+from swarms.tools.exec_tool import execute_tool_by_name
+from swarms.prompts.worker_prompt import worker_tools_sop_promp
 
 
 # Utils
@@ -53,109 +52,92 @@ def agent_id():
 
 class Agent:
     """
-    Agent is the structure that provides autonomy to any llm in a reliable and effective fashion.
-    The agent structure is designed to be used with any llm and provides the following features:
+    Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
+    ingest any type of docs like PDFs, Txts, Markdown, Json, and etc for the agent. Here is a list of features.
 
-    Features:
-    * Interactive, AI generates, then user input
-    * Message history and performance history fed -> into context -> truncate if too long
-    * Ability to save and load flows
-    * Ability to provide feedback on responses
-    * Ability to provide a loop interval
+
 
     Args:
-        id (str): The id of the agent
         llm (Any): The language model to use
-        template (Optional[str]): The template to use
-        max_loops (int): The maximum number of loops
-        stopping_condition (Optional[Callable[[str], bool]]): The stopping condition
+        template (str): The template to use
+        max_loops (int): The maximum number of loops to run
+        stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
-        retry_attempts (int): The retry attempts
+        retry_attempts (int): The number of retry attempts
         retry_interval (int): The retry interval
         return_history (bool): Return the history
         stopping_token (str): The stopping token
-        dynamic_loops (Optional[bool]): Dynamic loops
-        interactive (bool): Interactive mode
-        dashboard (bool): Dashboard mode
+        dynamic_loops (bool): Enable dynamic loops
+        interactive (bool): Enable interactive mode
+        dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
         system_prompt (str): The system prompt
-        tools (List[BaseTool]): The tools
-        dynamic_temperature_enabled (Optional[bool]): Dynamic temperature enabled
-        sop (Optional[str]): The standard operating procedure
-        sop_list (Optional[List[str]]): The standard operating procedure list
-        saved_state_path (Optional[str]): The saved state path
-        autosave (Optional[bool]): Autosave
-        context_length (Optional[int]): The context length
+        tools (List[BaseTool]): The tools to use
+        dynamic_temperature_enabled (bool): Enable dynamic temperature
+        sop (str): The standard operating procedure
+        sop_list (List[str]): The standard operating procedure list
+        saved_state_path (str): The path to the saved state
+        autosave (bool): Autosave the state
+        context_length (int): The context length
         user_name (str): The user name
-        self_healing_enabled (Optional[bool]): Self healing enabled
-        code_interpreter (Optional[bool]): Code interpreter
-        multi_modal (Optional[bool]): Multi modal
-        pdf_path (Optional[str]): The pdf path
-        list_of_pdf (Optional[str]): The list of pdf
-        tokenizer (Optional[Any]): The tokenizer
-        memory (Optional[VectorDatabase]): The memory
-        preset_stopping_token (Optional[bool]): Preset stopping token
-        *args: Variable length argument list.
-        **kwargs: Arbitrary keyword arguments.
+        self_healing_enabled (bool): Enable self healing
+        code_interpreter (bool): Enable code interpreter
+        multi_modal (bool): Enable multimodal
+        pdf_path (str): The path to the pdf
+        list_of_pdf (str): The list of pdf
+        tokenizer (Any): The tokenizer
+        memory (AbstractVectorDatabase): The memory
+        preset_stopping_token (bool): Enable preset stopping token
+        traceback (Any): The traceback
+        traceback_handlers (Any): The traceback handlers
+        streaming_on (bool): Enable streaming
 
     Methods:
-        run(task: str, **kwargs: Any): Run the agent on a task
-        run_concurrent(tasks: List[str], **kwargs: Any): Run the agent on a list of tasks concurrently
-        bulk_run(inputs: List[Dict[str, Any]]): Run the agent on a list of inputs
-        from_llm_and_template(llm: Any, template: str): Create AgentStream from LLM and a string template.
-        from_llm_and_template_file(llm: Any, template_file: str): Create AgentStream from LLM and a template file.
-        save(file_path): Save the agent history to a file
-        load(file_path): Load the agent history from a file
-        validate_response(response: str): Validate the response based on certain criteria
-        print_history_and_memory(): Print the entire history and memory of the agent
-        step(task: str, **kwargs): Executes a single step in the agent interaction, generating a response from the language model based on the given input text.
-        graceful_shutdown(): Gracefully shutdown the system saving the state
-        run_with_timeout(task: str, timeout: int): Run the loop but stop if it takes longer than the timeout
-        analyze_feedback(): Analyze the feedback for issues
-        undo_last(): Response the last response and return the previous state
-        add_response_filter(filter_word: str): Add a response filter to filter out certain words from the response
-        apply_reponse_filters(response: str): Apply the response filters to the response
-        filtered_run(task: str): Filtered run
-        interactive_run(max_loops: int): Interactive run mode
-        streamed_generation(prompt: str): Stream the generation of the response
-        get_llm_params(): Extracts and returns the parameters of the llm object for serialization.
-        save_state(file_path: str): Saves the current state of the agent to a JSON file, including the llm parameters.
-        load_state(file_path: str): Loads the state of the agent from a json file and restores the configuration and memory.
-        retry_on_failure(function, retries: int = 3, retry_delay: int = 1): Retry wrapper for LLM calls.
-        run_code(response: str): Run the code in the response
-        construct_dynamic_prompt(): Construct the dynamic prompt
-        extract_tool_commands(text: str): Extract the tool commands from the text
-        parse_and_execute_tools(response: str): Parse and execute the tools
-        execute_tools(tool_name, params): Execute the tool with the provided params
-        truncate_history(): Take the history and truncate it to fit into the model context length
-        add_task_to_memory(task: str): Add the task to the memory
-        add_message_to_memory(message: str): Add the message to the memory
-        add_message_to_memory_and_truncate(message: str): Add the message to the memory and truncate
-        print_dashboard(task: str): Print dashboard
-        activate_autonomous_agent(): Print the autonomous agent activation message
-        dynamic_temperature(): Dynamically change the temperature
-        _check_stopping_condition(response: str): Check if the stopping condition is met
-        format_prompt(template, **kwargs: Any): Format the template with the provided kwargs using f-string interpolation.
-        get_llm_init_params(): Get LLM init params
-        get_tool_description(): Get the tool description
-        find_tool_by_name(name: str): Find a tool by name
+        run: Run the agent
+        run_concurrent: Run the agent concurrently
+        bulk_run: Run the agent in bulk
+        save: Save the agent
+        load: Load the agent
+        validate_response: Validate the response
+        print_history_and_memory: Print the history and memory
+        step: Step through the agent
+        graceful_shutdown: Gracefully shutdown the agent
+        run_with_timeout: Run the agent with a timeout
+        analyze_feedback: Analyze the feedback
+        undo_last: Undo the last response
+        add_response_filter: Add a response filter
+        apply_response_filters: Apply the response filters
+        filtered_run: Run the agent with filtered responses
+        interactive_run: Run the agent in interactive mode
+        streamed_generation: Stream the generation of the response
+        save_state: Save the state
+        load_state: Load the state
+        truncate_history: Truncate the history
+        add_task_to_memory: Add the task to the memory
+        add_message_to_memory: Add the message to the memory
+        add_message_to_memory_and_truncate: Add the message to the memory and truncate
+        print_dashboard: Print the dashboard
+        loop_count_print: Print the loop count
+        streaming: Stream the content
+        _history: Generate the history
+        _dynamic_prompt_setup: Setup the dynamic prompt
+        run_async: Run the agent asynchronously
+        run_async_concurrent: Run the agent asynchronously and concurrently
+        run_async_concurrent: Run the agent asynchronously and concurrently
+        construct_dynamic_prompt: Construct the dynamic prompt
+        construct_dynamic_prompt: Construct the dynamic prompt
 
 
-    Example:
+    Examples:
     >>> from swarms.models import OpenAIChat
     >>> from swarms.structs import Agent
-    >>> llm = OpenAIChat(
-    ...     openai_api_key=api_key,
-    ...     temperature=0.5,
-    ... )
-    >>> agent = Agent(
-    ...     llm=llm, max_loops=5,
-    ...     #system_prompt=SYSTEM_PROMPT,
-    ...     #retry_interval=1,
-    ... )
-    >>> agent.run("Generate a 10,000 word blog")
-    >>> agent.save("path/agent.yaml")
+    >>> llm = OpenAIChat()
+    >>> agent = Agent(llm=llm, max_loops=1)
+    >>> response = agent.run("Generate a report on the financials.")
+    >>> print(response)
+    >>> # Generate a report on the financials.
+
     """
 
     def __init__(
@@ -173,7 +155,7 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: bool = False,
         dashboard: bool = False,
-        agent_name: str = "Autonomous-Agent-XYZ1B",
+        agent_name: str = "swarm-worker-01",
         agent_description: str = None,
         system_prompt: str = AGENT_SYSTEM_PROMPT_3,
         tools: List[BaseTool] = None,
@@ -189,14 +171,18 @@ class Agent:
         multi_modal: Optional[bool] = None,
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
-        tokenizer: Optional[Any] = None,
-        memory: Optional[VectorDatabase] = None,
+        tokenizer: Optional[BaseTokenizer] = None,
+        long_term_memory: Optional[AbstractVectorDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Any = None,
         traceback_handlers: Any = None,
         streaming_on: Optional[bool] = False,
+        docs: List[str] = None,
+        docs_folder: str = None,
+        verbose: bool = False,
+        parser: Optional[Callable] = None,
         *args,
-        **kwargs: Any,
+        **kwargs,
     ):
         self.id = id
         self.llm = llm
@@ -207,7 +193,7 @@ class Agent:
         self.retry_attempts = retry_attempts
         self.retry_interval = retry_interval
         self.task = None
-        self.stopping_token = stopping_token  # or "<DONE>"
+        self.stopping_token = stopping_token
         self.interactive = interactive
         self.dashboard = dashboard
         self.return_history = return_history
@@ -217,9 +203,7 @@ class Agent:
         self.context_length = context_length
         self.sop = sop
         self.sop_list = sop_list
-        self.sop_list = []
-        self.tools = tools or []
-        self.tool_docs = []
+        self.tools = tools
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -233,13 +217,15 @@ class Agent:
         self.pdf_path = pdf_path
         self.list_of_pdf = list_of_pdf
         self.tokenizer = tokenizer
-        self.memory = memory
+        self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.traceback = traceback
         self.traceback_handlers = traceback_handlers
         self.streaming_on = streaming_on
-
-        # self.system_prompt = AGENT_SYSTEM_PROMPT_3
+        self.docs = docs
+        self.docs_folder = docs_folder
+        self.verbose = verbose
+        self.parser = parser
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -255,7 +241,6 @@ class Agent:
 
         # Memory
         self.feedback = []
-        self.short_memory = []
 
         # Initialize the code executor
         self.code_executor = SubprocessCodeInterpreter()
@@ -264,11 +249,44 @@ class Agent:
         if preset_stopping_token:
             self.stopping_token = "<DONE>"
 
-        # If tools exist then add the tool docs usage to the sop
+        self.short_memory = Conversation(
+            system_prompt=self.system_prompt, time_enabled=True
+        )
+
+        # If the docs exist then ingest the docs
+        if self.docs:
+            self.ingest_docs(self.docs)
+
+        # If docs folder exists then get the docs from docs folder
+        if self.docs_folder:
+            self.get_docs_from_doc_folders()
+
+        # If tokenizer and context length exists then:
+        if self.tokenizer and self.context_length:
+            self.truncate_history()
+
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+
+        # If tools are provided then set the tool prompt by adding to sop
         if self.tools:
-            self.sop_list.append(
-                self.tools_prompt_prep(self.tool_docs, SCENARIOS)
+            tools_prompt = worker_tools_sop_promp(
+                name=self.agent_name,
+                memory=self.short_memory.return_history_as_string(),
             )
+
+            # Append the tools prompt to the sop
+            self.sop = f"{self.sop}\n{tools_prompt}"
+
+        # If the long term memory is provided then set the long term memory prompt
+
+        # Agentic stuff
+        self.reply = ""
+        self.question = None
+        self.answer = ""
+
+        # Initialize the llm with the conditional variables
+        # self.llm = llm(*args, **kwargs)
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -318,113 +336,10 @@ class Agent:
         """Format the template with the provided kwargs using f-string interpolation."""
         return template.format(**kwargs)
 
-    def get_llm_init_params(self) -> str:
-        """Get LLM init params"""
-        init_signature = inspect.signature(self.llm.__init__)
-        params = init_signature.parameters
-        params_str_list = []
-
-        for name, param in params.items():
-            if name == "self":
-                continue
-            if hasattr(self.llm, name):
-                value = getattr(self.llm, name)
-            else:
-                value = self.llm.__dict__.get(name, "Unknown")
-
-            params_str_list.append(
-                f"    {name.capitalize().replace('_', ' ')}: {value}"
-            )
-
-        return "\n".join(params_str_list)
-
-    def get_tool_description(self):
-        """Get the tool description"""
-        if self.tools:
-            try:
-                tool_descriptions = []
-                for tool in self.tools:
-                    description = f"{tool.name}: {tool.description}"
-                    tool_descriptions.append(description)
-                return "\n".join(tool_descriptions)
-            except Exception as error:
-                print(
-                    f"Error getting tool description: {error} try"
-                    " adding a description to the tool or removing"
-                    " the tool"
-                )
-        else:
-            return "No tools available"
-
-    def find_tool_by_name(self, name: str):
-        """Find a tool by name"""
-        for tool in self.tools:
-            if tool.name == name:
-                return tool
-
-    def extract_tool_commands(self, text: str):
-        """
-        Extract the tool commands from the text
-
-        Example:
-        ```json
-        {
-            "tool": "tool_name",
-            "params": {
-                "tool1": "inputs",
-                "param2": "value2"
-            }
-        }
-        ```
-
-        """
-        # Regex to find JSON like strings
-        pattern = r"```json(.+?)```"
-        matches = re.findall(pattern, text, re.DOTALL)
-        json_commands = []
-        for match in matches:
-            try:
-                json_commands = json.loads(match)
-                json_commands.append(json_commands)
-            except Exception as error:
-                print(f"Error parsing JSON command: {error}")
-
-    def execute_tools(self, tool_name, params):
-        """Execute the tool with the provided params"""
-        tool = self.tool_find_by_name(tool_name)
-        if tool:
-            # Execute the tool with the provided parameters
-            tool_result = tool.run(**params)
-            print(tool_result)
-
-    def parse_and_execute_tools(self, response: str):
-        """Parse and execute the tools"""
-        json_commands = self.extract_tool_commands(response)
-        for command in json_commands:
-            tool_name = command.get("tool")
-            params = command.get("parmas", {})
-            self.execute_tools(tool_name, params)
-
-    def truncate_history(self):
-        """
-        Take the history and truncate it to fit into the model context length
-        """
-        # truncated_history = self.short_memory[-1][-self.context_length :]
-        # self.short_memory[-1] = truncated_history
-        # out = limit_tokens_from_string(
-        #     "\n".join(truncated_history), self.llm.model_name
-        # )
-        truncated_history = self.short_memory[-1][
-            -self.context_length :
-        ]
-        text = "\n".join(truncated_history)
-        out = limit_tokens_from_string(text, "gpt-4")
-        return out
-
     def add_task_to_memory(self, task: str):
         """Add the task to the memory"""
         try:
-            self.short_memory.append([f"{self.user_name}: {task}"])
+            self.short_memory.add(f"{self.user_name}: {task}")
         except Exception as error:
             print(
                 colored(
@@ -435,7 +350,9 @@ class Agent:
     def add_message_to_memory(self, message: str):
         """Add the message to the memory"""
         try:
-            self.short_memory[-1].append(message)
+            self.short_memory.add(
+                role=self.agent_name, content=message
+            )
         except Exception as error:
             print(
                 colored(
@@ -448,15 +365,8 @@ class Agent:
         self.short_memory[-1].append(message)
         self.truncate_history()
 
-    def parse_tool_docs(self):
-        """Parse the tool docs"""
-        for tool in self.tools:
-            docs = self.tool_docs.append(scrape_tool_func_docs(tool))
-        return str(docs)
-
     def print_dashboard(self, task: str):
         """Print dashboard"""
-        model_config = self.get_llm_init_params()
         print(colored("Initializing Agent Dashboard...", "yellow"))
 
         print(
@@ -485,7 +395,6 @@ class Agent:
                     Dynamic Temperature: {self.dynamic_temperature_enabled}
                     Autosave: {self.autosave}
                     Saved State: {self.saved_state_path}
-                    Model Configuration: {model_config}
 
                 ----------------------------------------
                 """,
@@ -580,14 +489,11 @@ class Agent:
         combined_prompt = f"{dynamic_prompt}\n{task}"
         return combined_prompt
 
-    def agent_system_prompt_2(self):
-        """Agent system prompt 2"""
-        return agent_system_prompt_2(self.agent_name)
-
     def run(
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
+        *args,
         **kwargs,
     ):
         """
@@ -640,13 +546,7 @@ class Agent:
                     self.dynamic_temperature()
 
                 # Preparing the prompt
-                task = self.agent_history_prompt(
-                    AGENT_SYSTEM_PROMPT_3, response
-                )
-
-                # # Retreiving long term memory
-                # if self.memory:
-                #     task = self.agent_memory_prompt(response, task)
+                task = self.agent_history_prompt(history=response)
 
                 attempt = 0
                 while attempt < self.retry_attempts:
@@ -665,13 +565,21 @@ class Agent:
                             )
                             print(response)
 
+                        # If parser exists then parse the response
+                        if self.parser:
+                            response = self.parser(response)
+
                         # If code interpreter is enabled then run the code
                         if self.code_interpreter:
                             self.run_code(response)
 
-                        # If there are any tools then parse and execute them
+                        # If tools are enabled then execute the tools
                         if self.tools:
-                            self.parse_and_execute_tools(response)
+                            execute_tool_by_name(
+                                response,
+                                self.tools,
+                                self.stopping_condition,
+                            )
 
                         # If interactive mode is enabled then print the response and get user input
                         if self.interactive:
@@ -697,7 +605,9 @@ class Agent:
 
                 time.sleep(self.loop_interval)
             # Add the history to the memory
-            self.short_memory.append(history)
+            self.short_memory.add(
+                role=self.agent_name, content=history
+            )
 
             # If autosave is enabled then save the state
             if self.autosave:
@@ -718,8 +628,17 @@ class Agent:
 
             return response
         except Exception as error:
-            print(f"Error running agent: {error}")
+            logger.error(f"Error running agent: {error}")
             raise
+
+    def __call__(self, task: str, img: str = None, *args, **kwargs):
+        """Call the agent
+
+        Args:
+            task (str): _description_
+            img (str, optional): _description_. Defaults to None.
+        """
+        self.run(task, img, *args, **kwargs)
 
     def _run(self, **kwargs: Any) -> str:
         """Run the agent on a task
@@ -737,8 +656,7 @@ class Agent:
 
     def agent_history_prompt(
         self,
-        system_prompt: str = AGENT_SYSTEM_PROMPT_3,
-        history=None,
+        history: str = None,
     ):
         """
         Generate the agent history prompt
@@ -751,7 +669,7 @@ class Agent:
             str: The agent history prompt
         """
         if self.sop:
-            system_prompt = system_prompt or self.system_prompt
+            system_prompt = self.system_prompt
             agent_history_prompt = f"""
                 SYSTEM_PROMPT: {system_prompt}
 
@@ -764,7 +682,7 @@ class Agent:
             """
             return agent_history_prompt
         else:
-            system_prompt = system_prompt or self.system_prompt
+            system_prompt = self.system_prompt
             agent_history_prompt = f"""
                 SYSTEM_PROMPT: {system_prompt}
 
@@ -774,7 +692,7 @@ class Agent:
             """
             return agent_history_prompt
 
-    def agent_memory_prompt(self, query, prompt):
+    def long_term_memory_prompt(self, query: str, *args, **kwargs):
         """
         Generate the agent long term memory prompt
 
@@ -785,16 +703,27 @@ class Agent:
         Returns:
             str: The agent history prompt
         """
-        context_injected_prompt = prompt
-        if self.memory:
-            ltr = self.memory.query(query)
+        ltr = str(self.long_term_memory.query(query), *args, **kwargs)
 
-            context_injected_prompt = f"""{prompt}
-                ################ CONTEXT ####################
-                {ltr}
-            """
+        context = f"""
+            System: This reminds you of these events from your past: [{ltr}]
+        """
+        return self.short_memory.add(
+            role=self.agent_name, content=context
+        )
 
-        return context_injected_prompt
+    def add_memory(self, message: str):
+        """Add a memory to the agent
+
+        Args:
+            message (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.short_memory.add(
+            role=self.agent_name, content=message
+        )
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """
@@ -826,20 +755,6 @@ class Agent:
             return [self.run(**input_data) for input_data in inputs]
         except Exception as error:
             print(colored(f"Error running bulk run: {error}", "red"))
-
-    @staticmethod
-    def from_llm_and_template(llm: Any, template: str) -> "Agent":
-        """Create AgentStream from LLM and a string template."""
-        return Agent(llm=llm, template=template)
-
-    @staticmethod
-    def from_llm_and_template_file(
-        llm: Any, template_file: str
-    ) -> "Agent":
-        """Create AgentStream from LLM and a template file."""
-        with open(template_file, "r") as f:
-            template = f.read()
-        return Agent(llm=llm, template=template)
 
     def save(self, file_path) -> None:
         """Save the agent history to a file.
@@ -934,10 +849,16 @@ class Agent:
 
             # Update the agent's history with the new interaction
             if self.interactive:
-                self.short_memory.append(f"AI: {response}")
-                self.short_memory.append(f"Human: {task}")
+                self.short_memory.add(
+                    role=self.agent_name, content=response
+                )
+                self.short_memory.add(
+                    role=self.user_name, content=task
+                )
             else:
-                self.short_memory.append(f"AI: {response}")
+                self.short_memory.add(
+                    role=self.agent_name, content=response
+                )
 
             return response
         except Exception as error:
@@ -984,11 +905,11 @@ class Agent:
         if len(self.short_memory) < 2:
             return None, None
 
-        # Remove the last response
-        self.short_memory.pop()
+        # Remove the last response but keep the last state, short_memory is a dict
+        self.short_memory.delete(-1)
 
         # Get the previous state
-        previous_state = self.short_memory[-1][-1]
+        previous_state = self.short_memory[-1]
         return previous_state, f"Restored to {previous_state}"
 
     # Response Filtering
@@ -1056,45 +977,6 @@ class Agent:
         print()
         return response
 
-    def get_llm_params(self):
-        """
-        Extracts and returns the parameters of the llm object for serialization.
-        It assumes that the llm object has an __init__ method
-        with parameters that can be used to recreate it.
-        """
-        if not hasattr(self.llm, "__init__"):
-            return None
-
-        init_signature = inspect.signature(self.llm.__init__)
-        params = init_signature.parameters
-        llm_params = {}
-
-        for name, param in params.items():
-            if name == "self":
-                continue
-            if hasattr(self.llm, name):
-                value = getattr(self.llm, name)
-                if isinstance(
-                    value,
-                    (
-                        str,
-                        int,
-                        float,
-                        bool,
-                        list,
-                        dict,
-                        tuple,
-                        type(None),
-                    ),
-                ):
-                    llm_params[name] = value
-                else:
-                    llm_params[name] = str(
-                        value
-                    )  # For non-serializable objects, save their string representation.
-
-        return llm_params
-
     def save_state(self, file_path: str) -> None:
         """
         Saves the current state of the agent to a JSON file, including the llm parameters.
@@ -1112,7 +994,9 @@ class Agent:
                 "agent_description": self.agent_description,
                 "system_prompt": self.system_prompt,
                 "sop": self.sop,
-                "short_memory": self.short_memory,
+                "short_memory": (
+                    self.short_memory.return_history_as_string()
+                ),
                 "loop_interval": self.loop_interval,
                 "retry_attempts": self.retry_attempts,
                 "retry_interval": self.retry_interval,
@@ -1147,7 +1031,9 @@ class Agent:
                 "agent_description": self.agent_description,
                 "system_prompt": self.system_prompt,
                 "sop": self.sop,
-                "short_memory": self.short_memory,
+                "short_memory": (
+                    self.short_memory.return_history_as_string()
+                ),
                 "loop_interval": self.loop_interval,
                 "retry_attempts": self.retry_attempts,
                 "retry_interval": self.retry_interval,
@@ -1252,13 +1138,13 @@ class Agent:
 
     def reset(self):
         """Reset the agent"""
-        self.short_memory = []
+        self.short_memory = {}
 
     def run_code(self, code: str):
         """
         text -> parse_code by looking for code inside 6 backticks `````-> run_code
         """
-        parsed_code = extract_code_in_backticks_in_string(code)
+        parsed_code = extract_code_from_markdown(code)
         run_code = self.code_executor.run(parsed_code)
         return run_code
 
@@ -1288,71 +1174,80 @@ class Agent:
         text = limit_tokens_from_string(text, num_limits)
         return text
 
-    def tools_prompt_prep(
-        self, docs: str = None, scenarios: str = SCENARIOS
-    ):
-        """
-        Tools prompt prep
+    def ingest_docs(self, docs: List[str], *args, **kwargs):
+        """Ingest the docs into the memory
 
         Args:
-            docs (str, optional): _description_. Defaults to None.
-            scenarios (str, optional): _description_. Defaults to None.
+            docs (List[str]): _description_
 
         Returns:
             _type_: _description_
         """
-        PROMPT = f"""
-        # Task
-        You will be provided with a list of APIs. These APIs will have a
-        description and a list of parameters and return types for each tool. Your
-        task involves creating varied, complex, and detailed user scenarios
-        that require to call API calls. You must select what api to call based on 
-        the context of the task and the scenario.
+        for doc in docs:
+            data = data_to_text(doc)
 
-        For instance, given the APIs: SearchHotels, BookHotel, CancelBooking,
-        GetNFLNews. Given that GetNFLNews is explicitly provided, your scenario
-        should articulate something akin to:
+        return self.short_memory.add(
+            role=self.user_name, content=data
+        )
 
-        "The user wants to see if the Broncos won their last game (GetNFLNews).
-        They then want to see if that qualifies them for the playoffs and who
-        they will be playing against (GetNFLNews). The Broncos did make it into
-        the playoffs, so the user wants watch the game in person. They want to
-        look for hotels where the playoffs are occurring (GetNBANews +
-        SearchHotels). After looking at the options, the user chooses to book a
-        3-day stay at the cheapest 4-star option (BookHotel)."
-        13
+    def ingest_pdf(self, pdf: str):
+        """Ingest the pdf into the memory
 
-        This scenario exemplifies a scenario using 5 API calls. The scenario is
-        complex, detailed, and concise as desired. The scenario also includes two
-        APIs used in tandem, the required API, GetNBANews to search for the
-        playoffs location and SearchHotels to find hotels based on the returned
-        location. Usage of multiple APIs in tandem is highly desirable and will
-        receive a higher score. Ideally each scenario should contain one or more
-        instances of multiple APIs being used in tandem.
+        Args:
+            pdf (str): _description_
 
-        Note that this scenario does not use all the APIs given and re-uses the "
-        GetNBANews" API. Re-using APIs is allowed, but each scenario should
-        involve as many different APIs as the user demands. Note that API usage is also included
-        in the scenario, but exact parameters ar necessary. You must use a
-        different combination of APIs for each scenario. All APIs must be used in
-        at least one scenario. You can only use the APIs provided in the APIs
-        section.
-        
-        Note that API calls are not explicitly mentioned and their uses are
-        included in parentheses. This behaviour should be mimicked in your
-        response.
-        
-        Output the tool usage in a strict json format with the function name and input to 
-        the function. For example, Deliver your response in this format:
-        
-        ‘‘‘
-        {scenarios}
-        ‘‘‘
-        # APIs
-        ‘‘‘
-        {docs}
-        ‘‘‘
-        # Response
-        ‘‘‘
+        Returns:
+            _type_: _description_
         """
-        return PROMPT
+        text = pdf_to_text(pdf)
+        return self.short_memory.add(
+            role=self.user_name, content=text
+        )
+
+    def receieve_mesage(self, name: str, message: str):
+        """Receieve a message"""
+        message = f"{name}: {message}"
+        return self.short_memory.add(role=name, content=message)
+
+    def send_agent_message(
+        self, agent_name: str, message: str, *args, **kwargs
+    ):
+        """Send a message to the agent"""
+        message = f"{agent_name}: {message}"
+        return self.run(message, *args, **kwargs)
+
+    def truncate_history(self):
+        """
+        Truncates the short-term memory of the agent based on the count of tokens.
+
+        The method counts the tokens in the short-term memory using the tokenizer and
+        compares it with the length of the memory. If the length of the memory is greater
+        than the count, the memory is truncated to match the count.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
+        # Count the short term history with the tokenizer
+        count = self.tokenizer.count_tokens(
+            self.short_memory.return_history_as_string()
+        )
+
+        # Now the logic that truncates the memory if it's more than the count
+        if len(self.short_memory) > count:
+            self.short_memory = self.short_memory[:count]
+
+    def get_docs_from_doc_folders(self):
+        """Get the docs from the files"""
+        # Get the list of files then extract them and add them to the memory
+        files = os.listdir(self.docs_folder)
+
+        # Extract the text from the files
+        for file in files:
+            text = data_to_text(file)
+
+        return self.short_memory.add(
+            role=self.user_name, content=text
+        )

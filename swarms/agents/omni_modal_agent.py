@@ -1,7 +1,4 @@
-from typing import Dict, List
-
 from langchain.base_language import BaseLanguageModel
-from langchain.tools.base import BaseTool
 from langchain_experimental.autonomous_agents.hugginggpt.repsonse_generator import (
     load_response_generator,
 )
@@ -13,34 +10,7 @@ from langchain_experimental.autonomous_agents.hugginggpt.task_planner import (
 )
 from transformers import load_tool
 
-from swarms.agents.message import Message
-
-
-class Step:
-    def __init__(
-        self,
-        task: str,
-        id: int,
-        dep: List[int],
-        args: Dict[str, str],
-        tool: BaseTool,
-    ):
-        self.task = task
-        self.id = id
-        self.dep = dep
-        self.args = args
-        self.tool = tool
-
-
-class Plan:
-    def __init__(self, steps: List[Step]):
-        self.steps = steps
-
-    def __str__(self) -> str:
-        return str([str(step) for step in self.steps])
-
-    def __repr(self) -> str:
-        return str(self)
+from swarms.structs.message import Message
 
 
 class OmniModalAgent:

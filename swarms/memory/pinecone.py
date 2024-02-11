@@ -1,14 +1,14 @@
 from typing import Optional
-from swarms.memory.base_vectordb import VectorDatabase
+from swarms.memory.base_vectordb import AbstractVectorDatabase
 import pinecone
 from attr import define, field
 from swarms.utils.hash import str_to_hash
 
 
 @define
-class PineconDB(VectorDatabase):
+class PineconeDB(AbstractVectorDatabase):
     """
-    PineconDB is a vector storage driver that uses Pinecone as the underlying storage engine.
+    PineconeDB is a vector storage driver that uses Pinecone as the underlying storage engine.
 
     Pinecone is a vector database that allows you to store, search, and retrieve high-dimensional vectors with
     blazing speed and low latency. It is a managed service that is easy to use and scales effortlessly, so you can
@@ -34,14 +34,14 @@ class PineconDB(VectorDatabase):
             Creates a new index.
 
     Usage:
-    >>> from swarms.memory.vector_stores.pinecone import PineconDB
+    >>> from swarms.memory.vector_stores.pinecone import PineconeDB
     >>> from swarms.utils.embeddings import USEEmbedding
     >>> from swarms.utils.hash import str_to_hash
     >>> from swarms.utils.dataframe import dataframe_to_hash
     >>> import pandas as pd
     >>>
-    >>> # Create a new PineconDB instance:
-    >>> pv = PineconDB(
+    >>> # Create a new PineconeDB instance:
+    >>> pv = PineconeDB(
     >>>     api_key="your-api-key",
     >>>     index_name="your-index-name",
     >>>     environment="us-west1-gcp",
@@ -166,7 +166,7 @@ class PineconDB(VectorDatabase):
         count: Optional[int] = None,
         namespace: Optional[str] = None,
         include_vectors: bool = False,
-        # PineconDBStorageDriver-specific params:
+        # PineconeDBStorageDriver-specific params:
         include_metadata=True,
         **kwargs,
     ):
