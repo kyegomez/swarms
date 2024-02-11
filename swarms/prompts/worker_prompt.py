@@ -3,8 +3,8 @@ import datetime
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def worker_tools_sop_promp(name: str, memory: str = None):
-    return """
+def worker_tools_sop_promp(name: str, memory: str):
+    out = """
     You are {name}, 
     Your decisions must always be made independently without seeking user assistance. 
     Play to your strengths as an LLM and pursue simple strategies with no legal complications.
@@ -45,7 +45,7 @@ def worker_tools_sop_promp(name: str, memory: str = None):
         "thoughts": {
             "text": "thought",
             "reasoning": "reasoning",
-            "plan": "- short bulleted\n- list that conveys\n- long-term plan",
+            "plan": "- short bulleted - list that conveys - long-term plan",
             "criticism": "constructive self-criticism",
             "speak": "thoughts summary to say to user"
         },
@@ -62,4 +62,6 @@ def worker_tools_sop_promp(name: str, memory: str = None):
     [{memory}]
     
     Human: Determine which next command to use, and respond using the format specified above:
-    """.format(name=name, memory=memory)
+    """.format(name=name, memory=memory, time=time)
+
+    return str(out)

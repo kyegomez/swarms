@@ -180,6 +180,7 @@ class Agent:
         docs: List[str] = None,
         docs_folder: str = None,
         verbose: bool = False,
+        parser: Optional[Callable] = None,
         *args,
         **kwargs,
     ):
@@ -224,6 +225,7 @@ class Agent:
         self.docs = docs
         self.docs_folder = docs_folder
         self.verbose = verbose
+        self.parser = parser
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -268,11 +270,23 @@ class Agent:
 
         # If tools are provided then set the tool prompt by adding to sop
         if self.tools:
-            self.sop = self.sop + worker_tools_sop_promp(
-                self.agent_name, memory=""
+            tools_prompt = worker_tools_sop_promp(
+                name=self.agent_name,
+                memory=self.short_memory.return_history_as_string(),
             )
 
+            # Append the tools prompt to the sop
+            self.sop = f"{self.sop}\n{tools_prompt}"
+
         # If the long term memory is provided then set the long term memory prompt
+
+        # Agentic stuff
+        self.reply = ""
+        self.question = None
+        self.answer = ""
+
+        # Initialize the llm with the conditional variables
+        # self.llm = llm(*args, **kwargs)
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -550,6 +564,10 @@ class Agent:
                                 **kwargs,
                             )
                             print(response)
+
+                        # If parser exists then parse the response
+                        if self.parser:
+                            response = self.parser(response)
 
                         # If code interpreter is enabled then run the code
                         if self.code_interpreter:
