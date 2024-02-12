@@ -155,3 +155,12 @@ class Step(StepRequestBody):
         False,
         description="Whether this is the last step in the task.",
     )
+
+class Skill(BaseModel):
+    name: str
+    level: int
+
+class Agent(BaseModel):
+    name: str
+    age: int
+    skills: List[Skill]
