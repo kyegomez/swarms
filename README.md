@@ -28,7 +28,7 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 </a>
 
 ### `Agent`
-A fully plug in and play Autonomous agent powered by an LLM extended by a long term memory database, and equipped with function calling for tool usage! By passing in an LLM you can create a fully autonomous agent with extreme customization and reliability ready for real-world task automation!
+A fully plug-and-play autonomous agent powered by an LLM extended by a long-term memory database, and equipped with function calling for tool usage! By passing in an LLM, you can create a fully autonomous agent with extreme customization and reliability, ready for real-world task automation!
 
 Features:
 
@@ -73,13 +73,7 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 
 
 ### `ToolAgent`
-ToolAgent is an agent that outputs JSON using any model from huggingface. It takes in an example schema with fields and then you provide it with a simple task and it'll output json! Perfect for function calling, parallel, and multi-step tool usage!
-
-✅ Versatility: The ToolAgent class is designed to be flexible and adaptable. It can be used with any model and tokenizer, making it suitable for a wide range of tasks. This versatility means that you can use ToolAgent as a foundation for any tool that requires language model processing.
-
-✅  Ease of Use: With its simple and intuitive interface, ToolAgent makes it easy to perform complex tasks. Just initialize it with your model, tokenizer, and JSON schema, and then call the run method with your task. This ease of use allows you to focus on your task, not on setting up your tools.
-
-✅  Customizability: ToolAgent accepts variable length arguments and keyword arguments, allowing you to customize its behavior to suit your needs. Whether you need to adjust the temperature of the model's output, limit the number of tokens, or tweak any other parameter, ToolAgent has you covered. This customizability ensures that ToolAgent can adapt to your specific requirements.
+ToolAgent is an agent that outputs JSON using any model from huggingface. It takes an example schema and performs a task, outputting JSON. It is versatile, easy to use, and customizable.
 
 
 ```python
@@ -119,7 +113,7 @@ print(generated_data)
 
 
 ### `Worker`
-The `Worker` is a simple all-in-one agent equipped with an LLM, tools, and RAG. Get started below:
+The `Worker` is a simple all-in-one agent equipped with an LLM, tools, and RAG for low level tasks.
 
 ✅ Plug in and Play LLM. Utilize any LLM from anywhere and any framework
 
