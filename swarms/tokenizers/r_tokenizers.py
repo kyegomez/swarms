@@ -147,7 +147,7 @@ class HuggingFaceTokenizer:
         backend_tokenizer_file = osp.join(model_dir, "tokenizer.json")
         model_file_exists = osp.exists(model_file)
         self.logger = get_logger("lmdeploy")
-        if ( not osp.exists(backend_tokenizer_file) and model_file_exists ):
+        if (not osp.exists(backend_tokenizer_file) and model_file_exists):
             self.logger.warning(
                 "Can not find tokenizer.json. "
                 "It may take long time to initialize the tokenizer."

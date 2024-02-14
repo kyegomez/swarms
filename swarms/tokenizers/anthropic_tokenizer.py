@@ -61,10 +61,7 @@ class AnthropicTokenizer(BaseTokenizer):
         }
         self.model = self.model  # or self.DEFAULT_MODEL
         self.max_tokens = self.max_tokens or self.default_max_tokens()
-        self.client = (
-            self.client
-            or import_optional_dependency("anthropic").Anthropic()
-        )
+        self.client = (self.client or import_optional_dependency("anthropic").Anthropic())
 
     def default_max_tokens(self) -> int:
         """
