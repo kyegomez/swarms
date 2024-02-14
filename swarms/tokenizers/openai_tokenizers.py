@@ -1,3 +1,6 @@
+# noqa: E501
+""" A module for OpenAI tokenizers. """
+
 from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
