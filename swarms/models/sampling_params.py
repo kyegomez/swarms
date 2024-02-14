@@ -209,10 +209,7 @@ class SamplingParams:
             raise ValueError(
                 f"logprobs must be non-negative, got {self.logprobs}."
             )
-        if (
-            self.prompt_logprobs is not None
-            and self.prompt_logprobs < 0
-        ):
+        if (self.prompt_logprobs is not None and self.prompt_logprobs < 0):
             raise ValueError(
                 "prompt_logprobs must be non-negative, got "
                 f"{self.prompt_logprobs}."
