@@ -245,10 +245,7 @@ class SamplingParams:
                 "early_stopping is not effective and must be "
                 "False when not using beam search."
             )
-        if (
-            self.length_penalty < 1.0 - _SAMPLING_EPS
-            or self.length_penalty > 1.0 + _SAMPLING_EPS
-        ):
+        if (self.length_penalty < 1.0 - _SAMPLING_EPS or self.length_penalty > 1.0 + _SAMPLING_EPS):
             raise ValueError(
                 "length_penalty is not effective and must be the "
                 "default value of 1.0 when not using beam search."
