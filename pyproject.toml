@@ -75,7 +75,8 @@ pinecone-client = "*"
 roboflow = "1.1.4"
 python-dotenv = "0.19.1"
 
-[tool.poetry.playground.dependencies]
+[tool.poetry.extras]
+playground = ["streamlit", "requests", "pygame", "speechrecognition", "playsound", "numpy"]
 streamlit = "0.89.0"
 requests = "2.26.0"
 pygame = "2.0.2"
