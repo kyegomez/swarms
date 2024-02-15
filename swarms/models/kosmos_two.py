@@ -209,19 +209,8 @@ class Kosmos(BaseMultiModalModel):
                 x1 = orig_x1 - l_o
                 y1 = orig_y1 - l_o
 
-                if (
-                    y1
-                    < text_height
-                    + text_offset_original
-                    + 2 * text_spaces
-                ):
-                    y1 = (
-                        orig_y1
-                        + r_o
-                        + text_height
-                        + text_offset_original
-                        + 2 * text_spaces
-                    )
+                if (y1 < text_height + text_offset_original + 2 * text_spaces):
+                    y1 = (orig_y1 + r_o + text_height + text_offset_original + 2 * text_spaces)
                     x1 = orig_x1 + r_o
 
                 # add text background
@@ -233,12 +222,7 @@ class Kosmos(BaseMultiModalModel):
                 )
                 text_bg_x1, text_bg_y1, text_bg_x2, text_bg_y2 = (
                     x1,
-                    y1
-                    - (
-                        text_height
-                        + text_offset_original
-                        + 2 * text_spaces
-                    ),
+                    y1 - (text_height + text_offset_original + 2 * text_spaces),
                     x1 + text_width,
                     y1,
                 )
@@ -253,31 +237,14 @@ class Kosmos(BaseMultiModalModel):
                         ),
                         prev_bbox,
                     ):
-                        text_bg_y1 += (
-                            text_height
-                            + text_offset_original
-                            + 2 * text_spaces
-                        )
-                        text_bg_y2 += (
-                            text_height
-                            + text_offset_original
-                            + 2 * text_spaces
-                        )
-                        y1 += (
-                            text_height
-                            + text_offset_original
-                            + 2 * text_spaces
-                        )
+                        text_bg_y1 += (text_height + text_offset_original + 2 * text_spaces)
+                        text_bg_y2 += (text_height + text_offset_original + 2 * text_spaces)
+                        y1 += (text_height + text_offset_original + 2 * text_spaces)
 
                         if text_bg_y2 >= image_h:
                             text_bg_y1 = max(
                                 0,
-                                image_h
-                                - (
-                                    text_height
-                                    + text_offset_original
-                                    + 2 * text_spaces
-                                ),
+                                image_h - (text_height + text_offset_original + 2 * text_spaces),
                             )
                             text_bg_y2 = image_h
                             y1 = image_h
@@ -294,8 +261,7 @@ class Kosmos(BaseMultiModalModel):
                                 # white
                                 bg_color = [255, 255, 255]
                             new_image[i, j] = (
-                                alpha * new_image[i, j]
-                                + (1 - alpha) * np.array(bg_color)
+                                alpha * new_image[i, j] + (1 - alpha) * np.array(bg_color)
                             ).astype(np.uint8)
 
                 cv2.putText(
