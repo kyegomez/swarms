@@ -45,14 +45,11 @@ from tenacity import (
     wait_exponential,
 )
 
-logger = logging.getLogger(__name__)
-
 from importlib.metadata import version
 
 from packaging.version import parse
 
 logger = logging.getLogger(__name__)
-
 
 @functools.lru_cache
 def _log_error_once(msg: str) -> None:
