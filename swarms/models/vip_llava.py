@@ -83,7 +83,7 @@ class VipLlavaMultiModal(BaseMultiModalModel):
             )
 
             return self.processor.decode(
-                generate_ids[0][len(inputs["input_ids"][0]) :],
+                generate_ids[0][len(inputs["input_ids"][0]):],
                 skip_special_tokens=True,
             )
 
