@@ -63,9 +63,7 @@ def _create_retry_decorator(
             | retry_if_exception_type(llm.error.APIError)
             | retry_if_exception_type(llm.error.APIConnectionError)
             | retry_if_exception_type(llm.error.RateLimitError)
-            | retry_if_exception_type(
-                llm.error.ServiceUnavailableError
-            )
+            | retry_if_exception_type(llm.error.ServiceUnavailableError)
         ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
