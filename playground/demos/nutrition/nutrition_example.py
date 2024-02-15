@@ -45,7 +45,7 @@ def create_vision_agent(image_path):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {openai_api_key}",
-        "OpenAI-Organization": f"{self.openai_org_id}"
+        "OpenAI-Organization": f"{openai_org_id}"
     }
     payload = {
         "model": "gpt-4-vision-preview",
