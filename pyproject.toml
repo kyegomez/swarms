@@ -73,7 +73,7 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "1.1.4"
-
+python-dotenv = "0.19.1"
 
 
 [tool.poetry.group.lint.dependencies]
