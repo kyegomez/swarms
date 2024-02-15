@@ -12,6 +12,7 @@ load_dotenv()
 # Model
 llm = OpenAIChat(
     openai_api_key=os.getenv("OPENAI_API_KEY"),
+    openai_org_id=os.getenv("OPENAI_ORG_ID"),
     model_name="gpt-4",
     max_tokens=1000,
 )

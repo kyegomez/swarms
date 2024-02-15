@@ -169,6 +169,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             os.environ["OPENAI_API_TYPE"] = "azure"
             os.environ["OPENAI_API_BASE"] = "https://<your-endpoint.openai.azure.com/"
             os.environ["OPENAI_API_KEY"] = "your AzureOpenAI key"
+            os.environ["OPENAI_ORG_ID"] = "your AzureOpenAI organization id"
             os.environ["OPENAI_API_VERSION"] = "2023-05-15"
             os.environ["OPENAI_PROXY"] = "http://your-corporate-proxy:8080"
 
@@ -197,6 +198,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     embedding_ctx_length: int = 8191
     """The maximum number of tokens to embed at once."""
     openai_api_key: Optional[str] = None
+    openai_org_id: Optional[str] = None
     openai_organization: Optional[str] = None
     allowed_special: Union[Literal["all"], Set[str]] = set()
     disallowed_special: Union[
@@ -268,6 +270,9 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         values["openai_api_key"] = get_from_dict_or_env(
             values, "openai_api_key", "OPENAI_API_KEY"
         )
+        values["openai_org_id"] = get_from_dict_or_env(
+            values, "openai_org_id", "OPENAI_ORG_ID", default=""
+        )
         values["openai_api_base"] = get_from_dict_or_env(
             values,
             "openai_api_base",
@@ -324,6 +329,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             "request_timeout": self.request_timeout,
             "headers": self.headers,
             "api_key": self.openai_api_key,
+            "org_id" : self.openai_org_id,
             "organization": self.openai_organization,
             "api_base": self.openai_api_base,
             "api_type": self.openai_api_type,

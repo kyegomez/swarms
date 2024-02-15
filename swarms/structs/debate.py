@@ -21,6 +21,7 @@ class DebatePlayer(Agent):
             name (str): name of this player
             temperature (float): higher values make the output more random, while lower values make it more focused and deterministic
             openai_api_key (str): As the parameter name suggests
+            openai_org_id (str): As the parameter name suggests
             sleep_time (float): sleep because of rate limits
         """
         super(DebatePlayer, self).__init__(
@@ -37,6 +38,7 @@ class Debate:
         num_players (int): num of players
         save_file_dir (str): dir path to json file
         openai_api_key (str): As the parameter name suggests
+        openai_org_id (str): As the parameter name suggests
         prompts_path (str): prompts path (json file)
         max_round (int): maximum Rounds of Debate
         sleep_time (float): sleep because of rate limits
@@ -277,6 +279,7 @@ class Debate:
                 name="Judge",
                 temperature=self.temperature,
                 openai_api_key=self.openai_api_key,
+                openai_org_id=self.openai_org_id,
                 sleep_time=self.sleep_time,
             )
             aff_ans = self.affirmative.memory_lst[2]["content"]

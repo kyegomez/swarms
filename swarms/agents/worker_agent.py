@@ -9,6 +9,10 @@ from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.utils.decorators import error_decorator, timing_decorator
 
+load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.getenv("OPENAI_ORG_ID")
 
 class Worker:
     """
@@ -48,6 +52,7 @@ class Worker:
         temperature: float = 0.5,
         llm=None,
         openai_api_key: str = None,
+        openai_org_id: str = None,
         tools: List[Any] = None,
         embedding_size: int = 1536,
         search_kwargs: dict = {"k": 8},
@@ -62,6 +67,7 @@ class Worker:
         self.temperature = temperature
         self.llm = llm
         self.openai_api_key = openai_api_key
+        self.openai_org_id = openai_org_id
         self.tools = tools
         self.embedding_size = embedding_size
         self.search_kwargs = search_kwargs
@@ -103,6 +109,7 @@ class Worker:
         external_tools = [MyTool1(), MyTool2()]
         worker = Worker(model_name="gpt-4",
                 openai_api_key="my_key",
+                openai_org_id="my_org_id",
                 name="My Worker",
                 role="Worker",
                 external_tools=external_tools,
@@ -123,9 +130,13 @@ class Worker:
         openai_api_key = (
             os.getenv("OPENAI_API_KEY") or self.openai_api_key
         )
+        openai_org_id = (
+            os.getenv("OPENAI_ORG_ID") or self.openai_org_id
+        )
         try:
             embeddings_model = OpenAIEmbeddings(
-                openai_api_key=openai_api_key
+                openai_api_key=openai_api_key,
+                openai_org_id=openai_org_id,
             )
             embedding_size = self.embedding_size
             index = faiss.IndexFlatL2(embedding_size)

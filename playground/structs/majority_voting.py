@@ -1,7 +1,9 @@
 from swarms import Agent, OpenAIChat, MajorityVoting
 
+api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.getenv("OPENAI_ORG_ID")
 # Initialize the llm
-llm = OpenAIChat()
+llm = OpenAIChat(openai_api_key=api_key, openai_org_id=org_id, max_tokens=150)
 
 # Initialize the agents
 agent1 = Agent(llm=llm, max_loops=1)

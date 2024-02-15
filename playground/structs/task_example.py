@@ -22,6 +22,7 @@ def my_condition():
 # Create an agent
 agent = Agent(
     llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
+    openai_org_id=os.environ["OPENAI_ORG_ID"],
     max_loops=1,
     dashboard=False,
 )

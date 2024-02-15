@@ -9,6 +9,7 @@ load_dotenv()
 # Initialize the model
 llm = OpenAIChat(
     openai_api_key=os.getenv("OPENAI_API_KEY"),
+    openai_org_id=os.getenv("OPENAI_ORG_ID"),
     max_tokens=1000,
 )
 

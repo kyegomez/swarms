@@ -36,10 +36,12 @@ class ModelParallelizer:
     ...     OpenAIChat(
     ...         temperature=0.5,
     ...         openai_api_key="OPENAI_API_KEY",
+    ...         openai_org_id="OPENAI_ORG_ID",
     ...     ),
     ...     OpenAIChat(
     ...         temperature=0.5,
     ...         openai_api_key="OPENAI_API_KEY",
+    ...         openai_org_id="OPENAI_ORG_ID",
     ...     ),
     ... ]
     >>> mp = ModelParallelizer(llms)

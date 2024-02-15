@@ -33,7 +33,9 @@ from swarms.prompts.autobloggen import (
 )
 
 api_key = os.environ["OPENAI_API_KEY"]
-llm = OpenAIChat(openai_api_key=api_key)
+org_id = os.environ["OPENAI_ORG_ID"]
+llm = OpenAIChat(openai_api_key=api_key, openai_org_id=org_id))
+
 
 
 def get_review_prompt(article):

@@ -12,10 +12,12 @@ from swarms.utils.parse_code import extract_code_from_markdown
 load_dotenv()
 
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.getenv("OPENAI_ORG_ID")
 
 model = OpenAIChat(
     model_name="gpt-4",
     openai_api_key=api_key,
+    openai_org_id=org_id,
     max_tokens=4000,
 )
 

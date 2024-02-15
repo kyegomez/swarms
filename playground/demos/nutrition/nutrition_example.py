@@ -8,6 +8,7 @@ from swarms.structs import Agent
 # Load environment variables
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Define prompts for various tasks
 MEAL_PLAN_PROMPT = (
@@ -33,6 +34,7 @@ def encode_image(image_path):
 # Initialize Language Model (LLM)
 llm = OpenAIChat(
     openai_api_key=openai_api_key,
+    openai_org_id=org_id,
     max_tokens=3000,
 )
 
@@ -43,6 +45,7 @@ def create_vision_agent(image_path):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {openai_api_key}",
+        "OpenAI-Organization: f{openai_org_id}",
     }
     payload = {
         "model": "gpt-4-vision-preview",

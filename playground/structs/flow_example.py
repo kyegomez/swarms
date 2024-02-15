@@ -1,12 +1,14 @@
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 
-api_key = ""
+api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Initialize the language model, this model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
 llm = OpenAIChat(
     # model_name="gpt-4"
     openai_api_key=api_key,
+    openai_org_id=org_id,
     temperature=0.5,
     # max_tokens=100,
 )

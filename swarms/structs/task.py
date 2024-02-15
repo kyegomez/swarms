@@ -50,7 +50,7 @@ class Task:
     Examples:
     >>> from swarms.structs import Task, Agent
     >>> from swarms.models import OpenAIChat
-    >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
+    >>> agent = Agent(llm=OpenAIChat(openai_api_key="", openai_org_id=""), max_loops=1, dashboard=False)
     >>> task = Task(description="What's the weather in miami", agent=agent)
     >>> task.execute()
     >>> task.result
@@ -81,7 +81,7 @@ class Task:
         Examples:
         >>> from swarms.structs import Task, Agent
         >>> from swarms.models import OpenAIChat
-        >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
+        >>> agent = Agent(llm=OpenAIChat(openai_api_key="", openai_org_id=""), max_loops=1, dashboard=False)
         >>> task = Task(description="What's the weather in miami", agent=agent)
         >>> task.execute()
         >>> task.result

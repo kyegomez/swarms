@@ -9,11 +9,14 @@ class BlogGen:
     def __init__(
         self,
         api_key,
+        org_id,
         blog_topic,
         temperature_range: str = "0.4,0.6,0.8,1.0,1.2",
     ):  # Add blog_topic as an argument
         self.openai_chat = OpenAIChat(
-            openai_api_key=api_key, temperature=0.8
+            openai_api_key=api_key, 
+            openai_org_id=org_id,
+            temperature=0.8
         )
         self.auto_temp = AutoTemp(api_key)
         self.temperature_range = temperature_range
@@ -134,5 +137,6 @@ class BlogGen:
 
 if __name__ == "__main__":
     api_key = os.environ["OPENAI_API_KEY"]
+    org_id = os.environ["OPENAI_ORG_ID"]
     blog_generator = BlogGen(api_key)
     blog_generator.run_workflow()

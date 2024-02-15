@@ -26,12 +26,14 @@ load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 stable_api_key = os.environ.get("STABLE_API_KEY")
 
 
 # Initialize the language model
 llm = GPT4VisionAPI(
     openai_api_key=api_key,
+    openai_org_id=org_id,
     max_tokens=500,
 )
 

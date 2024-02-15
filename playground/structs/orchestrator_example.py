@@ -1,7 +1,11 @@
 from swarms import Worker, Orchestrator
 
+api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.getenv("OPENAI_ORG_ID")
+
 node = Worker(
-    openai_api_key="",
+    openai_api_key=api_key,
+    openai_org_id=org_id,
     ai_name="Optimus Prime",
 )
 

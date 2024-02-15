@@ -25,6 +25,9 @@ def openai_api_key_env():
     openai_api_key = os.getenv("OPENAI_API_KEY")
     return openai_api_key
 
+def openai_org_id_env():
+    openai_org_id = os.getenv("OPENAI_ORG_ID")
+    return openai_org_id
 
 class OpenAITTS(AbstractLLM):
     """OpenAI TTS model
@@ -33,6 +36,7 @@ class OpenAITTS(AbstractLLM):
         model_name (str): _description_
         proxy_url (str): _description_
         openai_api_key (str): _description_
+        openai_org_id (str): _description_
         voice (str): _description_
         chunk_size (_type_): _description_
 
@@ -46,6 +50,7 @@ class OpenAITTS(AbstractLLM):
     ...     model_name = "tts-1-1106",
     ...     proxy_url = "https://api.openai.com/v1/audio/speech",
     ...     openai_api_key = openai_api_key_env,
+    ...     openai_org_id = openai_org_id_env,
     ...     voice = "onyx",
     ... )
     >>> tts.run("Hello world")
@@ -57,6 +62,7 @@ class OpenAITTS(AbstractLLM):
         model_name: str = "tts-1-1106",
         proxy_url: str = "https://api.openai.com/v1/audio/speech",
         openai_api_key: str = openai_api_key_env,
+        openai_org_id: str = openai_org_id_env,
         voice: str = "onyx",
         chunk_size=1024 * 1024,
         autosave: bool = False,
@@ -68,6 +74,7 @@ class OpenAITTS(AbstractLLM):
         self.model_name = model_name
         self.proxy_url = proxy_url
         self.openai_api_key = openai_api_key
+        self.openai_org_id = openai_org_id
         self.voice = voice
         self.chunk_size = chunk_size
         self.autosave = autosave

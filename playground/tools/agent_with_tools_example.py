@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 api_key = os.environ.get("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
-
-llm = OpenAIChat(api_key=api_key)
+llm = OpenAIChat(openai_api_key=api_key, openai_org_id=org_id)
 
 # @tool
 # def search_api(query: str) -> str:

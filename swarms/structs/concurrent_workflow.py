@@ -24,7 +24,7 @@ class ConcurrentWorkflow(BaseStructure):
     Examples:
     >>> from swarms.models import OpenAIChat
     >>> from swarms.structs import ConcurrentWorkflow
-    >>> llm = OpenAIChat(openai_api_key="")
+    >>> llm = OpenAIChat(openai_api_key="", openai_org_id="")
     >>> workflow = ConcurrentWorkflow(max_workers=5)
     >>> workflow.add("What's the weather in miami", llm)
     >>> workflow.add("Create a report on these metrics", llm)

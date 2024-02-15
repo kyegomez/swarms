@@ -12,12 +12,13 @@ from swarms.structs import Agent
 # Load environment variables
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 stability_api_key = os.getenv("STABLE_API_KEY")
 
 # Initialize the models
-vision_api = GPT4VisionAPI(api_key=openai_api_key)
+vision_api = GPT4VisionAPI(api_key=openai_api_key, org_id=org_id)
 sd_api = StableDiffusion(api_key=stability_api_key)
-gpt_api = OpenAIChat(openai_api_key=openai_api_key)
+gpt_api = OpenAIChat(openai_api_key=openai_api_key, org_id=org_id)
 
 
 class Idea2Image(Agent):

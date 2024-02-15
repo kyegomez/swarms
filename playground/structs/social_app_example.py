@@ -1,10 +1,11 @@
 from ..swarms import HierarchicalSwarm
 
 # Retrieve your API key from the environment or replace with your actual key
-api_key = "sksdsds"
+api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.getenv("OPENAI_ORG_ID")
 
 # Initialize HierarchicalSwarm with your API key
-swarm = HierarchicalSwarm(openai_api_key=api_key)
+swarm = HierarchicalSwarm(openai_api_key=api_key, openai_org_id=org_id, max_loops=1)
 
 # Define an objective
 objective = """

@@ -9,6 +9,7 @@ load_dotenv()
 
 # Retrieving the OpenAI API key from environment variables
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Creating a Worker instance
 worker = Worker(
@@ -17,7 +18,7 @@ worker = Worker(
     human_in_the_loop=False,
     tools=[],
     temperature=0.5,
-    llm=OpenAIChat(openai_api_key=api_key),
+    llm=OpenAIChat(openai_api_key=api_key, openai_org_id=org_id, max_tokens=500,),
     verbose=True,
 )
 

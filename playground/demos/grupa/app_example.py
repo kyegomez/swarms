@@ -43,11 +43,13 @@ export default MainPanel;
 
 # Load the environment variables
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Initialize the language agent
 llm = OpenAIChat(
     model_name="gpt-4",
     openai_api_key=api_key,
+    openai_org_id=org_id,
     temperature=0.5,
     max_tokens=4000,
 )

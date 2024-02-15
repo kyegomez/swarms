@@ -11,12 +11,14 @@ class AutoTemp:
     def __init__(
         self,
         api_key,
+        org_id,
         default_temp=0.0,
         alt_temps=None,
         auto_select=True,
         max_workers=6,
     ):
         self.api_key = api_key
+        self.org_id = org_id
         self.default_temp = default_temp
         self.alt_temps = (
             alt_temps if alt_temps else [0.4, 0.6, 0.8, 1.0, 1.2, 1.4]
@@ -24,7 +26,7 @@ class AutoTemp:
         self.auto_select = auto_select
         self.max_workers = max_workers
         self.llm = OpenAIChat(
-            openai_api_key=self.api_key, temperature=self.default_temp
+            openai_api_key=self.api_key, openai_org_id=org_id, temperature=self.default_temp
         )
 
     def evaluate_output(self, output, temperature):

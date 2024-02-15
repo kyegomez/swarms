@@ -79,6 +79,7 @@ class AutoScaler(BaseStructure):
     >>> llm = OpenAIChat(
     ...     temperature=0.5,
     ...     openai_api_key=api_key,
+    ...     openai_org_id=org_id,
     ... )
     >>> ## Initialize the workflow
     >>> agent = Agent(llm=llm, max_loops=1, dashboard=True)

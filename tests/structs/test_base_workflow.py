@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 api_key = os.environ.get("OPENAI_API_KEY")
-
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 def setup_workflow():
-    llm = OpenAIChat(openai_api_key=api_key)
+    llm = OpenAIChat(openai_api_key=api_key, openai_org_id=org_id)
     workflow = BaseWorkflow(max_loops=1)
     workflow.add("What's the weather in miami", llm)
     workflow.add("Create a report on these metrics", llm)

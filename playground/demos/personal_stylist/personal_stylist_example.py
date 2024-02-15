@@ -13,9 +13,10 @@ from swarms.prompts.personal_stylist import (
 # Load environment variables
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Initialize GPT4VisionAPI
-llm = GPT4VisionAPI(openai_api_key=api_key)
+llm = GPT4VisionAPI(openai_api_key=api_key, openai_org_id=org_id)
 
 # User selfie and clothes images
 user_selfie = "user_image.jpg"

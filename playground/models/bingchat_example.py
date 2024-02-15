@@ -5,6 +5,7 @@ from swarms.models import OpenAIChat
 import os
 
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Initialize the EdgeGPTModel
 edgegpt = BingChat(cookies_path="./cookies.txt")
@@ -20,6 +21,7 @@ def edgegpt(task: str = None):
 # This model can be swapped out with Anthropic, ETC, Huggingface Models like Mistral, ETC
 llm = OpenAIChat(
     openai_api_key=api_key,
+    openai_org_id=org_id,
     temperature=0.5,
 )
 

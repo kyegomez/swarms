@@ -61,6 +61,8 @@ class MultiAgentCollaboration:
     >>>
     >>> # Initialize the language model
     >>> llm = OpenAIChat(
+    >>>     openai_api_key="OPENAI_API_KEY",
+    >>>     openai_org_id="OPENAI_ORG_ID",
     >>>     temperature=0.5,
     >>> )
     >>>

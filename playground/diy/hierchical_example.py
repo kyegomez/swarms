@@ -3,6 +3,7 @@ from swarms import HierarchicalSwarm
 
 swarm = HierarchicalSwarm(
     openai_api_key="key",
+    openai_org_id="org_id",
     model_type="openai",
     model_id="gpt-4",
     use_vectorstore=False,

@@ -7,8 +7,9 @@ import swarms.prompts.security_team as stsp
 # Load environment variables and initialize the Vision API
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
-llm = GPT4VisionAPI(openai_api_key=api_key)
+llm = GPT4VisionAPI(openai_api_key=api_key, openai_org_id=org_id)
 
 # Image for analysis
 img = "bank_robbery.jpg"

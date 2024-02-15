@@ -7,15 +7,19 @@ import swarms.prompts.urban_planning as upp
 # Load environment variables
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 stability_api_key = os.getenv("STABILITY_API_KEY")
 
 # Initialize language model
 llm = OpenAIChat(
-    openai_api_key=api_key, temperature=0.5, max_tokens=3000
+    openai_api_key=api_key, 
+    openai_org_id=org_id,
+    temperature=0.5, 
+    max_tokens=3000
 )
 
 # Initialize Vision model
-vision_api = GPT4VisionAPI(api_key=api_key)
+vision_api = GPT4VisionAPI(api_key=api_key, org_id=org_id)
 
 # Initialize agents for urban planning tasks
 architecture_analysis_agent = Agent(

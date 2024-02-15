@@ -5,7 +5,7 @@ from swarms.models import OpenAIChat
 
 class TestNonlinearWorkflow:
     def test_add_task(self):
-        llm = OpenAIChat(openai_api_key="")
+        llm = OpenAIChat(openai_api_key="", openai_org_id="")
         task = Task(llm, "What's the weather in miami")
         workflow = NonlinearWorkflow()
         workflow.add(task)
@@ -18,7 +18,7 @@ class TestNonlinearWorkflow:
         workflow.run()
 
     def test_run_with_single_task(self):
-        llm = OpenAIChat(openai_api_key="")
+        llm = OpenAIChat(openai_api_key="", openai_org_id="")
         task = Task(llm, "What's the weather in miami")
         workflow = NonlinearWorkflow()
         workflow.add(task)
@@ -26,7 +26,7 @@ class TestNonlinearWorkflow:
         workflow.run()
 
     def test_run_with_circular_dependency(self):
-        llm = OpenAIChat(openai_api_key="")
+        llm = OpenAIChat(openai_api_key="", openai_org_id="")
         task1 = Task(llm, "What's the weather in miami")
         task2 = Task(llm, "What's the weather in new york")
         workflow = NonlinearWorkflow()
@@ -38,7 +38,7 @@ class TestNonlinearWorkflow:
             workflow.run()
 
     def test_run_with_stopping_token(self):
-        llm = OpenAIChat(openai_api_key="")
+        llm = OpenAIChat(openai_api_key="", openai_org_id="")
         task1 = Task(llm, "What's the weather in miami")
         task2 = Task(llm, "What's the weather in new york")
         workflow = NonlinearWorkflow(stopping_token="stop")

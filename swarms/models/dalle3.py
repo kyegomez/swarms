@@ -65,13 +65,15 @@ class Dalle3:
     max_retries: int = 3
     quality: str = "standard"
     openai_api_key: str = None or os.getenv("OPENAI_API_KEY")
+    openai_org_id: str = None or os.getenv("OPENAI_ORG_ID")
     n: int = 1
     save_path: str = "images"
     max_time_seconds: int = 60
     save_folder: str = "images"
     image_format: str = "png"
     client = OpenAI(
-        api_key=openai_api_key,
+        openai_api_key=openai_api_key,
+        openai_org_id=openai_org_id,
     )
     cache = TTLCache(maxsize=100, ttl=3600)
     dashboard: bool = False

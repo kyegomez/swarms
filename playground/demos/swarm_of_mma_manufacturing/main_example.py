@@ -23,9 +23,12 @@ from swarms.structs import Agent
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # GPT4VisionAPI
-llm = GPT4VisionAPI(openai_api_key=api_key, max_tokens=2000)
+llm = GPT4VisionAPI(openai_api_key=api_key,
+    openai_org_id=org_id,
+    max_tokens=2000)
 
 assembly_line = (
     "playground/demos/swarm_of_mma_manufacturing/assembly_line.jpg"

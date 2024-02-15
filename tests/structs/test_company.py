@@ -4,7 +4,9 @@ from swarms.structs.company import Company
 from swarms import OpenAIChat
 
 # Mock OpenAIChat instance
-llm = OpenAIChat(openai_api_key="test_key", max_tokens=4000)
+llm = OpenAIChat(openai_api_key="test_key", 
+    openai_org_id=org_id,
+    max_tokens=4000)
 
 # Mock Agents
 ceo = Agent(llm=llm, name="CEO")

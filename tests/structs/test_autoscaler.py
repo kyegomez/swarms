@@ -12,9 +12,11 @@ from swarms.structs.autoscaler import AutoScaler
 load_dotenv()
 
 api_key = os.environ.get("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 llm = OpenAIChat(
     temperature=0.5,
     openai_api_key=api_key,
+    openai_org_id=org_id,
 )
 agent = Agent(llm=llm, max_loops=1)
 

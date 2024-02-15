@@ -13,10 +13,12 @@ load_dotenv()
 
 # Get the API key from the environment
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Initialize the language model
 llm = OpenAIChat(
     openai_api_key=openai_api_key,
+    openai_org_id=org_id,
 )
 
 # Initialize the text-to-speech model
@@ -24,6 +26,7 @@ tts = OpenAITTS(
     model_name="tts-1-1106",
     voice="onyx",
     openai_api_key=openai_api_key,
+    openai_org_id=org_id,
     saved_filepath="runs/tts_speech.wav",
 )
 

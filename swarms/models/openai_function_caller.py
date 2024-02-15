@@ -113,6 +113,7 @@ class OpenAIFunctionCaller:
     def __init__(
         self,
         openai_api_key: str,
+        openai_org_id: str,
         model: str = "text-davinci-003",
         max_tokens: int = 3000,
         temperature: float = 0.5,
@@ -131,6 +132,7 @@ class OpenAIFunctionCaller:
         timeout_sec: Union[float, None] = None,
     ):
         self.openai_api_key = openai_api_key
+        self.openai_org_id = openai_org_id
         self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -164,6 +166,7 @@ class OpenAIFunctionCaller:
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + openai.api_key,
+            "OpenAI-Organization: f"{self.openai_org_id}"
         }
         json_data = {"model": self.model, "messages": messages}
         if tools is not None:

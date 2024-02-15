@@ -7,11 +7,12 @@ from swarms.models.stable_diffusion import StableDiffusion
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 stability_api_key = os.getenv("STABILITY_API_KEY")
 
 # Initialize the language model and image generation model
 llm = OpenAIChat(
-    openai_api_key=openai_api_key, temperature=0.5, max_tokens=3000
+    openai_api_key=openai_api_key, openai_org_id=org_id, temperature=0.5, max_tokens=3000
 )
 sd_api = StableDiffusion(api_key=stability_api_key)
 

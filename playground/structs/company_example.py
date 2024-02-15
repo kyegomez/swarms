@@ -10,7 +10,9 @@ from swarms.structs.company import Company
 load_dotenv()
 
 llm = OpenAIChat(
-    openai_api_key=os.getenv("OPENAI_API_KEY"), max_tokens=4000
+    openai_api_key=os.getenv("OPENAI_API_KEY"), 
+    openai_org_id=os.getenv("OPENAI_ORG_ID"),
+    max_tokens=4000
 )
 
 ceo = Agent(llm=llm, ai_name="CEO")

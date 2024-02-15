@@ -2,10 +2,12 @@ from swarms import OpenAI, Agent
 from swarms.structs.groupchat import GroupChatManager, GroupChat
 
 
-api_key = ""
+api_key = os.environ.get("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 llm = OpenAI(
     openai_api_key=api_key,
+    openai_org_id=org_id,
     temperature=0.5,
     max_tokens=3000,
 )

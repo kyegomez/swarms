@@ -23,6 +23,7 @@ def test_openaitts_initialization_custom_parameters():
     assert tts.model_name == "custom_model"
     assert tts.proxy_url == "custom_url"
     assert tts.openai_api_key == "custom_key"
+    assert tts.openai_org_id == "custom_org_id"
     assert tts.voice == "custom_voice"
     assert tts.chunk_size == 2048
 
@@ -37,7 +38,9 @@ def test_run(mock_post):
     assert audio == b"chunk1chunk2"
     mock_post.assert_called_once_with(
         "https://api.openai.com/v1/audio/speech",
-        headers={"Authorization": f"Bearer {tts.openai_api_key}"},
+        headers={"Authorization": f"Bearer {tts.openai_api_key}",
+                    "X-OpenAI-Organization": f"{tts.openai_org_id}"
+        },
         json={
             "model": "tts-1-1106",
             "input": "Hello world",
@@ -77,7 +80,9 @@ def test_run_custom_model(mock_post):
     assert audio == b"chunk1chunk2"
     mock_post.assert_called_once_with(
         "https://api.openai.com/v1/audio/speech",
-        headers={"Authorization": f"Bearer {tts.openai_api_key}"},
+        headers={"Authorization": f"Bearer {tts.openai_api_key}",                    
+            "X-OpenAI-Organization": f"{tts.openai_org_id}"
+        },
         json={
             "model": "custom_model",
             "input": "Hello world",
@@ -96,7 +101,9 @@ def test_run_custom_voice(mock_post):
     assert audio == b"chunk1chunk2"
     mock_post.assert_called_once_with(
         "https://api.openai.com/v1/audio/speech",
-        headers={"Authorization": f"Bearer {tts.openai_api_key}"},
+        headers={"Authorization": f"Bearer {tts.openai_api_key}",                    
+            "X-OpenAI-Organization": f"{tts.openai_org_id}"
+        },
         json={
             "model": "tts-1-1106",
             "input": "Hello world",

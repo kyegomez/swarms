@@ -5,7 +5,11 @@ from swarms.swarms.multi_agent_debate import (
 from swarms.workers.worker import Worker
 from swarms.models import OpenAIChat
 
-llm = OpenAIChat()
+api_key = os.environ.get("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
+
+
+llm = OpenAIChat(openai_api_key=api_key, openai_org_id=org_id)
 
 worker1 = Worker(
     llm=llm,
