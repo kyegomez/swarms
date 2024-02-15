@@ -11,4 +11,6 @@ agent = Agent(
 )
 
 # Run the workflow on a task
-agent("Generate a 10,000 word blog on health and wellness.")
+agent(
+    "Find a chick fil a equivalent in san francisco in hayes valley"
+)

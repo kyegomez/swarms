@@ -1,0 +1,17 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+name = "engine"
+path = "src/my_lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.15", features = ["extension-module"] }
+rayon = "1.5.1"
+log = "0.4.14"
+rustcuda = "0.1.0"
+rustcuda_derive = "*"
+rustcuda_core = "0.1"

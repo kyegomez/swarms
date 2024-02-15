@@ -145,7 +145,7 @@ class Agent:
         id: str = agent_id,
         llm: Any = None,
         template: Optional[str] = None,
-        max_loops: int = 1,
+        max_loops: Optional[int] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: int = 1,
         retry_attempts: int = 3,
@@ -181,6 +181,10 @@ class Agent:
         docs_folder: str = None,
         verbose: bool = False,
         parser: Optional[Callable] = None,
+        best_of_n: Optional[int] = None,
+        callback: Optional[Callable] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        callbacks: Optional[List[Callable]] = None,
         *args,
         **kwargs,
     ):
@@ -226,6 +230,10 @@ class Agent:
         self.docs_folder = docs_folder
         self.verbose = verbose
         self.parser = parser
+        self.best_of_n = best_of_n
+        self.callback = callback
+        self.metadata = metadata
+        self.callbacks = callbacks
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:

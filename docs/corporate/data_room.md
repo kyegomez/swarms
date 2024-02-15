@@ -70,6 +70,11 @@ The team has thousands of hours building and optimizing autonomous agents. Leade
 Key milestones: get 80K framework users in January 2024, start contracts in target verticals, introduce commercial products in 2025 with various pricing models.
 
 
+### **Pre-Seed Pitch Deck** 
+- [Here is our pitch deck for our preseed round](https://www.figma.com/file/LlEMXZ48HTIG3S9VzdibaB/Swarm-Pitch-Deck?type=design&node-id=0%3A1&
+mode=design&t=D3023hPOz27M9RGD-1)
+
+
 ### **The Swarm Corporation Memo**
 To learn more about our mission, vision, plans for GTM, and much more please refer to the [Swarm Memo here](https://docs.google.com/document/d/1hS_nv_lFjCqLfnJBoF6ULY9roTbSgSuCkvXvSUSc7Lo/edit?usp=sharing)
 
@@ -92,4 +97,11 @@ Swarms is an open source framework for developers in python to enable seamless, 
 | Github Community insights        | Insights into the Github community around the product.                                                        | [Github Community insights](https://github.com/kyegomez/swarms/graphs/community)         |
 | Github Traffic Metrics           | Metrics related to traffic, such as views and clones on Github.                                               | [Github Traffic Metrics](https://github.com/kyegomez/swarms/graphs/traffic)               |
 | Issues with the framework        | Current open issues for the product on Github.                                                                | [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) |
+
+
+
+## **Corporate Documents**
+This section is dedicated entirely for corporate documents.
+
+- [Cap Table](https://docs.google.com/spreadsheets/d/1wuTWbfhYaY5Xp6nSQ9R0wDtSpwSS9coHxsjKd0UbIDc/edit?usp=sharing)
 

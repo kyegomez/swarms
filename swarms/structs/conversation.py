@@ -6,6 +6,7 @@ from termcolor import colored
 from swarms.memory.base_db import AbstractDatabase
 from swarms.structs.base import BaseStructure
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
+from typing import Optional
 
 
 class Conversation(BaseStructure):
@@ -61,7 +62,7 @@ class Conversation(BaseStructure):
 
     def __init__(
         self,
-        system_prompt: str,
+        system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         database: AbstractDatabase = None,
         autosave: bool = False,

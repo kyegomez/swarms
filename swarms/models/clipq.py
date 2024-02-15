@@ -8,19 +8,16 @@ from transformers import CLIPModel, CLIPProcessor
 
 
 class CLIPQ:
-    """
-    ClipQ is an CLIQ based model that can be used to generate captions for images.
-
-
-    Attributes:
-        model_name (str): The name of the model to be used.
-        query_text (str): The query text to be used for the model.
+    """CLIPQ model for image and text retrieval
 
     Args:
-        model_name (str): The name of the model to be used.
-        query_text (str): The query text to be used for the model.
+    model_name (str): The name of the CLIP model to use
+    query_text (str): The query text to use for the model
 
-
+    Example:
+    >>> clipq = CLIPQ()
+    >>> image = clipq.fetch_image_from_url()
+    >>> vectors = clipq.get_vectors(image)
 
 
     """

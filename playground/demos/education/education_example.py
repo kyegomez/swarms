@@ -1,8 +1,7 @@
 import os
 from dotenv import load_dotenv
 from swarms.models import OpenAIChat
-from swarms.models.stable_diffusion import StableDiffusion
-from swarms.structs import Agent, SequentialWorkflow
+from swarms import Agent, SequentialWorkflow
 import swarms.prompts.education as edu_prompts
 
 # Load environment variables
@@ -14,9 +13,6 @@ stability_api_key = os.getenv("STABILITY_API_KEY")
 llm = OpenAIChat(
     openai_api_key=api_key, temperature=0.5, max_tokens=3000
 )
-
-# Initialize Stable Diffusion
-sd_api = StableDiffusion(api_key=stability_api_key)
 
 # User preferences (can be dynamically set in a real application)
 user_preferences = {
@@ -60,8 +56,6 @@ workflow.add(sample_lesson_agent, "Generate a practice test")
 workflow.run()
 
 # Generate an image using Stable Diffusion
-image_result = sd_api.run(image_prompt)
-
 # Output results for each task
 for task in workflow.tasks:
     print(
@@ -70,7 +64,4 @@ for task in workflow.tasks:
     )
 
 # Output image result
-print(
-    "Image Generation Task: Generate an image for the interactive"
-    f" lesson\nResult: {image_result}"
-)
+print("Image Generation Task: Generate an image for the interactive")
