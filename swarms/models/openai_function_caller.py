@@ -166,7 +166,7 @@ class OpenAIFunctionCaller:
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + openai.api_key,
-            "OpenAI-Organization: f"{self.openai_org_id}"
+            "OpenAI-Organization: f"{self.openai_org_id}""
         }
         json_data = {"model": self.model, "messages": messages}
         if tools is not None:
