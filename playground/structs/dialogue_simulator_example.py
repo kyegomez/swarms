@@ -1,15 +1,15 @@
 from swarms.swarms import DialogueSimulator
 from swarms.workers.worker import Worker
 from swarms.models import OpenAIChat
-
+import os
 
 api_key = os.environ.get("OPENAI_API_KEY")
 org_id = os.environ.get("OPENAI_ORG_ID")
 
 llm = OpenAIChat(
     model_name="gpt-4", 
-    openai_api_key=api-key, 
-    openai_org_id=org-id,
+    openai_api_key=api_key, 
+    openai_org_id=org_id,
     temperature=0.5
 )
 
