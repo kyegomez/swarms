@@ -130,7 +130,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.openai_api_key}",
-                "OpenAI-Organization: f"{self.openai_org_id}""
+                "OpenAI-Organization": f"{self.openai_org_id}"
             }
             payload = {
                 "model": self.model_name,
@@ -269,7 +269,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {openai_api_key}",
-            "OpenAI-Organization: f"{self.openai_org_id}""
+            "OpenAI-Organization": f"{self.openai_org_id}"
         }
         payload = {
             "model": self.model_name,
@@ -332,7 +332,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {openai_api_key}",
-                "OpenAI-Organization: f"{self.openai_org_id}""
+                "OpenAI-Organization": f"{self.openai_org_id}"
             }
             payload = {
                 "model": self.model_name,
