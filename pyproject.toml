@@ -99,6 +99,10 @@ aggressive = 3
 [tool.ruff]
 line-length = 70
 
+[tool.flake8]
+line-length = 70
+ignore = "E501,W6"  # or ["E501", "W6"]
+
 [tool.black]
 line-length = 70
 target-version = ['py38']
@@ -107,3 +111,5 @@ preview = true
 
 [tool.poetry.scripts]
 swarms = 'swarms.cli._cli:main'
+
+
