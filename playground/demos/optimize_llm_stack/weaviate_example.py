@@ -8,7 +8,7 @@ weaviate_client = WeaviateDB(
     grpc_port="YOUR_gRPC_PORT",
     grpc_secure=True,
     auth_client_secret="YOUR_APIKEY",
-    additional_headers={"X-OpenAI-Api-Key": "YOUR_OPENAI_APIKEY","OpenAI-Organization: YOUR_OPENAI_ORG_ID"},
+    additional_headers={"X-OpenAI-Api-Key": "YOUR_OPENAI_APIKEY","OpenAI-Organization": "YOUR_OPENAI_ORG_ID"},
     additional_config=None,  # You can pass additional configuration here
 )
 
