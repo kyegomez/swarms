@@ -47,8 +47,8 @@ class ChromaDB:
 
     def __init__(
         self,
-        metric: str,
-        output_dir: str,
+        metric: str = "cosine",
+        output_dir: str = "swarms",
         limit_tokens: Optional[int] = 1000,
         n_results: int = 2,
         embedding_function: Callable = None,

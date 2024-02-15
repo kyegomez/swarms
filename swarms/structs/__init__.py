@@ -62,8 +62,9 @@ from swarms.structs.majority_voting import (
     most_frequent,
     parse_code_completion,
     majority_voting,
+    MajorityVoting,
 )
-
+from swarms.structs.stackoverflow_swarm import StackOverflowSwarm
 
 __all__ = [
     "Agent",
@@ -123,4 +124,6 @@ __all__ = [
     "most_frequent",
     "parse_code_completion",
     "majority_voting",
+    "MajorityVoting",
+    "StackOverflowSwarm",
 ]
