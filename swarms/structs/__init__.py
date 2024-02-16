@@ -17,7 +17,6 @@ from swarms.structs.recursive_workflow import RecursiveWorkflow
 from swarms.structs.schemas import (
     Artifact,
     ArtifactUpload,
-    Step,
     StepInput,
     StepOutput,
     StepRequestBody,

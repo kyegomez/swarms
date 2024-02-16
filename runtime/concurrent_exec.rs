@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use pyo3::types::IntoPyDict;
-use rayon::{ThreadPool, ThreadPoolBuilder, prelude::*};
+use rayon::{ThreadPool, ThreadPoolBuilder};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use std::thread;
@@ -12,16 +12,6 @@ fn rust_module(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(concurrent_exec, m)?)?;
     Ok(())
 }
-
-#[pyfunction]
-pub fn concurrent_exec<F, G, H>(
-    py_codes: Vec<&str>,
-    timeout: Option<Duration>,
-    num_threads: usize,
-    error_handler: F,
-    log_function: G,
-    result_handler: H,
-) -> PyResult<Vec<PyResult<()>>>
 
 /// This function wraps Python code in Rust concurrency for ultra high performance.
 ///
@@ -45,6 +35,16 @@ pub fn concurrent_exec<F, G, H>(
 /// let result_handler = |r| println!("Result: {:?}", r);
 /// execute_python_codes(py_codes, timeout, num_threads, error_handler, log_function, result_handler);
 /// ```
+
+#[pyfunction]
+pub fn concurrent_exec<F, G, H>(
+    py_codes: Vec<&str>,
+    timeout: Option<Duration>,
+    num_threads: usize,
+    error_handler: F,
+    log_function: G,
+    result_handler: H,
+) -> PyResult<Vec<PyResult<()>>>
 where
     F: Fn(&str),
     G: Fn(&str),
@@ -83,7 +83,7 @@ where
                 None => {}
             }
 
-            results.lock().unwrap().push(result.clone());
+            results.lock().unwrap().push(result.clone(result));
             result_handler(&result);
         });
     });

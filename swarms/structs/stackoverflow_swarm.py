@@ -52,14 +52,12 @@ class StackOverflowSwarm(BaseMultiAgentStructure):
 
         # Counter for the number of upvotes per post
         self.upvotes = 0
-        
+
         # Counter for the number of downvotes per post
         self.downvotes = 0
-        
+
         # Forum for the agents to interact
         self.forum = []
-        
-        
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -85,9 +83,7 @@ class StackOverflowSwarm(BaseMultiAgentStructure):
                 **kwargs,
             )
             # Add to the conversation
-            self.conversation.add(
-                agent.ai_name, f"{response}"
-            )
+            self.conversation.add(agent.ai_name, f"{response}")
             logger.info(f"[{agent.ai_name}]: [{response}]")
-            
+
         return self.conversation.return_history_as_string()
