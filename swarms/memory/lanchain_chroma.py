@@ -52,6 +52,7 @@ class LangchainChromaVectorMemory:
         search_memory: Searches the vector memory for similar entries.
         ask_question: Asks a question to the vector memory.
     """
+
     def __init__(
         self,
         loc=None,

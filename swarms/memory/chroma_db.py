@@ -7,10 +7,6 @@ from typing import Optional, Callable, List
 import chromadb
 from dotenv import load_dotenv
 
-# from chromadb.utils.data import ImageLoader
-from chromadb.utils.embedding_functions import (
-    OpenCLIPEmbeddingFunction,
-)
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.markdown_message import display_markdown_message
 
@@ -94,7 +90,7 @@ class ChromaDB:
 
         # If multimodal set the embedding model to OpenCLIP
         if multimodal:
-            self.embedding_function = OpenCLIPEmbeddingFunction()
+            self.embedding_function = None
 
         # Create ChromaDB client
         self.client = chromadb.Client()

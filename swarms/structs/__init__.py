@@ -64,6 +64,10 @@ from swarms.structs.majority_voting import (
     MajorityVoting,
 )
 from swarms.structs.stackoverflow_swarm import StackOverflowSwarm
+from swarms.structs.task_queue_base import (
+    synchronized_queue,
+    TaskQueueBase,
+)
 
 __all__ = [
     "Agent",
@@ -125,4 +129,6 @@ __all__ = [
     "majority_voting",
     "MajorityVoting",
     "StackOverflowSwarm",
+    "synchronized_queue",
+    "TaskQueueBase",
 ]

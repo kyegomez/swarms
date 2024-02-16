@@ -11,6 +11,7 @@ dataframe/
 static/generated
 runs
 chroma
+Unit Testing Agent_state.json
 swarms/__pycache__
 venv
 .DS_Store

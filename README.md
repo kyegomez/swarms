@@ -1181,10 +1181,34 @@ Join our growing community around the world, for real-time support, ideas, and d
 ## Discovery Call
 Book a discovery call to learn how Swarms can lower your operating costs by 40% with swarms of autonomous agents in lightspeed. [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
 
+
+
 ## Accelerate Backlog
 Help us accelerate our backlog by supporting us financially! Note, we're an open source corporation and so all the revenue we generate is through donations at the moment ;)
 
 <a href="https://polar.sh/kyegomez"><img src="https://polar.sh/embed/fund-our-backlog.svg?org=kyegomez" /></a>
+
+
+## File Structure
+The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
+
+```sh
+├── __init__.py
+├── agents
+├── artifacts
+├── chunkers
+├── cli
+├── loaders
+├── memory
+├── models
+├── prompts
+├── structs
+├── telemetry
+├── tokenizers
+├── tools
+├── utils
+└── workers
+```
 
 ## Swarm Newsletter 🤖 🤖 🤖 📧 
 Sign up to the Swarm newsletter to receive  updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊
