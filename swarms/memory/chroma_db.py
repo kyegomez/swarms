@@ -41,6 +41,7 @@ class ChromaDB:
         >>>     output="results",
         >>>     llm="gpt3",
         >>>     openai_api_key=OPENAI_API_KEY,
+        >>>     openai_org_id=OPENAI_ORG_ID,
         >>> )
         >>> chromadb.add(task, result, result_id)
     """

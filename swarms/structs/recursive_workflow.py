@@ -24,7 +24,7 @@ class RecursiveWorkflow(BaseStructure):
     Examples:
     >>> from swarms.models import OpenAIChat
     >>> from swarms.structs import RecursiveWorkflow, Task
-    >>> llm = OpenAIChat(openai_api_key="")
+    >>> llm = OpenAIChat(openai_api_key="", openai_org_id="")
     >>> task = Task(llm, "What's the weather in miami")
     >>> workflow = RecursiveWorkflow()
     >>> workflow.add(task)

@@ -7,11 +7,12 @@ from swarms.models.stable_diffusion import StableDiffusion
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 stability_api_key = os.getenv("STABILITY_API_KEY")
 
 # Initialize the language model and image generation model
 llm = OpenAIChat(
-    openai_api_key=openai_api_key, temperature=0.5, max_tokens=3000
+    openai_api_key=openai_api_key, openai_org_id=org_id, temperature=0.5, max_tokens=3000
 )
 sd_api = StableDiffusion(api_key=stability_api_key)
 
@@ -41,7 +42,7 @@ class ProductAdConceptGenerator:
             "serene",
             "lasers,lightning",
         ]
-        self.contexts = [
+        self.style = [
             "in an everyday setting",
             "in a rave setting",
             "in an abstract environment",
@@ -62,10 +63,21 @@ class ProductAdConceptGenerator:
         self.contexts = [
             "high realism product ad (extremely creative)"
         ]
+        self.social_media_platforms = [
+            "Facebook",
+            "Instagram",
+            "Twitter",
+            "LinkedIn",
+            "Snapchat",
+            "TikTok",
+            "Pinterest",
+            "YouTube",
+        ]
 
     def generate_concept(self):
         theme = random.choice(self.themes)
         context = random.choice(self.contexts)
+        style = random.choice(self.style)
         return (
             f"{theme} inside a {style} {self.product_name}, {context}"
         )
@@ -93,8 +105,7 @@ ad_copy_prompt = (
 ad_copy = ad_copy_agent.run(task=ad_copy_prompt)
 
 # Output the results
-print("Creative Concept:", concept_result)
-print("Design Ideas:", design_result)
+print("Creative Concept:", concept_concept)
 print("Ad Copy:", copywriting_result)
 print(
     "Image Path:",

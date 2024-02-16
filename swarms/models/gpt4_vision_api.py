@@ -22,6 +22,7 @@ except ImportError:
 # Load environment variables
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_org_id = os.getenv("OPENAI_ORG_ID")
 
 
 gpt4_vision_system_prompt = """
@@ -67,6 +68,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
     def __init__(
         self,
         openai_api_key: str = openai_api_key,
+        openai_org_id: str = openai_org_id,
         model_name: str = "gpt-4-vision-preview",
         logging_enabled: bool = False,
         max_workers: int = 10,
@@ -81,6 +83,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
     ):
         super(GPT4VisionAPI).__init__(*args, **kwargs)
         self.openai_api_key = openai_api_key
+        self.openai_org_id = openai_org_id
         self.logging_enabled = logging_enabled
         self.model_name = model_name
         self.max_workers = max_workers
@@ -127,6 +130,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.openai_api_key}",
+                "OpenAI-Organization": f"{self.openai_org_id}"
             }
             payload = {
                 "model": self.model_name,
@@ -203,7 +207,6 @@ class GPT4VisionAPI(BaseMultiModalModel):
         """
         PROMPT = f"""
         These are frames from a video that I want to upload. Generate a compelling description that I can upload along with the video:
-        
         {frames}
         """
         return PROMPT
@@ -266,6 +269,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {openai_api_key}",
+            "OpenAI-Organization": f"{self.openai_org_id}"
         }
         payload = {
             "model": self.model_name,
@@ -328,6 +332,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {openai_api_key}",
+                "OpenAI-Organization": f"{self.openai_org_id}"
             }
             payload = {
                 "model": self.model_name,

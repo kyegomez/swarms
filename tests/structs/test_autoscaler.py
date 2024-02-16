@@ -12,9 +12,11 @@ from swarms.structs.autoscaler import AutoScaler
 load_dotenv()
 
 api_key = os.environ.get("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 llm = OpenAIChat(
     temperature=0.5,
     openai_api_key=api_key,
+    openai_org_id=org_id,
 )
 agent = Agent(llm=llm, max_loops=1)
 
@@ -232,13 +234,6 @@ def test_autoscaler_initialization():
     assert autoscaler.busy_threshold == 0.8
     assert len(autoscaler.agents_pool) == 5
 
-
-def test_autoscaler_add_task():
-    autoscaler = AutoScaler(agent=agent)
-    autoscaler.add_task("task1")
-    assert autoscaler.task_queue.qsize() == 1
-
-
 def test_autoscaler_scale_up():
     autoscaler = AutoScaler(
         initial_agents=5, scale_up_factor=2, agent=agent
@@ -277,3 +272,24 @@ def test_autoscaler_del_agent():
     autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.del_agent()
     assert len(autoscaler.agents_pool) == 4
+
+
+    def test_add_task(self):
+        autoscaler = AutoScaler()
+        autoscaler.add_task("Task 1")
+        assert not autoscaler.task_queue.empty()
+
+    def test_scaling_methods(self):
+        agent = Agent(llm=None, max_loops=1, dashboard=True)
+        autoscaler = AutoScaler(initial_agents=1, agents=[agent], scale_up_factor=2)
+        autoscaler.scale_up()
+        assert len(autoscaler.agents_pool) == 2
+        autoscaler.scale_down()
+        assert len(autoscaler.agents_pool) == 1
+
+
+    def test_print_dashboard(self, capsys):
+        autoscaler = AutoScaler()
+        autoscaler.print_dashboard()
+        captured = capsys.readouterr()
+        assert "Autoscaler Dashboard" in captured.out

@@ -13,6 +13,7 @@ from swarms.structs.sequential_workflow import (
 
 # Mock the OpenAI API key using environment variables
 os.environ["OPENAI_API_KEY"] = "mocked_api_key"
+os.environ["OPENAI_ORG_ID"] = "mocked_org_id"
 
 
 # Mock OpenAIChat class for testing

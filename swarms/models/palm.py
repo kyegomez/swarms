@@ -41,15 +41,9 @@ def _create_retry_decorator() -> Callable[[Any], Any]:
             multiplier=multiplier, min=min_seconds, max=max_seconds
         ),
         retry=(
-            retry_if_exception_type(
-                google.api_core.exceptions.ResourceExhausted
-            )
-            | retry_if_exception_type(
-                google.api_core.exceptions.ServiceUnavailable
-            )
-            | retry_if_exception_type(
-                google.api_core.exceptions.GoogleAPIError
-            )
+            retry_if_exception_type(google.api_core.exceptions.ResourceExhausted)
+            | retry_if_exception_type(google.api_core.exceptions.ServiceUnavailable)
+            | retry_if_exception_type(google.api_core.exceptions.GoogleAPIError)
         ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
@@ -123,30 +117,17 @@ class GooglePalm(BaseLLM, BaseModel):
 
         values["client"] = genai
 
-        if (
-            values["temperature"] is not None
-            and not 0 <= values["temperature"] <= 1
-        ):
-            raise ValueError(
-                "temperature must be in the range [0.0, 1.0]"
-            )
+        if (values["temperature"] is not None and not 0 <= values["temperature"] <= 1):
+            raise ValueError("temperature must be in the range [0.0, 1.0]")
 
-        if (
-            values["top_p"] is not None
-            and not 0 <= values["top_p"] <= 1
-        ):
+        if (values["top_p"] is not None and not 0 <= values["top_p"] <= 1):
             raise ValueError("top_p must be in the range [0.0, 1.0]")
 
         if values["top_k"] is not None and values["top_k"] <= 0:
             raise ValueError("top_k must be positive")
 
-        if (
-            values["max_output_tokens"] is not None
-            and values["max_output_tokens"] <= 0
-        ):
-            raise ValueError(
-                "max_output_tokens must be greater than zero"
-            )
+        if (values["max_output_tokens"] is not None and values["max_output_tokens"] <= 0):
+            raise ValueError("max_output_tokens must be greater than zero")
 
         return values
 

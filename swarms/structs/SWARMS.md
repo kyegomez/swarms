@@ -292,7 +292,7 @@ class Orchestrator:
                     self.condition.notify()
 
     def embed(self, input):
-        openai = embedding_functions.OpenAIEmbeddingFunction(api_key=self.api_key, model_name=self.model_name)
+        openai = embedding_functions.OpenAIEmbeddingFunction(api_key=self.api_key, org_id=self.org_id, model_name=self.model_name)
         embedding = openai(input)
         return embedding
 

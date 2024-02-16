@@ -12,9 +12,11 @@ load_dotenv()
 # Getting the Gemini API key from environment variables
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_org_id = os.getenv("OPENAI_ORG_ID")
 
 llm = OpenAIChat(
     openai_api_key=openai_api_key,
+    openai_org_id=openai_org_id,
     max_tokens=1000,
     temperature=0.2,
 )

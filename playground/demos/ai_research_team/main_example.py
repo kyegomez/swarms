@@ -15,6 +15,7 @@ from swarms.utils.pdf_to_text import pdf_to_text
 load_dotenv()
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 PDF_PATH = "fasterffn.pdf"
 
@@ -22,6 +23,7 @@ PDF_PATH = "fasterffn.pdf"
 # Base llms
 llm1 = OpenAIChat(
     openai_api_key=openai_api_key,
+    openai_org_id=org_id,
 )
 
 llm2 = Anthropic(

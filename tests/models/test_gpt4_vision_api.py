@@ -11,16 +11,19 @@ from swarms.models.gpt4_vision_api import GPT4VisionAPI
 load_dotenv()
 
 custom_api_key = os.environ.get("OPENAI_API_KEY")
+custom_org_id = os.environ.get("OPENAI_ORG_ID")
+
 img = "images/swarms.jpeg"
 
 
 @pytest.fixture
 def vision_api():
-    return GPT4VisionAPI(openai_api_key="test_api_key")
+    return GPT4VisionAPI(openai_api_key="test_api_key", openai_org_id="test_org_id")
 
 
 def test_init(vision_api):
     assert vision_api.openai_api_key == "test_api_key"
+    assert vision_api.openai_org_id == "test_org_id"
 
 
 def test_encode_image(vision_api):
@@ -83,12 +86,14 @@ def gpt_api():
 def test_initialization_with_default_key():
     api = GPT4VisionAPI()
     assert api.openai_api_key == custom_api_key
+    assert api.openai_org_id == custom_org_id
 
 
 def test_initialization_with_custom_key():
     custom_key = custom_api_key
     api = GPT4VisionAPI(openai_api_key=custom_key)
     assert api.openai_api_key == custom_key
+    assert api.openai_org_id == custom_org_id
 
 
 def test_run_with_exception(gpt_api):

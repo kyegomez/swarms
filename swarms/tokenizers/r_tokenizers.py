@@ -58,11 +58,7 @@ class SentencePieceTokenizer:
 
     def _maybe_add_prefix_space(self, tokens, decoded):
         """maybe add prefix space for incremental decoding."""
-        if (
-            len(tokens)
-            and not decoded.startswith(" ")
-            and tokens[0] in self.prefix_space_tokens
-        ):
+        if (len(tokens) and not decoded.startswith(" ") and tokens[0] in self.prefix_space_tokens):
             return " " + decoded
         else:
             return decoded
@@ -151,10 +147,7 @@ class HuggingFaceTokenizer:
         backend_tokenizer_file = osp.join(model_dir, "tokenizer.json")
         model_file_exists = osp.exists(model_file)
         self.logger = get_logger("lmdeploy")
-        if (
-            not osp.exists(backend_tokenizer_file)
-            and model_file_exists
-        ):
+        if (not osp.exists(backend_tokenizer_file) and model_file_exists):
             self.logger.warning(
                 "Can not find tokenizer.json. "
                 "It may take long time to initialize the tokenizer."
@@ -164,15 +157,10 @@ class HuggingFaceTokenizer:
         )
         self._prefix_space_tokens = None
         # save tokenizer.json to reuse
-        if (
-            not osp.exists(backend_tokenizer_file)
-            and model_file_exists
-        ):
+        if (not osp.exists(backend_tokenizer_file) and model_file_exists):
             if hasattr(self.model, "backend_tokenizer"):
                 if os.access(model_dir, os.W_OK):
-                    self.model.backend_tokenizer.save(
-                        backend_tokenizer_file
-                    )
+                    self.model.backend_tokenizer.save(backend_tokenizer_file)
 
         if self.model.eos_token_id is None:
             generation_config_file = osp.join(
@@ -227,11 +215,7 @@ class HuggingFaceTokenizer:
         self, tokens: List[int], decoded: str
     ):
         """maybe add prefix space for incremental decoding."""
-        if (
-            len(tokens)
-            and not decoded.startswith(" ")
-            and tokens[0] in self.prefix_space_tokens
-        ):
+        if (len(tokens) and not decoded.startswith(" ") and tokens[0] in self.prefix_space_tokens):
             return " " + decoded
         else:
             return decoded
@@ -241,9 +225,7 @@ class HuggingFaceTokenizer:
         """Check if self.model.convert_ids_to_tokens return not a str value."""
         if self._maybe_decode_bytes is None:
             self._maybe_decode_bytes = False
-            vocab = self.model.convert_ids_to_tokens(
-                list(range(self.vocab_size))
-            )
+            vocab = self.model.convert_ids_to_tokens(list(range(self.vocab_size)))
             for tok in vocab:
                 if not isinstance(tok, str):
                     self._maybe_decode_bytes = True

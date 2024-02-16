@@ -28,7 +28,7 @@ class SequentialWorkflow:
     Examples:
     >>> from swarms.models import OpenAIChat
     >>> from swarms.structs import SequentialWorkflow
-    >>> llm = OpenAIChat(openai_api_key="")
+    >>> llm = OpenAIChat(openai_api_key="", openai_org_id="")
     >>> workflow = SequentialWorkflow(max_loops=1)
     >>> workflow.add("What's the weather in miami", llm)
     >>> workflow.add("Create a report on these metrics", llm)
@@ -158,7 +158,7 @@ class SequentialWorkflow:
         Examples:
         >>> from swarms.models import OpenAIChat
         >>> from swarms.structs import SequentialWorkflow
-        >>> llm = OpenAIChat(openai_api_key="")
+        >>> llm = OpenAIChat(openai_api_key="", openai_org_id="")
         >>> workflow = SequentialWorkflow(max_loops=1)
         >>> workflow.add("What's the weather in miami", llm)
         >>> workflow.add("Create a report on these metrics", llm)
@@ -220,7 +220,7 @@ class SequentialWorkflow:
         Examples:
         >>> from swarms.models import OpenAIChat
         >>> from swarms.structs import SequentialWorkflow
-        >>> llm = OpenAIChat(openai_api_key="")
+        >>> llm = OpenAIChat(openai_api_key="", openai_org_id="")
         >>> workflow = SequentialWorkflow(max_loops=1)
         >>> workflow.add("What's the weather in miami", llm)
         >>> workflow.add("Create a report on these metrics", llm)
@@ -271,7 +271,7 @@ class SequentialWorkflow:
         Examples:
         >>> from swarms.models import OpenAIChat
         >>> from swarms.structs import SequentialWorkflow
-        >>> llm = OpenAIChat(openai_api_key="")
+        >>> llm = OpenAIChat(openai_api_key="", openai_org_id="")
         >>> workflow = SequentialWorkflow(max_loops=1)
         >>> workflow.add("What's the weather in miami", llm)
         >>> workflow.add("Create a report on these metrics", llm)

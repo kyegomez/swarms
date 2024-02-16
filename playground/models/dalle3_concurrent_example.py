@@ -8,8 +8,9 @@ from swarms.models.dalle3 import Dalle3
 import os
 
 api_key = os.environ["OPENAI_API_KEY"]
+org_id = os.environ["OPENAI_ORG_ID"]
 
-dalle3 = Dalle3(openai_api_key=api_key, n=1)
+dalle3 = Dalle3(openai_api_key=api_key, openai_org_id=org_id, n=1)
 
 # task = "Swarm of robots working super industrial ambience concept art"
 

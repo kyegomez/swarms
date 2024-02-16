@@ -1,7 +1,12 @@
 from swarms import OpenAIChat, Agent, Task, SequentialWorkflow
 
+api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.getenv("OPENAI_ORG_ID")
+
 # Example usage
 llm = OpenAIChat(
+    openai_api_key=api_key,
+    openai_org_id=org_id,
     temperature=0.5,
     max_tokens=3000,
 )

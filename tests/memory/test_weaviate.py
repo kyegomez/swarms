@@ -15,7 +15,9 @@ def weaviate_client_mock():
         grpc_secure=False,
         auth_client_secret="mock_api_key",
         additional_headers={
-            "X-OpenAI-Api-Key": "mock_openai_api_key"
+            "X-OpenAI-Api-Key": "mock_openai_api_key",
+            "X-OpenAI-Organization": "mock_openai_org_id",
+
         },
         additional_config=Mock(),
     )

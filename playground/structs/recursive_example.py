@@ -6,7 +6,7 @@ from swarms import OpenAIChat, Task, RecursiveWorkflow, Agent
 load_dotenv()
 
 # Load environment variables
-llm = OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY"))
+llm = OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY"), openai_org_id=os.getenv("OPENAI_ORG_ID"))
 agent = Agent(llm=llm, max_loops=1)
 
 # Create a workflow

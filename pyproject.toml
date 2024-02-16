@@ -23,9 +23,9 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = ">=3.9,<4.0.0"
 torch = "2.1.1"
-transformers = "4.37.1"
+transformers = "4.37.2"
 openai = "0.28.0"
 langchain = "0.0.333"
 asyncio = "3.4.3"
@@ -45,7 +45,7 @@ PyPDF2 = "3.0.1"
 accelerate = "*"
 anthropic = "*"
 sentencepiece = "0.1.98"
-httpx = "0.24.1"
+httpx = "0.25.0"
 tiktoken = "0.4.0"
 attrs = "22.2.0"
 ratelimit = "2.2.1"
@@ -54,7 +54,7 @@ huggingface-hub = "*"
 pydantic = "1.10.12"
 tenacity = "8.2.2"
 Pillow = "9.4.0"
-chromadb = "*"
+chromadb = "0.4.14"
 termcolor = "2.2.0"
 black = "23.3.0"
 soundfile = "0.12.1"
@@ -72,8 +72,11 @@ timm = "*"
 supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
-roboflow = "*"
+roboflow = "1.1.4"
+python-dotenv = "0.19.1"
 
+[tool.poetry.extras]
+playground = ["streamlit", "requests", "pygame", "speechrecognition", "playsound", "numpy"]
 
 
 [tool.poetry.group.lint.dependencies]
@@ -96,6 +99,10 @@ aggressive = 3
 [tool.ruff]
 line-length = 70
 
+[tool.flake8]
+line-length = 70
+ignore = "E501,W6"  # or ["E501", "W6"]
+
 [tool.black]
 line-length = 70
 target-version = ['py38']
@@ -104,3 +111,5 @@ preview = true
 
 [tool.poetry.scripts]
 swarms = 'swarms.cli._cli:main'
+
+

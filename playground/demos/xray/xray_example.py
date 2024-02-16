@@ -12,15 +12,18 @@ from swarms.structs.agent import Agent
 # Load environment variables
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Function to analyze an X-ray image
 multimodal_llm = GPT4VisionAPI(
     openai_api_key=openai_api_key,
+    openai_org_id=org_id,
 )
 
 # Initialize Language Model (LLM)
 llm = OpenAIChat(
     openai_api_key=openai_api_key,
+    openai_org_id=org_id,
     max_tokens=3000,
 )
 

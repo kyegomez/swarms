@@ -24,6 +24,7 @@ from swarms.structs import Agent
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 
 TASK = """
@@ -32,7 +33,9 @@ CODE
 """
 
 # Initialize the language model
-llm = OpenAIChat(openai_api_key=api_key, max_tokens=5000)
+llm = OpenAIChat(openai_api_key=api_key,
+    openai_org_id=org_id,
+    max_tokens=5000)
 
 
 # Documentation agent

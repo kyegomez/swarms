@@ -10,10 +10,11 @@ load_dotenv()
 # API Keys
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 # Initialize the models
-llm = OpenAIChat(openai_api_key=openai_api_key)
+llm = OpenAIChat(openai_api_key=openai_api_key, openai_org_id=org_id)
 anthropic = Anthropic(anthropic_api_key=anthropic_api_key)
 mixtral = Mixtral()
 gemini = Gemini(gemini_api_key=gemini_api_key)

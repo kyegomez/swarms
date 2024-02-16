@@ -45,14 +45,11 @@ from tenacity import (
     wait_exponential,
 )
 
-logger = logging.getLogger(__name__)
-
 from importlib.metadata import version
 
 from packaging.version import parse
 
 logger = logging.getLogger(__name__)
-
 
 @functools.lru_cache
 def _log_error_once(msg: str) -> None:
@@ -281,6 +278,7 @@ class BaseOpenAI(BaseLLM):
     model_kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""
     openai_api_key: Optional[str] = None
+    openai_org_id: Optional[str] = None
     openai_api_base: Optional[str] = None
     openai_organization: Optional[str] = None
     # to support explicit proxy for OpenAI
@@ -339,6 +337,9 @@ class BaseOpenAI(BaseLLM):
         """Validate that api key and python package exists in environment."""
         values["openai_api_key"] = get_from_dict_or_env(
             values, "openai_api_key", "OPENAI_API_KEY"
+        )
+        values["openai_org_id"] = get_from_dict_or_env(
+            values, "openai_org_id", "OPENAI_ORG_ID"
         )
         values["openai_api_base"] = get_from_dict_or_env(
             values,
@@ -650,6 +651,7 @@ class BaseOpenAI(BaseLLM):
         """Get the parameters used to invoke the model."""
         openai_creds: Dict[str, Any] = {
             "api_key": self.openai_api_key,
+            "org_id" : self.openai_org_id,
             "api_base": self.openai_api_base,
             "organization": self.openai_organization,
         }
@@ -905,6 +907,7 @@ class OpenAIChat(BaseLLM):
     model_name: str = "gpt-4-1106-preview"
     model_kwargs: Dict[str, Any] = Field(default_factory=dict)
     openai_api_key: Optional[str] = None
+    openai_org_id: Optional[str] = None
     openai_api_base: Optional[str] = None
     openai_proxy: Optional[str] = None
     max_retries: int = 6
@@ -942,6 +945,9 @@ class OpenAIChat(BaseLLM):
         openai_api_key = get_from_dict_or_env(
             values, "openai_api_key", "OPENAI_API_KEY"
         )
+        openai_org_id = get_from_dict_or_env(
+            values, "openai_org_id", "OPENAI_ORG_ID"
+        )
         openai_api_base = get_from_dict_or_env(
             values,
             "openai_api_base",
@@ -964,6 +970,7 @@ class OpenAIChat(BaseLLM):
             import openai
 
             openai.api_key = openai_api_key
+            openai.org_id = openai_org_id
             if openai_api_base:
                 openai.api_base = openai_api_base
             if openai_organization:

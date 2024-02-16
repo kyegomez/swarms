@@ -7,11 +7,15 @@ import swarms.prompts.education as edu_prompts
 # Load environment variables
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
+org_id = os.getenv("OPENAI_ORG_ID")
 stability_api_key = os.getenv("STABILITY_API_KEY")
 
 # Initialize language model
 llm = OpenAIChat(
-    openai_api_key=api_key, temperature=0.5, max_tokens=3000
+    openai_api_key=api_key, 
+    openai_org_id=org_id,
+    temperature=0.5, 
+    max_tokens=3000
 )
 
 # User preferences (can be dynamically set in a real application)

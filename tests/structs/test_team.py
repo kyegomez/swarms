@@ -9,7 +9,7 @@ from swarms.structs.team import Team
 class TestTeam(unittest.TestCase):
     def setUp(self):
         self.agent = Agent(
-            llm=OpenAIChat(openai_api_key=""),
+            llm=OpenAIChat(openai_api_key="", openai_org_id=""),
             max_loops=1,
             dashboard=False,
         )

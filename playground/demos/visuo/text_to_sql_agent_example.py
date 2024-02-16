@@ -10,6 +10,7 @@ load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")
+org_id = os.environ.get("OPENAI_ORG_ID")
 
 # Initialize the language model
 llm = HuggingfaceLLM(

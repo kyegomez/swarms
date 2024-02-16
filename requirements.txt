@@ -1,6 +1,5 @@
 torch==2.1.1
-transformers
-pandas==1.5.3
+transformers==4.37.2
 langchain==0.0.333
 langchain-experimental==0.0.10
 httpx==0.24.1
@@ -30,7 +29,6 @@ diffusers
 einops==0.7.0
 opencv-python-headless==4.8.1.78
 numpy
-openai==0.28.0
 opencv-python==4.7.0.72
 timm
 yapf

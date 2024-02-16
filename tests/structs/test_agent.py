@@ -13,6 +13,7 @@ from swarms.utils.logger import logger
 load_dotenv()
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_org_id = os.getenv("OPENAI_ORG_ID")
 
 
 # Mocks and Fixtures
@@ -20,6 +21,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 def mocked_llm():
     return OpenAIChat(
         openai_api_key=openai_api_key,
+        openai_org_id=openai_org_id,
     )
 
 
@@ -214,7 +216,8 @@ def test_from_llm_and_template(mocked_llm):
 # Mocking the OpenAIChat for testing
 @patch("swarms.models.OpenAIChat", autospec=True)
 def test_mocked_openai_chat(MockedOpenAIChat):
-    llm = MockedOpenAIChat(openai_api_key=openai_api_key)
+    llm = MockedOpenAIChat(openai_api_key=openai_api_key,
+                           openai_org_id=openai_org_id) 
     llm.return_value = MagicMock()
     agent = Agent(llm=llm, max_loops=5)
     agent.run("Mocked run")
@@ -291,6 +294,7 @@ def flow_instance():
     # You may need to adjust this based on your actual class initialization
     llm = OpenAIChat(
         openai_api_key=openai_api_key,
+        openai_org_id=openai_org_id,
     )
     agent = Agent(
         llm=llm,
