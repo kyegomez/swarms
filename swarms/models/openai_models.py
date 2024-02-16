@@ -674,17 +674,6 @@ class BaseOpenAI(BaseLLM):
 
     def get_token_ids(self, text: str) -> List[int]:
         """Get the token IDs using the tiktoken package."""
-        # tiktoken NOT supported for Python < 3.8
-        if sys.version_info[1] < 8:
-            return super().get_num_tokens(text)
-        try:
-            import tiktoken
-        except ImportError:
-            raise ImportError(
-                "Could not import tiktoken python package. This is"
-                " needed in order to calculate get_num_tokens. Please"
-                " install it with `pip install tiktoken`."
-            )
 
         model_name = self.tiktoken_model_name or self.model_name
         try:
