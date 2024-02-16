@@ -2,7 +2,7 @@ import tempfile
 from enum import Enum
 from typing import Any, Dict, Union
 
-from langchain_communityutils import get_from_dict_or_env
+from langchain_community.utils import get_from_dict_or_env
 from pydantic import root_validator
 
 from swarms.tools.tool import BaseTool

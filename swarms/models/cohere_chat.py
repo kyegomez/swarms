@@ -9,15 +9,15 @@ from tenacity import (
     wait_exponential,
 )
 
-from langchain_communitycallbacks.manager import (
+from langchain_community.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
-from langchain_communityllms.base import LLM
-from langchain_communityllms.utils import enforce_stop_tokens
-from langchain_communityload.serializable import Serializable
+from langchain_community.llms.base import LLM
+from langchain_community.llms.utils import enforce_stop_tokens
+from langchain_community.load.serializable import Serializable
 from pydantic import Extra, Field, root_validator
-from langchain_communityutils import get_from_dict_or_env
+from langchain_community.utils import get_from_dict_or_env
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ class Cohere(LLM, BaseCohere):
     Example:
         .. code-block:: python
 
-            from langchain_communityllms import Cohere
+            from langchain_community.llms import Cohere
 
             cohere = Cohere(model="gptd-instruct-tft", cohere_api_key="my-api-key")
     """

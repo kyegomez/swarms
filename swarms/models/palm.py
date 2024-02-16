@@ -3,11 +3,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Dict, List, Optional
 
-from langchain_communitycallbacks.manager import CallbackManagerForLLMRun
-from langchain_communityllms import BaseLLM
-from langchain_communitypydantic_v1 import BaseModel, root_validator
-from langchain_communityschema import Generation, LLMResult
-from langchain_communityutils import get_from_dict_or_env
+from langchain_community.callbacks.manager import CallbackManagerForLLMRun
+from langchain_community.llms import BaseLLM
+from langchain_community.pydantic_v1 import BaseModel, root_validator
+from langchain_community.schema import Generation, LLMResult
+from langchain_community.utils import get_from_dict_or_env
 from tenacity import (
     before_sleep_log,
     retry,

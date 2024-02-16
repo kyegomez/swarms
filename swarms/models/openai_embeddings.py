@@ -155,7 +155,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     Example:
         .. code-block:: python
 
-            from langchain_communityembeddings import OpenAIEmbeddings
+            from langchain_community.embeddings import OpenAIEmbeddings
             openai = OpenAIEmbeddings(openai_api_key="my-api-key")
 
     In order to use the library with Microsoft Azure endpoints, you need to set
@@ -174,7 +174,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             os.environ["OPENAI_API_VERSION"] = "2023-05-15"
             os.environ["OPENAI_PROXY"] = "http://your-corporate-proxy:8080"
 
-            from langchain_communityembeddings.openai import OpenAIEmbeddings
+            from langchain_community.embeddings.openai import OpenAIEmbeddings
             embeddings = OpenAIEmbeddings(
                 deployment="your-embeddings-deployment-name",
                 model="your-embeddings-model-name",

@@ -47,7 +47,7 @@ def test_stream_speech(eleven_labs_tool):
 # Testing fixture and environment variables
 def test_api_key_validation(eleven_labs_tool):
     with patch(
-        "langchain_communityutils.get_from_dict_or_env", return_value=API_KEY
+        "langchain_community.utils.get_from_dict_or_env", return_value=API_KEY
     ):
         values = {"eleven_api_key": None}
         validated_values = eleven_labs_tool.validate_environment(

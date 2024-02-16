@@ -3,7 +3,7 @@ import re
 from abc import abstractmethod
 from typing import Dict, List, NamedTuple
 
-from langchain_communityschema import BaseOutputParser
+from langchain_community.schema import BaseOutputParser
 from pydantic import ValidationError
 
 from swarms.tools.tool import BaseTool

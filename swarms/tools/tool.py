@@ -19,8 +19,8 @@ from typing import (
     Union,
 )
 
-from langchain_communitycallbacks.base import BaseCallbackManager
-from langchain_communitycallbacks.manager import (
+from langchain_community.callbacks.base import BaseCallbackManager
+from langchain_community.callbacks.manager import (
     AsyncCallbackManager,
     AsyncCallbackManagerForToolRun,
     CallbackManager,
@@ -28,7 +28,7 @@ from langchain_communitycallbacks.manager import (
     Callbacks,
 )
 
-from langchain_communityload.serializable import Serializable
+from langchain_community.load.serializable import Serializable
 from pydantic import (
     BaseModel,
     Extra,
@@ -37,7 +37,7 @@ from pydantic import (
     root_validator,
     validate_arguments,
 )
-from langchain_communityschema.runnable import (
+from langchain_community.schema.runnable import (
     Runnable,
     RunnableConfig,
     RunnableSerializable,

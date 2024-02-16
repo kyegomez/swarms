@@ -22,19 +22,19 @@ from typing import (
     Union,
 )
 
-from langchain_communitycallbacks.manager import (
+from langchain_community.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
-from langchain_communityllms.base import BaseLLM
-from langchain_communitypydantic_v1 import Field, root_validator
-from langchain_communityschema import Generation, LLMResult
-from langchain_communityschema.output import GenerationChunk
-from langchain_communityutils import (
+from langchain_community.llms.base import BaseLLM
+from langchain_community.pydantic_v1 import Field, root_validator
+from langchain_community.schema import Generation, LLMResult
+from langchain_community.schema.output import GenerationChunk
+from langchain_community.utils import (
     get_from_dict_or_env,
     get_pydantic_field_names,
 )
-from langchain_communityutils.utils import build_extra_kwargs
+from langchain_community.utils.utils import build_extra_kwargs
 from tenacity import (
     RetryCallState,
     before_sleep_log,
@@ -785,7 +785,7 @@ class OpenAI(BaseOpenAI):
     Example:
         .. code-block:: python
 
-            from langchain_communityllms import OpenAI
+            from langchain_community.llms import OpenAI
             openai = OpenAI(model_name="text-davinci-003")
     """
 
@@ -809,7 +809,7 @@ class AzureOpenAI(BaseOpenAI):
     Example:
         .. code-block:: python
 
-            from langchain_communityllms import AzureOpenAI
+            from langchain_community.llms import AzureOpenAI
             openai = AzureOpenAI(model_name="text-davinci-003")
     """
 
@@ -886,7 +886,7 @@ class OpenAIChat(BaseLLM):
     Example:
         .. code-block:: python
 
-            from langchain_communityllms import OpenAIChat
+            from langchain_community.llms import OpenAIChat
             openaichat = OpenAIChat(model_name="gpt-3.5-turbo")
     """
 

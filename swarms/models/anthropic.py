@@ -19,16 +19,16 @@ from typing import (
     Union,
 )
 
-from langchain_communitycallbacks.manager import (
+from langchain_community.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
-from langchain_communityllms.base import LLM
+from langchain_community.llms.base import LLM
 from pydantic import Field, SecretStr, root_validator
-from langchain_communityschema.language_model import BaseLanguageModel
-from langchain_communityschema.output import GenerationChunk
-from langchain_communityschema.prompt import PromptValue
-from langchain_communityutils import (
+from langchain_community.schema.language_model import BaseLanguageModel
+from langchain_community.schema.output import GenerationChunk
+from langchain_community.schema.prompt import PromptValue
+from langchain_community.utils import (
     get_from_dict_or_env,
 )
 from packaging.version import parse
@@ -360,7 +360,7 @@ class Anthropic(LLM, _AnthropicCommon):
         .. code-block:: python
 
             import anthropic
-            from langchain_communityllms import Anthropic
+            from langchain_community.llms import Anthropic
 
             model = Anthropic(model="<model_name>", anthropic_api_key="my-api-key")
 
@@ -386,7 +386,7 @@ class Anthropic(LLM, _AnthropicCommon):
         """Raise warning that this class is deprecated."""
         warnings.warn(
             "This Anthropic LLM is deprecated. Please use `from"
-            " langchain_communitychat_models import ChatAnthropic` instead"
+            " langchain_community.chat_models import ChatAnthropic` instead"
         )
         return values
 
