@@ -1,6 +1,8 @@
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 
+import os
+
 api_key = os.getenv("OPENAI_API_KEY")
 org_id = os.environ.get("OPENAI_ORG_ID")
 

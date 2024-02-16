@@ -9,7 +9,7 @@ from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.utils.decorators import error_decorator, timing_decorator
 
-load_dotenv()
+import os
 
 api_key = os.getenv("OPENAI_API_KEY")
 org_id = os.getenv("OPENAI_ORG_ID")
