@@ -1229,9 +1229,9 @@ docker build --gpus all -t swarms
 ### Running the Docker Container
 To run the Docker container, use the following command:
 
-`docker run --gpus all -p 4000:80 your-image-name`
+`docker run --gpus all -p 4000:80 swarms`
 
-Replace your-image-name with the name of your Docker image, and replace 4000:80 with your actual port mapping. The format is hostPort:containerPort.
+Replace swarms with the name of your Docker image, and replace 4000:80 with your actual port mapping. The format is hostPort:containerPort.
 
 Now, your application should be running with CUDA support!
 
