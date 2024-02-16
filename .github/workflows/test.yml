@@ -19,6 +19,7 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
         test_type:
           - "core"
           - "extended"
@@ -80,6 +81,7 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12"
         test_type:
           - "core"
           - "extended"
