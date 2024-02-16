@@ -1210,6 +1210,32 @@ The swarms package has been meticlously crafted for extreme use-ability and unde
 └── workers
 ```
 
+## Docker Instructions
+
+This application uses Docker with CUDA support. To build and run the Docker container, follow these steps:
+
+### Prerequisites
+
+- Make sure you have [Docker installed](https://docs.docker.com/get-docker/) on your machine.
+- Ensure your machine has an NVIDIA GPU and [NVIDIA Docker support](https://github.com/NVIDIA/nvidia-docker) installed.
+
+### Building the Docker Image
+
+To build the Docker image, navigate to the root directory containing the `Dockerfile` and run the following command:
+
+```bash
+docker build --gpus all -t swarms
+``` 
+### Running the Docker Container
+To run the Docker container, use the following command:
+
+`docker run --gpus all -p 4000:80 your-image-name`
+
+Replace your-image-name with the name of your Docker image, and replace 4000:80 with your actual port mapping. The format is hostPort:containerPort.
+
+Now, your application should be running with CUDA support!
+
+
 ## Swarm Newsletter 🤖 🤖 🤖 📧 
 Sign up to the Swarm newsletter to receive  updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊
 
