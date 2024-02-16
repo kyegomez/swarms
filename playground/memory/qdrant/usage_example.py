@@ -1,4 +1,4 @@
-from langchain.document_loaders import CSVLoader
+from langchain_communitydocument_loaders import CSVLoader
 from swarms.memory import qdrant
 
 loader = CSVLoader(

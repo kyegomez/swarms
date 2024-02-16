@@ -3,7 +3,7 @@ import random
 from typing import List
 
 import tenacity
-from langchain.output_parsers import RegexParser
+from langchain_communityoutput_parsers import RegexParser
 
 from swarms.structs.agent import Agent
 from swarms.utils.logger import logger

@@ -8,7 +8,7 @@ from pydantic import Field
 from swarms.utils.serializable import Serializable
 
 if TYPE_CHECKING:
-    from langchain.prompts.chat import ChatPromptTemplate
+    from langchain_communityprompts.chat import ChatPromptTemplate
 
 
 def get_buffer_string(
@@ -29,7 +29,7 @@ def get_buffer_string(
     Example:
         .. code-block:: python
 
-            from langchain.schema import AIMessage, HumanMessage
+            from langchain_communityschema import AIMessage, HumanMessage
 
             messages = [
                 HumanMessage(content="Hi, how are you?"),
@@ -86,7 +86,7 @@ class BaseMessage(Serializable):
         return True
 
     def __add__(self, other: Any) -> ChatPromptTemplate:
-        from langchain.prompts.chat import ChatPromptTemplate
+        from langchain_communityprompts.chat import ChatPromptTemplate
 
         prompt = ChatPromptTemplate(messages=[self])
         return prompt + other

@@ -2,10 +2,10 @@ from typing import Callable, List
 
 import numpy as np
 import tenacity
-from langchain.chat_models import ChatOpenAI
-from langchain.output_parsers import RegexParser
-from langchain.prompts import PromptTemplate
-from langchain.schema import (
+from langchain_communitychat_models import ChatOpenAI
+from langchain_communityoutput_parsers import RegexParser
+from langchain_communityprompts import PromptTemplate
+from langchain_communityschema import (
     HumanMessage,
     SystemMessage,
 )

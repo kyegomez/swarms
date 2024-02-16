@@ -100,9 +100,9 @@ Here's the pseudocode algorithm for a `WorkerNode` class that includes a vector 
 In Python, this could look something like:
 
 ```python
-from langchain.vectorstores import FAISS
-from langchain.docstore import InMemoryDocstore
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_communityvectorstores import FAISS
+from langchain_communitydocstore import InMemoryDocstore
+from langchain_communityembeddings import OpenAIEmbeddings
 import faiss
 from swarms.workers.auto_agent import AutoGPT
 from collections import deque

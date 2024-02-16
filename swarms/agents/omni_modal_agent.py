@@ -1,4 +1,4 @@
-from langchain.base_language import BaseLanguageModel
+from langchain_communitybase_language import BaseLanguageModel
 from langchain_experimental.autonomous_agents.hugginggpt.repsonse_generator import (
     load_response_generator,
 )

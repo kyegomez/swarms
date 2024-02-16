@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Any, Literal, Sequence
 
-from langchain.load.serializable import Serializable
+from langchain_communityload.serializable import Serializable
 from pydantic import Field
 
 
