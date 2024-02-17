@@ -44,6 +44,8 @@ from swarms.utils.supervision_masking import (
 )
 from swarms.utils.supervision_visualizer import MarkVisualizer
 
+from swarms.utils import load_environment
+
 __all__ = [
     "SubprocessCodeInterpreter",
     "display_markdown_message",
@@ -77,4 +79,5 @@ __all__ = [
     "masks_to_marks",
     "refine_marks",
     "MarkVisualizer",
+    "load_environment",
 ]

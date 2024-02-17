@@ -1,6 +1,5 @@
 import os
 
-from dotenv import load_dotenv
 
 from swarms import (
     OpenAIChat,
@@ -11,16 +10,15 @@ from swarms import (
 
 from swarms.tools.code_executor import CodeExecutor
 
+from swarms.utils import load_environment
+
 conv = Conversation(
     autosave=False,
     time_enabled=True,
 )
 
 # Load the environment variables
-load_dotenv()
-
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
+api_key = load_environment()
 
 # Initialize the language model
 llm = OpenAIChat(openai_api_key=api_key)
