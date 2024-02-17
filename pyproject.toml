@@ -76,7 +76,7 @@ scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
 python-dotenv = "*"
-
+pyyaml = "*"
 
 
 [tool.poetry.group.lint.dependencies]
