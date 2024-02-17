@@ -53,3 +53,4 @@ anthropic
 pinecone-client
 roboflow
 rich==13.7.0
+python-dotenv
