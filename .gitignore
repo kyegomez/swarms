@@ -17,6 +17,7 @@ venv
 .DS_Store
 
 .DS_STORE
+Cargo.lock
 swarms/agents/.DS_Store
 
 _build

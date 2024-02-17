@@ -68,6 +68,14 @@ from swarms.structs.task_queue_base import (
     synchronized_queue,
     TaskQueueBase,
 )
+from swarms.structs.multi_process_workflow import (
+    MultiProcessingWorkflow,
+)
+from swarms.structs.multi_threaded_workflow import (
+    MultiThreadedWorkflow,
+)
+from swarms.structs.agent_base import AgentJob
+
 
 __all__ = [
     "Agent",
@@ -131,4 +139,7 @@ __all__ = [
     "StackOverflowSwarm",
     "synchronized_queue",
     "TaskQueueBase",
+    "MultiProcessingWorkflow",
+    "MultiThreadedWorkflow",
+    "AgentJob",
 ]
