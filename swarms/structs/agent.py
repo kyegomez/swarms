@@ -403,7 +403,7 @@ class Agent:
                     Name: {self.agent_name}
                     Description: {self.agent_description}
                     Standard Operating Procedure: {self.sop}
-                    System Prompt: {self.system_prompt} 
+                    System Prompt: {self.system_prompt}
                     Task: {task}
                     Max Loops: {self.max_loops}
                     Stopping Condition: {self.stopping_condition}
@@ -706,7 +706,7 @@ class Agent:
 
                 Follow this standard operating procedure (SOP) to complete tasks:
                 {self.sop}
-                
+
                 -----------------
                 ################ CHAT HISTORY ####################
                 {history}
@@ -716,7 +716,7 @@ class Agent:
             system_prompt = self.system_prompt
             agent_history_prompt = f"""
                 System : {system_prompt}
-                
+
                 {history}
             """
             return agent_history_prompt

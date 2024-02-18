@@ -123,7 +123,7 @@ class CogAgent(BaseMultiModalModel):
 
         with torch.no_grad():
             outputs = self.model(**inputs, **kwargs)
-            outputs = outputs[:, inputs["input_ids"].shape[1] :]
+            outputs = outputs[:, inputs["input_ids"].shape[1]:]
             response = self.decode(outputs[0])
             response = response.split("</s>")[0]
             print(response)

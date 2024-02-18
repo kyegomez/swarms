@@ -19,7 +19,8 @@ class DebatePlayer(Agent):
         Args:
             model_name(str): model name
             name (str): name of this player
-            temperature (float): higher values make the output more random, while lower values make it more focused and deterministic
+            temperature (float): higher values make the output more random,
+            while lower values make it more focused and deterministic
             openai_api_key (str): As the parameter name suggests
             sleep_time (float): sleep because of rate limits
         """
@@ -33,7 +34,8 @@ class Debate:
 
     Args:
         model_name (str): openai model name
-        temperature (float): higher values make the output more random, while lower values make it more focused and deterministic
+        temperature (float): higher values make the output more random,
+        while lower values make it more focused and deterministic
         num_players (int): num of players
         save_file_dir (str): dir path to json file
         openai_api_key (str): As the parameter name suggests
@@ -239,7 +241,7 @@ class Debate:
             if self.mod_ans["debate_translation"] != "":
                 break
             else:
-                print(f"===== Debate Round-{round+2} =====\n")
+                print(f"===== Debate Round-{round + 2} =====\n")
                 self.affirmative.add_message_to_memory(
                     self.save_file["debate_prompt"].replace(
                         "##oppo_ans##", self.neg_ans
@@ -361,6 +363,13 @@ class Debate:
 #         with open(prompts_path, 'w') as file:
 #             json.dump(config, file, ensure_ascii=False, indent=4)
 
-#         debate = Debate(save_file_dir=save_file_dir, num_players=3, openai_api_key=openai_api_key, prompts_path=prompts_path, temperature=0, sleep_time=0)
+        # debate = Debate(
+        #     save_file_dir=save_file_dir,
+        #     num_players=3,
+        #     openai_api_key=openai_api_key,
+        #     prompts_path=prompts_path,
+        #     temperature=0,
+        #     sleep_time=0
+        # )
 #         debate.run()
 #         debate.save_file_to_json(id)

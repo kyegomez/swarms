@@ -72,7 +72,7 @@ class BaseChunker(ABC):
             # If a separator is provided, only use separators after it.
             if current_separator:
                 separators = self.separators[
-                    self.separators.index(current_separator) :
+                    self.separators.index(current_separator):
                 ]
             else:
                 separators = self.separators
@@ -120,7 +120,7 @@ class BaseChunker(ABC):
                         second_subchunk = (
                             separator.value
                             + separator.value.join(
-                                subchunks[balance_index + 1 :]
+                                subchunks[balance_index + 1:]
                             )
                         )
                     else:
@@ -132,7 +132,7 @@ class BaseChunker(ABC):
                             + separator.value
                         )
                         second_subchunk = separator.value.join(
-                            subchunks[balance_index + 1 :]
+                            subchunks[balance_index + 1:]
                         )
 
                     # Continue recursively chunking the subchunks.

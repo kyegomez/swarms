@@ -139,7 +139,7 @@ class DistilWhisperModel:
                 len(audio_input.array) / sample_rate
                 chunks = [
                     audio_input.array[
-                        i : i + sample_rate * chunk_duration
+                        i: i + sample_rate * chunk_duration
                     ]
                     for i in range(
                         0,
@@ -175,7 +175,7 @@ class DistilWhisperModel:
                     # Print the chunk's transcription
                     print(
                         colored(
-                            f"Chunk {i+1}/{len(chunks)}: ", "yellow"
+                            f"Chunk {i + 1}/{len(chunks)}: ", "yellow"
                         )
                         + transcription
                     )

@@ -43,7 +43,7 @@ class PDFLoader:
     max_tokens: int
 
     def __post_init__(self):
-        self.chunker = PdfChunker(
+        self.chunker = PdfChunker(  # noqa: F821
             tokenizer=self.tokenizer, max_tokens=self.max_tokens
         )
 

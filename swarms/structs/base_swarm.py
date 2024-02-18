@@ -92,11 +92,6 @@ class AbstractSwarm(ABC):
         pass
 
     # @abstractmethod
-    def add_agent(self, agent: "Agent"):
-        """Add a agent to the swarm"""
-        pass
-
-    # @abstractmethod
     def remove_agent(self, agent: "Agent"):
         """Remove a agent from the swarm"""
         pass

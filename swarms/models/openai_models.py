@@ -45,7 +45,6 @@ from tenacity import (
     wait_exponential,
 )
 
-logger = logging.getLogger(__name__)
 
 from importlib.metadata import version
 
@@ -610,7 +609,7 @@ class BaseOpenAI(BaseLLM):
                 prompts[0]
             )
         sub_prompts = [
-            prompts[i : i + self.batch_size]
+            prompts[i: i + self.batch_size]
             for i in range(0, len(prompts), self.batch_size)
         ]
         return sub_prompts
@@ -624,7 +623,7 @@ class BaseOpenAI(BaseLLM):
         """Create the LLMResult from the choices and prompts."""
         generations = []
         for i, _ in enumerate(prompts):
-            sub_choices = choices[i * self.n : (i + 1) * self.n]
+            sub_choices = choices[i * self.n: (i + 1) * self.n]
             generations.append(
                 [
                     Generation(

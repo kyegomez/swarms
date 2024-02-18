@@ -109,7 +109,7 @@ class Jsonformer:
             response[0], skip_special_tokens=True
         )
 
-        response = response[len(prompt) :]
+        response = response[len(prompt):]
         response = response.strip().rstrip(".")
         self.debug("[generate_number]", response)
         try:
@@ -181,7 +181,7 @@ class Jsonformer:
                 response[0][: len(input_tokens[0])] == input_tokens
             ).all()
         ):
-            response = response[0][len(input_tokens[0]) :]
+            response = response[0][len(input_tokens[0]):]
         if response.shape[0] == 1:
             response = response[0]
 

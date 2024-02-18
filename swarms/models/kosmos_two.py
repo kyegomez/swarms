@@ -323,5 +323,5 @@ class Kosmos(BaseMultiModalModel):
 
     def generate_boxees(self, task, image_url):
         image = self.get_image(image_url)
-        processed_text, entities = self.process_task(task, image)
+        _, entities = self.process_task(task, image)
         self.draw_entity_boxes_on_image(image, entities, show=True)

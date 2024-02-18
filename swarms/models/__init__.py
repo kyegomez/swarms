@@ -1,4 +1,4 @@
-############################################ LLMs
+# LLMs
 from swarms.models.base_llm import AbstractLLM  # noqa: E402
 from swarms.models.anthropic import Anthropic  # noqa: E402
 from swarms.models.petals import Petals  # noqa: E402
@@ -25,7 +25,7 @@ from swarms.models.mixtral import Mixtral  # noqa: E402
 # )  # noqa: E402
 from swarms.models.together import TogetherLLM  # noqa: E402
 
-################# MultiModal Models
+# MultiModal Models
 from swarms.models.base_multimodal_model import (
     BaseMultiModalModel,
 )  # noqa: E402
@@ -61,10 +61,10 @@ from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
 # from swarms.models.cog_agent import CogAgent  # noqa: E402
 
 
-################# Tokenizers
+# Tokenizers
 
 
-############## Types
+# Types
 from swarms.models.types import (
     TextModality,
     ImageModality,
@@ -77,7 +77,7 @@ from swarms.models.types import (
 from swarms.models.base_embedding_model import BaseEmbeddingModel
 
 
-##### Utils
+# Utils
 from swarms.models.sampling_params import (
     SamplingType,
     SamplingParams,
