@@ -64,9 +64,7 @@ class MultiOnAgent(AbstractLLM):
 
 
 # model
-model = MultiOnAgent(
-    multion_api_key=""
-)
+model = MultiOnAgent(multion_api_key="")
 
 # out = model.run("search for a recipe")
 agent = Agent(
