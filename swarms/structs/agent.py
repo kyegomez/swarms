@@ -29,6 +29,7 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
 from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.prompts.worker_prompt import worker_tools_sop_promp
+from swarms.structs.schemas import Step
 
 
 # Utils
@@ -48,6 +49,14 @@ def parse_done_token(response: str) -> bool:
 def agent_id():
     """Generate an agent id"""
     return str(uuid.uuid4())
+
+
+def task_id():
+    return str(uuid.uuid4())
+
+
+def step_id():
+    return str(uuid.uuid1())
 
 
 class Agent:
@@ -296,6 +305,9 @@ class Agent:
         # Initialize the llm with the conditional variables
         # self.llm = llm(*args, **kwargs)
 
+        # Step cache
+        self.step_cache = []
+
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
         self.system_prompt = system_prompt
@@ -522,7 +534,7 @@ class Agent:
             # Activate Autonomous agent message
             self.activate_autonomous_agent()
 
-            response = task  # or combined_prompt
+            # response = task  # or combined_prompt
             history = self._history(self.user_name, task)
 
             # If dashboard = True then print the dashboard
@@ -541,20 +553,13 @@ class Agent:
                 self.loop_count_print(loop_count, self.max_loops)
                 print("\n")
 
-                # Check to see if stopping token is in the output to stop the loop
-                if self.stopping_token:
-                    if self._check_stopping_condition(
-                        response
-                    ) or parse_done_token(response):
-                        break
-
                 # Adjust temperature, comment if no work
                 if self.dynamic_temperature_enabled:
                     print(colored("Adjusting temperature...", "blue"))
                     self.dynamic_temperature()
 
                 # Preparing the prompt
-                task = self.agent_history_prompt(history=response)
+                task = self.agent_history_prompt(history=task)
 
                 attempt = 0
                 while attempt < self.retry_attempts:
@@ -572,6 +577,24 @@ class Agent:
                                 **kwargs,
                             )
                             print(response)
+
+                        # Log each step
+                        step = Step(
+                            input=task,
+                            task_id=task_id,
+                            step_id=step_id,
+                            output=response,
+                        )
+
+                        # Check to see if stopping token is in the output to stop the loop
+                        if self.stopping_token:
+                            if self._check_stopping_condition(
+                                response
+                            ) or parse_done_token(response):
+                                break
+
+                        self.step_cache.append(step)
+                        logging.info(f"Step: {step}")
 
                         # If parser exists then parse the response
                         if self.parser:
@@ -692,10 +715,8 @@ class Agent:
         else:
             system_prompt = self.system_prompt
             agent_history_prompt = f"""
-                SYSTEM_PROMPT: {system_prompt}
-
-
-                ################ CHAT HISTORY ####################
+                System : {system_prompt}
+                
                 {history}
             """
             return agent_history_prompt

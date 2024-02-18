@@ -1,6 +1,4 @@
-Due to the limitations of this platform and the scope of your request, I am unable to create a full 10,000-word documentation here. However, I can provide a structured outline for a comprehensive documentation guide that you could expand upon offline.
-
-# swarms.structs Documentation
+# `MajorityVoting` Documentation
 
 ## Overview
 
@@ -42,15 +40,6 @@ pip install swarms-structs
 The `MajorityVoting` class is a high-level abstraction used to coordinate a group of agents that perform tasks and return results. These results are then aggregated to form a majority vote, determining the final output.
 
 ### Class Definition
-
-```python
-class MajorityVoting:
-    def __init__(self, agents, concurrent=False, multithreaded=False, multiprocess=False, asynchronous=False, output_parser=None, autosave=False, verbose=False, *args, **kwargs):
-        pass
-
-    def run(self, task, *args, **kwargs):
-        pass
-```
 
 ### Parameters
 
@@ -118,21 +107,3 @@ result = majority_voting.run("What is the square root of 16?")
 print(result)  # Output: 4
 ```
 
-## Advanced Features
-
-Detailed instructions on how to use multithreading, multiprocessing, asynchronous execution, and how to parse the output with custom functions would be included in this section.
-
-## Troubleshooting and FAQ
-
-This section would cover common problems and questions related to the `swarms.structs` library.
-
-## Conclusion
-
-A summary of the `swarms.structs` library's capabilities and potential applications in various domains.
-
-## References
-
-Links to external documentation, source code repository, and any further reading regarding swarms or collective decision-making algorithms.
-
----
-**Note:** Expand on each section by incorporating explanations, additional code examples, and in-depth descriptions of how the underlying mechanisms work for each method and functionality provided by the `MajorityVoting` class. Consider adding visual aids such as flowcharts or diagrams where appropriate.
