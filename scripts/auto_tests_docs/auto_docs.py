@@ -9,17 +9,13 @@ from scripts.auto_tests_docs.docs import DOCUMENTATION_WRITER_SOP
 from swarms import OpenAIChat
 
 ##########
-from swarms.tokenizers.r_tokenizers import (
-    SentencePieceTokenizer,
-    HuggingFaceTokenizer,
-    Tokenizer,
+
+from swarms.structs.tool_json_schema import JSON
+from swarms.structs.majority_voting import (
+    MajorityVoting,
 )
-from swarms.tokenizers.base_tokenizer import BaseTokenizer
-from swarms.tokenizers.openai_tokenizers import OpenAITokenizer
-from swarms.tokenizers.anthropic_tokenizer import (
-    AnthropicTokenizer,
-)
-from swarms.tokenizers.cohere_tokenizer import CohereTokenizer
+from swarms.structs.stackoverflow_swarm import StackOverflowSwarm
+from swarms.structs.task_queue_base import TaskQueueBase
 
 
 ####################
@@ -47,7 +43,7 @@ def process_documentation(cls):
 
     # Process with OpenAI model (assuming the model's __call__ method takes this input and returns processed content)
     processed_content = model(
-        DOCUMENTATION_WRITER_SOP(input_content, "swarms.tokenizers")
+        DOCUMENTATION_WRITER_SOP(input_content, "swarms.structs")
     )
 
     # doc_content = f"# {cls.__name__}\n\n{processed_content}\n"
@@ -67,13 +63,10 @@ def process_documentation(cls):
 
 def main():
     classes = [
-        SentencePieceTokenizer,
-        HuggingFaceTokenizer,
-        Tokenizer,
-        BaseTokenizer,
-        OpenAITokenizer,
-        AnthropicTokenizer,
-        CohereTokenizer,
+        JSON,
+        MajorityVoting,
+        StackOverflowSwarm,
+        TaskQueueBase,
     ]
     threads = []
     for cls in classes:
@@ -87,7 +80,7 @@ def main():
     for thread in threads:
         thread.join()
 
-    print("Documentation generated in 'swarms.tokenizers' directory.")
+    print("Documentation generated in 'swarms.structs' directory.")
 
 
 if __name__ == "__main__":

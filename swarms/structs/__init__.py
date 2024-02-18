@@ -17,7 +17,6 @@ from swarms.structs.recursive_workflow import RecursiveWorkflow
 from swarms.structs.schemas import (
     Artifact,
     ArtifactUpload,
-    Step,
     StepInput,
     StepOutput,
     StepRequestBody,
@@ -65,6 +64,18 @@ from swarms.structs.majority_voting import (
     MajorityVoting,
 )
 from swarms.structs.stackoverflow_swarm import StackOverflowSwarm
+from swarms.structs.task_queue_base import (
+    synchronized_queue,
+    TaskQueueBase,
+)
+from swarms.structs.multi_process_workflow import (
+    MultiProcessingWorkflow,
+)
+from swarms.structs.multi_threaded_workflow import (
+    MultiThreadedWorkflow,
+)
+from swarms.structs.agent_base import AgentJob
+
 
 __all__ = [
     "Agent",
@@ -126,4 +137,9 @@ __all__ = [
     "majority_voting",
     "MajorityVoting",
     "StackOverflowSwarm",
+    "synchronized_queue",
+    "TaskQueueBase",
+    "MultiProcessingWorkflow",
+    "MultiThreadedWorkflow",
+    "AgentJob",
 ]

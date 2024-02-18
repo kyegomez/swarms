@@ -1,5 +1,5 @@
 import asyncio
-from abc import ABC
+from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional
 
@@ -432,3 +432,59 @@ class AbstractSwarm(ABC):
                 self.agents,
             )
         return list(responses)
+
+    @abstractmethod
+    def add_swarm_entry(self, swarm):
+        """
+        Add the information of a joined Swarm to the registry.
+
+        Args:
+            swarm (SwarmManagerBase): Instance of SwarmManagerBase representing the joined Swarm.
+
+        Returns:
+            None
+        """
+
+    @abstractmethod
+    def add_agent_entry(self, agent: Agent):
+        """
+        Add the information of an Agent to the registry.
+
+        Args:
+            agent (Agent): Instance of Agent representing the Agent.
+
+        Returns:
+            None
+        """
+
+    @abstractmethod
+    def retrieve_swarm_information(self, swarm_id: str):
+        """
+        Retrieve the information of a specific Swarm from the registry.
+
+        Args:
+            swarm_id (str): Unique identifier of the Swarm.
+
+        Returns:
+            SwarmManagerBase: Instance of SwarmManagerBase representing the retrieved Swarm, or None if not found.
+        """
+
+    @abstractmethod
+    def retrieve_joined_agents(self, agent_id: str) -> List[Agent]:
+        """
+        Retrieve the information the Agents which have joined the registry.
+
+        Returns:
+            Agent: Instance of Agent representing the retrieved Agent, or None if not found.
+        """
+
+    @abstractmethod
+    def join_swarm(
+        self, from_entity: Agent | Agent, to_entity: Agent
+    ):
+        """
+        Add a relationship between a Swarm and an Agent or other Swarm to the registry.
+
+        Args:
+            from (Agent | SwarmManagerBase): Instance of Agent or SwarmManagerBase representing the source of the relationship.
+        """

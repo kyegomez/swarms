@@ -6,17 +6,9 @@ from swarms import OpenAIChat
 from scripts.auto_tests_docs.docs import TEST_WRITER_SOP_PROMPT
 
 #########
-from swarms.tokenizers.r_tokenizers import (
-    SentencePieceTokenizer,
-    HuggingFaceTokenizer,
-    Tokenizer,
-)
-from swarms.tokenizers.base_tokenizer import BaseTokenizer
-from swarms.tokenizers.openai_tokenizers import OpenAITokenizer
-from swarms.tokenizers.anthropic_tokenizer import (
-    AnthropicTokenizer,
-)
-from swarms.tokenizers.cohere_tokenizer import CohereTokenizer
+from swarms.memory.dict_internal_memory import DictInternalMemory
+from swarms.memory.dict_shared_memory import DictSharedMemory
+from swarms.memory.lanchain_chroma import LangchainChromaVectorMemory
 
 ########
 from dotenv import load_dotenv
@@ -26,10 +18,21 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 model = OpenAIChat(
-    model_name="gpt-4",
     openai_api_key=api_key,
     max_tokens=4000,
 )
+
+# agent = Agent(
+#     llm=model,
+#     agent_name="Unit Testing Agent",
+#     agent_description=(
+#         "This agent is responsible for generating unit tests for"
+#         " the swarms package."
+#     ),
+#     autosave=True,
+#     system_prompt=None,
+#     max_loops=1,
+# )
 
 
 def extract_code_from_markdown(markdown_content: str):
@@ -61,12 +64,11 @@ def create_test(cls):
         f" {cls.__name__}\n\nDocumentation:\n{doc}\n\nSource"
         f" Code:\n{source}"
     )
-    print(input_content)
 
     # Process with OpenAI model (assuming the model's __call__ method takes this input and returns processed content)
     processed_content = model(
         TEST_WRITER_SOP_PROMPT(
-            input_content, "swarms", "swarms.tokenizers"
+            input_content, "swarms", "swarms.memory"
         )
     )
     processed_content = extract_code_from_markdown(processed_content)
@@ -74,7 +76,7 @@ def create_test(cls):
     doc_content = f"# {cls.__name__}\n\n{processed_content}\n"
 
     # Create the directory if it doesn't exist
-    dir_path = "tests/tokenizers"
+    dir_path = "tests/memory"
     os.makedirs(dir_path, exist_ok=True)
 
     # Write the processed documentation to a Python file
@@ -85,13 +87,9 @@ def create_test(cls):
 
 def main():
     classes = [
-        SentencePieceTokenizer,
-        HuggingFaceTokenizer,
-        Tokenizer,
-        BaseTokenizer,
-        OpenAITokenizer,
-        AnthropicTokenizer,
-        CohereTokenizer,
+        DictInternalMemory,
+        DictSharedMemory,
+        LangchainChromaVectorMemory,
     ]
     threads = []
     for cls in classes:
@@ -103,7 +101,7 @@ def main():
     for thread in threads:
         thread.join()
 
-    print("Tests generated in 'tests/tokenizers' directory.")
+    print("Tests generated in 'tests/memory' directory.")
 
 
 if __name__ == "__main__":
