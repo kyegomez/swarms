@@ -1,3 +1,4 @@
+---
 name: release
 
 on:
@@ -7,7 +8,7 @@ on:
     branches:
       - master
     paths:
-      - 'pyproject.toml'
+      - "pyproject.toml"
 
 env:
   POETRY_VERSION: "1.4.2"
@@ -15,8 +16,8 @@ env:
 jobs:
   if_release:
     if: |
-        ${{ github.event.pull_request.merged == true }}
-        && ${{ contains(github.event.pull_request.labels.*.name, 'release') }}
+      ${{ github.event.pull_request.merged == true }}
+      && ${{ contains(github.event.pull_request.labels.*.name, 'release') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

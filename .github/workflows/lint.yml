@@ -1,7 +1,7 @@
-
+---
 name: Lint
 
-on: [push, pull_request]  # yamllint disable-line rule:truthy
+on: [push, pull_request]
 
 jobs:
   yaml-lint:

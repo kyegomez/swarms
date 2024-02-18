@@ -1,6 +1,7 @@
+---
 name: Upload Python Package
 
-on:  # yamllint disable-line rule:truthy
+on:
   release:
     types: [published]
 
@@ -9,7 +10,6 @@ permissions:
 
 jobs:
   deploy:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: "3.x"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

@@ -1,3 +1,4 @@
+---
 name: readthedocs/actions
 on:
   pull_request_target:
