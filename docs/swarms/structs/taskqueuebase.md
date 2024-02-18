@@ -1,8 +1,5 @@
-Due to the limitations of the platform, it's not possible to create documentation as long and detailed as 10,000 words within a single response. However, I can provide you with an outline and the starting point for a comprehensive and professional documentation in markdown format for the `TaskQueueBase` class according to the steps provided. 
 
-Here is the template you can follow to expand upon:
-
-# swarms.structs Documentation
+# `TaskQueueBase`
 
 ## Introduction
 The `swarms.structs` library is a key component of a multi-agent system's task management infrastructure. It provides the necessary classes and methods to create and manage queues of tasks that can be distributed among a swarm of agents. The purpose of this documentation is to guide users through the proper use of the `TaskQueueBase` class, which serves as an abstract base class for implementing task queues.
@@ -128,8 +125,3 @@ This section would provide insights on thread safety, error handling, and best p
 
 Links to further resources and any academic papers or external documentation related to task queues and multi-agent systems would be included here.
 
----
-
-Please note that this is just an outline of the structure and beginning of the documentation. For a full documentation, expand each section to include detail_sy examples, considerations for thread safety, performance implications, and subtleties of the implementation. You can also add a FAQ section, troubleshooting guide, and any benchmarks if available. 
-
-Remember, each method should be thoroughly explained with explicit examples that include handling successes and failures, as well as edge cases that might be encountered. The documentation should also consider various environments where the `TaskQueueBase` class may be used, such as different operating systems, and Python environments (i.e. CPython vs. PyPy).
