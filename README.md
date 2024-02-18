@@ -79,7 +79,7 @@ ToolAgent is an agent that outputs JSON using any model from huggingface. It tak
 ```python
 # Import necessary libraries
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from swarms import ToolAgent
+from swarms.agents.tool_agent import ToolAgent
 
 # Load the pre-trained model and tokenizer
 model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v2-12b")
