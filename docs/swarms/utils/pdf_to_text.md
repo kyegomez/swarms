@@ -68,4 +68,4 @@ print(text)
 - This function reads the text from the PDF. It does not handle images, graphical elements, or any non-text content.
 - If the PDF contains scanned images rather than textual data, the `extract_text` function may not be able to extract any text. In such cases, you would require OCR (Optical Character Recognition) tools to extract the text. 
 - Be aware of the possibility that the output string might contain special characters or escape sequences because they were part of the PDF's content. You might need to clean the resulting text according to your requirements.
-- The function uses the pypdf library to facilitate the PDF reading and text extraction. For any issues related to PDF manipulation, consult the [pypdf library documentation](https://pythonhosted.org/pypdf/).
+- The function uses the pypdf library to facilitate the PDF reading and text extraction. For any issues related to PDF manipulation, consult the [pypdf library documentation](https://pypdf.readthedocs.io/en/stable/).
