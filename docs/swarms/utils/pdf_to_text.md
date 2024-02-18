@@ -1,7 +1,6 @@
 # pdf_to_text
 
 ## Introduction
-
 The function `pdf_to_text` is a Python utility for converting a PDF file into a string of text content. It leverages the `pypdf` library, an excellent Python library for processing PDF files. The function takes in a PDF file's path and reads its content, subsequently returning the extracted textual data.
 
 This function can be very useful when you want to extract textual information from PDF files automatically. For instance, when processing a large number of documents, performing textual analysis, or when you're dealing with text data that is only available in PDF format.
