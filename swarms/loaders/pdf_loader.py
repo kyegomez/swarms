@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Dict, List, Optional
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from swarms.utils.hash import str_to_hash
 

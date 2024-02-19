@@ -1,11 +1,11 @@
 import sys
 
 try:
-    import PyPDF2
+    import pypdf
 except ImportError:
     print(
-        "PyPDF2 not installed. Please install it using: pip install"
-        " PyPDF2"
+        "pypdf not installed. Please install it using: pip install"
+        " pypdf"
     )
     sys.exit(1)
 
@@ -27,7 +27,7 @@ def pdf_to_text(pdf_path):
     try:
         # Open the PDF file
         with open(pdf_path, "rb") as file:
-            pdf_reader = PyPDF2.PdfReader(file)
+            pdf_reader = pypdf.PdfReader(file)
             text = ""
 
             # Iterate through each page and extract text
