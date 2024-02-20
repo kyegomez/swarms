@@ -55,6 +55,8 @@ jobs:
   pytype3_10:
     name: pytype 3.10
     runs-on: ubuntu-latest
+    # google/pytype/1105
+    if: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -64,8 +66,8 @@ jobs:
         run: |
           python --version
           pip install .[dev]
-          pip install -q gspread ipython
-          pytype
+          pip install -q gspread ipython pytype
+          pytype .
   format:
     name: Check format with black
     runs-on: ubuntu-latest
