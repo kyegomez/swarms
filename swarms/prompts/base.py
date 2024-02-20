@@ -86,7 +86,9 @@ class BaseMessage(Serializable):
         return True
 
     def __add__(self, other: Any) -> ChatPromptTemplate:
-        from langchain_community.prompts.chat import ChatPromptTemplate
+        from langchain_community.prompts.chat import (
+            ChatPromptTemplate,
+        )
 
         prompt = ChatPromptTemplate(messages=[self])
         return prompt + other

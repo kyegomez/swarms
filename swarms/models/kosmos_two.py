@@ -88,9 +88,10 @@ class Kosmos(BaseMultiModalModel):
             skip_special_tokens=True,
         )[0]
 
-        processed_text, entities = (
-            self.processor.post_process_generation(generated_texts)
-        )
+        (
+            processed_text,
+            entities,
+        ) = self.processor.post_process_generation(generated_texts)
 
         return processed_text, entities
 

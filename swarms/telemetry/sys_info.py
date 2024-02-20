@@ -48,9 +48,9 @@ def get_cpu_info():
 
 def get_ram_info():
     vm = psutil.virtual_memory()
-    used_ram_gb = vm.used / (1024**3)
-    free_ram_gb = vm.free / (1024**3)
-    total_ram_gb = vm.total / (1024**3)
+    used_ram_gb = vm.used / (1024 ** 3)
+    free_ram_gb = vm.free / (1024 ** 3)
+    total_ram_gb = vm.total / (1024 ** 3)
     return (
         f"{total_ram_gb:.2f} GB, used: {used_ram_gb:.2f}, free:"
         f" {free_ram_gb:.2f}"

@@ -244,9 +244,9 @@ class BaseOpenAI(BaseLLM):
             attributes["openai_api_base"] = self.openai_api_base
 
         if self.openai_organization != "":
-            attributes["openai_organization"] = (
-                self.openai_organization
-            )
+            attributes[
+                "openai_organization"
+            ] = self.openai_organization
 
         if self.openai_proxy != "":
             attributes["openai_proxy"] = self.openai_proxy
@@ -287,9 +287,9 @@ class BaseOpenAI(BaseLLM):
     openai_proxy: Optional[str] = None
     batch_size: int = 20
     """Batch size to use when passing multiple documents to generate."""
-    request_timeout: Optional[Union[float, Tuple[float, float]]] = (
-        None
-    )
+    request_timeout: Optional[
+        Union[float, Tuple[float, float]]
+    ] = None
     """Timeout for requests to OpenAI completion API. Default is 600 seconds."""
     logit_bias: Optional[Dict[str, float]] = Field(
         default_factory=dict

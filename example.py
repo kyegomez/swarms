@@ -1,6 +1,7 @@
+"""Example of using the swarms package to run a workflow."""
 from swarms import Agent, OpenAIChat
 
-## Initialize the workflow
+# Initialize the workflow
 agent = Agent(
     llm=OpenAIChat(),
     max_loops="auto",

@@ -902,9 +902,9 @@ def tool(
 
                 coroutine = ainvoke_wrapper
                 func = invoke_wrapper
-                schema: Optional[Type[BaseModel]] = (
-                    runnable.input_schema
-                )
+                schema: Optional[
+                    Type[BaseModel]
+                ] = runnable.input_schema
                 description = repr(runnable)
             elif inspect.iscoroutinefunction(dec_func):
                 coroutine = dec_func

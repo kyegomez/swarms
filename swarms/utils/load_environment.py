@@ -8,4 +8,3 @@ def load_environment():
     api_key = os.environ.get("OPENAI_API_KEY")
 
     return api_key, os.environ
-

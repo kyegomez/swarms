@@ -42,9 +42,9 @@ class SequentialWorkflow:
     task_pool: List[Task] = field(default_factory=list)
     max_loops: int = 1
     autosave: bool = False
-    saved_state_filepath: Optional[str] = (
-        "sequential_workflow_state.json"
-    )
+    saved_state_filepath: Optional[
+        str
+    ] = "sequential_workflow_state.json"
     restore_state_filepath: Optional[str] = None
     dashboard: bool = False
 

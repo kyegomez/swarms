@@ -105,7 +105,7 @@ def prime_swarm(agents: List[Agent], tasks: List[str]):
 
 
 def power_swarm(agents: List[str], tasks: List[str]):
-    powers = [2**i for i in range(int(len(agents) ** 0.5))]
+    powers = [2 ** i for i in range(int(len(agents) ** 0.5))]
     for power in powers:
         if power < len(agents) and tasks:
             task = tasks.pop(0)
@@ -114,14 +114,14 @@ def power_swarm(agents: List[str], tasks: List[str]):
 
 def log_swarm(agents: List[Agent], tasks: List[str]):
     for i in range(len(agents)):
-        if 2**i < len(agents) and tasks:
+        if 2 ** i < len(agents) and tasks:
             task = tasks.pop(0)
-            agents[2**i].run(task)
+            agents[2 ** i].run(task)
 
 
 def exponential_swarm(agents: List[Agent], tasks: List[str]):
     for i in range(len(agents)):
-        index = min(int(2**i), len(agents) - 1)
+        index = min(int(2 ** i), len(agents) - 1)
         if tasks:
             task = tasks.pop(0)
             agents[index].run(task)
@@ -130,7 +130,7 @@ def exponential_swarm(agents: List[Agent], tasks: List[str]):
 def geometric_swarm(agents, tasks):
     ratio = 2
     for i in range(range(len(agents))):
-        index = min(int(ratio**2), len(agents) - 1)
+        index = min(int(ratio ** 2), len(agents) - 1)
         if tasks:
             task = tasks.pop(0)
             agents[index].run(task)

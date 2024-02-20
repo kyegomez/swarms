@@ -25,7 +25,9 @@ from langchain_community.callbacks.manager import (
 )
 from langchain_community.llms.base import LLM
 from pydantic import Field, SecretStr, root_validator
-from langchain_community.schema.language_model import BaseLanguageModel
+from langchain_community.schema.language_model import (
+    BaseLanguageModel,
+)
 from langchain_community.schema.output import GenerationChunk
 from langchain_community.schema.prompt import PromptValue
 from langchain_community.utils import (

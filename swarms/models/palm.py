@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Dict, List, Optional
 
-from langchain_community.callbacks.manager import CallbackManagerForLLMRun
+from langchain_community.callbacks.manager import (
+    CallbackManagerForLLMRun,
+)
 from langchain_community.llms import BaseLLM
 from langchain_community.pydantic_v1 import BaseModel, root_validator
 from langchain_community.schema import Generation, LLMResult

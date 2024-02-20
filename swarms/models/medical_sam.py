@@ -115,12 +115,13 @@ class MedicalSAM:
         if len(box_torch.shape) == 2:
             box_torch = box_torch[:, None, :]
 
-        sparse_embeddings, dense_embeddings = (
-            self.model.prompt_encoder(
-                points=None,
-                boxes=box_torch,
-                masks=None,
-            )
+        (
+            sparse_embeddings,
+            dense_embeddings,
+        ) = self.model.prompt_encoder(
+            points=None,
+            boxes=box_torch,
+            masks=None,
         )
 
         low_res_logits, _ = self.model.mask_decoder(

@@ -317,9 +317,9 @@ class MultiAgentCollaboration:
         """Tracks and reports the performance of each agent"""
         performance_data = {}
         for agent in self.agents:
-            performance_data[agent.name] = (
-                agent.get_performance_metrics()
-            )
+            performance_data[
+                agent.name
+            ] = agent.get_performance_metrics()
         return performance_data
 
     def set_interaction_rules(self, rules):
