@@ -4,7 +4,22 @@ name: Lint
 on: [push, pull_request]  # yamllint disable-line rule:truthy
 
 jobs:
+  yaml-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-go@v4
+      - run: go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+      - run: yamlfmt .
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: "yamllint: auto-format"
+          default_author: github_actions
   yaml-lint:
+    needs: yaml-fmt
     runs-on: ubuntu-latest
     steps:
       - name: Check out source repository
