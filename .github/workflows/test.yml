@@ -5,8 +5,6 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
-env:
-  POETRY_VERSION: "1.4.2"
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -17,62 +15,16 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
-        test_type:
-          - "core"
-          - "extended"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Poetry
         uses: "snok/install-poetry@v1"
-        with:
-          python-version: ${{ matrix.python-version }}
-          poetry-version: "1.4.2"
-          cache-key: ${{ matrix.test_type }}
-          install-command: if [ "${{ matrix.test_type }}" == "core" ]; then echo "Running core tests, installing
-            dependencies with poetry..." poetry install else echo "Running extended tests, installing dependencies
-            with poetry..." poetry install -E extended_testing fi
-      - name: Run ${{matrix.test_type}} tests
-        run: |
-          if [ "${{ matrix.test_type }}" == "core" ]; then
-            make test
-          else
-            make extended_tests
-          fi
-        shell: bash
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-        test_type:
-          - "core"
-          - "extended"
-    name: Python ${{ matrix.python-version }} ${{ matrix.test_type }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: "./.github/actions/poetry_setup"
-        with:
-          python-version: ${{ matrix.python-version }}
-          poetry-version: "1.4.2"
-          cache-key: ${{ matrix.test_type }}
-          install-command: |
-            if [ "${{ matrix.test_type }}" == "core" ]; then
-              echo "Running core tests, installing dependencies with poetry..."
-              poetry install
-            else
-              echo "Running extended tests, installing dependencies with poetry..."
-              poetry install -E extended_testing
-            fi
-      - name: Run ${{matrix.test_type}} tests
-        run: |
-          if [ "${{ matrix.test_type }}" == "core" ]; then
-            make test
-          else
-            make extended_tests
-          fi
-        shell: bash
+      - name: Install dependencies
+        run: poetry install --no-root --no-interaction
+      - name: Run tests
+        run: pytest tests/
