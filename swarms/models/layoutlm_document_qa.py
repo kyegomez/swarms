@@ -2,7 +2,9 @@
 LayoutLMDocumentQA is a multimodal good for
 visual question answering on real world docs lik invoice, pdfs, etc
 """
+
 from transformers import pipeline
+
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 
@@ -29,7 +31,7 @@ class LayoutLMDocumentQA(BaseMultiModalModel):
         *args,
         **kwargs,
     ):
-        super(LayoutLMDocumentQA, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.model_name = model_name
         self.task_type = task_type
         self.pipeline = pipeline(task_type, model=model_name)

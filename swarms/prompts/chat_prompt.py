@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Dict, List, Sequence
+from typing import Sequence
 
 
 class Message:
@@ -11,7 +11,7 @@ class Message:
     """
 
     def __init__(
-        self, content: str, role: str, additional_kwargs: Dict = None
+        self, content: str, role: str, additional_kwargs: dict = None
     ):
         self.content = content
         self.role = role
@@ -33,7 +33,7 @@ class HumanMessage(Message):
         self,
         content: str,
         role: str = "Human",
-        additional_kwargs: Dict = None,
+        additional_kwargs: dict = None,
         example: bool = False,
     ):
         super().__init__(content, role, additional_kwargs)
@@ -52,7 +52,7 @@ class AIMessage(Message):
         self,
         content: str,
         role: str = "AI",
-        additional_kwargs: Dict = None,
+        additional_kwargs: dict = None,
         example: bool = False,
     ):
         super().__init__(content, role, additional_kwargs)
@@ -72,7 +72,7 @@ class SystemMessage(Message):
         self,
         content: str,
         role: str = "System",
-        additional_kwargs: Dict = None,
+        additional_kwargs: dict = None,
     ):
         super().__init__(content, role, additional_kwargs)
 
@@ -90,7 +90,7 @@ class FunctionMessage(Message):
         content: str,
         role: str = "Function",
         name: str = None,
-        additional_kwargs: Dict = None,
+        additional_kwargs: dict = None,
     ):
         super().__init__(content, role, additional_kwargs)
         self.name = name
@@ -105,7 +105,7 @@ class ChatMessage(Message):
     """
 
     def __init__(
-        self, content: str, role: str, additional_kwargs: Dict = None
+        self, content: str, role: str, additional_kwargs: dict = None
     ):
         super().__init__(content, role, additional_kwargs)
 
@@ -135,7 +135,7 @@ def message_to_dict(message: Message) -> dict:
     return {"type": message.get_type(), "data": message.__dict__}
 
 
-def messages_to_dict(messages: Sequence[Message]) -> List[dict]:
+def messages_to_dict(messages: Sequence[Message]) -> list[dict]:
     return [message_to_dict(m) for m in messages]
 
 
@@ -155,5 +155,5 @@ def message_from_dict(message: dict) -> Message:
         raise ValueError(f"Got unexpected message type: {_type}")
 
 
-def messages_from_dict(messages: List[dict]) -> List[Message]:
+def messages_from_dict(messages: list[dict]) -> list[Message]:
     return [message_from_dict(m) for m in messages]

@@ -107,16 +107,17 @@ Now, let's create your first Agent. A Agent represents a chain-like structure th
 
 # Import necessary modules
 ```python
-from swarms.models import OpenAIChat # Zephr, Mistral
+from swarms.models import OpenAIChat  # Zephr, Mistral
 from swarms.structs import Agent
 
-api_key = ""# Initialize the language model (LLM)
-llm = OpenAIChat(openai_api_key=api_key, temperature=0.5, max_tokens=3000)# Initialize the Agent object
+api_key = ""  # Initialize the language model (LLM)
+llm = OpenAIChat(
+    openai_api_key=api_key, temperature=0.5, max_tokens=3000
+)  # Initialize the Agent object
 
-agent = Agent(llm=llm, max_loops=5)# Run the agent
+agent = Agent(llm=llm, max_loops=5)  # Run the agent
 out = agent.run("Create an financial analysis on the following metrics")
 print(out)
-
 ```
 
 ### [3. Initializing the Agent Object](https://github.com/kyegomez/swarms)

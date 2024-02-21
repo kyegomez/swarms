@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 from swarms.models.mistral import Mistral
 
 

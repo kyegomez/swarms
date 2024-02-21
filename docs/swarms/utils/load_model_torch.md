@@ -50,11 +50,13 @@ This function can be used directly inside your code as shown in the following ex
 Loading a model without specifying a device results in the function choosing the most optimal available device automatically.
 
 ```python
-from swarms.utils import load_model_torch
 import torch.nn as nn
+
+from swarms.utils import load_model_torch
 
 # Assume `mymodel.pth` is in the current directory
 model_path = "./mymodel.pth"
+
 
 # Define your model architecture if the model file only contains state dict
 class MyModel(nn.Module):
@@ -64,6 +66,7 @@ class MyModel(nn.Module):
 
     def forward(self, x):
         return self.linear(x)
+
 
 model = MyModel()
 

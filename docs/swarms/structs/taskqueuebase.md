@@ -7,12 +7,13 @@ The `swarms.structs` library is a key component of a multi-agent system's task m
 ## TaskQueueBase Class
 
 ```python
-from abc import ABC, abstractmethod
 import threading
+from abc import ABC, abstractmethod
 
 # Include any additional imports that are relevant to decorators and other classes such as Task and Agent if needed
 
 # Definition of the synchronized_queue decorator (if necessary)
+
 
 class TaskQueueBase(ABC):
     def __init__(self):
@@ -27,12 +28,12 @@ class TaskQueueBase(ABC):
     @abstractmethod
     def get_task(self, agent: Agent) -> Task:
         pass
-    
+
     @synchronized_queue
     @abstractmethod
     def complete_task(self, task_id: str):
         pass
-    
+
     @synchronized_queue
     @abstractmethod
     def reset_task(self, task_id: str):
@@ -65,11 +66,12 @@ Below are three examples of how the `TaskQueueBase` class can be implemented and
 
 ```python
 # file: basic_queue.py
-import threading
-from swarms.structs import TaskQueueBase, Task, Agent
 
 # Assume synchronized_queue decorator is defined elsewhere
-from decorators import synchronized_queue 
+from decorators import synchronized_queue
+
+from swarms.structs import Agent, Task, TaskQueueBase
+
 
 class BasicTaskQueue(TaskQueueBase):
     def __init__(self):
@@ -94,6 +96,7 @@ class BasicTaskQueue(TaskQueueBase):
     def reset_task(self, task_id: str):
         # Logic to reset the task
         pass
+
 
 # Usage
 queue = BasicTaskQueue()

@@ -1,5 +1,5 @@
-import sys
 import subprocess
+import sys
 
 
 def run_file(filename: str):

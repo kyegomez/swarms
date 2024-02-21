@@ -72,9 +72,7 @@ class Anthropic:
 from swarms.models import Anthropic
 
 # Initialize an instance of the Anthropic class
-model = Anthropic(
-    anthropic_api_key=""
-)
+model = Anthropic(anthropic_api_key="")
 
 # Using the run method
 completion_1 = model.run("What is the capital of France?")

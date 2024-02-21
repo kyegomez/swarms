@@ -1,4 +1,5 @@
 import io
+
 import requests
 import torch
 from PIL import Image
@@ -7,6 +8,7 @@ from transformers import (
     AutoProcessor,
     GenerationConfig,
 )
+
 from swarms.models.base_multimodal_model import (
     BaseMultiModalModel,
 )  # noqa: F401

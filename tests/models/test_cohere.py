@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from dotenv import load_dotenv
+
 from swarms.models.cohere_chat import BaseCohere, Cohere
 
 # Load the environment variables

@@ -1,7 +1,9 @@
 from typing import Optional
-from swarms.memory.base_vectordb import AbstractVectorDatabase
+
 import pinecone
 from attr import define, field
+
+from swarms.memory.base_vectordb import AbstractVectorDatabase
 from swarms.utils.hash import str_to_hash
 
 

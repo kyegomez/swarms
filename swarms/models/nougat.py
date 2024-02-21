@@ -8,7 +8,9 @@ format
 - Extracting metadata from pdfs
 
 """
+
 import re
+
 import torch
 from PIL import Image
 from transformers import NougatProcessor, VisionEncoderDecoderModel

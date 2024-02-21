@@ -107,16 +107,16 @@ The `__call__` method is a convenient way to run the GPT-4 Vision model. It has 
 ```python
 def __call__(task: str, img: str) -> str:
     """
-    Run the GPT-4 Vision model (callable).
+       Run the GPT-4 Vision model (callable).
 
-    Parameters:
-    - task (str): The task or question related to the image.
-    - img
+       Parameters:
+       - task (str): The task or question related to the image.
+       - img
 
- (str): URL of the image to analyze.
+    (str): URL of the image to analyze.
 
-    Returns:
-    str: The model's response.
+       Returns:
+       str: The model's response.
     """
 ```
 

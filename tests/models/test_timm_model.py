@@ -1,6 +1,8 @@
 from unittest.mock import Mock
-import torch
+
 import pytest
+import torch
+
 from swarms.models.timm import TimmModel
 
 

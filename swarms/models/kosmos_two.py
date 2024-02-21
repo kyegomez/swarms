@@ -41,7 +41,7 @@ class Kosmos(BaseMultiModalModel):
         *args,
         **kwargs,
     ):
-        super(Kosmos, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.max_new_tokens = max_new_tokens
 

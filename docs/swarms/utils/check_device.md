@@ -36,16 +36,18 @@ This function does not take any mandatory argument. However, it supports optiona
 ### Example 1: Basic Usage 
 
 ```python
-import torch
 import logging
+
+import torch
+
 from swarms.utils import check_device
 
 # Basic usage
 device = check_device(
-            log_level=logging.INFO,
-            memory_threshold=0.8,
-            capability_threshold=3.5,
-            return_type="list"
+    log_level=logging.INFO,
+    memory_threshold=0.8,
+    capability_threshold=3.5,
+    return_type="list",
 )
 ```
 
@@ -53,24 +55,24 @@ device = check_device(
 
 ```python
 import torch
-import logging
+
 from swarms.utils import check_device
 
 # When CUDA is not available
 device = check_device()
-print(device) # If CUDA is not available it should return torch.device('cpu')
+print(device)  # If CUDA is not available it should return torch.device('cpu')
 ```
 
 ### Example 3: Multiple GPU Available
 
 ```python
 import torch
-import logging
+
 from swarms.utils import check_device
 
 # When multiple GPUs are available
 device = check_device()
-print(device) # Should return a list of available GPU devices
+print(device)  # Should return a list of available GPU devices
 ```
 
 ## Tips and Additional Information

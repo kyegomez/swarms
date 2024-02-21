@@ -58,10 +58,12 @@ The design of the `StackOverflowSwarm` class is intended to allow easy tracking 
 from swarms.structs.agent import Agent
 from swarms.structs.stack_overflow_swarm import StackOverflowSwarm
 
+
 # Define custom Agents with some logic (placeholder for actual Agent implementation)
 class CustomAgent(Agent):
     def run(self, conversation, *args, **kwargs):
         return "This is a response from CustomAgent."
+
 
 # Initialize agents
 agent1 = CustomAgent(ai_name="Agent1")

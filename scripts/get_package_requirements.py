@@ -3,7 +3,7 @@ import pkg_resources
 
 def get_package_versions(requirements_path, output_path):
     try:
-        with open(requirements_path, "r") as file:
+        with open(requirements_path) as file:
             requirements = file.readlines()
     except FileNotFoundError:
         print(f"Error: The file '{requirements_path}' was not found.")

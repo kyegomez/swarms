@@ -1,11 +1,12 @@
+import asyncio
+import concurrent.futures
 import json
 import os
 from abc import ABC
-from typing import Optional, Any, Dict, List
-from datetime import datetime
-import asyncio
-import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 import psutil
 
 try:
@@ -81,7 +82,6 @@ class BaseStructure(ABC):
 
     def run(self, *args, **kwargs):
         """Run the structure."""
-        pass
 
     def save_to_file(self, data: Any, file_path: str):
         """Save data to file.
@@ -102,7 +102,7 @@ class BaseStructure(ABC):
         Returns:
             Any: _description_
         """
-        with open(file_path, "r") as file:
+        with open(file_path) as file:
             return json.load(file)
 
     def save_metadata(self, metadata: Dict[str, Any]):

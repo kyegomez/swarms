@@ -68,7 +68,9 @@ final_response = agent.run(initial_task)
 You can collect feedback during the conversation using the `provide_feedback` method:
 
 ```python
-agent.provide_feedback("Generate an SOP for new sales employees on the best cold sales practices")
+agent.provide_feedback(
+    "Generate an SOP for new sales employees on the best cold sales practices"
+)
 ```
 
 ### Stopping Condition
@@ -78,8 +80,10 @@ You can define a custom stopping condition using a function. For example, you ca
 ```python
 from swarms.structs import Agent
 
+
 def stop_when_repeats(response: str) -> bool:
     return "Stop" in response.lower()
+
 
 agent = Agent(llm=my_language_model, max_loops=5, stopping_condition=stop_when_repeats)
 ```
@@ -107,9 +111,9 @@ Here are three usage examples:
 ### Example 1: Simple Conversation
 
 ```python
-from swarms.structs import Agent
 # Select any Language model from the models folder
 from swarms.models import Mistral, OpenAIChat
+from swarms.structs import Agent
 
 llm = Mistral()
 # llm = OpenAIChat()
@@ -128,8 +132,10 @@ final_response = agent.run(initial_task)
 ```python
 from swarms.structs import Agent
 
+
 def stop_when_repeats(response: str) -> bool:
     return "Stop" in response.lower()
+
 
 agent = Agent(llm=llm, max_loops=5, stopping_condition=stop_when_repeats)
 ```

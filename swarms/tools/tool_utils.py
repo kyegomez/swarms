@@ -2,9 +2,7 @@ import json
 import re
 from typing import Any, List
 
-from swarms.prompts.tools import (
-    SCENARIOS,
-)
+from swarms.prompts.tools import SCENARIOS
 from swarms.tools.tool import BaseTool
 from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 

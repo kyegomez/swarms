@@ -44,7 +44,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms import OpenAIChat, Agent
+from swarms import Agent, OpenAIChat
 
 # Load the environment variables
 load_dotenv()
@@ -54,10 +54,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
 llm = OpenAIChat(
-    temperature=0.5,
-    model_name="gpt-4",
-    openai_api_key=api_key,
-    max_tokens=4000
+    temperature=0.5, model_name="gpt-4", openai_api_key=api_key, max_tokens=4000
 )
 
 
@@ -66,9 +63,6 @@ agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
 # Run the workflow on a task
 agent.run("Generate a 10,000 word blog on health and wellness.")
-
-
-
 ```
 
 
@@ -79,6 +73,7 @@ ToolAgent is an agent that outputs JSON using any model from huggingface. It tak
 ```python
 # Import necessary libraries
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from swarms import ToolAgent
 
 # Load the pre-trained model and tokenizer
@@ -107,8 +102,6 @@ generated_data = agent.run(task)
 
 # Print the generated data
 print(generated_data)
-
-
 ```
 
 
@@ -124,8 +117,10 @@ The `Worker` is a simple all-in-one agent equipped with an LLM, tools, and RAG f
 ```python
 # Importing necessary modules
 import os
+
 from dotenv import load_dotenv
-from swarms import Worker, OpenAIChat, tool
+
+from swarms import OpenAIChat, Worker, tool
 
 # Loading environment variables from .env file
 load_dotenv()
@@ -151,14 +146,10 @@ worker = Worker(
 )
 
 # Running the worker with a prompt
-out = worker.run(
-    "Hello, how are you? Create an image of how your are doing!"
-)
+out = worker.run("Hello, how are you? Create an image of how your are doing!")
 
 # Printing the output
 print(out)
-
-
 ```
 
 ------
@@ -174,9 +165,11 @@ Sequential Workflow enables you to sequentially execute tasks with `Agent` and t
 ✅  Utilizes Agent class
 
 ```python
-import os 
-from swarms import OpenAIChat, Agent, SequentialWorkflow 
+import os
+
 from dotenv import load_dotenv
+
+from swarms import Agent, OpenAIChat, SequentialWorkflow
 
 load_dotenv()
 
@@ -186,10 +179,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize the language agent
 llm = OpenAIChat(
-    temperature=0.5,
-    model_name="gpt-4",
-    openai_api_key=api_key,
-    max_tokens=4000
+    temperature=0.5, model_name="gpt-4", openai_api_key=api_key, max_tokens=4000
 )
 
 
@@ -207,12 +197,14 @@ workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to the workflow
 workflow.add(
-    agent1, "Generate a 10,000 word blog on health and wellness.", 
+    agent1,
+    "Generate a 10,000 word blog on health and wellness.",
 )
 
 # Suppose the next task takes the output of the first task as input
 workflow.add(
-    agent2, "Summarize the generated blog",
+    agent2,
+    "Summarize the generated blog",
 )
 
 # Run the workflow
@@ -231,8 +223,10 @@ for task in workflow.tasks:
 
 ```python
 import os
+
 from dotenv import load_dotenv
-from swarms import OpenAIChat, Task, ConcurrentWorkflow, Agent
+
+from swarms import Agent, ConcurrentWorkflow, OpenAIChat, Task
 
 # Load environment variables from .env file
 load_dotenv()
@@ -254,16 +248,17 @@ workflow.add(tasks=[task1, task2, task3])
 
 # Run the workflow
 workflow.run()
-
 ```
 
 ### `RecursiveWorkflow`
 `RecursiveWorkflow` will keep executing the tasks until a specific token like <DONE> is located inside the text!
 
 ```python
-import os 
-from dotenv import load_dotenv 
-from swarms import OpenAIChat, Task, RecursiveWorkflow, Agent
+import os
+
+from dotenv import load_dotenv
+
+from swarms import Agent, OpenAIChat, RecursiveWorkflow, Task
 
 # Load environment variables from .env file
 load_dotenv()
@@ -287,8 +282,6 @@ workflow.add(task3)
 
 # Run the workflow
 workflow.run()
-
-
 ```
 
 
@@ -304,7 +297,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms import Anthropic, Gemini, Mixtral, OpenAIChat, ModelParallelizer
+from swarms import Anthropic, Gemini, Mixtral, ModelParallelizer, OpenAIChat
 
 load_dotenv()
 
@@ -346,10 +339,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms import (
-    OpenAIChat,
-    Conversation,
-)
+from swarms import Conversation, OpenAIChat
 
 conv = Conversation(
     time_enabled=True,
@@ -364,6 +354,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # Initialize the language model
 llm = OpenAIChat(openai_api_key=api_key, model_name="gpt-4")
 
+
 # Run the language model in a loop
 def interactive_conversation(llm):
     conv = Conversation()
@@ -372,9 +363,7 @@ def interactive_conversation(llm):
         conv.add("user", user_input)
         if user_input.lower() == "quit":
             break
-        task = (
-            conv.return_history_as_string()
-        )  # Get the conversation history
+        task = conv.return_history_as_string()  # Get the conversation history
         out = llm(task)
         conv.add("assistant", out)
         print(
@@ -386,7 +375,6 @@ def interactive_conversation(llm):
 
 # Replace with your LLM instance
 interactive_conversation(llm)
-
 ```
 
 
@@ -405,7 +393,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms import OpenAIChat, Agent, SwarmNetwork
+from swarms import Agent, OpenAIChat, SwarmNetwork
 
 # Load the environment variables
 load_dotenv()
@@ -442,11 +430,8 @@ print(out)
 
 
 # Run all the agents in the swarm network on a task
-out = swarmnet.run_many_agents(
-    "Generate a 10,000 word blog on health and wellness."
-)
+out = swarmnet.run_many_agents("Generate a 10,000 word blog on health and wellness.")
 print(out)
-
 ```
 
 
@@ -513,8 +498,6 @@ else:
 
 # Output the result of the task
 print(f"Task result: {task.result}")
-
-
 ```
 
 ---
@@ -535,14 +518,7 @@ from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Import the models, structs, and telemetry modules
-from swarms import (
-    Gemini,
-    GPT4VisionAPI,
-    Mixtral,
-    OpenAI,
-    ToolAgent,
-    BlocksList,
-)
+from swarms import BlocksList, Gemini, GPT4VisionAPI, Mixtral, OpenAI, ToolAgent
 
 # Load the environment variables
 load_dotenv()
@@ -552,9 +528,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 # Tool Agent
-model = AutoModelForCausalLM.from_pretrained(
-    "databricks/dolly-v2-12b"
-)
+model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v2-12b")
 tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v2-12b")
 json_schema = {
     "type": "object",
@@ -565,9 +539,7 @@ json_schema = {
         "courses": {"type": "array", "items": {"type": "string"}},
     },
 }
-toolagent = ToolAgent(
-    model=model, tokenizer=tokenizer, json_schema=json_schema
-)
+toolagent = ToolAgent(model=model, tokenizer=tokenizer, json_schema=json_schema)
 
 # Blocks List which enables you to build custom swarms by adding classes or functions
 swarm = BlocksList(
@@ -619,9 +591,7 @@ blocks_by_parent_name = swarm.get_by_parent_name(swarm.name)
 blocks_by_parent_type = swarm.get_by_parent_type(type(swarm).__name__)
 
 # Get blocks by parent description
-blocks_by_parent_description = swarm.get_by_parent_description(
-    swarm.description
-)
+blocks_by_parent_description = swarm.get_by_parent_description(swarm.description)
 
 # Run the block in the swarm
 inference = swarm.run_block(toolagent, "Hello World")
@@ -636,25 +606,27 @@ Here's a production grade swarm ready for real-world deployment in a factory and
 
 
 ```python
-from swarms.structs import Agent
 import os
+
 from dotenv import load_dotenv
+
 from swarms.models import GPT4VisionAPI
 from swarms.prompts.logistics import (
+    Efficiency_Agent_Prompt,
     Health_Security_Agent_Prompt,
-    Quality_Control_Agent_Prompt,
     Productivity_Agent_Prompt,
+    Quality_Control_Agent_Prompt,
     Safety_Agent_Prompt,
     Security_Agent_Prompt,
     Sustainability_Agent_Prompt,
-    Efficiency_Agent_Prompt,
 )
+from swarms.structs import Agent
 
 # Load ENV
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
-# GPT4VisionAPI 
+# GPT4VisionAPI
 llm = GPT4VisionAPI(openai_api_key=api_key)
 
 # Image for analysis
@@ -686,9 +658,7 @@ productivity_agent = Agent(
 )
 
 # Initiailize safety agent
-safety_agent = Agent(
-    llm=llm, sop=Safety_Agent_Prompt, max_loops=1, multi_modal=True
-)
+safety_agent = Agent(llm=llm, sop=Safety_Agent_Prompt, max_loops=1, multi_modal=True)
 
 # Init the security agent
 security_agent = Agent(
@@ -748,7 +718,9 @@ Run the agent with multiple modalities useful for various real-world tasks in ma
 ```python
 # Description: This is an example of how to use the Agent class to run a multi-modal workflow
 import os
+
 from dotenv import load_dotenv
+
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.structs import Agent
 
@@ -775,17 +747,11 @@ img = "assembly_line.jpg"
 
 ## Initialize the workflow
 agent = Agent(
-    llm=llm,
-    max_loops="auto",
-    autosave=True,
-    dashboard=True,
-    multi_modal=True
+    llm=llm, max_loops="auto", autosave=True, dashboard=True, multi_modal=True
 )
 
 # Run the workflow on a task
 agent.run(task=task, img=img)
-
-
 ```
 
 ---
@@ -857,14 +823,10 @@ model = QwenVLMultiModal(
 )
 
 # Run the model
-response = model(
-    "Hello, how are you?", "https://example.com/image.jpg"
-)
+response = model("Hello, how are you?", "https://example.com/image.jpg")
 
 # Print the response
 print(response)
-
-
 ```
 
 
@@ -882,7 +844,6 @@ out = model.run("Analyze the reciepts in this image", "docs.jpg")
 
 # Print the output
 print(out)
-
 ```
 
 
@@ -923,8 +884,6 @@ model.set_max_length(200)
 
 # Clear the chat history of the model
 model.clear_chat_history()
-
-
 ```
 
 ## Radically Simple AI Model APIs
@@ -941,9 +900,7 @@ We provide a vast array of language and multi-modal model APIs for you to genera
 from swarms.models import Anthropic
 
 # Initialize an instance of the Anthropic class
-model = Anthropic(
-    anthropic_api_key=""
-)
+model = Anthropic(anthropic_api_key="")
 
 # Using the run method
 completion_1 = model.run("What is the capital of France?")
@@ -952,7 +909,6 @@ print(completion_1)
 # Using the __call__ method
 completion_2 = model("How far is the moon from the earth?", stop=["miles", "km"])
 print(completion_2)
-
 ```
 
 
@@ -964,12 +920,16 @@ from swarms.models import HuggingfaceLLM
 custom_config = {
     "quantize": True,
     "quantization_config": {"load_in_4bit": True},
-    "verbose": True
+    "verbose": True,
 }
-inference = HuggingfaceLLM(model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config)
+inference = HuggingfaceLLM(
+    model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config
+)
 
 # Generate text based on a prompt
-prompt_text = "Create a list of known biggest risks of structural collapse with references"
+prompt_text = (
+    "Create a list of known biggest risks of structural collapse with references"
+)
 generated_text = inference(prompt_text)
 print(generated_text)
 ```
@@ -1027,7 +987,6 @@ task = "A person is walking on the street."
 # Generate the video!
 video_path = zeroscope(task)
 print(video_path)
-
 ```
 
 

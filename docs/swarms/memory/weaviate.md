@@ -82,7 +82,7 @@ weaviate_client.create_collection(
         {"name": "property1", "dataType": ["string"]},
         {"name": "property2", "dataType": ["int"]},
     ],
-    vectorizer_config=None  # Optional vectorizer configuration
+    vectorizer_config=None,  # Optional vectorizer configuration
 )
 ```
 
@@ -99,8 +99,7 @@ The `add` method allows you to add an object to a specified collection in Weavia
 
 ```python
 weaviate_client.add(
-    collection_name="my_collection",
-    properties={"property1": "value1", "property2": 42}
+    collection_name="my_collection", properties={"property1": "value1", "property2": 42}
 )
 ```
 
@@ -142,7 +141,7 @@ The `update` method allows you to update an object in a specified collection in 
 weaviate_client.update(
     collection_name="my_collection",
     object_id="object123",
-    properties={"property1": "new_value", "property2": 99}
+    properties={"property1": "new_value", "property2": 99},
 )
 ```
 
@@ -158,10 +157,7 @@ The `delete` method allows you to delete an object from a specified collection i
 #### Usage
 
 ```python
-weaviate_client.delete(
-    collection_name="my_collection",
-    object_id="object123"
-)
+weaviate_client.delete(collection_name="my_collection", object_id="object123")
 ```
 
 ## Examples
@@ -175,28 +171,21 @@ weaviate_client.create_collection(
     name="people",
     properties=[
         {"name": "name", "dataType": ["string"]},
-        {"name": "age", "dataType": ["int"]}
-    ]
+        {"name": "age", "dataType": ["int"]},
+    ],
 )
 ```
 
 ### Example 2: Adding an Object
 
 ```python
-weaviate_client.add(
-    collection_name="people",
-    properties={"name": "John", "age": 30}
-)
+weaviate_client.add(collection_name="people", properties={"name": "John", "age": 30})
 ```
 
 ### Example 3: Querying Objects
 
 ```python
-results = weaviate_client.query(
-    collection_name="people",
-    query="name:John",
-    limit=5
-)
+results = weaviate_client.query(collection_name="people", query="name:John", limit=5)
 ```
 
 These examples cover the basic operations of creating collections, adding objects, and querying objects using the Weaviate API Client.

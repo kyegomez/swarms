@@ -1,6 +1,5 @@
 from swarms import HierarchicalSwarm
 
-
 swarm = HierarchicalSwarm(
     openai_api_key="key",
     model_type="openai",

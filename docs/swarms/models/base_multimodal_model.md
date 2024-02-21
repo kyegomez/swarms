@@ -149,7 +149,9 @@ model = BaseMultiModalModel(
 )
 
 # Run the model with a text task and an image URL
-response = model.run("Generate a summary of this text", "https://www.example.com/image.jpg")
+response = model.run(
+    "Generate a summary of this text", "https://www.example.com/image.jpg"
+)
 print(response)
 ```
 
@@ -209,6 +211,7 @@ for response in responses:
 ```python
 from swarms.models import BaseMultiModalModel
 
+
 class CustomMultiModalModel(BaseMultiModalModel):
     def __init__(self, model_name, custom_parameter, *args, **kwargs):
         # Call the parent class constructor
@@ -226,6 +229,7 @@ class CustomMultiModalModel(BaseMultiModalModel):
         # You can use self.custom_parameter and other inherited attributes
         pass
 
+
 # Create an instance of your custom multimodal model
 custom_model = CustomMultiModalModel(
     model_name="your_custom_model_name",
@@ -236,7 +240,9 @@ custom_model = CustomMultiModalModel(
 )
 
 # Run your custom model
-response = custom_model.run("Generate a summary of this text", "https://www.example.com/image.jpg")
+response = custom_model.run(
+    "Generate a summary of this text", "https://www.example.com/image.jpg"
+)
 print(response)
 
 # Generate a summary using your custom model

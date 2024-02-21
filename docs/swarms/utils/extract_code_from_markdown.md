@@ -57,14 +57,13 @@ Below are three examples of how you might use this function:
 Extracting code blocks from a simple markdown string.
 
 ```python
-import re
 from swarms.utils import extract_code_from_markdown
 
-markdown_string = '''# Example
+markdown_string = """# Example
 This is an example of a code block:
 ```python
 print("Hello World!")
-``` '''
+``` """
 print(extract_code_from_markdown(markdown_string))
 ```
 
@@ -75,13 +74,15 @@ Extracting code blocks from a markdown file.
 ```python
 import re
 
+
 def extract_code_from_markdown(markdown_content: str) -> str:
     pattern = r"```(?:\w+\n)?(.*?)```"
     matches = re.findall(pattern, markdown_content, re.DOTALL)
     return "\n".join(code.strip() for code in matches)
 
+
 # Assume that 'example.md' contains multiple code blocks
-with open('example.md', 'r') as file:
+with open("example.md") as file:
     markdown_content = file.read()
 print(extract_code_from_markdown(markdown_content))
 ```
@@ -93,17 +94,20 @@ Using the function in a pipeline to extract and then analyze code blocks.
 ```python
 import re
 
+
 def extract_code_from_markdown(markdown_content: str) -> str:
     pattern = r"```(?:\w+\n)?(.*?)```"
     matches = re.findall(pattern, markdown_content, re.DOTALL)
     return "\n".join(code.strip() for code in matches)
 
+
 def analyze_code_blocks(code: str):
     # Add your analysis logic here
-    pass 
+    pass
+
 
 # Assume that 'example.md' contains multiple code blocks
-with open('example.md', 'r') as file:
+with open("example.md") as file:
     markdown_content = file.read()
 code_blocks = extract_code_from_markdown(markdown_content)
 analyze_code_blocks(code_blocks)

@@ -73,7 +73,7 @@ from swarms.utils import limit_tokens_from_string
 string = "In case the method does not find the specified model, it will fall back to gpt2 model."
 
 # model
-model = "gpt-4" 
+model = "gpt-4"
 
 output = limit_tokens_from_string(string, model=model)
 ```

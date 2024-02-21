@@ -21,8 +21,6 @@ class AbstractDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def close(self):
         """
@@ -31,8 +29,6 @@ class AbstractDatabase(ABC):
         This method closes the connection to the database.
 
         """
-
-        pass
 
     @abstractmethod
     def execute_query(self, query):
@@ -46,8 +42,6 @@ class AbstractDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def fetch_all(self):
         """
@@ -59,8 +53,6 @@ class AbstractDatabase(ABC):
             list: A list of dictionaries representing the rows.
 
         """
-
-        pass
 
     @abstractmethod
     def fetch_one(self):
@@ -74,8 +66,6 @@ class AbstractDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def add(self, table, data):
         """
@@ -88,8 +78,6 @@ class AbstractDatabase(ABC):
             data (dict): A dictionary representing the data to be added.
 
         """
-
-        pass
 
     @abstractmethod
     def query(self, table, condition):
@@ -107,8 +95,6 @@ class AbstractDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def get(self, table, id):
         """
@@ -125,8 +111,6 @@ class AbstractDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def update(self, table, id, data):
         """
@@ -141,8 +125,6 @@ class AbstractDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def delete(self, table, id):
         """
@@ -155,5 +137,3 @@ class AbstractDatabase(ABC):
             id (int): The ID of the record to be deleted.
 
         """
-
-        pass

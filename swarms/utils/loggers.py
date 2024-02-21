@@ -1,14 +1,16 @@
 """Logging modules"""
+
+import json
 import logging
 import os
 import random
 import re
 import time
-import json
 from logging import LogRecord
 from typing import Any
 
 from colorama import Fore, Style
+
 from swarms.utils.apa import Action, ToolCallStatus
 
 

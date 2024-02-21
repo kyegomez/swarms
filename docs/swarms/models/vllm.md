@@ -63,7 +63,7 @@ custom_vllm = vLLM(
     trust_remote_code=True,
     revision="abc123",
     temperature=0.7,
-    top_p=0.8
+    top_p=0.8,
 )
 ```
 
@@ -108,7 +108,7 @@ custom_vllm = vLLM(
     trust_remote_code=True,
     revision="abc123",
     temperature=0.7,
-    top_p=0.8
+    top_p=0.8,
 )
 
 # Generate text with custom configuration
@@ -128,7 +128,7 @@ vllm = vLLM()
 tasks = [
     "Translate the following sentence to French: 'Hello, world!'",
     "Write a short story set in a futuristic world.",
-    "Summarize the main points of a news article about climate change."
+    "Summarize the main points of a news article about climate change.",
 ]
 
 for task in tasks:

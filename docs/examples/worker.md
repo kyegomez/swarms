@@ -53,11 +53,11 @@ Voila! You’re now ready to summon your Worker.
 Here’s a simple way to invoke the Worker and give it a task:
 
 ```python
-from swarms.models import OpenAIChat
 from swarms import Worker
+from swarms.models import OpenAIChat
 
 llm = OpenAIChat(
-    #enter your api key
+    # enter your api key
     openai_api_key="",
     temperature=0.5,
 )
@@ -75,8 +75,6 @@ node = Worker(
 task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
 response = node.run(task)
 print(response)
-
-
 ```
 
 

@@ -5,8 +5,8 @@ from typing import List, Tuple, Type
 
 import numpy as np
 
-from swarms.structs.document import Document
 from swarms.memory.cosine_similarity import cosine_similarity
+from swarms.structs.document import Document
 
 
 class DistanceStrategy(str, Enum):

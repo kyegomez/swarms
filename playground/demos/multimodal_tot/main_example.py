@@ -2,8 +2,8 @@
 Multi Modal tree of thoughts that leverages the GPT-4 language model and the
 Stable Diffusion model to generate a multimodal output and evaluate the
 output based a metric from 0.0 to 1.0 and then run a search algorithm using DFS and BFS and return the best output.
-    
-    
+
+
 task: Generate an image of a swarm of bees -> Image generator -> GPT4V evaluates the img from 0.0 to 1.0 -> DFS/BFS -> return the best output
 
 
@@ -16,10 +16,12 @@ task: Generate an image of a swarm of bees -> Image generator -> GPT4V evaluates
 """
 
 import os
+
 from dotenv import load_dotenv
+from termcolor import colored
+
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.models.stable_diffusion import StableDiffusion
-from termcolor import colored
 
 # Load the environment variables
 load_dotenv()

@@ -1,7 +1,9 @@
 import unittest
+from unittest.mock import Mock
+
 import pytest
 import torch
-from unittest.mock import Mock
+
 from swarms.utils import prep_torch_inference
 
 

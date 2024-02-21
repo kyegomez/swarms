@@ -1,4 +1,5 @@
 import pytest
+
 from swarms.structs.graph_workflow import GraphWorkflow
 
 

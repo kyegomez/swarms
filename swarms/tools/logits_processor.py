@@ -1,9 +1,9 @@
+import torch
 from transformers import (
-    PreTrainedTokenizer,
     LogitsWarper,
+    PreTrainedTokenizer,
     StoppingCriteria,
 )
-import torch
 
 
 class StringStoppingCriteria(StoppingCriteria):

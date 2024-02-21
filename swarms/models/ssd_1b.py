@@ -7,11 +7,11 @@ from typing import List
 
 import backoff
 import torch
+from cachetools import TTLCache
 from diffusers import StableDiffusionXLPipeline
 from PIL import Image
 from pydantic import validator
 from termcolor import colored
-from cachetools import TTLCache
 
 
 @dataclass

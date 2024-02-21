@@ -1,11 +1,11 @@
 from typing import List
 
 from swarms.structs.agent import Agent
-from swarms.structs.conversation import Conversation
-from swarms.utils.logger import logger
 from swarms.structs.base_multiagent_structure import (
     BaseMultiAgentStructure,
 )
+from swarms.structs.conversation import Conversation
+from swarms.utils.logger import logger
 
 
 class StackOverflowSwarm(BaseMultiAgentStructure):

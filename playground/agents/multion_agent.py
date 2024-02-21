@@ -1,7 +1,8 @@
 import multion
-from swarms.structs.concurrent_workflow import ConcurrentWorkflow
+
 from swarms.models.base_llm import AbstractLLM
 from swarms.structs.agent import Agent
+from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.task import Task
 
 

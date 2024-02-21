@@ -1,7 +1,8 @@
-import logging
-from swarms.structs.base import BaseStructure
-import threading
 import json
+import logging
+import threading
+
+from swarms.structs.base import BaseStructure
 
 
 class ShortTermMemory(BaseStructure):
@@ -181,7 +182,7 @@ class ShortTermMemory(BaseStructure):
         """
         try:
             with self.lock:
-                with open(filename, "r") as f:
+                with open(filename) as f:
                     data = json.load(f)
                 self.short_term_memory = data.get(
                     "short_term_memory", []

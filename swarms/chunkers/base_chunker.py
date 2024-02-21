@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 from abc import ABC
-from typing import Optional
 from dataclasses import dataclass, field
+
 from swarms.artifacts.text_artifact import TextArtifact
 from swarms.chunkers.chunk_seperator import ChunkSeparator
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
@@ -47,7 +48,7 @@ class BaseChunker(ABC):
     def _chunk_recursively(
         self,
         chunk: str,
-        current_separator: Optional[ChunkSeparator] = None,
+        current_separator: ChunkSeparator | None = None,
     ) -> list[str]:
         """
         Recursively chunk the given chunk into smaller subchunks.

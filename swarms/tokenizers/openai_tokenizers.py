@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
+
 import tiktoken
 from tiktoken import Encoding
-from typing import Optional
+
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
 
 
@@ -39,7 +41,7 @@ class OpenAITokenizer(BaseTokenizer):
         Sets the default maximum number of tokens.
         """
         self.max_tokens: int = field(
-            default_factory=lambda: self.default_max_tokens()
+            default_factory=self.default_max_tokens
         )
 
         self.DEFAULT_OPENAI_GPT_3_COMPLETION_MODEL = (
@@ -102,7 +104,7 @@ class OpenAITokenizer(BaseTokenizer):
         ) - offset
 
     def count_tokens(
-        self, text: str | list[dict], model: Optional[str] = None
+        self, text: str | list[dict], model: str | None = None
     ) -> int:
         """
         Counts the number of tokens in the given text.
@@ -171,7 +173,7 @@ class OpenAITokenizer(BaseTokenizer):
         else:
             return len(self.encoding.encode(text))
 
-    def len(self, text: str | list[dict], model: Optional[str]):
+    def len(self, text: str | list[dict], model: str | None):
         """
         Returns the length of the text in tokens.
         If a model is provided, uses that model for encoding.

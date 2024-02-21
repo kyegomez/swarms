@@ -3,12 +3,11 @@ import os
 from dotenv import load_dotenv
 
 from swarms import (
-    OpenAIChat,
     Conversation,
+    OpenAIChat,
     detect_markdown,
     extract_code_from_markdown,
 )
-
 from swarms.tools.code_executor import CodeExecutor
 
 conv = Conversation(

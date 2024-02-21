@@ -78,8 +78,8 @@ Suppose we have a JSON Schema in `config_schema.json` for application configurat
 Now we'll create a subclass `AppConfig` that uses this schema.
 
 ```python
-import json
 from swarms.structs import JSON
+
 
 class AppConfig(JSON):
     def __init__(self, schema_path):
@@ -87,7 +87,8 @@ class AppConfig(JSON):
 
     def validate(self, config_data):
         # Here we'll use a JSON Schema validation library like jsonschema
-        from jsonschema import validate, ValidationError
+        from jsonschema import ValidationError, validate
+
         try:
             validate(instance=config_data, schema=self.schema)
         except ValidationError as e:
@@ -95,15 +96,13 @@ class AppConfig(JSON):
             return False
         return True
 
+
 # Main Example Usage
 
 if __name__ == "__main__":
-    config = {
-        "debug": True,
-        "window_size": [800, 600]
-    }
+    config = {"debug": True, "window_size": [800, 600]}
 
-    app_config = AppConfig('config_schema.json')
+    app_config = AppConfig("config_schema.json")
 
     if app_config.validate(config):
         print("Config is valid!")

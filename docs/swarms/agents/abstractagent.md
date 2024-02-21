@@ -37,7 +37,6 @@ class AbstractAgent:
 
     def memory(self, memory_store):
         """init memory"""
-        pass
 
     def reset(self):
         """(Abstract method) Reset the agent."""
@@ -82,7 +81,7 @@ agent.reset()
 The `run` method allows the agent to perform a specific task.
 
 ```python
-agent.run('some_task')
+agent.run("some_task")
 ```
 
 #### 3. `chat`
@@ -90,7 +89,7 @@ agent.run('some_task')
 The `chat` method enables communication with the agent through a series of messages.
 
 ```python
-messages = [{'id': 1, 'text': 'Hello, agent!'}, {'id': 2, 'text': 'How are you?'}]
+messages = [{"id": 1, "text": "Hello, agent!"}, {"id": 2, "text": "How are you?"}]
 agent.chat(messages)
 ```
 
@@ -99,7 +98,7 @@ agent.chat(messages)
 The `step` method allows the agent to process a single message.
 
 ```python
-agent.step('Hello, agent!')
+agent.step("Hello, agent!")
 ```
 
 ### Asynchronous Methods

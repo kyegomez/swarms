@@ -110,7 +110,9 @@ def setup(
 
 ```python
 # Initialize the PgVectorVectorStore instance
-vector_store = PgVectorVectorStore(connection_string="your-db-connection-string", table_name="your-table-name")
+vector_store = PgVectorVectorStore(
+    connection_string="your-db-connection-string", table_name="your-table-name"
+)
 
 # Set up the database with default settings
 vector_store.setup()
@@ -120,10 +122,14 @@ vector_store.setup()
 
 ```python
 # Initialize the PgVectorVectorStore instance
-vector_store = PgVectorVectorStore(connection_string="your-db-connection-string", table_name="your-table-name")
+vector_store = PgVectorVectorStore(
+    connection_string="your-db-connection-string", table_name="your-table-name"
+)
 
 # Set up the database with customized settings
-vector_store.setup(create_schema=False, install_uuid_extension=True, install_vector_extension=True)
+vector_store.setup(
+    create_schema=False, install_uuid_extension=True, install_vector_extension=True
+)
 ```
 
 ### 4.2 Upserting Vectors <a name="upserting-vectors"></a>
@@ -137,7 +143,7 @@ def upsert_vector(
     vector_id: Optional[str] = None,
     namespace: Optional[str] = None,
     meta: Optional[dict] = None,
-    **kwargs
+    **kwargs,
 ) -> str:
     """
     Inserts or updates a vector in the collection.
@@ -158,7 +164,9 @@ def upsert_vector(
 
 ```python
 # Initialize the PgVectorVectorStore instance
-vector_store = PgVectorVectorStore(connection_string="your-db-connection-string", table_name="your-table-name")
+vector_store = PgVectorVectorStore(
+    connection_string="your-db-connection-string", table_name="your-table-name"
+)
 
 # Define a vector and upsert it
 vector = [0.1, 0.2, 0.3, 0.4]
@@ -167,10 +175,7 @@ namespace = "your-namespace"
 meta = {"key1": "value1", "key2": "value2"}
 
 vector_store.upsert_vector(
-    vector=vector,
-    vector_id=vector_id,
-    namespace=namespace,
-    meta=meta
+    vector=vector, vector_id=vector_id, namespace=namespace, meta=meta
 )
 ```
 
@@ -222,9 +227,7 @@ else:
 The `load_entries` method allows you to load all vector entries from the collection, optionally filtering by namespace.
 
 ```python
-def load_entries(
-    self, namespace: Optional[str] = None
-) -> list[BaseVectorStore.Entry]:
+def load_entries(self, namespace: Optional[str] = None) -> list[BaseVectorStore.Entry]:
     """
     Retrieves all vector entries from the collection, optionally filtering to only those that match the provided namespace.
 
@@ -240,7 +243,9 @@ def load_entries(
 
 ```python
 # Initialize the PgVectorVectorStore instance
-vector_store = PgVectorVectorStore(connection_string="your-db-connection-string", table_name="your-table-name")
+vector_store = PgVectorVectorStore(
+    connection_string="your-db-connection-string", table_name="your-table-name"
+)
 
 # Load all vector entries in the specified namespace
 entries = vector_store.load_entries(namespace="your-namespace")
@@ -266,7 +271,7 @@ def query(
     namespace: Optional[str] = None,
     include_vectors: bool = False,
     distance_metric: str = "cosine_distance",
-    **kwargs
+    **kwargs,
 ) -> list[BaseVectorStore.QueryResult]:
     """
     Performs a search on the collection to find vectors similar to the provided input vector,
@@ -290,7 +295,9 @@ def query(
 
 ```python
 # Initialize the PgVectorVectorStore instance
-vector_store = PgVectorVectorStore(connection_string="your-db-connection-string", table_name="your-table-name")
+vector_store = PgVectorVectorStore(
+    connection_string="your-db-connection-string", table_name="your-table-name"
+)
 
 # Perform a vector query
 query_string = "your-query-string"
@@ -304,7 +311,7 @@ results = vector_store.query(
     count=count,
     namespace=namespace,
     include_vectors=include_vectors,
-    distance_metric=distance_metric
+    distance_metric=distance_metric,
 )
 
 # Process the query results

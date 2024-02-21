@@ -5,10 +5,8 @@ import tenacity
 from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import RegexParser
 from langchain.prompts import PromptTemplate
-from langchain.schema import (
-    HumanMessage,
-    SystemMessage,
-)
+from langchain.schema import HumanMessage, SystemMessage
+
 from swarms import Worker
 
 

@@ -15,6 +15,8 @@ Let's say you have two functions: `ground_truth` and `generated_func`, that have
 @math_eval(ground_truth, generated_func)
 def test_func(x):
     return x
+
+
 result1, result2 = test_func(5)
 print(f"Result from ground_truth: {result1}")
 print(f"Result from generated_func: {result2}")
@@ -46,6 +48,7 @@ Here's how to implement the `math_eval` decorator:
 import functools
 import logging
 
+
 def math_eval(func1, func2):
     """Math evaluation decorator."""
 
@@ -65,9 +68,7 @@ def math_eval(func1, func2):
                 result2 = None
 
             if result1 != result2:
-                logging.warning(
-                    f"Outputs do not match: {result1} != {result2}"
-                )
+                logging.warning(f"Outputs do not match: {result1} != {result2}")
 
             return result1, result2
 

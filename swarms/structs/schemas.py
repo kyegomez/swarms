@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -34,7 +34,7 @@ class Artifact(BaseModel):
     file_name: str = Field(
         ..., description="Filename of the artifact", example="main.py"
     )
-    relative_path: Optional[str] = Field(
+    relative_path: str | None = Field(
         None,
         description=(
             "Relative path of the artifact in the agent's workspace"
@@ -45,7 +45,7 @@ class Artifact(BaseModel):
 
 class ArtifactUpload(BaseModel):
     file: bytes = Field(..., description="File to upload")
-    relative_path: Optional[str] = Field(
+    relative_path: str | None = Field(
         None,
         description=(
             "Relative path of the artifact in the agent's workspace"
@@ -77,14 +77,14 @@ class StepOutput(BaseModel):
 
 
 class TaskRequestBody(BaseModel):
-    input: Optional[str] = Field(
+    input: str | None = Field(
         None,
         description="Input prompt for the task.",
         example=(
             "Write the words you receive to the file 'output.txt'."
         ),
     )
-    additional_input: Optional[TaskInput] = None
+    additional_input: TaskInput | None = None
 
 
 class Task(TaskRequestBody):
@@ -93,7 +93,7 @@ class Task(TaskRequestBody):
         description="The ID of the task.",
         example="50da533e-3904-4401-8a07-c49adf88b5eb",
     )
-    artifacts: List[Artifact] = Field(
+    artifacts: list[Artifact] = Field(
         [],
         description="A list of artifacts that the task has produced.",
         example=[
@@ -104,12 +104,12 @@ class Task(TaskRequestBody):
 
 
 class StepRequestBody(BaseModel):
-    input: Optional[str] = Field(
+    input: str | None = Field(
         None,
         description="Input prompt for the step.",
         example="Washington",
     )
-    additional_input: Optional[StepInput] = None
+    additional_input: StepInput | None = None
 
 
 class Status(Enum):
@@ -129,7 +129,7 @@ class Step(StepRequestBody):
         description="The ID of the task step.",
         example="6bb1801a-fd80-45e8-899a-4dd723cc602e",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         description="The name of the task step.",
         example="Write to file",
@@ -137,7 +137,7 @@ class Step(StepRequestBody):
     status: Status = Field(
         ..., description="The status of the task step."
     )
-    output: Optional[str] = Field(
+    output: str | None = Field(
         None,
         description="Output of the task step.",
         example=(
@@ -146,12 +146,12 @@ class Step(StepRequestBody):
             " <write_to_file('output.txt', 'Washington')"
         ),
     )
-    additional_output: Optional[StepOutput] = None
-    artifacts: List[Artifact] = Field(
+    additional_output: StepOutput | None = None
+    artifacts: list[Artifact] = Field(
         [],
         description="A list of artifacts that the step has produced.",
     )
-    is_last: Optional[bool] = Field(
+    is_last: bool | None = Field(
         False,
         description="Whether this is the last step in the task.",
     )

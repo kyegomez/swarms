@@ -1,12 +1,12 @@
 import datetime
 import json
+from typing import Optional
 
 from termcolor import colored
 
 from swarms.memory.base_db import AbstractDatabase
 from swarms.structs.base import BaseStructure
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
-from typing import Optional
 
 
 class Conversation(BaseStructure):
@@ -200,7 +200,7 @@ class Conversation(BaseStructure):
         Args:
             filename (str): filename to import from
         """
-        with open(filename, "r") as f:
+        with open(filename) as f:
             for line in f:
                 role, content = line.split(": ", 1)
                 self.add(role, content.strip())
@@ -250,7 +250,7 @@ class Conversation(BaseStructure):
         """
         # Load the conversation history from a JSON file
         if filename is not None:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 self.conversation_history = json.load(f)
 
     def search_keyword_in_conversation(self, keyword: str):

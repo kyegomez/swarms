@@ -45,6 +45,7 @@ To use the Zephyr model, follow these steps:
 
 ```python
 from swarms.models import Zephyr
+
 model = Zephyr(max_new_tokens=300, temperature=0.7, top_k=50, top_p=0.95)
 ```
 

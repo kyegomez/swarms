@@ -1,6 +1,7 @@
 import pytest
 import torch
 from torch import nn
+
 from swarms.utils import load_model_torch
 
 

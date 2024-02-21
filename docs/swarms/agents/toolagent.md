@@ -69,6 +69,7 @@ The `ToolAgent` class takes the following arguments:
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from swarms import ToolAgent
 
 # Creating a model and tokenizer
@@ -82,11 +83,8 @@ json_schema = {
         "name": {"type": "string"},
         "age": {"type": "number"},
         "is_student": {"type": "boolean"},
-        "courses": {
-            "type": "array",
-            "items": {"type": "string"}
-        }
-    }
+        "courses": {"type": "array", "items": {"type": "string"}},
+    },
 }
 
 # Defining a task

@@ -1,4 +1,5 @@
 from io import BytesIO
+
 import requests
 from PIL import Image
 
@@ -26,6 +27,6 @@ def download_img_from_url(url: str):
 
         print("Image downloaded successfully.")
     except requests.exceptions.RequestException as e:
-        raise IOError("Error while downloading the image.") from e
-    except IOError as e:
-        raise IOError("Error while saving the image.") from e
+        raise OSError("Error while downloading the image.") from e
+    except OSError as e:
+        raise OSError("Error while saving the image.") from e

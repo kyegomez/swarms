@@ -28,6 +28,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   agent = Agent()
   swarm = SwarmNetwork(agents=[agent])
   swarm.add_task("task")
@@ -41,6 +42,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   agent = Agent()
   swarm = SwarmNetwork(agents=[agent])
   await swarm.async_add_task("task")
@@ -57,6 +59,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   agent = Agent()
   swarm = SwarmNetwork(agents=[agent])
   swarm.run_single_agent(agent_id, "task")
@@ -72,6 +75,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   agent = Agent()
   swarm = SwarmNetwork(agents=[agent])
   swarm.run_many_agents("task")
@@ -85,6 +89,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   agent = Agent()
   swarm = SwarmNetwork(agents=[agent])
   swarm.list_agents()
@@ -98,6 +103,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   agent = Agent()
   swarm = SwarmNetwork()
   swarm.add_agent(agent)
@@ -111,6 +117,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   agent = Agent()
   swarm = SwarmNetwork(agents=[agent])
   swarm.remove_agent(agent_id)
@@ -124,6 +131,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   swarm = SwarmNetwork()
   swarm.scale_up(num_agents=5)
   ```
@@ -136,6 +144,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   swarm = SwarmNetwork(agents=[agent1, agent2, agent3, agent4, agent5])
   swarm.scale_down(num_agents=2)
   ```
@@ -146,6 +155,7 @@ The `SwarmNetwork` class has the following parameters:
   ```python
   from swarms.structs.agent import Agent
   from swarms.structs.swarm_net import SwarmNetwork
+
   agent = Agent()
   swarm = SwarmNetwork(agents=[agent])
   swarm.create_apis_for_agents()

@@ -3,10 +3,11 @@ from pathlib import Path
 
 from langchain.chains import RetrievalQA
 from langchain.chains.question_answering import load_qa_chain
-from swarms.models.openai_models import OpenAIChat
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
+
+from swarms.models.openai_models import OpenAIChat
 
 
 def synchronized_mem(method):

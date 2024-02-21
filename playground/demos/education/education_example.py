@@ -1,8 +1,10 @@
 import os
+
 from dotenv import load_dotenv
-from swarms.models import OpenAIChat
-from swarms import Agent, SequentialWorkflow
+
 import swarms.prompts.education as edu_prompts
+from swarms import Agent, SequentialWorkflow
+from swarms.models import OpenAIChat
 
 # Load environment variables
 load_dotenv()

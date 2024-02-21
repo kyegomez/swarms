@@ -1,6 +1,8 @@
-from swarms.models.base_multimodal_model import BaseMultiModalModel
-from ultralytics import YOLO
 from typing import List
+
+from ultralytics import YOLO
+
+from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 
 class UltralyticsModel(BaseMultiModalModel):

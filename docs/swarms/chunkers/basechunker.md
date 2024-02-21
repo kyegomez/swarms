@@ -69,7 +69,9 @@ from basechunker import BaseChunker, ChunkSeparator
 chunker = BaseChunker()
 
 # Text to be chunked
-input_text = "This is a long text that needs to be split into smaller chunks for processing."
+input_text = (
+    "This is a long text that needs to be split into smaller chunks for processing."
+)
 
 # Chunk the text
 chunks = chunker.chunk(input_text)

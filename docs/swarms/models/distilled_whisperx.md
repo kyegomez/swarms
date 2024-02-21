@@ -29,7 +29,7 @@ from swarms.models import DistilWhisperModel
 model_wrapper = DistilWhisperModel()
 
 # Initialize with a specific model ID
-model_wrapper = DistilWhisperModel(model_id='distil-whisper/distil-large-v2')
+model_wrapper = DistilWhisperModel(model_id="distil-whisper/distil-large-v2")
 ```
 
 ## Attributes
@@ -62,7 +62,7 @@ Transcribes audio input synchronously.
 
 ```python
 # Synchronous transcription
-transcription = model_wrapper.transcribe('path/to/audio.mp3')
+transcription = model_wrapper.transcribe("path/to/audio.mp3")
 print(transcription)
 ```
 
@@ -84,7 +84,7 @@ Transcribes audio input asynchronously.
 import asyncio
 
 # Asynchronous transcription
-transcription = asyncio.run(model_wrapper.async_transcribe('path/to/audio.mp3'))
+transcription = asyncio.run(model_wrapper.async_transcribe("path/to/audio.mp3"))
 print(transcription)
 ```
 
@@ -103,7 +103,7 @@ Simulates real-time transcription of an audio file.
 
 ```python
 # Real-time transcription simulation
-model_wrapper.real_time_transcribe('path/to/audio.mp3', chunk_duration=5)
+model_wrapper.real_time_transcribe("path/to/audio.mp3", chunk_duration=5)
 ```
 
 ## Error Handling

@@ -1,13 +1,14 @@
-from typing import List, Union, Dict, Any
+import json
+from typing import Any, Dict, List, Union
+
+from termcolor import cprint
+from transformers import PreTrainedModel, PreTrainedTokenizer
 
 from swarms.tools.logits_processor import (
     NumberStoppingCriteria,
     OutputNumbersTokens,
     StringStoppingCriteria,
 )
-from termcolor import cprint
-from transformers import PreTrainedModel, PreTrainedTokenizer
-import json
 
 GENERATION_MARKER = "|GENERATION|"
 

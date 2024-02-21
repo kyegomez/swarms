@@ -1,9 +1,10 @@
 import hashlib
 import platform
-import uuid
 import socket
-from swarms.telemetry.sys_info import system_info
+import uuid
+
 from swarms.telemetry.check_update import check_for_package
+from swarms.telemetry.sys_info import system_info
 
 
 # Helper functions
@@ -43,7 +44,7 @@ def get_system_info():
         "ip_address": socket.gethostbyname(socket.gethostname()),
         "mac_address": ":".join(
             [
-                "{:02x}".format((uuid.getnode() >> elements) & 0xFF)
+                f"{(uuid.getnode() >> elements) & 0xFF:02x}"
                 for elements in range(0, 2 * 6, 8)
             ][::-1]
         ),

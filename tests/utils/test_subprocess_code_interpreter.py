@@ -1,10 +1,12 @@
-import pytest
+import queue
 import subprocess
 import threading
-import queue
-from swarms.utils.code_interpreter import (
+
+import pytest
+
+from swarms.utils.code_interpreter import (  # Adjust the import according to your project structure
     SubprocessCodeInterpreter,
-)  # Adjust the import according to your project structure
+)
 
 
 # Fixture for the SubprocessCodeInterpreter instance

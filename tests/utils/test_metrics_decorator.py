@@ -1,10 +1,11 @@
 # pytest imports
-import pytest
+import time
 from unittest.mock import Mock
+
+import pytest
 
 # Imports from your project
 from swarms.utils import metrics_decorator
-import time
 
 
 # Basic successful test

@@ -1,6 +1,5 @@
 from swarms import Mistral
 
-
 # Initialize the model
 model = Mistral(
     model_name="miqudev/miqu-1-70b",

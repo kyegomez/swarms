@@ -1,4 +1,4 @@
-from swarms import Agent, OpenAIChat, ChromaDB
+from swarms import Agent, ChromaDB, OpenAIChat
 
 # Making an instance of the ChromaDB class
 memory = ChromaDB(

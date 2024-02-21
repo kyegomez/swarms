@@ -1,8 +1,10 @@
 import os
+
 from dotenv import load_dotenv
+
+import swarms.prompts.security_team as stsp
 from swarms.models import GPT4VisionAPI
 from swarms.structs import Agent
-import swarms.prompts.security_team as stsp
 
 # Load environment variables and initialize the Vision API
 load_dotenv()

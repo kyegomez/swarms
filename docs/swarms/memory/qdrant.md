@@ -14,8 +14,15 @@ pip install qdrant-client sentence-transformers httpx
 
 ```python
 class Qdrant:
-    def __init__(self, api_key: str, host: str, port: int = 6333, collection_name: str = "qdrant", model_name: str = "BAAI/bge-small-en-v1.5", https: bool = True):
-        ...
+    def __init__(
+        self,
+        api_key: str,
+        host: str,
+        port: int = 6333,
+        collection_name: str = "qdrant",
+        model_name: str = "BAAI/bge-small-en-v1.5",
+        https: bool = True,
+    ): ...
 ```
 
 ### Constructor Parameters
@@ -60,10 +67,7 @@ qdrant_client = Qdrant(api_key="your_api_key", host="localhost", port=6333)
 ### Example 2: Adding Vectors to a Collection
 
 ```python
-documents = [
-    {"page_content": "Sample text 1"},
-    {"page_content": "Sample text 2"}
-]
+documents = [{"page_content": "Sample text 1"}, {"page_content": "Sample text 2"}]
 
 operation_info = qdrant_client.add_vectors(documents)
 print(operation_info)

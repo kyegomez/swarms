@@ -1,3 +1,5 @@
+import datetime
+from datetime import timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -9,8 +11,6 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
-import datetime
-from datetime import timedelta
 
 load_dotenv()
 

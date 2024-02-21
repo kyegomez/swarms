@@ -1,5 +1,5 @@
-import pkgutil
 import inspect
+import pkgutil
 
 
 class ModelRegistry:

@@ -1,5 +1,7 @@
-import pytest
 import sqlite3
+
+import pytest
+
 from swarms.memory.sqlite import SQLiteDB
 
 

@@ -1,4 +1,5 @@
 """Sampling parameters for text generation."""
+
 from enum import IntEnum
 from functools import cached_property
 from typing import Callable, List, Optional, Union
@@ -104,7 +105,7 @@ class SamplingParams:
         use_beam_search: bool = False,
         length_penalty: float = 1.0,
         early_stopping: Union[bool, str] = False,
-        stop: Optional[Union[str, List[str]]] = None,
+        stop: Union[str, List[str], None] = None,
         stop_token_ids: Optional[List[int]] = None,
         include_stop_str_in_output: bool = False,
         ignore_eos: bool = False,

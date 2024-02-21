@@ -1,5 +1,6 @@
 import uuid
 from typing import Any, List, Optional
+
 from sqlalchemy import JSON, Column, String, create_engine
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base

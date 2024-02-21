@@ -64,6 +64,7 @@ Initialize the `llm` (Language Learning Model) with your OpenAI API key:
 
 ```python
 from swarms.models import OpenAIChat
+
 llm = OpenAIChat(
     openai_api_key="Your_OpenAI_API_Key",
     temperature=0.5,
@@ -74,6 +75,7 @@ Initialize the bot with the `llm`:
 
 ```python
 from apps.discord import Bot
+
 bot = Bot(llm=llm)
 ```
 

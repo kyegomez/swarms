@@ -1,5 +1,5 @@
-import pytest
 import pypdf
+import pytest
 from swarms.utils import pdf_to_text
 
 

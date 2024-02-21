@@ -1,24 +1,25 @@
-import os
 import csv
 import json
+import os
+
 from swarms.utils.pdf_to_text import pdf_to_text
 
 
 def csv_to_text(file):
-    with open(file, "r") as file:
+    with open(file) as file:
         reader = csv.reader(file)
         data = list(reader)
     return str(data)
 
 
 def json_to_text(file):
-    with open(file, "r") as file:
+    with open(file) as file:
         data = json.load(file)
     return json.dumps(data)
 
 
 def txt_to_text(file):
-    with open(file, "r") as file:
+    with open(file) as file:
         data = file.read()
     return data
 
@@ -28,7 +29,7 @@ def md_to_text(file):
         raise FileNotFoundError(
             f"No such file or directory: '{file}'"
         )
-    with open(file, "r") as file:
+    with open(file) as file:
         data = file.read()
     return data
 
@@ -71,8 +72,8 @@ def data_to_text(file):
         elif ext == ".md":
             return md_to_text(file)
         else:
-            with open(file, "r") as file:
+            with open(file) as file:
                 data = file.read()
             return data
     except Exception as e:
-        raise IOError(f"Error reading file: {file}") from e
+        raise OSError(f"Error reading file: {file}") from e

@@ -28,7 +28,6 @@ We have a small gallery of examples to run here, [for more check out the docs to
 - Enterprise Grade + Production Grade: `Agent` is designed and optimized for automating real-world tasks at scale!
 
 ```python
-
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 
@@ -64,9 +63,6 @@ out = agent.run("Generate a 10,000 word blog on health and wellness.")
 # out = agent.print_history_and_memory()
 # # out = agent.save_state("flow_state.json")
 # print(out)
-
-
-
 ```
 
 ------
@@ -82,9 +78,7 @@ from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
-api_key = (
-    ""  # Your actual API key here
-)
+api_key = ""  # Your actual API key here
 
 # Initialize the language agent
 llm = OpenAIChat(
@@ -118,7 +112,6 @@ workflow.run()
 # Output the results
 for task in workflow.tasks:
     print(f"Task: {task.description}, Result: {task.result}")
-
 ```
 
 ---

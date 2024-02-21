@@ -125,7 +125,9 @@ def update_short_term(self, index, role: str, message: str, *args, **kwargs):
 
 ##### Example: Updating a Message in Short-Term Memory
 ```python
-memory.update_short_term(index=0, role="Updated Role", message="Updated message content.")
+memory.update_short_term(
+    index=0, role="Updated Role", message="Updated message content."
+)
 ```
 
 #### 7. `clear`

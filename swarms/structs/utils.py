@@ -1,6 +1,7 @@
-import re
 import json
-from typing import Dict, Any, List, Optional
+import re
+from typing import Any, Dict, List, Optional
+
 from swarms.structs.agent import Agent
 
 

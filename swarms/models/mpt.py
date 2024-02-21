@@ -1,6 +1,7 @@
+import logging
+
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-import logging
 
 
 class MPT7B:

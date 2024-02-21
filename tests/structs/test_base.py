@@ -1,6 +1,8 @@
-import pytest
 import os
 from datetime import datetime
+
+import pytest
+
 from swarms.structs.base import BaseStructure
 
 
@@ -52,7 +54,7 @@ class TestBaseStructure:
         base_structure.log_error(error_message)
 
         log_file = os.path.join(tmp_dir, "TestStructure_errors.log")
-        with open(log_file, "r") as file:
+        with open(log_file) as file:
             lines = file.readlines()
             assert len(lines) == 1
             assert lines[0] == f"{error_message}\n"
@@ -83,7 +85,7 @@ class TestBaseStructure:
         base_structure.log_event(event, event_type)
 
         log_file = os.path.join(tmp_dir, "TestStructure_events.log")
-        with open(log_file, "r") as file:
+        with open(log_file) as file:
             lines = file.readlines()
             assert len(lines) == 1
             assert (
@@ -122,7 +124,7 @@ class TestBaseStructure:
         await base_structure.log_error_async(error_message)
 
         log_file = os.path.join(tmp_dir, "TestStructure_errors.log")
-        with open(log_file, "r") as file:
+        with open(log_file) as file:
             lines = file.readlines()
             assert len(lines) == 1
             assert lines[0] == f"{error_message}\n"
@@ -165,7 +167,7 @@ class TestBaseStructure:
         await base_structure.log_event_async(event, event_type)
 
         log_file = os.path.join(tmp_dir, "TestStructure_events.log")
-        with open(log_file, "r") as file:
+        with open(log_file) as file:
             lines = file.readlines()
             assert len(lines) == 1
             assert (

@@ -1,8 +1,9 @@
 import asyncio
 import os
 from unittest.mock import AsyncMock, Mock, mock_open, patch
-from aiohttp import ClientResponseError
+
 import pytest
+from aiohttp import ClientResponseError
 from dotenv import load_dotenv
 from requests.exceptions import RequestException
 

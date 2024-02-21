@@ -184,7 +184,7 @@ def test_save_different_memory(basic_flow, tmp_path):
     file_path = tmp_path / "memory.json"
     basic_flow.memory.append(["Task1", "Task2", "Task3"])
     basic_flow.save(file_path)
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         data = json.load(f)
     assert data == [["Task1", "Task2", "Task3"]]
 

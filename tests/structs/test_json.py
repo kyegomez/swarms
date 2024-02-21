@@ -2,8 +2,10 @@
 
 # Contents of test_json.py, which must be placed in the `tests/` directory.
 
-import pytest
 import json
+
+import pytest
+
 from swarms.tokenizers import JSON
 
 

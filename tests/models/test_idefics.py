@@ -1,10 +1,12 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 import torch
+
 from swarms.models.idefics import (
+    AutoProcessor,
     Idefics,
     IdeficsForVisionText2Text,
-    AutoProcessor,
 )
 
 

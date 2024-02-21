@@ -28,8 +28,8 @@ The provided code showcases a system built around a worker node that utilizes va
 The code begins with import statements, bringing in necessary modules and classes. Key imports include the `OpenAIChat` class, which represents a language model, and several custom agents and tools from the `swarms` package.
 
 ```python
-import os
 import interpreter  # Assuming this is a custom module
+
 from swarms.agents.hf_agents import HFAgent
 from swarms.agents.omni_modal_agent import OmniModalAgent
 from swarms.models import OpenAIChat
@@ -59,11 +59,7 @@ All defined tools are appended to a list called `tools`. This list is later used
 
 ```python
 # Append tools to a list
-tools = [
-    hf_agent,
-    omni_agent,
-    compile
-]
+tools = [hf_agent, omni_agent, compile]
 ```
 
 ### Initializing a Worker Node
@@ -263,8 +259,6 @@ response = node.run(task)
 
 # Print the response
 print(response)
-
-
 ```
 
 

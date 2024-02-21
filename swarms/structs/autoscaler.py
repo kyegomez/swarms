@@ -7,12 +7,12 @@ from typing import Callable, Dict, List, Optional
 from termcolor import colored
 
 from swarms.structs.agent import Agent
+from swarms.structs.base import BaseStructure
 from swarms.utils.decorators import (
     error_decorator,
     log_decorator,
     timing_decorator,
 )
-from swarms.structs.base import BaseStructure
 
 
 class AutoScaler(BaseStructure):
@@ -241,7 +241,7 @@ class AutoScaler(BaseStructure):
                 task = self.task_queue.get()
                 if task:
                     available_agent = next(
-                        (agent for agent in self.agents_pool)
+                        agent for agent in self.agents_pool
                     )
                     if available_agent:
                         available_agent.run(task)

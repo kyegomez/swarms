@@ -15,9 +15,7 @@ class ArtifactUpload(BaseModel):
     file: bytes = Field(..., description="File to upload")
     relative_path: Optional[str] = Field(
         None,
-        description=(
-            "Relative path of the artifact in the agent's workspace"
-        ),
+        description=("Relative path of the artifact in the agent's workspace"),
         example="python/code/",
     )
 ```
@@ -32,10 +30,12 @@ The `ArtifactUpload` class is used to create an instance of an artifact upload. 
 from swarms.structs import ArtifactUpload
 
 # Uploading a file with no relative path
-upload_no_path = ArtifactUpload(file=b'example_file_contents')
+upload_no_path = ArtifactUpload(file=b"example_file_contents")
 
 # Uploading a file with a relative path
-upload_with_path = ArtifactUpload(file=b'example_file_contents', relative_path="python/code/")
+upload_with_path = ArtifactUpload(
+    file=b"example_file_contents", relative_path="python/code/"
+)
 ```
 
 In the above example, `upload_no_path` is an instance of `ArtifactUpload` with no specified `relative_path`, whereas `upload_with_path` is an instance of `ArtifactUpload` with the `relative_path` set to "python/code/".

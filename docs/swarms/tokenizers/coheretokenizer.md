@@ -57,7 +57,7 @@ def count_tokens(self, text: str | list) -> int:
 
     Args:
         text (str | list): The input text to tokenize.
-        
+
     Returns:
         int: The number of tokens in the text.
 
@@ -82,13 +82,14 @@ First, the Cohere client must be initialized and passed in to create an instance
 
 ```python
 from cohere import Client
+
 from swarms.tokenizers import CohereTokenizer
 
 # Initialize Cohere client with your API key
-cohere_client = Client('your-api-key')
+cohere_client = Client("your-api-key")
 
 # Instantiate the tokenizer
-tokenizer = CohereTokenizer(model='your-model-name', client=cohere_client)
+tokenizer = CohereTokenizer(model="your-model-name", client=cohere_client)
 ```
 
 ### Count Tokens Example 1

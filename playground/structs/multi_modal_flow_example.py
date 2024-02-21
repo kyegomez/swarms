@@ -1,5 +1,5 @@
 # This might not work in the beginning but it's a starting point
-from swarms.structs import Agent, GPT4V
+from swarms.structs import GPT4V, Agent
 
 llm = GPT4V()
 

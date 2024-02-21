@@ -55,7 +55,7 @@ from swarms.models import OpenAIChat
 
 llm = OpenAIChat(openai_api_key="sk-")
 agent = OmniModalAgent(llm)
-response = agent.run("Create an video of a swarm of fish concept art, game art") 
+response = agent.run("Create an video of a swarm of fish concept art, game art")
 print(response)
 ```
 

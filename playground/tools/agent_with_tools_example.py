@@ -1,7 +1,9 @@
 import os
+
+from dotenv import load_dotenv
+
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
-from dotenv import load_dotenv
 
 load_dotenv()
 

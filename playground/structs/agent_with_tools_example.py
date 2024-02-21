@@ -1,11 +1,11 @@
 """
-    
-    
-tool decorated func [search_api] -> agent which parses the docs of the tool func 
+
+
+tool decorated func [search_api] -> agent which parses the docs of the tool func
 -> injected into prompt -> agent will output json containing tool usage -> agent output will be parsed -> tool executed
 -> terminal response can be returned to agent for self-healing
-    
-    
+
+
 """
 
 import os
@@ -13,7 +13,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms import OpenAIChat, Agent
+from swarms import Agent, OpenAIChat
 from swarms.tools.tool import tool
 
 # Load the environment variables

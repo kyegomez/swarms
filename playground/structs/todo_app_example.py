@@ -1,6 +1,5 @@
 from swarms import HierarchicalSwarm
 
-
 # Retrieve your API key from the environment or replace with your actual key
 api_key = "sksdsds"
 

@@ -10,26 +10,26 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from termcolor import colored
 
 from swarms.memory.base_vectordb import AbstractVectorDatabase
-from swarms.prompts.agent_system_prompts import (
-    AGENT_SYSTEM_PROMPT_3,
-)
+from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.prompts.worker_prompt import worker_tools_sop_promp
 from swarms.structs.conversation import Conversation
+from swarms.structs.schemas import Step
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
+from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.logger import logger
-from swarms.utils.parse_code import (
-    extract_code_from_markdown,
-)
+from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
-from swarms.tools.exec_tool import execute_tool_by_name
-from swarms.prompts.worker_prompt import worker_tools_sop_promp
-from swarms.structs.schemas import Step
+from swarms.utils.video_to_frames import (
+    save_frames_as_images,
+    video_to_frames,
+)
 
 
 # Utils
@@ -513,6 +513,7 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
+        video: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -531,6 +532,12 @@ class Agent:
 
         """
         try:
+            if video:
+                video_to_frames(video)
+                frames = save_frames_as_images(video)
+                for frame in frames:
+                    img = frame
+
             # Activate Autonomous agent message
             self.activate_autonomous_agent()
 
@@ -577,6 +584,9 @@ class Agent:
                                 **kwargs,
                             )
                             print(response)
+
+                        # Add the response to the history
+                        history.append(response)
 
                         # Log each step
                         step = Step(
@@ -631,8 +641,6 @@ class Agent:
                         )
                         attempt += 1
                         time.sleep(self.retry_interval)
-                # Add the response to the history
-                history.append(response)
 
                 time.sleep(self.loop_interval)
             # Add the history to the memory
@@ -807,7 +815,7 @@ class Agent:
         Args:
             file_path (str): The path to the file containing the saved agent history.
         """
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             self.short_memory = json.load(f)
         print(f"Loaded agent history from {file_path}")
 
@@ -1096,7 +1104,7 @@ class Agent:
         >>> agent.run("Continue with the task")
 
         """
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             state = json.load(f)
 
         # Restore other saved attributes

@@ -168,7 +168,11 @@ prompt = "Translate the following English text to French: 'Hello, how are you?'"
 generated_text = openai.generate(prompt, max_tokens=50)
 
 # Generate text from multiple prompts
-prompts = ["Translate this: 'Good morning' to Spanish.", "Summarize the following article:", article_text]
+prompts = [
+    "Translate this: 'Good morning' to Spanish.",
+    "Summarize the following article:",
+    article_text,
+]
 generated_texts = openai.generate(prompts, max_tokens=100)
 
 # Generate text asynchronously
@@ -188,7 +192,7 @@ custom_options = {
     "max_tokens": 100,
     "top_p": 0.9,
     "frequency_penalty": 0.2,
-    "presence_penalty": 0.4
+    "presence_penalty": 0.4,
 }
 generated_text = openai.generate(prompt, **custom_options)
 ```

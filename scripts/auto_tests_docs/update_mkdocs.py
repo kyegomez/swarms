@@ -14,7 +14,7 @@ def update_mkdocs(
     - base_path: The base path where documentation Markdown files are stored.
     - mkdocs_file: The path to the mkdocs.yml file.
     """
-    with open(mkdocs_file, "r") as file:
+    with open(mkdocs_file) as file:
         mkdocs_config = yaml.safe_load(file)
 
     # Find or create the 'zeta.nn.modules' section in 'nav'

@@ -1,4 +1,5 @@
 """Interface for embedding models."""
+
 from abc import ABC, abstractmethod
 from typing import List
 

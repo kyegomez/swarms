@@ -37,7 +37,6 @@ class AbstractAgent:
 
     def memory(self, memory_store):
         """init memory"""
-        pass
 
     def reset(self):
         """(Abstract method) Reset the agent."""

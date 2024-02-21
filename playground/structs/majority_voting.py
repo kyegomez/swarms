@@ -1,4 +1,4 @@
-from swarms import Agent, OpenAIChat, MajorityVoting
+from swarms import Agent, MajorityVoting, OpenAIChat
 
 # Initialize the llm
 llm = OpenAIChat()

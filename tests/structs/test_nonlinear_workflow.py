@@ -1,6 +1,7 @@
 import pytest
-from swarms.structs import NonlinearWorkflow, Task
+
 from swarms.models import OpenAIChat
+from swarms.structs import NonlinearWorkflow, Task
 
 
 class TestNonlinearWorkflow:

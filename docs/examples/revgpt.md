@@ -35,7 +35,6 @@ The abstraction provided in `revgpt.py` is designed to simplify your interaction
 1. **Import the Necessary Modules:**
 
 ```python
-import os
 from dotenv import load_dotenv
 from revgpt import AbstractChatGPT
 ```

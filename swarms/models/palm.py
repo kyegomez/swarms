@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable
 
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms import BaseLLM
@@ -85,19 +85,19 @@ class GooglePalm(BaseLLM, BaseModel):
     """Google PaLM models."""
 
     client: Any  #: :meta private:
-    google_api_key: Optional[str]
+    google_api_key: str | None
     model_name: str = "models/text-bison-001"
     """Model name to use."""
     temperature: float = 0.7
     """Run inference with this temperature. Must by in the closed interval
        [0.0, 1.0]."""
-    top_p: Optional[float] = None
+    top_p: float | None = None
     """Decode using nucleus sampling: consider the smallest set of tokens whose
        probability sum is at least top_p. Must be in the closed interval [0.0, 1.0]."""
-    top_k: Optional[int] = None
+    top_k: int | None = None
     """Decode using top-k sampling: consider the set of top_k most probable tokens.
        Must be positive."""
-    max_output_tokens: Optional[int] = None
+    max_output_tokens: int | None = None
     """Maximum number of tokens to include in a candidate. Must be greater than zero.
        If unset, will default to 64."""
     n: int = 1
@@ -105,7 +105,7 @@ class GooglePalm(BaseLLM, BaseModel):
        not return the full n completions if duplicates are generated."""
 
     @root_validator()
-    def validate_environment(cls, values: Dict) -> Dict:
+    def validate_environment(cls, values: dict) -> dict:
         """Validate api key, python package exists."""
         google_api_key = get_from_dict_or_env(
             values, "google_api_key", "GOOGLE_API_KEY"
@@ -152,9 +152,9 @@ class GooglePalm(BaseLLM, BaseModel):
 
     def _generate(
         self,
-        prompts: List[str],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        prompts: list[str],
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> LLMResult:
         generations = []

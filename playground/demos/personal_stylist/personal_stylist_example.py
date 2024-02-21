@@ -1,14 +1,16 @@
-from swarms.structs import Agent
 import os
+
 from dotenv import load_dotenv
+
 from swarms.models import GPT4VisionAPI
 from swarms.prompts.personal_stylist import (
-    HAIRCUT_STYLIST_AGENT_PROMPT,
-    MAKEUP_STYLIST_AGENT_PROMPT,
+    ACCESSORIES_STYLIST_AGENT_PROMPT,
     BEARD_STYLIST_AGENT_PROMPT,
     CLOTHING_STYLIST_AGENT_PROMPT,
-    ACCESSORIES_STYLIST_AGENT_PROMPT,
+    HAIRCUT_STYLIST_AGENT_PROMPT,
+    MAKEUP_STYLIST_AGENT_PROMPT,
 )
+from swarms.structs import Agent
 
 # Load environment variables
 load_dotenv()

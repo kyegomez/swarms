@@ -1,7 +1,8 @@
 # Tokenizer
 
-from swarms.tokenizers.r_tokenizers import Tokenizer
 from unittest.mock import patch
+
+from swarms.tokenizers.r_tokenizers import Tokenizer
 
 
 def test_initializer_existing_model_file():

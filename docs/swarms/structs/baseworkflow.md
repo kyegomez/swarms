@@ -13,19 +13,19 @@ Base class for workflows.
 
 Source Code:
 ```python
-   class BaseWorkflow(BaseStructure):
-   """
-   Base class for workflows.
+class BaseWorkflow(BaseStructure):
+"""
+Base class for workflows.
 
-    Attributes:
-        task_pool (list): A list to store tasks.
+ Attributes:
+     task_pool (list): A list to store tasks.
 
-    Methods:
-        add(task: Task = None, tasks: List[Task] = None, *args, **kwargs):
-            Adds a task or a list of tasks to the task pool.
-        run():
-            Abstract method to run the workflow.
-   """
+ Methods:
+     add(task: Task = None, tasks: List[Task] = None, *args, **kwargs):
+         Adds a task or a list of tasks to the task pool.
+     run():
+         Abstract method to run the workflow.
+"""
 ```
  
 For the usage examples and additional in-depth documentation please visit [BaseWorkflow](https://github.com/swarms-modules/structs/blob/main/baseworkflow.md#swarms-structs)
