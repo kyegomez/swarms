@@ -1,7 +1,8 @@
 import json
 import re
-import yaml
 from typing import Type, TypeVar
+
+import yaml
 from pydantic import BaseModel, ValidationError
 
 T = TypeVar("T", bound=BaseModel)

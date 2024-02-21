@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional
 
-
 from swarms.structs.agent import Agent
 
 
@@ -59,17 +58,14 @@ class AbstractSwarm(ABC):
         """Initialize the swarm with agents"""
         self.agents = agents
         self.max_loops = max_loops
-        pass
 
     # @abstractmethod
     def communicate(self):
         """Communicate with the swarm through the orchestrator, protocols, and the universal communication layer"""
-        pass
 
     # @abstractmethod
     def run(self):
         """Run the swarm"""
-        pass
 
     def __call__(
         self,
@@ -89,34 +85,28 @@ class AbstractSwarm(ABC):
 
     def step(self):
         """Step the swarm"""
-        pass
 
     # @abstractmethod
     def add_agent(self, agent: "Agent"):
         """Add a agent to the swarm"""
-        pass
 
     # @abstractmethod
     def remove_agent(self, agent: "Agent"):
         """Remove a agent from the swarm"""
-        pass
 
     # @abstractmethod
     def broadcast(
         self, message: str, sender: Optional["Agent"] = None
     ):
         """Broadcast a message to all agents"""
-        pass
 
     # @abstractmethod
     def reset(self):
         """Reset the swarm"""
-        pass
 
     # @abstractmethod
     def plan(self, task: str):
         """agents must individually plan using a workflow or pipeline"""
-        pass
 
     # @abstractmethod
     def direct_message(
@@ -126,27 +116,22 @@ class AbstractSwarm(ABC):
         recipient: "Agent",
     ):
         """Send a direct message to a agent"""
-        pass
 
     # @abstractmethod
     def autoscaler(self, num_agents: int, agent: ["Agent"]):
         """Autoscaler that acts like kubernetes for autonomous agents"""
-        pass
 
     # @abstractmethod
     def get_agent_by_id(self, id: str) -> "Agent":
         """Locate a agent by id"""
-        pass
 
     # @abstractmethod
     def get_agent_by_name(self, name: str) -> "Agent":
         """Locate a agent by name"""
-        pass
 
     # @abstractmethod
     def assign_task(self, agent: "Agent", task: Any) -> Dict:
         """Assign a task to a agent"""
-        pass
 
     # @abstractmethod
     def get_all_tasks(self, agent: "Agent", task: Any):
@@ -155,67 +140,54 @@ class AbstractSwarm(ABC):
     # @abstractmethod
     def get_finished_tasks(self) -> List[Dict]:
         """Get all finished tasks"""
-        pass
 
     # @abstractmethod
     def get_pending_tasks(self) -> List[Dict]:
         """Get all pending tasks"""
-        pass
 
     # @abstractmethod
     def pause_agent(self, agent: "Agent", agent_id: str):
         """Pause a agent"""
-        pass
 
     # @abstractmethod
     def resume_agent(self, agent: "Agent", agent_id: str):
         """Resume a agent"""
-        pass
 
     # @abstractmethod
     def stop_agent(self, agent: "Agent", agent_id: str):
         """Stop a agent"""
-        pass
 
     # @abstractmethod
     def restart_agent(self, agent: "Agent"):
         """Restart agent"""
-        pass
 
     # @abstractmethod
     def scale_up(self, num_agent: int):
         """Scale up the number of agents"""
-        pass
 
     # @abstractmethod
     def scale_down(self, num_agent: int):
         """Scale down the number of agents"""
-        pass
 
     # @abstractmethod
     def scale_to(self, num_agent: int):
         """Scale to a specific number of agents"""
-        pass
 
     # @abstractmethod
     def get_all_agents(self) -> List["Agent"]:
         """Get all agents"""
-        pass
 
     # @abstractmethod
     def get_swarm_size(self) -> int:
         """Get the size of the swarm"""
-        pass
 
     # #@abstractmethod
     def get_swarm_status(self) -> Dict:
         """Get the status of the swarm"""
-        pass
 
     # #@abstractmethod
     def save_swarm_state(self):
         """Save the swarm state"""
-        pass
 
     def batched_run(self, tasks: List[Any], *args, **kwargs):
         """_summary_

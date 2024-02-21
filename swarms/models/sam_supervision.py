@@ -1,17 +1,18 @@
+from typing import Optional
+
 import cv2
 import numpy as np
 import supervision as sv
 from PIL import Image
 from transformers import (
-    pipeline,
+    SamImageProcessor,
     SamModel,
     SamProcessor,
-    SamImageProcessor,
+    pipeline,
 )
-from typing import Optional
 
-from swarms.utils.supervision_masking import masks_to_marks
 from swarms.models.base_multimodal_model import BaseMultiModalModel
+from swarms.utils.supervision_masking import masks_to_marks
 
 
 class SegmentAnythingMarkGenerator(BaseMultiModalModel):

@@ -1,8 +1,10 @@
 # LangchainChromaVectorMemory
 
-import pytest
-from swarms.memory import LangchainChromaVectorMemory
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+from swarms.memory import LangchainChromaVectorMemory
 
 
 # Fixtures for setting up the memory and mocks

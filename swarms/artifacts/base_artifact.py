@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Any
+
 import json
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass

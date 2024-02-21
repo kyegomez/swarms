@@ -1,8 +1,4 @@
-from typing import (
-    Any,
-    List,
-    Optional,
-)
+from typing import Any, List, Optional
 
 from swarms.structs.base import BaseStructure
 

@@ -40,15 +40,9 @@ The function `find_image_path` performs text parsing and pattern recognition to 
 ```python
 def find_image_path(text):
     pattern = r"([A-Za-z]:\\[^:\n]*?\.(png|jpg|jpeg|PNG|JPG|JPEG))|(/[^:\n]*?\.(png|jpg|jpeg|PNG|JPG|JPEG))"
-    matches = [
-        match.group()
-        for match in re.finditer(pattern, text)
-        if match.group()
-    ]
+    matches = [match.group() for match in re.finditer(pattern, text) if match.group()]
     matches += [match.replace("\\", "") for match in matches if match]
-    existing_paths = [
-        match for match in matches if os.path.exists(match)
-    ]
+    existing_paths = [match for match in matches if os.path.exists(match)]
     return max(existing_paths, key=len) if existing_paths else None
 ```
 
@@ -75,7 +69,9 @@ Consider the case where the text has multiple image paths.
 from swarms.utils import find_image_path
 
 text = "Here is an image path: /home/user/image1.png. Here is another one: C:\\Users\\User\\Documents\\image2.jpeg"
-print(find_image_path(text))  # Outputs: the longest image path (depends on your file system and existing files)
+print(
+    find_image_path(text)
+)  # Outputs: the longest image path (depends on your file system and existing files)
 ```
 
 **Example 3:**

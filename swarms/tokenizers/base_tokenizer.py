@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Union
 
 
 @dataclass
@@ -20,12 +19,12 @@ class BaseTokenizer(ABC):
     stop_token: str = "<|Response|>"
 
     def __post_init__(self):
-        self.stop_sequences: List[str] = field(
+        self.stop_sequences: list[str] = field(
             default_factory=lambda: ["<|Response|>"],
             init=False,
         )
 
-    def count_tokens_left(self, text: Union[str, List[dict]]) -> int:
+    def count_tokens_left(self, text: str | list[dict]) -> int:
         """
         Counts the number of tokens left based on the given text.
 
@@ -43,7 +42,7 @@ class BaseTokenizer(ABC):
             return 0
 
     @abstractmethod
-    def count_tokens(self, text: Union[str, List[dict]]) -> int:
+    def count_tokens(self, text: str | list[dict]) -> int:
         """
         Counts the number of tokens in the given text.
 

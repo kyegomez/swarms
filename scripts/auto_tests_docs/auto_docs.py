@@ -7,15 +7,12 @@ from dotenv import load_dotenv
 
 from scripts.auto_tests_docs.docs import DOCUMENTATION_WRITER_SOP
 from swarms import OpenAIChat
-
-##########
-
-from swarms.structs.tool_json_schema import JSON
-from swarms.structs.majority_voting import (
-    MajorityVoting,
-)
+from swarms.structs.majority_voting import MajorityVoting
 from swarms.structs.stackoverflow_swarm import StackOverflowSwarm
 from swarms.structs.task_queue_base import TaskQueueBase
+from swarms.structs.tool_json_schema import JSON
+
+##########
 
 
 ####################

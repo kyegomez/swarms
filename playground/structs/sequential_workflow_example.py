@@ -1,4 +1,4 @@
-from swarms import OpenAIChat, Agent, Task, SequentialWorkflow
+from swarms import Agent, OpenAIChat, SequentialWorkflow, Task
 
 # Example usage
 llm = OpenAIChat(

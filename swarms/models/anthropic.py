@@ -24,14 +24,12 @@ from langchain.callbacks.manager import (
     CallbackManagerForLLMRun,
 )
 from langchain.llms.base import LLM
-from pydantic import Field, SecretStr, root_validator
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.schema.output import GenerationChunk
 from langchain.schema.prompt import PromptValue
-from langchain.utils import (
-    get_from_dict_or_env,
-)
+from langchain.utils import get_from_dict_or_env
 from packaging.version import parse
+from pydantic import Field, SecretStr, root_validator
 from requests import HTTPError, Response
 
 

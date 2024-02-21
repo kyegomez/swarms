@@ -2,15 +2,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
-from swarms.chunkers.base_chunker import BaseChunker
-from swarms.chunkers.text_chunker import TextChunker
-from swarms.utils.exponential_backoff import ExponentialBackoffMixin
 
 from swarms.artifacts.text_artifact import TextArtifact
+from swarms.chunkers.base_chunker import BaseChunker
+from swarms.chunkers.text_chunker import TextChunker
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
+from swarms.utils.exponential_backoff import ExponentialBackoffMixin
 
 
 @dataclass
@@ -26,7 +25,7 @@ class BaseEmbeddingModel(
     """
 
     model: str = None
-    tokenizer: Optional[BaseTokenizer] = None
+    tokenizer: BaseTokenizer | None = None
     chunker: BaseChunker = field(init=False)
 
     def __post_init__(self) -> None:

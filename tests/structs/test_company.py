@@ -1,7 +1,8 @@
 import pytest
+
+from swarms import OpenAIChat
 from swarms.structs.agent import Agent
 from swarms.structs.company import Company
-from swarms import OpenAIChat
 
 # Mock OpenAIChat instance
 llm = OpenAIChat(openai_api_key="test_key", max_tokens=4000)

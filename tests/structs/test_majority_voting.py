@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+
 import pytest
 
 from swarms.structs.agent import Agent

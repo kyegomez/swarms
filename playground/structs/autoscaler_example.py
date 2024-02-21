@@ -7,7 +7,6 @@ from swarms.models import OpenAIChat
 from swarms.structs import Agent
 from swarms.structs.autoscaler import AutoScaler
 
-
 # Load the environment variables
 load_dotenv()
 

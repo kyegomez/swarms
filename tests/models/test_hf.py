@@ -1,8 +1,8 @@
-import torch
 import logging
 from unittest.mock import patch
 
 import pytest
+import torch
 
 from swarms.models.huggingface import HuggingfaceLLM
 
@@ -83,17 +83,11 @@ def test_load_model(mock_huggingface_llm):
     llm = HuggingfaceLLM(model_id="test_model")
     llm.load_model()
 
-    # Ensure that the load_model function is called
-    assert True
-
 
 # Test running the model
 def test_run(mock_huggingface_llm):
     llm = HuggingfaceLLM(model_id="test_model")
     llm.run("Test prompt")
-
-    # Ensure that the run function is called
-    assert True
 
 
 # Test for setting max_length

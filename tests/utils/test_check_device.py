@@ -1,5 +1,7 @@
-import torch
 import logging
+
+import torch
+
 from swarms.utils import check_device
 
 # For the purpose of the test, we're assuming that the `memory_allocated`

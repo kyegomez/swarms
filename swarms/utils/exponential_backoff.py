@@ -1,7 +1,8 @@
 import logging
 from abc import ABC
 from dataclasses import dataclass
-from tenacity import Retrying, wait_exponential, stop_after_attempt
+
+from tenacity import Retrying, stop_after_attempt, wait_exponential
 
 
 @dataclass

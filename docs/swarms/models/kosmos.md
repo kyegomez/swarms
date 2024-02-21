@@ -30,7 +30,9 @@ kosmos = Kosmos()
 2. Perform Multimodal Grounding:
 
 ```python
-kosmos.multimodal_grounding("Find the red apple in the image.", "https://example.com/apple.jpg")
+kosmos.multimodal_grounding(
+    "Find the red apple in the image.", "https://example.com/apple.jpg"
+)
 ```
 
 ### Example 1 - Multimodal Grounding
@@ -40,13 +42,17 @@ from swarms.models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
-kosmos.multimodal_grounding("Find the red apple in the image.", "https://example.com/apple.jpg")
+kosmos.multimodal_grounding(
+    "Find the red apple in the image.", "https://example.com/apple.jpg"
+)
 ```
 
 3. Perform Referring Expression Comprehension:
 
 ```python
-kosmos.referring_expression_comprehension("Show me the green bottle.", "https://example.com/bottle.jpg")
+kosmos.referring_expression_comprehension(
+    "Show me the green bottle.", "https://example.com/bottle.jpg"
+)
 ```
 
 ### Example 2 - Referring Expression Comprehension
@@ -56,13 +62,17 @@ from swarms.models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
-kosmos.referring_expression_comprehension("Show me the green bottle.", "https://example.com/bottle.jpg")
+kosmos.referring_expression_comprehension(
+    "Show me the green bottle.", "https://example.com/bottle.jpg"
+)
 ```
 
 4. Generate Referring Expressions:
 
 ```python
-kosmos.referring_expression_generation("It is on the table.", "https://example.com/table.jpg")
+kosmos.referring_expression_generation(
+    "It is on the table.", "https://example.com/table.jpg"
+)
 ```
 
 ### Example 3 - Referring Expression Generation
@@ -72,7 +82,9 @@ from swarms.models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
-kosmos.referring_expression_generation("It is on the table.", "https://example.com/table.jpg")
+kosmos.referring_expression_generation(
+    "It is on the table.", "https://example.com/table.jpg"
+)
 ```
 
 5. Perform Grounded Visual Question Answering (VQA):
@@ -127,7 +139,10 @@ kosmos.grounded_image_captioning_detailed("https://example.com/beach.jpg")
 
 ```python
 image = kosmos.get_image("https://example.com/image.jpg")
-entities = [("apple", (0, 3), [(0.2, 0.3, 0.4, 0.5)]), ("banana", (4, 9), [(0.6, 0.2, 0.8, 0.4)])]
+entities = [
+    ("apple", (0, 3), [(0.2, 0.3, 0.4, 0.5)]),
+    ("banana", (4, 9), [(0.6, 0.2, 0.8, 0.4)]),
+]
 kosmos.draw_entity_boxes_on_image(image, entities, show=True)
 ```
 
@@ -139,24 +154,38 @@ from swarms.models.kosmos_two import Kosmos
 kosmos = Kosmos()
 
 image = kosmos.get_image("https://example.com/image.jpg")
-entities = [("apple", (0, 3), [(0.2, 0.3, 0.4, 0.5)]), ("banana", (4, 9), [(0.6, 0.2, 0.8, 0.4)])]
+entities = [
+    ("apple", (0, 3), [(0.2, 0.3, 0.4, 0.5)]),
+    ("banana", (4, 9), [(0.6, 0.2, 0.8, 0.4)]),
+]
 kosmos.draw_entity_boxes_on_image(image, entities, show=True)
 ```
 
 9. Generate Boxes for Entities:
 
 ```python
-entities = [("apple", (0, 3), [(0.2, 0.3, 0.4, 0.5)]), ("banana", (4, 9), [(0.6, 0.2, 0.8, 0.4)])]
-image = kosmos.generate_boxes("Find the apple and the banana in the image.", "https://example.com/image.jpg")
+entities = [
+    ("apple", (0, 3), [(0.2, 0.3, 0.4, 0.5)]),
+    ("banana", (4, 9), [(0.6, 0.2, 0.8, 0.4)]),
+]
+image = kosmos.generate_boxes(
+    "Find the apple and the banana in the image.", "https://example.com/image.jpg"
+)
 ```
 
 ### Example 8 - Generating Boxes for Entities
 
 ```python
 from swarms.models.kosmos_two import Kosmos
+
 kosmos = Kosmos()
-entities = [("apple", (0, 3), [(0.2, 0.3, 0.4, 0.5)]), ("banana", (4, 9), [(0.6, 0.2, 0.8, 0.4)])]
-image = kosmos.generate_boxes("Find the apple and the banana in the image.", "https://example.com/image.jpg")
+entities = [
+    ("apple", (0, 3), [(0.2, 0.3, 0.4, 0.5)]),
+    ("banana", (4, 9), [(0.6, 0.2, 0.8, 0.4)]),
+]
+image = kosmos.generate_boxes(
+    "Find the apple and the banana in the image.", "https://example.com/image.jpg"
+)
 ```
 
 ## How Kosmos Works

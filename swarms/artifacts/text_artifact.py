@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Optional
+
 from dataclasses import dataclass, field
+
 from swarms.artifacts.base_artifact import BaseArtifact
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
 
@@ -33,7 +34,7 @@ class TextArtifact(BaseArtifact):
     _embedding: list[float] = field(default_factory=list)
 
     @property
-    def embedding(self) -> Optional[list[float]]:
+    def embedding(self) -> list[float] | None:
         return None if len(self._embedding) == 0 else self._embedding
 
     def __add__(self, other: BaseArtifact) -> TextArtifact:
@@ -42,7 +43,7 @@ class TextArtifact(BaseArtifact):
     def __bool__(self) -> bool:
         return bool(self.value.strip())
 
-    def generate_embedding(self, model) -> Optional[list[float]]:
+    def generate_embedding(self, model) -> list[float] | None:
         self._embedding.clear()
         self._embedding.extend(model.embed_string(str(self.value)))
 

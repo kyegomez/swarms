@@ -1,25 +1,25 @@
-import signal
-import platform
-import os
-import multiprocessing
-import tempfile
 import contextlib
-from typing import Dict, Optional
 import faulthandler
 import io
+import multiprocessing
+import os
+import platform
+import signal
+import tempfile
+from typing import Dict, Optional
 
 
 class WriteOnlyStringIO(io.StringIO):
     """StringIO that throws an exception when it's read from"""
 
     def read(self, *args, **kwargs):
-        raise IOError
+        raise OSError
 
     def readline(self, *args, **kwargs):
-        raise IOError
+        raise OSError
 
     def readlines(self, *args, **kwargs):
-        raise IOError
+        raise OSError
 
     def readable(self, *args, **kwargs):
         """Returns True if the IO object can be read."""

@@ -1,6 +1,6 @@
-from swarms.structs.agent import Agent
-from swarms.prompts.tests import TEST_WRITER_SOP_PROMPT
 from swarms.prompts.documentation import DOCUMENTATION_WRITER_SOP
+from swarms.prompts.tests import TEST_WRITER_SOP_PROMPT
+from swarms.structs.agent import Agent
 
 
 class UnitTesterAgent:

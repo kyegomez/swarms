@@ -1,16 +1,18 @@
-from swarms.structs import Agent
 import os
+
 from dotenv import load_dotenv
+
 from swarms.models import GPT4VisionAPI
 from swarms.prompts.logistics import (
+    Efficiency_Agent_Prompt,
     Health_Security_Agent_Prompt,
-    Quality_Control_Agent_Prompt,
     Productivity_Agent_Prompt,
+    Quality_Control_Agent_Prompt,
     Safety_Agent_Prompt,
     Security_Agent_Prompt,
     Sustainability_Agent_Prompt,
-    Efficiency_Agent_Prompt,
 )
+from swarms.structs import Agent
 
 # from swarms.utils.banana_wrapper import banana
 

@@ -1,5 +1,7 @@
-import torch
 from unittest.mock import MagicMock
+
+import torch
+
 from swarms.utils.prep_torch_model_inference import (
     prep_torch_inference,
 )

@@ -1,6 +1,8 @@
 from unittest.mock import patch
-from swarms.models import TimmModel
+
 import torch
+
+from swarms.models import TimmModel
 
 
 def test_timm_model_init():

@@ -8,8 +8,9 @@
 
 ```python
 # Example 1: Creating and executing a Task
-from swarms.structs import Task, Agent
 from swarms.models import OpenAIChat
+from swarms.structs import Agent, Task
+
 agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
 task = Task(agent=agent)
 task.execute("What's the weather in miami")

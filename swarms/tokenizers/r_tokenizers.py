@@ -59,7 +59,7 @@ class SentencePieceTokenizer:
     def _maybe_add_prefix_space(self, tokens, decoded):
         """maybe add prefix space for incremental decoding."""
         if (
-            len(tokens)
+            tokens
             and not decoded.startswith(" ")
             and tokens[0] in self.prefix_space_tokens
         ):
@@ -179,7 +179,7 @@ class HuggingFaceTokenizer:
                 model_dir, "generation_config.json"
             )
             if osp.exists(generation_config_file):
-                with open(generation_config_file, "r") as f:
+                with open(generation_config_file) as f:
                     cfg = json.load(f)
                     self.model.eos_token_id = cfg["eos_token_id"]
             elif hasattr(self.model, "eod_id"):  # Qwen remote
@@ -228,7 +228,7 @@ class HuggingFaceTokenizer:
     ):
         """maybe add prefix space for incremental decoding."""
         if (
-            len(tokens)
+            tokens
             and not decoded.startswith(" ")
             and tokens[0] in self.prefix_space_tokens
         ):
@@ -300,7 +300,7 @@ class HuggingFaceTokenizer:
         encoded = self.model.encode(s, **kwargs)
         if not add_bos:
             # in the middle of a session
-            if len(encoded) and encoded[0] == self.bos_token_id:
+            if encoded and encoded[0] == self.bos_token_id:
                 encoded = encoded[1:]
         return encoded
 

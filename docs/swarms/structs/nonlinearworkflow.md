@@ -60,7 +60,7 @@ task3 = Task(llm, "Find a hotel in Paris")
 # Initialize the NonlinearWorkflow
 workflow = NonlinearWorkflow()
 # Add tasks to the workflow with dependencies
-workflow.add(task1, task2.name) 
+workflow.add(task1, task2.name)
 workflow.add(task2, task3.name)
 workflow.add(task3, "OpenAIChat Initialization")
 # Execute the workflow
@@ -82,7 +82,7 @@ task3 = Task(llm, "Find a hotel in Paris")
 # Initialize the NonlinearWorkflow
 workflow = NonlinearWorkflow()
 # Add tasks to the workflow with dependencies
-workflow.add(task1) 
+workflow.add(task1)
 workflow.add(task2, task1.name)
 workflow.add(task3, task1.name, task2.name)
 # Execute the workflow

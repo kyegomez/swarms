@@ -1,11 +1,13 @@
-import pytest
-from unittest.mock import patch, mock_open
-from swarms.models.eleven_labs import (
-    ElevenLabsText2SpeechTool,
-    ElevenLabsModel,
-)
 import os
+from unittest.mock import mock_open, patch
+
+import pytest
 from dotenv import load_dotenv
+
+from swarms.models.eleven_labs import (
+    ElevenLabsModel,
+    ElevenLabsText2SpeechTool,
+)
 
 load_dotenv()
 

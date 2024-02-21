@@ -1,8 +1,10 @@
+from typing import Callable, Optional
+
 import torch
-from transformers import AutoProcessor, IdeficsForVisionText2Text
 from termcolor import colored
+from transformers import AutoProcessor, IdeficsForVisionText2Text
+
 from swarms.models.base_multimodal_model import BaseMultiModalModel
-from typing import Optional, Callable
 
 
 def autodetect_device():

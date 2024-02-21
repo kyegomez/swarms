@@ -1,6 +1,8 @@
+from unittest.mock import MagicMock
+
 import pytest
 import torch
-from unittest.mock import MagicMock
+
 from swarms.utils.load_model_torch import load_model_torch
 
 

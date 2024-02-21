@@ -1,8 +1,10 @@
+from io import BytesIO
+from typing import Tuple, Union
+
 import requests
 from PIL import Image
 from transformers import AutoProcessor, LlavaForConditionalGeneration
-from typing import Tuple, Union
-from io import BytesIO
+
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 

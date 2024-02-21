@@ -1,11 +1,13 @@
 """
 
-User task ->> GPT4 for prompt enrichment ->> Dalle3V for image generation 
-->> GPT4Vision for image captioning ->> Dalle3 better image 
+User task ->> GPT4 for prompt enrichment ->> Dalle3V for image generation
+->> GPT4Vision for image captioning ->> Dalle3 better image
 
 """
-from swarms.models.dalle3 import Dalle3
+
 import os
+
+from swarms.models.dalle3 import Dalle3
 
 api_key = os.environ["OPENAI_API_KEY"]
 

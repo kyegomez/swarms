@@ -1,14 +1,15 @@
-import threading
-from swarms.structs.base_workflow import BaseWorkflow
 import logging
+import queue
+import threading
 from concurrent.futures import (
     FIRST_COMPLETED,
     ThreadPoolExecutor,
     wait,
 )
 from typing import List
+
+from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.task import Task
-import queue
 
 logging.basicConfig(
     level=logging.INFO,

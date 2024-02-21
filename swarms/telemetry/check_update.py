@@ -1,9 +1,9 @@
+import importlib.util
+import sys
+
 import pkg_resources
 import requests
 from packaging import version
-
-import importlib.util
-import sys
 
 
 # borrowed from: https://stackoverflow.com/a/1051266/656011

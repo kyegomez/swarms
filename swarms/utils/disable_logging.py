@@ -1,11 +1,7 @@
 import logging
 import os
-import warnings
 import sys
-import logging
-import os
 import warnings
-import sys
 
 
 def disable_logging():

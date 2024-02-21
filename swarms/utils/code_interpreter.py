@@ -1,6 +1,6 @@
+import queue
 import subprocess
 import threading
-import queue
 import time
 import traceback
 

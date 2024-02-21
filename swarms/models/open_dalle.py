@@ -1,7 +1,8 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
 import torch
 from diffusers import AutoPipelineForText2Image
+
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 

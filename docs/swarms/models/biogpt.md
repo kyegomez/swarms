@@ -83,7 +83,6 @@ print(generated_text)
 ```python
 from swarms.models import BioGPT
 
-
 # Initialize the BioGPT model
 biogpt = BioGPT()
 
@@ -98,7 +97,6 @@ print(features)
 
 ```python
 from swarms.models import BioGPT
-
 
 # Initialize the BioGPT model
 biogpt = BioGPT()

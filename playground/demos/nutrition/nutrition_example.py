@@ -1,7 +1,9 @@
-import os
 import base64
+import os
+
 import requests
 from dotenv import load_dotenv
+
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 

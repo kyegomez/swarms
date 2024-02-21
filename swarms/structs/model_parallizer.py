@@ -96,7 +96,7 @@ class ModelParallelizer:
     @classmethod
     def load_llms_from_file(cls, filename):
         """Load llms from file"""
-        with open(filename, "r") as file:
+        with open(filename) as file:
             llms = [line.strip() for line in file.readlines()]
         return cls(llms)
 

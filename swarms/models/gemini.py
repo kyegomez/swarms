@@ -5,7 +5,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from PIL import Image
 
-
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 try:

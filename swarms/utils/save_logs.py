@@ -25,7 +25,7 @@ def parse_log_file(filename: str):
 
     log_entries = []
 
-    with open(filename, "r") as file:
+    with open(filename) as file:
         for line in file:
             parts = line.split(" - ")
             # Check if the log entry has the correct format

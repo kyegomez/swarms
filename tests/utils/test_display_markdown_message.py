@@ -1,10 +1,12 @@
 # import necessary modules
+from unittest import mock
+
 import pytest
-from swarms.utils import display_markdown_message
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.rule import Rule
-from unittest import mock
+
+from swarms.utils import display_markdown_message
 
 
 def test_basic_message():

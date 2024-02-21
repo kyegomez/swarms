@@ -4,7 +4,7 @@ import os
 import threading
 import uuid
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 class DictSharedMemory:
@@ -61,7 +61,7 @@ class DictSharedMemory:
     def get_top_n(self, n: int) -> None:
         """Get the top n entries from the internal memory."""
         with self.lock:
-            with open(self.file_loc, "r") as f:
+            with open(self.file_loc) as f:
                 try:
                     file_data = json.load(f)
                 except Exception as e:
@@ -81,7 +81,7 @@ class DictSharedMemory:
     def write_to_file(self, data: Dict[str, Dict[str, Any]]) -> bool:
         """Write the internal memory to a file."""
         if self.file_loc is not None:
-            with open(self.file_loc, "r") as f:
+            with open(self.file_loc) as f:
                 try:
                     file_data = json.load(f)
                 except Exception as e:

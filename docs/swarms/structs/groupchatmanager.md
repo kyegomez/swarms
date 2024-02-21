@@ -24,7 +24,7 @@ agents = Agent()
 manager = GroupChatManager(groupchat, selector)
 
 # Call the group chat manager passing a specific chat task
-result = manager('Discuss the agenda for the upcoming meeting')
+result = manager("Discuss the agenda for the upcoming meeting")
 ```
 
 Explanation:
@@ -67,9 +67,7 @@ class GroupChatManager:
         Returns:
             str: The response from the group chat.
         """
-        self.groupchat.messages.append(
-            {"role": self.selector.name, "content": task}
-        )
+        self.groupchat.messages.append({"role": self.selector.name, "content": task})
         for i in range(self.groupchat.max_round):
             speaker = self.groupchat.select_speaker(
                 last_speaker=self.selector, selector=self.selector

@@ -132,7 +132,7 @@ class BaseMultiAgentStructure:
             None
         """
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 self.__dict__ = json.load(f)
         except Exception as e:
             logger.error(e)
@@ -164,7 +164,7 @@ class BaseMultiAgentStructure:
             None
         """
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 self.__dict__ = yaml.load(f)
         except Exception as e:
             logger.error(e)

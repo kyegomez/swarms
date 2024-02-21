@@ -82,8 +82,10 @@ Executes the given task by all participating agents and aggregates the results t
 from swarms.structs.agent import Agent
 from swarms.structs.majority_voting import MajorityVoting
 
+
 def create_agent(name):
     return Agent(name)
+
 
 agents = [create_agent(name) for name in ["GPT-3", "Codex", "Tabnine"]]
 majority_voting = MajorityVoting(agents)

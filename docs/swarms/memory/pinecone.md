@@ -174,7 +174,7 @@ pv = PineconeVector(
     api_key="your-api-key",
     index_name="your-index-name",
     environment="us-west1-gcp",
-    project_name="your-project-name"
+    project_name="your-project-name",
 )
 ```
 
@@ -198,12 +198,7 @@ vector_id = "unique-vector-id"
 namespace = "your-namespace"
 meta = {"key1": "value1", "key2": "value2"}
 
-pv.upsert_vector(
-    vector=vector,
-    vector_id=vector_id,
-    namespace=namespace,
-    meta=meta
-)
+pv.upsert_vector(vector=vector, vector_id=vector_id, namespace=namespace, meta=meta)
 ```
 
 ### 4.4 Querying the Index <a name="querying-the-index"></a>
@@ -222,7 +217,7 @@ results = pv.query(
     count=count,
     namespace=namespace,
     include_vectors=include_vectors,
-    include_metadata=include_metadata
+    include_metadata=include_metadata,
 )
 
 # Process the query results

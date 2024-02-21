@@ -42,8 +42,9 @@ OpenAI(api_key: str, system: str = None, console: bool = True, model: str = None
 
 **Usage Example:**
 ```python
-from swarms import OpenAI
 import asyncio
+
+from swarms import OpenAI
 
 chat = OpenAI(api_key="YOUR_OPENAI_API_KEY")
 
@@ -126,7 +127,10 @@ GooglePalm(model_name: str = "models/chat-bison-001", google_api_key: str = None
 from swarms import GooglePalm
 
 google_palm = GooglePalm()
-messages = [{"role": "system", "content": "You are a helpful assistant"}, {"role": "user", "content": "Tell me a joke"}]
+messages = [
+    {"role": "system", "content": "You are a helpful assistant"},
+    {"role": "user", "content": "Tell me a joke"},
+]
 
 response = google_palm.generate(messages)
 print(response["choices"][0]["text"])

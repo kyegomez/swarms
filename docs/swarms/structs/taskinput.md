@@ -20,10 +20,13 @@ The `TaskInput` class encapsulates the input parameters in a structured format. 
 #### Usage Example 1: Using TaskInput for Debugging
 ```python
 from pydantic import BaseModel, Field
+
 from swarms.structs import TaskInput
+
 
 class DebugInput(TaskInput):
     debug: bool
+
 
 # Creating an instance of DebugInput
 debug_params = DebugInput(__root__={"debug": True})
@@ -35,10 +38,13 @@ print(debug_params.debug)  # Output: True
 #### Usage Example 2: Using TaskInput for Task Modes
 ```python
 from pydantic import BaseModel, Field
+
 from swarms.structs import TaskInput
+
 
 class ModeInput(TaskInput):
     mode: str
+
 
 # Creating an instance of ModeInput
 mode_params = ModeInput(__root__={"mode": "benchmarks"})
@@ -50,11 +56,14 @@ print(mode_params.mode)  # Output: benchmarks
 #### Usage Example 3: Using TaskInput with Arbitrary Parameters
 ```python
 from pydantic import BaseModel, Field
+
 from swarms.structs import TaskInput
+
 
 class ArbitraryInput(TaskInput):
     message: str
     quantity: int
+
 
 # Creating an instance of ArbitraryInput
 arbitrary_params = ArbitraryInput(__root__={"message": "Hello, world!", "quantity": 5})

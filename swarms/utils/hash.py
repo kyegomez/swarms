@@ -1,5 +1,6 @@
-import pandas as pd
 import hashlib
+
+import pandas as pd
 
 
 def dataframe_to_hash(dataframe: pd.DataFrame) -> str:

@@ -50,7 +50,7 @@ Given the extensive nature of this class, several examples are provided for each
 ```python
 from swarms.tokenizers import OpenAITokenizer
 
-tokenizer = OpenAITokenizer(model='gpt-4')
+tokenizer = OpenAITokenizer(model="gpt-4")
 ```
 
 This example creates a new instance of `OpenAITokenizer` set to work with the GPT-4 model.
@@ -61,7 +61,7 @@ This example creates a new instance of `OpenAITokenizer` set to work with the GP
 text = "Hello, this is an example text to tokenize."
 
 # Initialize the tokenizer
-tokenizer = OpenAITokenizer(model='gpt-4')
+tokenizer = OpenAITokenizer(model="gpt-4")
 
 # Count tokens
 num_tokens = tokenizer.count_tokens(text)
@@ -78,7 +78,7 @@ messages = [
     {"name": "Bob", "message": "I'm good! Just working on some code."},
 ]
 
-tokenizer = OpenAITokenizer(model='gpt-3.5-turbo')
+tokenizer = OpenAITokenizer(model="gpt-3.5-turbo")
 
 # Count tokens for a list of messages
 num_tokens = tokenizer.len(messages, model="gpt-3.5-turbo-0613")

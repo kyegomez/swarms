@@ -37,43 +37,46 @@ class AbstractWorker:
         Args:
             name (str): Name of the worker.
         """
-    
+
     @property
     def name(self):
         """Get the name of the worker."""
-        pass
 
     def run(self, task: str):
         """Run the worker agent once."""
-        pass
 
-    def send(self, message: Union[Dict, str], recipient, request_reply: Optional[bool] = None):
+    def send(
+        self, message: Union[Dict, str], recipient, request_reply: Optional[bool] = None
+    ):
         """Send a message to another worker."""
-        pass
 
-    async def a_send(self, message: Union[Dict, str], recipient, request_reply: Optional[bool] = None):
+    async def a_send(
+        self, message: Union[Dict, str], recipient, request_reply: Optional[bool] = None
+    ):
         """Send a message to another worker asynchronously."""
-        pass
 
-    def receive(self, message: Union[Dict, str], sender, request_reply: Optional[bool] = None):
+    def receive(
+        self, message: Union[Dict, str], sender, request_reply: Optional[bool] = None
+    ):
         """Receive a message from another worker."""
-        pass
 
-    async def a_receive(self, message: Union[Dict, str], sender, request_reply: Optional[bool] = None):
+    async def a_receive(
+        self, message: Union[Dict, str], sender, request_reply: Optional[bool] = None
+    ):
         """Receive a message from another worker asynchronously."""
-        pass
 
     def reset(self):
         """Reset the worker."""
-        pass
 
-    def generate_reply(self, messages: Optional[List[Dict]] = None, sender=None, **kwargs) -> Union[str, Dict, None]:
+    def generate_reply(
+        self, messages: Optional[List[Dict]] = None, sender=None, **kwargs
+    ) -> Union[str, Dict, None]:
         """Generate a reply based on received messages."""
-        pass
 
-    async def a_generate_reply(self, messages: Optional[List[Dict]] = None, sender=None, **kwargs) -> Union[str, Dict, None]:
+    async def a_generate_reply(
+        self, messages: Optional[List[Dict]] = None, sender=None, **kwargs
+    ) -> Union[str, Dict, None]:
         """Generate a reply based on received messages asynchronously."""
-        pass
 ```
 
 ### 2.2 Attributes <a name="attributes"></a>
@@ -121,6 +124,7 @@ class MyWorker(AbstractWorker):
     def run(self, task: str):
         print(f"{self.name} is performing task: {task}")
 
+
 worker = MyWorker("Worker1")
 worker.run("Collect data")
 ```
@@ -155,12 +159,14 @@ The `a_send()` method is an asynchronous version of the `send()` method, allowin
 ```python
 import asyncio
 
+
 async def main():
     worker1 = AbstractWorker("Worker1")
     worker2 = AbstractWorker("Worker2")
 
     message = "Hello, Worker2!"
     await worker1.a_send(message, worker2)
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
@@ -208,6 +214,7 @@ The `a_receive()` method is an asynchronous version of the `receive()` method, a
 ```python
 import asyncio
 
+
 async def main():
     worker1 = AbstractWorker("Worker1")
     worker2 = AbstractWorker("Worker2")
@@ -217,6 +224,7 @@ async def main():
 
     await worker1.a_receive(message1, worker2)
     await worker1.a_receive(message2, worker2)
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
@@ -232,6 +240,7 @@ The `reset()` method is a placeholder for resetting the worker. You can customiz
 class MyWorker(AbstractWorker):
     def reset(self):
         print(f"{self.name} has been reset.")
+
 
 worker = MyWorker("Worker1")
 worker.reset()
@@ -253,12 +262,15 @@ The `generate_reply()` method is a placeholder for generating a reply based on r
 
 ```python
 class MyWorker(AbstractWorker):
-    def generate_reply(self, messages: Optional[List[Dict]] = None, sender=None, **kwargs) -> Union[str, Dict, None]:
+    def generate_reply(
+        self, messages: Optional[List[Dict]] = None, sender=None, **kwargs
+    ) -> Union[str, Dict, None]:
         if messages:
             # Generate a reply based on received messages
             return f"Received {len(messages)} messages from {sender.name}."
         else:
             return None
+
 
 worker1 = MyWorker("Worker1")
 worker2 = MyWorker("Worker2")
@@ -284,6 +296,7 @@ The `a_generate_reply()` method is an asynchronous version of the `generate_repl
 ```python
 import asyncio
 
+
 async def main():
     worker1 = AbstractWorker("Worker1")
     worker2 = AbstractWorker("Worker2")
@@ -293,6 +306,7 @@ async def main():
 
     if reply:
         print(f"{worker2.name} generated a reply: {reply}")
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
@@ -312,12 +326,16 @@ Start by creating a custom worker class that inherits from `AbstractWorker`. Def
 class CustomWorker(AbstractWorker):
     def run(self, task: str):
         print(f"{self.name} is performing task: {task}")
-    
-    def receive(self, message: Union[Dict, str], sender, request_reply: Optional[bool] = None):
+
+    def receive(
+        self, message: Union[Dict, str], sender, request_reply: Optional[bool] = None
+    ):
         if isinstance(message, str):
             print(f"{self.name} received a text message from {sender.name}: {message}")
         elif isinstance(message, dict):
-            print(f"{self.name} received a dictionary message from {sender.name}: {message}")
+            print(
+                f"{self.name} received a dictionary message from {sender.name}: {message}"
+            )
 ```
 
 ### Step 2: Create Custom Worker Instances
@@ -355,7 +373,9 @@ Customize the `generate_reply()` method to allow your workers to generate replie
 
 ```python
 class CustomWorker(AbstractWorker):
-    def generate_reply(self, messages: Optional[List[Dict]] = None, sender=None, **kwargs) -> Union[str, Dict, None]:
+    def generate_reply(
+        self, messages: Optional[List[Dict]] = None, sender=None, **kwargs
+    ) -> Union[str, Dict, None]:
         if messages:
             # Generate a reply based on received messages
             return f"Received {len(messages)} messages from {sender.name}."

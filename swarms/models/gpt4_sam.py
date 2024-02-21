@@ -1,10 +1,11 @@
+from typing import Any
+
 import cv2
 
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
 from swarms.utils.supervision_masking import refine_marks
 from swarms.utils.supervision_visualizer import MarkVisualizer
-from typing import Any
 
 
 class GPT4VSAM(BaseMultiModalModel):

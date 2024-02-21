@@ -54,7 +54,7 @@ Here is an example of how to use `pdf_to_text`:
 
 ```python
 # Define the path to the pdf file
-pdf_path = 'sample.pdf'
+pdf_path = "sample.pdf"
 
 # Use the function to extract text
 text = pdf_to_text(pdf_path)

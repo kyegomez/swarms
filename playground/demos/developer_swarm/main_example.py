@@ -6,7 +6,7 @@ This is a simple example of how to use the swarms library to create a swarm of d
 The swarm is composed of two agents:
     - Documentation agent: writes documentation for a given code snippet.
     - Tests agent: writes tests for a given code snippet.
-    
+
 The swarm is initialized with a language model that is used by the agents to generate text. In this example, we use the OpenAI GPT-3 language model.
 
 Agent:
@@ -14,6 +14,7 @@ Documentation agent -> Tests agent
 
 
 """
+
 import os
 
 from dotenv import load_dotenv

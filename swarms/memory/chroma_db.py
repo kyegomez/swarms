@@ -1,15 +1,14 @@
-import os
-import numpy as np
 import logging
+import os
 import uuid
-from typing import Optional, Callable, List
+from typing import Callable, List, Optional
 
 import chromadb
+import numpy as np
 from dotenv import load_dotenv
 
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.markdown_message import display_markdown_message
-
 
 # Load environment variables
 load_dotenv()

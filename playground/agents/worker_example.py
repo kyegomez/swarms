@@ -1,8 +1,10 @@
 # Importing necessary modules
 import os
+
 from dotenv import load_dotenv
-from swarms.agents.worker_agent import Worker
+
 from swarms import OpenAIChat
+from swarms.agents.worker_agent import Worker
 
 # Loading environment variables from .env file
 load_dotenv()

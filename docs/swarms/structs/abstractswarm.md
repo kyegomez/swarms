@@ -47,8 +47,10 @@ The `AbstractSwarm` class is an abstract base class that serves as the foundatio
 
 ```python
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any
+from typing import List
+
 from swarms.swarms.base import AbstractWorker
+
 
 class AbstractSwarm(ABC):
     """
@@ -58,12 +60,12 @@ class AbstractSwarm(ABC):
     ---------
     ...
     """
+
     # The class definition and constructor are provided here.
 
     @abstractmethod
     def __init__(self, workers: List["AbstractWorker"]):
         """Initialize the swarm with workers"""
-        pass
 
     # Other abstract methods are listed here.
 ```

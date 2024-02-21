@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import Mock, create_autospec
+
+import pytest
+
 from swarms.models import OpenAIChat
 from swarms.structs import RecursiveWorkflow, Task
 

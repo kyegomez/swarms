@@ -282,7 +282,7 @@ class SequentialWorkflow:
         try:
             filepath = filepath or self.restore_state_filepath
 
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 state = json.load(f)
                 self.max_loops = state["max_loops"]
                 self.task_pool = []

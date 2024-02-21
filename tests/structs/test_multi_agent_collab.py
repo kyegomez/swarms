@@ -1,12 +1,12 @@
 import json
 import os
-import pytest
 from unittest.mock import Mock
-from swarms.structs import Agent
+
+import pytest
+
 from swarms.models import OpenAIChat
-from swarms.structs.multi_agent_collab import (
-    MultiAgentCollaboration,
-)
+from swarms.structs import Agent
+from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 
 # Sample agents for testing
 agent1 = Agent(llm=OpenAIChat(), max_loops=2)
@@ -126,7 +126,7 @@ def test_save(collaboration, tmp_path):
     collaboration.saved_file_path_name = tmp_path / "test_save.json"
     collaboration.save()
 
-    with open(collaboration.saved_file_path_name, "r") as file:
+    with open(collaboration.saved_file_path_name) as file:
         saved_data = json.load(file)
 
     assert saved_data["_step"] == collaboration._step

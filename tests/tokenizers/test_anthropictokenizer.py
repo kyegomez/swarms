@@ -1,6 +1,7 @@
 # AnthropicTokenizer
 
 import pytest
+
 from swarms.tokenizers.anthropic_tokenizer import AnthropicTokenizer
 
 

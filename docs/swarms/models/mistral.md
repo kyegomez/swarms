@@ -150,7 +150,6 @@ Example:
 ```python
 from swarms.models import Mistral
 
-
 model = Mistral()
 task = "Translate the following English text to French: 'Hello, how are you?'"
 result = model.run(task)

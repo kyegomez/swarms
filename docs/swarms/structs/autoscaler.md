@@ -36,7 +36,9 @@ Initializes the `AutoScaler` with a predefined number of agents and sets up conf
 ```python
 from swarms import AutoScaler
 
-scaler = AutoScaler(initial_agents=5, scale_up_factor=3, idle_threshold=0.1, busy_threshold=0.8)
+scaler = AutoScaler(
+    initial_agents=5, scale_up_factor=3, idle_threshold=0.1, busy_threshold=0.8
+)
 ```
 
 ---
@@ -140,7 +142,9 @@ scaler.start()
 from swarms import AutoScaler
 
 # Initialize the scaler
-auto_scaler = AutoScaler(initial_agents=15, scale_up_factor=2, idle_threshold=0.2, busy_threshold=0.7)
+auto_scaler = AutoScaler(
+    initial_agents=15, scale_up_factor=2, idle_threshold=0.2, busy_threshold=0.7
+)
 
 # Start the monitoring and task processing
 auto_scaler.start()
@@ -161,7 +165,6 @@ auto_scaler.start()
 
 for i in range(100):  # Adding tasks
     auto_scaler.add_task(f"Task {i}")
-
 ```
 
 

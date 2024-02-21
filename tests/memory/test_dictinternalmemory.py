@@ -1,8 +1,10 @@
 # DictInternalMemory
 
-import pytest
-from swarms.memory import DictInternalMemory
 from uuid import uuid4
+
+import pytest
+
+from swarms.memory import DictInternalMemory
 
 # Example of an extensive suite of tests for DictInternalMemory.
 

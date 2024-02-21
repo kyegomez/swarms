@@ -1,7 +1,8 @@
 import wave
-from typing import Optional
-from swarms.models.base_llm import AbstractLLM
 from abc import abstractmethod
+from typing import Optional
+
+from swarms.models.base_llm import AbstractLLM
 
 
 class BaseTTSModel(AbstractLLM):
@@ -47,7 +48,6 @@ class BaseTTSModel(AbstractLLM):
         Args:
             filepath (Optional[str], optional): _description_. Defaults to None.
         """
-        pass
 
     def load(self, filepath: Optional[str] = None):
         """Load the model from a file.
@@ -55,7 +55,6 @@ class BaseTTSModel(AbstractLLM):
         Args:
             filepath (Optional[str], optional): _description_. Defaults to None.
         """
-        pass
 
     @abstractmethod
     def run(self, task: str, *args, **kwargs):
@@ -64,7 +63,6 @@ class BaseTTSModel(AbstractLLM):
         Args:
             task (str): _description_
         """
-        pass
 
     def __call__(self, task: str, *args, **kwargs):
         """Call the model on the given task.

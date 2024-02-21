@@ -26,15 +26,16 @@ Blog Post: [https://huggingface.co/blog/speecht5]
 Demo: [https://huggingface.co/spaces/Matthijs/speecht5-tts-demo]
 
 """
-import torch
+
 import soundfile as sf
+import torch
+from datasets import load_dataset
 from transformers import (
-    pipeline,
-    SpeechT5Processor,
     SpeechT5ForTextToSpeech,
     SpeechT5HifiGan,
+    SpeechT5Processor,
+    pipeline,
 )
-from datasets import load_dataset
 
 
 class SpeechT5:

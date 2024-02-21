@@ -1,8 +1,10 @@
 import os
+
 from dotenv import load_dotenv
-from swarms.models import OpenAIChat, GPT4VisionAPI
-from swarms.structs import Agent, SequentialWorkflow
+
 import swarms.prompts.urban_planning as upp
+from swarms.models import GPT4VisionAPI, OpenAIChat
+from swarms.structs import Agent, SequentialWorkflow
 
 # Load environment variables
 load_dotenv()

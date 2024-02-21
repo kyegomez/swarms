@@ -1,9 +1,9 @@
-import os
 import json
-
-from swarms.structs.agent import Agent
+import os
 from datetime import datetime
 from typing import List
+
+from swarms.structs.agent import Agent
 
 NAME_LIST = [
     "Affirmative side",
@@ -23,9 +23,7 @@ class DebatePlayer(Agent):
             openai_api_key (str): As the parameter name suggests
             sleep_time (float): sleep because of rate limits
         """
-        super(DebatePlayer, self).__init__(
-            llm=llm, agent_name=name, *args, **kwargs
-        )
+        super().__init__(llm=llm, agent_name=name, *args, **kwargs)
 
 
 class Debate:

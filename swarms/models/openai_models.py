@@ -10,16 +10,9 @@ from typing import (
     AsyncIterator,
     Callable,
     Collection,
-    Dict,
     Iterator,
-    List,
     Literal,
     Mapping,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    Union,
 )
 
 from langchain.callbacks.manager import (
@@ -61,11 +54,12 @@ def _log_error_once(msg: str) -> None:
 
 
 def create_base_retry_decorator(
-    error_types: List[Type[BaseException]],
+    error_types: list[type[BaseException]],
     max_retries: int = 1,
-    run_manager: Optional[
-        Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
-    ] = None,
+    run_manager: (
+        AsyncCallbackManagerForLLMRun | CallbackManagerForLLMRun
+    )
+    | None = None,
 ) -> Callable[[Any], Any]:
     """Create a retry decorator for a given LLM and provided list of error types."""
 
@@ -92,7 +86,7 @@ def create_base_retry_decorator(
     max_seconds = 10
     # Wait 2^x * 1 second between each retry starting with
     # 4 seconds, then up to 10 seconds, then 10 seconds afterwards
-    retry_instance: "retry_base" = retry_if_exception_type(
+    retry_instance: retry_base = retry_if_exception_type(
         error_types[0]
     )
     for error in error_types[1:]:
@@ -116,9 +110,9 @@ def is_openai_v1() -> bool:
 
 
 def update_token_usage(
-    keys: Set[str],
-    response: Dict[str, Any],
-    token_usage: Dict[str, Any],
+    keys: set[str],
+    response: dict[str, Any],
+    token_usage: dict[str, Any],
 ) -> None:
     """Update token usage."""
     _keys_to_use = keys.intersection(response["usage"])
@@ -130,7 +124,7 @@ def update_token_usage(
 
 
 def _stream_response_to_generation_chunk(
-    stream_response: Dict[str, Any],
+    stream_response: dict[str, Any],
 ) -> GenerationChunk:
     """Convert a stream response to a generation chunk."""
     return GenerationChunk(
@@ -147,7 +141,7 @@ def _stream_response_to_generation_chunk(
 
 
 def _update_response(
-    response: Dict[str, Any], stream_response: Dict[str, Any]
+    response: dict[str, Any], stream_response: dict[str, Any]
 ) -> None:
     """Update response from the stream response."""
     response["choices"][0]["text"] += stream_response["choices"][0][
@@ -161,7 +155,7 @@ def _update_response(
     ]["logprobs"]
 
 
-def _streaming_response_template() -> Dict[str, Any]:
+def _streaming_response_template() -> dict[str, Any]:
     return {
         "choices": [
             {
@@ -174,10 +168,11 @@ def _streaming_response_template() -> Dict[str, Any]:
 
 
 def _create_retry_decorator(
-    llm: Union[BaseOpenAI, OpenAIChat],
-    run_manager: Optional[
-        Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
-    ] = None,
+    llm: BaseOpenAI | OpenAIChat,
+    run_manager: (
+        AsyncCallbackManagerForLLMRun | CallbackManagerForLLMRun
+    )
+    | None = None,
 ) -> Callable[[Any], Any]:
     import openai
 
@@ -196,8 +191,8 @@ def _create_retry_decorator(
 
 
 def completion_with_retry(
-    llm: Union[BaseOpenAI, OpenAIChat],
-    run_manager: Optional[CallbackManagerForLLMRun] = None,
+    llm: BaseOpenAI | OpenAIChat,
+    run_manager: CallbackManagerForLLMRun | None = None,
     **kwargs: Any,
 ) -> Any:
     """Use tenacity to retry the completion call."""
@@ -213,8 +208,8 @@ def completion_with_retry(
 
 
 async def acompletion_with_retry(
-    llm: Union[BaseOpenAI, OpenAIChat],
-    run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+    llm: BaseOpenAI | OpenAIChat,
+    run_manager: AsyncCallbackManagerForLLMRun | None = None,
     **kwargs: Any,
 ) -> Any:
     """Use tenacity to retry the async completion call."""
@@ -234,12 +229,12 @@ class BaseOpenAI(BaseLLM):
     """Base OpenAI large language model class."""
 
     @property
-    def lc_secrets(self) -> Dict[str, str]:
+    def lc_secrets(self) -> dict[str, str]:
         return {"openai_api_key": "OPENAI_API_KEY"}
 
     @property
-    def lc_attributes(self) -> Dict[str, Any]:
-        attributes: Dict[str, Any] = {}
+    def lc_attributes(self) -> dict[str, Any]:
+        attributes: dict[str, Any] = {}
         if self.openai_api_base != "":
             attributes["openai_api_base"] = self.openai_api_base
 
@@ -278,32 +273,28 @@ class BaseOpenAI(BaseLLM):
     """How many completions to generate for each prompt."""
     best_of: int = 1
     """Generates best_of completions server-side and returns the "best"."""
-    model_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    model_kwargs: dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""
-    openai_api_key: Optional[str] = None
-    openai_api_base: Optional[str] = None
-    openai_organization: Optional[str] = None
+    openai_api_key: str | None = None
+    openai_api_base: str | None = None
+    openai_organization: str | None = None
     # to support explicit proxy for OpenAI
-    openai_proxy: Optional[str] = None
+    openai_proxy: str | None = None
     batch_size: int = 20
     """Batch size to use when passing multiple documents to generate."""
-    request_timeout: Optional[Union[float, Tuple[float, float]]] = (
-        None
-    )
+    request_timeout: float | tuple[float, float] | None = None
     """Timeout for requests to OpenAI completion API. Default is 600 seconds."""
-    logit_bias: Optional[Dict[str, float]] = Field(
-        default_factory=dict
-    )
+    logit_bias: dict[str, float] | None = Field(default_factory=dict)
     """Adjust the probability of specific tokens being generated."""
     max_retries: int = 6
     """Maximum number of retries to make when generating."""
     streaming: bool = False
     """Whether to stream the results or not."""
-    allowed_special: Union[Literal["all"], AbstractSet[str]] = set()
+    allowed_special: Literal["all"] | AbstractSet[str] = set()
     """Set of special tokens that are allowed。"""
-    disallowed_special: Union[Literal["all"], Collection[str]] = "all"
+    disallowed_special: Literal["all"] | Collection[str] = "all"
     """Set of special tokens that are not allowed。"""
-    tiktoken_model_name: Optional[str] = None
+    tiktoken_model_name: str | None = None
     """The model name to pass to tiktoken when using this class.
     Tiktoken is used to count the number of tokens in documents to constrain
     them to be under a certain limit. By default, when set to None, this will
@@ -314,7 +305,7 @@ class BaseOpenAI(BaseLLM):
     API but with different models. In those cases, in order to avoid erroring
     when tiktoken is called, you can specify a model name to use here."""
 
-    def __new__(cls, **data: Any) -> Union[OpenAIChat, BaseOpenAI]:  # type: ignore
+    def __new__(cls, **data: Any) -> OpenAIChat | BaseOpenAI:  # type: ignore
         """Initialize the OpenAI object."""
         data.get("model_name", "")
         return super().__new__(cls)
@@ -325,7 +316,7 @@ class BaseOpenAI(BaseLLM):
         allow_population_by_field_name = True
 
     @root_validator(pre=True)
-    def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def build_extra(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
         all_required_field_names = get_pydantic_field_names(cls)
         extra = values.get("model_kwargs", {})
@@ -335,7 +326,7 @@ class BaseOpenAI(BaseLLM):
         return values
 
     @root_validator()
-    def validate_environment(cls, values: Dict) -> Dict:
+    def validate_environment(cls, values: dict) -> dict:
         """Validate that api key and python package exists in environment."""
         values["openai_api_key"] = get_from_dict_or_env(
             values, "openai_api_key", "OPENAI_API_KEY"
@@ -376,7 +367,7 @@ class BaseOpenAI(BaseLLM):
         return values
 
     @property
-    def _default_params(self) -> Dict[str, Any]:
+    def _default_params(self) -> dict[str, Any]:
         """Get the default parameters for calling OpenAI API."""
         normal_params = {
             "temperature": self.temperature,
@@ -399,8 +390,8 @@ class BaseOpenAI(BaseLLM):
     def _stream(
         self,
         prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> Iterator[GenerationChunk]:
         params = {**self._invocation_params, **kwargs, "stream": True}
@@ -427,8 +418,8 @@ class BaseOpenAI(BaseLLM):
     async def _astream(
         self,
         prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        stop: list[str] | None = None,
+        run_manager: AsyncCallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[GenerationChunk]:
         params = {**self._invocation_params, **kwargs, "stream": True}
@@ -454,9 +445,9 @@ class BaseOpenAI(BaseLLM):
 
     def _generate(
         self,
-        prompts: List[str],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        prompts: list[str],
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> LLMResult:
         """Call out to OpenAI's endpoint with k unique prompts.
@@ -478,7 +469,7 @@ class BaseOpenAI(BaseLLM):
         params = {**params, **kwargs}
         sub_prompts = self.get_sub_prompts(params, prompts, stop)
         choices = []
-        token_usage: Dict[str, int] = {}
+        token_usage: dict[str, int] = {}
         # Get the token usage from the response.
         # Includes prompt, completion, and total tokens used.
         _keys = {"completion_tokens", "prompt_tokens", "total_tokens"}
@@ -489,7 +480,7 @@ class BaseOpenAI(BaseLLM):
                         "Cannot stream results with multiple prompts."
                     )
 
-                generation: Optional[GenerationChunk] = None
+                generation: GenerationChunk | None = None
                 for chunk in self._stream(
                     _prompts[0], stop, run_manager, **kwargs
                 ):
@@ -528,9 +519,9 @@ class BaseOpenAI(BaseLLM):
 
     async def _agenerate(
         self,
-        prompts: List[str],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        prompts: list[str],
+        stop: list[str] | None = None,
+        run_manager: AsyncCallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> LLMResult:
         """Call out to OpenAI's endpoint async with k unique prompts."""
@@ -538,7 +529,7 @@ class BaseOpenAI(BaseLLM):
         params = {**params, **kwargs}
         sub_prompts = self.get_sub_prompts(params, prompts, stop)
         choices = []
-        token_usage: Dict[str, int] = {}
+        token_usage: dict[str, int] = {}
         # Get the token usage from the response.
         # Includes prompt, completion, and total tokens used.
         _keys = {"completion_tokens", "prompt_tokens", "total_tokens"}
@@ -549,7 +540,7 @@ class BaseOpenAI(BaseLLM):
                         "Cannot stream results with multiple prompts."
                     )
 
-                generation: Optional[GenerationChunk] = None
+                generation: GenerationChunk | None = None
                 async for chunk in self._astream(
                     _prompts[0], stop, run_manager, **kwargs
                 ):
@@ -588,10 +579,10 @@ class BaseOpenAI(BaseLLM):
 
     def get_sub_prompts(
         self,
-        params: Dict[str, Any],
-        prompts: List[str],
-        stop: Optional[List[str]] = None,
-    ) -> List[List[str]]:
+        params: dict[str, Any],
+        prompts: list[str],
+        stop: list[str] | None = None,
+    ) -> list[list[str]]:
         """Get the sub prompts for llm call."""
         if stop is not None:
             if "stop" in params:
@@ -618,8 +609,8 @@ class BaseOpenAI(BaseLLM):
     def create_llm_result(
         self,
         choices: Any,
-        prompts: List[str],
-        token_usage: Dict[str, int],
+        prompts: list[str],
+        token_usage: dict[str, int],
     ) -> LLMResult:
         """Create the LLMResult from the choices and prompts."""
         generations = []
@@ -646,9 +637,9 @@ class BaseOpenAI(BaseLLM):
         )
 
     @property
-    def _invocation_params(self) -> Dict[str, Any]:
+    def _invocation_params(self) -> dict[str, Any]:
         """Get the parameters used to invoke the model."""
-        openai_creds: Dict[str, Any] = {
+        openai_creds: dict[str, Any] = {
             "api_key": self.openai_api_key,
             "api_base": self.openai_api_base,
             "organization": self.openai_organization,
@@ -672,7 +663,7 @@ class BaseOpenAI(BaseLLM):
         """Return type of llm."""
         return "openai"
 
-    def get_token_ids(self, text: str) -> List[int]:
+    def get_token_ids(self, text: str) -> list[int]:
         """Get the token IDs using the tiktoken package."""
         # tiktoken NOT supported for Python < 3.8
         if sys.version_info[1] < 8:
@@ -797,11 +788,12 @@ class OpenAI(BaseOpenAI):
         .. code-block:: python
 
             from langchain.llms import OpenAI
+
             openai = OpenAI(model_name="text-davinci-003")
     """
 
     @property
-    def _invocation_params(self) -> Dict[str, Any]:
+    def _invocation_params(self) -> dict[str, Any]:
         return {
             **{"model": self.model_name},
             **super()._invocation_params,
@@ -821,6 +813,7 @@ class AzureOpenAI(BaseOpenAI):
         .. code-block:: python
 
             from langchain.llms import AzureOpenAI
+
             openai = AzureOpenAI(model_name="text-davinci-003")
     """
 
@@ -830,7 +823,7 @@ class AzureOpenAI(BaseOpenAI):
     openai_api_version: str = ""
 
     @root_validator()
-    def validate_azure_settings(cls, values: Dict) -> Dict:
+    def validate_azure_settings(cls, values: dict) -> dict:
         values["openai_api_version"] = get_from_dict_or_env(
             values,
             "openai_api_version",
@@ -849,7 +842,7 @@ class AzureOpenAI(BaseOpenAI):
         }
 
     @property
-    def _invocation_params(self) -> Dict[str, Any]:
+    def _invocation_params(self) -> dict[str, Any]:
         openai_params = {
             "engine": self.deployment_name,
             "api_type": self.openai_api_type,
@@ -863,7 +856,7 @@ class AzureOpenAI(BaseOpenAI):
         return "azure"
 
     @property
-    def lc_attributes(self) -> Dict[str, Any]:
+    def lc_attributes(self) -> dict[str, Any]:
         return {
             "openai_api_type": self.openai_api_type,
             "openai_api_version": self.openai_api_version,
@@ -898,28 +891,29 @@ class OpenAIChat(BaseLLM):
         .. code-block:: python
 
             from langchain.llms import OpenAIChat
+
             openaichat = OpenAIChat(model_name="gpt-3.5-turbo")
     """
 
     client: Any  #: :meta private:
     model_name: str = "gpt-4-1106-preview"
-    model_kwargs: Dict[str, Any] = Field(default_factory=dict)
-    openai_api_key: Optional[str] = None
-    openai_api_base: Optional[str] = None
-    openai_proxy: Optional[str] = None
+    model_kwargs: dict[str, Any] = Field(default_factory=dict)
+    openai_api_key: str | None = None
+    openai_api_base: str | None = None
+    openai_proxy: str | None = None
     max_retries: int = 6
     """Maximum number of retries to make when generating."""
-    prefix_messages: List = Field(default_factory=list)
+    prefix_messages: list = Field(default_factory=list)
     """Series of messages for Chat input."""
     streaming: bool = False
     """Whether to stream the results or not."""
-    allowed_special: Union[Literal["all"], AbstractSet[str]] = set()
+    allowed_special: Literal["all"] | AbstractSet[str] = set()
     """Set of special tokens that are allowed。"""
-    disallowed_special: Union[Literal["all"], Collection[str]] = "all"
+    disallowed_special: Literal["all"] | Collection[str] = "all"
     """Set of special tokens that are not allowed。"""
 
     @root_validator(pre=True)
-    def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def build_extra(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
         all_required_field_names = {
             field.alias for field in cls.__fields__.values()
@@ -937,7 +931,7 @@ class OpenAIChat(BaseLLM):
         return values
 
     @root_validator()
-    def validate_environment(cls, values: Dict) -> Dict:
+    def validate_environment(cls, values: dict) -> dict:
         """Validate that api key and python package exists in environment."""
         openai_api_key = get_from_dict_or_env(
             values, "openai_api_key", "OPENAI_API_KEY"
@@ -987,13 +981,13 @@ class OpenAIChat(BaseLLM):
         return values
 
     @property
-    def _default_params(self) -> Dict[str, Any]:
+    def _default_params(self) -> dict[str, Any]:
         """Get the default parameters for calling OpenAI API."""
         return self.model_kwargs
 
     def _get_chat_params(
-        self, prompts: List[str], stop: Optional[List[str]] = None
-    ) -> Tuple:
+        self, prompts: list[str], stop: list[str] | None = None
+    ) -> tuple:
         if len(prompts) > 1:
             raise ValueError(
                 "OpenAIChat currently only supports single prompt,"
@@ -1002,7 +996,7 @@ class OpenAIChat(BaseLLM):
         messages = self.prefix_messages + [
             {"role": "user", "content": prompts[0]}
         ]
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             **{"model": self.model_name},
             **self._default_params,
         }
@@ -1021,8 +1015,8 @@ class OpenAIChat(BaseLLM):
     def _stream(
         self,
         prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> Iterator[GenerationChunk]:
         messages, params = self._get_chat_params([prompt], stop)
@@ -1041,8 +1035,8 @@ class OpenAIChat(BaseLLM):
     async def _astream(
         self,
         prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        stop: list[str] | None = None,
+        run_manager: AsyncCallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[GenerationChunk]:
         messages, params = self._get_chat_params([prompt], stop)
@@ -1060,13 +1054,13 @@ class OpenAIChat(BaseLLM):
 
     def _generate(
         self,
-        prompts: List[str],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        prompts: list[str],
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> LLMResult:
         if self.streaming:
-            generation: Optional[GenerationChunk] = None
+            generation: GenerationChunk | None = None
             for chunk in self._stream(
                 prompts[0], stop, run_manager, **kwargs
             ):
@@ -1101,13 +1095,13 @@ class OpenAIChat(BaseLLM):
 
     async def _agenerate(
         self,
-        prompts: List[str],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        prompts: list[str],
+        stop: list[str] | None = None,
+        run_manager: AsyncCallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> LLMResult:
         if self.streaming:
-            generation: Optional[GenerationChunk] = None
+            generation: GenerationChunk | None = None
             async for chunk in self._astream(
                 prompts[0], stop, run_manager, **kwargs
             ):
@@ -1153,7 +1147,7 @@ class OpenAIChat(BaseLLM):
         """Return type of llm."""
         return "openai-chat"
 
-    def get_token_ids(self, text: str) -> List[int]:
+    def get_token_ids(self, text: str) -> list[int]:
         """Get the token IDs using the tiktoken package."""
         # tiktoken NOT supported for Python < 3.8
         if sys.version_info[1] < 8:

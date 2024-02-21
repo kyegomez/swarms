@@ -299,7 +299,7 @@ class MultiAgentCollaboration:
 
     def load(self):
         """Loads the state of all agents."""
-        with open(self.saved_file_path_name, "r") as file:
+        with open(self.saved_file_path_name) as file:
             state = json.load(file)
         self._step = state["step"]
         self.results = state["results"]

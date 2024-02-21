@@ -9,9 +9,7 @@ from transformers import BioGptForCausalLM, BioGptTokenizer
 # Fixture for BioGPT instance
 @pytest.fixture
 def biogpt_instance():
-    from swarms.models import (
-        BioGPT,
-    )
+    from swarms.models import BioGPT
 
     return BioGPT()
 
@@ -20,28 +18,32 @@ def biogpt_instance():
 def test_biomedical_response_1(biogpt_instance):
     question = "What are the functions of the mitochondria?"
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 37. Test for a genetics-based question
 def test_genetics_response(biogpt_instance):
     question = "Can you explain the Mendelian inheritance?"
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 38. Test for a question about viruses
 def test_virus_response(biogpt_instance):
     question = "How do RNA viruses replicate?"
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 39. Test for a cell biology related question
 def test_cell_biology_response(biogpt_instance):
     question = "Describe the cell cycle and its phases."
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 40. Test for a question about protein structure
@@ -51,28 +53,32 @@ def test_protein_structure_response(biogpt_instance):
         " structures in proteins?"
     )
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 41. Test for a pharmacology question
 def test_pharmacology_response(biogpt_instance):
     question = "How do beta blockers work?"
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 42. Test for an anatomy-based question
 def test_anatomy_response(biogpt_instance):
     question = "Describe the structure of the human heart."
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 43. Test for a question about bioinformatics
 def test_bioinformatics_response(biogpt_instance):
     question = "What is a BLAST search?"
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 44. Test for a neuroscience question
@@ -81,14 +87,16 @@ def test_neuroscience_response(biogpt_instance):
         "Explain the function of synapses in the nervous system."
     )
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 # 45. Test for an immunology question
 def test_immunology_response(biogpt_instance):
     question = "What is the role of T cells in the immune response?"
     response = biogpt_instance(question)
-    assert response and isinstance(response, str)
+    assert response
+    assert isinstance(response, str)
 
 
 def test_init(bio_gpt):

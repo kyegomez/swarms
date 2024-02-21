@@ -1,4 +1,5 @@
 """Base implementation for tools or skills."""
+
 from __future__ import annotations
 
 import asyncio
@@ -7,17 +8,7 @@ import warnings
 from abc import abstractmethod
 from functools import partial
 from inspect import signature
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, Awaitable, Callable, Dict, Union
 
 from langchain.callbacks.base import BaseCallbackManager
 from langchain.callbacks.manager import (
@@ -27,8 +18,12 @@ from langchain.callbacks.manager import (
     CallbackManagerForToolRun,
     Callbacks,
 )
-
 from langchain.load.serializable import Serializable
+from langchain.schema.runnable import (
+    Runnable,
+    RunnableConfig,
+    RunnableSerializable,
+)
 from pydantic import (
     BaseModel,
     Extra,
@@ -36,11 +31,6 @@ from pydantic import (
     create_model,
     root_validator,
     validate_arguments,
-)
-from langchain.schema.runnable import (
-    Runnable,
-    RunnableConfig,
-    RunnableSerializable,
 )
 
 
@@ -50,7 +40,7 @@ class SchemaAnnotationError(TypeError):
 
 def _create_subset_model(
     name: str, model: BaseModel, field_names: list
-) -> Type[BaseModel]:
+) -> type[BaseModel]:
     """Create a pydantic model with only a subset of model's fields."""
     fields = {}
     for field_name in field_names:
@@ -60,7 +50,7 @@ def _create_subset_model(
 
 
 def _get_filtered_args(
-    inferred_model: Type[BaseModel],
+    inferred_model: type[BaseModel],
     func: Callable,
 ) -> dict:
     """Get the arguments from a function's signature."""
@@ -83,7 +73,7 @@ class _SchemaConfig:
 def create_schema_from_function(
     model_name: str,
     func: Callable,
-) -> Type[BaseModel]:
+) -> type[BaseModel]:
     """Create a pydantic schema from a function's signature.
     Args:
         model_name: Name to assign to the generated pydandic schema
@@ -113,8 +103,6 @@ class ToolException(Exception):
     variable of the tool, and the processing result will be returned
     to the agent as observation, and printed in red on the console.
     """
-
-    pass
 
 
 class BaseTool(RunnableSerializable[Union[str, Dict], Any]):
@@ -158,7 +146,7 @@ class ChildTool(BaseTool):
 
     You can provide few-shot examples as a part of the description.
     """
-    args_schema: Optional[Type[BaseModel]] = None
+    args_schema: type[BaseModel] | None = None
     """Pydantic model class to validate and parse the tool's input arguments."""
     return_direct: bool = False
     """Whether to return the tool's output directly. Setting this to True means
@@ -170,26 +158,26 @@ class ChildTool(BaseTool):
 
     callbacks: Callbacks = Field(default=None, exclude=True)
     """Callbacks to be called during tool execution."""
-    callback_manager: Optional[BaseCallbackManager] = Field(
+    callback_manager: BaseCallbackManager | None = Field(
         default=None, exclude=True
     )
     """Deprecated. Please use callbacks instead."""
-    tags: Optional[List[str]] = None
+    tags: list[str] | None = None
     """Optional list of tags associated with the tool. Defaults to None
     These tags will be associated with each call to this tool,
     and passed as arguments to the handlers defined in `callbacks`.
     You can use these to eg identify a specific instance of a tool with its use case.
     """
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
     """Optional metadata associated with the tool. Defaults to None
     This metadata will be associated with each call to this tool,
     and passed as arguments to the handlers defined in `callbacks`.
     You can use these to eg identify a specific instance of a tool with its use case.
     """
 
-    handle_tool_error: Optional[
-        Union[bool, str, Callable[[ToolException], str]]
-    ] = False
+    handle_tool_error: (
+        bool | str | Callable[[ToolException], str] | None
+    ) = False
     """Handle the content of the ToolException thrown."""
 
     class Config(Serializable.Config):
@@ -214,7 +202,7 @@ class ChildTool(BaseTool):
     # --- Runnable ---
 
     @property
-    def input_schema(self) -> Type[BaseModel]:
+    def input_schema(self) -> type[BaseModel]:
         """The tool's input schema."""
         if self.args_schema is not None:
             return self.args_schema
@@ -223,8 +211,8 @@ class ChildTool(BaseTool):
 
     def invoke(
         self,
-        input: Union[str, Dict],
-        config: Optional[RunnableConfig] = None,
+        input: str | dict,
+        config: RunnableConfig | None = None,
         **kwargs: Any,
     ) -> Any:
         config = config or {}
@@ -239,8 +227,8 @@ class ChildTool(BaseTool):
 
     async def ainvoke(
         self,
-        input: Union[str, Dict],
-        config: Optional[RunnableConfig] = None,
+        input: str | dict,
+        config: RunnableConfig | None = None,
         **kwargs: Any,
     ) -> Any:
         config = config or {}
@@ -257,8 +245,8 @@ class ChildTool(BaseTool):
 
     def _parse_input(
         self,
-        tool_input: Union[str, Dict],
-    ) -> Union[str, Dict[str, Any]]:
+        tool_input: str | dict,
+    ) -> str | dict[str, Any]:
         """Convert tool input to pydantic model."""
         input_args = self.args_schema
         if isinstance(tool_input, str):
@@ -277,7 +265,7 @@ class ChildTool(BaseTool):
         return tool_input
 
     @root_validator(skip_on_failure=True)
-    def raise_deprecation(cls, values: Dict) -> Dict:
+    def raise_deprecation(cls, values: dict) -> dict:
         """Raise deprecation warning if callback_manager is used."""
         if values.get("callback_manager") is not None:
             warnings.warn(
@@ -319,8 +307,8 @@ class ChildTool(BaseTool):
         )
 
     def _to_args_and_kwargs(
-        self, tool_input: Union[str, Dict]
-    ) -> Tuple[Tuple, Dict]:
+        self, tool_input: str | dict
+    ) -> tuple[tuple, dict]:
         # For backwards compatibility, if run_input is a string,
         # pass as a positional argument.
         if isinstance(tool_input, str):
@@ -330,15 +318,15 @@ class ChildTool(BaseTool):
 
     def run(
         self,
-        tool_input: Union[str, Dict],
-        verbose: Optional[bool] = None,
-        start_color: Optional[str] = "green",
-        color: Optional[str] = "green",
+        tool_input: str | dict,
+        verbose: bool | None = None,
+        start_color: str | None = "green",
+        color: str | None = "green",
         callbacks: Callbacks = None,
         *,
-        tags: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        run_name: Optional[str] = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+        run_name: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Run the tool."""
@@ -422,15 +410,15 @@ class ChildTool(BaseTool):
 
     async def arun(
         self,
-        tool_input: Union[str, Dict],
-        verbose: Optional[bool] = None,
-        start_color: Optional[str] = "green",
-        color: Optional[str] = "green",
+        tool_input: str | dict,
+        verbose: bool | None = None,
+        start_color: str | None = "green",
+        color: str | None = "green",
         callbacks: Callbacks = None,
         *,
-        tags: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        run_name: Optional[str] = None,
+        tags: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+        run_name: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Run the tool asynchronously."""
@@ -523,16 +511,16 @@ class Tool(BaseTool):
     """Tool that takes in function or coroutine directly."""
 
     description: str = ""
-    func: Optional[Callable[..., str]]
+    func: Callable[..., str] | None
     """The function to run when the tool is called."""
-    coroutine: Optional[Callable[..., Awaitable[str]]] = None
+    coroutine: Callable[..., Awaitable[str]] | None = None
     """The asynchronous version of the function."""
 
     # --- Runnable ---
     async def ainvoke(
         self,
-        input: Union[str, Dict],
-        config: Optional[RunnableConfig] = None,
+        input: str | dict,
+        config: RunnableConfig | None = None,
         **kwargs: Any,
     ) -> Any:
         if not self.coroutine:
@@ -555,8 +543,8 @@ class Tool(BaseTool):
         return {"tool_input": {"type": "string"}}
 
     def _to_args_and_kwargs(
-        self, tool_input: Union[str, Dict]
-    ) -> Tuple[Tuple, Dict]:
+        self, tool_input: str | dict
+    ) -> tuple[tuple, dict]:
         """Convert tool input to pydantic model."""
         args, kwargs = super()._to_args_and_kwargs(tool_input)
         # For backwards compatibility. The tool must be run with a single input
@@ -571,7 +559,7 @@ class Tool(BaseTool):
     def _run(
         self,
         *args: Any,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
+        run_manager: CallbackManagerForToolRun | None = None,
         **kwargs: Any,
     ) -> Any:
         """Use the tool."""
@@ -597,7 +585,7 @@ class Tool(BaseTool):
     async def _arun(
         self,
         *args: Any,
-        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
+        run_manager: AsyncCallbackManagerForToolRun | None = None,
         **kwargs: Any,
     ) -> Any:
         """Use the tool asynchronously."""
@@ -629,26 +617,25 @@ class Tool(BaseTool):
     def __init__(
         self,
         name: str,
-        func: Optional[Callable],
+        func: Callable | None,
         description: str,
         **kwargs: Any,
     ) -> None:
         """Initialize tool."""
-        super(Tool, self).__init__(
+        super().__init__(
             name=name, func=func, description=description, **kwargs
         )
 
     @classmethod
     def from_function(
         cls,
-        func: Optional[Callable],
+        func: Callable | None,
         name: str,  # We keep these required to support backwards compatibility
         description: str,
         return_direct: bool = False,
-        args_schema: Optional[Type[BaseModel]] = None,
-        coroutine: Optional[
-            Callable[..., Awaitable[Any]]
-        ] = None,  # This is last for compatibility, but should be after func
+        args_schema: type[BaseModel] | None = None,
+        coroutine: (Callable[..., Awaitable[Any]])
+        | None = None,  # This is last for compatibility, but should be after func
         **kwargs: Any,
     ) -> Tool:
         """Initialize tool from a function."""
@@ -671,20 +658,20 @@ class StructuredTool(BaseTool):
     """Tool that can operate on any number of inputs."""
 
     description: str = ""
-    args_schema: Type[BaseModel] = Field(
+    args_schema: type[BaseModel] = Field(
         ..., description="The tool schema."
     )
     """The input arguments' schema."""
-    func: Optional[Callable[..., Any]]
+    func: Callable[..., Any] | None
     """The function to run when the tool is called."""
-    coroutine: Optional[Callable[..., Awaitable[Any]]] = None
+    coroutine: Callable[..., Awaitable[Any]] | None = None
     """The asynchronous version of the function."""
 
     # --- Runnable ---
     async def ainvoke(
         self,
-        input: Union[str, Dict],
-        config: Optional[RunnableConfig] = None,
+        input: str | dict,
+        config: RunnableConfig | None = None,
         **kwargs: Any,
     ) -> Any:
         if not self.coroutine:
@@ -705,7 +692,7 @@ class StructuredTool(BaseTool):
     def _run(
         self,
         *args: Any,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
+        run_manager: CallbackManagerForToolRun | None = None,
         **kwargs: Any,
     ) -> Any:
         """Use the tool."""
@@ -731,7 +718,7 @@ class StructuredTool(BaseTool):
     async def _arun(
         self,
         *args: Any,
-        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
+        run_manager: AsyncCallbackManagerForToolRun | None = None,
         **kwargs: Any,
     ) -> str:
         """Use the tool asynchronously."""
@@ -761,12 +748,12 @@ class StructuredTool(BaseTool):
     @classmethod
     def from_function(
         cls,
-        func: Optional[Callable] = None,
-        coroutine: Optional[Callable[..., Awaitable[Any]]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        func: Callable | None = None,
+        coroutine: Callable[..., Awaitable[Any]] | None = None,
+        name: str | None = None,
+        description: str | None = None,
         return_direct: bool = False,
-        args_schema: Optional[Type[BaseModel]] = None,
+        args_schema: type[BaseModel] | None = None,
         infer_schema: bool = True,
         **kwargs: Any,
     ) -> StructuredTool:
@@ -835,9 +822,9 @@ class StructuredTool(BaseTool):
 
 
 def tool(
-    *args: Union[str, Callable, Runnable],
+    *args: str | Callable | Runnable,
     return_direct: bool = False,
-    args_schema: Optional[Type[BaseModel]] = None,
+    args_schema: type[BaseModel] | None = None,
     infer_schema: bool = True,
 ) -> Callable:
     """Make tools out of functions, can be used with or without arguments.
@@ -863,6 +850,7 @@ def tool(
                 # Searches the API for the query.
                 return
 
+
             @tool("search", return_direct=True)
             def search_api(query: str) -> str:
                 # Searches the API for the query.
@@ -870,9 +858,7 @@ def tool(
     """
 
     def _make_with_name(tool_name: str) -> Callable:
-        def _make_tool(
-            dec_func: Union[Callable, Runnable]
-        ) -> BaseTool:
+        def _make_tool(dec_func: Callable | Runnable) -> BaseTool:
             if isinstance(dec_func, Runnable):
                 runnable = dec_func
 
@@ -885,7 +871,7 @@ def tool(
                     )
 
                 async def ainvoke_wrapper(
-                    callbacks: Optional[Callbacks] = None,
+                    callbacks: Callbacks | None = None,
                     **kwargs: Any,
                 ) -> Any:
                     return await runnable.ainvoke(
@@ -893,7 +879,7 @@ def tool(
                     )
 
                 def invoke_wrapper(
-                    callbacks: Optional[Callbacks] = None,
+                    callbacks: Callbacks | None = None,
                     **kwargs: Any,
                 ) -> Any:
                     return runnable.invoke(
@@ -902,9 +888,7 @@ def tool(
 
                 coroutine = ainvoke_wrapper
                 func = invoke_wrapper
-                schema: Optional[Type[BaseModel]] = (
-                    runnable.input_schema
-                )
+                schema: type[BaseModel] | None = runnable.input_schema
                 description = repr(runnable)
             elif inspect.iscoroutinefunction(dec_func):
                 coroutine = dec_func

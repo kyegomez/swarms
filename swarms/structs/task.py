@@ -2,17 +2,11 @@ import sched
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Union
 
 from swarms.structs.agent import Agent
-from swarms.utils.logger import logger
 from swarms.structs.conversation import Conversation
+from swarms.utils.logger import logger
 
 
 @dataclass

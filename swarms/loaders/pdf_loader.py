@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import IO, Dict, List, Optional
+from typing import IO
 
 from pypdf import PdfReader
 
@@ -50,27 +50,27 @@ class PDFLoader:
     def load(
         self,
         source: str | IO | Path,
-        password: Optional[str] = None,
+        password: str | None = None,
         *args,
         **kwargs,
-    ) -> List[TextArtifact]:
+    ) -> list[TextArtifact]:
         return self._load_pdf(source, password)
 
     def load_collection(
         self,
-        sources: List[str | IO | Path],
-        password: Optional[str] = None,
+        sources: list[str | IO | Path],
+        password: str | None = None,
         *args,
         **kwargs,
-    ) -> Dict[str, List[TextArtifact]]:
+    ) -> dict[str, list[TextArtifact]]:
         return {
             str_to_hash(str(s)): self._load_pdf(s, password)
             for s in sources
         }
 
     def _load_pdf(
-        self, stream: str | IO | Path, password: Optional[str]
-    ) -> List[TextArtifact]:
+        self, stream: str | IO | Path, password: str | None
+    ) -> list[TextArtifact]:
         reader = PdfReader(stream, strict=True, password=password)
         return [
             TextArtifact(text=p.extract_text()) for p in reader.pages

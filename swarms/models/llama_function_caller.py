@@ -3,14 +3,15 @@
 # !pip install transformers
 # !pip install bitsandbytes
 
+from typing import Callable, Dict, List
+
 import torch
 from transformers import (
-    AutoTokenizer,
     AutoModelForCausalLM,
+    AutoTokenizer,
     BitsAndBytesConfig,
     TextStreamer,
 )
-from typing import Callable, Dict, List
 
 
 class LlamaFunctionCaller:

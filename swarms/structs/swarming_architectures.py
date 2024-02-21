@@ -1,7 +1,8 @@
+import asyncio
 import math
 from typing import List
+
 from swarms.structs.agent import Agent
-import asyncio
 from swarms.utils.logger import logger
 
 

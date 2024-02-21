@@ -1,5 +1,5 @@
-import time
 import os
+import time
 
 import pygame
 import speech_recognition as sr

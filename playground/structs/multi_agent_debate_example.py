@@ -1,9 +1,9 @@
+from swarms.models import OpenAIChat
 from swarms.swarms.multi_agent_debate import (
     MultiAgentDebate,
     select_speaker,
 )
 from swarms.workers.worker import Worker
-from swarms.models import OpenAIChat
 
 llm = OpenAIChat()
 

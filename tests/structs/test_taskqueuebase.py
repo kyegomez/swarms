@@ -2,8 +2,10 @@
 
 import threading
 from unittest.mock import Mock
+
 import pytest
-from swarms.tokenizers import TaskQueueBase, Task, Agent
+
+from swarms.tokenizers import Agent, Task, TaskQueueBase
 
 
 # Create mocked instances of dependencies

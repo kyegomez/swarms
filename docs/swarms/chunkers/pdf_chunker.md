@@ -62,8 +62,8 @@ Let's explore how to use the `PdfChunker` class with different scenarios and app
 #### Example 1: Basic Chunking
 
 ```python
-from swarms.chunkers.pdf_chunker import PdfChunker
 from swarms.chunkers.chunk_seperator import ChunkSeparator
+from swarms.chunkers.pdf_chunker import PdfChunker
 
 # Initialize the PdfChunker
 pdf_chunker = PdfChunker()
@@ -82,8 +82,8 @@ for idx, chunk in enumerate(chunks, start=1):
 #### Example 2: Custom Separators
 
 ```python
-from swarms.chunkers.pdf_chunker import PdfChunker
 from swarms.chunkers.chunk_seperator import ChunkSeparator
+from swarms.chunkers.pdf_chunker import PdfChunker
 
 # Define custom separators for PDF chunking
 custom_separators = [ChunkSeparator("\n\n"), ChunkSeparator(". ")]

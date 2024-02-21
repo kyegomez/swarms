@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 from pydantic import Field
 
@@ -94,8 +94,8 @@ class BaseMessage(Serializable):
 
 class BaseMessageChunk(BaseMessage):
     def _merge_kwargs_dict(
-        self, left: Dict[str, Any], right: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, left: dict[str, Any], right: dict[str, Any]
+    ) -> dict[str, Any]:
         """Merge additional_kwargs from another BaseMessageChunk into this one."""
         merged = left.copy()
         for k, v in right.items():
@@ -223,7 +223,7 @@ def _message_to_dict(message: BaseMessage) -> dict:
     return {"type": message.type, "data": message.dict()}
 
 
-def messages_to_dict(messages: Sequence[BaseMessage]) -> List[dict]:
+def messages_to_dict(messages: Sequence[BaseMessage]) -> list[dict]:
     """Convert a sequence of Messages to a list of dictionaries.
 
     Args:
@@ -251,7 +251,7 @@ def _message_from_dict(message: dict) -> BaseMessage:
         raise ValueError(f"Got unexpected message type: {_type}")
 
 
-def messages_from_dict(messages: List[dict]) -> List[BaseMessage]:
+def messages_from_dict(messages: list[dict]) -> list[BaseMessage]:
     """Convert a sequence of messages from dicts to Message objects.
 
     Args:

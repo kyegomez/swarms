@@ -2,8 +2,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from swarms.structs.agent import Agent
-from swarms.utils.logger import logger
 from swarms.structs.conversation import Conversation
+from swarms.utils.logger import logger
 
 
 @dataclass

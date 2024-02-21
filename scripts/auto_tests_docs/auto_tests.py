@@ -2,16 +2,17 @@ import inspect
 import os
 import re
 import threading
-from swarms import OpenAIChat
+
+########
+from dotenv import load_dotenv
+
 from scripts.auto_tests_docs.docs import TEST_WRITER_SOP_PROMPT
+from swarms import OpenAIChat
 
 #########
 from swarms.memory.dict_internal_memory import DictInternalMemory
 from swarms.memory.dict_shared_memory import DictSharedMemory
 from swarms.memory.lanchain_chroma import LangchainChromaVectorMemory
-
-########
-from dotenv import load_dotenv
 
 load_dotenv()
 

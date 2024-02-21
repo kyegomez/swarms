@@ -31,7 +31,7 @@ class Orchestrator(ABC):
         # Break down main_task into smaller tasks
         # ...
         return sub_tasks
-    
+
     def aggregate_results(self, sub_results: List[Any]) -> Any:
         # Combine results from sub-tasks into a cohesive output
         # ...

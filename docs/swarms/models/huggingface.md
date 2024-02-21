@@ -114,9 +114,11 @@ from swarms.models import HuggingfaceLLM
 custom_config = {
     "quantize": True,
     "quantization_config": {"load_in_4bit": True},
-    "verbose": True
+    "verbose": True,
 }
-inference = HuggingfaceLLM(model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config)
+inference = HuggingfaceLLM(
+    model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config
+)
 
 # Generate text based on a prompt
 prompt_text = "Tell me a joke"

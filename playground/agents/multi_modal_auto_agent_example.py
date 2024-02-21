@@ -1,6 +1,8 @@
 # Description: This is an example of how to use the Agent class to run a multi-modal workflow
 import os
+
 from dotenv import load_dotenv
+
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.structs import Agent
 

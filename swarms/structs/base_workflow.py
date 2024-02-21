@@ -62,7 +62,6 @@ class BaseWorkflow(BaseStructure):
         Abstract method for the sequential loop.
         """
         # raise NotImplementedError("You must implement this method")
-        pass
 
     def __log(self, message: str):
         """
@@ -298,7 +297,7 @@ class BaseWorkflow(BaseStructure):
         try:
             filepath = filepath or self.restore_state_filepath
 
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 state = json.load(f)
                 self.max_loops = state["max_loops"]
                 self.tasks = []
