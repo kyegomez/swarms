@@ -17,7 +17,7 @@ jobs:
       pull-requests: write
     # Disable until we have some actual labels to apply
     if: false
-    
+
     steps:
       - uses: actions/labeler@v5
         with:
