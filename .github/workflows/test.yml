@@ -1,14 +1,12 @@
+---
 name: test
-
 on:
   push:
     branches: [master]
   pull_request:
   workflow_dispatch:
-
 env:
   POETRY_VERSION: "1.4.2"
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -30,14 +28,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           poetry-version: "1.4.2"
           cache-key: ${{ matrix.test_type }}
-          install-command: 
-              if [ "${{ matrix.test_type }}" == "core" ]; then
-                echo "Running core tests, installing dependencies with poetry..."
-                poetry install
-              else
-                echo "Running extended tests, installing dependencies with poetry..."
-                poetry install -E extended_testing
-              fi
+          install-command: if [ "${{ matrix.test_type }}" == "core" ]; then echo "Running core tests, installing dependencies with
+            poetry..." poetry install else echo "Running extended tests, installing dependencies with poetry..." poetry install -E
+            extended_testing fi
       - name: Run ${{matrix.test_type}} tests
         run: |
           if [ "${{ matrix.test_type }}" == "core" ]; then
@@ -56,13 +49,13 @@ jobs:
           poetry-version: "1.4.2"
           cache-key: ${{ matrix.test_type }}
           install-command: |
-              if [ "${{ matrix.test_type }}" == "core" ]; then
-                echo "Running core tests, installing dependencies with poetry..."
-                poetry install
-              else
-                echo "Running extended tests, installing dependencies with poetry..."
-                poetry install -E extended_testing
-              fi
+            if [ "${{ matrix.test_type }}" == "core" ]; then
+              echo "Running core tests, installing dependencies with poetry..."
+              poetry install
+            else
+              echo "Running extended tests, installing dependencies with poetry..."
+              poetry install -E extended_testing
+            fi
       - name: Run ${{matrix.test_type}} tests
         run: |
           if [ "${{ matrix.test_type }}" == "core" ]; then
@@ -93,13 +86,13 @@ jobs:
           poetry-version: "1.4.2"
           cache-key: ${{ matrix.test_type }}
           install-command: |
-              if [ "${{ matrix.test_type }}" == "core" ]; then
-                echo "Running core tests, installing dependencies with poetry..."
-                poetry install
-              else
-                echo "Running extended tests, installing dependencies with poetry..."
-                poetry install -E extended_testing
-              fi
+            if [ "${{ matrix.test_type }}" == "core" ]; then
+              echo "Running core tests, installing dependencies with poetry..."
+              poetry install
+            else
+              echo "Running extended tests, installing dependencies with poetry..."
+              poetry install -E extended_testing
+            fi
       - name: Run ${{matrix.test_type}} tests
         run: |
           if [ "${{ matrix.test_type }}" == "core" ]; then
