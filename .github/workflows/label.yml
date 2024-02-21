@@ -18,5 +18,6 @@ jobs:
 
     steps:
       - uses: actions/labeler@v5
+        if: false
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
