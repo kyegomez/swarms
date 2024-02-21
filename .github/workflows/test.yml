@@ -23,12 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: "snok/install-poetry@v1"
+        id: setup-python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          poetry-version: "1.4.2"
-          install-command: poetry install
+      - name: Set up Poetry
+        uses: "snok/install-poetry@v1"
+      - name: Install dependencies
+        run: poetry install --no-interaction
       - name: Run tests
-        run: |
-          pytest
+        run: pytest
         shell: bash
