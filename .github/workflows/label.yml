@@ -7,7 +7,8 @@
 # https://github.com/actions/labeler
 
 name: Labeler
-on: [pull_request_target]
+# Disable until we have some actual labels to apply
+on: []
 
 jobs:
   label:
@@ -15,8 +16,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    # Disable until we have some actual labels to apply
-    if: false
 
     steps:
       - uses: actions/labeler@v5
