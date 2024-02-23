@@ -4,9 +4,9 @@ from swarms import Agent, MajorityVoting, OpenAIChat
 llm = OpenAIChat()
 
 # Initialize the agents
-agent1 = Agent(llm=llm, max_loops=1)
-agent2 = Agent(llm=llm, max_loops=1)
-agent3 = Agent(llm=llm, max_loops=1)
+agent1 = Agent(agent_name="worker-1", llm=llm, max_loops=1)
+agent2 = Agent(agent_name="worker-2", llm=llm, max_loops=1)
+agent3 = Agent(agent_name="worker3", llm=llm, max_loops=1)
 
 
 # Initialize the majority voting

@@ -1,16 +1,23 @@
-############################################ LLMs
 from swarms.models.anthropic import Anthropic  # noqa: E402
-
-# 3############ Embedding models
 from swarms.models.base_embedding_model import BaseEmbeddingModel
 from swarms.models.base_llm import AbstractLLM  # noqa: E402
-
-################# MultiModal Models
 from swarms.models.base_multimodal_model import (
     BaseMultiModalModel,
-)  # noqa: E402
+)
+
+# noqa: E402
 from swarms.models.biogpt import BioGPT  # noqa: E402
 from swarms.models.clipq import CLIPQ  # noqa: E402
+
+# from swarms.models.dalle3 import Dalle3
+# from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
+# from swarms.models.whisperx_model import WhisperX  # noqa: E402
+# from swarms.models.kosmos_two import Kosmos  # noqa: E402
+# from swarms.models.cog_agent import CogAgent  # noqa: E402
+## Function calling models
+from swarms.models.fire_function import (
+    FireFunctionCaller,
+)
 from swarms.models.fuyu import Fuyu  # noqa: E402
 from swarms.models.gemini import Gemini  # noqa: E402
 from swarms.models.gigabind import Gigabind  # noqa: E402
@@ -20,9 +27,9 @@ from swarms.models.idefics import Idefics  # noqa: E402
 from swarms.models.kosmos_two import Kosmos  # noqa: E402
 from swarms.models.layoutlm_document_qa import (
     LayoutLMDocumentQA,
-)  # noqa: E402
+)
 
-# from swarms.models.vip_llava import VipLlavaMultiModal  # noqa: E402
+# noqa: E402
 from swarms.models.llava import LavaMultiModal  # noqa: E402
 from swarms.models.mistral import Mistral  # noqa: E402
 from swarms.models.mixtral import Mixtral  # noqa: E402
@@ -32,18 +39,18 @@ from swarms.models.openai_models import (
     AzureOpenAI,
     OpenAI,
     OpenAIChat,
-)  # noqa: E402
+)
+
+# noqa: E402
 from swarms.models.openai_tts import OpenAITTS  # noqa: E402
 from swarms.models.petals import Petals  # noqa: E402
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 from swarms.models.roboflow_model import RoboflowMultiModal
 from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
-
-##### Utils
 from swarms.models.sampling_params import (
     SamplingParams,
     SamplingType,
-)  # noqa: E402
+)
 from swarms.models.timm import TimmModel  # noqa: E402
 
 # from swarms.models.modelscope_pipeline import ModelScopePipeline
@@ -62,25 +69,18 @@ from swarms.models.types import (  # noqa: E402
 )
 from swarms.models.ultralytics_model import (
     UltralyticsModel,
-)  # noqa: E402
+)
+
+# noqa: E402
 from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.wizard_storytelling import (
     WizardLLMStoryTeller,
-)  # noqa: E402
+)
 
+# noqa: E402
 # from swarms.models.vllm import vLLM  # noqa: E402
 from swarms.models.zephyr import Zephyr  # noqa: E402
 from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
-
-# from swarms.models.dalle3 import Dalle3
-# from swarms.models.distilled_whisperx import DistilWhisperModel # noqa: E402
-# from swarms.models.whisperx_model import WhisperX  # noqa: E402
-# from swarms.models.kosmos_two import Kosmos  # noqa: E402
-# from swarms.models.cog_agent import CogAgent  # noqa: E402
-
-
-################# Tokenizers
-
 
 __all__ = [
     "AbstractLLM",
@@ -100,7 +100,6 @@ __all__ = [
     "HuggingfaceLLM",
     "MPT7B",
     "WizardLLMStoryTeller",
-    # "GPT4Vision",
     # "Dalle3",
     # "DistilWhisperModel",
     "GPT4VisionAPI",
@@ -118,7 +117,6 @@ __all__ = [
     "TogetherLLM",
     "TimmModel",
     "UltralyticsModel",
-    # "VipLlavaMultiModal",
     "LavaMultiModal",
     "QwenVLMultiModal",
     "CLIPQ",
@@ -129,4 +127,5 @@ __all__ = [
     "SegmentAnythingMarkGenerator",
     "SamplingType",
     "SamplingParams",
+    "FireFunctionCaller",
 ]

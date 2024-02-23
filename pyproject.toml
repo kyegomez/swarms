@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "4.1.6"
+version = "4.1.7"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -51,6 +51,7 @@ httpx = "0.24.1"
 tiktoken = "0.4.0"
 attrs = "22.2.0"
 ratelimit = "2.2.1"
+loguru = "*"
 cohere = "4.24"
 huggingface-hub = "*"
 pydantic = "1.10.12"
