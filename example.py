@@ -11,7 +11,4 @@ agent = Agent(
 )
 
 # Run the workflow on a task
-agent(
-    "Find a chick fil a equivalent in hayes valley"
-)
-
+agent("Find a chick fil a equivalent in hayes valley")
