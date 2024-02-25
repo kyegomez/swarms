@@ -14,7 +14,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initilaize the chromadb client
 chromadb = ChromaDB(
-    metric="cosine",g
+    metric="cosine",
     output="results",
 )
 

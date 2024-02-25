@@ -3,7 +3,7 @@ import timeit
 from swarms import Agent, ConcurrentWorkflow, Task
 
 # model
-model = MultiOnAgent(multion_api_key="535ae401948b4c59bc1b2c61eec90fe6")
+model = MultiOnAgent(multion_api_key="api-key")
 
 # out = model.run("search for a recipe")
 agent = Agent(
