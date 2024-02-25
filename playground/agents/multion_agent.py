@@ -1,12 +1,10 @@
 from swarms.agents.multion_agent import MultiOnAgent
-from swarms.structs.agent import Agent
-from swarms.structs.concurrent_workflow import ConcurrentWorkflow
-from swarms.structs.task import Task
+import timeit
+from swarms import Agent, ConcurrentWorkflow, Task
+from swarms.utils.loguru_logger import logger
 
 # model
-model = MultiOnAgent(
-    multion_api_key=""
-)
+model = MultiOnAgent(multion_api_key="")
 
 # out = model.run("search for a recipe")
 agent = Agent(
@@ -17,6 +15,7 @@ agent = Agent(
     system_prompt=None,
 )
 
+logger.info("[Agent][ID][MultiOnAgent][Initialized][Successfully")
 
 # Task
 task = Task(
@@ -27,16 +26,25 @@ task = Task(
     ),
 )
 
-
 # Swarm
+logger.info(
+    f"Running concurrent workflow with task: {task.description}"
+)
+
+# Measure execution time
+start_time = timeit.default_timer()
+
 workflow = ConcurrentWorkflow(
-    max_workers=21,
+    max_workers=1,
     autosave=True,
     print_results=True,
     return_results=True,
 )
 
-
 # Add task to workflow
 workflow.add(task)
 workflow.run()
+
+# Calculate execution time
+execution_time = timeit.default_timer() - start_time
+logger.info(f"Execution time: {execution_time} seconds")

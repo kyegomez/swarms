@@ -37,7 +37,9 @@ def multion_tool(
 
 # Execute the interpreter tool
 @tool
-def execute_interpreter_tool(code: str,):
+def execute_interpreter_tool(
+    code: str,
+):
     """
     Executes a single command using the interpreter.
 
