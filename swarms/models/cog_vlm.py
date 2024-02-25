@@ -227,8 +227,8 @@ class CogVLMMultiModal(BaseMultiModalModel):
             torch_type = torch.float16
 
         print(
-            "========Use torch type as:{} with device:{}========\n\n"
-            .format(torch_type, device)
+            f"========Use torch type as:{torch_type} with"
+            f" device:{device}========\n\n"
         )
 
         if "cuda" in device:
@@ -495,7 +495,7 @@ class CogVLMMultiModal(BaseMultiModalModel):
             choices=[choice_data],
             object="chat.completion.chunk",
         )
-        yield "{}".format(chunk.model_dump_json(exclude_unset=True))
+        yield f"{chunk.model_dump_json(exclude_unset=True)}"
 
         previous_text = ""
         for new_response in self.generate_stream_cogvlm(params):
@@ -515,9 +515,7 @@ class CogVLMMultiModal(BaseMultiModalModel):
                 choices=[choice_data],
                 object="chat.completion.chunk",
             )
-            yield "{}".format(
-                chunk.model_dump_json(exclude_unset=True)
-            )
+            yield f"{chunk.model_dump_json(exclude_unset=True)}"
         choice_data = ChatCompletionResponseStreamChoice(
             index=0,
             delta=DeltaMessage(),
@@ -527,4 +525,4 @@ class CogVLMMultiModal(BaseMultiModalModel):
             choices=[choice_data],
             object="chat.completion.chunk",
         )
-        yield "{}".format(chunk.model_dump_json(exclude_unset=True))
+        yield f"{chunk.model_dump_json(exclude_unset=True)}"

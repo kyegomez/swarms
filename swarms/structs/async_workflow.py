@@ -43,7 +43,7 @@ class AsyncWorkflow:
     loop: Optional[asyncio.AbstractEventLoop] = None
     stopping_condition: Optional[Callable] = None
 
-    async def add(self, task: Any, tasks: List[Any]):
+    async def add(self, task: Any = None, tasks: List[Any] = None):
         """Add tasks to the workflow"""
         try:
             if tasks:

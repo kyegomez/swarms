@@ -24,8 +24,6 @@ from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.data_to_text import data_to_text
-
-# from swarms.utils.logger import logger
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
@@ -33,6 +31,7 @@ from swarms.utils.video_to_frames import (
     save_frames_as_images,
     video_to_frames,
 )
+import yaml
 
 
 # Utils
@@ -209,6 +208,8 @@ class Agent:
         search_algorithm: Optional[Callable] = None,
         logs_to_filename: Optional[str] = None,
         evaluator: Optional[Callable] = None,
+        output_json: bool = False,
+        stopping_func: Optional[Callable] = None,
         *args,
         **kwargs,
     ):
@@ -262,6 +263,8 @@ class Agent:
         self.search_algorithm = search_algorithm
         self.logs_to_filename = logs_to_filename
         self.evaluator = evaluator
+        self.output_json = output_json
+        self.stopping_func = stopping_func
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -626,6 +629,11 @@ class Agent:
                             )
                             print(response)
 
+                        if self.output_json:
+                            response = extract_code_from_markdown(
+                                response
+                            )
+
                         # Add the response to the history
                         history.append(response)
 
@@ -651,13 +659,27 @@ class Agent:
                                 "Evaluator", out
                             )
 
-                        # Check to see if stopping token is in the output to stop the loop
+                        # Stopping logic for agents
                         if self.stopping_token:
-                            if self._check_stopping_condition(
-                                response
-                            ) or parse_done_token(response):
+                            # Check if the stopping token is in the response
+                            if self.stopping_token in response:
                                 break
 
+                        if self.stopping_condition:
+                            if self._check_stopping_condition(
+                                response
+                            ):
+                                break
+
+                        if self.parse_done_token:
+                            if parse_done_token(response):
+                                break
+
+                        if self.stopping_func is not None:
+                            if self.stopping_func(response) is True:
+                                break
+
+                        # If the stopping condition is met then break
                         self.step_cache.append(step)
                         logging.info(f"Step: {step}")
 
@@ -1043,6 +1065,22 @@ class Agent:
             # Get user input
             response = input("You: ")
 
+    def save_to_yaml(self, file_path: str) -> None:
+        """
+        Save the agent to a YAML file
+
+        Args:
+            file_path (str): The path to the YAML file
+        """
+        try:
+            logger.info(f"Saving agent to YAML file: {file_path}")
+            with open(file_path, "w") as f:
+                yaml.dump(self.__dict__, f)
+        except Exception as error:
+            print(
+                colored(f"Error saving agent to YAML: {error}", "red")
+            )
+
     def save_state(self, file_path: str) -> None:
         """
         Saves the current state of the agent to a JSON file, including the llm parameters.
@@ -1075,7 +1113,6 @@ class Agent:
                 "autosave": self.autosave,
                 "saved_state_path": self.saved_state_path,
                 "max_loops": self.max_loops,
-                # "StepCache": self.step_cache,
             }
 
             with open(file_path, "w") as f:

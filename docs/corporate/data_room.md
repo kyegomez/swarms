@@ -52,7 +52,6 @@
 ## **Introdution**
 Swarms provides automation-as-a-service through swarms of autonomous agents that work together as a team. We enable our customers to build, deploy, and scale production-grade multi-agent applications to automate real-world tasks.
 
-
 ### **Vision**
 Our vision for 2024 is to provide the most reliable infrastructure for deploying autonomous agents into the real world through the Swarm Cloud, our premier cloud platform for the scalable deployment of Multi-Modal Autonomous Agents. The platform focuses on delivering maximum value to users by only taking a small fee when utilizing the agents for the hosted compute power needed to host the agents.
 
@@ -69,15 +68,25 @@ The team has thousands of hours building and optimizing autonomous agents. Leade
 
 Key milestones: get 80K framework users in January 2024, start contracts in target verticals, introduce commercial products in 2025 with various pricing models.
 
-
+## Resources
 ### **Pre-Seed Pitch Deck** 
-- [Here is our pitch deck for our preseed round](https://www.figma.com/file/LlEMXZ48HTIG3S9VzdibaB/Swarm-Pitch-Deck?type=design&node-id=0%3A1&
-mode=design&t=D3023hPOz27M9RGD-1)
-
+- [Here is our pitch deck for our preseed round](https://drive.google.com/file/d/1c76gK5UIdrfN4JOSpSlvVBEOpzR9emWc/view?usp=sharing)
 
 ### **The Swarm Corporation Memo**
 To learn more about our mission, vision, plans for GTM, and much more please refer to the [Swarm Memo here](https://docs.google.com/document/d/1hS_nv_lFjCqLfnJBoF6ULY9roTbSgSuCkvXvSUSc7Lo/edit?usp=sharing)
 
+
+
+
+## **Financial Documents**
+This section is dedicated entirely for corporate documents.
+
+- [Cap Table](https://docs.google.com/spreadsheets/d/1wuTWbfhYaY5Xp6nSQ9R0wDtSpwSS9coHxsjKd0UbIDc/edit?usp=sharing)
+
+- [Cashflow Prediction Sheet](https://docs.google.com/spreadsheets/d/1HQEHCIXXMHajXMl5sj8MEfcQtWfOnD7GjHtNiocpD60/edit?usp=sharing)
+
+
+------
 
 ## **Product**
 Swarms is an open source framework for developers in python to enable seamless, reliable, and scalable multi-agent orchestration through modularity, customization, and precision.
@@ -86,7 +95,7 @@ Swarms is an open source framework for developers in python to enable seamless, 
 
 ### Product Growth Metrics
 | Name                             | Description                                                                                                   | Link                                                                                      |
-|----------------------------------|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+|--------------------------b--------|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | Total Downloads of all time      | Total number of downloads for the product over its entire lifespan.                                           | [![Downloads](https://static.pepy.tech/badge/swarms)](https://pepy.tech/project/swarms)   |
 | Downloads this month             | Number of downloads for the product in the current month.                                                     | [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms) |
 | Total Downloads this week        | Total number of downloads for the product in the current week.                                                | [![Downloads](https://static.pepy.tech/badge/swarms/week)](https://pepy.tech/project/swarms) |
@@ -98,10 +107,4 @@ Swarms is an open source framework for developers in python to enable seamless, 
 | Github Traffic Metrics           | Metrics related to traffic, such as views and clones on Github.                                               | [Github Traffic Metrics](https://github.com/kyegomez/swarms/graphs/traffic)               |
 | Issues with the framework        | Current open issues for the product on Github.                                                                | [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) |
 
-
-
-## **Corporate Documents**
-This section is dedicated entirely for corporate documents.
-
-- [Cap Table](https://docs.google.com/spreadsheets/d/1wuTWbfhYaY5Xp6nSQ9R0wDtSpwSS9coHxsjKd0UbIDc/edit?usp=sharing)
-
+-------
