@@ -1,4 +1,3 @@
-# Example
 
 import os
 

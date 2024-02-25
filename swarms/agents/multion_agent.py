@@ -37,12 +37,7 @@ class MultiOnAgent(AbstractLLM):
         self.max_steps = max_steps
         self.starting_url = starting_url
 
-        self.multion = multion.login(
-            use_api=True,
-            multion_api_key=str(multion_api_key),
-            *args,
-            **kwargs,
-        )
+
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -56,7 +51,14 @@ class MultiOnAgent(AbstractLLM):
         Returns:
             dict: The response from the browsing task.
         """
-        response = self.multion.browse(
+        multion.login(
+            use_api=True,
+            multion_api_key=str(self.multion_api_key),
+            *args,
+            **kwargs,
+        )
+        
+        response = multion.browse(
             {
                 "cmd": task,
                 "url": self.starting_url,
