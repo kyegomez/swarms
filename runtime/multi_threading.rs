@@ -29,48 +29,51 @@ fn my_module(py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
 
+
+
+/// The function returns `Ok(())` if all modules are processed successfully.
+/// Note: This code assumes that the necessary dependencies (`pyo3`, `rayon`, `log`) are already imported and initialized.
+///
+/// # Arguments
+///
+/// * `modules` - A vector of `PythonModule` structs representing the Python modules and functions to execute.
+/// * `num_threads` - The number of threads to use for parallel processing.
+///
+/// # Examples
+///
+/// ```
+/// use pyo3::types::PyModule;
+/// use pyo3::types::PyResult;
+/// use pyo3::prelude::*;
+///
+/// struct PythonModule<'a> {
+///     name: &'a str,
+///     function: &'a str,
+///     args: Vec<&'a str>,
+/// }
+///
+/// #[pymodule]
+/// fn multithreading_processor(modules: Vec<PythonModule>, num_threads: usize) -> Result<(), PythonError> {
+///     // Function implementation
+///     Ok(())
+/// }
+/// ```
+///
+/// # Errors
+///
+/// Returns a `PythonError` if an import error or a function call error occurs.
+///
+/// # Panics
+///
+/// This function does not panic.
+///
+/// # Safety
+///
+/// This function is safe to call, but it assumes that the necessary dependencies (`pyo3`, `rayon`, `log`) are already imported and initialized.
+// Initialize Python interpreter
 #[pyfunction]
 fn process_python_modules(modules: Vec<PythonModule>, num_threads: usize) -> Result<(), PythonError> {
-    /// The function returns `Ok(())` if all modules are processed successfully.
-    /// Note: This code assumes that the necessary dependencies (`pyo3`, `rayon`, `log`) are already imported and initialized.
-    ///
-    /// # Arguments
-    ///
-    /// * `modules` - A vector of `PythonModule` structs representing the Python modules and functions to execute.
-    /// * `num_threads` - The number of threads to use for parallel processing.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use pyo3::types::PyModule;
-    /// use pyo3::types::PyResult;
-    /// use pyo3::prelude::*;
-    ///
-    /// struct PythonModule<'a> {
-    ///     name: &'a str,
-    ///     function: &'a str,
-    ///     args: Vec<&'a str>,
-    /// }
-    ///
-    /// #[pymodule]
-    /// fn multithreading_processor(modules: Vec<PythonModule>, num_threads: usize) -> Result<(), PythonError> {
-    ///     // Function implementation
-    ///     Ok(())
-    /// }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns a `PythonError` if an import error or a function call error occurs.
-    ///
-    /// # Panics
-    ///
-    /// This function does not panic.
-    ///
-    /// # Safety
-    ///
-    /// This function is safe to call, but it assumes that the necessary dependencies (`pyo3`, `rayon`, `log`) are already imported and initialized.
-    // Initialize Python interpreter
+
     let gil = Python::acquire_gil();
     let py = gil.python();
 

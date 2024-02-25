@@ -96,9 +96,7 @@ class Nougat:
 
         # Convert the matches to a readable format
         cleaned_data = [
-            "Date: {}, Amount: {}".format(
-                date, amount.replace(",", "")
-            )
+            f"Date: {date}, Amount: {amount.replace(',', '')}"
             for date, amount in matches
         ]
 

@@ -16,6 +16,8 @@ sentencepiece==0.1.98
 requests_mock
 pypdf==4.0.1
 accelerate==0.22.0
+loguru
+multion
 chromadb
 tensorflow
 optimum

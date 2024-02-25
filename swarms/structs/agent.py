@@ -3,10 +3,12 @@ import json
 import logging
 import os
 import random
+import sys
 import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from loguru import logger
 from termcolor import colored
 
 from swarms.memory.base_vectordb import AbstractVectorDatabase
@@ -22,7 +24,6 @@ from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.data_to_text import data_to_text
-from swarms.utils.logger import logger
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
@@ -30,6 +31,7 @@ from swarms.utils.video_to_frames import (
     save_frames_as_images,
     video_to_frames,
 )
+import yaml
 
 
 # Utils
@@ -51,10 +53,18 @@ def agent_id():
     return str(uuid.uuid4())
 
 
+# Task ID generator
 def task_id():
+    """
+    Generate a unique task ID.
+
+    Returns:
+        str: A string representation of a UUID.
+    """
     return str(uuid.uuid4())
 
 
+# Step ID generator
 def step_id():
     return str(uuid.uuid1())
 
@@ -194,6 +204,12 @@ class Agent:
         callback: Optional[Callable] = None,
         metadata: Optional[Dict[str, Any]] = None,
         callbacks: Optional[List[Callable]] = None,
+        logger_handler: Any = sys.stderr,
+        search_algorithm: Optional[Callable] = None,
+        logs_to_filename: Optional[str] = None,
+        evaluator: Optional[Callable] = None,
+        output_json: bool = False,
+        stopping_func: Optional[Callable] = None,
         *args,
         **kwargs,
     ):
@@ -243,9 +259,16 @@ class Agent:
         self.callback = callback
         self.metadata = metadata
         self.callbacks = callbacks
+        self.logger_handler = logger_handler
+        self.search_algorithm = search_algorithm
+        self.logs_to_filename = logs_to_filename
+        self.evaluator = evaluator
+        self.output_json = output_json
+        self.stopping_func = stopping_func
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
+            logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
 
         # If multimodal = yes then set the sop to the multimodal sop
@@ -260,7 +283,9 @@ class Agent:
         self.feedback = []
 
         # Initialize the code executor
-        self.code_executor = SubprocessCodeInterpreter()
+        self.code_executor = SubprocessCodeInterpreter(
+            debug_mode=True,
+        )
 
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
         if preset_stopping_token:
@@ -279,11 +304,12 @@ class Agent:
             self.get_docs_from_doc_folders()
 
         # If tokenizer and context length exists then:
-        if self.tokenizer and self.context_length:
-            self.truncate_history()
+        # if self.tokenizer and self.context_length:
+        #     self.truncate_history()
 
-        if verbose:
-            logger.setLevel(logging.DEBUG)
+        # If verbose is enabled then set the logger level to info
+        # if verbose:
+        #     logger.setLevel(logging.INFO)
 
         # If tools are provided then set the tool prompt by adding to sop
         if self.tools:
@@ -307,6 +333,21 @@ class Agent:
 
         # Step cache
         self.step_cache = []
+
+        # Set the logger handler
+        if logger_handler:
+            logger.add(
+                f"{self.agent_name}.log",
+                level="INFO",
+                colorize=True,
+                format=(
+                    "<green>{time}</green> <level>{message}</level>"
+                ),
+                backtrace=True,
+                diagnose=True,
+            )
+
+        # logger.info("Creating Agent {}".format(self.agent_name))
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -342,6 +383,7 @@ class Agent:
             if hasattr(self.llm, "temperature"):
                 # Randomly change the temperature attribute of self.llm object
                 self.llm.temperature = random.uniform(0.0, 1.0)
+                logger.info(f"Temperature: {self.llm.temperature}")
             else:
                 # Use a default temperature
                 self.llm.temperature = 0.7
@@ -359,6 +401,7 @@ class Agent:
     def add_task_to_memory(self, task: str):
         """Add the task to the memory"""
         try:
+            logger.info(f"Adding task to memory: {task}")
             self.short_memory.add(f"{self.user_name}: {task}")
         except Exception as error:
             print(
@@ -370,6 +413,7 @@ class Agent:
     def add_message_to_memory(self, message: str):
         """Add the message to the memory"""
         try:
+            logger.info(f"Adding message to memory: {message}")
             self.short_memory.add(
                 role=self.agent_name, content=message
             )
@@ -585,24 +629,57 @@ class Agent:
                             )
                             print(response)
 
+                        if self.output_json:
+                            response = extract_code_from_markdown(
+                                response
+                            )
+
                         # Add the response to the history
                         history.append(response)
 
                         # Log each step
                         step = Step(
-                            input=task,
-                            task_id=task_id,
-                            step_id=step_id,
-                            output=response,
+                            input=str(task),
+                            task_id=str(task_id),
+                            step_id=str(step_id),
+                            output=str(response),
+                            status="running",
                         )
 
-                        # Check to see if stopping token is in the output to stop the loop
-                        if self.stopping_token:
-                            if self._check_stopping_condition(
+                        if self.evaluator:
+                            evaluated_response = self.evaluator(
                                 response
-                            ) or parse_done_token(response):
+                            )
+
+                            out = (
+                                f"Response: {response}\nEvaluated"
+                                f" Response: {evaluated_response}"
+                            )
+                            out = self.short_memory.add(
+                                "Evaluator", out
+                            )
+
+                        # Stopping logic for agents
+                        if self.stopping_token:
+                            # Check if the stopping token is in the response
+                            if self.stopping_token in response:
                                 break
 
+                        if self.stopping_condition:
+                            if self._check_stopping_condition(
+                                response
+                            ):
+                                break
+
+                        if self.parse_done_token:
+                            if parse_done_token(response):
+                                break
+
+                        if self.stopping_func is not None:
+                            if self.stopping_func(response) is True:
+                                break
+
+                        # If the stopping condition is met then break
                         self.step_cache.append(step)
                         logging.info(f"Step: {step}")
 
@@ -679,20 +756,6 @@ class Agent:
         """
         self.run(task, img, *args, **kwargs)
 
-    def _run(self, **kwargs: Any) -> str:
-        """Run the agent on a task
-
-        Returns:
-            str: _description_
-        """
-        try:
-            task = self.format_prompt(**kwargs)
-            response, history = self._generate(task, task)
-            logging.info(f"Message history: {history}")
-            return response
-        except Exception as error:
-            print(colored(f"Error running agent: {error}", "red"))
-
     def agent_history_prompt(
         self,
         history: str = None,
@@ -710,13 +773,12 @@ class Agent:
         if self.sop:
             system_prompt = self.system_prompt
             agent_history_prompt = f"""
-                SYSTEM_PROMPT: {system_prompt}
+                role: system
+                {system_prompt}
 
                 Follow this standard operating procedure (SOP) to complete tasks:
                 {self.sop}
                 
-                -----------------
-                ################ CHAT HISTORY ####################
                 {history}
             """
             return agent_history_prompt
@@ -758,6 +820,7 @@ class Agent:
         Returns:
             _type_: _description_
         """
+        logger.info(f"Adding memory: {message}")
         return self.short_memory.add(
             role=self.agent_name, content=message
         )
@@ -770,10 +833,12 @@ class Agent:
             tasks (List[str]): A list of tasks to run.
         """
         try:
+            logger.info(f"Running concurrent tasks: {tasks}")
             task_coroutines = [
                 self.run_async(task, **kwargs) for task in tasks
             ]
             completed_tasks = await asyncio.gather(*task_coroutines)
+            logger.info(f"Completed tasks: {completed_tasks}")
             return completed_tasks
         except Exception as error:
             print(
@@ -789,6 +854,7 @@ class Agent:
     def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
         try:
             """Generate responses for multiple input sets."""
+            logger.info(f"Running bulk tasks: {inputs}")
             return [self.run(**input_data) for input_data in inputs]
         except Exception as error:
             print(colored(f"Error running bulk run: {error}", "red"))
@@ -881,6 +947,7 @@ class Agent:
 
         """
         try:
+            logger.info(f"Running a single step: {task}")
             # Generate the response using lm
             response = self.llm(task, **kwargs)
 
@@ -960,6 +1027,7 @@ class Agent:
 
 
         """
+        logger.info(f"Adding response filter: {filter_word}")
         self.reponse_filters.append(filter_word)
 
     def apply_reponse_filters(self, response: str) -> str:
@@ -967,6 +1035,9 @@ class Agent:
         Apply the response filters to the response
 
         """
+        logger.info(
+            f"Applying response filters to response: {response}"
+        )
         for word in self.response_filters:
             response = response.replace(word, "[FILTERED]")
         return response
@@ -978,11 +1049,13 @@ class Agent:
         response = agent.filtered_run("Generate a report on finance")
         print(response)
         """
+        logger.info(f"Running filtered task: {task}")
         raw_response = self.run(task)
         return self.apply_response_filters(raw_response)
 
     def interactive_run(self, max_loops: int = 5) -> None:
         """Interactive run mode"""
+        logger.info("Running in interactive mode")
         response = input("Start the cnversation")
 
         for i in range(max_loops):
@@ -992,27 +1065,21 @@ class Agent:
             # Get user input
             response = input("You: ")
 
-    def streamed_generation(self, prompt: str) -> str:
+    def save_to_yaml(self, file_path: str) -> None:
         """
-        Stream the generation of the response
+        Save the agent to a YAML file
 
         Args:
-            prompt (str): The prompt to use
-
-        Example:
-        # Feature 4: Streamed generation
-        response = agent.streamed_generation("Generate a report on finance")
-        print(response)
-
+            file_path (str): The path to the YAML file
         """
-        tokens = list(prompt)
-        response = ""
-        for token in tokens:
-            time.sleep(0.1)
-            response += token
-            print(token, end="", flush=True)
-        print()
-        return response
+        try:
+            logger.info(f"Saving agent to YAML file: {file_path}")
+            with open(file_path, "w") as f:
+                yaml.dump(self.__dict__, f)
+        except Exception as error:
+            print(
+                colored(f"Error saving agent to YAML: {error}", "red")
+            )
 
     def save_state(self, file_path: str) -> None:
         """
@@ -1025,6 +1092,7 @@ class Agent:
         >>> agent.save_state('saved_flow.json')
         """
         try:
+            logger.info(f"Saving agent state to: {file_path}")
             state = {
                 "agent_id": str(self.id),
                 "agent_name": self.agent_name,
@@ -1104,54 +1172,55 @@ class Agent:
         >>> agent.run("Continue with the task")
 
         """
-        with open(file_path) as f:
-            state = json.load(f)
+        try:
+            with open(file_path) as f:
+                state = json.load(f)
 
-        # Restore other saved attributes
-        self.id = state.get("agent_id", self.id)
-        self.agent_name = state.get("agent_name", self.agent_name)
-        self.agent_description = state.get(
-            "agent_description", self.agent_description
-        )
-        self.system_prompt = state.get(
-            "system_prompt", self.system_prompt
-        )
-        self.sop = state.get("sop", self.sop)
-        self.short_memory = state.get("short_memory", [])
-        self.max_loops = state.get("max_loops", 5)
-        self.loop_interval = state.get("loop_interval", 1)
-        self.retry_attempts = state.get("retry_attempts", 3)
-        self.retry_interval = state.get("retry_interval", 1)
-        self.interactive = state.get("interactive", False)
+            # Restore other saved attributes
+            self.id = state.get("agent_id", self.id)
+            self.agent_name = state.get("agent_name", self.agent_name)
+            self.agent_description = state.get(
+                "agent_description", self.agent_description
+            )
+            self.system_prompt = state.get(
+                "system_prompt", self.system_prompt
+            )
+            self.sop = state.get("sop", self.sop)
+            self.short_memory = state.get("short_memory", [])
+            self.max_loops = state.get("max_loops", 5)
+            self.loop_interval = state.get("loop_interval", 1)
+            self.retry_attempts = state.get("retry_attempts", 3)
+            self.retry_interval = state.get("retry_interval", 1)
+            self.interactive = state.get("interactive", False)
 
-        print(f"Agent state loaded from {file_path}")
+            print(f"Agent state loaded from {file_path}")
+        except Exception as error:
+            print(
+                colored(f"Error loading agent state: {error}", "red")
+            )
 
     def retry_on_failure(
-        self, function, retries: int = 3, retry_delay: int = 1
+        self,
+        function: callable,
+        retries: int = 3,
+        retry_delay: int = 1,
     ):
         """Retry wrapper for LLM calls."""
-        attempt = 0
-        while attempt < retries:
-            try:
-                return function()
-            except Exception as error:
-                logging.error(f"Error generating response: {error}")
-                attempt += 1
-                time.sleep(retry_delay)
-        raise Exception("All retry attempts failed")
-
-    def generate_reply(self, history: str, **kwargs) -> str:
-        """
-        Generate a response based on initial or task
-        """
-        prompt = f"""
-
-        SYSTEM_PROMPT: {self.system_prompt}
-
-        History: {history}
-        """
-        response = self.llm(prompt, **kwargs)
-        return {"role": self.agent_name, "content": response}
+        try:
+            logger.info(f"Retrying function: {function}")
+            attempt = 0
+            while attempt < retries:
+                try:
+                    return function()
+                except Exception as error:
+                    logging.error(
+                        f"Error generating response: {error}"
+                    )
+                    attempt += 1
+                    time.sleep(retry_delay)
+            raise Exception("All retry attempts failed")
+        except Exception as error:
+            print(colored(f"Error retrying function: {error}", "red"))
 
     def update_system_prompt(self, system_prompt: str):
         """Upddate the system message"""
@@ -1181,9 +1250,13 @@ class Agent:
         """
         text -> parse_code by looking for code inside 6 backticks `````-> run_code
         """
-        parsed_code = extract_code_from_markdown(code)
-        run_code = self.code_executor.run(parsed_code)
-        return run_code
+        try:
+            logger.info(f"Running code: {code}")
+            parsed_code = extract_code_from_markdown(code)
+            run_code = self.code_executor.run(parsed_code)
+            return run_code
+        except Exception as error:
+            logger.debug(f"Error running code: {error}")
 
     def pdf_connector(self, pdf: str = None):
         """Transforms the pdf into text
@@ -1194,9 +1267,13 @@ class Agent:
         Returns:
             _type_: _description_
         """
-        pdf = pdf or self.pdf_path
-        text = pdf_to_text(pdf)
-        return text
+        try:
+            pdf = pdf or self.pdf_path
+            text = pdf_to_text(pdf)
+            return text
+        except Exception as error:
+            print(f"Error connecting to the pdf: {error}")
+            raise error
 
     def pdf_chunker(self, text: str = None, num_limits: int = 1000):
         """Chunk the pdf into sentences
@@ -1220,12 +1297,15 @@ class Agent:
         Returns:
             _type_: _description_
         """
-        for doc in docs:
-            data = data_to_text(doc)
+        try:
+            for doc in docs:
+                data = data_to_text(doc)
 
-        return self.short_memory.add(
-            role=self.user_name, content=data
-        )
+            return self.short_memory.add(
+                role=self.user_name, content=data
+            )
+        except Exception as error:
+            print(colored(f"Error ingesting docs: {error}", "red"))
 
     def ingest_pdf(self, pdf: str):
         """Ingest the pdf into the memory
@@ -1236,22 +1316,37 @@ class Agent:
         Returns:
             _type_: _description_
         """
-        text = pdf_to_text(pdf)
-        return self.short_memory.add(
-            role=self.user_name, content=text
-        )
+        try:
+            logger.info(f"Ingesting pdf: {pdf}")
+            text = pdf_to_text(pdf)
+            return self.short_memory.add(
+                role=self.user_name, content=text
+            )
+        except Exception as error:
+            print(colored(f"Error ingesting pdf: {error}", "red"))
 
     def receieve_mesage(self, name: str, message: str):
         """Receieve a message"""
-        message = f"{name}: {message}"
-        return self.short_memory.add(role=name, content=message)
+        try:
+            message = f"{name}: {message}"
+            return self.short_memory.add(role=name, content=message)
+        except Exception as error:
+            print(colored(f"Error receiving message: {error}", "red"))
 
     def send_agent_message(
         self, agent_name: str, message: str, *args, **kwargs
     ):
         """Send a message to the agent"""
-        message = f"{agent_name}: {message}"
-        return self.run(message, *args, **kwargs)
+        try:
+            logger.info(f"Sending agent message: {message}")
+            message = f"{agent_name}: {message}"
+            return self.run(message, *args, **kwargs)
+        except Exception as error:
+            print(
+                colored(
+                    f"Error sending agent message: {error}", "red"
+                )
+            )
 
     def truncate_history(self):
         """
@@ -1278,13 +1373,22 @@ class Agent:
 
     def get_docs_from_doc_folders(self):
         """Get the docs from the files"""
-        # Get the list of files then extract them and add them to the memory
-        files = os.listdir(self.docs_folder)
+        try:
+            logger.info("Getting docs from doc folders")
+            # Get the list of files then extract them and add them to the memory
+            files = os.listdir(self.docs_folder)
 
-        # Extract the text from the files
-        for file in files:
-            text = data_to_text(file)
+            # Extract the text from the files
+            for file in files:
+                text = data_to_text(file)
 
-        return self.short_memory.add(
-            role=self.user_name, content=text
-        )
+            return self.short_memory.add(
+                role=self.user_name, content=text
+            )
+        except Exception as error:
+            print(
+                colored(
+                    f"Error getting docs from doc folders: {error}",
+                    "red",
+                )
+            )

@@ -108,7 +108,7 @@ class Code:
         self.value = value
 
     def __str__(self):
-        return "%d" % self.value
+        return f"{int(self.value)}"
 
 
 class Color(Code):
