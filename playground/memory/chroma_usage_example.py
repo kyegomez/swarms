@@ -14,4 +14,3 @@ chroma.add(text)
 
 # Search for similar text
 similar_text = chroma.query(text)
-

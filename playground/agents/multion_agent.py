@@ -19,9 +19,7 @@ agent = Agent(
 # Task
 task = Task(
     agent=agent,
-    description=(
-        "Download https://www.coachcamel.com/"
-    ),
+    description="Download https://www.coachcamel.com/",
 )
 
 # Swarm

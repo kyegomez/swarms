@@ -12,6 +12,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 llm = OpenAIChat(api_key=api_key)
 
+
 @tool
 def search_api(query: str) -> str:
     """Search API

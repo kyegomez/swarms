@@ -37,8 +37,6 @@ class MultiOnAgent(AbstractLLM):
         self.max_steps = max_steps
         self.starting_url = starting_url
 
-
-
     def run(self, task: str, *args, **kwargs):
         """
         Runs a browsing task.
@@ -57,7 +55,7 @@ class MultiOnAgent(AbstractLLM):
             *args,
             **kwargs,
         )
-        
+
         response = multion.browse(
             {
                 "cmd": task,
