@@ -1,12 +1,12 @@
 import os
-from typing import Any, List
+from typing import List
 
 import faiss
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
-
+from swarms.tools.tool import BaseTool
 from swarms.utils.decorators import error_decorator, timing_decorator
 
 
@@ -48,7 +48,7 @@ class Worker:
         temperature: float = 0.5,
         llm=None,
         openai_api_key: str = None,
-        tools: List[Any] = None,
+        tools: List[BaseTool] = None,
         embedding_size: int = 1536,
         search_kwargs: dict = {"k": 8},
         verbose: bool = False,
@@ -165,7 +165,7 @@ class Worker:
     # @log_decorator
     @error_decorator
     @timing_decorator
-    def run(self, task: str = None, img=None, *args, **kwargs):
+    def run(self, task: str = None, *args, **kwargs):
         """
         Run the autonomous agent on a given task.
 
@@ -195,7 +195,7 @@ class Worker:
         - `results`: The results of the agent's processing.
         """
         try:
-            results = self.run(task, *args, **kwargs)
-            return results
+            result = self.agent.run([task], *args, **kwargs)
+            return result
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")

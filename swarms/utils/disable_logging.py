@@ -1,13 +1,9 @@
 import logging
 import os
-import sys
 import warnings
 
 
 def disable_logging():
-    log_file = open("errors.txt", "w")
-    sys.stderr = log_file
-
     warnings.filterwarnings("ignore", category=UserWarning)
 
     # disable tensorflow warnings
@@ -29,6 +25,11 @@ def disable_logging():
         "numexpr",
         "git",
         "wandb.docker.auth",
+        "langchain",
+        "distutils",
+        "urllib3",
+        "elasticsearch",
+        "packaging",
     ]:
         logger = logging.getLogger(logger_name)
         logger.setLevel(logging.ERROR)

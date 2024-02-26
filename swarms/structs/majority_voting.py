@@ -7,7 +7,21 @@ from typing import Any, List
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.utils.logger import logger
+from loguru import logger
+import sys
+
+
+# Configure loguru logger with advanced settings
+logger.remove()
+logger.add(
+    sys.stderr,
+    colorize=True,
+    format="<green>{time}</green> <level>{message}</level>",
+    backtrace=True,
+    diagnose=True,
+    enqueue=True,
+    catch=True,
+)
 
 
 def extract_last_python_code_block(text):
@@ -157,11 +171,18 @@ class MajorityVoting:
             time_enabled=True, *args, **kwargs
         )
 
-        # # Configure logging
-        # self.logging.basicConfig(
-        #     level=logging.INFO,
-        #     format="%(asctime)s - %(levelname)s - %(message)s",
-        # )
+        # If autosave is enabled, save the conversation to a file
+        if self.autosave:
+            self.conversation.save()
+
+        # Log the agents
+        logger.info("Initializing majority voting system")
+        # Length of agents
+        logger.info(f"Number of agents: {len(self.agents)}")
+        logger.info(
+            "Agents:"
+            f" {', '.join(agent.agent_name for agent in self.agents)}"
+        )
 
     def run(self, task: str, *args, **kwargs) -> List[Any]:
         """
@@ -176,10 +197,11 @@ class MajorityVoting:
             List[Any]: The majority vote.
 
         """
-
         # Route to each agent
         if self.concurrent:
             with concurrent.futures.ThreadPoolExecutor() as executor:
+                # Log the agents
+                logger.info("Running agents concurrently")
                 futures = [
                     executor.submit(agent.run, task, *args)
                     for agent in self.agents
@@ -191,6 +213,7 @@ class MajorityVoting:
                     )
                 ]
         elif self.multithreaded:
+            logger.info("Running agents using multithreading")
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 results = [
                     executor.submit(agent.run, task, *args)
@@ -198,6 +221,7 @@ class MajorityVoting:
                 ]
                 results = [future.result() for future in results]
         elif self.multiprocess:
+            logger.info("Running agents using multiprocessing")
             with Pool() as pool:
                 results = pool.starmap(
                     Agent.run,
@@ -218,6 +242,8 @@ class MajorityVoting:
 
         # Add responses to conversation and log them
         for agent, response in zip(self.agents, results):
+            logger.info(f"[{agent.agent_id}][{response}]")
+
             response = (
                 response if isinstance(response, list) else [response]
             )
@@ -226,6 +252,9 @@ class MajorityVoting:
 
         # Perform majority voting on the conversation
         majority_vote = majority_voting(self.conversation.responses)
+
+        # Log the majority vote
+        logger.info(f"Majority vote: {majority_vote}")
 
         # If an output parser is provided, parse the output
         if self.output_parser:

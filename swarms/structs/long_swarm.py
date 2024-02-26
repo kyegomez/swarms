@@ -13,7 +13,7 @@ class LongContextSwarmLeader:
         - agents (List[Agent]): The agents in the swarm.
         - prompt_template_json (str): The SOP template in JSON format.
         - return_parsed (bool): Whether to return the parsed output.
-    
+
     """
 
     def __init__(
@@ -30,17 +30,16 @@ class LongContextSwarmLeader:
         self.agents = agents
         self.prompt_template_json = prompt_template_json
         self.return_parsed = return_parsed
-        
+
         # Create an instance of the Agent class
         self.agent = Agent(
             llm=llm,
             system_prompt=None,
-            sop=self.prompt_template_json, 
-            *args, 
-            **kwargs
+            sop=self.prompt_template_json,
+            *args,
+            **kwargs,
         )
 
-        
     def prep_schema(self, task: str, *args, **kwargs):
         """
         Returns a formatted string containing the metadata of all agents in the swarm.
@@ -71,16 +70,15 @@ class LongContextSwarmLeader:
         
         """
         for agent in self.agents:
-            prompt += f"Member Name: {agent.ai_name}\nMember ID: {agent.id}\nMember Description: {agent.description}\n\n"
-        
+            prompt += (
+                f"Member Name: {agent.ai_name}\nMember ID:"
+                f" {agent.id}\nMember Description:"
+                f" {agent.description}\n\n"
+            )
+
         return prompt
-    
-    
-    def prep_schema_second(
-        self,
-        task_description: str,
-        task: str
-    ):
+
+    def prep_schema_second(self, task_description: str, task: str):
         prompt = f"""
         You are the leader of a team of {len(self.agents)}
         members. Your team will need to collaborate to
@@ -115,7 +113,6 @@ class LongContextSwarmLeader:
         
         """
         return prompt
-    
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -131,11 +128,12 @@ class LongContextSwarmLeader:
         """
         task = self.prep_schema(task)
         out = self.agent.run(task, *args, **kwargs)
-        
+
         if self.return_parsed:
             out = extract_code_from_markdown(out)
-            
+
         return out
+
 
 # class LongContextSwarm(BaseSwarm):
 #     def __init__(

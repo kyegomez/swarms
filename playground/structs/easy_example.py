@@ -1,7 +1,14 @@
-from swarms import swarm
+from swarms import Agent, OpenAIChat
 
-# Use the function
-api_key = "APIKEY"
-objective = "What is the capital of the UK?"
-result = swarm(api_key, objective)
-print(result)  # Prints: "The capital of the UK is London."
+## Initialize the workflow
+agent = Agent(
+    llm=OpenAIChat(),
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+)
+
+# Run the workflow on a task
+agent("Find a chick fil a equivalent in hayes valley")
