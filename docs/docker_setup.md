@@ -30,6 +30,7 @@ This guide is intended for developers and contributors to the `swarms` project w
 ## Prerequisites
 
 Before you begin, ensure you have:
+
 - A GitHub account
 - Git installed on your machine
 - Basic command-line proficiency
@@ -115,14 +116,13 @@ docker run -it --rm swarms-dev
 - Introduce Docker Compose and its role in simplifying multi-container setups.
 - Create a `docker-compose.yml` file for the `swarms` project.
 
-
 ## Dockerfile
 
 Creating a Dockerfile for deploying the `swarms` framework to the cloud involves setting up the necessary environment to run your Python application, ensuring all dependencies are installed, and configuring the container to execute the desired tasks. Here's an example Dockerfile that sets up such an environment:
 
 ```Dockerfile
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1

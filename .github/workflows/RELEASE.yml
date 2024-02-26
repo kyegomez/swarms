@@ -7,7 +7,7 @@ on:
     branches:
       - master
     paths:
-      - 'pyproject.toml'
+      - "pyproject.toml"
 env:
   POETRY_VERSION: "1.4.2"
 jobs:
@@ -20,10 +20,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install poetry
         run: pipx install poetry==$POETRY_VERSION
-      - name: Set up Python 3.9
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: "3.10"
           cache: "poetry"
       - name: Build project for distribution
         run: poetry build
