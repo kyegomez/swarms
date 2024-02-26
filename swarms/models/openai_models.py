@@ -177,11 +177,11 @@ def _create_retry_decorator(
     import openai
 
     errors = [
-        openai.error.Timeout,
-        openai.error.APIError,
-        openai.error.APIConnectionError,
-        openai.error.RateLimitError,
-        openai.error.ServiceUnavailableError,
+        openai.Timeout,
+        openai.APIError,
+        openai.APIConnectionError,
+        openai.RateLimitError,
+        openai.ServiceUnavailableError,
     ]
     return create_base_retry_decorator(
         error_types=errors,
@@ -239,9 +239,9 @@ class BaseOpenAI(BaseLLM):
             attributes["openai_api_base"] = self.openai_api_base
 
         if self.openai_organization != "":
-            attributes["openai_organization"] = (
-                self.openai_organization
-            )
+            attributes[
+                "openai_organization"
+            ] = self.openai_organization
 
         if self.openai_proxy != "":
             attributes["openai_proxy"] = self.openai_proxy
@@ -352,7 +352,13 @@ class BaseOpenAI(BaseLLM):
         try:
             import openai
 
-            values["client"] = openai.Completion
+            values["client"] = openai.OpenAI(
+                api_key=values["openai_api_key"],
+                api_base=values["openai_api_base"] or None,
+                organization=values["openai_organization"] or None,
+                # TODO: Reenable this when openai package supports proxy
+                # proxy=values["openai_proxy"] or None,
+            )
         except ImportError:
             raise ImportError(
                 "Could not import openai python package. "
@@ -647,7 +653,8 @@ class BaseOpenAI(BaseLLM):
         if self.openai_proxy:
             import openai
 
-            openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
+            # TODO: The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy={"http": self.openai_proxy, "https": self.openai_proxy})'
+            # openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
         return {**openai_creds, **self._default_params}
 
     @property
@@ -956,21 +963,13 @@ class OpenAIChat(BaseLLM):
         )
         try:
             import openai
-
-            openai.api_key = openai_api_key
-            if openai_api_base:
-                openai.api_base = openai_api_base
-            if openai_organization:
-                openai.organization = openai_organization
-            if openai_proxy:
-                openai.proxy = {"http": openai_proxy, "https": openai_proxy}  # type: ignore[assignment]  # noqa: E501
         except ImportError:
             raise ImportError(
                 "Could not import openai python package. "
                 "Please install it with `pip install openai`."
             )
         try:
-            values["client"] = openai.ChatCompletion
+            values["client"] = openai.OpenAI
         except AttributeError:
             raise ValueError(
                 "`openai` has no `ChatCompletion` attribute, this is"
