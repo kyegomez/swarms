@@ -1,15 +1,20 @@
----
-name: "Init Environment"
-description: "Initialize environment for tests"
+name: "Setup"
+description: Setup the environment for the project
+inputs:
+  python-version:
+    description: "Python version to use"
+    required: false
+    default: "3.10"
+
 runs:
   using: "composite"
   steps:
     - name: Checkout actions
-      uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/checkout@v4
+    - name: Set up Python ${{ inputs.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ inputs.python-version }}
     - name: Install and configure Poetry
       uses: snok/install-poetry@v1
       with:
@@ -30,4 +35,9 @@ runs:
       run: |
         source .venv/bin/activate
         echo PATH=$PATH >> $GITHUB_ENV
+      shell: bash
+    - name: "Install apt dependencies"
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-opencv
       shell: bash

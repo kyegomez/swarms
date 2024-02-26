@@ -14,15 +14,8 @@ jobs:
           - "3.10"
           - "3.11"
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        id: setup-python
-        uses: actions/setup-python@v4
+      - uses: ./.github/library/setup
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Set up Poetry
-        uses: "snok/install-poetry@v1"
-      - name: Install dependencies
-        run: poetry install --no-root --no-interaction
       - name: Run tests
         run: pytest
