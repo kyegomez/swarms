@@ -10,6 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/library/setup
       - run: pip install mkdocs-material
       - run: pip install mkdocs-glightbox

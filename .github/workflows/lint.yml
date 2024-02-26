@@ -5,6 +5,7 @@ jobs:
   yaml-lint:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/library/setup
       - name: yaml Lint
         uses: ibiqlik/action-yamllint@v3
@@ -12,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     name: flake8 Lint
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/library/setup
       - name: Set up Python environment
         uses: py-actions/flake8@v2
@@ -19,5 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     name: ruff Lint
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/library/setup
       - uses: chartboost/ruff-action@v1

@@ -8,6 +8,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/library/setup
       - name: Install dependencies
         run: |
