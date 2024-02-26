@@ -1,68 +1,68 @@
 ---
 documentation:
-- changed-files:
-  - any-glob-to-any-file: ['docs/**', "*.md"]
+  - changed-files:
+      - any-glob-to-any-file: ["docs/**", "*.md"]
 
 tests:
-- changed-files:
-  - any-glob-to-any-file: 'tests/**'
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
 
 agents:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/agents/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/agents/**"
 
 artifacts:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/artifacts/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/artifacts/**"
 
 chunkers:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/chunkers/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/chunkers/**"
 
 cli:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/cli/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/cli/**"
 
 loaders:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/loaders/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/loaders/**"
 
 memory:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/memory/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/memory/**"
 
 models:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/models/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/models/**"
 
 prompts:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/prompts/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/prompts/**"
 
 structs:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/structs/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/structs/**"
 
 telemetry:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/telemetry/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/telemetry/**"
 
 tokenizers:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/tokenizers/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/tokenizers/**"
 
 tools:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/tools/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/tools/**"
 
 utils:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/utils/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/utils/**"
 
 workers:
-- changed-files:
-  - any-glob-to-any-file: 'swarms/workers/**'
+  - changed-files:
+      - any-glob-to-any-file: "swarms/workers/**"
 
 rust:
-- changed-files:
-  - any-glob-to-any-file: '**/*.rs'
+  - changed-files:
+      - any-glob-to-any-file: "**/*.rs"
