@@ -37,7 +37,8 @@ class ElevenLabsText2SpeechTool(BaseTool):
             Defaults to ElevenLabsModel.MULTI_LINGUAL.
         name (str): The name of the tool. Defaults to "eleven_labs_text2speech".
         description (str): The description of the tool.
-            Defaults to "A wrapper around Eleven Labs Text2Speech. Useful for when you need to convert text to speech. It supports multiple languages, including English, German, Polish, Spanish, Italian, French, Portuguese, and Hindi."
+        Defaults to "A wrapper around Eleven Labs Text2Speech. Useful for when you need to convert text to speech.
+        It supports multiple languages, including English, German, Polish, Spanish, Italian, French, Portuguese, and Hindi."
 
 
     Usage:

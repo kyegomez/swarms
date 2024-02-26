@@ -37,9 +37,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-
-logger = logging.getLogger(__name__)
-
 from importlib.metadata import version
 
 from packaging.version import parse
@@ -239,9 +236,9 @@ class BaseOpenAI(BaseLLM):
             attributes["openai_api_base"] = self.openai_api_base
 
         if self.openai_organization != "":
-            attributes[
-                "openai_organization"
-            ] = self.openai_organization
+            attributes["openai_organization"] = (
+                self.openai_organization
+            )
 
         if self.openai_proxy != "":
             attributes["openai_proxy"] = self.openai_proxy
@@ -651,9 +648,10 @@ class BaseOpenAI(BaseLLM):
             "organization": self.openai_organization,
         }
         if self.openai_proxy:
-            import openai
+            pass
 
-            # TODO: The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy={"http": self.openai_proxy, "https": self.openai_proxy})'
+            # TODO: The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the
+            # client, e.g. 'OpenAI(proxy={"http": self.openai_proxy, "https": self.openai_proxy})'
             # openai.proxy = {"http": self.openai_proxy, "https": self.openai_proxy}  # type: ignore[assignment]  # noqa: E501
         return {**openai_creds, **self._default_params}
 
@@ -940,27 +938,27 @@ class OpenAIChat(BaseLLM):
     @root_validator()
     def validate_environment(cls, values: dict) -> dict:
         """Validate that api key and python package exists in environment."""
-        openai_api_key = get_from_dict_or_env(
-            values, "openai_api_key", "OPENAI_API_KEY"
-        )
-        openai_api_base = get_from_dict_or_env(
-            values,
-            "openai_api_base",
-            "OPENAI_API_BASE",
-            default="",
-        )
-        openai_proxy = get_from_dict_or_env(
-            values,
-            "openai_proxy",
-            "OPENAI_PROXY",
-            default="",
-        )
-        openai_organization = get_from_dict_or_env(
-            values,
-            "openai_organization",
-            "OPENAI_ORGANIZATION",
-            default="",
-        )
+        # openai_api_key = get_from_dict_or_env(
+        #     values, "openai_api_key", "OPENAI_API_KEY"
+        # )
+        # openai_api_base = get_from_dict_or_env(
+        #     values,
+        #     "openai_api_base",
+        #     "OPENAI_API_BASE",
+        #     default="",
+        # )
+        # openai_proxy = get_from_dict_or_env(
+        #     values,
+        #     "openai_proxy",
+        #     "OPENAI_PROXY",
+        #     default="",
+        # )
+        # openai_organization = get_from_dict_or_env(
+        #     values,
+        #     "openai_organization",
+        #     "OPENAI_ORGANIZATION",
+        #     default="",
+        # )
         try:
             import openai
         except ImportError:

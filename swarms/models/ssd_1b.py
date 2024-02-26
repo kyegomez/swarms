@@ -171,7 +171,7 @@ class SSD1B:
         """Print the SSD1B dashboard"""
         print(
             colored(
-                f"""SSD1B Dashboard: 
+                f"""SSD1B Dashboard:
                     --------------------
 
                     Model: {self.model}
@@ -185,8 +185,8 @@ class SSD1B:
                     Save Folder: {self.save_folder}
                     Image Format: {self.image_format}
                     --------------------
-                    
-                    
+
+
                     """,
                 "green",
             )

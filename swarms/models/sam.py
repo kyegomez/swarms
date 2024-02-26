@@ -27,7 +27,8 @@ class SAM:
         processor (SamProcessor): The processor for the SAM model.
 
     Methods:
-        run(task=None, img=None, *args, **kwargs): Runs the SAM model on the given image and returns the segmentation scores and masks.
+        run(task=None, img=None, *args, **kwargs):
+        Runs the SAM model on the given image and returns the segmentation scores and masks.
         process_img(img: str = None, *args, **kwargs): Processes the input image and returns the processed image.
 
     """

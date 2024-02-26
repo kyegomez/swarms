@@ -153,7 +153,8 @@ class LangchainChromaVectorMemory:
             query (str): The query to search for.
             k (int): The number of results to return.
             type (str): The type of search to perform: "cos" or "mmr".
-            distance_threshold (float): The similarity threshold to use for the search. Results with distance > similarity_threshold will be dropped.
+            distance_threshold (float):
+            The similarity threshold to use for the search. Results with distance > similarity_threshold will be dropped.
 
         Returns:
             list[str]: A list of the top k results.
