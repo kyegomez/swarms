@@ -7,3 +7,7 @@ rules:
   truthy:
     # GitHub Actions
     check-keys: false
+
+ignore:
+  # GH Actions
+  - ./lib
