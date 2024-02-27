@@ -1,4 +1,10 @@
-exclude = ["./playground", "./tests", "./scripts"]
+exclude = [
+    "./playground",
+    "./tests",
+    "./scripts",
+    # GH Actions
+    "./lib",
+]
 line-length = 127
 
 [lint]
