@@ -17,6 +17,8 @@ jobs:
       - uses: ./.github/library/setup
       - name: Set up Python environment
         uses: py-actions/flake8@v2
+        with:
+          args: --verbose
   ruff-lint:
     runs-on: ubuntu-latest
     name: ruff Lint
