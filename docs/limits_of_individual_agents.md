@@ -1,5 +1,7 @@
 # The Limits of Individual Agents
 
+![Reliable Agents](docs/assets/img/reliabilitythrough.png)
+
 - Context Window Limits
 - Single Task Execution
 - Hallucination

@@ -10,6 +10,7 @@ from swarms.structs.task import Task
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import logger
+from swarms.structs.base_workflow import BaseWorkflow
 
 
 # SequentialWorkflow class definition using dataclasses
@@ -61,8 +62,16 @@ class SequentialWorkflow:
         )
 
         # Logging
-        logger.info(f"Number of agents activated: {len(self.agents)}")
-        logger.info(f"Task Pool Size: {self.task_pool}")
+        logger.info("Number of agents activated:")
+        if self.agents:
+            logger.info(f"Agents: {len(self.agents)}")
+        else:
+            logger.info("No agents activated.")
+
+        if self.task_pool:
+            logger.info(f"Task Pool Size: {len(self.task_pool)}")
+        else:
+            logger.info("Task Pool is empty.")
 
     def add(
         self,
@@ -81,7 +90,6 @@ class SequentialWorkflow:
             *args: Additional arguments to pass to the task execution.
             **kwargs: Additional keyword arguments to pass to the task execution.
         """
-        logger.info("A")
         for agent in self.agents:
             out = agent(str(self.description))
             self.conversation.add(agent.agent_name, out)
@@ -169,217 +177,65 @@ class SequentialWorkflow:
                 ),
             )
 
-    def save_workflow_state(
-        self,
-        filepath: Optional[str] = "sequential_workflow_state.json",
-        **kwargs,
-    ) -> None:
-        """
-        Saves the workflow state to a json file.
-
-        Args:
-            filepath (str): The path to save the workflow state to.
-
-        Examples:
-        >>> from swarms.models import OpenAIChat
-        >>> from swarms.structs import SequentialWorkflow
-        >>> llm = OpenAIChat(openai_api_key="")
-        >>> workflow = SequentialWorkflow(max_loops=1)
-        >>> workflow.add("What's the weather in miami", llm)
-        >>> workflow.add("Create a report on these metrics", llm)
-        >>> workflow.save_workflow_state("sequential_workflow_state.json")
-        """
-        try:
-            filepath = filepath or self.saved_state_filepath
-
-            with open(filepath, "w") as f:
-                # Saving the state as a json for simplicuty
-                state = {
-                    "task_pool": [
-                        {
-                            "description": task.description,
-                            "args": task.args,
-                            "kwargs": task.kwargs,
-                            "result": task.result,
-                            "history": task.history,
-                        }
-                        for task in self.task_pool
-                    ],
-                    "max_loops": self.max_loops,
-                }
-                json.dump(state, f, indent=4)
-
-            logger.info(
-                "[INFO][SequentialWorkflow] Saved workflow state to"
-                f" {filepath}"
-            )
-        except Exception as error:
-            logger.error(
-                colored(
-                    f"Error saving workflow state: {error}",
-                    "red",
-                )
-            )
-
-    def workflow_bootup(self, **kwargs) -> None:
-        """
-        Workflow bootup.
-
-        """
-        print(
-            colored(
-                """
-                Sequential Workflow Initializing...""",
-                "green",
-                attrs=["bold", "underline"],
-            )
-        )
-
-    def workflow_dashboard(self, **kwargs) -> None:
-        """
-        Displays a dashboard for the workflow.
-
-        Args:
-            **kwargs: Additional keyword arguments to pass to the dashboard.
-
-        Examples:
-        >>> from swarms.models import OpenAIChat
-        >>> from swarms.structs import SequentialWorkflow
-        >>> llm = OpenAIChat(openai_api_key="")
-        >>> workflow = SequentialWorkflow(max_loops=1)
-        >>> workflow.add("What's the weather in miami", llm)
-        >>> workflow.add("Create a report on these metrics", llm)
-        >>> workflow.workflow_dashboard()
-
-        """
-        print(
-            colored(
-                f"""
-                Sequential Workflow Dashboard
-                --------------------------------
-                Name: {self.name}
-                Description: {self.description}
-                task_pool: {len(self.task_pool)}
-                Max Loops: {self.max_loops}
-                Autosave: {self.autosave}
-                Autosave Filepath: {self.saved_state_filepath}
-                Restore Filepath: {self.restore_state_filepath}
-                --------------------------------
-                Metadata:
-                kwargs: {kwargs}
-                """,
-                "cyan",
-                attrs=["bold", "underline"],
-            )
-        )
-
-    def workflow_shutdown(self, **kwargs) -> None:
-        """Shuts down the workflow."""
-        print(
-            colored(
-                """
-                Sequential Workflow Shutdown...""",
-                "red",
-                attrs=["bold", "underline"],
-            )
-        )
-
-    def load_workflow_state(
-        self, filepath: str = None, **kwargs
-    ) -> None:
-        """
-        Loads the workflow state from a json file and restores the workflow state.
-
-        Args:
-            filepath (str): The path to load the workflow state from.
-
-        Examples:
-        >>> from swarms.models import OpenAIChat
-        >>> from swarms.structs import SequentialWorkflow
-        >>> llm = OpenAIChat(openai_api_key="")
-        >>> workflow = SequentialWorkflow(max_loops=1)
-        >>> workflow.add("What's the weather in miami", llm)
-        >>> workflow.add("Create a report on these metrics", llm)
-        >>> workflow.save_workflow_state("sequential_workflow_state.json")
-        >>> workflow.load_workflow_state("sequential_workflow_state.json")
-
-        """
-        try:
-            filepath = filepath or self.restore_state_filepath
-
-            with open(filepath) as f:
-                state = json.load(f)
-                self.max_loops = state["max_loops"]
-                self.task_pool = []
-                for task_state in state["task_pool"]:
-                    task = Task(
-                        description=task_state["description"],
-                        agent=task_state["agent"],
-                        args=task_state["args"],
-                        kwargs=task_state["kwargs"],
-                        result=task_state["result"],
-                        history=task_state["history"],
-                    )
-                    self.task_pool.append(task)
-
-            print(
-                "[INFO][SequentialWorkflow] Loaded workflow state"
-                f" from {filepath}"
-            )
-        except Exception as error:
-            logger.error(
-                colored(
-                    f"Error loading workflow state: {error}",
-                    "red",
-                )
-            )
-
     def run(self) -> None:
         """
         Run the workflow.
 
         Raises:
-            ValueError: If a Agent instance is used as a task and the 'task' argument is not provided.
+            ValueError: If an Agent instance is used as a task and the 'task' argument is not provided.
 
         """
-        try:
-            self.workflow_bootup()
-            loops = 0
-            while loops < self.max_loops:
-                for i in range(len(self.task_pool)):
-                    task = self.task_pool[i]
-                    # Check if the current task can be executed
-                    if task.result is None:
-                        # Get the inputs for the current task
-                        task.context(task)
+        self.workflow_bootup()
+        loops = 0
+        while loops < self.max_loops:
+            for i, agent in enumerate(self.agents):
+                logger.info(f"Agent {i+1} is executing the task.")
+                out = agent(self.description)
+                self.conversation.add(agent.agent_name, str(out))
+                prompt = self.conversation.return_history_as_string()
+                print(prompt)
+                print(f"Next agent...........")
+                out = agent(prompt)
 
-                        result = task.execute()
+            return out
+        # try:
+        #     self.workflow_bootup()
+        #     loops = 0
+        #     while loops < self.max_loops:
+        #         for i in range(len(self.task_pool)):
+        #             task = self.task_pool[i]
+        #             # Check if the current task can be executed
+        #             if task.result is None:
+        #                 # Get the inputs for the current task
+        #                 task.context(task)
 
-                        # Pass the inputs to the next task
-                        if i < len(self.task_pool) - 1:
-                            next_task = self.task_pool[i + 1]
-                            next_task.description = result
+        #                 result = task.execute()
 
-                        # Execute the current task
-                        task.execute()
+        #                 # Pass the inputs to the next task
+        #                 if i < len(self.task_pool) - 1:
+        #                     next_task = self.task_pool[i + 1]
+        #                     next_task.description = result
 
-                        # Autosave the workflow state
-                        if self.autosave:
-                            self.save_workflow_state(
-                                "sequential_workflow_state.json"
-                            )
+        #                 # Execute the current task
+        #                 task.execute()
 
-                self.workflow_shutdown()
-                loops += 1
-        except Exception as e:
-            logger.error(
-                colored(
-                    (
-                        "Error initializing the Sequential workflow:"
-                        f" {e} try optimizing your inputs like the"
-                        " agent class and task description"
-                    ),
-                    "red",
-                    attrs=["bold", "underline"],
-                )
-            )
+        #                 # Autosave the workflow state
+        #                 if self.autosave:
+        #                     self.save_workflow_state(
+        #                         "sequential_workflow_state.json"
+        #                     )
+
+        #         self.workflow_shutdown()
+        #         loops += 1
+        # except Exception as e:
+        #     logger.error(
+        #         colored(
+        #             (
+        #                 "Error initializing the Sequential workflow:"
+        #                 f" {e} try optimizing your inputs like the"
+        #                 " agent class and task description"
+        #             ),
+        #             "red",
+        #             attrs=["bold", "underline"],
+        #         )
+        #     )

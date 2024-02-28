@@ -75,6 +75,7 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
+langchain-core = "0.1.27"
 
 
 

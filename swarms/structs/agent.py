@@ -671,9 +671,9 @@ class Agent:
                             ):
                                 break
 
-                        if self.parse_done_token:
-                            if parse_done_token(response):
-                                break
+                        # if self.parse_done_token:
+                        #     if parse_done_token(response):
+                        #         break
 
                         if self.stopping_func is not None:
                             if self.stopping_func(response) is True:
