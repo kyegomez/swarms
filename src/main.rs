@@ -5,7 +5,7 @@ use std::fs;
 use std::time::Instant;
 
 // Define the new execute function
-fn execute(script_path: &str, threads: usize) -> PyResult<()> {
+fn exec_concurrently(script_path: &str, threads: usize) -> PyResult<()> {
     (0..threads).into_par_iter().for_each(|_| {
         Python::with_gil(|py| {
             let sys = py.import("sys").unwrap();
@@ -47,7 +47,7 @@ fn main() -> PyResult<()> {
     let start = Instant::now();
 
     // Call the execute function
-    execute(script_path, threads)?;
+    exec_concurrently(script_path, threads)?;
 
     let duration = start.elapsed();
     match fs::write("/tmp/elapsed.time", format!("booting time: {:?}", duration)) {
