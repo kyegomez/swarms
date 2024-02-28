@@ -3,7 +3,6 @@ transformers
 pandas==1.5.3
 langchain==0.0.333
 langchain-experimental==0.0.10
-langchain-core==0.1.27
 httpx==0.24.1
 Pillow==9.4.0
 faiss-cpu==1.7.4

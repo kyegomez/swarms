@@ -75,8 +75,6 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
-langchain-core = "0.1.27"
-
 
 
 [tool.poetry.group.lint.dependencies]
