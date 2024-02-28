@@ -1,12 +1,15 @@
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from termcolor import colored
 
 from swarms.structs.task import Task
-from swarms.utils.logger import logger
+
+# from swarms.utils.logger import logger
 from swarms.structs.agent import Agent
+from swarms.structs.conversation import Conversation
+from swarms.utils.loguru_logger import logger
 
 
 # SequentialWorkflow class definition using dataclasses
@@ -40,7 +43,7 @@ class SequentialWorkflow:
 
     name: str = None
     description: str = None
-    task_pool: List[Task] = field(default_factory=list)
+    task_pool: List[Task] = None
     max_loops: int = 1
     autosave: bool = False
     saved_state_filepath: Optional[str] = (
@@ -49,6 +52,17 @@ class SequentialWorkflow:
     restore_state_filepath: Optional[str] = None
     dashboard: bool = False
     agents: List[Agent] = None
+
+    def __post_init__(self):
+        self.conversation = Conversation(
+            system_prompt=f"Objective: {self.description}",
+            time_enabled=True,
+            autosave=True,
+        )
+
+        # Logging
+        logger.info(f"Number of agents activated: {len(self.agents)}")
+        logger.info(f"Task Pool Size: {self.task_pool}")
 
     def add(
         self,
@@ -67,35 +81,44 @@ class SequentialWorkflow:
             *args: Additional arguments to pass to the task execution.
             **kwargs: Additional keyword arguments to pass to the task execution.
         """
-        try:
-            # If the agent is a Task instance, we include the task in kwargs for Agent.run()
-            # Append the task to the task_pool list
-            if task:
-                self.task_pool.append(task)
-                logger.info(
-                    f"[INFO][SequentialWorkflow] Added task {task} to"
-                    " workflow"
-                )
-            elif tasks:
-                for task in tasks:
-                    self.task_pool.append(task)
-                    logger.info(
-                        "[INFO][SequentialWorkflow] Added task"
-                        f" {task} to workflow"
-                    )
-            else:
-                if task and tasks is not None:
-                    # Add the task and list of tasks to the task_pool at the same time
-                    self.task_pool.append(task)
-                    for task in tasks:
-                        self.task_pool.append(task)
+        logger.info("A")
+        for agent in self.agents:
+            out = agent(str(self.description))
+            self.conversation.add(agent.agent_name, out)
+            prompt = self.conversation.return_history_as_string()
+            out = agent(prompt)
 
-        except Exception as error:
-            logger.error(
-                colored(
-                    f"Error adding task to workflow: {error}", "red"
-                ),
-            )
+        return out
+
+        # try:
+        #     # If the agent is a Task instance, we include the task in kwargs for Agent.run()
+        #     # Append the task to the task_pool list
+        #     if task:
+        #         self.task_pool.append(task)
+        #         logger.info(
+        #             f"[INFO][SequentialWorkflow] Added task {task} to"
+        #             " workflow"
+        #         )
+        #     elif tasks:
+        #         for task in tasks:
+        #             self.task_pool.append(task)
+        #             logger.info(
+        #                 "[INFO][SequentialWorkflow] Added task"
+        #                 f" {task} to workflow"
+        #             )
+        #     else:
+        #         if task and tasks is not None:
+        #             # Add the task and list of tasks to the task_pool at the same time
+        #             self.task_pool.append(task)
+        #             for task in tasks:
+        #                 self.task_pool.append(task)
+
+        # except Exception as error:
+        #     logger.error(
+        #         colored(
+        #             f"Error adding task to workflow: {error}", "red"
+        #         ),
+        #     )
 
     def reset_workflow(self) -> None:
         """Resets the workflow by clearing the results of each task."""
