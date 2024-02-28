@@ -10,5 +10,5 @@ rules:
 
 ignore:
   # GH Actions
-  - ./lib
-  - ./.venv
+  - lib
+  - .venv
