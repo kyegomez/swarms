@@ -1,14 +1,7 @@
 ---
 # Notebook-related checks
 name: Presubmit checks
-on:
-  # Relevant PRs
-  pull_request:
-    paths:
-      - "swarms/**"
-      - "tests/**"
-  # Allow manual runs
-  workflow_dispatch:
+on: [push, pull_request]
 jobs:
   pytype3_10:
     name: pytype 3.10
