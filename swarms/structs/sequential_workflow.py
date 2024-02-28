@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -10,7 +9,6 @@ from swarms.structs.task import Task
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import logger
-from swarms.structs.base_workflow import BaseWorkflow
 
 
 # SequentialWorkflow class definition using dataclasses
@@ -194,7 +192,7 @@ class SequentialWorkflow:
                 self.conversation.add(agent.agent_name, str(out))
                 prompt = self.conversation.return_history_as_string()
                 print(prompt)
-                print(f"Next agent...........")
+                print("Next agent...........")
                 out = agent(prompt)
 
             return out

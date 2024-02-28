@@ -23,7 +23,8 @@ agent2 = Agent("Summarizer", llm=llm, max_loops=1, dashboard=False)
 workflow = SequentialWorkflow(
     name="Blog Generation Workflow",
     description=(
-        "Generate a youtube transcript on how to deploy agents into production"
+        "Generate a youtube transcript on how to deploy agents into"
+        " production"
     ),
     max_loops=1,
     autosave=True,

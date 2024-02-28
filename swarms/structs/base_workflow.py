@@ -6,7 +6,8 @@ from termcolor import colored
 from swarms.structs.base import BaseStructure
 from swarms.structs.task import Task
 from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import logger 
+from swarms.utils.loguru_logger import logger
+
 
 class BaseWorkflow(BaseStructure):
     """
@@ -22,7 +23,7 @@ class BaseWorkflow(BaseStructure):
         super().__init__(*args, **kwargs)
         self.task_pool = []
         self.agent_pool = []
-        
+
         # Logging
         logger.info("Number of agents activated:")
         if self.agents:
@@ -60,13 +61,8 @@ class BaseWorkflow(BaseStructure):
             raise ValueError(
                 "You must provide a task or a list of tasks"
             )
-            
-    def add_agent(
-        self,
-        agent: Agent,
-        *args,
-        **kwargs
-    ):
+
+    def add_agent(self, agent: Agent, *args, **kwargs):
         return self.agent_pool(agent)
 
     def run(self):
@@ -337,7 +333,6 @@ class BaseWorkflow(BaseStructure):
                 )
             )
 
-
     def workflow_dashboard(self, **kwargs) -> None:
         """
         Displays a dashboard for the workflow.
@@ -375,7 +370,7 @@ class BaseWorkflow(BaseStructure):
                 attrs=["bold", "underline"],
             )
         )
-        
+
     def workflow_bootup(self, **kwargs) -> None:
         """
         Workflow bootup.
