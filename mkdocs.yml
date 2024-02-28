@@ -60,6 +60,7 @@ nav:
     - Contributing: "contributing.md"
 - Swarms:
   - Overview: "swarms/index.md"
+  - Limitations of Individual Agents (Problem Swarms Solves): "swarms/limits_of_individual_agents.md"git 
   - swarms.agents:
     - Agents:
       - WorkerAgent: "swarms/agents/workeragent.md"
