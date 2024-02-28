@@ -14,7 +14,6 @@ docs = loader.load()
 qdrant_client = qdrant.Qdrant(
     host="https://697ea26c-2881-4e17-8af4-817fcb5862e8.europe-west3-0.gcp.cloud.qdrant.io",
     collection_name="qdrant",
-    api_key="BhG2_yINqNU-aKovSEBadn69Zszhbo5uaqdJ6G_qDkdySjAljvuPqQ",
 )
 qdrant_client.add_vectors(docs)
 
