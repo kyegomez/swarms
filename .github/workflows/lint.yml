@@ -9,6 +9,8 @@ jobs:
       - uses: ./.github/library/setup
       - name: yaml Lint
         uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: ${{ github.workspace }}
   flake8-lint:
     runs-on: ubuntu-latest
     name: flake8 Lint
