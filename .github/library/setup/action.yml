@@ -9,6 +9,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Free up disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
+      shell: bash
     - name: Set up Python ${{ inputs.python-version }}
       uses: actions/setup-python@v4
       with:
@@ -27,7 +32,7 @@ runs:
         key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root --all-extras
+      run: poetry install --no-interaction --no-root
       shell: bash
     - name: Activate venv
       run: |
