@@ -5,6 +5,7 @@ from swarms import Agent, ConcurrentWorkflow, Task
 # model
 model = MultiOnAgent(multion_api_key="api-key")
 
+
 # out = model.run("search for a recipe")
 agent = Agent(
     agent_name="MultiOnAgent",

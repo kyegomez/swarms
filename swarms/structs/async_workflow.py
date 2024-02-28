@@ -4,6 +4,7 @@ from typing import Any, Callable, List, Optional
 
 from swarms.structs.task import Task
 from swarms.utils.logger import logger
+from swarms.structs.agent import Agent
 
 
 @dataclass
@@ -42,6 +43,7 @@ class AsyncWorkflow:
     results: List[Any] = field(default_factory=list)
     loop: Optional[asyncio.AbstractEventLoop] = None
     stopping_condition: Optional[Callable] = None
+    agents: List[Agent] = None
 
     async def add(self, task: Any = None, tasks: List[Any] = None):
         """Add tasks to the workflow"""

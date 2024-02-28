@@ -94,6 +94,7 @@ Swarms is an open source framework for developers in python to enable seamless, 
 [Here is the official Swarms Github Page:](https://github.com/kyegomez/swarms)
 
 ### Product Growth Metrics
+
 | Name                             | Description                                                                                                   | Link                                                                                      |
 |--------------------------b--------|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | Total Downloads of all time      | Total number of downloads for the product over its entire lifespan.                                           | [![Downloads](https://static.pepy.tech/badge/swarms)](https://pepy.tech/project/swarms)   |
@@ -107,4 +108,6 @@ Swarms is an open source framework for developers in python to enable seamless, 
 | Github Traffic Metrics           | Metrics related to traffic, such as views and clones on Github.                                               | [Github Traffic Metrics](https://github.com/kyegomez/swarms/graphs/traffic)               |
 | Issues with the framework        | Current open issues for the product on Github.                                                                | [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) |
 
+
+gi
 -------
