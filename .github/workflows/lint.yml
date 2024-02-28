@@ -28,3 +28,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/library/setup
       - uses: chartboost/ruff-action@v1
+  pylint-lint:
+    runs-on: ubuntu-latest
+    name: pylint Lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/library/setup
+      - name: Install dependencies
+        run: |
+          pip install pylint
+      - name: Analysing the code with pylint
+        run: |
+          pylint $(git ls-files '*.py')

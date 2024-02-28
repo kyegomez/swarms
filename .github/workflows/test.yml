@@ -1,22 +1,20 @@
 ---
-name: test
+name: build
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-  workflow_dispatch:
+    branches: [main]
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version:
-          - "3.10"
-          - "3.11"
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/library/setup
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Run tests
+      - name: Install dependencies
+        run: |
+          pip install pytest
+      - name: Run Python unit tests
         run: pytest
+      - name: Verify that the Docker image for the action builds
+        run: docker build . --file Dockerfile
