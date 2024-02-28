@@ -75,7 +75,6 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
-multion = "0.3.13"
 
 
 

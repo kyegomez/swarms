@@ -17,7 +17,6 @@ requests_mock
 pypdf==4.0.1
 accelerate==0.22.0
 loguru==0.7.2
-multion==0.3.13
 chromadb
 tensorflow
 optimum
