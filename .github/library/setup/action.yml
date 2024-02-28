@@ -1,3 +1,4 @@
+---
 name: "Setup"
 description: Setup the environment for the project
 inputs:
@@ -5,7 +6,6 @@ inputs:
     description: "Python version to use"
     required: false
     default: "3.10"
-
 runs:
   using: "composite"
   steps:
@@ -39,8 +39,8 @@ runs:
         source .venv/bin/activate
         echo PATH=$PATH >> $GITHUB_ENV
       shell: bash
-    # - name: "Install apt dependencies"
-    #   run: |
-    #     sudo apt-get update
-    #     sudo apt-get install -y python3-opencv
-    # shell: bash
+  # - name: "Install apt dependencies"
+  #   run: |
+  #     sudo apt-get update
+  #     sudo apt-get install -y python3-opencv
+  # shell: bash

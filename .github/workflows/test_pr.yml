@@ -1,6 +1,5 @@
 ---
 # Notebook-related checks
-
 name: Presubmit checks
 on:
   # Relevant PRs
