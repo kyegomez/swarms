@@ -6,6 +6,7 @@ from termcolor import colored
 
 from swarms.structs.task import Task
 from swarms.utils.logger import logger
+from swarms.structs.agent import Agent
 
 
 # SequentialWorkflow class definition using dataclasses
@@ -47,6 +48,7 @@ class SequentialWorkflow:
     )
     restore_state_filepath: Optional[str] = None
     dashboard: bool = False
+    agents: List[Agent] = None
 
     def add(
         self,

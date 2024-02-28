@@ -6,6 +6,7 @@ from swarms.structs.task import Task
 from swarms.utils.logger import logger
 from swarms.structs.agent import Agent
 
+
 @dataclass
 class AsyncWorkflow:
     """
