@@ -9,12 +9,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/library/setup
+      - name: Install pytype
+        run: pip install -q pytype
       - name: Run pytype
-        run: |
-          python --version
-          pip install .[dev]
-          pip install -q gspread ipython
-          pytype
+        run: pytype .
   format:
     name: Check format with black
     runs-on: ubuntu-latest
