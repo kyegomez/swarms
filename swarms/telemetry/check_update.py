@@ -1,7 +1,7 @@
 import importlib.util
 import sys
 
-import pkg_resources
+from importlib.metadata import version as pkg_version
 import requests
 from packaging import version
 
@@ -35,8 +35,6 @@ def check_for_update():
     latest_version = response.json()["info"]["version"]
 
     # Get the current version using pkg_resources
-    current_version = pkg_resources.get_distribution("swarms").version
+    current_version = pkg_version("swarms")
 
-    return version.parse(latest_version) > version.parse(
-        current_version
-    )
+    return version.parse(latest_version) > version.parse(current_version)

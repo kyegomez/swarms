@@ -3,7 +3,7 @@ from time import time_ns
 from typing import Callable, List, Optional, Sequence, Union
 
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import BaseSwarm
+from swarms.structs.base_swarm import AbstractSwarm
 from swarms.utils.loguru_logger import logger
 
 
@@ -43,7 +43,7 @@ def msg_hash(
     )
 
 
-class MessagePool(BaseSwarm):
+class MessagePool(AbstractSwarm):
     """
     A class representing a message pool for agents in a swarm.
 
