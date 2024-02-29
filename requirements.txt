@@ -42,7 +42,7 @@ rich==13.5.2
 mkdocs
 mkdocs-material
 mkdocs-glightbox
-pre-commit==3.2.2
+pre-commit==3.6.2
 peft
 psutil
 ultralytics
