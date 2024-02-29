@@ -32,7 +32,7 @@ einops==0.7.0
 opencv-python-headless==4.8.1.78
 numpy
 openai==0.28.0
-opencv-python==4.7.0.72
+opencv-python==4.9.0.80
 timm
 yapf
 autopep8
