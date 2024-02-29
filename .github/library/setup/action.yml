@@ -32,3 +32,6 @@ runs:
       with:
         path: ~/.local
         key: poetry-local-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('.github/workflows/*.yml') }}
+    - name: Install dependencies
+      run: poetry install
+      shell: bash
