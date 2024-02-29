@@ -40,30 +40,14 @@ class BaseMultiModalModel:
     Examples:
         >>> from swarms.models.base_multimodal_model import BaseMultiModalModel
         >>> model = BaseMultiModalModel()
-        >>> link = "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"
         >>> model.run("Generate a summary of this text")
-        >>> model.run("Generate a summary of this text", link)
+        >>> model.run("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")
         >>> model.run_batch(["Generate a summary of this text", "Generate a summary of this text"])
-        >>> model.run_batch([
-            ("Generate a summary of this text", link),
-            ("Generate a summary of this text", link)
-        ])
-        >>> model.run_batch_async([
-            "Generate a summary of this text",
-            "Generate a summary of this text"
-        ])
-        >>> model.run_batch_async([
-            ("Generate a summary of this text", link),
-            ("Generate a summary of this text", link)
-        ])
-        >>> model.run_batch_async_with_retries([
-            "Generate a summary of this text",
-            "Generate a summary of this text"
-        ])
-        >>> model.run_batch_async_with_retries([
-            ("Generate a summary of this text", link),
-            ("Generate a summary of this text", link)
-        ])
+        >>> model.run_batch([("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"), ("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")])
+        >>> model.run_batch_async(["Generate a summary of this text", "Generate a summary of this text"])
+        >>> model.run_batch_async([("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"), ("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")])
+        >>> model.run_batch_async_with_retries(["Generate a summary of this text", "Generate a summary of this text"])
+        >>> model.run_batch_async_with_retries([("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"), ("Generate a summary of this text", "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png")])
         >>> model.generate_summary("Generate a summary of this text")
         >>> model.set_temperature(0.5)
         >>> model.set_max_tokens(500)
@@ -364,9 +348,9 @@ class BaseMultiModalModel:
             _type_: _description_
         """
         META_PROMPT = """
-        For any labels or markings on an image that you reference in your response, please
-        enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for
-        example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be
+        For any labels or markings on an image that you reference in your response, please 
+        enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for 
+        example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be 
         numbers or letters and typically correspond to specific segments or parts of the image.
         """
         return META_PROMPT

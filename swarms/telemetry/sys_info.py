@@ -1,8 +1,8 @@
 import platform
 import subprocess
 
+import pkg_resources
 import psutil
-import importlib.metadata as metadata
 import toml
 
 
@@ -31,7 +31,9 @@ def get_swarms_verison():
         )
     except Exception as e:
         swarms_verison_cmd = str(e)
-    swarms_verison_pkg = metadata.version("swarms")
+    swarms_verison_pkg = pkg_resources.get_distribution(
+        "swarms"
+    ).version
     swarms_verison = swarms_verison_cmd, swarms_verison_pkg
     return swarms_verison
 
@@ -65,7 +67,7 @@ def get_package_mismatches(file_path="pyproject.toml"):
     dependencies.update(dev_dependencies)
 
     installed_packages = {
-        pkg.key: pkg.version for pkg in metadata.distributions()
+        pkg.key: pkg.version for pkg in pkg_resources.working_set
     }
 
     mismatches = []

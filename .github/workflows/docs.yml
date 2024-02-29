@@ -1,5 +1,5 @@
----
 name: Docs WorkAgent
+
 on:
   push:
     branches:
@@ -11,7 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/library/setup
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
       - run: pip install mkdocs-material
       - run: pip install mkdocs-glightbox
       - run: pip install "mkdocstrings[python]"

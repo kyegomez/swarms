@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 
-from openai import OpenAI
-
+import openai
 import requests
 from pydantic import BaseModel, validator
 from tenacity import (
@@ -148,7 +147,6 @@ class OpenAIFunctionCaller:
         self.user = user
         self.messages = messages if messages is not None else []
         self.timeout_sec = timeout_sec
-        self.client = OpenAI(api_key=self.openai_api_key)
 
     def add_message(self, role: str, content: str):
         self.messages.append({"role": role, "content": content})
@@ -165,7 +163,7 @@ class OpenAIFunctionCaller:
     ):
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer " + self.openai_api_key,
+            "Authorization": "Bearer " + openai.api_key,
         }
         json_data = {"model": self.model, "messages": messages}
         if tools is not None:
@@ -237,7 +235,7 @@ class OpenAIFunctionCaller:
                 )
 
     def call(self, task: str, *args, **kwargs) -> Dict:
-        return self.client.completions.create(
+        return openai.Completion.create(
             engine=self.model,
             prompt=task,
             max_tokens=self.max_tokens,

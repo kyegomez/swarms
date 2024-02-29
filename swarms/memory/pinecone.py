@@ -24,31 +24,13 @@ class PineconeDB(AbstractVectorDatabase):
         index (pinecone.Index, optional): The Pinecone index to use. Defaults to None.
 
     Methods:
-        upsert_vector(
-            vector: list[float],
-            vector_id: Optional[str] = None,
-            namespace: Optional[str] = None,
-            meta: Optional[dict] = None,
-            **kwargs
-        ) -> str:
+        upsert_vector(vector: list[float], vector_id: Optional[str] = None, namespace: Optional[str] = None, meta: Optional[dict] = None, **kwargs) -> str:
             Upserts a vector into the index.
-        load_entry(
-            vector_id: str,
-            namespace: Optional[str] = None
-        ) -> Optional[BaseVectorStore.Entry]:
+        load_entry(vector_id: str, namespace: Optional[str] = None) -> Optional[BaseVectorStore.Entry]:
             Loads a single vector from the index.
-        load_entries(
-            namespace: Optional[str] = None
-        ) -> list[BaseVectorStore.Entry]:
+        load_entries(namespace: Optional[str] = None) -> list[BaseVectorStore.Entry]:
             Loads all vectors from the index.
-        query(
-            query: str,
-            count: Optional[int] = None,
-            namespace: Optional[str] = None,
-            include_vectors: bool = False,
-            include_metadata=True,
-            **kwargs
-        ) -> list[BaseVectorStore.QueryResult]:
+        query(query: str, count: Optional[int] = None, namespace: Optional[str] = None, include_vectors: bool = False, include_metadata=True, **kwargs) -> list[BaseVectorStore.QueryResult]:
             Queries the index for vectors similar to the given query string.
         create_index(name: str, **kwargs) -> None:
             Creates a new index.

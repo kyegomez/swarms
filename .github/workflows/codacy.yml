@@ -1,4 +1,3 @@
----
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
@@ -11,38 +10,39 @@
 # https://github.com/codacy/codacy-analysis-cli-action.
 # For more information on Codacy Analysis CLI in general, see
 # https://github.com/codacy/codacy-analysis-cli.
+
 name: Codacy Security Scan
+
 on:
   push:
-    branches: ["master"]
+    branches: [ "master" ]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: ["master"]
+    branches: [ "master" ]
   schedule:
     - cron: '18 23 * * 4'
+
 permissions:
   contents: read
+
 jobs:
   codacy-security-scan:
     permissions:
-      # for actions/checkout to fetch code
-      contents: read
-      # for github/codeql-action/upload-sarif to upload SARIF results
-      security-events: write
-      # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-      actions: read
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     name: Codacy Security Scan
     runs-on: ubuntu-latest
     steps:
       # Checkout the repository to the GitHub Actions runner
       - name: Checkout code
         uses: actions/checkout@v4
+
       # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@33d455949345bddfdb845fba76b57b70cc83754b
         with:
-          # Check https://github.com/codacy/codacy-analysis-cli#project-token
-          # to get your project token from your Codacy repository
+          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
           # You can also omit the token and run the tools that support default configurations
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           verbose: true
@@ -53,6 +53,7 @@ jobs:
           # Force 0 exit code to allow SARIF file generation
           # This will handover control about PR rejection to the GitHub side
           max-allowed-issues: 2147483647
+
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
         uses: github/codeql-action/upload-sarif@v3

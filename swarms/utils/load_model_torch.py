@@ -18,8 +18,7 @@ def load_model_torch(
         model_path (str): Path to the saved model file.
         device (torch.device): Device to move the model to.
         model (nn.Module): The model architecture, if the model file only contains the state dictionary.
-        strict (bool): Whether to strictly enforce that the keys in the state dictionary match the keys returned by the model's
-        `state_dict()` function.
+        strict (bool): Whether to strictly enforce that the keys in the state dictionary match the keys returned by the model's `state_dict()` function.
         map_location (callable): A function to remap the storage locations of the loaded model.
         *args: Additional arguments to pass to `torch.load`.
         **kwargs: Additional keyword arguments to pass to `torch.load`.

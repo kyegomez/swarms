@@ -10,37 +10,30 @@ description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
 homepage = "https://github.com/kyegomez/swarms"
-documentation = "https://swarms.apac.ai"
-readme = "README.md"
+documentation = "https://swarms.apac.ai"  
+readme = "README.md"  # Assuming you have a README.md
 repository = "https://github.com/kyegomez/swarms"
-keywords = [
-    "artificial intelligence",
-    "deep learning",
-    "optimizers",
-    "Prompt Engineering",
-    "swarms",
-    "agents",
-]
+keywords = ["artificial intelligence", "deep learning", "optimizers", "Prompt Engineering", "swarms", "agents"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.10"
 ]
 
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = "^3.6.1"
 torch = "2.1.1"
-transformers = "4.38.1"
-openai = "1.3.0"
+transformers = "4.37.1"
+openai = "0.28.0"
 langchain = "0.0.333"
 asyncio = "3.4.3"
 einops = "0.7.0"
 google-generativeai = "0.3.1"
 langchain-experimental = "0.0.10"
-tensorflow = "^2.15.0"
+tensorflow = "*"
 weaviate-client = "3.25.3"
 opencv-python-headless = "4.8.1.78"
 faiss-cpu = "1.7.4"
@@ -62,7 +55,7 @@ cohere = "4.24"
 huggingface-hub = "*"
 pydantic = "1.10.12"
 tenacity = "8.2.2"
-Pillow = "10.2.0"
+Pillow = "9.4.0"
 chromadb = "*"
 termcolor = "2.2.0"
 black = "23.3.0"
@@ -93,12 +86,9 @@ types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
 
 
-[tool.poetry.group.test.dependencies]
-pytest = "^8.0.2"
-
 [tool.autopep8]
 max_line_length = 70
-ignore = "E501,W6"   # or ["E501", "W6"]
+ignore = "E501,W6"  # or ["E501", "W6"]
 in-place = true
 recursive = true
 aggressive = 3

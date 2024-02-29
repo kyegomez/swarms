@@ -19,7 +19,7 @@ python -m pip install --upgrade revChatGPT
 ```
 
 **Supported Python Versions:**
-- Minimum: Python3.10
+- Minimum: Python3.9
 - Recommended: Python3.11+
 
 ### Initial Setup and Configuration <a name="initial-setup"></a>

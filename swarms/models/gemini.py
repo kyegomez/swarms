@@ -132,13 +132,13 @@ class Gemini(BaseMultiModalModel):
             system_prompt (str, optional): _description_. Defaults to None.
         """
         PROMPT = f"""
-
+        
         {self.system_prompt}
-
+        
         ######
-
+        
         {task}
-
+        
         """
         return PROMPT
 

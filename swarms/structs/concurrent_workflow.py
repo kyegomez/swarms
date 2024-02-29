@@ -15,8 +15,7 @@ class ConcurrentWorkflow(BaseStructure):
     Args:
         max_workers (int): The maximum number of workers to use for the ThreadPoolExecutor.
         autosave (bool): Whether to save the state of the workflow to a file. Default is False.
-        saved_state_filepath (str):
-        The filepath to save the state of the workflow to. Default is "runs/concurrent_workflow.json".
+        saved_state_filepath (str): The filepath to save the state of the workflow to. Default is "runs/concurrent_workflow.json".
         print_results (bool): Whether to print the results of each task. Default is False.
         return_results (bool): Whether to return the results of each task. Default is False.
         use_processes (bool): Whether to use processes instead of threads. Default is False.

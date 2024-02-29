@@ -15,7 +15,7 @@ custom_config = {
     "verbose": True,
 }
 huggingface_llm = HuggingfaceLLM(
-    model_id="liuhaotian/llava-v1.6-mistral-7b",
+    model_id="NousResearch/Nous-Hermes-2-Vision-Alpha",
     **custom_config,
 )
 mixtral = Mixtral(load_in_4bit=True, use_flash_attention_2=True)

@@ -1,16 +1,27 @@
----
 name: Upload Python Package
-on:
+
+on:  # yamllint disable-line rule:truthy
   release:
     types: [published]
+
 permissions:
   contents: read
+
 jobs:
   deploy:
+
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/library/setup
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
       - name: Build package
         run: python -m build
       - name: Publish package

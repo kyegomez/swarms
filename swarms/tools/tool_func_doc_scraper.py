@@ -12,8 +12,7 @@ def scrape_tool_func_docs(fn: Callable) -> str:
         fn (Callable): The function to scrape.
 
     Returns:
-        str: A string containing the function's name, documentation string, and a list of its parameters.
-        Each parameter is represented as a line containing the parameter's name, default value, and annotation.
+        str: A string containing the function's name, documentation string, and a list of its parameters. Each parameter is represented as a line containing the parameter's name, default value, and annotation.
     """
     try:
         # If the function is a tool, get the original function
