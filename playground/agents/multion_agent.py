@@ -1,6 +1,7 @@
-from swarms.agents.multion_agent import MultiOnAgent
 import timeit
+
 from swarms import Agent, ConcurrentWorkflow, Task
+from swarms.agents.multion_agent import MultiOnAgent
 
 # model
 model = MultiOnAgent(multion_api_key="api-key")

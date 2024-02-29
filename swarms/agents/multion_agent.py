@@ -1,8 +1,9 @@
 import os
+
 import multion
+from dotenv import load_dotenv
 
 from swarms.models.base_llm import AbstractLLM
-from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()

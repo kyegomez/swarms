@@ -3,9 +3,9 @@ from typing import Any, Dict, List, Optional
 
 from termcolor import colored
 
+from swarms.structs.agent import Agent
 from swarms.structs.base import BaseStructure
 from swarms.structs.task import Task
-from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import logger
 
 

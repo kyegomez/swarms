@@ -1,6 +1,5 @@
 from swarms.memory import ChromaDB
 
-
 # Initialize the memory
 chroma = ChromaDB(
     metric="cosine",

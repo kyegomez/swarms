@@ -22,7 +22,8 @@ class Qdrant:
         collection_name: str = "qdrant",
         model_name: str = "BAAI/bge-small-en-v1.5",
         https: bool = True,
-    ): ...
+    ):
+        ...
 ```
 
 ### Constructor Parameters

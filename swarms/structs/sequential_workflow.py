@@ -3,11 +3,10 @@ from typing import Any, Dict, List, Optional
 
 from termcolor import colored
 
-from swarms.structs.task import Task
-
 # from swarms.utils.logger import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.task import Task
 from swarms.utils.loguru_logger import logger
 
 

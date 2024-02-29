@@ -27,7 +27,6 @@ from swarms.tokenizers import BaseTokenizer
 
 
 class SimpleTokenizer(BaseTokenizer):
-
     def count_tokens(self, text: Union[str, List[dict]]) -> int:
         if isinstance(text, str):
             # Split text by spaces as a simple tokenization approach

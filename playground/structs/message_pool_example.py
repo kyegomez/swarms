@@ -1,6 +1,6 @@
+from swarms import OpenAIChat
 from swarms.structs.agent import Agent
 from swarms.structs.message_pool import MessagePool
-from swarms import OpenAIChat
 
 agent1 = Agent(llm=OpenAIChat(), agent_name="agent1")
 agent2 = Agent(llm=OpenAIChat(), agent_name="agent2")
