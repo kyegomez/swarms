@@ -12,8 +12,10 @@ from swarms.models.clipq import CLIPQ  # noqa: E402
 # from swarms.models.whisperx_model import WhisperX  # noqa: E402
 # from swarms.models.kosmos_two import Kosmos  # noqa: E402
 # from swarms.models.cog_agent import CogAgent  # noqa: E402
-## Function calling models
-from swarms.models.fire_function import FireFunctionCaller
+# Function calling models
+from swarms.models.fire_function import (
+    FireFunctionCaller,
+)
 from swarms.models.fuyu import Fuyu  # noqa: E402
 from swarms.models.gemini import Gemini  # noqa: E402
 from swarms.models.gigabind import Gigabind  # noqa: E402
@@ -50,7 +52,7 @@ from swarms.models.timm import TimmModel  # noqa: E402
 # )  # noqa: E402
 from swarms.models.together import TogetherLLM  # noqa: E402
 
-############## Types
+# Types
 from swarms.models.types import (  # noqa: E402
     AudioModality,
     ImageModality,

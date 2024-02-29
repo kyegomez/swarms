@@ -1,3 +1,4 @@
+---
 name: readthedocs/actions
 on:
   pull_request_target:
@@ -5,10 +6,8 @@ on:
       - opened
     paths:
       - "docs/**"
-
 permissions:
   pull-requests: write
-
 jobs:
   pull-request-links:
     runs-on: ubuntu-latest

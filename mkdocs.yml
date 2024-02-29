@@ -1,3 +1,4 @@
+---
 site_name: Swarms Docs
 plugins:
   - glightbox
@@ -16,15 +17,15 @@ extra:
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/Swarms/
 theme:
-    name: material
-    custom_dir: docs/overrides
-    logo: assets/img/SwarmsLogoIcon.png
-    palette:
-      # Palette toggle for light mode
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/img/SwarmsLogoIcon.png
+  palette:
+    # Palette toggle for light mode
     - scheme: default
       primary: black
       toggle:
-        icon: material/brightness-7 
+        icon: material/brightness-7
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
@@ -32,14 +33,14 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-    features:
-        - content.code.copy
-        - content.code.annotate
-        - navigation.tabs
-        - navigation.sections
-        - navigation.expand
-        - navigation.top
-        - announce.dismiss
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - announce.dismiss
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -55,127 +56,126 @@ markdown_extensions:
   - def_list
   - footnotes
 nav:
-- Home:
-    - Overview: "index.md"
-    - Contributing: "contributing.md"
-    - Limitations of Individual Agents: "limits_of_individual_agents.md"
-- Swarms:
-  - Overview: "swarms/index.md" 
-  - swarms.agents:
-    - Agents:
-      - WorkerAgent: "swarms/agents/workeragent.md"
-      - OmniAgent: "swarms/agents/omni_agent.md"
-      - AbstractAgent: "swarms/agents/abstractagent.md"
-      - ToolAgent: "swarms/agents/toolagent.md"
-  - swarms.models:
-    - Language:
-      - BaseLLM: "swarms/models/base_llm.md"
-      - Overview: "swarms/models/index.md"
-      - HuggingFaceLLM: "swarms/models/huggingface.md"
-      - Anthropic: "swarms/models/anthropic.md"
-      - OpenAI: "swarms/models/openai.md"
-      - Zephyr: "swarms/models/zephyr.md"
-      - BioGPT: "swarms/models/biogpt.md"
-      - vLLM: "swarms/models/vllm.md"
-      - MPT7B: "swarms/models/mpt.md"
-      - Mistral: "swarms/models/mistral.md"
-      - Mixtral: "swarms/models/mixtral.md"
-    - MultiModal:
-      - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
-      - Fuyu: "swarms/models/fuyu.md"
-      - Vilt: "swarms/models/vilt.md"
-      - Idefics: "swarms/models/idefics.md"
-      - BingChat: "swarms/models/bingchat.md"
-      - Kosmos: "swarms/models/kosmos.md"
-      - Nougat: "swarms/models/nougat.md"
-      - Dalle3: "swarms/models/dalle3.md"
-      - GPT4V: "swarms/models/gpt4v.md"
-      - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
-      - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
-      - ElevenLabsText2SpeechTool: "swarms/models/elevenlabs.md"
-      - OpenAITTS: "swarms/models/openai_tts.md"
-      - Gemini: "swarms/models/gemini.md"
-      - ZeroscopeTTV: "swarms/models/zeroscope.md"
-  - swarms.structs:
-      - Foundational Structures:
-        - agent: "swarms/structs/agent.md"
-        - basestructure: "swarms/structs/basestructure.md"
-        - artifactupload: "swarms/structs/artifactupload.md"
-        - taskinput: "swarms/structs/taskinput.md"
-        - stepinput: "swarms/structs/stepinput.md"
-        - artifact: "swarms/structs/artifact.md"
-        - task: "swarms/structs/task.md"
-        - Task Queue Base: "swarms/structs/taskqueuebase.md"
-      - Workflows:
-        - recursiveworkflow: "swarms/structs/recursiveworkflow.md"
-        - concurrentworkflow: "swarms/structs/concurrentworkflow.md"
-        - nonlinearworkflow: "swarms/structs/nonlinearworkflow.md"
-        - sequential_workflow: "swarms/structs/sequential_workflow.md"
-        - workflow: "swarms/structs/workflow.md"
-        - baseworkflow: "swarms/structs/baseworkflow.md"      
-      - Multi Agent Architectures:
-        - conversation: "swarms/structs/conversation.md"
-        - groupchat: "swarms/structs/groupchat.md"
-        - swarmnetwork: "swarms/structs/swarmnetwork.md"
-        - groupchatmanager: "swarms/structs/groupchatmanager.md"
-        - MajorityVoting: "swarms/structs/majorityvoting.md"
-  - swarms.tokenizers:
-    - Language:
-      - Tokenizer: "swarms/tokenizers/tokenizer.md"
-      - CohereTokenizer: "swarms/tokenizers/coheretokenizer.md"
-      - BaseTokenizer: "swarms/tokenizers/basetokenizer.md"
-      - HuggingfaceTokenizer: "swarms/tokenizers/huggingfacetokenizer.md"
-      - SentencepieceTokenizer: "swarms/tokenizers/sentencepiecetokenizer.md"
-      - AnthropicTokenizer: "swarms/tokenizers/anthropictokenizer.md"
-      - OpenaiTokenizer: "swarms/tokenizers/openaitokenizer.md"
-  - swarms.memory:
-    - Vector Databases:
-      - Weaviate: "swarms/memory/weaviate.md"
-      - PineconeDB: "swarms/memory/pinecone.md"
-      - PGVectorStore: "swarms/memory/pg.md"
-    - ShortTermMemory: "swarms/memory/short_term_memory.md"
-  - swarms.utils:
-    - Misc:
-      - pdf_to_text: "swarms/utils/pdf_to_text.md"
-      - load_model_torch: "swarms/utils/load_model_torch.md"
-      - metrics_decorator: "swarms/utils/metrics_decorator.md"
-      - prep_torch_inference: "swarms/utils/prep_torch_inference.md"
-      - find_image_path: "swarms/utils/find_image_path.md"
-      - print_class_parameters: "swarms/utils/print_class_parameters.md"
-      - extract_code_from_markdown: "swarms/utils/extract_code_from_markdown.md"
-      - check_device: "swarms/utils/check_device.md"
-      - display_markdown_message: "swarms/utils/display_markdown_message.md"
-      - phoenix_tracer: "swarms/utils/phoenix_tracer.md"
-      - limit_tokens_from_string: "swarms/utils/limit_tokens_from_string.md"
-      - math_eval: "swarms/utils/math_eval.md"
-- Guides:
-    - Overview: "examples/index.md"
-    - Agents:
-      - Agent: "examples/flow.md"
-      - OmniAgent: "examples/omni_agent.md"
-    - Swarms:
-      - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
-    - 2O+ Autonomous Agent Blogs: "examples/ideas.md"
-- Applications:
-    - CustomerSupport: 
-      - Overview: "applications/customer_support.md"
-    - Marketing: 
-      - Overview: "applications/marketing_agencies.md" 
-- Corporate:
-    - FAQ: "corporate/faq.md"
-    - Purpose: "corporate/purpose.md"
-    - Roadmap: "corporate/roadmap.md"
-    - Weaknesses: "corporate/failures.md"
-    - Design: "corporate/design.md"
-    - Flywheel: "corporate/flywheel.md"
-    - Bounties: "corporate/bounties.md"
-    - Metric: "corporate/metric.md"
-    - Distribution: "corporate/distribution"
-    - Research: "corporate/research.md"
-    - Demos: "corporate/demos.md"
-    - Architecture: "corporate/architecture.md"
-    - Checklist: "corporate/checklist.md"
-    - Hiring: "corporate/hiring.md"
-    - SwarmCloud: "corporate/swarm_cloud.md"
-    - SwarmMemo: "corporate/swarm_memo.md"
-    - Data Room: "corporate/data_room.md"
+  - Home:
+      - Overview: "index.md"
+      - Contributing: "contributing.md"
+  - Swarms:
+      - Overview: "swarms/index.md"
+      - swarms.agents:
+          - Agents:
+              - WorkerAgent: "swarms/agents/workeragent.md"
+              - OmniAgent: "swarms/agents/omni_agent.md"
+              - AbstractAgent: "swarms/agents/abstractagent.md"
+              - ToolAgent: "swarms/agents/toolagent.md"
+      - swarms.models:
+          - Language:
+              - BaseLLM: "swarms/models/base_llm.md"
+              - Overview: "swarms/models/index.md"
+              - HuggingFaceLLM: "swarms/models/huggingface.md"
+              - Anthropic: "swarms/models/anthropic.md"
+              - OpenAI: "swarms/models/openai.md"
+              - Zephyr: "swarms/models/zephyr.md"
+              - BioGPT: "swarms/models/biogpt.md"
+              - vLLM: "swarms/models/vllm.md"
+              - MPT7B: "swarms/models/mpt.md"
+              - Mistral: "swarms/models/mistral.md"
+              - Mixtral: "swarms/models/mixtral.md"
+          - MultiModal:
+              - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
+              - Fuyu: "swarms/models/fuyu.md"
+              - Vilt: "swarms/models/vilt.md"
+              - Idefics: "swarms/models/idefics.md"
+              - BingChat: "swarms/models/bingchat.md"
+              - Kosmos: "swarms/models/kosmos.md"
+              - Nougat: "swarms/models/nougat.md"
+              - Dalle3: "swarms/models/dalle3.md"
+              - GPT4V: "swarms/models/gpt4v.md"
+              - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
+              - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
+              - ElevenLabsText2SpeechTool: "swarms/models/elevenlabs.md"
+              - OpenAITTS: "swarms/models/openai_tts.md"
+              - Gemini: "swarms/models/gemini.md"
+              - ZeroscopeTTV: "swarms/models/zeroscope.md"
+      - swarms.structs:
+          - Foundational Structures:
+              - agent: "swarms/structs/agent.md"
+              - basestructure: "swarms/structs/basestructure.md"
+              - artifactupload: "swarms/structs/artifactupload.md"
+              - taskinput: "swarms/structs/taskinput.md"
+              - stepinput: "swarms/structs/stepinput.md"
+              - artifact: "swarms/structs/artifact.md"
+              - task: "swarms/structs/task.md"
+              - Task Queue Base: "swarms/structs/taskqueuebase.md"
+          - Workflows:
+              - recursiveworkflow: "swarms/structs/recursiveworkflow.md"
+              - concurrentworkflow: "swarms/structs/concurrentworkflow.md"
+              - nonlinearworkflow: "swarms/structs/nonlinearworkflow.md"
+              - sequential_workflow: "swarms/structs/sequential_workflow.md"
+              - workflow: "swarms/structs/workflow.md"
+              - baseworkflow: "swarms/structs/baseworkflow.md"
+          - Multi Agent Architectures:
+              - conversation: "swarms/structs/conversation.md"
+              - groupchat: "swarms/structs/groupchat.md"
+              - swarmnetwork: "swarms/structs/swarmnetwork.md"
+              - groupchatmanager: "swarms/structs/groupchatmanager.md"
+              - MajorityVoting: "swarms/structs/majorityvoting.md"
+      - swarms.tokenizers:
+          - Language:
+              - Tokenizer: "swarms/tokenizers/tokenizer.md"
+              - CohereTokenizer: "swarms/tokenizers/coheretokenizer.md"
+              - BaseTokenizer: "swarms/tokenizers/basetokenizer.md"
+              - HuggingfaceTokenizer: "swarms/tokenizers/huggingfacetokenizer.md"
+              - SentencepieceTokenizer: "swarms/tokenizers/sentencepiecetokenizer.md"
+              - AnthropicTokenizer: "swarms/tokenizers/anthropictokenizer.md"
+              - OpenaiTokenizer: "swarms/tokenizers/openaitokenizer.md"
+      - swarms.memory:
+          - Vector Databases:
+              - Weaviate: "swarms/memory/weaviate.md"
+              - PineconeDB: "swarms/memory/pinecone.md"
+              - PGVectorStore: "swarms/memory/pg.md"
+          - ShortTermMemory: "swarms/memory/short_term_memory.md"
+      - swarms.utils:
+          - Misc:
+              - pdf_to_text: "swarms/utils/pdf_to_text.md"
+              - load_model_torch: "swarms/utils/load_model_torch.md"
+              - metrics_decorator: "swarms/utils/metrics_decorator.md"
+              - prep_torch_inference: "swarms/utils/prep_torch_inference.md"
+              - find_image_path: "swarms/utils/find_image_path.md"
+              - print_class_parameters: "swarms/utils/print_class_parameters.md"
+              - extract_code_from_markdown: "swarms/utils/extract_code_from_markdown.md"
+              - check_device: "swarms/utils/check_device.md"
+              - display_markdown_message: "swarms/utils/display_markdown_message.md"
+              - phoenix_tracer: "swarms/utils/phoenix_tracer.md"
+              - limit_tokens_from_string: "swarms/utils/limit_tokens_from_string.md"
+              - math_eval: "swarms/utils/math_eval.md"
+  - Guides:
+      - Overview: "examples/index.md"
+      - Agents:
+          - Agent: "examples/flow.md"
+          - OmniAgent: "examples/omni_agent.md"
+      - Swarms:
+          - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
+      - 2O+ Autonomous Agent Blogs: "examples/ideas.md"
+  - Applications:
+      - CustomerSupport:
+          - Overview: "applications/customer_support.md"
+      - Marketing:
+          - Overview: "applications/marketing_agencies.md"
+  - Corporate:
+      - FAQ: "corporate/faq.md"
+      - Purpose: "corporate/purpose.md"
+      - Roadmap: "corporate/roadmap.md"
+      - Weaknesses: "corporate/failures.md"
+      - Design: "corporate/design.md"
+      - Flywheel: "corporate/flywheel.md"
+      - Bounties: "corporate/bounties.md"
+      - Metric: "corporate/metric.md"
+      - Distribution: "corporate/distribution"
+      - Research: "corporate/research.md"
+      - Demos: "corporate/demos.md"
+      - Architecture: "corporate/architecture.md"
+      - Checklist: "corporate/checklist.md"
+      - Hiring: "corporate/hiring.md"
+      - SwarmCloud: "corporate/swarm_cloud.md"
+      - SwarmMemo: "corporate/swarm_memo.md"
+      - Data Room: "corporate/data_room.md"

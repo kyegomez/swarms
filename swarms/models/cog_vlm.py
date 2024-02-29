@@ -161,7 +161,8 @@ class CogVLMMultiModal(BaseMultiModalModel):
     Methods:
         run: Generates a response using the CogVLM model.
         generate_stream_cogvlm: Generates a stream of responses using the CogVLM model in inference mode.
-        process_history_and_images: Processes history messages to extract text, identify the last user query, and convert base64 encoded image URLs to PIL images.
+        process_history_and_images: Processes history messages to extract text, identify the last user query,
+        and convert base64 encoded image URLs to PIL images.
 
     Example:
     >>> model = CogVLMMultiModal()

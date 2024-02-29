@@ -49,7 +49,7 @@ class SSD1B:
     max_time_seconds: int = 60
     save_folder: str = "images"
     image_format: str = "png"
-    device: str = "cuda"
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
     dashboard: bool = False
     cache = TTLCache(maxsize=100, ttl=3600)
     pipe = StableDiffusionXLPipeline.from_pretrained(
@@ -171,7 +171,7 @@ class SSD1B:
         """Print the SSD1B dashboard"""
         print(
             colored(
-                f"""SSD1B Dashboard: 
+                f"""SSD1B Dashboard:
                     --------------------
 
                     Model: {self.model}
@@ -185,8 +185,8 @@ class SSD1B:
                     Save Folder: {self.save_folder}
                     Image Format: {self.image_format}
                     --------------------
-                    
-                    
+
+
                     """,
                 "green",
             )

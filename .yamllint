@@ -1,0 +1,14 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 127
+  truthy:
+    # GitHub Actions
+    check-keys: false
+
+ignore:
+  # GH Actions
+  - lib
+  - .venv

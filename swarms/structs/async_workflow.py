@@ -98,7 +98,8 @@ class AsyncWorkflow:
             # if self.dashboard:
             #     self.display()
 
-            # Add a stopping condition to stop the workflow, if provided but stopping_condition takes in a parameter s for string
+            # Add a stopping condition to stop the workflow,
+            # if provided but stopping_condition takes in a parameter s for string
             if self.stopping_condition:
                 if self.stopping_condition(self.results):
                     break

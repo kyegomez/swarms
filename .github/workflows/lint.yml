@@ -1,27 +1,42 @@
-
+---
 name: Lint
-
-on: [push, pull_request]  # yamllint disable-line rule:truthy
-
+on: [push, pull_request]
 jobs:
   yaml-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/library/setup
       - name: yaml Lint
         uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: ${{ github.workspace }}
   flake8-lint:
     runs-on: ubuntu-latest
     name: flake8 Lint
     steps:
-      - name: Check out source repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/library/setup
       - name: Set up Python environment
         uses: py-actions/flake8@v2
+        with:
+          args: --verbose
   ruff-lint:
     runs-on: ubuntu-latest
     name: ruff Lint
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/library/setup
       - uses: chartboost/ruff-action@v1
+  pylint-lint:
+    runs-on: ubuntu-latest
+    name: pylint Lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/library/setup
+      - name: Install dependencies
+        run: |
+          pip install pylint
+      - name: Analysing the code with pylint
+        run: |
+          pylint $(git ls-files '*.py')

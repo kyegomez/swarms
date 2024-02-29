@@ -14,7 +14,7 @@ def dataframe_to_text(
 
     Returns:
         str: The string representation of the DataFrame.
-        
+
     Example:
     >>> df = pd.DataFrame({
     ...     'A': [1, 2, 3],

@@ -17,7 +17,8 @@ class GraphWorkflow(BaseStructure):
         connect(from_node, to_node): Connects two nodes in the graph.
         set_entry_point(node_name): Sets the entry point node for the workflow.
         add_edge(from_node, to_node): Adds an edge between two nodes in the graph.
-        add_conditional_edges(from_node, condition, edge_dict): Adds conditional edges from a node to multiple nodes based on a condition.
+        add_conditional_edges(from_node, condition, edge_dict):
+        Adds conditional edges from a node to multiple nodes based on a condition.
         run(): Runs the workflow and returns the graph.
 
     Examples:

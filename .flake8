@@ -1,0 +1,11 @@
+[flake8]
+max-line-length = 127
+extend-ignore = E203
+per-file-ignores =
+    # Most of this is just long strings
+    ./swarms/prompts/**.py: E501 W293 W291
+    ./swarms/__init__.py: F401
+exclude =
+    ./playground
+    ./tests
+    ./scripts

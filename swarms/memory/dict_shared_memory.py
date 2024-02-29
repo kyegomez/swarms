@@ -16,13 +16,15 @@ class DictSharedMemory:
 
     Methods:
         __init__(self, file_loc: str = None) -> None: Initializes the shared memory.
-        add_entry(self, score: float, agent_id: str, agent_cycle: int, entry: Any) -> bool: Adds an entry to the internal memory.
+        add_entry(self, score: float, agent_id: str, agent_cycle: int, entry: Any) -> bool:
+        Adds an entry to the internal memory.
         get_top_n(self, n: int) -> None: Gets the top n entries from the internal memory.
         write_to_file(self, data: Dict[str, Dict[str, Any]]) -> bool: Writes the internal memory to a file.
     """
 
     def __init__(self, file_loc: str = None) -> None:
-        """Initialize the shared memory. In the current architecture the memory always consists of a set of soltuions or evaluations.
+        """Initialize the shared memory.
+        In the current architecture the memory always consists of a set of soltuions or evaluations.
         Moreover, the project is designed around LLMs for the proof of concepts, so we treat all entry content as a string.
         """
         if file_loc is not None:

@@ -1,0 +1,6 @@
+---
+formatter:
+  type: basic
+  include_document_start: true
+  max_line_length: 100
+  pad_line_comments: 2

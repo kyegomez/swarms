@@ -203,8 +203,9 @@ class GPT4VisionAPI(BaseMultiModalModel):
 
         """
         PROMPT = f"""
-        These are frames from a video that I want to upload. Generate a compelling description that I can upload along with the video:
-        
+        These are frames from a video that I want to upload.
+        Generate a compelling description that I can upload along with the video:
+
         {frames}
         """
         return PROMPT
