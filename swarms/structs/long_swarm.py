@@ -51,23 +51,23 @@ class LongContextSwarmLeader:
         - prompt (str): The formatted string containing the agent metadata.
         """
         prompt = f"""
-
+        
         You need to recruit a team of members to solve a
         task. Select the appropriate member based on the
         task description:
-
+        
         # Task Description
         {task}
-
+        
         # Members
-
+        
         Your output must follow this JSON schema below in markdown format:
             {{
                 "agent_id": "string",
                 "agent_name": "string",
                 "agent_description": "string"
             }}
-
+        
         """
         for agent in self.agents:
             prompt += (
@@ -83,7 +83,7 @@ class LongContextSwarmLeader:
         You are the leader of a team of {len(self.agents)}
         members. Your team will need to collaborate to
         solve a task. The rule is:
-
+        
         1. Only you know the task description and task
         objective; the other members do not.
         2. But they will receive different documents that
@@ -95,13 +95,13 @@ class LongContextSwarmLeader:
         explicitly include the task objective.
         4. Finally, you need to complete the task based on
         the query results they return.
-
+        
         # Task Description:
         {task_description}
-
+        
         # Task Objective:
         {task}
-
+        
         # Generate Instruction for Members:
         Now, you need to generate an instruction for all
         team members. You can ask them to answer a
@@ -110,7 +110,7 @@ class LongContextSwarmLeader:
         Your output must following the JSON
         format: {{"type": "instruction", "content":
         "your_instruction_content"}}
-
+        
         """
         return prompt
 

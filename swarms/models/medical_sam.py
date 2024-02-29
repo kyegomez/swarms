@@ -26,8 +26,7 @@ class MedicalSAM:
 
     Methods:
         __post_init__(): Initializes the MedicalSAM object.
-        download_model_weights(model_path: str):
-        Downloads the model weights from the specified URL and saves them to the given file path.
+        download_model_weights(model_path: str): Downloads the model weights from the specified URL and saves them to the given file path.
         preprocess(img): Preprocesses the input image.
         run(img, box): Runs the semantic segmentation on the input image within the specified bounding box.
 

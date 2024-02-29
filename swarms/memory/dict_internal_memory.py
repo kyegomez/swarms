@@ -7,8 +7,7 @@ class InternalMemoryBase(ABC):
     """Abstract base class for internal memory of agents in the swarm."""
 
     def __init__(self, n_entries):
-        """Initialize the internal memory.
-        In the current architecture the memory always consists of a set of soltuions or evaluations.
+        """Initialize the internal memory. In the current architecture the memory always consists of a set of soltuions or evaluations.
         During the operation, the agent should retrivie best solutions from it's internal memory based on the score.
 
         Moreover, the project is designed around LLMs for the proof of concepts, so we treat all entry content as a string.
@@ -29,8 +28,7 @@ class InternalMemoryBase(ABC):
 class DictInternalMemory(InternalMemoryBase):
     def __init__(self, n_entries: int):
         """
-        Initialize the internal memory.
-        In the current architecture the memory always consists of a set of solutions or evaluations.
+        Initialize the internal memory. In the current architecture the memory always consists of a set of solutions or evaluations.
         Simple key-value store for now.
 
         Args:

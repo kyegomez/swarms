@@ -63,8 +63,7 @@ class Idefics(BaseMultiModalModel):
     response = model.chat(user_input)
     print(response)
 
-    user_input = "User: And who is that? \
-https://static.wikia.nocookie.net/asterix/images/2/25/R22b.gif/revision/latest?cb=20110815073052"
+    user_input = "User: And who is that? https://static.wikia.nocookie.net/asterix/images/2/25/R22b.gif/revision/latest?cb=20110815073052"
     response = model.chat(user_input)
     print(response)
 

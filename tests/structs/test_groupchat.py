@@ -6,9 +6,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.groupchat import GroupChat, GroupChatManager
 
 llm = OpenAIChat()
-# llm2 = Anthropic()
-# TODO: Mock anthropic class
-llm2 = OpenAIChat()
+llm2 = Anthropic()
 
 
 # Mock the OpenAI class for testing

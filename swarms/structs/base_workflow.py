@@ -195,16 +195,7 @@ class BaseWorkflow(BaseStructure):
         >>> workflow.add("Create a report on these metrics", llm)
         >>> workflow.delete_task("What's the weather in miami")
         >>> workflow.tasks
-        [
-            Task(
-                description='Create a report on these metrics',
-                agent=Agent(llm=OpenAIChat(openai_api_key=''), max_loops=1, dashboard=False),
-                args=[],
-                kwargs={},
-                result=None,
-                history=[]
-            )
-        ]
+        [Task(description='Create a report on these metrics', agent=Agent(llm=OpenAIChat(openai_api_key=''), max_loops=1, dashboard=False), args=[], kwargs={}, result=None, history=[])]
         """
         try:
             for task in self.tasks:

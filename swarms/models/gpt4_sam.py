@@ -11,8 +11,7 @@ from swarms.utils.supervision_visualizer import MarkVisualizer
 class GPT4VSAM(BaseMultiModalModel):
     """
     GPT4VSAM class represents a multi-modal model that combines the capabilities of GPT-4 and SegmentAnythingMarkGenerator.
-    It takes an instance of BaseMultiModalModel (vlm)
-    and a device as input and provides methods for loading images and making predictions.
+    It takes an instance of BaseMultiModalModel (vlm) and a device as input and provides methods for loading images and making predictions.
 
     Args:
         vlm (BaseMultiModalModel): An instance of BaseMultiModalModel representing the visual language model.

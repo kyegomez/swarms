@@ -129,8 +129,7 @@ class MajorityVoting:
         multithreaded (bool, optional): Whether to run the agents using multithreading. Defaults to False.
         multiprocess (bool, optional): Whether to run the agents using multiprocessing. Defaults to False.
         asynchronous (bool, optional): Whether to run the agents asynchronously. Defaults to False.
-        output_parser (callable, optional): A callable function to parse the output
-        of the majority voting system. Defaults to None.
+        output_parser (callable, optional): A callable function to parse the output of the majority voting system. Defaults to None.
 
     Examples:
         >>> from swarms.structs.agent import Agent

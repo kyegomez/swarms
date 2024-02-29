@@ -257,7 +257,7 @@ class Dalle3:
         """Print the Dalle3 dashboard"""
         print(
             colored(
-                f"""Dalle3 Dashboard:
+                f"""Dalle3 Dashboard: 
                     --------------------
 
                     Model: {self.model}
@@ -271,8 +271,8 @@ class Dalle3:
                     Save Folder: {self.save_folder}
                     Image Format: {self.image_format}
                     --------------------
-
-
+                    
+                    
                     """,
                 "green",
             )
