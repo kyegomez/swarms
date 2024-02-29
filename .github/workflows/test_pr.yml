@@ -3,16 +3,17 @@
 name: Presubmit checks
 on: [push, pull_request]
 jobs:
-  pytype3_10:
-    name: pytype 3.10
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/library/setup
-      - name: Install pytype
-        run: pip install -q pytype
-      - name: Run pytype
-        run: pytype .
+  # Disabled until google/pytype/issues/151 is resolved
+  # pytype3_10:
+  #   name: pytype 3.10
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: ./.github/library/setup
+  #     - name: Install pytype
+  #       run: pip install -q pytype
+  #     - name: Run pytype
+  #       run: pytype ./swarms
   format:
     name: Check format with black
     runs-on: ubuntu-latest
