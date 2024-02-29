@@ -68,11 +68,11 @@ The team has thousands of hours building and optimizing autonomous agents. Leade
 
 Key milestones: get 80K framework users in January 2024, start contracts in target verticals, introduce commercial products in 2025 with various pricing models.
 
-## Resources
-### **Pre-Seed Pitch Deck** 
+### **Resources**
+#### **Pre-Seed Pitch Deck** 
 - [Here is our pitch deck for our preseed round](https://drive.google.com/file/d/1c76gK5UIdrfN4JOSpSlvVBEOpzR9emWc/view?usp=sharing)
 
-### **The Swarm Corporation Memo**
+#### **The Swarm Corporation Memo**
 To learn more about our mission, vision, plans for GTM, and much more please refer to the [Swarm Memo here](https://docs.google.com/document/d/1hS_nv_lFjCqLfnJBoF6ULY9roTbSgSuCkvXvSUSc7Lo/edit?usp=sharing)
 
 
@@ -91,8 +91,10 @@ This section is dedicated entirely for corporate documents.
 ## **Product**
 Swarms is an open source framework for developers in python to enable seamless, reliable, and scalable multi-agent orchestration through modularity, customization, and precision.
 
-[Here is the official Swarms Github Page:](https://github.com/kyegomez/swarms)
-
+- [Swarms Github Page:](https://github.com/kyegomez/swarms)
+- [Swarms Memo](https://docs.google.com/document/d/1hS_nv_lFjCqLfnJBoF6ULY9roTbSgSuCkvXvSUSc7Lo/edit)
+- [Swarms Project Board](https://github.com/users/kyegomez/projects/1)
+- [Swarms Website](https://www.swarms.world/g)
 
 ### Product Growth Metrics
 | Name                             | Description                                                                                                   | Link                                                                                      |
