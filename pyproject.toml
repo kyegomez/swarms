@@ -10,16 +10,23 @@ description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
 homepage = "https://github.com/kyegomez/swarms"
-documentation = "https://swarms.apac.ai"  
-readme = "README.md"  # Assuming you have a README.md
+documentation = "https://swarms.apac.ai"
+readme = "README.md"
 repository = "https://github.com/kyegomez/swarms"
-keywords = ["artificial intelligence", "deep learning", "optimizers", "Prompt Engineering", "swarms", "agents"]
+keywords = [
+    "artificial intelligence",
+    "deep learning",
+    "optimizers",
+    "Prompt Engineering",
+    "swarms",
+    "agents",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.10"
+    "Programming Language :: Python :: 3.10",
 ]
 
 
@@ -86,9 +93,12 @@ types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
 
 
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.2"
+
 [tool.autopep8]
 max_line_length = 70
-ignore = "E501,W6"  # or ["E501", "W6"]
+ignore = "E501,W6"   # or ["E501", "W6"]
 in-place = true
 recursive = true
 aggressive = 3
