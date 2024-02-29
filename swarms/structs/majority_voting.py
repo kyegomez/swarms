@@ -1,15 +1,15 @@
 import asyncio
 import concurrent.futures
 import re
+import sys
 from collections import Counter
 from multiprocessing import Pool
 from typing import Any, List
 
+from loguru import logger
+
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from loguru import logger
-import sys
-
 
 # Configure loguru logger with advanced settings
 logger.remove()

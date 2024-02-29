@@ -1,5 +1,6 @@
-import cv2
 from typing import List
+
+import cv2
 
 
 def video_to_frames(video_file: str) -> List:

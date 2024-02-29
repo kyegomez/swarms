@@ -68,11 +68,11 @@ The team has thousands of hours building and optimizing autonomous agents. Leade
 
 Key milestones: get 80K framework users in January 2024, start contracts in target verticals, introduce commercial products in 2025 with various pricing models.
 
-## Resources
-### **Pre-Seed Pitch Deck** 
+### **Resources**
+#### **Pre-Seed Pitch Deck** 
 - [Here is our pitch deck for our preseed round](https://drive.google.com/file/d/1c76gK5UIdrfN4JOSpSlvVBEOpzR9emWc/view?usp=sharing)
 
-### **The Swarm Corporation Memo**
+#### **The Swarm Corporation Memo**
 To learn more about our mission, vision, plans for GTM, and much more please refer to the [Swarm Memo here](https://docs.google.com/document/d/1hS_nv_lFjCqLfnJBoF6ULY9roTbSgSuCkvXvSUSc7Lo/edit?usp=sharing)
 
 
@@ -91,12 +91,14 @@ This section is dedicated entirely for corporate documents.
 ## **Product**
 Swarms is an open source framework for developers in python to enable seamless, reliable, and scalable multi-agent orchestration through modularity, customization, and precision.
 
-[Here is the official Swarms Github Page:](https://github.com/kyegomez/swarms)
+- [Swarms Github Page:](https://github.com/kyegomez/swarms)
+- [Swarms Memo](https://docs.google.com/document/d/1hS_nv_lFjCqLfnJBoF6ULY9roTbSgSuCkvXvSUSc7Lo/edit)
+- [Swarms Project Board](https://github.com/users/kyegomez/projects/1)
+- [Swarms Website](https://www.swarms.world/g)
 
 ### Product Growth Metrics
-
 | Name                             | Description                                                                                                   | Link                                                                                      |
-|--------------------------b--------|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+|----------------------------------|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | Total Downloads of all time      | Total number of downloads for the product over its entire lifespan.                                           | [![Downloads](https://static.pepy.tech/badge/swarms)](https://pepy.tech/project/swarms)   |
 | Downloads this month             | Number of downloads for the product in the current month.                                                     | [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms) |
 | Total Downloads this week        | Total number of downloads for the product in the current week.                                                | [![Downloads](https://static.pepy.tech/badge/swarms/week)](https://pepy.tech/project/swarms) |
@@ -109,5 +111,3 @@ Swarms is an open source framework for developers in python to enable seamless, 
 | Issues with the framework        | Current open issues for the product on Github.                                                                | [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) |
 
 
-gi
--------

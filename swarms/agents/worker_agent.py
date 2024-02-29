@@ -6,6 +6,7 @@ from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
+
 from swarms.tools.tool import BaseTool
 from swarms.utils.decorators import error_decorator, timing_decorator
 

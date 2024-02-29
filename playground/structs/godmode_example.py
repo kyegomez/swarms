@@ -2,8 +2,8 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import Anthropic, Gemini, Mixtral, OpenAIChat
 from swarms import ModelParallelizer
+from swarms.models import Anthropic, Gemini, Mixtral, OpenAIChat
 
 load_dotenv()
 

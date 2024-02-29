@@ -1,9 +1,7 @@
 from swarms.models.anthropic import Anthropic  # noqa: E402
 from swarms.models.base_embedding_model import BaseEmbeddingModel
 from swarms.models.base_llm import AbstractLLM  # noqa: E402
-from swarms.models.base_multimodal_model import (
-    BaseMultiModalModel,
-)
+from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 # noqa: E402
 from swarms.models.biogpt import BioGPT  # noqa: E402
@@ -25,9 +23,7 @@ from swarms.models.gpt4_vision_api import GPT4VisionAPI  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
 from swarms.models.idefics import Idefics  # noqa: E402
 from swarms.models.kosmos_two import Kosmos  # noqa: E402
-from swarms.models.layoutlm_document_qa import (
-    LayoutLMDocumentQA,
-)
+from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
 
 # noqa: E402
 from swarms.models.llava import LavaMultiModal  # noqa: E402
@@ -47,10 +43,7 @@ from swarms.models.petals import Petals  # noqa: E402
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 from swarms.models.roboflow_model import RoboflowMultiModal
 from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
-from swarms.models.sampling_params import (
-    SamplingParams,
-    SamplingType,
-)
+from swarms.models.sampling_params import SamplingParams, SamplingType
 from swarms.models.timm import TimmModel  # noqa: E402
 
 # from swarms.models.modelscope_pipeline import ModelScopePipeline
@@ -67,15 +60,11 @@ from swarms.models.types import (  # noqa: E402
     TextModality,
     VideoModality,
 )
-from swarms.models.ultralytics_model import (
-    UltralyticsModel,
-)
+from swarms.models.ultralytics_model import UltralyticsModel
 
 # noqa: E402
 from swarms.models.vilt import Vilt  # noqa: E402
-from swarms.models.wizard_storytelling import (
-    WizardLLMStoryTeller,
-)
+from swarms.models.wizard_storytelling import WizardLLMStoryTeller
 
 # noqa: E402
 # from swarms.models.vllm import vLLM  # noqa: E402
