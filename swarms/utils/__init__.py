@@ -46,6 +46,8 @@ from swarms.utils.video_to_frames import (
 
 ########
 from swarms.utils.yaml_output_parser import YamlOutputParser
+from swarms.utils.pandas_to_str import dataframe_to_text
+
 
 __all__ = [
     "SubprocessCodeInterpreter",
@@ -82,4 +84,5 @@ __all__ = [
     "MarkVisualizer",
     "video_to_frames",
     "save_frames_as_images",
+    "dataframe_to_text",
 ]
