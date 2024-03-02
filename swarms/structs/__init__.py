@@ -1,4 +1,5 @@
 from swarms.structs.agent import Agent
+from swarms.structs.agent_base import AgentJob
 from swarms.structs.autoscaler import AutoScaler
 from swarms.structs.base import BaseStructure
 from swarms.structs.base_swarm import AbstractSwarm
@@ -8,16 +9,27 @@ from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.graph_workflow import GraphWorkflow
 from swarms.structs.groupchat import GroupChat, GroupChatManager
+from swarms.structs.majority_voting import (
+    MajorityVoting,
+    majority_voting,
+    most_frequent,
+    parse_code_completion,
+)
 from swarms.structs.message import Message
 from swarms.structs.model_parallizer import ModelParallelizer
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
+from swarms.structs.multi_process_workflow import (
+    MultiProcessingWorkflow,
+)
+from swarms.structs.multi_threaded_workflow import (
+    MultiThreadedWorkflow,
+)
 from swarms.structs.nonlinear_workflow import NonlinearWorkflow
 from swarms.structs.plan import Plan
 from swarms.structs.recursive_workflow import RecursiveWorkflow
 from swarms.structs.schemas import (
     Artifact,
     ArtifactUpload,
-    Step,
     StepInput,
     StepOutput,
     StepRequestBody,
@@ -25,6 +37,7 @@ from swarms.structs.schemas import (
     TaskRequestBody,
 )
 from swarms.structs.sequential_workflow import SequentialWorkflow
+from swarms.structs.stackoverflow_swarm import StackOverflowSwarm
 from swarms.structs.step import Step
 from swarms.structs.swarm_net import SwarmNetwork
 from swarms.structs.swarming_architectures import (
@@ -48,6 +61,11 @@ from swarms.structs.swarming_architectures import (
     star_swarm,
 )
 from swarms.structs.task import Task
+from swarms.structs.task_queue_base import (
+    TaskQueueBase,
+    synchronized_queue,
+)
+from swarms.structs.tool_json_schema import JSON
 from swarms.structs.utils import (
     detect_markdown,
     distribute_tasks,
@@ -57,13 +75,6 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
-from swarms.structs.tool_json_schema import JSON
-from swarms.structs.majority_voting import (
-    most_frequent,
-    parse_code_completion,
-    majority_voting,
-)
-
 
 __all__ = [
     "Agent",
@@ -123,4 +134,11 @@ __all__ = [
     "most_frequent",
     "parse_code_completion",
     "majority_voting",
+    "MajorityVoting",
+    "StackOverflowSwarm",
+    "synchronized_queue",
+    "TaskQueueBase",
+    "MultiProcessingWorkflow",
+    "MultiThreadedWorkflow",
+    "AgentJob",
 ]

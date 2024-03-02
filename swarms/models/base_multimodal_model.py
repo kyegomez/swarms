@@ -105,7 +105,6 @@ class BaseMultiModalModel:
         **kwargs,
     ):
         """Run the model"""
-        pass
 
     def __call__(
         self,
@@ -127,7 +126,6 @@ class BaseMultiModalModel:
 
     async def arun(self, task: str, img: str, *args, **kwargs):
         """Run the model asynchronously"""
-        pass
 
     def get_img_from_web(self, img: str, *args, **kwargs):
         """Get the image from the web"""
@@ -294,7 +292,6 @@ class BaseMultiModalModel:
     @abstractmethod
     def generate_summary(self, text: str) -> str:
         """Generate Summary"""
-        pass
 
     def set_temperature(self, value: float):
         """Set Temperature"""

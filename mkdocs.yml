@@ -58,8 +58,9 @@ nav:
 - Home:
     - Overview: "index.md"
     - Contributing: "contributing.md"
+    - Limitations of Individual Agents: "limits_of_individual_agents.md"
 - Swarms:
-  - Overview: "swarms/index.md"
+  - Overview: "swarms/index.md" 
   - swarms.agents:
     - Agents:
       - WorkerAgent: "swarms/agents/workeragent.md"
@@ -104,6 +105,7 @@ nav:
         - stepinput: "swarms/structs/stepinput.md"
         - artifact: "swarms/structs/artifact.md"
         - task: "swarms/structs/task.md"
+        - Task Queue Base: "swarms/structs/taskqueuebase.md"
       - Workflows:
         - recursiveworkflow: "swarms/structs/recursiveworkflow.md"
         - concurrentworkflow: "swarms/structs/concurrentworkflow.md"
@@ -116,6 +118,7 @@ nav:
         - groupchat: "swarms/structs/groupchat.md"
         - swarmnetwork: "swarms/structs/swarmnetwork.md"
         - groupchatmanager: "swarms/structs/groupchatmanager.md"
+        - MajorityVoting: "swarms/structs/majorityvoting.md"
   - swarms.tokenizers:
     - Language:
       - Tokenizer: "swarms/tokenizers/tokenizer.md"

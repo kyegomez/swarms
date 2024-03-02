@@ -1,4 +1,4 @@
-from swarms import Worker, Orchestrator
+from swarms import Orchestrator, Worker
 
 node = Worker(
     openai_api_key="",

@@ -20,7 +20,7 @@ class JSON(ABC):
         Returns:
             dict: The loaded JSON schema.
         """
-        with open(self.schema_path, "r") as f:
+        with open(self.schema_path) as f:
             return json.load(f)
 
     @abstractmethod
@@ -34,4 +34,3 @@ class JSON(ABC):
         Raises:
             NotImplementedError: This method needs to be implemented by the subclass.
         """
-        pass

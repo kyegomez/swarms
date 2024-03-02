@@ -1,6 +1,8 @@
-import torch
 from unittest.mock import MagicMock
+
 import pytest
+import torch
+
 from swarms.utils.device_checker_cuda import check_device
 
 

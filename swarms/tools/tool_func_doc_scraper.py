@@ -1,5 +1,6 @@
 import inspect
 from typing import Callable
+
 from termcolor import colored
 
 

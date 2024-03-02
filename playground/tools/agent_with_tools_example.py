@@ -1,7 +1,9 @@
 import os
-from swarms.models import OpenAIChat
-from swarms.structs import Agent
+
 from dotenv import load_dotenv
+
+from swarms import Agent, OpenAIChat
+from swarms.tools.tool import tool
 
 load_dotenv()
 
@@ -10,24 +12,25 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 llm = OpenAIChat(api_key=api_key)
 
-# @tool
-# def search_api(query: str) -> str:
-#     """Search API
 
-#     Args:
-#         query (str): _description_
+@tool
+def search_api(query: str) -> str:
+    """Search API
 
-#     Returns:
-#         str: _description_
-#     """
-#     print(f"Searching API for {query}")
+    Args:
+        query (str): _description_
+
+    Returns:
+        str: _description_
+    """
+    print(f"Searching API for {query}")
 
 
 ## Initialize the workflow
 agent = Agent(
     llm=llm,
     max_loops=5,
-    # tools=[search_api],
+    tools=[search_api],
     dashboard=True,
 )
 

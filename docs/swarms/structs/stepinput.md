@@ -12,10 +12,7 @@ The `StepInput` class is defined as follows:
 class StepInput(BaseModel):
     __root__: Any = Field(
         ...,
-        description=(
-            "Input parameters for the task step. Any value is"
-            " allowed."
-        ),
+        description=("Input parameters for the task step. Any value is" " allowed."),
         example='{\n"file_to_refactor": "models.py"\n}',
     )
 ```
@@ -29,10 +26,7 @@ The `StepInput` class is designed to accept any input value, providing flexibili
 ```python
 from swarms.structs import StepInput
 
-input_params = {
-    "file_to_refactor": "models.py",
-    "refactor_method": "code"
-}
+input_params = {"file_to_refactor": "models.py", "refactor_method": "code"}
 step_input = StepInput(__root__=input_params)
 ```
 
@@ -42,10 +36,7 @@ In this example, we import the `StepInput` class from the `swarms.structs` libra
 ```python
 from swarms.structs import StepInput
 
-input_params = {
-    "input_path": "data.csv",
-    "output_path": "result.csv"
-}
+input_params = {"input_path": "data.csv", "output_path": "result.csv"}
 step_input = StepInput(__root__=input_params)
 ```
 
@@ -56,7 +47,7 @@ In this example, we again create an instance of `StepInput` by passing a diction
 from swarms.structs import StepInput
 
 file_path = "config.json"
-with open(file_path, 'r') as f:
+with open(file_path) as f:
     input_data = json.load(f)
 
 step_input = StepInput(__root__=input_data)

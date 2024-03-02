@@ -1,5 +1,6 @@
-from typing import Optional, List
 import multiprocessing as mp
+from typing import List, Optional
+
 from swarms.structs.base import BaseStructure
 
 

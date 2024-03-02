@@ -14,7 +14,7 @@ In `SentencePieceTokenizer`, the tokenization process is language-agnostic and e
 class SentencePieceTokenizer:
     """
     Tokenizer of sentencepiece.
-    
+
     Args:
         model_file (str): the path of the tokenizer model
     """
@@ -45,7 +45,7 @@ Parameter | Type | Description
 ```python
 from swarms.tokenizers import SentencePieceTokenizer
 
-tokenizer = SentencePieceTokenizer(model_file='your_model.model')
+tokenizer = SentencePieceTokenizer(model_file="your_model.model")
 ```
 
 ### Properties: Vocabulary Information

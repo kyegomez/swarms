@@ -38,7 +38,7 @@ worker = Worker(
     human_in_the_loop=False,
     temperature=0.5,
     llm=some_language_model,
-    openai_api_key="my_key"
+    openai_api_key="my_key",
 )
 worker.run("What's the weather in Miami?")
 ```
@@ -56,11 +56,11 @@ worker.send()
 ```python
 external_tools = [MyTool1(), MyTool2()]
 worker = Worker(
-name="My Worker",
-role="Worker",
-external_tools=external_tools,
-human_in_the_loop=False,
-temperature=0.5,
+    name="My Worker",
+    role="Worker",
+    external_tools=external_tools,
+    human_in_the_loop=False,
+    temperature=0.5,
 )
 ```
 

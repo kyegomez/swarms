@@ -1,6 +1,5 @@
-from swarms import OpenAI, Agent
-from swarms.structs.groupchat import GroupChatManager, GroupChat
-
+from swarms import Agent, OpenAI
+from swarms.structs.groupchat import GroupChat, GroupChatManager
 
 api_key = ""
 

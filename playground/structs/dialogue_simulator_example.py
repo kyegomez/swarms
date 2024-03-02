@@ -1,5 +1,4 @@
-from swarms.swarms import DialogueSimulator
-from swarms.workers.worker import Worker
+from swarms import DialogueSimulator, Worker
 from swarms.models import OpenAIChat
 
 llm = OpenAIChat(

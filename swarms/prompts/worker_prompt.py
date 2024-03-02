@@ -3,12 +3,12 @@ import datetime
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def worker_tools_sop_promp(name: str, memory: str):
+def worker_tools_sop_promp(name: str, memory: str, time=time):
     out = """
     You are {name}, 
     Your decisions must always be made independently without seeking user assistance. 
     Play to your strengths as an LLM and pursue simple strategies with no legal complications.
-    If you have completed all your tasks, make sure to use the "finish" command.
+    If you have completed all your tasks, make sure to use the 'finish' command.
     
     GOALS:
     
@@ -19,11 +19,11 @@ def worker_tools_sop_promp(name: str, memory: str):
     1. ~4000 word limit for short term memory. Your short term memory is short, so immediately save important information to files.
     2. If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.
     3. No user assistance
-    4. Exclusively use the commands listed in double quotes e.g. "command name"
+    4. Exclusively use the commands listed in double quotes e.g. 'command name'
     
     Commands:
     
-    1. finish: use this to signal that you have finished all your objectives, args: "response": "final response to let people know you have finished your objectives"
+    1. finish: use this to signal that you have finished all your objectives, args: 'response': 'final response to let people know you have finished your objectives'
     
     Resources:
     
@@ -42,17 +42,17 @@ def worker_tools_sop_promp(name: str, memory: str):
     You should only respond in JSON format as described below 
     Response Format: 
     {
-        "thoughts": {
-            "text": "thought",
-            "reasoning": "reasoning",
-            "plan": "- short bulleted - list that conveys - long-term plan",
-            "criticism": "constructive self-criticism",
-            "speak": "thoughts summary to say to user"
+        'thoughts': {
+            'text': 'thoughts',
+            'reasoning': 'reasoning',
+            'plan': '- short bulleted - list that conveys - long-term plan',
+            'criticism': 'constructive self-criticism',
+            'speak': 'thoughts summary to say to user'
         },
-        "command": {
-            "name": "command name",
-            "args": {
-                "arg name": "value"
+        'command': {
+            'name': 'command name',
+            'args': {
+                'arg name': 'value'
             }
         }
     }
@@ -62,6 +62,6 @@ def worker_tools_sop_promp(name: str, memory: str):
     [{memory}]
     
     Human: Determine which next command to use, and respond using the format specified above:
-    """.format(name=name, memory=memory, time=time)
+    """.format(name=name, time=time, memory=memory)
 
     return str(out)

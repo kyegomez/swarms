@@ -25,17 +25,18 @@ The `BaseTokenizer` class provides the structure for creating tokenizers. It inc
 ```python
 from swarms.tokenizers import BaseTokenizer
 
-class SimpleTokenizer(BaseTokenizer):
 
+class SimpleTokenizer(BaseTokenizer):
     def count_tokens(self, text: Union[str, List[dict]]) -> int:
         if isinstance(text, str):
             # Split text by spaces as a simple tokenization approach
             return len(text.split())
         elif isinstance(text, list):
             # Assume list of dictionaries with 'token' key
-            return sum(len(item['token'].split()) for item in text)
+            return sum(len(item["token"].split()) for item in text)
         else:
             raise TypeError("Unsupported type for text")
+
 
 # Usage example
 tokenizer = SimpleTokenizer(max_tokens=100)

@@ -1,4 +1,5 @@
 import torch
+
 from swarms.utils.load_model_torch import load_model_torch
 
 

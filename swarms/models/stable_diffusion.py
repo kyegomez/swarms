@@ -1,10 +1,11 @@
 import base64
 import os
-import requests
-import uuid
 import shutil
-from dotenv import load_dotenv
+import uuid
 from typing import List
+
+import requests
+from dotenv import load_dotenv
 
 load_dotenv()
 

@@ -26,20 +26,26 @@ To use the Vilt model, follow these steps:
 
 ```python
 from swarms.models import Vilt
+
 model = Vilt()
 ```
 
 2. Call the model with a text question and an image URL:
 
 ```python
-output = model("What is this image?", "http://images.cocodataset.org/val2017/000000039769.jpg")
+output = model(
+    "What is this image?", "http://images.cocodataset.org/val2017/000000039769.jpg"
+)
 ```
 
 ### Example 1 - Image Questioning
 
 ```python
 model = Vilt()
-output = model("What are the objects in this image?", "http://images.cocodataset.org/val2017/000000039769.jpg")
+output = model(
+    "What are the objects in this image?",
+    "http://images.cocodataset.org/val2017/000000039769.jpg",
+)
 print(output)
 ```
 
@@ -47,7 +53,10 @@ print(output)
 
 ```python
 model = Vilt()
-output = model("Describe the scene in this image.", "http://images.cocodataset.org/val2017/000000039769.jpg")
+output = model(
+    "Describe the scene in this image.",
+    "http://images.cocodataset.org/val2017/000000039769.jpg",
+)
 print(output)
 ```
 
@@ -55,7 +64,10 @@ print(output)
 
 ```python
 model = Vilt()
-output = model("Tell me more about the landmark in this image.", "http://images.cocodataset.org/val2017/000000039769.jpg")
+output = model(
+    "Tell me more about the landmark in this image.",
+    "http://images.cocodataset.org/val2017/000000039769.jpg",
+)
 print(output)
 ```
 

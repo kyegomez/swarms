@@ -1,12 +1,12 @@
 from concurrent import futures
 from concurrent.futures import Future
-from typing import TypeVar, Dict
+from typing import Dict, TypeVar
 
 T = TypeVar("T")
 
 
 def execute_futures_dict(
-    fs_dict: Dict[str, Future[T]]
+    fs_dict: Dict[str, Future[T]],
 ) -> Dict[str, T]:
     """Execute a dictionary of futures and return the results.
 

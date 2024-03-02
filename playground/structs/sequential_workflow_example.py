@@ -1,4 +1,4 @@
-from swarms import OpenAIChat, Agent, Task, SequentialWorkflow
+from swarms import Agent, OpenAIChat, SequentialWorkflow, Task
 
 # Example usage
 llm = OpenAIChat(
@@ -44,5 +44,5 @@ workflow.add(tasks=[task1, task2])
 workflow.run()
 
 # # Output the results
-# for task in workflow.tasks:
-#     print(f"Task: {task.description}, Result: {task.result}")
+for task in workflow.tasks:
+    print(f"Task: {task.description}, Result: {task.result}")

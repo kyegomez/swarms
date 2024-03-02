@@ -39,7 +39,6 @@ print(response)
 ```python
 from swarms.models.bing_chat import BingChat
 
-
 edgegpt = BingChat(cookies_path="./path/to/cookies.json")
 response = edgegpt("Hello, my name is ChatGPT")
 print(response)
@@ -48,7 +47,9 @@ print(response)
 3. Generate an image based on a text prompt:
 
 ```python
-image_path = edgegpt.create_img("Sunset over mountains", output_dir="./output", auth_cookie="your_auth_cookie")
+image_path = edgegpt.create_img(
+    "Sunset over mountains", output_dir="./output", auth_cookie="your_auth_cookie"
+)
 print(f"Generated image saved at {image_path}")
 ```
 
@@ -59,7 +60,9 @@ from swarms.models.bing_chat import BingChat
 
 edgegpt = BingChat(cookies_path="./path/to/cookies.json")
 
-image_path = edgegpt.create_img("Sunset over mountains", output_dir="./output", auth_cookie="your_auth_cookie")
+image_path = edgegpt.create_img(
+    "Sunset over mountains", output_dir="./output", auth_cookie="your_auth_cookie"
+)
 
 print(f"Generated image saved at {image_path}")
 ```

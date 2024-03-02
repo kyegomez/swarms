@@ -41,9 +41,7 @@ class Artifact(BaseModel):
     )
     relative_path: Optional[str] = Field(
         None,
-        description=(
-            "Relative path of the artifact in the agent's workspace"
-        ),
+        description=("Relative path of the artifact in the agent's workspace"),
         example="python/code/",
     )
 ```
@@ -64,7 +62,7 @@ from swarms.structs import Artifact
 artifact_instance = Artifact(
     artifact_id="b225e278-8b4c-4f99-a696-8facf19f0e56",
     file_name="main.py",
-    relative_path="python/code/"
+    relative_path="python/code/",
 )
 ```
 
@@ -85,8 +83,7 @@ If the `relative_path` attribute is not provided during artifact creation, it wi
 
 ```python
 artifact_instance_no_path = Artifact(
-    artifact_id="c280s347-9b7d-3c68-m337-7abvf50j23k",
-    file_name="script.js"
+    artifact_id="c280s347-9b7d-3c68-m337-7abvf50j23k", file_name="script.js"
 )
 
 print(artifact_instance_no_path.relative_path)

@@ -1,7 +1,8 @@
-import logging
-import pymongo
-import platform
 import datetime
+import logging
+import platform
+
+import pymongo
 
 
 class Telemetry:

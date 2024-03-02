@@ -1,6 +1,7 @@
 # BaseTokenizer
 
 import pytest
+
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
 
 

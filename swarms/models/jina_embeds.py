@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 import torch
 from numpy.linalg import norm
@@ -9,6 +9,7 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
+
 from swarms.models.base_embedding_model import BaseEmbeddingModel
 
 

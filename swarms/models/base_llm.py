@@ -123,7 +123,6 @@ class AbstractLLM(ABC):
     @metrics_decorator
     def run(self, task: Optional[str] = None, *args, **kwargs) -> str:
         """generate text using language model"""
-        pass
 
     async def arun(self, task: Optional[str] = None, *args, **kwargs):
         """Asynchronous run
@@ -190,7 +189,6 @@ class AbstractLLM(ABC):
 
     def generate_summary(self, text: str) -> str:
         """Generate Summary"""
-        pass
 
     def set_temperature(self, value: float):
         """Set Temperature"""

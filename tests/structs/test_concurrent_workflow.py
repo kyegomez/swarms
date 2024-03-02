@@ -1,6 +1,7 @@
-from unittest.mock import Mock, create_autospec, patch
 from concurrent.futures import Future
-from swarms.structs import ConcurrentWorkflow, Task, Agent
+from unittest.mock import Mock, create_autospec, patch
+
+from swarms.structs import Agent, ConcurrentWorkflow, Task
 
 
 def test_add():

@@ -56,7 +56,8 @@ Here are some examples of how you can use the `prep_torch_inference` method. Bef
 
 ```python
 import torch
-from swarms.utils import prep_torch_inference, load_model_torch
+
+from swarms.utils import load_model_torch, prep_torch_inference
 ```
 
 ### Example 1: Load a model for inference on CPU

@@ -1,6 +1,7 @@
 import torch
-from PIL import Image
 from modelscope import AutoModelForCausalLM, AutoTokenizer
+from PIL import Image
+
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 device_check = "cuda" if torch.cuda.is_available() else "cpu"

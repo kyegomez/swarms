@@ -1,19 +1,14 @@
-import os
-import numpy as np
 import logging
+import os
 import uuid
-from typing import Optional, Callable, List
+from typing import Callable, List, Optional
 
 import chromadb
+import numpy as np
 from dotenv import load_dotenv
 
-# from chromadb.utils.data import ImageLoader
-from chromadb.utils.embedding_functions import (
-    OpenCLIPEmbeddingFunction,
-)
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.markdown_message import display_markdown_message
-
 
 # Load environment variables
 load_dotenv()
@@ -47,8 +42,8 @@ class ChromaDB:
 
     def __init__(
         self,
-        metric: str,
-        output_dir: str,
+        metric: str = "cosine",
+        output_dir: str = "swarms",
         limit_tokens: Optional[int] = 1000,
         n_results: int = 2,
         embedding_function: Callable = None,
@@ -94,7 +89,7 @@ class ChromaDB:
 
         # If multimodal set the embedding model to OpenCLIP
         if multimodal:
-            self.embedding_function = OpenCLIPEmbeddingFunction()
+            self.embedding_function = None
 
         # Create ChromaDB client
         self.client = chromadb.Client()

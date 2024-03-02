@@ -1,11 +1,15 @@
-from swarms.memory import chroma
+from swarms.memory import ChromaDB
 
-chromadbcl = chroma.ChromaClient()
-
-chromadbcl.add_vectors(
-    ["This is a document", "BONSAIIIIIII", "the walking dead"]
+# Initialize the memory
+chroma = ChromaDB(
+    metric="cosine",
+    limit_tokens=1000,
+    verbose=True,
 )
 
-results = chromadbcl.search_vectors("zombie", limit=1)
+# Add text
+text = "This is a test"
+chroma.add(text)
 
-print(results)
+# Search for similar text
+similar_text = chroma.query(text)

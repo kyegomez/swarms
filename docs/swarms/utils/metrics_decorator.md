@@ -70,6 +70,7 @@ def text_generator(self, text: str):
     # language generation implementation goes here
     return tokens
 
+
 # Instantiate the class and call the decorated function
 obj = ClassName()
 obj.text_generator("Hello, world!")

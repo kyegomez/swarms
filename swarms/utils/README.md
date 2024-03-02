@@ -100,13 +100,16 @@ Here's the pseudocode algorithm for a `WorkerNode` class that includes a vector 
 In Python, this could look something like:
 
 ```python
-from langchain.vectorstores import FAISS
+from collections import deque
+from typing import Any, Dict
+
+import faiss
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
-import faiss
+from langchain.vectorstores import FAISS
+
 from swarms.workers.auto_agent import AutoGPT
-from collections import deque
-from typing import Dict, Any
+
 
 class WorkerNode:
     def __init__(self, llm: AutoGPT, vectorstore: FAISS):
@@ -118,20 +121,24 @@ class WorkerNode:
 
     def receive_task(self, task):
         self.task_queue.append(task)
-        self.task_status[task] = 'pending'
+        self.task_status[task] = "pending"
 
     def complete_task(self):
         task = self.task_queue.popleft()
         result = self.llm.run(task)
         self.completed_tasks.append(result)
-        self.task_status[task] = 'completed'
+        self.task_status[task] = "completed"
         # Insert task result into the vectorstore
         self.vectorstore.insert(task, result)
         return result
 
     def communicate(self):
         # Share task results and status through vectorstore
-        completed_tasks = [(task, self.task_status[task]) for task in self.task_queue if self.task_status[task] == 'completed']
+        completed_tasks = [
+            (task, self.task_status[task])
+            for task in self.task_queue
+            if self.task_status[task] == "completed"
+        ]
         for task, status in completed_tasks:
             self.vectorstore.insert(task, status)
 ```

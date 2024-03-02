@@ -1,10 +1,10 @@
-import toml
 import pkg_resources
+import toml
 
 
 def update_pyproject_versions(pyproject_path):
     try:
-        with open(pyproject_path, "r") as file:
+        with open(pyproject_path) as file:
             data = toml.load(file)
     except FileNotFoundError:
         print(f"Error: The file '{pyproject_path}' was not found.")

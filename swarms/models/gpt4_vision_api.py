@@ -8,6 +8,7 @@ import aiohttp
 import requests
 from dotenv import load_dotenv
 from termcolor import colored
+
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 try:
@@ -298,8 +299,6 @@ class GPT4VisionAPI(BaseMultiModalModel):
 
         if self.streaming_enabled:
             content = self.stream_response(content)
-        else:
-            pass
 
         if self.beautify:
             content = colored(content, "cyan")
@@ -362,8 +361,6 @@ class GPT4VisionAPI(BaseMultiModalModel):
 
             if self.streaming_enabled:
                 content = self.stream_response(content)
-            else:
-                pass
 
             if self.beautify:
                 content = colored(content, "cyan")

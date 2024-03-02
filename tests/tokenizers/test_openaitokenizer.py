@@ -1,6 +1,7 @@
 # OpenAITokenizer
 
 import pytest
+
 import swarms.tokenizers.openai_tokenizers as tokenizers
 
 

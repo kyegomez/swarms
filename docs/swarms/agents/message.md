@@ -44,7 +44,7 @@ class Message:
     def __repr__(self):
         """
         __repr__ represents the string representation of the Message object.
-        
+
         Returns:
         (str) A string containing the timestamp, sender, and content of the message.
         """
@@ -60,10 +60,7 @@ The `Message` class represents a message in the agent system. Upon initializatio
 Creating a `Message` object and displaying its string representation.
 
 ```python
-mes = Message(
-    sender = "Kye",
-    content = "Hello! How are you?"
-)
+mes = Message(sender="Kye", content="Hello! How are you?")
 
 print(mes)
 ```
@@ -80,9 +77,7 @@ Creating a `Message` object with metadata.
 ```python
 metadata = {"priority": "high", "category": "urgent"}
 mes_with_metadata = Message(
-    sender = "Alice",
-    content = "Important update",
-    metadata = metadata
+    sender="Alice", content="Important update", metadata=metadata
 )
 
 print(mes_with_metadata)
@@ -98,10 +93,7 @@ Output:
 Creating a `Message` object without providing metadata.
 
 ```python
-mes_no_metadata = Message(
-    sender = "Bob",
-    content = "Reminder: Meeting at 2PM"
-)
+mes_no_metadata = Message(sender="Bob", content="Reminder: Meeting at 2PM")
 
 print(mes_no_metadata)
 ```

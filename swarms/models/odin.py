@@ -1,7 +1,9 @@
 import os
+
 import supervision as sv
-from ultralytics_example import YOLO
 from tqdm import tqdm
+from ultralytics_example import YOLO
+
 from swarms.models.base_llm import AbstractLLM
 from swarms.utils.download_weights_from_url import (
     download_weights_from_url,
@@ -34,7 +36,7 @@ class Odin(AbstractLLM):
         confidence_threshold: float = 0.3,
         iou_threshold: float = 0.7,
     ):
-        super(Odin, self).__init__()
+        super().__init__()
         self.source_weights_path = source_weights_path
         self.confidence_threshold = confidence_threshold
         self.iou_threshold = iou_threshold

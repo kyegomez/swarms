@@ -1,6 +1,8 @@
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock
-from swarms.models.vilt import Vilt, Image, requests
+
+from swarms.models.vilt import Image, Vilt, requests
 
 
 # Fixture for Vilt instance

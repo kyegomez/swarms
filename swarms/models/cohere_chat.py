@@ -1,14 +1,6 @@
 import logging
 from typing import Any, Callable, Dict, List, Optional
 
-from tenacity import (
-    before_sleep_log,
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
-
 from langchain.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
@@ -16,8 +8,15 @@ from langchain.callbacks.manager import (
 from langchain.llms.base import LLM
 from langchain.llms.utils import enforce_stop_tokens
 from langchain.load.serializable import Serializable
-from pydantic import Extra, Field, root_validator
 from langchain.utils import get_from_dict_or_env
+from pydantic import Extra, Field, root_validator
+from tenacity import (
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ def _create_retry_decorator(llm) -> Callable[[Any], Any]:
         wait=wait_exponential(
             multiplier=1, min=min_seconds, max=max_seconds
         ),
-        retry=(retry_if_exception_type(cohere.error.CohereError)),
+        retry=retry_if_exception_type(cohere.error.CohereError),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
 

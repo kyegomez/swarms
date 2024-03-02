@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from importlib import import_module
 from types import ModuleType
-from typing import Optional
 
 from anthropic import Anthropic
 
@@ -16,7 +15,7 @@ INSTALL_MAPPING = {
 }
 
 
-def import_optional_dependency(name: str) -> Optional[ModuleType]:
+def import_optional_dependency(name: str) -> ModuleType | None:
     """Import an optional dependency.
 
     If a dependency is missing, an ImportError with a nice message will be raised.

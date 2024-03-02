@@ -1,11 +1,12 @@
 import pytest
-from swarms.structs.model_parallizer import ModelParallelizer
+
 from swarms.models import (
+    GPT4VisionAPI,
     HuggingfaceLLM,
     Mixtral,
-    GPT4VisionAPI,
     ZeroscopeTTV,
 )
+from swarms.structs.model_parallizer import ModelParallelizer
 
 # Initialize the models
 custom_config = {

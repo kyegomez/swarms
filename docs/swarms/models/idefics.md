@@ -36,7 +36,9 @@ model = Idefics()
 2. Generate text based on prompts:
 
 ```python
-prompts = ["User: What is in this image? https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"]
+prompts = [
+    "User: What is in this image? https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"
+]
 response = model(prompts)
 print(response)
 ```
@@ -47,7 +49,9 @@ print(response)
 from swarms.models import Idefics
 
 model = Idefics()
-prompts = ["User: What is in this image? https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"]
+prompts = [
+    "User: What is in this image? https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"
+]
 response = model(prompts)
 print(response)
 ```

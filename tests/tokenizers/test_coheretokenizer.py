@@ -1,8 +1,10 @@
 # CohereTokenizer
 
-import pytest
-from swarms.tokenizers.cohere_tokenizer import CohereTokenizer
 from unittest.mock import MagicMock
+
+import pytest
+
+from swarms.tokenizers.cohere_tokenizer import CohereTokenizer
 
 
 @pytest.fixture

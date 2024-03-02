@@ -2,18 +2,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Literal, Sequence
 
 import numpy as np
 from pydantic import BaseModel, Extra, Field, root_validator
@@ -25,6 +14,7 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+
 from swarms.models.embeddings_base import Embeddings
 
 
@@ -36,7 +26,7 @@ def get_from_dict_or_env(
     return values.get(key) or os.getenv(env_key) or default
 
 
-def get_pydantic_field_names(cls: Any) -> Set[str]:
+def get_pydantic_field_names(cls: Any) -> set[str]:
     return set(cls.__annotations__.keys())
 
 
@@ -156,6 +146,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         .. code-block:: python
 
             from langchain.embeddings import OpenAIEmbeddings
+
             openai = OpenAIEmbeddings(openai_api_key="my-api-key")
 
     In order to use the library with Microsoft Azure endpoints, you need to set
@@ -168,6 +159,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         .. code-block:: python
 
             import os
+
             os.environ["OPENAI_API_TYPE"] = "azure"
             os.environ["OPENAI_API_BASE"] = "https://<your-endpoint.openai.azure.com/"
             os.environ["OPENAI_API_KEY"] = "your AzureOpenAI key"
@@ -175,6 +167,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             os.environ["OPENAI_PROXY"] = "http://your-corporate-proxy:8080"
 
             from langchain.embeddings.openai import OpenAIEmbeddings
+
             embeddings = OpenAIEmbeddings(
                 deployment="your-embeddings-deployment-name",
                 model="your-embeddings-model-name",
@@ -189,31 +182,29 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     client: Any  #: :meta private:
     model: str = "text-embedding-ada-002"
     deployment: str = model  # to support Azure OpenAI Service custom deployment names
-    openai_api_version: Optional[str] = None
+    openai_api_version: str | None = None
     # to support Azure OpenAI Service custom endpoints
-    openai_api_base: Optional[str] = None
+    openai_api_base: str | None = None
     # to support Azure OpenAI Service custom endpoints
-    openai_api_type: Optional[str] = None
+    openai_api_type: str | None = None
     # to support explicit proxy for OpenAI
-    openai_proxy: Optional[str] = None
+    openai_proxy: str | None = None
     embedding_ctx_length: int = 8191
     """The maximum number of tokens to embed at once."""
-    openai_api_key: Optional[str] = None
-    openai_organization: Optional[str] = None
-    allowed_special: Union[Literal["all"], Set[str]] = set()
-    disallowed_special: Union[
-        Literal["all"], Set[str], Sequence[str]
+    openai_api_key: str | None = None
+    openai_organization: str | None = None
+    allowed_special: Literal["all"] | set[str] = set()
+    disallowed_special: Literal["all"] | set[str] | Sequence[
+        str
     ] = "all"
     chunk_size: int = 1000
     """Maximum number of texts to embed in each batch"""
     max_retries: int = 6
     """Maximum number of retries to make when generating."""
-    request_timeout: Optional[Union[float, Tuple[float, float]]] = (
-        None
-    )
+    request_timeout: float | tuple[float, float] | None = None
     """Timeout in seconds for the OpenAPI request."""
     headers: Any = None
-    tiktoken_model_name: Optional[str] = None
+    tiktoken_model_name: str | None = None
     """The model name to pass to tiktoken when using this class.
     Tiktoken is used to count the number of tokens in documents to constrain
     them to be under a certain limit. By default, when set to None, this will
@@ -225,7 +216,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     when tiktoken is called, you can specify a model name to use here."""
     show_progress_bar: bool = False
     """Whether to show a progress bar when embedding."""
-    model_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    model_kwargs: dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""
 
     class Config:
@@ -234,7 +225,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         extra = Extra.forbid
 
     @root_validator(pre=True)
-    def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def build_extra(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
         all_required_field_names = get_pydantic_field_names(cls)
         extra = values.get("model_kwargs", {})
@@ -265,7 +256,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         return values
 
     @root_validator()
-    def validate_environment(cls, values: Dict) -> Dict:
+    def validate_environment(cls, values: dict) -> dict:
         """Validate that api key and python package exists in environment."""
         values["openai_api_key"] = get_from_dict_or_env(
             values, "openai_api_key", "OPENAI_API_KEY"
@@ -320,7 +311,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         return values
 
     @property
-    def _invocation_params(self) -> Dict:
+    def _invocation_params(self) -> dict:
         openai_args = {
             "model": self.model,
             "request_timeout": self.request_timeout,
@@ -345,12 +336,12 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
 
     def _get_len_safe_embeddings(
         self,
-        texts: List[str],
+        texts: list[str],
         *,
         engine: str,
-        chunk_size: Optional[int] = None,
-    ) -> List[List[float]]:
-        embeddings: List[List[float]] = [
+        chunk_size: int | None = None,
+    ) -> list[list[float]]:
+        embeddings: list[list[float]] = [
             [] for _ in range(len(texts))
         ]
         try:
@@ -390,7 +381,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 )
                 indices.append(i)
 
-        batched_embeddings: List[List[float]] = []
+        batched_embeddings: list[list[float]] = []
         _chunk_size = chunk_size or self.chunk_size
 
         if self.show_progress_bar:
@@ -413,10 +404,10 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 r["embedding"] for r in response["data"]
             )
 
-        results: List[List[List[float]]] = [
+        results: list[list[list[float]]] = [
             [] for _ in range(len(texts))
         ]
-        num_tokens_in_batch: List[List[int]] = [
+        num_tokens_in_batch: list[list[int]] = [
             [] for _ in range(len(texts))
         ]
         for i in range(len(indices)):
@@ -445,12 +436,12 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
     # https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb
     async def _aget_len_safe_embeddings(
         self,
-        texts: List[str],
+        texts: list[str],
         *,
         engine: str,
-        chunk_size: Optional[int] = None,
-    ) -> List[List[float]]:
-        embeddings: List[List[float]] = [
+        chunk_size: int | None = None,
+    ) -> list[list[float]]:
+        embeddings: list[list[float]] = [
             [] for _ in range(len(texts))
         ]
         try:
@@ -490,7 +481,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 )
                 indices.append(i)
 
-        batched_embeddings: List[List[float]] = []
+        batched_embeddings: list[list[float]] = []
         _chunk_size = chunk_size or self.chunk_size
         for i in range(0, len(tokens), _chunk_size):
             response = await async_embed_with_retry(
@@ -502,10 +493,10 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
                 r["embedding"] for r in response["data"]
             )
 
-        results: List[List[List[float]]] = [
+        results: list[list[list[float]]] = [
             [] for _ in range(len(texts))
         ]
-        num_tokens_in_batch: List[List[int]] = [
+        num_tokens_in_batch: list[list[int]] = [
             [] for _ in range(len(texts))
         ]
         for i in range(len(indices)):
@@ -533,8 +524,8 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         return embeddings
 
     def embed_documents(
-        self, texts: List[str], chunk_size: Optional[int] = 0
-    ) -> List[List[float]]:
+        self, texts: list[str], chunk_size: int | None = 0
+    ) -> list[list[float]]:
         """Call out to OpenAI's embedding endpoint for embedding search docs.
 
         Args:
@@ -552,8 +543,8 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         )
 
     async def aembed_documents(
-        self, texts: List[str], chunk_size: Optional[int] = 0
-    ) -> List[List[float]]:
+        self, texts: list[str], chunk_size: int | None = 0
+    ) -> list[list[float]]:
         """Call out to OpenAI's embedding endpoint async for embedding search docs.
 
         Args:
@@ -570,7 +561,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
             texts, engine=self.deployment
         )
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         """Call out to OpenAI's embedding endpoint for embedding query text.
 
         Args:
@@ -581,7 +572,7 @@ class OpenAIEmbeddings(BaseModel, Embeddings):
         """
         return self.embed_documents([text])[0]
 
-    async def aembed_query(self, text: str) -> List[float]:
+    async def aembed_query(self, text: str) -> list[float]:
         """Call out to OpenAI's embedding endpoint async for embedding query text.
 
         Args:

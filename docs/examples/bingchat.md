@@ -46,6 +46,7 @@ You can also specify the conversation style:
 
 ```python
 from bing_chat import ConversationStyle
+
 response = chat("Tell me a joke", style=ConversationStyle.creative)
 print(response)
 ```

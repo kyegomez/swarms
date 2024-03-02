@@ -1,8 +1,8 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from swarms.structs.message import Message
 from swarms.models.base_llm import AbstractLLM
+from swarms.structs.message import Message
 
 
 class Mistral(AbstractLLM):

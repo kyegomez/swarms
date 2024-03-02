@@ -52,10 +52,10 @@ class MPT7B:
 from swarms.models import MPT7B
 
 # Initialize the MPT7B class
-mpt = MPT7B('mosaicml/mpt-7b-storywriter', 'EleutherAI/gpt-neox-20b', max_tokens=150)
+mpt = MPT7B("mosaicml/mpt-7b-storywriter", "EleutherAI/gpt-neox-20b", max_tokens=150)
 
 # Generate text
-output = mpt.run('generate', 'Once upon a time in a land far, far away...')
+output = mpt.run("generate", "Once upon a time in a land far, far away...")
 print(output)
 ```
 
@@ -77,13 +77,16 @@ print(outputs)
 
 ```python
 import asyncio
+
 from swarms.models import MPT7B
 
 # Initialize the MPT7B class
-mpt = MPT7B('mosaicml/mpt-7b-storywriter', 'EleutherAI/gpt-neox-20b', max_tokens=150)
+mpt = MPT7B("mosaicml/mpt-7b-storywriter", "EleutherAI/gpt-neox-20b", max_tokens=150)
 
 # Generate text asynchronously
-output = asyncio.run(mpt.run_async('generate', 'Once upon a time in a land far, far away...'))
+output = asyncio.run(
+    mpt.run_async("generate", "Once upon a time in a land far, far away...")
+)
 print(output)
 ```
 

@@ -1,6 +1,7 @@
-import torch
 import logging
-from typing import Union, List, Any
+from typing import Any, List, Union
+
+import torch
 from torch.cuda import memory_allocated, memory_reserved
 
 

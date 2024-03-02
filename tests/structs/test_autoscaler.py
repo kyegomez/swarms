@@ -1,9 +1,8 @@
 import os
-
-from dotenv import load_dotenv
 from unittest.mock import MagicMock, patch
 
 import pytest
+from dotenv import load_dotenv
 
 from swarms.models import OpenAIChat
 from swarms.structs import Agent

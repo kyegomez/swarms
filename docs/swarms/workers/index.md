@@ -49,11 +49,11 @@ Makes the Worker class callable. When an instance of the class is called, it wil
 ### **Example 1**: Basic usage with default parameters:
 
 ```python
-from swarms.models import OpenAIChat
 from swarms import Worker
+from swarms.models import OpenAIChat
 
 llm = OpenAIChat(
-    #enter your api key
+    # enter your api key
     openai_api_key="",
     temperature=0.5,
 )
@@ -195,17 +195,16 @@ response = node.run(task)
 
 # Print the response
 print(response)
-
 ```
 
 ### **Example 3**: Usage with human in the loop:
 
 ```python
-from swarms.models import OpenAIChat
 from swarms import Worker
+from swarms.models import OpenAIChat
 
 llm = OpenAIChat(
-    #enter your api key
+    # enter your api key
     openai_api_key="",
     temperature=0.5,
 )
@@ -223,7 +222,6 @@ node = Worker(
 task = "What were the winning boston marathon times for the past 5 years (ending in 2022)? Generate a table of the year, name, country of origin, and times."
 response = node.run(task)
 print(response)
-
 ```
 
 ## **Mathematical Description**:

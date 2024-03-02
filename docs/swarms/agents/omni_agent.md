@@ -39,10 +39,12 @@ For streaming mode, this function yields the response token by token, ensuring a
 ## Examples & Use Cases
 Initialize the `OmniModalAgent` and communicate with it:
 ```python
+import os
+
+from dotenv import load_dotenv
+
 from swarms.agents.omni_modal_agent import OmniModalAgent, OpenAIChat
 from swarms.models import OpenAIChat
-from dotenv import load_dotenv
-import os
 
 # Load the environment variables
 load_dotenv()

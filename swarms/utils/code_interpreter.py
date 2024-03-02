@@ -1,6 +1,6 @@
+import queue
 import subprocess
 import threading
-import queue
 import time
 import traceback
 
@@ -20,10 +20,12 @@ class SubprocessCodeInterpreter:
     Example:
     """
 
-    def __init__(self):
-        self.start_cmd = ""
+    def __init__(
+        self,
+        start_cmd: str = "",
+        debug_mode: bool = False,
+    ):
         self.process = None
-        self.debug_mode = False
         self.output_queue = queue.Queue()
         self.done = threading.Event()
 

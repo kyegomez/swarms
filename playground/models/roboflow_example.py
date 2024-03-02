@@ -1,6 +1,5 @@
 from swarms import RoboflowMultiModal
 
-
 # Initialize the model
 model = RoboflowMultiModal(
     api_key="api",

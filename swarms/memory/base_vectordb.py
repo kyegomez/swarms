@@ -21,8 +21,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def close(self):
         """
@@ -31,8 +29,6 @@ class AbstractVectorDatabase(ABC):
         This method closes the connection to the database.
 
         """
-
-        pass
 
     @abstractmethod
     def query(self, query: str):
@@ -46,8 +42,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def fetch_all(self):
         """
@@ -59,8 +53,6 @@ class AbstractVectorDatabase(ABC):
             list: A list of dictionaries representing the rows.
 
         """
-
-        pass
 
     @abstractmethod
     def fetch_one(self):
@@ -74,8 +66,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def add(self, doc: str):
         """
@@ -88,8 +78,6 @@ class AbstractVectorDatabase(ABC):
             data (dict): A dictionary representing the data to be added.
 
         """
-
-        pass
 
     @abstractmethod
     def get(self, query: str):
@@ -107,8 +95,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def update(self, doc):
         """
@@ -123,8 +109,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def delete(self, message):
         """
@@ -137,5 +121,3 @@ class AbstractVectorDatabase(ABC):
             id (int): The ID of the record to be deleted.
 
         """
-
-        pass

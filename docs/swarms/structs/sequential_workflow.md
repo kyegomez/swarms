@@ -310,9 +310,7 @@ from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
-api_key = (
-    ""  # Your actual API key here
-)
+api_key = ""  # Your actual API key here
 
 # Initialize the language agent
 llm = OpenAIChat(
@@ -350,9 +348,7 @@ from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
-api_key = (
-    ""  # Your actual API key here
-)
+api_key = ""  # Your actual API key here
 
 # Initialize the language agent
 llm = OpenAIChat(
@@ -393,9 +389,7 @@ from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
-api_key = (
-    ""  # Your actual API key here
-)
+api_key = ""  # Your actual API key here
 
 # Initialize the language agent
 llm = OpenAIChat(
@@ -436,9 +430,7 @@ from swarms.structs import Agent
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # Example usage
-api_key = (
-    ""  # Your actual API key here
-)
+api_key = ""  # Your actual API key here
 
 # Initialize the language agent
 llm = OpenAIChat(

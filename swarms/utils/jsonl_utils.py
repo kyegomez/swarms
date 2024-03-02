@@ -1,8 +1,7 @@
-from typing import Iterable, Dict
 import gzip
 import json
 import os
-
+from typing import Dict, Iterable
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,7 +28,7 @@ def stream_jsonl(filename: str) -> Iterable[Dict]:
                         yield json.loads(line)
 
     else:
-        with open(filename, "r") as fp:
+        with open(filename) as fp:
             for line in fp:
                 if any(not x.isspace() for x in line):
                     yield json.loads(line)

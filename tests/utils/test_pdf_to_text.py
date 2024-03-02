@@ -1,12 +1,13 @@
+import pypdf
 import pytest
-import PyPDF2
+
 from swarms.utils import pdf_to_text
 
 
 @pytest.fixture
 def pdf_file(tmpdir):
-    pdf_writer = PyPDF2.PdfWriter()
-    pdf_page = PyPDF2.pdf.PageObject.createBlankPage(None, 200, 200)
+    pdf_writer = pypdf.PdfWriter()
+    pdf_page = pypdf.PageObject.create_blank_page(None, 200, 200)
     pdf_writer.add_page(pdf_page)
     pdf_file = tmpdir.join("temp.pdf")
     with open(pdf_file, "wb") as output:

@@ -76,7 +76,7 @@ Tokenizes given text when the object is called like a function.
 from swarms.tokenizers import HuggingFaceTokenizer
 
 # Initialize the tokenizer with the path to your tokenizer model.
-tokenizer = HuggingFaceTokenizer('/path/to/your/model_dir')
+tokenizer = HuggingFaceTokenizer("/path/to/your/model_dir")
 ```
 
 ### 2. Encoding Text

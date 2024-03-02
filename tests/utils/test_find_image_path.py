@@ -1,8 +1,10 @@
 # Filename: test_utils.py
 
-import pytest
-from swarms.utils import find_image_path
 import os
+
+import pytest
+
+from swarms.utils import find_image_path
 
 
 def test_find_image_path_no_images():

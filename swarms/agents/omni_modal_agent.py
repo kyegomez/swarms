@@ -142,5 +142,4 @@ class OmniModalAgent:
             print(token)
 
         """
-        for token in response.split():
-            yield token
+        yield from response.split()

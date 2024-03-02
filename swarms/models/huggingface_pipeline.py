@@ -1,6 +1,7 @@
 from abc import abstractmethod
-from termcolor import colored
+
 import torch
+from termcolor import colored
 
 from swarms.models.base_llm import AbstractLLM
 

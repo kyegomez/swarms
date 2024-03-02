@@ -150,7 +150,9 @@ user_message = "User: Tell me another joke."
 response = openai_chat.generate([user_message])
 
 # Print the generated response
-print(response[0][0].text)  # Output: "Assistant: Why don't scientists trust atoms? Because they make up everything!"
+print(
+    response[0][0].text
+)  # Output: "Assistant: Why don't scientists trust atoms? Because they make up everything!"
 ```
 
 ### Example 3: Asynchronous Generation
@@ -158,11 +160,13 @@ print(response[0][0].text)  # Output: "Assistant: Why don't scientists trust ato
 ```python
 import asyncio
 
+
 # Define an asynchronous function for generating responses
 async def generate_responses():
     user_message = "User: Tell me a fun fact."
     async for chunk in openai_chat.stream([user_message]):
         print(chunk.text)
+
 
 # Run the asynchronous generation function
 asyncio.run(generate_responses())

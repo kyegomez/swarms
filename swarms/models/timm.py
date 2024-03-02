@@ -3,6 +3,7 @@ from typing import List
 import timm
 import torch
 from torch import Tensor
+
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 

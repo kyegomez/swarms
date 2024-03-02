@@ -1,4 +1,4 @@
-"""
+r"""
 BioGPT
 Pre-trained language models have attracted increasing attention in the biomedical domain,
 inspired by their great success in the general natural language domain.
@@ -35,10 +35,10 @@ advantage of BioGPT on biomedical literature to generate fluent descriptions for
 
 import torch
 from transformers import (
+    BioGptForCausalLM,
+    BioGptTokenizer,
     pipeline,
     set_seed,
-    BioGptTokenizer,
-    BioGptForCausalLM,
 )
 
 

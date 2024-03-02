@@ -1,4 +1,5 @@
 from swarms.prompts.code_interpreter import CODE_INTERPRETER
+from swarms.prompts.documentation import DOCUMENTATION_WRITER_SOP
 from swarms.prompts.finance_agent_prompt import FINANCE_AGENT_PROMPT
 from swarms.prompts.growth_agent_prompt import GROWTH_AGENT_PROMPT
 from swarms.prompts.legal_agent_prompt import LEGAL_AGENT_PROMPT
@@ -6,7 +7,6 @@ from swarms.prompts.operations_agent_prompt import (
     OPERATIONS_AGENT_PROMPT,
 )
 from swarms.prompts.product_agent_prompt import PRODUCT_AGENT_PROMPT
-from swarms.prompts.documentation import DOCUMENTATION_WRITER_SOP
 from swarms.prompts.schema_generator import SchemaGenerator
 
 __all__ = [

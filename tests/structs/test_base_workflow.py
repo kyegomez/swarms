@@ -1,10 +1,11 @@
-import os
-import pytest
 import json
+import os
+
+import pytest
+from dotenv import load_dotenv
+
 from swarms.models import OpenAIChat
 from swarms.structs import BaseWorkflow
-
-from dotenv import load_dotenv
 
 load_dotenv()
 

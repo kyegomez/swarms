@@ -14,8 +14,9 @@ huggingface-hub
 google-generativeai==0.3.1
 sentencepiece==0.1.98
 requests_mock
-PyPDF2==3.0.1
+pypdf==4.0.1
 accelerate==0.22.0
+loguru==0.7.2
 chromadb
 tensorflow
 optimum
@@ -31,7 +32,7 @@ einops==0.7.0
 opencv-python-headless==4.8.1.78
 numpy
 openai==0.28.0
-opencv-python==4.7.0.72
+opencv-python==4.9.0.80
 timm
 yapf
 autopep8
@@ -41,7 +42,7 @@ rich==13.5.2
 mkdocs
 mkdocs-material
 mkdocs-glightbox
-pre-commit==3.2.2
+pre-commit==3.6.2
 peft
 psutil
 ultralytics

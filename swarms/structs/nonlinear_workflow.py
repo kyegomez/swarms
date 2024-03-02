@@ -1,5 +1,5 @@
-from swarms.structs.task import Task
 from swarms.structs.base import BaseStructure
+from swarms.structs.task import Task
 from swarms.utils.logger import logger  # noqa: F401
 
 

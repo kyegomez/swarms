@@ -1,5 +1,6 @@
 import pytest
 import torch
+
 from swarms.models.jina_embeds import JinaEmbeddings
 
 
@@ -61,7 +62,8 @@ def test_cosine_similarity(model):
     embeddings2 = model.run(task2)
     sim = model.cos_sim(embeddings1, embeddings2)
     assert isinstance(sim, torch.Tensor)
-    assert sim.item() >= -1.0 and sim.item() <= 1.0
+    assert sim.item() >= -1.0
+    assert sim.item() <= 1.0
 
 
 def test_failed_load_model(caplog):
