@@ -87,16 +87,13 @@ def test_return_history_as_string_with_different_roles(role, content):
 
 
 @pytest.mark.parametrize("message_count", range(1, 11))
-def test_return_history_as_string_with_multiple_messages(
-    message_count,
-):
+def test_return_history_as_string_with_multiple_messages(message_count,):
     conv = Conversation()
     for i in range(message_count):
         conv.add("user", f"Message {i + 1}")
     result = conv.return_history_as_string()
     expected = "".join(
-        [f"user: Message {i + 1}\n\n" for i in range(message_count)]
-    )
+        [f"user: Message {i + 1}\n\n" for i in range(message_count)])
     assert result == expected
 
 
@@ -122,10 +119,8 @@ def test_return_history_as_string_with_large_message(conversation):
     large_message = "Hello, world! " * 10000  # 10,000 repetitions
     conversation.add("user", large_message)
     result = conversation.return_history_as_string()
-    expected = (
-        "user: Hello, world!\n\nassistant: Hello, user!\n\nuser:"
-        f" {large_message}\n\n"
-    )
+    expected = ("user: Hello, world!\n\nassistant: Hello, user!\n\nuser:"
+                f" {large_message}\n\n")
     assert result == expected
 
 
@@ -141,10 +136,8 @@ def test_export_import_conversation(conversation, tmp_path):
     conversation.export_conversation(filename)
     new_conversation = Conversation()
     new_conversation.import_conversation(filename)
-    assert (
-        new_conversation.return_history_as_string()
-        == conversation.return_history_as_string()
-    )
+    assert (new_conversation.return_history_as_string() ==
+            conversation.return_history_as_string())
 
 
 def test_count_messages_by_role(conversation):

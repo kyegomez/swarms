@@ -5,6 +5,7 @@ from swarms.structs import NonlinearWorkflow, Task
 
 
 class TestNonlinearWorkflow:
+
     def test_add_task(self):
         llm = OpenAIChat(openai_api_key="")
         task = Task(llm, "What's the weather in miami")
@@ -33,9 +34,7 @@ class TestNonlinearWorkflow:
         workflow = NonlinearWorkflow()
         workflow.add(task1, task2.name)
         workflow.add(task2, task1.name)
-        with pytest.raises(
-            Exception, match="Circular dependency detected"
-        ):
+        with pytest.raises(Exception, match="Circular dependency detected"):
             workflow.run()
 
     def test_run_with_stopping_token(self):

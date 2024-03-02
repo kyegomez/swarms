@@ -26,8 +26,7 @@ def memory_instance(memory_file):
 def test_init(memory_file):
     memory = DictSharedMemory(file_loc=memory_file)
     assert os.path.exists(
-        memory.file_loc
-    ), "Memory file should be created if non-existent"
+        memory.file_loc), "Memory file should be created if non-existent"
 
 
 def test_add_entry(memory_instance):
@@ -44,9 +43,8 @@ def test_get_top_n(memory_instance):
     memory_instance.add(9.5, "agent123", 1, "Entry A")
     memory_instance.add(8.5, "agent124", 1, "Entry B")
     top_1 = memory_instance.get_top_n(1)
-    assert (
-        len(top_1) == 1
-    ), "get_top_n should return the correct number of top entries"
+    assert (len(top_1) == 1
+           ), "get_top_n should return the correct number of top entries"
 
 
 # Parameterized tests
@@ -59,18 +57,14 @@ def test_get_top_n(memory_instance):
         # add more test cases
     ],
 )
-def test_parametrized_get_top_n(
-    memory_instance, scores, agent_ids, expected_top_score
-):
+def test_parametrized_get_top_n(memory_instance, scores, agent_ids,
+                                expected_top_score):
     for score, agent_id in zip(scores, agent_ids):
-        memory_instance.add(
-            score, agent_id, 1, f"Entry by {agent_id}"
-        )
+        memory_instance.add(score, agent_id, 1, f"Entry by {agent_id}")
     top_1 = memory_instance.get_top_n(1)
     top_score = next(iter(top_1.values()))["score"]
-    assert (
-        top_score == expected_top_score
-    ), "get_top_n should return the entry with top score"
+    assert (top_score == expected_top_score
+           ), "get_top_n should return the entry with top score"
 
 
 # Exception testing
@@ -78,9 +72,7 @@ def test_parametrized_get_top_n(
 
 def test_add_entry_invalid_input(memory_instance):
     with pytest.raises(ValueError):
-        memory_instance.add(
-            "invalid_score", "agent123", 1, "Test Entry"
-        )
+        memory_instance.add("invalid_score", "agent123", 1, "Test Entry")
 
 
 # Mocks and monkey-patching

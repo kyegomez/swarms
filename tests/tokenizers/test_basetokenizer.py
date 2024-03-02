@@ -18,9 +18,7 @@ def test_post_init(base_tokenizer):
 
 
 # 3. Tests for count_tokens_left with different inputs.
-def test_count_tokens_left_with_positive_diff(
-    base_tokenizer, monkeypatch
-):
+def test_count_tokens_left_with_positive_diff(base_tokenizer, monkeypatch):
     # Mocking count_tokens to return a specific value
     monkeypatch.setattr(
         "swarms.tokenizers.BaseTokenizer.count_tokens",
@@ -29,9 +27,7 @@ def test_count_tokens_left_with_positive_diff(
     assert base_tokenizer.count_tokens_left("some text") == 50
 
 
-def test_count_tokens_left_with_zero_diff(
-    base_tokenizer, monkeypatch
-):
+def test_count_tokens_left_with_zero_diff(base_tokenizer, monkeypatch):
     monkeypatch.setattr(
         "swarms.tokenizers.BaseTokenizer.count_tokens",
         lambda x, y: 100,

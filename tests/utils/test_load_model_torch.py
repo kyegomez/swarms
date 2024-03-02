@@ -6,6 +6,7 @@ from swarms.utils import load_model_torch
 
 
 class DummyModel(nn.Module):
+
     def __init__(self):
         super().__init__()
         self.fc = nn.Linear(10, 2)
@@ -25,9 +26,7 @@ def test_load_model_torch_success(tmp_path):
     model_loaded = load_model_torch(model_path, model=DummyModel())
 
     # Check if loaded model has the same architecture
-    assert isinstance(
-        model_loaded, DummyModel
-    ), "Loaded model type mismatch."
+    assert isinstance(model_loaded, DummyModel), "Loaded model type mismatch."
 
 
 # Test case 2: Test if function raises FileNotFoundError for non-existent file
@@ -66,13 +65,12 @@ def test_load_model_torch_device_handling(tmp_path):
 
     # Define a device other than default and load the model to the specified device
     device = torch.device("cpu")
-    model_loaded = load_model_torch(
-        model_path, model=DummyModel(), device=device
-    )
+    model_loaded = load_model_torch(model_path,
+                                    model=DummyModel(),
+                                    device=device)
 
-    assert (
-        model_loaded.fc.weight.device == device
-    ), "Model not loaded to specified device."
+    assert (model_loaded.fc.weight.device == device
+           ), "Model not loaded to specified device."
 
 
 # Test case 6: Testing for correct handling of '*args' and '**kwargs'
@@ -82,15 +80,14 @@ def test_load_model_torch_args_kwargs_handling(monkeypatch, tmp_path):
     torch.save(model.state_dict(), model_path)
 
     def mock_torch_load(*args, **kwargs):
-        assert (
-            "pickle_module" in kwargs
-        ), "Keyword arguments not passed to 'torch.load'."
+        assert ("pickle_module"
+                in kwargs), "Keyword arguments not passed to 'torch.load'."
 
     # Monkeypatch 'torch.load' to check if '*args' and '**kwargs' are passed correctly
     monkeypatch.setattr(torch, "load", mock_torch_load)
-    load_model_torch(
-        model_path, model=DummyModel(), pickle_module="dummy_module"
-    )
+    load_model_torch(model_path,
+                     model=DummyModel(),
+                     pickle_module="dummy_module")
 
 
 # Test case 7: Test for model loading on CPU if no GPU is available
@@ -103,9 +100,8 @@ def test_load_model_torch_cpu(tmp_path):
         return False
 
     # Monkeypatch to simulate no GPU available
-    pytest.MonkeyPatch.setattr(
-        torch.cuda, "is_available", mock_torch_cuda_is_available
-    )
+    pytest.MonkeyPatch.setattr(torch.cuda, "is_available",
+                               mock_torch_cuda_is_available)
     model_loaded = load_model_torch(model_path, model=DummyModel())
 
     # Ensure model is loaded on CPU

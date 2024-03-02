@@ -18,6 +18,7 @@ def func2_with_exception(x):
 
 
 def test_same_results_no_exception(caplog):
+
     @math_eval(func1_no_exception, func2_no_exception)
     def test_func(x):
         return x
@@ -28,6 +29,7 @@ def test_same_results_no_exception(caplog):
 
 
 def test_func1_exception(caplog):
+
     @math_eval(func1_with_exception, func2_no_exception)
     def test_func(x):
         return x

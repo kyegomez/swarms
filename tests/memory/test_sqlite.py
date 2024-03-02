@@ -8,9 +8,7 @@ from swarms.memory.sqlite import SQLiteDB
 @pytest.fixture
 def db():
     conn = sqlite3.connect(":memory:")
-    conn.execute(
-        "CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)"
-    )
+    conn.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)")
     conn.commit()
     return SQLiteDB(":memory:")
 
@@ -30,9 +28,7 @@ def test_delete(db):
 
 def test_update(db):
     db.add("INSERT INTO test (name) VALUES (?)", ("test",))
-    db.update(
-        "UPDATE test SET name = ? WHERE name = ?", ("new", "test")
-    )
+    db.update("UPDATE test SET name = ? WHERE name = ?", ("new", "test"))
     result = db.query("SELECT * FROM test")
     assert result == [(1, "new")]
 
@@ -45,9 +41,7 @@ def test_query(db):
 
 def test_execute_query(db):
     db.add("INSERT INTO test (name) VALUES (?)", ("test",))
-    result = db.execute_query(
-        "SELECT * FROM test WHERE name = ?", ("test",)
-    )
+    result = db.execute_query("SELECT * FROM test WHERE name = ?", ("test",))
     assert result == [(1, "test")]
 
 
@@ -101,6 +95,4 @@ def test_query_with_wrong_query(db):
 
 def test_execute_query_with_wrong_query(db):
     with pytest.raises(sqlite3.OperationalError):
-        db.execute_query(
-            "SELECT * FROM wrong WHERE name = ?", ("test",)
-        )
+        db.execute_query("SELECT * FROM wrong WHERE name = ?", ("test",))

@@ -11,18 +11,27 @@ def test_tool_agent_init():
     json_schema = {
         "type": "object",
         "properties": {
-            "name": {"type": "string"},
-            "age": {"type": "number"},
-            "is_student": {"type": "boolean"},
-            "courses": {"type": "array", "items": {"type": "string"}},
+            "name": {
+                "type": "string"
+            },
+            "age": {
+                "type": "number"
+            },
+            "is_student": {
+                "type": "boolean"
+            },
+            "courses": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
         },
     }
     name = "Test Agent"
     description = "This is a test agent"
 
-    agent = ToolAgent(
-        name, description, model, tokenizer, json_schema
-    )
+    agent = ToolAgent(name, description, model, tokenizer, json_schema)
 
     assert agent.name == name
     assert agent.description == description
@@ -38,22 +47,29 @@ def test_tool_agent_run(mock_run):
     json_schema = {
         "type": "object",
         "properties": {
-            "name": {"type": "string"},
-            "age": {"type": "number"},
-            "is_student": {"type": "boolean"},
-            "courses": {"type": "array", "items": {"type": "string"}},
+            "name": {
+                "type": "string"
+            },
+            "age": {
+                "type": "number"
+            },
+            "is_student": {
+                "type": "boolean"
+            },
+            "courses": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
         },
     }
     name = "Test Agent"
     description = "This is a test agent"
-    task = (
-        "Generate a person's information based on the following"
-        " schema:"
-    )
+    task = ("Generate a person's information based on the following"
+            " schema:")
 
-    agent = ToolAgent(
-        name, description, model, tokenizer, json_schema
-    )
+    agent = ToolAgent(name, description, model, tokenizer, json_schema)
     agent.run(task)
 
     mock_run.assert_called_once_with(task)
@@ -65,10 +81,21 @@ def test_tool_agent_init_with_kwargs():
     json_schema = {
         "type": "object",
         "properties": {
-            "name": {"type": "string"},
-            "age": {"type": "number"},
-            "is_student": {"type": "boolean"},
-            "courses": {"type": "array", "items": {"type": "string"}},
+            "name": {
+                "type": "string"
+            },
+            "age": {
+                "type": "number"
+            },
+            "is_student": {
+                "type": "boolean"
+            },
+            "courses": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
         },
     }
     name = "Test Agent"
@@ -82,9 +109,8 @@ def test_tool_agent_init_with_kwargs():
         "max_string_token_length": 20,
     }
 
-    agent = ToolAgent(
-        name, description, model, tokenizer, json_schema, **kwargs
-    )
+    agent = ToolAgent(name, description, model, tokenizer, json_schema,
+                      **kwargs)
 
     assert agent.name == name
     assert agent.description == description
@@ -95,7 +121,4 @@ def test_tool_agent_init_with_kwargs():
     assert agent.max_array_length == kwargs["max_array_length"]
     assert agent.max_number_tokens == kwargs["max_number_tokens"]
     assert agent.temperature == kwargs["temperature"]
-    assert (
-        agent.max_string_token_length
-        == kwargs["max_string_token_length"]
-    )
+    assert (agent.max_string_token_length == kwargs["max_string_token_length"])

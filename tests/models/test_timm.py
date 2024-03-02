@@ -19,18 +19,16 @@ def test_timm_model_init():
 
 
 def test_timm_model_call():
-    with patch(
-        "swarms.models.timm.create_model"
-    ) as mock_create_model:
+    with patch("swarms.models.timm.create_model") as mock_create_model:
         model_name = "resnet18"
         pretrained = True
         in_chans = 3
         timm_model = TimmModel(model_name, pretrained, in_chans)
         task = torch.rand(1, in_chans, 224, 224)
         result = timm_model(task)
-        mock_create_model.assert_called_once_with(
-            model_name, pretrained=pretrained, in_chans=in_chans
-        )
+        mock_create_model.assert_called_once_with(model_name,
+                                                  pretrained=pretrained,
+                                                  in_chans=in_chans)
         assert result == mock_create_model.return_value(task)
 
 

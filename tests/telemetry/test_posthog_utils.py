@@ -35,9 +35,8 @@ def test_log_activity_posthog(mock_posthog, mock_env):
     test_function()
 
     # Check if the Posthog capture method was called with the expected arguments
-    mock_posthog.capture.assert_called_once_with(
-        "test_user_id", event_name, event_properties
-    )
+    mock_posthog.capture.assert_called_once_with("test_user_id", event_name,
+                                                 event_properties)
 
 
 # Test a scenario where environment variables are not set

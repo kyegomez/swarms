@@ -32,8 +32,7 @@ def test_create_vector_model():
 
 def test_add_or_update_vector():
     with patch("sqlalchemy.create_engine"), patch(
-        "sqlalchemy.orm.Session"
-    ) as MockSession:
+            "sqlalchemy.orm.Session") as MockSession:
         db = PostgresDB(
             connection_string=PSG_CONNECTION_STRING,
             table_name="test",
@@ -51,8 +50,7 @@ def test_add_or_update_vector():
 
 def test_query_vectors():
     with patch("sqlalchemy.create_engine"), patch(
-        "sqlalchemy.orm.Session"
-    ) as MockSession:
+            "sqlalchemy.orm.Session") as MockSession:
         db = PostgresDB(
             connection_string=PSG_CONNECTION_STRING,
             table_name="test",
@@ -67,8 +65,7 @@ def test_query_vectors():
 
 def test_delete_vector():
     with patch("sqlalchemy.create_engine"), patch(
-        "sqlalchemy.orm.Session"
-    ) as MockSession:
+            "sqlalchemy.orm.Session") as MockSession:
         db = PostgresDB(
             connection_string=PSG_CONNECTION_STRING,
             table_name="test",

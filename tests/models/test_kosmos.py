@@ -16,9 +16,7 @@ def mock_image_request():
     img_data = open(TEST_IMAGE_URL, "rb").read()
     mock_resp = Mock()
     mock_resp.raw = img_data
-    with patch.object(
-        requests, "get", return_value=mock_resp
-    ) as _fixture:
+    with patch.object(requests, "get", return_value=mock_resp) as _fixture:
         yield _fixture
 
 
@@ -47,18 +45,16 @@ def test_get_image(mock_image_request):
 # Test multimodal grounding
 def test_multimodal_grounding(mock_image_request):
     kosmos = Kosmos()
-    kosmos.multimodal_grounding(
-        "Find the red apple in the image.", TEST_IMAGE_URL
-    )
+    kosmos.multimodal_grounding("Find the red apple in the image.",
+                                TEST_IMAGE_URL)
     # TODO: Validate the result if possible
 
 
 # Test referring expression comprehension
 def test_referring_expression_comprehension(mock_image_request):
     kosmos = Kosmos()
-    kosmos.referring_expression_comprehension(
-        "Show me the green bottle.", TEST_IMAGE_URL
-    )
+    kosmos.referring_expression_comprehension("Show me the green bottle.",
+                                              TEST_IMAGE_URL)
     # TODO: Validate the result if possible
 
 
@@ -93,6 +89,7 @@ IMG_URL5 = "https://images.unsplash.com/photo-1696862761045-0a65acbede8f?auto=fo
 
 # Mock response for requests.get()
 class MockResponse:
+
     @staticmethod
     def json():
         return {}
@@ -111,30 +108,23 @@ def kosmos():
 # Mocking the requests.get() method
 @pytest.fixture
 def mock_request_get(monkeypatch):
-    monkeypatch.setattr(
-        requests, "get", lambda url, **kwargs: MockResponse()
-    )
+    monkeypatch.setattr(requests, "get", lambda url, **kwargs: MockResponse())
 
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_multimodal_grounding(kosmos):
-    kosmos.multimodal_grounding(
-        "Find the red apple in the image.", IMG_URL1
-    )
+    kosmos.multimodal_grounding("Find the red apple in the image.", IMG_URL1)
 
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_referring_expression_comprehension(kosmos):
-    kosmos.referring_expression_comprehension(
-        "Show me the green bottle.", IMG_URL2
-    )
+    kosmos.referring_expression_comprehension("Show me the green bottle.",
+                                              IMG_URL2)
 
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_referring_expression_generation(kosmos):
-    kosmos.referring_expression_generation(
-        "It is on the table.", IMG_URL3
-    )
+    kosmos.referring_expression_generation("It is on the table.", IMG_URL3)
 
 
 @pytest.mark.usefixtures("mock_request_get")
@@ -154,16 +144,13 @@ def test_grounded_image_captioning_detailed(kosmos):
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_multimodal_grounding_2(kosmos):
-    kosmos.multimodal_grounding(
-        "Find the yellow fruit in the image.", IMG_URL2
-    )
+    kosmos.multimodal_grounding("Find the yellow fruit in the image.", IMG_URL2)
 
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_referring_expression_comprehension_2(kosmos):
-    kosmos.referring_expression_comprehension(
-        "Where is the water bottle?", IMG_URL3
-    )
+    kosmos.referring_expression_comprehension("Where is the water bottle?",
+                                              IMG_URL3)
 
 
 @pytest.mark.usefixtures("mock_request_get")

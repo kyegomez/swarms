@@ -2,9 +2,9 @@ import os
 from typing import List
 
 import faiss
-from langchain.docstore import InMemoryDocstore
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_community.docstore import InMemoryDocstore
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.tools.tool import BaseTool

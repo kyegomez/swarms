@@ -51,18 +51,10 @@ def test_prefix_space_tokens(hftokenizer):
 
 # testing _maybe_add_prefix_space method
 def test__maybe_add_prefix_space(hftokenizer):
-    assert (
-        hftokenizer._maybe_add_prefix_space(
-            [101, 2003, 2010, 2050, 2001, 2339], " is why"
-        )
-        == " is why"
-    )
-    assert (
-        hftokenizer._maybe_add_prefix_space(
-            [2003, 2010, 2050, 2001, 2339], "is why"
-        )
-        == " is why"
-    )
+    assert (hftokenizer._maybe_add_prefix_space(
+        [101, 2003, 2010, 2050, 2001, 2339], " is why") == " is why")
+    assert (hftokenizer._maybe_add_prefix_space([2003, 2010, 2050, 2001, 2339],
+                                                "is why") == " is why")
 
 
 # continuing tests for other methods...

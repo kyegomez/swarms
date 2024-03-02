@@ -10,6 +10,7 @@ from swarms.utils import metrics_decorator
 
 # Basic successful test
 def test_metrics_decorator_success():
+
     @metrics_decorator
     def decorated_func():
         time.sleep(0.1)
@@ -30,8 +31,8 @@ def test_metrics_decorator_success():
     ],
 )
 def test_metrics_decorator_with_various_wait_times_and_return_vals(
-    wait_time, return_val
-):
+        wait_time, return_val):
+
     @metrics_decorator
     def decorated_func():
         time.sleep(wait_time)
@@ -55,19 +56,17 @@ def test_metrics_decorator_with_mocked_time(mocker):
         return ["tok_1", "tok_2"]
 
     metrics = decorated_func()
-    assert (
-        metrics
-        == """
+    assert (metrics == """
     Time to First Token: 5
     Generation Latency: 20
     Throughput: 0.1
-    """
-    )
+    """)
     mocked_time.assert_any_call()
 
 
 # Test to ensure that exceptions in the decorated function are propagated
 def test_metrics_decorator_raises_exception():
+
     @metrics_decorator
     def decorated_func():
         raise ValueError("Oops!")
@@ -78,6 +77,7 @@ def test_metrics_decorator_raises_exception():
 
 # Test to ensure proper handling when decorated function returns non-list value
 def test_metrics_decorator_with_non_list_return_val():
+
     @metrics_decorator
     def decorated_func():
         return "Hello, world!"

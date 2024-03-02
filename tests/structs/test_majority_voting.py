@@ -35,15 +35,9 @@ def test_majority_voting_run_concurrent(mocker):
     majority_vote = mv.run("What is the capital of France?")
 
     # Assert agent.run method was called with the correct task
-    agent1.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
-    agent2.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
-    agent3.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
+    agent1.run.assert_called_once_with("What is the capital of France?")
+    agent2.run.assert_called_once_with("What is the capital of France?")
+    agent3.run.assert_called_once_with("What is the capital of France?")
 
     # Assert conversation.add method was called with the correct responses
     conversation.add.assert_any_call(agent1.agent_name, results[0])
@@ -83,15 +77,9 @@ def test_majority_voting_run_multithreaded(mocker):
     majority_vote = mv.run("What is the capital of France?")
 
     # Assert agent.run method was called with the correct task
-    agent1.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
-    agent2.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
-    agent3.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
+    agent1.run.assert_called_once_with("What is the capital of France?")
+    agent2.run.assert_called_once_with("What is the capital of France?")
+    agent3.run.assert_called_once_with("What is the capital of France?")
 
     # Assert conversation.add method was called with the correct responses
     conversation.add.assert_any_call(agent1.agent_name, results[0])
@@ -133,15 +121,9 @@ async def test_majority_voting_run_asynchronous(mocker):
     majority_vote = await mv.run("What is the capital of France?")
 
     # Assert agent.run method was called with the correct task
-    agent1.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
-    agent2.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
-    agent3.run.assert_called_once_with(
-        "What is the capital of France?"
-    )
+    agent1.run.assert_called_once_with("What is the capital of France?")
+    agent2.run.assert_called_once_with("What is the capital of France?")
+    agent3.run.assert_called_once_with("What is the capital of France?")
 
     # Assert conversation.add method was called with the correct responses
     conversation.add.assert_any_call(agent1.agent_name, results[0])

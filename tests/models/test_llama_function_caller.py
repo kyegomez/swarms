@@ -18,6 +18,7 @@ def test_llama_model_loading(llama_caller):
 
 # Test adding and calling custom functions
 def test_llama_custom_function(llama_caller):
+
     def sample_function(arg1, arg2):
         return f"Sample function called with args: {arg1}, {arg2}"
 
@@ -39,13 +40,11 @@ def test_llama_custom_function(llama_caller):
         ],
     )
 
-    result = llama_caller.call_function(
-        "sample_function", arg1="arg1_value", arg2="arg2_value"
-    )
+    result = llama_caller.call_function("sample_function",
+                                        arg1="arg1_value",
+                                        arg2="arg2_value")
     assert (
-        result
-        == "Sample function called with args: arg1_value, arg2_value"
-    )
+        result == "Sample function called with args: arg1_value, arg2_value")
 
 
 # Test streaming user prompts
@@ -64,6 +63,7 @@ def test_llama_custom_function_not_found(llama_caller):
 
 # Test invalid arguments for custom function
 def test_llama_custom_function_invalid_arguments(llama_caller):
+
     def sample_function(arg1, arg2):
         return f"Sample function called with args: {arg1}, {arg2}"
 
@@ -86,9 +86,7 @@ def test_llama_custom_function_invalid_arguments(llama_caller):
     )
 
     with pytest.raises(TypeError):
-        llama_caller.call_function(
-            "sample_function", arg1="arg1_value"
-        )
+        llama_caller.call_function("sample_function", arg1="arg1_value")
 
 
 # Test streaming with custom runtime

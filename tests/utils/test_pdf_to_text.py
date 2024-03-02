@@ -29,8 +29,8 @@ def test_passing_non_pdf_file(tmpdir):
     file = tmpdir.join("temp.txt")
     file.write("This is a test")
     with pytest.raises(
-        Exception,
-        match=r"An error occurred while reading the PDF file",
+            Exception,
+            match=r"An error occurred while reading the PDF file",
     ):
         pdf_to_text(str(file))
 

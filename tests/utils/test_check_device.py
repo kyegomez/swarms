@@ -19,9 +19,8 @@ def test_check_device_no_cuda(monkeypatch):
 
 def test_check_device_cuda_exception(monkeypatch):
     # Mock torch.cuda.is_available to raise an exception
-    monkeypatch.setattr(
-        torch.cuda, "is_available", lambda: 1 / 0
-    )  # Raises ZeroDivisionError
+    monkeypatch.setattr(torch.cuda, "is_available",
+                        lambda: 1 / 0)  # Raises ZeroDivisionError
 
     result = check_device(log_level=logging.DEBUG)
     assert result.type == "cpu"
@@ -33,12 +32,8 @@ def test_check_device_one_cuda(monkeypatch):
     # Mock torch.cuda.device_count to return 1
     monkeypatch.setattr(torch.cuda, "device_count", lambda: 1)
     # Mock torch.cuda.memory_allocated and torch.cuda.memory_reserved to return 0
-    monkeypatch.setattr(
-        torch.cuda, "memory_allocated", lambda device: 0
-    )
-    monkeypatch.setattr(
-        torch.cuda, "memory_reserved", lambda device: 0
-    )
+    monkeypatch.setattr(torch.cuda, "memory_allocated", lambda device: 0)
+    monkeypatch.setattr(torch.cuda, "memory_reserved", lambda device: 0)
 
     result = check_device(log_level=logging.DEBUG)
     assert len(result) == 1
@@ -52,12 +47,8 @@ def test_check_device_multiple_cuda(monkeypatch):
     # Mock torch.cuda.device_count to return 4
     monkeypatch.setattr(torch.cuda, "device_count", lambda: 4)
     # Mock torch.cuda.memory_allocated and torch.cuda.memory_reserved to return 0
-    monkeypatch.setattr(
-        torch.cuda, "memory_allocated", lambda device: 0
-    )
-    monkeypatch.setattr(
-        torch.cuda, "memory_reserved", lambda device: 0
-    )
+    monkeypatch.setattr(torch.cuda, "memory_allocated", lambda device: 0)
+    monkeypatch.setattr(torch.cuda, "memory_reserved", lambda device: 0)
 
     result = check_device(log_level=logging.DEBUG)
     assert len(result) == 4

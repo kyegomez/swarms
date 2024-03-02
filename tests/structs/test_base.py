@@ -7,6 +7,7 @@ from swarms.structs.base import BaseStructure
 
 
 class TestBaseStructure:
+
     def test_init(self):
         base_structure = BaseStructure(
             name="TestStructure",
@@ -88,11 +89,8 @@ class TestBaseStructure:
         with open(log_file) as file:
             lines = file.readlines()
             assert len(lines) == 1
-            assert (
-                lines[0]
-                == f"[{base_structure._current_timestamp()}]"
-                f" [{event_type}] {event}\n"
-            )
+            assert (lines[0] == f"[{base_structure._current_timestamp()}]"
+                    f" [{event_type}] {event}\n")
 
     @pytest.mark.asyncio
     async def test_run_async(self):
@@ -136,9 +134,7 @@ class TestBaseStructure:
 
         artifact = {"key": "value"}
         artifact_name = "test_artifact"
-        await base_structure.save_artifact_async(
-            artifact, artifact_name
-        )
+        await base_structure.save_artifact_async(artifact, artifact_name)
         loaded_artifact = base_structure.load_artifact(artifact_name)
 
         assert loaded_artifact == artifact
@@ -151,9 +147,8 @@ class TestBaseStructure:
         artifact = {"key": "value"}
         artifact_name = "test_artifact"
         base_structure.save_artifact(artifact, artifact_name)
-        loaded_artifact = await base_structure.load_artifact_async(
-            artifact_name
-        )
+        loaded_artifact = await base_structure.load_artifact_async(artifact_name
+                                                                  )
 
         assert loaded_artifact == artifact
 
@@ -170,11 +165,8 @@ class TestBaseStructure:
         with open(log_file) as file:
             lines = file.readlines()
             assert len(lines) == 1
-            assert (
-                lines[0]
-                == f"[{base_structure._current_timestamp()}]"
-                f" [{event_type}] {event}\n"
-            )
+            assert (lines[0] == f"[{base_structure._current_timestamp()}]"
+                    f" [{event_type}] {event}\n")
 
     @pytest.mark.asyncio
     async def test_asave_to_file(self, tmpdir):
@@ -201,18 +193,14 @@ class TestBaseStructure:
 
     def test_run_in_thread(self):
         base_structure = BaseStructure()
-        result = base_structure.run_in_thread(
-            lambda: "Thread Test Result"
-        )
+        result = base_structure.run_in_thread(lambda: "Thread Test Result")
         assert result.result() == "Thread Test Result"
 
     def test_save_and_decompress_data(self):
         base_structure = BaseStructure()
         data = {"key": "value"}
         compressed_data = base_structure.compress_data(data)
-        decompressed_data = base_structure.decompres_data(
-            compressed_data
-        )
+        decompressed_data = base_structure.decompres_data(compressed_data)
         assert decompressed_data == data
 
     def test_run_batched(self):
@@ -222,13 +210,11 @@ class TestBaseStructure:
             return f"Processed {data}"
 
         batched_data = list(range(10))
-        result = base_structure.run_batched(
-            batched_data, batch_size=5, func=run_function
-        )
+        result = base_structure.run_batched(batched_data,
+                                            batch_size=5,
+                                            func=run_function)
 
-        expected_result = [
-            f"Processed {data}" for data in batched_data
-        ]
+        expected_result = [f"Processed {data}" for data in batched_data]
         assert result == expected_result
 
     def test_load_config(self, tmpdir):
@@ -246,15 +232,12 @@ class TestBaseStructure:
         tmp_dir = tmpdir.mkdir("test_dir")
         base_structure = BaseStructure()
         data_to_backup = {"key": "value"}
-        base_structure.backup_data(
-            data_to_backup, backup_path=tmp_dir
-        )
+        base_structure.backup_data(data_to_backup, backup_path=tmp_dir)
         backup_files = os.listdir(tmp_dir)
 
         assert len(backup_files) == 1
         loaded_data = base_structure.load_from_file(
-            os.path.join(tmp_dir, backup_files[0])
-        )
+            os.path.join(tmp_dir, backup_files[0]))
         assert loaded_data == data_to_backup
 
     def test_monitor_resources(self):
@@ -279,11 +262,9 @@ class TestBaseStructure:
             return f"Processed {data}"
 
         batched_data = list(range(10))
-        result = base_structure.run_with_resources_batched(
-            batched_data, batch_size=5, func=run_function
-        )
+        result = base_structure.run_with_resources_batched(batched_data,
+                                                           batch_size=5,
+                                                           func=run_function)
 
-        expected_result = [
-            f"Processed {data}" for data in batched_data
-        ]
+        expected_result = [f"Processed {data}" for data in batched_data]
         assert result == expected_result

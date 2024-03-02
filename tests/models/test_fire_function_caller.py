@@ -39,6 +39,4 @@ def test_fire_function_caller_run(mocker):
     tokenizer.batch_decode.assert_called_once_with(generated_ids)
 
     # Assert the decoded output is printed
-    assert decoded_output in mocker.patch.object(
-        print, "call_args_list"
-    )
+    assert decoded_output in mocker.patch.object(print, "call_args_list")

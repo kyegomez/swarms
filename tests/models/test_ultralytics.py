@@ -20,9 +20,7 @@ def test_ultralytics_call():
         args = (1, 2, 3)
         kwargs = {"a": "A", "b": "B"}
         result = ultralytics(task, *args, **kwargs)
-        mock_yolo.return_value.assert_called_once_with(
-            task, *args, **kwargs
-        )
+        mock_yolo.return_value.assert_called_once_with(task, *args, **kwargs)
         assert result == mock_yolo.return_value.return_value
 
 

@@ -44,9 +44,7 @@ def test_autoscaler_run():
         agent.id,
         "Generate a 10,000 word blog on health and wellness.",
     )
-    assert (
-        out == "Generate a 10,000 word blog on health and wellness."
-    )
+    assert (out == "Generate a 10,000 word blog on health and wellness.")
 
 
 def test_autoscaler_add_agent():
@@ -239,9 +237,7 @@ def test_autoscaler_add_task():
 
 
 def test_autoscaler_scale_up():
-    autoscaler = AutoScaler(
-        initial_agents=5, scale_up_factor=2, agent=agent
-    )
+    autoscaler = AutoScaler(initial_agents=5, scale_up_factor=2, agent=agent)
     autoscaler.scale_up()
     assert len(autoscaler.agents_pool) == 10
 

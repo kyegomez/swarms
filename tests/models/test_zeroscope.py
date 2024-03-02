@@ -25,16 +25,11 @@ def test_zeroscope_ttv_init(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_forward(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
-    mock_pipeline_instance.return_value = MagicMock(
-        frames="Generated frames"
-    )
+    mock_pipeline.from_pretrained.return_value = (mock_pipeline_instance)
+    mock_pipeline_instance.return_value = MagicMock(frames="Generated frames")
     mock_pipeline_instance.enable_vae_slicing.assert_called_once()
     mock_pipeline_instance.enable_forward_chunking.assert_called_once_with(
-        chunk_size=1, dim=1
-    )
+        chunk_size=1, dim=1)
     result = zeroscope.forward("Test task")
     assert result == "Generated frames"
     mock_pipeline_instance.assert_called_once_with(
@@ -51,12 +46,8 @@ def test_zeroscope_ttv_forward(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_forward_error(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
-    mock_pipeline_instance.return_value = MagicMock(
-        frames="Generated frames"
-    )
+    mock_pipeline.from_pretrained.return_value = (mock_pipeline_instance)
+    mock_pipeline_instance.return_value = MagicMock(frames="Generated frames")
     mock_pipeline_instance.side_effect = Exception("Test error")
     with pytest.raises(Exception, match="Test error"):
         zeroscope.forward("Test task")
@@ -67,12 +58,8 @@ def test_zeroscope_ttv_forward_error(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_call(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
-    mock_pipeline_instance.return_value = MagicMock(
-        frames="Generated frames"
-    )
+    mock_pipeline.from_pretrained.return_value = (mock_pipeline_instance)
+    mock_pipeline_instance.return_value = MagicMock(frames="Generated frames")
     result = zeroscope.__call__("Test task")
     assert result == "Generated frames"
     mock_pipeline_instance.assert_called_once_with(
@@ -89,12 +76,8 @@ def test_zeroscope_ttv_call(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_call_error(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
-    mock_pipeline_instance.return_value = MagicMock(
-        frames="Generated frames"
-    )
+    mock_pipeline.from_pretrained.return_value = (mock_pipeline_instance)
+    mock_pipeline_instance.return_value = MagicMock(frames="Generated frames")
     mock_pipeline_instance.side_effect = Exception("Test error")
     with pytest.raises(Exception, match="Test error"):
         zeroscope.__call__("Test task")
@@ -105,12 +88,8 @@ def test_zeroscope_ttv_call_error(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_save_video_path(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
-    mock_pipeline_instance.return_value = MagicMock(
-        frames="Generated frames"
-    )
+    mock_pipeline.from_pretrained.return_value = (mock_pipeline_instance)
+    mock_pipeline_instance.return_value = MagicMock(frames="Generated frames")
     result = zeroscope.save_video_path("Test video path")
     assert result == "Test video path"
     mock_pipeline_instance.assert_called_once_with(

@@ -9,16 +9,13 @@ from swarms.utils import prep_torch_inference
 
 def test_prep_torch_inference():
     model_path = "model_path"
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() else "cpu"
-    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_mock = Mock()
     model_mock.eval = Mock()
 
     # Mocking the load_model_torch function to return our mock model.
-    with unittest.mock.patch(
-        "swarms.utils.load_model_torch", return_value=model_mock
-    ) as _:
+    with unittest.mock.patch("swarms.utils.load_model_torch",
+                             return_value=model_mock) as _:
         model = prep_torch_inference(model_path, device)
 
     # Check if model was properly loaded and eval function was called

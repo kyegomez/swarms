@@ -8,12 +8,8 @@ from swarms.utils import find_image_path
 
 
 def test_find_image_path_no_images():
-    assert (
-        find_image_path(
-            "This is a test string without any image paths."
-        )
-        is None
-    )
+    assert (find_image_path("This is a test string without any image paths.")
+            is None)
 
 
 def test_find_image_path_one_image():
@@ -23,9 +19,7 @@ def test_find_image_path_one_image():
 
 def test_find_image_path_multiple_images():
     text = "This string has two image paths: img1.png, and img2.jpg."
-    assert (
-        find_image_path(text) == "img2.jpg"
-    )  # Assuming both images exist
+    assert (find_image_path(text) == "img2.jpg")  # Assuming both images exist
 
 
 def test_find_image_path_wrong_input():

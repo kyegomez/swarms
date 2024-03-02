@@ -5,8 +5,7 @@ import threading
 import pytest
 
 from swarms.utils.code_interpreter import (  # Adjust the import according to your project structure
-    SubprocessCodeInterpreter,
-)
+    SubprocessCodeInterpreter,)
 
 
 # Fixture for the SubprocessCodeInterpreter instance
@@ -30,9 +29,8 @@ def test_start_and_terminate_process(interpreter):
     interpreter.start_process()
     assert isinstance(interpreter.process, subprocess.Popen)
     interpreter.terminate()
-    assert (
-        interpreter.process.poll() is not None
-    )  # Process should be terminated
+    assert (interpreter.process.poll()
+            is not None)  # Process should be terminated
 
 
 # Test preprocess_code method
@@ -46,25 +44,22 @@ def test_preprocess_code(interpreter):
 # Test detect_active_line method
 def test_detect_active_line(interpreter):
     line = "Some line of code"
-    assert (
-        interpreter.detect_active_line(line) is None
-    )  # Adjust assertion based on implementation
+    assert (interpreter.detect_active_line(line)
+            is None)  # Adjust assertion based on implementation
 
 
 # Test detect_end_of_execution method
 def test_detect_end_of_execution(interpreter):
     line = "End of execution line"
-    assert (
-        interpreter.detect_end_of_execution(line) is None
-    )  # Adjust assertion based on implementation
+    assert (interpreter.detect_end_of_execution(line)
+            is None)  # Adjust assertion based on implementation
 
 
 # Test line_postprocessor method
 def test_line_postprocessor(interpreter):
     line = "Some output line"
-    assert (
-        interpreter.line_postprocessor(line) == line
-    )  # Adjust assertion based on implementation
+    assert (interpreter.line_postprocessor(line) == line
+           )  # Adjust assertion based on implementation
 
 
 # Test handle_stream_output method
