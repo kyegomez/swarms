@@ -46,7 +46,9 @@ def test_generate_unique_identifier():
     # Generate unique identifiers and ensure they are valid UUID strings
     unique_id = generate_unique_identifier()
     assert isinstance(unique_id, str)
-    assert uuid.UUID(unique_id, version=5, namespace=uuid.NAMESPACE_DNS)
+    assert uuid.UUID(
+        unique_id, version=5, namespace=uuid.NAMESPACE_DNS
+    )
 
 
 def test_generate_user_id_edge_case():
@@ -71,7 +73,9 @@ def test_get_system_info_edge_case():
     # Test get_system_info for consistency
     system_info1 = get_system_info()
     system_info2 = get_system_info()
-    assert (system_info1 == system_info2)  # Ensure system info remains the same
+    assert (
+        system_info1 == system_info2
+    )  # Ensure system info remains the same
 
 
 def test_generate_unique_identifier_edge_case():

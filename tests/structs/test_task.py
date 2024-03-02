@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,)
+    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
+)
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
 
@@ -20,11 +21,13 @@ def llm():
 
 
 def test_agent_run_task(llm):
-    task = ("Analyze this image of an assembly line and identify any"
-            " issues such as misaligned parts, defects, or deviations"
-            " from the standard assembly process. IF there is anything"
-            " unsafe in the image, explain why it is unsafe and how it"
-            " could be improved.")
+    task = (
+        "Analyze this image of an assembly line and identify any"
+        " issues such as misaligned parts, defects, or deviations"
+        " from the standard assembly process. IF there is anything"
+        " unsafe in the image, explain why it is unsafe and how it"
+        " could be improved."
+    )
     img = "assembly_line.jpg"
 
     agent = Agent(
@@ -46,7 +49,9 @@ def test_agent_run_task(llm):
 @pytest.fixture
 def task():
     agents = [Agent(llm=llm, id=f"Agent_{i}") for i in range(5)]
-    return Task(id="Task_1", task="Task_Name", agents=agents, dependencies=[])
+    return Task(
+        id="Task_1", task="Task_Name", agents=agents, dependencies=[]
+    )
 
 
 # Basic tests
@@ -184,7 +189,9 @@ def test_task_execute_with_condition(mocker):
     mock_agent = mocker.Mock(spec=Agent)
     mock_agent.run.return_value = "result"
     condition = mocker.Mock(return_value=True)
-    task = Task(description="Test task", agent=mock_agent, condition=condition)
+    task = Task(
+        description="Test task", agent=mock_agent, condition=condition
+    )
     task.execute()
     assert task.result == "result"
     assert task.history == ["result"]
@@ -194,7 +201,9 @@ def test_task_execute_with_condition_false(mocker):
     mock_agent = mocker.Mock(spec=Agent)
     mock_agent.run.return_value = "result"
     condition = mocker.Mock(return_value=False)
-    task = Task(description="Test task", agent=mock_agent, condition=condition)
+    task = Task(
+        description="Test task", agent=mock_agent, condition=condition
+    )
     task.execute()
     assert task.result is None
     assert task.history == []
@@ -204,7 +213,9 @@ def test_task_execute_with_action(mocker):
     mock_agent = mocker.Mock(spec=Agent)
     mock_agent.run.return_value = "result"
     action = mocker.Mock()
-    task = Task(description="Test task", agent=mock_agent, action=action)
+    task = Task(
+        description="Test task", agent=mock_agent, action=action
+    )
     task.execute()
     assert task.result == "result"
     assert task.history == ["result"]
@@ -232,9 +243,11 @@ def test_task_handle_scheduled_task_future(mocker):
         agent=mock_agent,
         schedule_time=datetime.now() + timedelta(days=1),
     )
-    with mocker.patch.object(task.scheduler,
-                             "enter") as mock_enter, mocker.patch.object(
-                                 task.scheduler, "run") as mock_run:
+    with mocker.patch.object(
+        task.scheduler, "enter"
+    ) as mock_enter, mocker.patch.object(
+        task.scheduler, "run"
+    ) as mock_run:
         task.handle_scheduled_task()
     mock_enter.assert_called_once()
     mock_run.assert_called_once()

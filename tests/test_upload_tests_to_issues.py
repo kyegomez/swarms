@@ -20,7 +20,9 @@ headers = {
 
 
 def run_pytest():
-    result = subprocess.run(["pytest"], capture_output=True, text=True)
+    result = subprocess.run(
+        ["pytest"], capture_output=True, text=True
+    )
     return result.stdout + result.stderr
 
 
@@ -54,7 +56,9 @@ def main():
     errors = parse_pytest_output(pytest_output)
 
     for error in errors:
-        issue_response = create_github_issue(error["title"], error["body"])
+        issue_response = create_github_issue(
+            error["title"], error["body"]
+        )
         print(f"Issue created: {issue_response.get('html_url')}")
 
 

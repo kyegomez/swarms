@@ -7,7 +7,6 @@ from swarms.structs.team import Team
 
 
 class TestTeam(unittest.TestCase):
-
     def setUp(self):
         self.agent = Agent(
             llm=OpenAIChat(openai_api_key=""),
@@ -31,17 +30,16 @@ class TestTeam(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.team.check_config(
-                {"config": json.dumps({
-                    "agents": [],
-                    "tasks": []
-                })})
+                {"config": json.dumps({"agents": [], "tasks": []})}
+            )
 
     def test_run(self):
         self.assertEqual(self.team.run(), self.task.execute())
 
     def test_sequential_loop(self):
-        self.assertEqual(self.team._Team__sequential_loop(),
-                         self.task.execute())
+        self.assertEqual(
+            self.team._Team__sequential_loop(), self.task.execute()
+        )
 
     def test_log(self):
         self.assertIsNone(self.team._Team__log("Test message"))

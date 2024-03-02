@@ -65,20 +65,23 @@ def test_structured_tool_invoke():
 
 
 def test_tool_creation():
-    tool = Tool(name="test_tool", func=lambda x: x, description="Test tool")
+    tool = Tool(
+        name="test_tool", func=lambda x: x, description="Test tool"
+    )
     assert tool.name == "test_tool"
     assert tool.func is not None
     assert tool.description == "Test tool"
 
 
 def test_tool_ainvoke():
-    tool = Tool(name="test_tool", func=lambda x: x, description="Test tool")
+    tool = Tool(
+        name="test_tool", func=lambda x: x, description="Test tool"
+    )
     result = tool.ainvoke("input_data")
     assert result == "input_data"
 
 
 def test_tool_ainvoke_with_coroutine():
-
     async def async_function(input_data):
         return input_data
 
@@ -92,7 +95,6 @@ def test_tool_ainvoke_with_coroutine():
 
 
 def test_tool_args():
-
     def sample_function(input_data):
         return input_data
 
@@ -108,7 +110,6 @@ def test_tool_args():
 
 
 def test_structured_tool_creation():
-
     class SampleArgsSchema:
         pass
 
@@ -125,7 +126,6 @@ def test_structured_tool_creation():
 
 
 def test_structured_tool_ainvoke():
-
     class SampleArgsSchema:
         pass
 
@@ -140,7 +140,6 @@ def test_structured_tool_ainvoke():
 
 
 def test_structured_tool_ainvoke_with_coroutine():
-
     class SampleArgsSchema:
         pass
 
@@ -158,7 +157,6 @@ def test_structured_tool_ainvoke_with_coroutine():
 
 
 def test_structured_tool_args():
-
     class SampleArgsSchema:
         pass
 
@@ -184,13 +182,14 @@ def test_tool_ainvoke_exception():
 
 
 def test_tool_ainvoke_with_coroutine_exception():
-    tool = Tool(name="test_tool", coroutine=None, description="Test tool")
+    tool = Tool(
+        name="test_tool", coroutine=None, description="Test tool"
+    )
     with pytest.raises(NotImplementedError):
         tool.ainvoke("input_data")
 
 
 def test_structured_tool_ainvoke_exception():
-
     class SampleArgsSchema:
         pass
 
@@ -205,7 +204,6 @@ def test_structured_tool_ainvoke_exception():
 
 
 def test_structured_tool_ainvoke_with_coroutine_exception():
-
     class SampleArgsSchema:
         pass
 
@@ -227,7 +225,6 @@ def test_tool_description_not_provided():
 
 
 def test_tool_invoke_with_callbacks():
-
     def sample_function(input_data, callbacks=None):
         if callbacks:
             callbacks.on_start()
@@ -243,7 +240,6 @@ def test_tool_invoke_with_callbacks():
 
 
 def test_tool_invoke_with_new_argument():
-
     def sample_function(input_data, callbacks=None):
         return input_data
 
@@ -253,7 +249,6 @@ def test_tool_invoke_with_new_argument():
 
 
 def test_tool_ainvoke_with_new_argument():
-
     async def async_function(input_data, callbacks=None):
         return input_data
 
@@ -263,7 +258,6 @@ def test_tool_ainvoke_with_new_argument():
 
 
 def test_tool_description_from_docstring():
-
     def sample_function(input_data):
         """Sample function docstring"""
         return input_data
@@ -273,7 +267,6 @@ def test_tool_description_from_docstring():
 
 
 def test_tool_ainvoke_with_exceptions():
-
     async def async_function(input_data):
         raise ValueError("Test exception")
 
@@ -286,7 +279,6 @@ def test_tool_ainvoke_with_exceptions():
 
 
 def test_structured_tool_infer_schema_false():
-
     def sample_function(input_data):
         return input_data
 
@@ -300,7 +292,6 @@ def test_structured_tool_infer_schema_false():
 
 
 def test_structured_tool_ainvoke_with_callbacks():
-
     class SampleArgsSchema:
         pass
 
@@ -316,14 +307,15 @@ def test_structured_tool_ainvoke_with_callbacks():
         args_schema=SampleArgsSchema,
     )
     callbacks = MagicMock()
-    result = tool.ainvoke({"tool_input": "input_data"}, callbacks=callbacks)
+    result = tool.ainvoke(
+        {"tool_input": "input_data"}, callbacks=callbacks
+    )
     assert result == "input_data"
     callbacks.on_start.assert_called_once()
     callbacks.on_finish.assert_called_once()
 
 
 def test_structured_tool_description_not_provided():
-
     class SampleArgsSchema:
         pass
 
@@ -338,7 +330,6 @@ def test_structured_tool_description_not_provided():
 
 
 def test_structured_tool_args_schema():
-
     class SampleArgsSchema:
         pass
 
@@ -354,7 +345,6 @@ def test_structured_tool_args_schema():
 
 
 def test_structured_tool_args_schema_inference():
-
     def sample_function(input_data):
         return input_data
 
@@ -368,7 +358,6 @@ def test_structured_tool_args_schema_inference():
 
 
 def test_structured_tool_ainvoke_with_new_argument():
-
     class SampleArgsSchema:
         pass
 
@@ -380,12 +369,13 @@ def test_structured_tool_ainvoke_with_new_argument():
         func=sample_function,
         args_schema=SampleArgsSchema,
     )
-    result = tool.ainvoke({"tool_input": "input_data"}, callbacks=None)
+    result = tool.ainvoke(
+        {"tool_input": "input_data"}, callbacks=None
+    )
     assert result == "input_data"
 
 
 def test_structured_tool_ainvoke_with_exceptions():
-
     class SampleArgsSchema:
         pass
 
@@ -471,7 +461,9 @@ def test_tool_with_runnable(mock_runnable):
 def test_tool_with_invalid_argument():
     # Test passing an invalid argument type
     with pytest.raises(ValueError):
-        tool(123)  # Using an integer instead of a string/callable/Runnable
+        tool(
+            123
+        )  # Using an integer instead of a string/callable/Runnable
 
 
 def test_tool_with_multiple_arguments(mock_func):
@@ -533,7 +525,9 @@ class MockSchema(BaseModel):
 # Test suite starts here
 class TestTool:
     # Basic Functionality Tests
-    def test_tool_with_valid_callable_creates_base_tool(self, mock_func):
+    def test_tool_with_valid_callable_creates_base_tool(
+        self, mock_func
+    ):
         result = tool(mock_func)
         assert isinstance(result, BaseTool)
 
@@ -566,7 +560,6 @@ class TestTool:
 
     # Error Handling Tests
     def test_tool_raises_error_without_docstring(self):
-
         def no_doc_func(arg: str) -> str:
             return arg
 
@@ -574,14 +567,14 @@ class TestTool:
             tool(no_doc_func)
 
     def test_tool_raises_error_runnable_without_object_schema(
-            self, mock_runnable):
+        self, mock_runnable
+    ):
         with pytest.raises(ValueError):
             tool(mock_runnable)
 
     # Decorator Behavior Tests
     @pytest.mark.asyncio
     async def test_async_tool_function(self):
-
         @tool
         async def async_func(arg: str) -> str:
             return arg
@@ -604,7 +597,6 @@ class TestTool:
         pass
 
     def test_tool_with_different_return_types(self):
-
         @tool
         def return_int(arg: str) -> int:
             return int(arg)
@@ -623,7 +615,6 @@ class TestTool:
 
     # Test with multiple arguments
     def test_tool_with_multiple_args(self):
-
         @tool
         def concat_strings(a: str, b: str) -> str:
             return a + b
@@ -633,7 +624,6 @@ class TestTool:
 
     # Test handling of optional arguments
     def test_tool_with_optional_args(self):
-
         @tool
         def greet(name: str, greeting: str = "Hello") -> str:
             return f"{greeting} {name}"
@@ -643,7 +633,6 @@ class TestTool:
 
     # Test with variadic arguments
     def test_tool_with_variadic_args(self):
-
         @tool
         def sum_numbers(*numbers: int) -> int:
             return sum(numbers)
@@ -653,7 +642,6 @@ class TestTool:
 
     # Test with keyword arguments
     def test_tool_with_kwargs(self):
-
         @tool
         def build_query(**kwargs) -> str:
             return "&".join(f"{k}={v}" for k, v in kwargs.items())
@@ -663,7 +651,6 @@ class TestTool:
 
     # Test with mixed types of arguments
     def test_tool_with_mixed_args(self):
-
         @tool
         def mixed_args(a: int, b: str, *args, **kwargs) -> str:
             return f"{a}{b}{len(args)}{'-'.join(kwargs.values())}"
@@ -672,7 +659,6 @@ class TestTool:
 
     # Test error handling with incorrect types
     def test_tool_error_with_incorrect_types(self):
-
         @tool
         def add_numbers(a: int, b: int) -> int:
             return a + b
@@ -682,7 +668,6 @@ class TestTool:
 
     # Test with nested tools
     def test_nested_tools(self):
-
         @tool
         def inner_tool(arg: str) -> str:
             return f"Inner {arg}"
@@ -694,7 +679,6 @@ class TestTool:
         assert outer_tool("Test") == "Outer Inner Test"
 
     def test_tool_with_global_variable(self):
-
         @tool
         def access_global(arg: str) -> str:
             return f"{global_var} {arg}"
@@ -717,7 +701,6 @@ class TestTool:
 
     # Test with complex data structures
     def test_tool_with_complex_data_structures(self):
-
         @tool
         def process_data(data: dict) -> list:
             return [data[key] for key in sorted(data.keys())]
@@ -727,7 +710,6 @@ class TestTool:
 
     # Test handling exceptions within the tool function
     def test_tool_handling_internal_exceptions(self):
-
         @tool
         def function_that_raises(arg: str):
             if arg == "error":
@@ -740,7 +722,6 @@ class TestTool:
 
     # Test with functions returning None
     def test_tool_with_none_return(self):
-
         @tool
         def return_none(arg: str):
             return None
@@ -754,9 +735,7 @@ class TestTool:
 
     # Test with class methods
     def test_tool_with_class_method(self):
-
         class MyClass:
-
             @tool
             def method(self, arg: str) -> str:
                 return f"Method {arg}"
@@ -766,15 +745,12 @@ class TestTool:
 
     # Test tool function with inheritance
     def test_tool_with_inheritance(self):
-
         class Parent:
-
             @tool
             def parent_method(self, arg: str) -> str:
                 return f"Parent {arg}"
 
         class Child(Parent):
-
             @tool
             def child_method(self, arg: str) -> str:
                 return f"Child {arg}"
@@ -785,9 +761,7 @@ class TestTool:
 
     # Test with decorators stacking
     def test_tool_with_multiple_decorators(self):
-
         def another_decorator(func):
-
             def wrapper(*args, **kwargs):
                 return f"Decorated {func(*args, **kwargs)}"
 
@@ -813,7 +787,9 @@ class TestTool:
         def thread_target():
             results.append(threaded_function(5))
 
-        threads = [threading.Thread(target=thread_target) for _ in range(10)]
+        threads = [
+            threading.Thread(target=thread_target) for _ in range(10)
+        ]
         for t in threads:
             t.start()
         for t in threads:
@@ -823,7 +799,6 @@ class TestTool:
 
     # Test with recursive functions
     def test_tool_with_recursive_function(self):
-
         @tool
         def recursive_function(n: int) -> int:
             if n == 0:

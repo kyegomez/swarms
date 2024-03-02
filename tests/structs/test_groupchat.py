@@ -11,7 +11,6 @@ llm2 = Anthropic()
 
 # Mock the OpenAI class for testing
 class MockOpenAI:
-
     def __init__(self, *args, **kwargs):
         pass
 
@@ -140,9 +139,9 @@ def test_groupchat_manager_generate_reply():
     selector = agent1
 
     # Initialize GroupChatManager
-    manager = GroupChatManager(groupchat=groupchat,
-                               selector=selector,
-                               openai=mocked_openai)
+    manager = GroupChatManager(
+        groupchat=groupchat, selector=selector, openai=mocked_openai
+    )
 
     # Generate a reply
     task = "Write me a riddle"
@@ -166,8 +165,9 @@ def test_groupchat_select_speaker():
 
     # Simulate selecting the next speaker
     last_speaker = agent1
-    next_speaker = manager.select_speaker(last_speaker=last_speaker,
-                                          selector=selector)
+    next_speaker = manager.select_speaker(
+        last_speaker=last_speaker, selector=selector
+    )
 
     # Ensure the next speaker is agent2
     assert next_speaker == agent2
@@ -185,8 +185,9 @@ def test_groupchat_underpopulated_group():
 
     # Simulate selecting the next speaker in an underpopulated group
     last_speaker = agent1
-    next_speaker = manager.select_speaker(last_speaker=last_speaker,
-                                          selector=selector)
+    next_speaker = manager.select_speaker(
+        last_speaker=last_speaker, selector=selector
+    )
 
     # Ensure the next speaker is the same as the last speaker in an underpopulated group
     assert next_speaker == last_speaker
@@ -204,13 +205,15 @@ def test_groupchat_max_rounds():
     # Simulate the conversation with max rounds
     last_speaker = agent1
     for _ in range(2):
-        next_speaker = manager.select_speaker(last_speaker=last_speaker,
-                                              selector=selector)
+        next_speaker = manager.select_speaker(
+            last_speaker=last_speaker, selector=selector
+        )
         last_speaker = next_speaker
 
     # Try one more round, should stay with the last speaker
-    next_speaker = manager.select_speaker(last_speaker=last_speaker,
-                                          selector=selector)
+    next_speaker = manager.select_speaker(
+        last_speaker=last_speaker, selector=selector
+    )
 
     # Ensure the next speaker is the same as the last speaker after reaching max rounds
     assert next_speaker == last_speaker

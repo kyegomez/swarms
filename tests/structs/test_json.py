@@ -15,8 +15,10 @@ def valid_schema_path(tmp_path):
     d = tmp_path / "sub"
     d.mkdir()
     p = d / "schema.json"
-    p.write_text('{"type": "object", "properties": {"name": {"type":'
-                 ' "string"}}}')
+    p.write_text(
+        '{"type": "object", "properties": {"name": {"type":'
+        ' "string"}}}'
+    )
     return str(p)
 
 
@@ -31,7 +33,6 @@ def invalid_schema_path(tmp_path):
 
 # This test class must be subclassed as JSON class is abstract
 class TestableJSON(JSON):
-
     def validate(self, data):
         # Here must be a real validation implementation for testing
         pass

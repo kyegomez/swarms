@@ -43,7 +43,9 @@ def test_model_initialization(setup_nougat):
     "cuda_available, expected_device",
     [(True, "cuda"), (False, "cpu")],
 )
-def test_device_initialization(cuda_available, expected_device, monkeypatch):
+def test_device_initialization(
+    cuda_available, expected_device, monkeypatch
+):
     monkeypatch.setattr(
         torch,
         "cuda",
@@ -72,7 +74,9 @@ def test_get_image_invalid_path(setup_nougat):
         (10, 50),
     ],
 )
-def test_model_call_with_diff_params(setup_nougat, min_len, max_tokens):
+def test_model_call_with_diff_params(
+    setup_nougat, min_len, max_tokens
+):
     setup_nougat.min_length = min_len
     setup_nougat.max_new_tokens = max_tokens
 
@@ -103,11 +107,11 @@ def test_model_call_mocked_output(setup_nougat):
 def mock_processor_and_model():
     """Mock the NougatProcessor and VisionEncoderDecoderModel to simulate their behavior."""
     with patch(
-            "transformers.NougatProcessor.from_pretrained",
-            return_value=Mock(),
+        "transformers.NougatProcessor.from_pretrained",
+        return_value=Mock(),
     ), patch(
-            "transformers.VisionEncoderDecoderModel.from_pretrained",
-            return_value=Mock(),
+        "transformers.VisionEncoderDecoderModel.from_pretrained",
+        return_value=Mock(),
     ):
         yield
 
@@ -118,7 +122,8 @@ def test_nougat_with_sample_image_1(setup_nougat):
         os.path.join(
             "sample_images",
             "https://plus.unsplash.com/premium_photo-1687149699194-0207c04bc6e8?auto=format&fit=crop&q=80&w=1378&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        ))
+        )
+    )
     assert isinstance(result, str)
 
 
@@ -135,7 +140,8 @@ def test_nougat_min_length_param(setup_nougat):
         os.path.join(
             "sample_images",
             "https://plus.unsplash.com/premium_photo-1687149699194-0207c04bc6e8?auto=format&fit=crop&q=80&w=1378&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        ))
+        )
+    )
     assert isinstance(result, str)
 
 
@@ -146,7 +152,8 @@ def test_nougat_max_new_tokens_param(setup_nougat):
         os.path.join(
             "sample_images",
             "https://plus.unsplash.com/premium_photo-1687149699194-0207c04bc6e8?auto=format&fit=crop&q=80&w=1378&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        ))
+        )
+    )
     assert isinstance(result, str)
 
 
@@ -157,13 +164,16 @@ def test_nougat_different_model_path(setup_nougat):
         os.path.join(
             "sample_images",
             "https://plus.unsplash.com/premium_photo-1687149699194-0207c04bc6e8?auto=format&fit=crop&q=80&w=1378&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        ))
+        )
+    )
     assert isinstance(result, str)
 
 
 @pytest.mark.usefixtures("mock_processor_and_model")
 def test_nougat_bad_image_path(setup_nougat):
-    with pytest.raises(Exception):  # Adjust the exception type accordingly.
+    with pytest.raises(
+        Exception
+    ):  # Adjust the exception type accordingly.
         setup_nougat("bad_image_path.png")
 
 
@@ -173,7 +183,8 @@ def test_nougat_image_large_size(setup_nougat):
         os.path.join(
             "sample_images",
             "https://images.unsplash.com/photo-1697641039266-bfa00367f7cb?auto=format&fit=crop&q=60&w=400&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHx0b3BpYy1mZWVkfDJ8SnBnNktpZGwtSGt8fGVufDB8fHx8fA%3D%3D",
-        ))
+        )
+    )
     assert isinstance(result, str)
 
 
@@ -183,7 +194,8 @@ def test_nougat_image_small_size(setup_nougat):
         os.path.join(
             "sample_images",
             "https://images.unsplash.com/photo-1697638626987-aa865b769276?auto=format&fit=crop&q=60&w=400&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHx0b3BpYy1mZWVkfDd8SnBnNktpZGwtSGt8fGVufDB8fHx8fA%3D%3D",
-        ))
+        )
+    )
     assert isinstance(result, str)
 
 
@@ -193,7 +205,8 @@ def test_nougat_image_varied_content(setup_nougat):
         os.path.join(
             "sample_images",
             "https://images.unsplash.com/photo-1697469994783-b12bbd9c4cff?auto=format&fit=crop&q=60&w=400&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHx0b3BpYy1mZWVkfDE0fEpwZzZLaWRsLUhrfHxlbnwwfHx8fHw%3D",
-        ))
+        )
+    )
     assert isinstance(result, str)
 
 
@@ -203,5 +216,6 @@ def test_nougat_image_with_metadata(setup_nougat):
         os.path.join(
             "sample_images",
             "https://images.unsplash.com/photo-1697273300766-5bbaa53ec2f0?auto=format&fit=crop&q=60&w=400&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHx0b3BpYy1mZWVkfDE5fEpwZzZLaWRsLUhrfHxlbnwwfHx8fHw%3D",
-        ))
+        )
+    )
     assert isinstance(result, str)

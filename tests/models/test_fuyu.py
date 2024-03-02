@@ -38,7 +38,9 @@ def fuyu_instance():
 # Test using the fixture.
 def test_fuyu_processor_initialization(fuyu_instance):
     assert isinstance(fuyu_instance.processor, FuyuProcessor)
-    assert isinstance(fuyu_instance.image_processor, FuyuImageProcessor)
+    assert isinstance(
+        fuyu_instance.image_processor, FuyuImageProcessor
+    )
 
 
 # Test exception when providing an invalid image path.
@@ -49,7 +51,6 @@ def test_invalid_image_path(fuyu_instance):
 
 # Using monkeypatch to replace the Image.open method to simulate a failure.
 def test_image_open_failure(fuyu_instance, monkeypatch):
-
     def mock_open(*args, **kwargs):
         raise Exception("Mocked failure")
 
@@ -78,9 +79,13 @@ def test_tokenizer_type(fuyu_instance):
 
 
 def test_processor_has_image_processor_and_tokenizer(fuyu_instance):
-    assert (fuyu_instance.processor.image_processor ==
-            fuyu_instance.image_processor)
-    assert (fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer)
+    assert (
+        fuyu_instance.processor.image_processor
+        == fuyu_instance.image_processor
+    )
+    assert (
+        fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer
+    )
 
 
 def test_model_device_map(fuyu_instance):
@@ -139,14 +144,22 @@ def test_get_img_invalid_path(fuyu_instance):
 
 # Test `run` method with valid inputs
 def test_run_valid_inputs(fuyu_instance):
-    with patch.object(fuyu_instance, "get_img") as mock_get_img, patch.object(
-            fuyu_instance, "processor") as mock_processor, patch.object(
-                fuyu_instance, "model") as mock_model:
+    with patch.object(
+        fuyu_instance, "get_img"
+    ) as mock_get_img, patch.object(
+        fuyu_instance, "processor"
+    ) as mock_processor, patch.object(
+        fuyu_instance, "model"
+    ) as mock_model:
         mock_get_img.return_value = "Test image"
-        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+        mock_processor.return_value = {
+            "input_ids": torch.tensor([1, 2, 3])
+        }
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test text"]
-        result = fuyu_instance.run("Hello, world!", "valid/path/to/image.png")
+        result = fuyu_instance.run(
+            "Hello, world!", "valid/path/to/image.png"
+        )
     assert result == ["Test text"]
 
 
@@ -173,7 +186,9 @@ def test_run_invalid_image_path(fuyu_instance):
     with patch.object(fuyu_instance, "get_img") as mock_get_img:
         mock_get_img.side_effect = FileNotFoundError
         with pytest.raises(FileNotFoundError):
-            fuyu_instance.run("Hello, world!", "invalid/path/to/image.png")
+            fuyu_instance.run(
+                "Hello, world!", "invalid/path/to/image.png"
+            )
 
 
 # Test `__init__` method with default parameters

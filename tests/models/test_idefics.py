@@ -13,8 +13,8 @@ from swarms.models.idefics import (
 @pytest.fixture
 def idefics_instance():
     with patch(
-            "torch.cuda.is_available",
-            return_value=False):  # Assuming tests are run on CPU for simplicity
+        "torch.cuda.is_available", return_value=False
+    ):  # Assuming tests are run on CPU for simplicity
         instance = Idefics()
     return instance
 
@@ -36,8 +36,8 @@ def test_init_default(idefics_instance):
 )
 def test_init_device(device, expected):
     with patch(
-            "torch.cuda.is_available",
-            return_value=True if expected == "cuda" else False,
+        "torch.cuda.is_available",
+        return_value=True if expected == "cuda" else False,
     ):
         instance = Idefics(device=device)
     assert instance.device == expected
@@ -46,10 +46,14 @@ def test_init_device(device, expected):
 # Test `run` method
 def test_run(idefics_instance):
     prompts = [["User: Test"]]
-    with patch.object(idefics_instance,
-                      "processor") as mock_processor, patch.object(
-                          idefics_instance, "model") as mock_model:
-        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor, patch.object(
+        idefics_instance, "model"
+    ) as mock_model:
+        mock_processor.return_value = {
+            "input_ids": torch.tensor([1, 2, 3])
+        }
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
 
@@ -61,10 +65,14 @@ def test_run(idefics_instance):
 # Test `__call__` method (using the same logic as run for simplicity)
 def test_call(idefics_instance):
     prompts = [["User: Test"]]
-    with patch.object(idefics_instance,
-                      "processor") as mock_processor, patch.object(
-                          idefics_instance, "model") as mock_model:
-        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor, patch.object(
+        idefics_instance, "model"
+    ) as mock_model:
+        mock_processor.return_value = {
+            "input_ids": torch.tensor([1, 2, 3])
+        }
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
 
@@ -77,7 +85,9 @@ def test_call(idefics_instance):
 def test_chat(idefics_instance):
     user_input = "User: Hello"
     response = "Model: Hi there!"
-    with patch.object(idefics_instance, "run", return_value=[response]):
+    with patch.object(
+        idefics_instance, "run", return_value=[response]
+    ):
         result = idefics_instance.chat(user_input)
 
     assert result == response
@@ -87,13 +97,16 @@ def test_chat(idefics_instance):
 # Test `set_checkpoint` method
 def test_set_checkpoint(idefics_instance):
     new_checkpoint = "new_checkpoint"
-    with patch.object(IdeficsForVisionText2Text,
-                      "from_pretrained") as mock_from_pretrained, patch.object(
-                          AutoProcessor, "from_pretrained"):
+    with patch.object(
+        IdeficsForVisionText2Text, "from_pretrained"
+    ) as mock_from_pretrained, patch.object(
+        AutoProcessor, "from_pretrained"
+    ):
         idefics_instance.set_checkpoint(new_checkpoint)
 
-    mock_from_pretrained.assert_called_with(new_checkpoint,
-                                            torch_dtype=torch.bfloat16)
+    mock_from_pretrained.assert_called_with(
+        new_checkpoint, torch_dtype=torch.bfloat16
+    )
 
 
 # Test `set_device` method
@@ -122,7 +135,7 @@ def test_clear_chat_history(idefics_instance):
 # Exception Tests
 def test_run_with_empty_prompts(idefics_instance):
     with pytest.raises(
-            Exception
+        Exception
     ):  # Replace Exception with the actual exception that may arise for an empty prompt.
         idefics_instance.run([])
 
@@ -130,10 +143,14 @@ def test_run_with_empty_prompts(idefics_instance):
 # Test `run` method with batched_mode set to False
 def test_run_batched_mode_false(idefics_instance):
     task = "User: Test"
-    with patch.object(idefics_instance,
-                      "processor") as mock_processor, patch.object(
-                          idefics_instance, "model") as mock_model:
-        mock_processor.return_value = {"input_ids": torch.tensor([1, 2, 3])}
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor, patch.object(
+        idefics_instance, "model"
+    ) as mock_model:
+        mock_processor.return_value = {
+            "input_ids": torch.tensor([1, 2, 3])
+        }
         mock_model.generate.return_value = torch.tensor([1, 2, 3])
         mock_processor.batch_decode.return_value = ["Test"]
 
@@ -146,7 +163,9 @@ def test_run_batched_mode_false(idefics_instance):
 # Test `run` method with an exception
 def test_run_with_exception(idefics_instance):
     task = "User: Test"
-    with patch.object(idefics_instance, "processor") as mock_processor:
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor:
         mock_processor.side_effect = Exception("Test exception")
         with pytest.raises(Exception):
             idefics_instance.run(task)
@@ -155,21 +174,24 @@ def test_run_with_exception(idefics_instance):
 # Test `set_model_name` method
 def test_set_model_name(idefics_instance):
     new_model_name = "new_model_name"
-    with patch.object(IdeficsForVisionText2Text,
-                      "from_pretrained") as mock_from_pretrained, patch.object(
-                          AutoProcessor, "from_pretrained"):
+    with patch.object(
+        IdeficsForVisionText2Text, "from_pretrained"
+    ) as mock_from_pretrained, patch.object(
+        AutoProcessor, "from_pretrained"
+    ):
         idefics_instance.set_model_name(new_model_name)
 
     assert idefics_instance.model_name == new_model_name
-    mock_from_pretrained.assert_called_with(new_model_name,
-                                            torch_dtype=torch.bfloat16)
+    mock_from_pretrained.assert_called_with(
+        new_model_name, torch_dtype=torch.bfloat16
+    )
 
 
 # Test `__init__` method with device set to None
 def test_init_device_none():
     with patch(
-            "torch.cuda.is_available",
-            return_value=False,
+        "torch.cuda.is_available",
+        return_value=False,
     ):
         instance = Idefics(device=None)
     assert instance.device == "cpu"
@@ -178,8 +200,8 @@ def test_init_device_none():
 # Test `__init__` method with device set to "cuda"
 def test_init_device_cuda():
     with patch(
-            "torch.cuda.is_available",
-            return_value=True,
+        "torch.cuda.is_available",
+        return_value=True,
     ):
         instance = Idefics(device="cuda")
     assert instance.device == "cuda"

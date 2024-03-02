@@ -14,14 +14,19 @@ def mock_pipeline():
 
 @pytest.fixture
 def pipeline(mock_pipeline):
-    return HuggingfacePipeline("text-generation",
-                               "meta-llama/Llama-2-13b-chat-hf")
+    return HuggingfacePipeline(
+        "text-generation", "meta-llama/Llama-2-13b-chat-hf"
+    )
 
 
 def test_init(pipeline, mock_pipeline):
     assert pipeline.task_type == "text-generation"
     assert pipeline.model_name == "meta-llama/Llama-2-13b-chat-hf"
-    assert (pipeline.use_fp8 is True if torch.cuda.is_available() else False)
+    assert (
+        pipeline.use_fp8 is True
+        if torch.cuda.is_available()
+        else False
+    )
     mock_pipeline.assert_called_once_with(
         "text-generation",
         "meta-llama/Llama-2-13b-chat-hf",
@@ -46,5 +51,6 @@ def test_run_with_different_task(pipeline, mock_pipeline):
     mock_pipeline.return_value = "Generated text"
     result = pipeline.run("text-classification", "Hello, world!")
     assert result == "Generated text"
-    mock_pipeline.assert_called_once_with("text-classification",
-                                          "Hello, world!")
+    mock_pipeline.assert_called_once_with(
+        "text-classification", "Hello, world!"
+    )

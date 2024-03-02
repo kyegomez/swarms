@@ -55,11 +55,7 @@ def test_init_custom_params(mock_api_key):
 def test_run_success(mock_post, mock_api_key):
     mock_response = Mock()
     mock_response.json.return_value = {
-        "choices": [{
-            "message": {
-                "content": "Generated response"
-            }
-        }]
+        "choices": [{"message": {"content": "Generated response"}}]
     }
     mock_post.return_value = mock_response
 
@@ -73,7 +69,8 @@ def test_run_success(mock_post, mock_api_key):
 @patch("swarms.models.together_model.requests.post")
 def test_run_failure(mock_post, mock_api_key):
     mock_post.side_effect = requests.exceptions.RequestException(
-        "Request failed")
+        "Request failed"
+    )
 
     model = TogetherLLM()
     task = "What is the color of the object?"
@@ -92,7 +89,9 @@ def test_run_with_logging_enabled(caplog, mock_api_key):
     assert "Sending request to" in caplog.text
 
 
-@pytest.mark.parametrize("invalid_input", [None, 123, ["list", "of", "items"]])
+@pytest.mark.parametrize(
+    "invalid_input", [None, 123, ["list", "of", "items"]]
+)
 def test_invalid_task_input(invalid_input, mock_api_key):
     model = TogetherLLM()
     response = model.run(invalid_input)
@@ -104,11 +103,7 @@ def test_invalid_task_input(invalid_input, mock_api_key):
 def test_run_streaming_enabled(mock_post, mock_api_key):
     mock_response = Mock()
     mock_response.json.return_value = {
-        "choices": [{
-            "message": {
-                "content": "Generated response"
-            }
-        }]
+        "choices": [{"message": {"content": "Generated response"}}]
     }
     mock_post.return_value = mock_response
 

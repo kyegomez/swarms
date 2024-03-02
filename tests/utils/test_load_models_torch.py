@@ -42,13 +42,15 @@ def test_load_model_torch_model_specified(mocker):
     mock_model = MagicMock(spec=torch.nn.Module)
     mocker.patch("torch.load", return_value={"key": "value"})
     load_model_torch("model_path", model=mock_model)
-    mock_model.load_state_dict.assert_called_once_with({"key": "value"},
-                                                       strict=True)
+    mock_model.load_state_dict.assert_called_once_with(
+        {"key": "value"}, strict=True
+    )
 
 
 def test_load_model_torch_model_specified_strict_false(mocker):
     mock_model = MagicMock(spec=torch.nn.Module)
     mocker.patch("torch.load", return_value={"key": "value"})
     load_model_torch("model_path", model=mock_model, strict=False)
-    mock_model.load_state_dict.assert_called_once_with({"key": "value"},
-                                                       strict=False)
+    mock_model.load_state_dict.assert_called_once_with(
+        {"key": "value"}, strict=False
+    )

@@ -4,30 +4,27 @@ from swarms.utils import print_class_parameters
 
 
 class TestObject:
-
     def __init__(self, value1, value2: int):
         pass
 
 
 class TestObject2:
-
     def __init__(self: "TestObject2", value1, value2: int = 5):
         pass
 
 
 def test_class_with_complex_parameters():
-
     class ComplexArgs:
-
         def __init__(self, value1: list, value2: dict = {}):
             pass
 
     output = {"value1": "<class 'list'>", "value2": "<class 'dict'>"}
-    assert (print_class_parameters(ComplexArgs, api_format=True) == output)
+    assert (
+        print_class_parameters(ComplexArgs, api_format=True) == output
+    )
 
 
 def test_empty_class():
-
     class Empty:
         pass
 
@@ -36,9 +33,7 @@ def test_empty_class():
 
 
 def test_class_with_no_annotations():
-
     class NoAnnotations:
-
         def __init__(self, value1, value2):
             pass
 
@@ -46,13 +41,14 @@ def test_class_with_no_annotations():
         "value1": "<class 'inspect._empty'>",
         "value2": "<class 'inspect._empty'>",
     }
-    assert (print_class_parameters(NoAnnotations, api_format=True) == output)
+    assert (
+        print_class_parameters(NoAnnotations, api_format=True)
+        == output
+    )
 
 
 def test_class_with_partial_annotations():
-
     class PartialAnnotations:
-
         def __init__(self, value1, value2: int):
             pass
 
@@ -60,8 +56,10 @@ def test_class_with_partial_annotations():
         "value1": "<class 'inspect._empty'>",
         "value2": "<class 'int'>",
     }
-    assert (print_class_parameters(PartialAnnotations,
-                                   api_format=True) == output)
+    assert (
+        print_class_parameters(PartialAnnotations, api_format=True)
+        == output
+    )
 
 
 @pytest.mark.parametrize(

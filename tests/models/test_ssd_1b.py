@@ -21,30 +21,36 @@ def test_ssd1b_call(ssd1b_model):
     image_url = ssd1b_model(task, neg_prompt)
     assert isinstance(image_url, str)
     assert image_url.startswith(
-        "https://")  # Assuming it starts with "https://"
+        "https://"
+    )  # Assuming it starts with "https://"
 
 
 # Add more tests for various aspects of the class and methods
 
 
 # Example of a parameterized test for different tasks
-@pytest.mark.parametrize("task",
-                         ["A painting of a cat", "A painting of a tree"])
+@pytest.mark.parametrize(
+    "task", ["A painting of a cat", "A painting of a tree"]
+)
 def test_ssd1b_parameterized_task(ssd1b_model, task):
     image_url = ssd1b_model(task)
     assert isinstance(image_url, str)
     assert image_url.startswith(
-        "https://")  # Assuming it starts with "https://"
+        "https://"
+    )  # Assuming it starts with "https://"
 
 
 # Example of a test using mocks to isolate units of code
 def test_ssd1b_with_mock(ssd1b_model, mocker):
-    mocker.patch("your_module.StableDiffusionXLPipeline")  # Mock the pipeline
+    mocker.patch(
+        "your_module.StableDiffusionXLPipeline"
+    )  # Mock the pipeline
     task = "A painting of a cat"
     image_url = ssd1b_model(task)
     assert isinstance(image_url, str)
     assert image_url.startswith(
-        "https://")  # Assuming it starts with "https://"
+        "https://"
+    )  # Assuming it starts with "https://"
 
 
 def test_ssd1b_call_with_cache(ssd1b_model):
@@ -62,8 +68,9 @@ def test_ssd1b_invalid_task(ssd1b_model):
 
 
 def test_ssd1b_failed_api_call(ssd1b_model, mocker):
-    mocker.patch("your_module.StableDiffusionXLPipeline"
-                )  # Mock the pipeline to raise an exception
+    mocker.patch(
+        "your_module.StableDiffusionXLPipeline"
+    )  # Mock the pipeline to raise an exception
     task = "A painting of a cat"
     with pytest.raises(Exception):
         ssd1b_model(task)

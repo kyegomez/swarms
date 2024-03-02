@@ -17,7 +17,6 @@ os.environ["OPENAI_API_KEY"] = "mocked_api_key"
 
 # Mock OpenAIChat class for testing
 class MockOpenAIChat:
-
     def __init__(self, *args, **kwargs):
         pass
 
@@ -27,7 +26,6 @@ class MockOpenAIChat:
 
 # Mock Agent class for testing
 class MockAgent:
-
     def __init__(self, *args, **kwargs):
         pass
 
@@ -37,7 +35,6 @@ class MockAgent:
 
 # Mock SequentialWorkflow class for testing
 class MockSequentialWorkflow:
-
     def __init__(self, *args, **kwargs):
         pass
 
@@ -72,7 +69,10 @@ def test_sequential_workflow_initialization():
     assert len(workflow.tasks) == 0
     assert workflow.max_loops == 1
     assert workflow.autosave is False
-    assert (workflow.saved_state_filepath == "sequential_workflow_state.json")
+    assert (
+        workflow.saved_state_filepath
+        == "sequential_workflow_state.json"
+    )
     assert workflow.restore_state_filepath is None
     assert workflow.dashboard is False
 
@@ -177,7 +177,6 @@ def test_sequential_workflow_workflow_dashboard(capfd):
 
 # Mock Agent class for async testing
 class MockAsyncAgent:
-
     def __init__(self, *args, **kwargs):
         pass
 

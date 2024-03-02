@@ -35,13 +35,16 @@ def qa_mock():
 # Example test cases
 def test_initialization_default_settings(vector_memory):
     assert vector_memory.chunk_size == 1000
-    assert (vector_memory.chunk_overlap == 100
-           )  # assuming default overlap of 0.1
+    assert (
+        vector_memory.chunk_overlap == 100
+    )  # assuming default overlap of 0.1
     assert vector_memory.loc.exists()
 
 
 def test_add_entry(vector_memory, embeddings_mock):
-    with patch.object(vector_memory.db, "add_texts") as add_texts_mock:
+    with patch.object(
+        vector_memory.db, "add_texts"
+    ) as add_texts_mock:
         vector_memory.add("Example text")
         add_texts_mock.assert_called()
 
@@ -74,17 +77,20 @@ def test_ask_question_returns_string(vector_memory, qa_mock):
         ),  # Mocked object as a placeholder
     ],
 )
-def test_search_memory_different_params(vector_memory, query, k, type,
-                                        expected):
+def test_search_memory_different_params(
+    vector_memory, query, k, type, expected
+):
     with patch.object(
-            vector_memory.db,
-            "max_marginal_relevance_search",
-            return_value=expected,
+        vector_memory.db,
+        "max_marginal_relevance_search",
+        return_value=expected,
     ):
         with patch.object(
-                vector_memory.db,
-                "similarity_search_with_score",
-                return_value=expected,
+            vector_memory.db,
+            "similarity_search_with_score",
+            return_value=expected,
         ):
-            result = vector_memory.search_memory(query, k=k, type=type)
+            result = vector_memory.search_memory(
+                query, k=k, type=type
+            )
             assert len(result) == (k if k > 0 else 0)

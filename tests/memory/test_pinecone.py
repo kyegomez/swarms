@@ -8,7 +8,8 @@ api_key = os.getenv("PINECONE_API_KEY") or ""
 
 def test_init():
     with patch("pinecone.init") as MockInit, patch(
-            "pinecone.Index") as MockIndex:
+        "pinecone.Index"
+    ) as MockIndex:
         store = PineconeDB(
             api_key=api_key,
             index_name="test_index",
@@ -70,7 +71,8 @@ def test_query():
 
 def test_create_index():
     with patch("pinecone.init"), patch("pinecone.Index"), patch(
-            "pinecone.create_index") as MockCreateIndex:
+        "pinecone.create_index"
+    ) as MockCreateIndex:
         store = PineconeDB(
             api_key=api_key,
             index_name="test_index",

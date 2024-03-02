@@ -24,8 +24,12 @@ def test_gemini_init_defaults(mock_gemini_api_key, mock_genai_model):
     assert model.model is mock_genai_model
 
 
-def test_gemini_init_custom_params(mock_gemini_api_key, mock_genai_model):
-    model = Gemini(model_name="custom-model", gemini_api_key="custom-api-key")
+def test_gemini_init_custom_params(
+    mock_gemini_api_key, mock_genai_model
+):
+    model = Gemini(
+        model_name="custom-model", gemini_api_key="custom-api-key"
+    )
     assert model.model_name == "custom-model"
     assert model.gemini_api_key == "custom-api-key"
     assert model.model is mock_genai_model
@@ -50,13 +54,16 @@ def test_gemini_run_with_img(
     response = model.run(task=task, img=img)
 
     assert response == "Generated response"
-    mock_generate_content.assert_called_with(content=[task, "Processed image"])
+    mock_generate_content.assert_called_with(
+        content=[task, "Processed image"]
+    )
     mock_process_img.assert_called_with(img=img)
 
 
 @patch("swarms.models.gemini.genai.GenerativeModel.generate_content")
-def test_gemini_run_without_img(mock_generate_content, mock_gemini_api_key,
-                                mock_genai_model):
+def test_gemini_run_without_img(
+    mock_generate_content, mock_gemini_api_key, mock_genai_model
+):
     model = Gemini()
     task = "A cat"
     response_mock = Mock(text="Generated response")
@@ -69,8 +76,9 @@ def test_gemini_run_without_img(mock_generate_content, mock_gemini_api_key,
 
 
 @patch("swarms.models.gemini.genai.GenerativeModel.generate_content")
-def test_gemini_run_exception(mock_generate_content, mock_gemini_api_key,
-                              mock_genai_model):
+def test_gemini_run_exception(
+    mock_generate_content, mock_gemini_api_key, mock_genai_model
+):
     model = Gemini()
     task = "A cat"
     mock_generate_content.side_effect = Exception("Test exception")
@@ -88,23 +96,30 @@ def test_gemini_process_img(mock_gemini_api_key, mock_genai_model):
 
     with patch("builtins.open", create=True) as open_mock:
         open_mock.return_value.__enter__.return_value.read.return_value = (
-            img_data)
+            img_data
+        )
 
         processed_img = model.process_img(img)
 
-    assert processed_img == [{"mime_type": "image/png", "data": img_data}]
+    assert processed_img == [
+        {"mime_type": "image/png", "data": img_data}
+    ]
     open_mock.assert_called_with(img, "rb")
 
 
 # Test Gemini initialization with missing API key
 def test_gemini_init_missing_api_key():
-    with pytest.raises(ValueError, match="Please provide a Gemini API key"):
+    with pytest.raises(
+        ValueError, match="Please provide a Gemini API key"
+    ):
         Gemini(gemini_api_key=None)
 
 
 # Test Gemini initialization with missing model name
 def test_gemini_init_missing_model_name():
-    with pytest.raises(ValueError, match="Please provide a model name"):
+    with pytest.raises(
+        ValueError, match="Please provide a model name"
+    ):
         Gemini(model_name=None)
 
 
@@ -126,20 +141,26 @@ def test_gemini_run_empty_img(mock_gemini_api_key, mock_genai_model):
 
 
 # Test Gemini process_img method with missing image
-def test_gemini_process_img_missing_image(mock_gemini_api_key,
-                                          mock_genai_model):
+def test_gemini_process_img_missing_image(
+    mock_gemini_api_key, mock_genai_model
+):
     model = Gemini()
     img = None
-    with pytest.raises(ValueError, match="Please provide an image to process"):
+    with pytest.raises(
+        ValueError, match="Please provide an image to process"
+    ):
         model.process_img(img=img)
 
 
 # Test Gemini process_img method with missing image type
-def test_gemini_process_img_missing_image_type(mock_gemini_api_key,
-                                               mock_genai_model):
+def test_gemini_process_img_missing_image_type(
+    mock_gemini_api_key, mock_genai_model
+):
     model = Gemini()
     img = "cat.png"
-    with pytest.raises(ValueError, match="Please provide the image type"):
+    with pytest.raises(
+        ValueError, match="Please provide the image type"
+    ):
         model.process_img(img=img, type=None)
 
 
@@ -147,7 +168,9 @@ def test_gemini_process_img_missing_image_type(mock_gemini_api_key,
 def test_gemini_process_img_missing_api_key(mock_genai_model):
     model = Gemini(gemini_api_key=None)
     img = "cat.png"
-    with pytest.raises(ValueError, match="Please provide a Gemini API key"):
+    with pytest.raises(
+        ValueError, match="Please provide a Gemini API key"
+    ):
         model.process_img(img=img, type="image/png")
 
 
@@ -170,7 +193,9 @@ def test_gemini_run_mock_img_processing(
     response = model.run(task=task, img=img)
 
     assert response == "Generated response"
-    mock_generate_content.assert_called_with(content=[task, "Processed image"])
+    mock_generate_content.assert_called_with(
+        content=[task, "Processed image"]
+    )
     mock_process_img.assert_called_with(img=img)
 
 

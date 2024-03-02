@@ -25,10 +25,14 @@ def test_mpt7b_run():
         "EleutherAI/gpt-neox-20b",
         max_tokens=150,
     )
-    output = mpt.run("generate", "Once upon a time in a land far, far away...")
+    output = mpt.run(
+        "generate", "Once upon a time in a land far, far away..."
+    )
 
     assert isinstance(output, str)
-    assert output.startswith("Once upon a time in a land far, far away...")
+    assert output.startswith(
+        "Once upon a time in a land far, far away..."
+    )
 
 
 def test_mpt7b_run_invalid_task():
@@ -51,10 +55,14 @@ def test_mpt7b_generate():
         "EleutherAI/gpt-neox-20b",
         max_tokens=150,
     )
-    output = mpt.generate("Once upon a time in a land far, far away...")
+    output = mpt.generate(
+        "Once upon a time in a land far, far away..."
+    )
 
     assert isinstance(output, str)
-    assert output.startswith("Once upon a time in a land far, far away...")
+    assert output.startswith(
+        "Once upon a time in a land far, far away..."
+    )
 
 
 def test_mpt7b_batch_generate():

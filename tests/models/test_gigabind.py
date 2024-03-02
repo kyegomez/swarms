@@ -11,13 +11,16 @@ except ImportError:
 
 @pytest.fixture
 def api():
-    return Gigabind(host="localhost", port=8000, endpoint="embeddings")
+    return Gigabind(
+        host="localhost", port=8000, endpoint="embeddings"
+    )
 
 
 @pytest.fixture
 def mock(requests_mock):
-    requests_mock.post("http://localhost:8000/embeddings",
-                       json={"result": "success"})
+    requests_mock.post(
+        "http://localhost:8000/embeddings", json={"result": "success"}
+    )
     return requests_mock
 
 
@@ -37,9 +40,9 @@ def test_run_with_audio(api, mock):
 
 
 def test_run_with_all(api, mock):
-    response = api.run(text="Hello, world!",
-                       vision="image.jpg",
-                       audio="audio.mp3")
+    response = api.run(
+        text="Hello, world!", vision="image.jpg", audio="audio.mp3"
+    )
     assert response == {"result": "success"}
 
 
@@ -62,20 +65,9 @@ def test_retry_on_failure(api, requests_mock):
     requests_mock.post(
         "http://localhost:8000/embeddings",
         [
-            {
-                "status_code": 500,
-                "json": {}
-            },
-            {
-                "status_code": 500,
-                "json": {}
-            },
-            {
-                "status_code": 200,
-                "json": {
-                    "result": "success"
-                }
-            },
+            {"status_code": 500, "json": {}},
+            {"status_code": 500, "json": {}},
+            {"status_code": 200, "json": {"result": "success"}},
         ],
     )
     response = api.run(text="Hello, world!")
@@ -86,18 +78,9 @@ def test_retry_exhausted(api, requests_mock):
     requests_mock.post(
         "http://localhost:8000/embeddings",
         [
-            {
-                "status_code": 500,
-                "json": {}
-            },
-            {
-                "status_code": 500,
-                "json": {}
-            },
-            {
-                "status_code": 500,
-                "json": {}
-            },
+            {"status_code": 500, "json": {}},
+            {"status_code": 500, "json": {}},
+            {"status_code": 500, "json": {}},
         ],
     )
     response = api.run(text="Hello, world!")
@@ -110,7 +93,9 @@ def test_proxy_url(api):
 
 
 def test_invalid_response(api, requests_mock):
-    requests_mock.post("http://localhost:8000/embeddings", text="not json")
+    requests_mock.post(
+        "http://localhost:8000/embeddings", text="not json"
+    )
     response = api.run(text="Hello, world!")
     assert response is None
 
@@ -125,7 +110,9 @@ def test_connection_error(api, requests_mock):
 
 
 def test_http_error(api, requests_mock):
-    requests_mock.post("http://localhost:8000/embeddings", status_code=500)
+    requests_mock.post(
+        "http://localhost:8000/embeddings", status_code=500
+    )
     response = api.run(text="Hello, world!")
     assert response is None
 
@@ -161,7 +148,9 @@ def test_run_with_large_all(api, mock):
     large_text = "Hello, world! " * 10000  # 10,000 repetitions
     large_vision = "image.jpg" * 10000  # 10,000 repetitions
     large_audio = "audio.mp3" * 10000  # 10,000 repetitions
-    response = api.run(text=large_text, vision=large_vision, audio=large_audio)
+    response = api.run(
+        text=large_text, vision=large_vision, audio=large_audio
+    )
     assert response == {"result": "success"}
 
 

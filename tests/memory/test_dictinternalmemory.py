@@ -33,8 +33,9 @@ def test_memory_limit_enforced(memory):
 
 
 # Parameterized Tests
-@pytest.mark.parametrize("scores, best_score", [([10, 5, 3], 10),
-                                                ([1, 2, 3], 3)])
+@pytest.mark.parametrize(
+    "scores, best_score", [([10, 5, 3], 10), ([1, 2, 3], 3)]
+)
 def test_get_top_n(scores, best_score, memory):
     for score in scores:
         memory.add(score, {"data": f"test{score}"})

@@ -73,8 +73,12 @@ def test_run(collaboration):
 
 
 def test_format_results(collaboration):
-    collaboration.results = [{"agent": "Agent1", "response": "Response1"}]
-    formatted_results = collaboration.format_results(collaboration.results)
+    collaboration.results = [
+        {"agent": "Agent1", "response": "Response1"}
+    ]
+    formatted_results = collaboration.format_results(
+        collaboration.results
+    )
     assert "Agent1 responded: Response1" in formatted_results
 
 
@@ -108,10 +112,7 @@ def test_repr(collaboration):
 def test_load(collaboration):
     state = {
         "step": 5,
-        "results": [{
-            "agent": "Agent1",
-            "response": "Response1"
-        }],
+        "results": [{"agent": "Agent1", "response": "Response1"}],
     }
     with open(collaboration.saved_file_path_name, "w") as file:
         json.dump(state, file)

@@ -14,7 +14,8 @@ def test_basic_message():
     with mock.patch.object(Console, "print") as mock_print:
         display_markdown_message("This is a test")
         mock_print.assert_called_once_with(
-            Markdown("This is a test", style="cyan"))
+            Markdown("This is a test", style="cyan")
+        )
 
 
 def test_empty_message():
@@ -30,7 +31,8 @@ def test_colors(color):
     with mock.patch.object(Console, "print") as mock_print:
         display_markdown_message("This is a test", color)
         mock_print.assert_called_once_with(
-            Markdown("This is a test", style=color))
+            Markdown("This is a test", style=color)
+        )
 
 
 def test_dash_line():

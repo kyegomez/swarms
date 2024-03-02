@@ -33,7 +33,7 @@ CODE
 """
 
 # Initialize the language model
-llm = OpenAIChat(openai_api_key=api_key, max_tokens=5000)
+llm = OpenAIChat(openai_api_key=api_key, max_tokens=4096)
 
 
 # Documentation agent

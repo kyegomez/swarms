@@ -16,8 +16,9 @@ def test_default_max_tokens():
     assert tokenizer.default_max_tokens() == 100000
 
 
-@pytest.mark.parametrize("model,tokens", [("claude-2.1", 200000),
-                                          ("claude", 100000)])
+@pytest.mark.parametrize(
+    "model,tokens", [("claude-2.1", 200000), ("claude", 100000)]
+)
 def test_default_max_tokens_models(model, tokens):
     tokenizer = AnthropicTokenizer(model=model)
     assert tokenizer.default_max_tokens() == tokens

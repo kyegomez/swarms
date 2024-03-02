@@ -23,15 +23,19 @@ def test_multion_agent_run(mock_multion):
     assert result == "result"
     assert status == "status"
     assert last_url == "lastUrl"
-    mock_multion.browse.assert_called_once_with({
-        "cmd": "task",
-        "url": "https://www.example.com",
-        "maxSteps": 5,
-    })
+    mock_multion.browse.assert_called_once_with(
+        {
+            "cmd": "task",
+            "url": "https://www.example.com",
+            "maxSteps": 5,
+        }
+    )
 
 
 # Additional tests for different tasks
-@pytest.mark.parametrize("task", ["task1", "task2", "task3", "task4", "task5"])
+@pytest.mark.parametrize(
+    "task", ["task1", "task2", "task3", "task4", "task5"]
+)
 @patch("swarms.agents.multion_agent.multion")
 def test_multion_agent_run_different_tasks(mock_multion, task):
     mock_response = MagicMock()
@@ -50,8 +54,6 @@ def test_multion_agent_run_different_tasks(mock_multion, task):
     assert result == "result"
     assert status == "status"
     assert last_url == "lastUrl"
-    mock_multion.browse.assert_called_once_with({
-        "cmd": task,
-        "url": "https://www.example.com",
-        "maxSteps": 5
-    })
+    mock_multion.browse.assert_called_once_with(
+        {"cmd": task, "url": "https://www.example.com", "maxSteps": 5}
+    )

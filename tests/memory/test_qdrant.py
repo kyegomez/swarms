@@ -13,8 +13,9 @@ def mock_qdrant_client():
 
 @pytest.fixture
 def mock_sentence_transformer():
-    with patch("sentence_transformers.SentenceTransformer"
-              ) as MockSentenceTransformer:
+    with patch(
+        "sentence_transformers.SentenceTransformer"
+    ) as MockSentenceTransformer:
         yield MockSentenceTransformer()
 
 
@@ -28,7 +29,9 @@ def test_qdrant_init(qdrant_client, mock_qdrant_client):
     assert qdrant_client.client is not None
 
 
-def test_load_embedding_model(qdrant_client, mock_sentence_transformer):
+def test_load_embedding_model(
+    qdrant_client, mock_sentence_transformer
+):
     qdrant_client._load_embedding_model("model_name")
     mock_sentence_transformer.assert_called_once_with("model_name")
 
@@ -36,7 +39,8 @@ def test_load_embedding_model(qdrant_client, mock_sentence_transformer):
 def test_setup_collection(qdrant_client, mock_qdrant_client):
     qdrant_client._setup_collection()
     mock_qdrant_client.get_collection.assert_called_once_with(
-        qdrant_client.collection_name)
+        qdrant_client.collection_name
+    )
 
 
 def test_add_vectors(qdrant_client, mock_qdrant_client):

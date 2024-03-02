@@ -21,9 +21,7 @@ def agent():
 
 @pytest.fixture()
 def concrete_task_queue():
-
     class ConcreteTaskQueue(TaskQueueBase):
-
         def add_task(self, task):
             pass  # Here you would add concrete implementation of add_task
 
@@ -53,8 +51,9 @@ def test_add_task_failure(concrete_task_queue, task):
     # Assuming the task is somehow invalid
     # Note: Concrete implementation requires logic defining what an invalid task is
     concrete_task_queue.add_task(task)
-    assert (concrete_task_queue.add_task(task)
-            is False)  # Adding the same task again
+    assert (
+        concrete_task_queue.add_task(task) is False
+    )  # Adding the same task again
 
 
 @pytest.mark.parametrize("invalid_task", [None, "", {}, []])
