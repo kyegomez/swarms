@@ -36,11 +36,9 @@ def scrape_tool_func_docs(fn: Callable) -> str:
     except Exception as error:
         print(
             colored(
-                (
-                    f"Error scraping tool function docs {error} try"
-                    " optimizing your inputs with different"
-                    " variables and attempt once more."
-                ),
+                f"Error scraping tool function docs {error} try"
+                " optimizing your inputs with different"
+                " variables and attempt once more.",
                 "red",
             )
         )

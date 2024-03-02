@@ -268,11 +268,9 @@ class HuggingfaceLLM(AbstractLLM):
         except Exception as e:
             print(
                 colored(
-                    (
-                        "HuggingfaceLLM could not generate text"
-                        f" because of error: {e}, try optimizing your"
-                        " arguments"
-                    ),
+                    "HuggingfaceLLM could not generate text"
+                    f" because of error: {e}, try optimizing your"
+                    " arguments",
                     "red",
                 )
             )

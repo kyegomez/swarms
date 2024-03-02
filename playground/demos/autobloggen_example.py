@@ -126,10 +126,8 @@ class AutoBlogGenSwarm:
             except Exception as error:
                 print(
                     colored(
-                        (
-                            "Error while running AutoBlogGenSwarm"
-                            f" {error}"
-                        ),
+                        "Error while running AutoBlogGenSwarm"
+                        f" {error}",
                         "red",
                     )
                 )

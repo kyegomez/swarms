@@ -68,10 +68,8 @@ workflow.add(
 )
 workflow.add(
     final_plan_agent,
-    (
-        "Generate the final urban improvement plan based on all"
-        " previous agent's findings"
-    ),
+    "Generate the final urban improvement plan based on all"
+    " previous agent's findings",
 )
 # Run the workflow for individual analysis tasks
 

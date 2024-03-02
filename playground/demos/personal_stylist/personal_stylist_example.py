@@ -66,43 +66,33 @@ accessories_stylist_agent = Agent(
 
 # Run agents with respective tasks
 haircut_suggestions = haircut_stylist_agent.run(
-    (
-        "Suggest suitable haircuts for this user, considering their"
-        " face shape and hair type."
-    ),
+    "Suggest suitable haircuts for this user, considering their"
+    " face shape and hair type.",
     user_selfie,
 )
 
 # Run Makeup or Beard agent based on gender
 if user_gender == "woman":
     makeup_suggestions = makeup_or_beard_stylist_agent.run(
-        (
-            "Recommend makeup styles for this user, complementing"
-            " their features."
-        ),
+        "Recommend makeup styles for this user, complementing"
+        " their features.",
         user_selfie,
     )
 elif user_gender == "man":
     beard_suggestions = makeup_or_beard_stylist_agent.run(
-        (
-            "Provide beard styling advice for this user, considering"
-            " their face shape."
-        ),
+        "Provide beard styling advice for this user, considering"
+        " their face shape.",
         user_selfie,
     )
 
 clothing_suggestions = clothing_stylist_agent.run(
-    (
-        "Match clothing styles and colors for this user, using color"
-        " matching principles."
-    ),
+    "Match clothing styles and colors for this user, using color"
+    " matching principles.",
     clothes_image,
 )
 
 accessories_suggestions = accessories_stylist_agent.run(
-    (
-        "Suggest accessories to complement this user's outfit,"
-        " considering the overall style."
-    ),
+    "Suggest accessories to complement this user's outfit,"
+    " considering the overall style.",
     clothes_image,
 )

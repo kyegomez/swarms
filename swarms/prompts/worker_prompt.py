@@ -62,6 +62,8 @@ def worker_tools_sop_promp(name: str, memory: str, time=time):
     [{memory}]
     
     Human: Determine which next command to use, and respond using the format specified above:
-    """.format(name=name, time=time, memory=memory)
+    """.format(
+        name=name, time=time, memory=memory
+    )
 
     return str(out)

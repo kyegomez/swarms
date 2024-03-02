@@ -239,9 +239,9 @@ class BaseOpenAI(BaseLLM):
             attributes["openai_api_base"] = self.openai_api_base
 
         if self.openai_organization != "":
-            attributes["openai_organization"] = (
-                self.openai_organization
-            )
+            attributes[
+                "openai_organization"
+            ] = self.openai_organization
 
         if self.openai_proxy != "":
             attributes["openai_proxy"] = self.openai_proxy

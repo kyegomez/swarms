@@ -317,10 +317,8 @@ class Conversation(BaseStructure):
             elif message["role"] == "tool":
                 print(
                     colored(
-                        (
-                            f"function ({message['name']}):"
-                            f" {message['content']}\n"
-                        ),
+                        f"function ({message['name']}):"
+                        f" {message['content']}\n",
                         role_to_color[message["role"]],
                     )
                 )

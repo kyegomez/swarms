@@ -84,7 +84,9 @@ class RedisSwarmRegistry(AbstractSwarm):
         query = f"""
         {match_query}
         CREATE (a)-[r:joined]->(b) RETURN r
-        """.replace("\n", "")
+        """.replace(
+            "\n", ""
+        )
 
         self.redis_graph.query(query)
 

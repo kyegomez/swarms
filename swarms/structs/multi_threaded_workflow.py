@@ -119,10 +119,8 @@ class MultiThreadedWorkflow(BaseWorkflow):
                             self._autosave_task_result(task, result)
                     except Exception as e:
                         logging.error(
-                            (
-                                f"Attempt {attempt+1} failed for task"
-                                f" {task}: {str(e)}"
-                            ),
+                            f"Attempt {attempt+1} failed for task"
+                            f" {task}: {str(e)}",
                             exc_info=True,
                         )
                         if attempt + 1 < self.retry_attempts:

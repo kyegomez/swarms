@@ -144,10 +144,8 @@ class SSD1B:
             # Handling exceptions and printing the errors details
             print(
                 colored(
-                    (
-                        f"Error running SSD1B: {error} try optimizing"
-                        " your api key and or try again"
-                    ),
+                    f"Error running SSD1B: {error} try optimizing"
+                    " your api key and or try again",
                     "red",
                 )
             )
@@ -234,20 +232,16 @@ class SSD1B:
                 except Exception as error:
                     print(
                         colored(
-                            (
-                                f"Error running SSD1B: {error} try"
-                                " optimizing your api key and or try"
-                                " again"
-                            ),
+                            f"Error running SSD1B: {error} try"
+                            " optimizing your api key and or try"
+                            " again",
                             "red",
                         )
                     )
                     print(
                         colored(
-                            (
-                                "Error running SSD1B:"
-                                f" {error.http_status}"
-                            ),
+                            "Error running SSD1B:"
+                            f" {error.http_status}",
                             "red",
                         )
                     )

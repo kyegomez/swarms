@@ -471,10 +471,8 @@ class Agent:
         try:
             print(
                 colored(
-                    (
-                        "Initializing Autonomous Agent"
-                        f" {self.agent_name}..."
-                    ),
+                    "Initializing Autonomous Agent"
+                    f" {self.agent_name}...",
                     "yellow",
                 )
             )
@@ -494,10 +492,8 @@ class Agent:
         except Exception as error:
             print(
                 colored(
-                    (
-                        "Error activating autonomous agent. Try"
-                        " optimizing your parameters..."
-                    ),
+                    "Error activating autonomous agent. Try"
+                    " optimizing your parameters...",
                     "red",
                 )
             )
@@ -729,10 +725,8 @@ class Agent:
             if self.autosave:
                 print(
                     colored(
-                        (
-                            "Autosaving agent state to"
-                            f" {self.saved_state_path}"
-                        ),
+                        "Autosaving agent state to"
+                        f" {self.saved_state_path}",
                         "green",
                     )
                 )
@@ -843,10 +837,8 @@ class Agent:
         except Exception as error:
             print(
                 colored(
-                    (
-                        f"Error running agent: {error} while running"
-                        " concurrently"
-                    ),
+                    f"Error running agent: {error} while running"
+                    " concurrently",
                     "red",
                 )
             )

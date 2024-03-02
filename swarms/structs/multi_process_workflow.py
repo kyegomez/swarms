@@ -133,10 +133,8 @@ class MultiProcessingWorkflow(BaseWorkflow):
 
         except Exception as e:
             logging.error(
-                (
-                    "An error occurred during execution of task"
-                    f" {task}: {str(e)}"
-                ),
+                "An error occurred during execution of task"
+                f" {task}: {str(e)}",
                 exc_info=True,
             )
             return None

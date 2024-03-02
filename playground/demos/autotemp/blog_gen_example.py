@@ -47,10 +47,8 @@ class BlogGen:
             topic_output = topic_result.generations[0][0].text
             print(
                 colored(
-                    (
-                        "\nTopic Selection Task"
-                        f" Output:\n----------------------------\n{topic_output}\n"
-                    ),
+                    "\nTopic Selection Task"
+                    f" Output:\n----------------------------\n{topic_output}\n",
                     "white",
                 )
             )
@@ -72,10 +70,8 @@ class BlogGen:
             initial_draft_output = auto_temp_output  # Assuming AutoTemp.run returns the best output directly
             print(
                 colored(
-                    (
-                        "\nInitial Draft"
-                        f" Output:\n----------------------------\n{initial_draft_output}\n"
-                    ),
+                    "\nInitial Draft"
+                    f" Output:\n----------------------------\n{initial_draft_output}\n",
                     "white",
                 )
             )
@@ -88,10 +84,8 @@ class BlogGen:
             review_output = review_result.generations[0][0].text
             print(
                 colored(
-                    (
-                        "\nReview"
-                        f" Output:\n----------------------------\n{review_output}\n"
-                    ),
+                    "\nReview"
+                    f" Output:\n----------------------------\n{review_output}\n",
                     "white",
                 )
             )
@@ -110,10 +104,8 @@ class BlogGen:
             ].text
             print(
                 colored(
-                    (
-                        "\nDistribution"
-                        f" Output:\n----------------------------\n{distribution_output}\n"
-                    ),
+                    "\nDistribution"
+                    f" Output:\n----------------------------\n{distribution_output}\n",
                     "white",
                 )
             )
@@ -122,10 +114,8 @@ class BlogGen:
             final_blog_content = f"{initial_draft_output}\n\n{review_output}\n\n{distribution_output}"
             print(
                 colored(
-                    (
-                        "\nFinal Blog"
-                        f" Content:\n----------------------------\n{final_blog_content}\n"
-                    ),
+                    "\nFinal Blog"
+                    f" Content:\n----------------------------\n{final_blog_content}\n",
                     "green",
                 )
             )

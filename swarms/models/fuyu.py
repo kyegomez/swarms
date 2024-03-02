@@ -97,11 +97,9 @@ class Fuyu(BaseMultiModalModel):
         except Exception as error:
             print(
                 colored(
-                    (
-                        "Error in"
-                        f" {self.__class__.__name__} pipeline:"
-                        f" {error}"
-                    ),
+                    "Error in"
+                    f" {self.__class__.__name__} pipeline:"
+                    f" {error}",
                     "red",
                 )
             )

@@ -95,10 +95,8 @@ product_manager_out = product_manager_agent.run(
 )
 print(
     colored(
-        (
-            "---------------------------- Product Manager Plan:"
-            f" {product_manager_out}"
-        ),
+        "---------------------------- Product Manager Plan:"
+        f" {product_manager_out}",
         "cyan",
     )
 )
@@ -111,10 +109,8 @@ agent1_out = feature_implementer_frontend.run(
 )
 print(
     colored(
-        (
-            "--------------------- Feature Implementer Code logic:"
-            f" {agent1_out}"
-        ),
+        "--------------------- Feature Implementer Code logic:"
+        f" {agent1_out}",
         "cyan",
     )
 )
@@ -125,10 +121,8 @@ tester_agent_out = tester_agent.run(
 )
 print(
     colored(
-        (
-            "---------------------------- Tests for the logic:"
-            f" {tester_agent_out}"
-        ),
+        "---------------------------- Tests for the logic:"
+        f" {tester_agent_out}",
         "green",
     )
 )
@@ -140,10 +134,8 @@ documenter_agent_out = documenting_agent.run(
 )
 print(
     colored(
-        (
-            "---------------------------- Documentation for the"
-            f" logic: {documenter_agent_out}"
-        ),
+        "---------------------------- Documentation for the"
+        f" logic: {documenter_agent_out}",
         "yellow",
     )
 )

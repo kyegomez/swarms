@@ -269,10 +269,8 @@ class ChildTool(BaseTool):
         """Raise deprecation warning if callback_manager is used."""
         if values.get("callback_manager") is not None:
             warnings.warn(
-                (
-                    "callback_manager is deprecated. Please use"
-                    " callbacks instead."
-                ),
+                "callback_manager is deprecated. Please use"
+                " callbacks instead.",
                 DeprecationWarning,
             )
             values["callbacks"] = values.pop("callback_manager", None)

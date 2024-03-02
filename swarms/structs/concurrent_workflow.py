@@ -35,9 +35,9 @@ class ConcurrentWorkflow(BaseStructure):
     max_loops: int = 1
     max_workers: int = 5
     autosave: bool = False
-    saved_state_filepath: Optional[str] = (
-        "runs/concurrent_workflow.json"
-    )
+    saved_state_filepath: Optional[
+        str
+    ] = "runs/concurrent_workflow.json"
     print_results: bool = False
     return_results: bool = False
     use_processes: bool = False
