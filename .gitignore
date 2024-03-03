@@ -15,7 +15,7 @@ Unit Testing Agent_state.json
 swarms/__pycache__
 venv
 .DS_Store
-
+Cargo.lock
 .DS_STORE
 Cargo.lock
 swarms/agents/.DS_Store

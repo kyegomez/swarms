@@ -8,6 +8,7 @@ import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import yaml
 from loguru import logger
 from termcolor import colored
 
@@ -31,7 +32,6 @@ from swarms.utils.video_to_frames import (
     save_frames_as_images,
     video_to_frames,
 )
-import yaml
 
 
 # Utils
@@ -671,9 +671,9 @@ class Agent:
                             ):
                                 break
 
-                        if self.parse_done_token:
-                            if parse_done_token(response):
-                                break
+                        # if self.parse_done_token:
+                        #     if parse_done_token(response):
+                        #         break
 
                         if self.stopping_func is not None:
                             if self.stopping_func(response) is True:

@@ -1,12 +1,11 @@
 [build-system]
-requires = ["poetry-core>=1.0.0", "maturin"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
 
 
 [tool.poetry]
 name = "swarms"
-version = "4.1.9"
+version = "4.2.1"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -51,7 +50,7 @@ httpx = "0.24.1"
 tiktoken = "0.4.0"
 attrs = "22.2.0"
 ratelimit = "2.2.1"
-loguru = "*"
+loguru = "0.7.2"
 cohere = "4.24"
 huggingface-hub = "*"
 pydantic = "1.10.12"
@@ -76,8 +75,6 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
-multion = "*"
-
 
 
 [tool.poetry.group.lint.dependencies]

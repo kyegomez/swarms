@@ -1,6 +1,6 @@
 from loguru import logger
 
-logger = logger.add(
+logger.add(
     "MessagePool.log",
     level="INFO",
     colorize=True,

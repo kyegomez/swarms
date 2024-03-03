@@ -16,7 +16,6 @@ from swarms.agents.stopping_conditions import (
 )
 from swarms.agents.tool_agent import ToolAgent
 from swarms.agents.worker_agent import Worker
-from swarms.agents.multion_agent import MultiOnAgent
 
 __all__ = [
     "AbstractAgent",
@@ -35,5 +34,4 @@ __all__ = [
     "check_end",
     "Worker",
     "agent_wrapper",
-    "MultiOnAgent",
 ]

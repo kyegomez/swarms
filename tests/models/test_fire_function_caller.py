@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock
 
-
 from swarms.models.fire_function import FireFunctionCaller
 
 

@@ -1,7 +1,9 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
 import json
-from swarms.models.base_llm import AbstractLLM
 from typing import Any
+
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+from swarms.models.base_llm import AbstractLLM
 
 
 class FireFunctionCaller(AbstractLLM):

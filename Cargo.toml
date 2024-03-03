@@ -1,14 +1,15 @@
 [package]
-name = "engine"
-version = "0.1.0"
-edition = "2018"
-
-[lib]
-name = "engine"
-path = "runtime/concurrent_exec.rs"
-crate-type = ["cdylib"]
+name = "swarms-runtime" # The name of your project
+version = "0.1.0" # The current version, adhering to semantic versioning
+edition = "2021" # Specifies which edition of Rust you're using, e.g., 2018 or 2021
+authors = ["Your Name <your.email@example.com>"] # Optional: specify the package authors
+license = "MIT" # Optional: the license for your project
+description = "A brief description of my project" # Optional: a short description of your project
 
 [dependencies]
-pyo3 = { version = "0.15", features = ["extension-module"] }
-rayon = "1.5.1"
-log = "0.4.14"
+cpython = "0.5"
+rayon = "1.5"
+
+[dependencies.pyo3]
+version = "0.20.3"
+features = ["extension-module", "auto-initialize"]

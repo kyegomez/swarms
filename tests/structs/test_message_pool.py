@@ -1,6 +1,6 @@
+from swarms import OpenAIChat
 from swarms.structs.agent import Agent
 from swarms.structs.message_pool import MessagePool
-from swarms import OpenAIChat
 
 
 def test_message_pool_initialization():

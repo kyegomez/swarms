@@ -3,8 +3,10 @@ from typing import Any, Dict, List, Optional
 
 from termcolor import colored
 
+from swarms.structs.agent import Agent
 from swarms.structs.base import BaseStructure
 from swarms.structs.task import Task
+from swarms.utils.loguru_logger import logger
 
 
 class BaseWorkflow(BaseStructure):
@@ -14,18 +16,27 @@ class BaseWorkflow(BaseStructure):
     Attributes:
         task_pool (list): A list to store tasks.
 
-    Methods:
-        add(task: Task = None, tasks: List[Task] = None, *args, **kwargs):
-            Adds a task or a list of tasks to the task pool.
-        run():
-            Abstract method to run the workflow.
+
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.task_pool = []
+        self.agent_pool = []
 
-    def add(
+        # Logging
+        logger.info("Number of agents activated:")
+        if self.agents:
+            logger.info(f"Agents: {len(self.agents)}")
+        else:
+            logger.info("No agents activated.")
+
+        if self.task_pool:
+            logger.info(f"Task Pool Size: {len(self.task_pool)}")
+        else:
+            logger.info("Task Pool is empty.")
+
+    def add_task(
         self,
         task: Task = None,
         tasks: List[Task] = None,
@@ -50,6 +61,9 @@ class BaseWorkflow(BaseStructure):
             raise ValueError(
                 "You must provide a task or a list of tasks"
             )
+
+    def add_agent(self, agent: Agent, *args, **kwargs):
+        return self.agent_pool(agent)
 
     def run(self):
         """
@@ -318,3 +332,55 @@ class BaseWorkflow(BaseStructure):
                     "red",
                 )
             )
+
+    def workflow_dashboard(self, **kwargs) -> None:
+        """
+        Displays a dashboard for the workflow.
+
+        Args:
+            **kwargs: Additional keyword arguments to pass to the dashboard.
+
+        Examples:
+        >>> from swarms.models import OpenAIChat
+        >>> from swarms.structs import SequentialWorkflow
+        >>> llm = OpenAIChat(openai_api_key="")
+        >>> workflow = SequentialWorkflow(max_loops=1)
+        >>> workflow.add("What's the weather in miami", llm)
+        >>> workflow.add("Create a report on these metrics", llm)
+        >>> workflow.workflow_dashboard()
+
+        """
+        print(
+            colored(
+                f"""
+                Sequential Workflow Dashboard
+                --------------------------------
+                Name: {self.name}
+                Description: {self.description}
+                task_pool: {len(self.task_pool)}
+                Max Loops: {self.max_loops}
+                Autosave: {self.autosave}
+                Autosave Filepath: {self.saved_state_filepath}
+                Restore Filepath: {self.restore_state_filepath}
+                --------------------------------
+                Metadata:
+                kwargs: {kwargs}
+                """,
+                "cyan",
+                attrs=["bold", "underline"],
+            )
+        )
+
+    def workflow_bootup(self, **kwargs) -> None:
+        """
+        Workflow bootup.
+
+        """
+        print(
+            colored(
+                """
+                Sequential Workflow Initializing...""",
+                "green",
+                attrs=["bold", "underline"],
+            )
+        )

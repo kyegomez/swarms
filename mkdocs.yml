@@ -58,8 +58,9 @@ nav:
 - Home:
     - Overview: "index.md"
     - Contributing: "contributing.md"
+    - Limitations of Individual Agents: "limits_of_individual_agents.md"
 - Swarms:
-  - Overview: "swarms/index.md"
+  - Overview: "swarms/index.md" 
   - swarms.agents:
     - Agents:
       - WorkerAgent: "swarms/agents/workeragent.md"

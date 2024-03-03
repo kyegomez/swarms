@@ -209,8 +209,6 @@ class CogVLMMultiModal(BaseMultiModalModel):
                 total_gb = total_bytes / (1 << 30)
                 if total_gb < 40:
                     pass
-                else:
-                    pass
 
         torch.cuda.empty_cache()
 
@@ -462,7 +460,7 @@ class CogVLMMultiModal(BaseMultiModalModel):
             elif role == "assistant":
                 if formatted_history:
                     if formatted_history[-1][1] != "":
-                        assert False, (
+                        raise AssertionError(
                             "the last query is answered. answer"
                             f" again. {formatted_history[-1][0]},"
                             f" {formatted_history[-1][1]},"
@@ -473,9 +471,11 @@ class CogVLMMultiModal(BaseMultiModalModel):
                         text_content,
                     )
                 else:
-                    assert False, "assistant reply before user"
+                    raise AssertionError(
+                        "assistant reply before user"
+                    )
             else:
-                assert False, f"unrecognized role: {role}"
+                raise AssertionError(f"unrecognized role: {role}")
 
         return last_user_query, formatted_history, image_list
 

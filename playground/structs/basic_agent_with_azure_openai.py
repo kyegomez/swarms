@@ -1,9 +1,9 @@
-from swarms import Agent, OpenAIChat
+from swarms import Agent, AzureOpenAI
 
 ## Initialize the workflow
 agent = Agent(
-    llm=OpenAIChat(),
-    max_loops=1,
+    llm=AzureOpenAI(),
+    max_loops="auto",
     autosave=True,
     dashboard=False,
     streaming_on=True,
@@ -11,4 +11,4 @@ agent = Agent(
 )
 
 # Run the workflow on a task
-agent("Find a chick fil a equivalent in hayes valley")
+agent("Understand the risk profile of this account")
