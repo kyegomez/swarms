@@ -4,6 +4,7 @@ import asyncio
 import functools
 import logging
 import sys
+from importlib.metadata import version
 from typing import (
     AbstractSet,
     Any,
@@ -28,6 +29,7 @@ from langchain.utils import (
     get_pydantic_field_names,
 )
 from langchain.utils.utils import build_extra_kwargs
+from packaging.version import parse
 from tenacity import (
     RetryCallState,
     before_sleep_log,
@@ -37,12 +39,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-
-logger = logging.getLogger(__name__)
-
-from importlib.metadata import version
-
-from packaging.version import parse
 
 logger = logging.getLogger(__name__)
 
@@ -275,7 +271,7 @@ class BaseOpenAI(BaseLLM):
     """Generates best_of completions server-side and returns the "best"."""
     model_kwargs: dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""
-    openai_api_key: str | None = None
+    openai_api_key: str | None = None  # | None = None
     openai_api_base: str | None = None
     openai_organization: str | None = None
     # to support explicit proxy for OpenAI
@@ -284,7 +280,7 @@ class BaseOpenAI(BaseLLM):
     """Batch size to use when passing multiple documents to generate."""
     request_timeout: float | tuple[float, float] | None = None
     """Timeout for requests to OpenAI completion API. Default is 600 seconds."""
-    logit_bias: dict[str, float] | None = Field(default_factory=dict)
+    logit_bias: dict[str, float] = Field(default_factory=dict)
     """Adjust the probability of specific tokens being generated."""
     max_retries: int = 6
     """Maximum number of retries to make when generating."""

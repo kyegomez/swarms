@@ -28,10 +28,6 @@ from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
-from swarms.utils.video_to_frames import (
-    save_frames_as_images,
-    video_to_frames,
-)
 
 
 # Utils
@@ -557,7 +553,6 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        video: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -576,12 +571,6 @@ class Agent:
 
         """
         try:
-            if video:
-                video_to_frames(video)
-                frames = save_frames_as_images(video)
-                for frame in frames:
-                    img = frame
-
             # Activate Autonomous agent message
             self.activate_autonomous_agent()
 
@@ -593,6 +582,8 @@ class Agent:
                 self.print_dashboard(task)
 
             loop_count = 0
+
+            response = None
 
             # While the max_loops is auto or the loop count is less than the max_loops
             while (
@@ -670,10 +661,6 @@ class Agent:
                                 response
                             ):
                                 break
-
-                        # if self.parse_done_token:
-                        #     if parse_done_token(response):
-                        #         break
 
                         if self.stopping_func is not None:
                             if self.stopping_func(response) is True:

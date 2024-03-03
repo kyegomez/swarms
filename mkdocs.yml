@@ -59,7 +59,7 @@ nav:
     - Overview: "index.md"
     - Contributing: "contributing.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
-- Swarms:
+- Swarms Framework:
   - Overview: "swarms/index.md" 
   - swarms.agents:
     - Agents:
