@@ -56,9 +56,7 @@ Note: The expectation is that the refactored code will be structured and tagged 
 """
 
 
-
 # Push the final codebase to a GitHub repository, managing code changes and revisions
 GITHUB_PUSH_PROMPT = """
 Push the final codebase to a GitHub repository. Manage code changes and maintain a history of revisions using version control integration. Here are the final changes: {changes}
 """
-

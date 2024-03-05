@@ -1,10 +1,8 @@
-import logging
-import tempfile
-import shutil
+import json
 import os
 import re
-from swarms.utils.parse_code import extract_code_from_markdown
-import json
+import shutil
+import tempfile
 
 
 def zip_workspace(workspace_path: str, output_filename: str):
@@ -32,33 +30,6 @@ def sanitize_file_path(file_path: str):
     sanitized_path = re.sub(r'[<>:"/\\|?*]', "_", sanitized_path)
     return sanitized_path
 
-
-def parse_tagged_output(output, workspace_path: str):
-    """
-    Parses tagged output and saves files to the workspace directory.
-    Adds logging for each step of the process.
-    """
-    pattern = r"<!--START_FILE_PATH-->(.*?)<!--END_FILE_PATH-->(.*?)<!--START_CONTENT-->(.*?)<!--END_CONTENT-->"
-    files = re.findall(pattern, output, re.DOTALL)
-    if not files:
-        logging.error("No files found in the output to parse.")
-        return
-
-    for file_path, _, content in files:
-        sanitized_path = sanitize_file_path(file_path)
-        content = extract_code_from_markdown(
-            content
-        )  # Remove code block markers
-        full_path = os.path.join(workspace_path, sanitized_path)
-        try:
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            with open(full_path, "w") as file:
-                file.write(content.strip())
-            logging.info(f"File saved: {full_path}")
-        except Exception as e:
-            logging.error(
-                f"Failed to save file {sanitized_path}: {e}"
-            )
 
 
 def load_json(json_string: str):
@@ -90,3 +61,55 @@ def create_file(
     with open(file_path, "w") as file:
         file.write(content)
     return file_path
+
+
+def create_file_in_folder(
+    folder_path: str, file_name: str, content: str
+):
+    """
+    Creates a file in the specified folder with the given file name and content.
+
+    Args:
+        folder_path (str): The path of the folder where the file will be created.
+        file_name (str): The name of the file to be created.
+        content (str): The content to be written to the file.
+
+    Returns:
+        str: The path of the created file.
+    """
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Create the file in the folder
+    file_path = os.path.join(folder_path, file_name)
+    with open(file_path, "w") as file:
+        file.write(content)
+
+    return file_path
+
+
+def zip_folders(folder1_path, folder2_path, zip_file_path):
+    """
+    Zip two folders into a single zip file.
+
+    Args:
+        folder1_path (str): Path to the first folder.
+        folder2_path (str): Path to the second folder.
+        zip_file_path (str): Path to the output zip file.
+
+    Returns:
+        None
+    """
+    # Create a temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Copy both folders into the temporary directory
+        shutil.copytree(
+            folder1_path,
+            os.path.join(temp_dir, os.path.basename(folder1_path)),
+        )
+        shutil.copytree(
+            folder2_path,
+            os.path.join(temp_dir, os.path.basename(folder2_path)),
+        )
+        # Create a zip file that contains the temporary directory
+        shutil.make_archive(zip_file_path, "zip", temp_dir)

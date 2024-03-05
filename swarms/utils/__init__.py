@@ -21,6 +21,8 @@ from swarms.utils.file_processing import (
     parse_tagged_output,
     sanitize_file_path,
     zip_workspace,
+    create_file_in_folder,
+    zip_folders,
 )
 from swarms.utils.find_img_path import find_image_path
 from swarms.utils.json_output_parser import JsonOutputParser
@@ -100,4 +102,6 @@ __all__ = [
     "csv_to_dataframe",
     "dataframe_to_strings",
     "execute_concurrently",
+    "create_file_in_folder",
+    "zip_folders",
 ]

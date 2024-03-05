@@ -1,5 +1,5 @@
 from swarms.structs.agent import Agent
-from swarms.structs.agent_base import AgentJob
+from swarms.structs.agent_job import AgentJob
 from swarms.structs.autoscaler import AutoScaler
 from swarms.structs.base import BaseStructure
 from swarms.structs.base_swarm import AbstractSwarm

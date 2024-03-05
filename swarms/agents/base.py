@@ -17,8 +17,9 @@ class AbstractAgent:
     def __init__(
         self,
         name: str,
-        # tools: List[Tool],
-        # memory: Memory
+        *args,
+        **kwargs
+        
     ):
         """
         Args:
