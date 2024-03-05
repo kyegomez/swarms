@@ -3,7 +3,7 @@
 # Define a file to keep track of successfully executed scripts
 SUCCESS_LOG="successful_runs.log"
 
-for f in /home/v/swarms/playground/examples/example_*.py; do
+for f in examples/example_*.py; do
     # Check if the script has been logged as successful
     if grep -Fxq "$f" "$SUCCESS_LOG"; then
         echo "Skipping ${f} as it ran successfully in a previous run."
