@@ -60,9 +60,9 @@ nav:
     - Contributing: "contributing.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
     - Why Swarms: "why_swarms.md"
-    - DIY Build Your Own Agent: "diy_your_own_agent.md"
 - Swarms Framework:
-  - Overview: "swarms/index.md" 
+  - Overview: "swarms/index.md"
+  - DIY Build Your Own Agent: "diy_your_own_agent.md"
   - swarms.agents:
     - Agents:
       - WorkerAgent: "swarms/agents/workeragent.md"

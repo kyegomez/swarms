@@ -14,13 +14,7 @@ class AbstractAgent:
 
     """
 
-    def __init__(
-        self,
-        name: str,
-        *args,
-        **kwargs
-        
-    ):
+    def __init__(self, name: str, *args, **kwargs):
         """
         Args:
             name (str): name of the agent.

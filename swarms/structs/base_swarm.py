@@ -8,6 +8,7 @@ from swarms.utils.loguru_logger import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 
+
 class AbstractSwarm(ABC):
     """
     Abstract Swarm Class for multi-agent systems
@@ -55,10 +56,9 @@ class AbstractSwarm(ABC):
 
     """
 
-    # @abstractmethod
     def __init__(
-        self, 
-        agents: List[Agent], 
+        self,
+        agents: List[Agent],
         max_loops: int = 200,
         callbacks: Optional[Sequence[callable]] = None,
         autosave: bool = False,
@@ -79,6 +79,9 @@ class AbstractSwarm(ABC):
         self.logging = logging
         self.return_metadata = return_metadata
         self.metadata_filename = metadata_filename
+        self.stopping_function = stopping_function
+        self.stopping_condition = stopping_condition
+        self.stopping_condition_args = stopping_condition_args
         self.conversation = Conversation(
             time_enabled=True, *args, **kwargs
         )
@@ -140,8 +143,6 @@ class AbstractSwarm(ABC):
 
     def step(self):
         """Step the swarm"""
-        
-        
 
     # @abstractmethod
     def add_agent(self, agent: "Agent"):
@@ -474,7 +475,6 @@ class AbstractSwarm(ABC):
             None
         """
 
-    @abstractmethod
     def add_agent_entry(self, agent: Agent):
         """
         Add the information of an Agent to the registry.
@@ -486,7 +486,6 @@ class AbstractSwarm(ABC):
             None
         """
 
-    @abstractmethod
     def retrieve_swarm_information(self, swarm_id: str):
         """
         Retrieve the information of a specific Swarm from the registry.
@@ -498,7 +497,6 @@ class AbstractSwarm(ABC):
             SwarmManagerBase: Instance of SwarmManagerBase representing the retrieved Swarm, or None if not found.
         """
 
-    @abstractmethod
     def retrieve_joined_agents(self, agent_id: str) -> List[Agent]:
         """
         Retrieve the information the Agents which have joined the registry.
@@ -507,7 +505,6 @@ class AbstractSwarm(ABC):
             Agent: Instance of Agent representing the retrieved Agent, or None if not found.
         """
 
-    @abstractmethod
     def join_swarm(
         self, from_entity: Agent | Agent, to_entity: Agent
     ):
