@@ -32,7 +32,7 @@ def disable_logging():
         "packaging",
     ]:
         logger = logging.getLogger(logger_name)
-        logger.setLevel(logging.ERROR)
+        logger.setLevel(logging.CRITICAL)
 
     # Remove all existing handlers
     logging.getLogger().handlers = []

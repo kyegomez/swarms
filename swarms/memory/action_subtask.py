@@ -1,8 +1,6 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 
-
-@dataclass
-class ActionSubtaskEntry:
+class ActionSubtaskEntry(BaseModel):
     """Used to store ActionSubtask data to preserve TaskMemory pointers and context in the form of thought and action.
 
     Attributes:

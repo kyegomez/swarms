@@ -68,7 +68,7 @@ class SwarmNetwork(BaseStructure):
 
     def __init__(
         self,
-        agents: List[Agent],
+        agents: List[Agent] = None,
         idle_threshold: float = 0.2,
         busy_threshold: float = 0.7,
         api_enabled: Optional[bool] = False,
@@ -84,12 +84,18 @@ class SwarmNetwork(BaseStructure):
         self.lock = threading.Lock()
         self.api_enabled = api_enabled
         self.logging_enabled = logging_enabled
+        self.agent_pool = []
 
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
         if api_enabled:
             self.api = FastAPI()
+
+        # For each agent in the pool, run it on it's own thread
+        if agents is not None:
+            for agent in agents:
+                self.agent_pool.append(agent)
 
     def add_task(self, task):
         """Add task to the task queue
@@ -163,11 +169,10 @@ class SwarmNetwork(BaseStructure):
         """
         self.logger.info(f"Running task {task} on agent {agent_id}")
         try:
-            for agent in self.agents:
+            for agent in self.agent_pool:
                 if agent.id == agent_id:
-                    return agent.run(task, *args, **kwargs)
-                # self.logger.info(f"No agent found with ID {agent_id}")
-            raise ValueError(f"No agent found with ID {agent_id}")
+                    out = agent.run(task, *args, **kwargs)
+            return out
         except Exception as error:
             self.logger.error(f"Error running task on agent: {error}")
             raise error
@@ -187,33 +192,27 @@ class SwarmNetwork(BaseStructure):
         try:
             return [
                 agent.run(task, *args, **kwargs)
-                for agent in self.agents
+                for agent in self.agent_pool
             ]
         except Exception as error:
             logger.error(f"Error running task on agents: {error}")
             raise error
 
     def list_agents(self):
-        """List all agents
-
-        Returns:
-            List: _description_
-        """
+        """List all agents."""
         self.logger.info("[Listing all active agents]")
-        num_agents = len(self.agents)
-
-        self.logger.info(f"[Number of active agents: {num_agents}]")
 
         try:
-            for agent in self.agents:
-                return self.logger.info(
+            # Assuming self.agent_pool is a list of agent objects
+            for agent in self.agent_pool:
+                self.logger.info(
                     f"[Agent] [ID: {agent.id}] [Name:"
                     f" {agent.agent_name}] [Description:"
-                    f" {agent.agent_description}] [Status] [Running]"
+                    f" {agent.agent_description}] [Status: Running]"
                 )
         except Exception as error:
-            logger.error(f"Error listing agents: {error}")
-            raise error
+            self.logger.error(f"Error listing agents: {error}")
+            raise
 
     def get_agent(self, agent_id):
         """Get agent by id
@@ -227,7 +226,7 @@ class SwarmNetwork(BaseStructure):
         self.logger.info(f"Getting agent {agent_id}")
 
         try:
-            for agent in self.agents:
+            for agent in self.agent_pool:
                 if agent.id == agent_id:
                     return agent
             raise ValueError(f"No agent found with ID {agent_id}")
@@ -235,7 +234,7 @@ class SwarmNetwork(BaseStructure):
             self.logger.error(f"Error getting agent: {error}")
             raise error
 
-    def add_agent(self, agent):
+    def add_agent(self, agent: Agent):
         """Add agent to the agent pool
 
         Args:
@@ -243,7 +242,7 @@ class SwarmNetwork(BaseStructure):
         """
         self.logger.info(f"Adding agent {agent} to pool")
         try:
-            self.agents.append(agent)
+            self.agent_pool.append(agent)
         except Exception as error:
             print(f"Error adding agent to pool: {error}")
             raise error
@@ -256,9 +255,9 @@ class SwarmNetwork(BaseStructure):
         """
         self.logger.info(f"Removing agent {agent_id} from pool")
         try:
-            for agent in self.agents:
+            for agent in self.agent_pool:
                 if agent.id == agent_id:
-                    self.agents.remove(agent)
+                    self.agent_pool.remove(agent)
                     return
             raise ValueError(f"No agent found with ID {agent_id}")
         except Exception as error:
@@ -291,7 +290,7 @@ class SwarmNetwork(BaseStructure):
         self.logger.info(f"Scaling up agent pool by {num_agents}")
         try:
             for _ in range(num_agents):
-                self.agents.append(Agent())
+                self.agent_pool.append(Agent())
         except Exception as error:
             print(f"Error scaling up agent pool: {error}")
             raise error
@@ -303,7 +302,7 @@ class SwarmNetwork(BaseStructure):
             num_agents (int, optional): _description_. Defaults to 1.
         """
         for _ in range(num_agents):
-            self.agents.pop()
+            self.agent_pool.pop()
 
     # - Create APIs for each agent in the pool (optional) with fastapi
     def create_apis_for_agents(self):
@@ -313,7 +312,7 @@ class SwarmNetwork(BaseStructure):
             _type_: _description_
         """
         self.apis = []
-        for agent in self.agents:
+        for agent in self.agent_pool:
             self.api.get(f"/{agent.id}")
 
             def run_agent(task: str, *args, **kwargs):
@@ -326,7 +325,7 @@ class SwarmNetwork(BaseStructure):
         # Observe all agents in the pool
         self.logger.info("Starting the SwarmNetwork")
 
-        for agent in self.agents:
+        for agent in self.agent_pool:
             self.logger.info(f"Starting agent {agent.id}")
             self.logger.info(
                 f"[Agent][{agent.id}] [Status] [Running] [Awaiting"

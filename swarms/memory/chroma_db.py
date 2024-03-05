@@ -186,6 +186,8 @@ class ChromaDB:
         Returns:
         - list: A list of paths to each file in the directory and its subdirectories.
         """
+        added_to_db = False
+
         image_extensions = [
             ".jpg",
             ".jpeg",
@@ -204,4 +206,5 @@ class ChromaDB:
         if images:
             added_to_db = self.add(img_urls=[images])
             print(f"{len(images)} images added to Database ")
+
         return added_to_db

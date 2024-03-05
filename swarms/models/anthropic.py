@@ -383,8 +383,8 @@ class Anthropic(LLM, _AnthropicCommon):
     def raise_warning(cls, values: Dict) -> Dict:
         """Raise warning that this class is deprecated."""
         warnings.warn(
-            "This Anthropic LLM is deprecated. Please use `from"
-            " langchain.chat_models import ChatAnthropic` instead"
+            "There may be an updated version of"
+            f" {cls.__name__} available."
         )
         return values
 

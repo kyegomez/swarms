@@ -1,10 +1,12 @@
+import yaml
+import json
 import asyncio
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Callable, Dict, List, Optional
-
+from typing import Any, Callable, Dict, List, Optional, Sequence
+from swarms.utils.loguru_logger import logger
 from swarms.structs.agent import Agent
-
+from swarms.structs.conversation import Conversation
 
 class AbstractSwarm(ABC):
     """
@@ -54,10 +56,63 @@ class AbstractSwarm(ABC):
     """
 
     # @abstractmethod
-    def __init__(self, agents: List[Agent], max_loops: int = 200):
+    def __init__(
+        self, 
+        agents: List[Agent], 
+        max_loops: int = 200,
+        callbacks: Optional[Sequence[callable]] = None,
+        autosave: bool = False,
+        logging: bool = False,
+        return_metadata: bool = False,
+        metadata_filename: str = "multiagent_structure_metadata.json",
+        stopping_function: Optional[Callable] = None,
+        stopping_condition: Optional[str] = "stop",
+        stopping_condition_args: Optional[Dict] = None,
+        *args,
+        **kwargs,
+    ):
         """Initialize the swarm with agents"""
         self.agents = agents
         self.max_loops = max_loops
+        self.callbacks = callbacks
+        self.autosave = autosave
+        self.logging = logging
+        self.return_metadata = return_metadata
+        self.metadata_filename = metadata_filename
+        self.conversation = Conversation(
+            time_enabled=True, *args, **kwargs
+        )
+
+        # Handle the case where the agents are not provided
+        # Handle agents
+        for agent in self.agents:
+            if not isinstance(agent, Agent):
+                raise TypeError("Agents must be of type Agent.")
+
+        if self.agents is None:
+            self.agents = []
+
+        # Handle the case where the callbacks are not provided
+        if self.callbacks is None:
+            self.callbacks = []
+
+        # Handle the case where the autosave is not provided
+        if self.autosave is None:
+            self.autosave = False
+
+        # Handle the case where the logging is not provided
+        if self.logging is None:
+            self.logging = False
+
+        # Handle callbacks
+        if callbacks is not None:
+            for callback in self.callbacks:
+                if not callable(callback):
+                    raise TypeError("Callback must be callable.")
+
+        # Handle autosave
+        if autosave:
+            self.save_to_json(metadata_filename)
 
     # @abstractmethod
     def communicate(self):
@@ -85,6 +140,8 @@ class AbstractSwarm(ABC):
 
     def step(self):
         """Step the swarm"""
+        
+        
 
     # @abstractmethod
     def add_agent(self, agent: "Agent"):
@@ -363,17 +420,17 @@ class AbstractSwarm(ABC):
         """Remove an llm from the god mode"""
         self.agents.remove(agent)
 
-    def add_agent(self, agent: Agent = None, *args, **kwargs):
-        """Add an agent to the swarm
+    # def add_agent(self, agent: Agent = None, *args, **kwargs):
+    #     """Add an agent to the swarm
 
-        Args:
-            agent (Agent, optional): _description_. Defaults to None.
+    #     Args:
+    #         agent (Agent, optional): _description_. Defaults to None.
 
-        Returns:
-            _type_: _description_
-        """
-        self.agents.append(agent)
-        return agent
+    #     Returns:
+    #         _type_: _description_
+    #     """
+    #     self.agents.append(agent)
+    #     return agent
 
     def run_all(self, task: str = None, *args, **kwargs):
         """Run all agents
@@ -460,3 +517,109 @@ class AbstractSwarm(ABC):
         Args:
             from (Agent | SwarmManagerBase): Instance of Agent or SwarmManagerBase representing the source of the relationship.
         """
+
+    def metadata(self):
+        """
+        Get the metadata of the multi-agent structure.
+
+        Returns:
+            dict: The metadata of the multi-agent structure.
+        """
+        return {
+            "agents": self.agents,
+            "callbacks": self.callbacks,
+            "autosave": self.autosave,
+            "logging": self.logging,
+            "conversation": self.conversation,
+        }
+
+    def save_to_json(self, filename: str):
+        """
+        Save the current state of the multi-agent structure to a JSON file.
+
+        Args:
+            filename (str): The name of the file to save the multi-agent structure to.
+
+        Returns:
+            None
+        """
+        try:
+            with open(filename, "w") as f:
+                json.dump(self.__dict__, f)
+        except Exception as e:
+            logger.error(e)
+
+    def load_from_json(self, filename: str):
+        """
+        Load the state of the multi-agent structure from a JSON file.
+
+        Args:
+            filename (str): The name of the file to load the multi-agent structure from.
+
+        Returns:
+            None
+        """
+        try:
+            with open(filename) as f:
+                self.__dict__ = json.load(f)
+        except Exception as e:
+            logger.error(e)
+
+    def save_to_yaml(self, filename: str):
+        """
+        Save the current state of the multi-agent structure to a YAML file.
+
+        Args:
+            filename (str): The name of the file to save the multi-agent structure to.
+
+        Returns:
+            None
+        """
+        try:
+            with open(filename, "w") as f:
+                yaml.dump(self.__dict__, f)
+        except Exception as e:
+            logger.error(e)
+
+    def load_from_yaml(self, filename: str):
+        """
+        Load the state of the multi-agent structure from a YAML file.
+
+        Args:
+            filename (str): The name of the file to load the multi-agent structure from.
+
+        Returns:
+            None
+        """
+        try:
+            with open(filename) as f:
+                self.__dict__ = yaml.load(f)
+        except Exception as e:
+            logger.error(e)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.__dict__})"
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.__dict__})"
+
+    def __len__(self):
+        return len(self.agents)
+
+    def __getitem__(self, index):
+        return self.agents[index]
+
+    def __setitem__(self, index, value):
+        self.agents[index] = value
+
+    def __delitem__(self, index):
+        del self.agents[index]
+
+    def __iter__(self):
+        return iter(self.agents)
+
+    def __reversed__(self):
+        return reversed(self.agents)
+
+    def __contains__(self, value):
+        return value in self.agents

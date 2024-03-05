@@ -59,7 +59,9 @@ nav:
     - Overview: "index.md"
     - Contributing: "contributing.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
-- Swarms:
+    - Why Swarms: "why_swarms.md"
+    - DIY Build Your Own Agent: "diy_your_own_agent.md"
+- Swarms Framework:
   - Overview: "swarms/index.md" 
   - swarms.agents:
     - Agents:
@@ -129,6 +131,7 @@ nav:
       - AnthropicTokenizer: "swarms/tokenizers/anthropictokenizer.md"
       - OpenaiTokenizer: "swarms/tokenizers/openaitokenizer.md"
   - swarms.memory:
+    - Building Custom Vector Memory Databases with the AbstractVectorDatabase Class: "swarms/memory/diy_memory.md"
     - Vector Databases:
       - Weaviate: "swarms/memory/weaviate.md"
       - PineconeDB: "swarms/memory/pinecone.md"

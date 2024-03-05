@@ -1,6 +1,6 @@
 # Why Swarms?
 
-The need for multiple agents to work together in artificial intelligence (AI) and particularly in the context of Large Language Models (LLMs) stems from several inherent limitations and challenges in handling complex, dynamic, and multifaceted tasks with single-agent systems. Collaborating with multiple agents offers a pathway to enhance computational efficiency, cognitive diversity, and problem-solving capabilities. This section delves into the rationale behind employing multi-agent systems and strategizes on overcoming the associated expenses, such as API bills and hosting costs.
+The need for multiple agents to work together in artificial intelligence (AI) and particularly in the context of Large Language Models (LLMs) stems from several inherent limitations and challenges in handling complex, dynamic, and multifaceted tasks with single-agent systems. Collaborating with multiple agents offers a pathway to enhance reliability, computational efficiency, cognitive diversity, and problem-solving capabilities. This section delves into the rationale behind employing multi-agent systems and strategizes on overcoming the associated expenses, such as API bills and hosting costs.
 
 ### Why Multiple Agents Are Necessary
 
