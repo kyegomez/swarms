@@ -99,7 +99,7 @@ class ChromaDB:
             name=output_dir,
             metadata={"hnsw:space": metric},
             embedding_function=self.embedding_function,
-            data_loader=self.data_loader,
+            # data_loader=self.data_loader,
             *args,
             **kwargs,
         )

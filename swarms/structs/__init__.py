@@ -37,7 +37,6 @@ from swarms.structs.schemas import (
     TaskRequestBody,
 )
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.stackoverflow_swarm import StackOverflowSwarm
 from swarms.structs.step import Step
 from swarms.structs.swarm_net import SwarmNetwork
 from swarms.structs.swarming_architectures import (
@@ -135,7 +134,6 @@ __all__ = [
     "parse_code_completion",
     "majority_voting",
     "MajorityVoting",
-    "StackOverflowSwarm",
     "synchronized_queue",
     "TaskQueueBase",
     "MultiProcessingWorkflow",

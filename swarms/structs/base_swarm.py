@@ -1,7 +1,7 @@
 import yaml
 import json
 import asyncio
-from abc import ABC, abstractmethod
+from abc import ABC
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional, Sequence
 from swarms.utils.loguru_logger import logger
@@ -463,7 +463,7 @@ class AbstractSwarm(ABC):
             )
         return list(responses)
 
-    @abstractmethod
+    # @abstractmethod
     def add_swarm_entry(self, swarm):
         """
         Add the information of a joined Swarm to the registry.

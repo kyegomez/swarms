@@ -18,7 +18,6 @@ from swarms.utils.download_weights_from_url import (
 from swarms.utils.exponential_backoff import ExponentialBackoffMixin
 from swarms.utils.file_processing import (
     load_json,
-    parse_tagged_output,
     sanitize_file_path,
     zip_workspace,
     create_file_in_folder,
@@ -97,7 +96,6 @@ __all__ = [
     "dataframe_to_text",
     "zip_workspace",
     "sanitize_file_path",
-    "parse_tagged_output",
     "load_json",
     "csv_to_dataframe",
     "dataframe_to_strings",

@@ -3,7 +3,6 @@ from time import time_ns
 from typing import Callable, List, Optional, Sequence, Union
 
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
 
 
@@ -43,7 +42,7 @@ def msg_hash(
     )
 
 
-class MessagePool(BaseSwarm):
+class MessagePool:
     """
     A class representing a message pool for agents in a swarm.
 
@@ -203,12 +202,12 @@ class MessagePool(BaseSwarm):
                 visible_messages.append(message)
         return visible_messages
 
-    def query(self, query: str):
-        """
-        Query a message from the messages list and then pass it to the moderator
-        """
-        return [
-            (mod, content)
-            for mod, content in self.messages
-            if mod == self.moderator
-        ]
+    # def query(self, query: str):
+    #     """
+    #     Query a message from the messages list and then pass it to the moderator
+    #     """
+    #     return [
+    #         (mod, content)
+    #         for mod, content, _ in self.messages  # Add an underscore to ignore the rest of the elements
+    #         if query in content
+    #     ]

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-A modular framework that enables you to Build, Deploy, and Scale Reliable Autonomous Agents. Get started now below.
+Orchestrate swarms of agents for production-grade applications.
 
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)[![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
 
@@ -15,7 +15,7 @@ A modular framework that enables you to Build, Deploy, and Scale Reliable Autono
 
 ----
 
-## Installation
+## Install
 `pip3 install -U swarms`
 
 ---

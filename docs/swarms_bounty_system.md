@@ -52,7 +52,7 @@ This tier encompasses moderate enhancements to existing features, as well as the
 
 | Reward                 | Description                                                  |
 |------------------------|--------------------------------------------------------------|
-| Cash Reward            | $301 - $500                                                  |
+| Cash Reward            | $301 - $++                                                  |
 | Stock Reward           | 25+           |
 
 This tier is reserved for truly exceptional contributions that have the potential to revolutionize the Swarms ecosystem. Major feature additions, innovative architectural improvements, and groundbreaking new projects fall under this category. Developers who contribute at this level will be recognized as thought leaders and pioneers in their respective fields.
