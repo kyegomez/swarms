@@ -18,7 +18,6 @@ pypdf==4.0.1
 accelerate==0.22.0
 loguru==0.7.2
 chromadb
-tensorflow
 optimum
 toml
 tiktoken==0.4.0
@@ -34,8 +33,6 @@ numpy
 openai==0.28.0
 opencv-python==4.9.0.80
 timm
-yapf
-autopep8
 cohere==4.24
 torchvision==0.16.1
 rich==13.5.2
@@ -47,7 +44,7 @@ peft
 psutil
 ultralytics
 supervision
-scikit-image
 anthropic
 pinecone-client
 roboflow
+black

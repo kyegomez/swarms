@@ -31,7 +31,6 @@ def sanitize_file_path(file_path: str):
     return sanitized_path
 
 
-
 def load_json(json_string: str):
     """
     Loads a JSON string and returns the corresponding Python object.

@@ -5,13 +5,13 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "4.2.6"
+version = "4.2.7"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
 homepage = "https://github.com/kyegomez/swarms"
 documentation = "https://swarms.apac.ai"  
-readme = "README.md"  # Assuming you have a README.md
+readme = "README.md" 
 repository = "https://github.com/kyegomez/swarms"
 keywords = ["artificial intelligence", "deep learning", "optimizers", "Prompt Engineering", "swarms", "agents"]
 classifiers = [
@@ -24,7 +24,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = "^3.7.1"
 torch = "2.1.1"
 transformers = "4.37.1"
 openai = "0.28.0"
@@ -33,8 +33,6 @@ asyncio = "3.4.3"
 einops = "0.7.0"
 google-generativeai = "0.3.1"
 langchain-experimental = "0.0.10"
-tensorflow = "*"
-weaviate-client = "3.25.3"
 opencv-python-headless = "4.8.1.78"
 faiss-cpu = "1.7.4"
 backoff = "2.2.1"
@@ -48,24 +46,19 @@ anthropic = "*"
 sentencepiece = "0.1.98"
 httpx = "0.24.1"
 tiktoken = "0.4.0"
-attrs = "22.2.0"
 ratelimit = "2.2.1"
 loguru = "0.7.2"
-cohere = "4.24"
 huggingface-hub = "*"
 pydantic = "1.10.12"
 tenacity = "8.2.2"
 Pillow = "9.4.0"
 chromadb = "*"
 termcolor = "2.2.0"
-black = "23.3.0"
-soundfile = "0.12.1"
 torchvision = "0.16.1"
 rich = "13.5.2"
 sqlalchemy = "*"
 bitsandbytes = "*"
 pgvector = "*"
-qdrant-client = "*"
 sentence-transformers = "*"
 peft = "*"
 psutil = "*"
@@ -75,6 +68,9 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
+
+[tool.poetry.dev-dependencies]
+black = "23.3.0"
 
 
 [tool.poetry.group.lint.dependencies]
@@ -86,15 +82,16 @@ types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
 
 
-[tool.autopep8]
-max_line_length = 70
-ignore = "E501,W6"  # or ["E501", "W6"]
-in-place = true
-recursive = true
-aggressive = 3
+
 
 [tool.ruff]
 line-length = 70
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
 
 [tool.black]
 line-length = 70
