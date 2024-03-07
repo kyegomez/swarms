@@ -33,7 +33,8 @@ def get_gemini_api_key_env():
     key = os.getenv("GEMINI_API_KEY")
     if key is None:
         raise ValueError("Please provide a Gemini API key")
-    return key
+    return str(key)
+
 
 
 # Main class
