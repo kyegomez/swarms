@@ -24,7 +24,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.7.1"
+python = "^3.10"
 torch = "2.1.1"
 transformers = "4.37.1"
 openai = "0.28.0"
@@ -68,6 +68,7 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
+cohere = "*"
 
 [tool.poetry.dev-dependencies]
 black = "23.3.0"
