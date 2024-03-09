@@ -5,8 +5,11 @@ llm = Anthropic()
 
 # Agents
 agent1 = Agent(
-    llm = llm,
-    system_prompt="You are the leader of the Progressive Party. What is your stance on healthcare?",
+    llm=llm,
+    system_prompt=(
+        "You are the leader of the Progressive Party. What is your"
+        " stance on healthcare?"
+    ),
     agent_name="Progressive Leader",
     agent_description="Leader of the Progressive Party",
     long_term_memory=ChromaDB(),

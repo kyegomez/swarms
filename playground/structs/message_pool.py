@@ -5,7 +5,12 @@ from swarms.memory.chroma_db import ChromaDB
 
 # Agents
 agent1 = Agent(
-    llm=OpenAIChat(system_prompt="You are a Minecraft player. What's your favorite building style?"),
+    llm=OpenAIChat(
+        system_prompt=(
+            "You are a Minecraft player. What's your favorite"
+            " building style?"
+        )
+    ),
     agent_name="Steve",
     agent_description="A Minecraft player agent",
     long_term_memory=ChromaDB(),
@@ -13,7 +18,12 @@ agent1 = Agent(
 )
 
 agent2 = Agent(
-    llm=OpenAIChat(system_prompt="You are a Minecraft builder. What's your most impressive creation?"),
+    llm=OpenAIChat(
+        system_prompt=(
+            "You are a Minecraft builder. What's your most impressive"
+            " creation?"
+        )
+    ),
     agent_name="Bob",
     agent_description="A Minecraft builder agent",
     long_term_memory=ChromaDB(),
@@ -21,7 +31,12 @@ agent2 = Agent(
 )
 
 agent3 = Agent(
-    llm=OpenAIChat(system_prompt="You are a Minecraft explorer. What's the most interesting place you've discovered?"),
+    llm=OpenAIChat(
+        system_prompt=(
+            "You are a Minecraft explorer. What's the most"
+            " interesting place you've discovered?"
+        )
+    ),
     agent_name="Alex",
     agent_description="A Minecraft explorer agent",
     long_term_memory=ChromaDB(),
@@ -29,7 +44,12 @@ agent3 = Agent(
 )
 
 agent4 = Agent(
-    llm=OpenAIChat(system_prompt="You are a Minecraft adventurer. What's the most dangerous situation you've been in?"),
+    llm=OpenAIChat(
+        system_prompt=(
+            "You are a Minecraft adventurer. What's the most"
+            " dangerous situation you've been in?"
+        )
+    ),
     agent_name="Ender",
     agent_description="A Minecraft adventurer agent",
     long_term_memory=ChromaDB(),
@@ -37,7 +57,12 @@ agent4 = Agent(
 )
 
 moderator = Agent(
-    llm=OpenAIChat(system_prompt="You are a Minecraft moderator. How do you handle conflicts between players?"),
+    llm=OpenAIChat(
+        system_prompt=(
+            "You are a Minecraft moderator. How do you handle"
+            " conflicts between players?"
+        )
+    ),
     agent_name="Admin",
     agent_description="A Minecraft moderator agent",
     long_term_memory=ChromaDB(),

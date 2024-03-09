@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, Json, root_validator
+from pydantic import model_validator, BaseModel, Field, Json
 
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
@@ -20,9 +20,11 @@ class Team(BaseModel):
         config (Optional[Json]): Configuration of the Team. Default is None.
     """
 
-    tasks: Optional[List[Task]] = Field(description="List of tasks")
+    tasks: Optional[List[Task]] = Field(
+        None, description="List of tasks"
+    )
     agents: Optional[List[Agent]] = Field(
-        description="List of agents in this Team."
+        None, description="List of agents in this Team."
     )
     architecture = Field(
         description="architecture that the Team will follow.",
@@ -36,7 +38,8 @@ class Team(BaseModel):
         description="Configuration of the Team.", default=None
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def check_config(_cls, values):
         if not values.get("config") and (
             not values.get("agents") and not values.get("tasks")

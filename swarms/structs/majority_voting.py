@@ -114,11 +114,10 @@ def majority_voting(answers: List[str]):
     """
     counter = Counter(answers)
     if counter:
-        
         answer = counter.most_common(1)[0][0]
-    else: 
+    else:
         answer = "I don't know"
-        
+
     return answer
 
 
@@ -166,7 +165,9 @@ class MajorityVoting:
 
         # If autosave is enabled, save the conversation to a file
         if self.autosave:
-            create_file(str(self.conversation), "majority_voting.json")
+            create_file(
+                str(self.conversation), "majority_voting.json"
+            )
 
         # Log the agents
         logger.info("Initializing majority voting system")
@@ -205,9 +206,14 @@ class MajorityVoting:
 
         # Add responses to conversation and log them
         for agent, response in zip(self.agents, results):
-            response = response if isinstance(response, list) else [response]
+            response = (
+                response if isinstance(response, list) else [response]
+            )
             self.conversation.add(agent.agent_name, response)
-            logger.info(f"[Agent][Name: {agent.agent_name}][Response: {response}]")
+            logger.info(
+                f"[Agent][Name: {agent.agent_name}][Response:"
+                f" {response}]"
+            )
 
         # Perform majority voting on the conversation
         responses = [
@@ -218,10 +224,11 @@ class MajorityVoting:
 
         # If an output parser is provided, parse the responses
         if self.output_parser is not None:
-            majority_vote = self.output_parser(responses, *args, **kwargs)
+            majority_vote = self.output_parser(
+                responses, *args, **kwargs
+            )
         else:
             majority_vote = majority_voting(responses)
-        
 
         # Return the majority vote
         return majority_vote

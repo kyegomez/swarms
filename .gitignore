@@ -13,6 +13,7 @@ runs
 chroma
 Unit Testing Agent_state.json
 swarms/__pycache__
+artifacts
 venv
 .DS_Store
 Cargo.lock
