@@ -33,7 +33,7 @@ numpy
 openai==0.28.0
 opencv-python==4.9.0.80
 timm
-cohere==4.24
+cohere==4.53
 torchvision==0.16.1
 rich==13.5.2
 mkdocs
