@@ -71,6 +71,7 @@ nav:
       - AbstractAgent: "swarms/agents/abstractagent.md"
       - ToolAgent: "swarms/agents/toolagent.md"
   - swarms.models:
+    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Language:
       - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"
