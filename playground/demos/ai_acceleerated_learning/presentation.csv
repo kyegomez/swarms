@@ -1,0 +1,15 @@
+Project Name,Team Members,Project Description,Project Link / Code,Team Twitter Handles
+presentation assistant,robert nowell,live visual aid for talks,loom,@robertnowell1
+Vocal,"Jeremy Nixon, Amir Gamil, Eliott Hoffenberg, Trina Chatterjee, Ruby Yeh","Educational Video Generation, Prompt -> Youtube Video",,"@jvnixon, @amirbolous, @Eliotthoff, @trina_chatt"
+Podgraph ,"DC, Leo, Anupam",Graph based podcast learning,https://github.com/dcsan/kbxt ; https://www.figma.com/file/sui06ZgDGXrHOVlrJDiOD7/Untitled?type=design&node-id=0%3A1&mode=design&t=LnQCl13XroVHVbxD-1,@anupambatra_  |  @dcsan
+"Listen, chat and learn!!!",James,Chat with a podcast to learn things,https://react.gitwit.dev/run/zfGVjrjsa6ZKaEU1PldW,@jamesmurdza
+Recall,Liam & Caden,conversation information retrieval,https://recall-97b8b27a6a92.herokuapp.com/,
+VoiceStudyBot,Konrad,Personal tutor to test your knowledge of a book,,@konrad_gnat
+Short Form Upskill,"Margarita, Aditya, Johnny",TikTok Scrape and Transcribe ,margro2000/Learn (github.com),https://twitter.com/Marg_Groisman
+Rohan,Rohan,Rohan,,
+Envision: diagram dataset,Steve,An API to translate any technical concept into diagrams,https://github.com/stephenkfrey/diagrammatic,twitter.com/stevekfrey
+Arxiv2Video,Lily Su,Converts an Arxiv web url to a short video,https://github.com/LilySu/Arxiv2Video,@excelsiorpred
+Dir Chat,Andy Li,Combine to power of SQL and RAG to serach courses,,@xdotli
+Empathy Coach,Ji Young Lim,A chatbot that coches people to make more empathetic conversations,,@jyl1030
+Aimor,Brach Burdick,Platform for assessing and monitoring the psychological wellbeing of a body of students based on conversations with an AI therapist,https://aimor-git-staging-aimor.vercel.app/admin,https://twitter.com/__brach__
+Structured TA bot Generation,Wenxi,Generate structured tutorial chatbot based on video transcript and potentially videos,https://github.com/wenxichen/video2ta ,

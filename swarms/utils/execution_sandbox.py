@@ -1,5 +1,7 @@
-import asyncio
 import logging
+import os
+import subprocess
+import tempfile
 import traceback
 from typing import Tuple
 
@@ -51,21 +53,62 @@ async def execute_code_async(code: str) -> Tuple[str, str]:
     return out, error_message
 
 
-def execute_code_sandbox(
-    code: str, async_on: bool = False
-) -> Tuple[str, str]:
+def execute_code_in_sandbox(code: str, language: str = "python"):
     """
-    Executes the given code in a sandbox environment.
+    Execute code in a specified language using subprocess and return the results or errors.
 
     Args:
         code (str): The code to be executed.
-        async_on (bool, optional): Indicates whether to execute the code asynchronously.
-                                   Defaults to False.
+        language (str): The programming language of the code. Currently supports 'python' only.
 
     Returns:
-        Tuple[str, str]: A tuple containing the stdout and stderr outputs of the code execution.
+        dict: A dictionary containing either the result or any errors.
     """
-    if async_on:
-        return asyncio.run(execute_code_async(code))
-    else:
-        return execute_code_async(code)
+    result = {"output": None, "errors": None}
+
+    try:
+        if language == "python":
+            # Write the code to a temporary file
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=".py", mode="w"
+            ) as tmp:
+                tmp.write(code)
+                tmp_path = tmp.name
+
+            # Execute the code in a separate process
+            process = subprocess.run(
+                ["python", tmp_path],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+
+            # Capture the output and errors
+            result["output"] = process.stdout
+            result["errors"] = process.stderr
+
+        else:
+            # Placeholder for other languages; each would need its own implementation
+            raise NotImplementedError(
+                f"Execution for {language} not implemented."
+            )
+
+    except subprocess.TimeoutExpired:
+        result["errors"] = "Execution timed out."
+    except Exception as e:
+        result["errors"] = str(e)
+    finally:
+        # Ensure the temporary file is removed after execution
+        if "tmp_path" in locals():
+            os.remove(tmp_path)
+
+    return result
+
+
+# # Example usage
+# code_to_execute = """
+# print("Hello, world!")
+# """
+
+# execution_result = execute_code(code_to_execute)
+# print(json.dumps(execution_result, indent=4))

@@ -1,8 +1,18 @@
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarms.models.base_llm import AbstractLLM
+
+
+class ExampleLLM(AbstractLLM):
+    def __init__():
+        pass
+
+    def run(self, task: str, *args, **kwargs):
+        pass
+
 
 ## Initialize the workflow
 agent = Agent(
-    llm=OpenAIChat(),
+    llm=ExampleLLM(),
     max_loops="auto",
     autosave=True,
     dashboard=False,
