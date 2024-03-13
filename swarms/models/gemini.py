@@ -36,7 +36,6 @@ def get_gemini_api_key_env():
     return str(key)
 
 
-
 # Main class
 class Gemini(BaseMultiModalModel):
     """Gemini model

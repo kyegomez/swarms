@@ -61,7 +61,7 @@ nav:
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
     - Why Swarms: "why_swarms.md"
     - The Swarms Bounty System: "swarms_bounty_system.md"
-- Swarms Framework:
+- Swarms Framework [PY]:
   - Overview: "swarms/index.md"
   - DIY Build Your Own Agent: "diy_your_own_agent.md"
   - swarms.agents:
@@ -71,6 +71,7 @@ nav:
       - AbstractAgent: "swarms/agents/abstractagent.md"
       - ToolAgent: "swarms/agents/toolagent.md"
   - swarms.models:
+    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Language:
       - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"

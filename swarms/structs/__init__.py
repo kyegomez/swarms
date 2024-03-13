@@ -19,7 +19,7 @@ from swarms.structs.message import Message
 from swarms.structs.model_parallizer import ModelParallelizer
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 from swarms.structs.multi_process_workflow import (
-    MultiProcessingWorkflow,
+    MultiProcessWorkflow,
 )
 from swarms.structs.multi_threaded_workflow import (
     MultiThreadedWorkflow,
@@ -136,7 +136,7 @@ __all__ = [
     "MajorityVoting",
     "synchronized_queue",
     "TaskQueueBase",
-    "MultiProcessingWorkflow",
+    "MultiProcessWorkflow",
     "MultiThreadedWorkflow",
     "AgentJob",
 ]

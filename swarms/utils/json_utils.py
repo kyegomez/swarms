@@ -1,6 +1,5 @@
 import json
 
-
 from pydantic import BaseModel
 
 
@@ -33,3 +32,19 @@ def extract_json_from_str(response: str):
     json_start = response.index("{")
     json_end = response.rfind("}")
     return json.loads(response[json_start : json_end + 1])
+
+
+def base_model_to_json(base_model_instance: BaseModel) -> str:
+    """
+    Convert a Pydantic base model instance to a JSON string.
+
+    Args:
+        base_model_instance (BaseModel): Instance of the Pydantic base model.
+
+    Returns:
+        str: JSON string representation of the base model instance.
+    """
+    model_dict = base_model_instance.dict()
+    json_string = json.dumps(model_dict)
+
+    return json_string

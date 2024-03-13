@@ -7,12 +7,12 @@ from swarms.tools.exec_tool import (
     preprocess_json_input,
 )
 from swarms.tools.tool import BaseTool, StructuredTool, Tool, tool
-from swarms.tools.tool_func_doc_scraper import scrape_tool_func_docs
 from swarms.tools.tool_utils import (
     execute_tools,
     extract_tool_commands,
     parse_and_execute_tools,
     tool_find_by_name,
+    scrape_tool_func_docs,
 )
 
 __all__ = [

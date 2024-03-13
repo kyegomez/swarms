@@ -28,6 +28,7 @@ from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
+from swarms.utils.execution_sandbox import execute_code_in_sandbox
 
 
 # Utils
@@ -625,6 +626,20 @@ class Agent:
                                 response
                             )
 
+                        # Code interpreter
+                        if self.code_interpreter:
+                            response = extract_code_from_markdown(
+                                response
+                            )
+                            # Execute the code in the sandbox
+                            response = execute_code_in_sandbox(
+                                response
+                            )
+                            response = task + response
+                            response = self.llm(
+                                response, *args, **kwargs
+                            )
+
                         # Add the response to the history
                         history.append(response)
 
@@ -641,7 +656,6 @@ class Agent:
                             evaluated_response = self.evaluator(
                                 response
                             )
-
                             out = (
                                 f"Response: {response}\nEvaluated"
                                 f" Response: {evaluated_response}"
@@ -673,10 +687,6 @@ class Agent:
                         # If parser exists then parse the response
                         if self.parser:
                             response = self.parser(response)
-
-                        # If code interpreter is enabled then run the code
-                        if self.code_interpreter:
-                            self.run_code(response)
 
                         # If tools are enabled then execute the tools
                         if self.tools:

@@ -1,7 +1,7 @@
 import concurrent
 import csv
 import os
-from swarms import Gemini, Agent, SwarmNetwork, ConcurrentWorkflow
+from swarms import Gemini, Agent
 from swarms.memory import ChromaDB
 from dotenv import load_dotenv
 from swarms.utils.parse_code import extract_code_from_markdown
@@ -17,24 +17,11 @@ gemini = Gemini(
     gemini_api_key=os.getenv("GEMINI_API_KEY"),
 )
 
-# SwarmNetwork
-swarm_network = SwarmNetwork(
-    logging_enabled=True,
-)
-
-
-# ConcurrentWorkflow
-workflow = ConcurrentWorkflow(
-    task_pool=None,
-    max_workers=10,
-)
-
-
 # memory
 memory = ChromaDB(output_dir="swarm_hackathon")
 
 
-def execute_concurrently(callable_functions, max_workers=5):
+def execute_concurrently(callable_functions: callable, max_workers=5):
     """
     Executes callable functions concurrently using multithreading.
 
@@ -69,23 +56,6 @@ def execute_concurrently(callable_functions, max_workers=5):
         concurrent.futures.wait(futures)
 
     return results
-
-
-# # For each row in the dataframe, create an agent and add it to the swarm network
-# for index, row in df.iterrows():
-#     agent_name = row["Project Name"] + "agent"
-#     system_prompt = row["Lightning Proposal"]
-#     agent = Agent(
-#         llm=gemini,
-#         max_loops="auto",
-#         stopping_token="<DONE>",
-#         system_prompt=system_prompt,
-#         agent_name=agent_name,
-#         long_term_memory=ChromaDB(output_dir="swarm_hackathon"),
-#     )
-#     swarm_network.add_agent(agent)
-
-# out = swarm_network.list_agents()
 
 
 # Adjusting the function to extract specific column values

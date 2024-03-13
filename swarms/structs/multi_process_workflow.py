@@ -1,17 +1,11 @@
-import logging
 from functools import wraps
 from multiprocessing import Manager, Pool, cpu_count
 from time import sleep
-from typing import List
+from typing import Sequence
 
+from swarms.structs.agent import Agent
 from swarms.structs.base_workflow import BaseWorkflow
-from swarms.structs.task import Task
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+from swarms.utils.loguru_logger import logger
 
 
 # Retry on failure
@@ -35,7 +29,7 @@ def retry_on_failure(max_retries: int = 3, delay: int = 5):
                 try:
                     return func(*args, **kwargs)
                 except Exception as error:
-                    logging.error(
+                    logger.error(
                         f"Error: {str(error)}, retrying in"
                         f" {delay} seconds..."
                     )
@@ -47,7 +41,7 @@ def retry_on_failure(max_retries: int = 3, delay: int = 5):
     return decorator
 
 
-class MultiProcessingWorkflow(BaseWorkflow):
+class MultiProcessWorkflow(BaseWorkflow):
     """
     Initialize a MultiProcessWorkflow object.
 
@@ -90,25 +84,32 @@ class MultiProcessingWorkflow(BaseWorkflow):
         self,
         max_workers: int = 5,
         autosave: bool = True,
-        tasks: List[Task] = None,
+        agents: Sequence[Agent] = None,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.max_workers = max_workers
         self.autosave = autosave
-        self.tasks = sorted(
-            tasks or [], key=lambda task: task.priority, reverse=True
-        )
+        self.agents = agents
 
         self.max_workers or cpu_count()
 
-        if tasks is None:
-            tasks = []
+        # Log
+        logger.info(
+            (
+                "Initialized MultiProcessWorkflow with"
+                f" {self.max_workers} max workers and autosave set to"
+                f" {self.autosave}"
+            ),
+        )
 
-        self.tasks = tasks
+        # Log the agents
+        if self.agents is not None:
+            for agent in self.agents:
+                logger.info(f"Agent: {agent.agent_name}")
 
-    def execute_task(self, task: Task, *args, **kwargs):
+    def execute_task(self, task: str, *args, **kwargs):
         """Execute a task and handle exceptions.
 
         Args:
@@ -121,27 +122,23 @@ class MultiProcessingWorkflow(BaseWorkflow):
 
         """
         try:
-            result = task.execute(*args, **kwargs)
+            if self.agents is not None:
+                # Execute the task
+                for agent in self.agents:
+                    result = agent.run(task, *args, **kwargs)
 
-            logging.info(
-                f"Task {task} completed successfully with result"
-                f" {result}"
-            )
-
-            if self.autosave:
-                self._autosave_task_result(task, result)
+            return result
 
         except Exception as e:
-            logging.error(
+            logger.error(
                 (
                     "An error occurred during execution of task"
                     f" {task}: {str(e)}"
                 ),
-                exc_info=True,
             )
             return None
 
-    def run(self, task: Task, *args, **kwargs):
+    def run(self, task: str, *args, **kwargs):
         """Run the workflow.
 
         Args:
@@ -163,14 +160,14 @@ class MultiProcessingWorkflow(BaseWorkflow):
                     results_list = manager.list()
                     jobs = [
                         pool.apply_async(
-                            self.execute_task,
-                            (task,),
+                            self.execute_task,  # Pass the function, not the function call
+                            args=(task,)
+                            + args,  # Pass the arguments as a tuple
+                            kwds=kwargs,  # Pass the keyword arguments as a dictionary
                             callback=results_list.append,
                             timeout=task.timeout,
-                            *args,
-                            **kwargs,
                         )
-                        for task in self.tasks
+                        for agent in self.agent
                     ]
 
                     # Wait for all jobs to complete
@@ -181,17 +178,5 @@ class MultiProcessingWorkflow(BaseWorkflow):
 
                 return results
         except Exception as error:
-            logging.error(f"Error in run: {error}")
+            logger.error(f"Error in run: {error}")
             return None
-
-    def _autosave_task_result(self, task: Task, result):
-        """Autosave task result. This should be adapted based on how autosaving is implemented.
-
-        Args:
-            task (Task): The task for which to autosave the result.
-            result (Any): The result of the task execution.
-
-        """
-        # Note: This method might need to be adapted to ensure it's process-safe, depending on how autosaving is implemented.
-        logging.info(f"Autosaving result for task {task}: {result}")
-        # Actual autosave logic here
