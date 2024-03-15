@@ -24,30 +24,29 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<4.0"
 torch = "2.1.1"
-transformers = "4.37.1"
-openai = "0.28.0"
-langchain = "0.0.333"
+transformers = "*"
 asyncio = "3.4.3"
 einops = "0.7.0"
 google-generativeai = "0.3.1"
 langchain-experimental = "0.0.10"
-opencv-python-headless = "4.8.1.78"
+langchain-community = "*"
 faiss-cpu = "1.7.4"
 backoff = "2.2.1"
 datasets = "*"
 optimum = "1.15.0"
 diffusers = "*"
+langchain = "*"
 toml = "*"
 pypdf = "4.0.1"
 accelerate = "*"
-anthropic = "*"
 sentencepiece = "0.1.98"
 httpx = "0.24.1"
 tiktoken = "0.4.0"
 ratelimit = "2.2.1"
 loguru = "0.7.2"
+pydantic-settings = "*"
 huggingface-hub = "*"
 pydantic = "*"
 tenacity = "8.2.2"
@@ -76,8 +75,6 @@ types-pytz = "^2023.3.0.0"
 black = "^23.1.0"
 types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
-
-
 
 
 [tool.ruff]
