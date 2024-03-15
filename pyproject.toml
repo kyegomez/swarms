@@ -69,7 +69,6 @@ supervision = "*"
 scikit-image = "*"
 pinecone-client = "*"
 roboflow = "*"
-cohere = "*"
 
 [tool.poetry.dev-dependencies]
 black = "23.3.0"

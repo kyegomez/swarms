@@ -48,4 +48,3 @@ anthropic
 pinecone-client
 roboflow
 black
-cohere
