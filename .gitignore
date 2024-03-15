@@ -21,6 +21,7 @@ Cargo.lock
 Cargo.lock
 swarms/agents/.DS_Store
 
+logs
 _build
 conversation.txt
 stderr_log.txt
