@@ -154,7 +154,7 @@ def image_to_base64(image_path):
 
 
 # Replace 'image.jpg' with the path to your image
-base64_image = image_to_base64("images/3897e80dcb0601c0.jpg")
+base64_image = image_to_base64("your_image.jpg")
 text_data = {"type": "text", "text": "Describe what is in the image"}
 image_data = {
     "type": "image_url",
@@ -197,7 +197,7 @@ async function imageToBase64(imagePath) {
 
 // Main function to execute the workflow
 async function main() {
-    const base64Image = await imageToBase64("images/3897e80dcb0601c0.jpg");
+    const base64Image = await imageToBase64("your_image.jpg");
     const textData = { type: "text", text: "Describe what is in the image" };
     const imageData = {
         type: "image_url",
@@ -288,7 +288,7 @@ func imageToBase64(imagePath string) (string, error) {
 
 // main is the entry point of the program.
 func main() {
-    base64Image, err := imageToBase64("images/3897e80dcb0601c0.jpg")
+    base64Image, err := imageToBase64("your_image.jpg")
     if err != nil {
         fmt.Println("Error converting image to Base64:", err)
         return
