@@ -45,7 +45,7 @@ class OmniTool(BaseModel):
             Tuple: A tuple containing the arguments and keyword arguments.
 
         """
-        try: 
+        try:
             self.transform_models_to_tools()
             logger.info(f"Number of tools: {len(self.tools)}")
             try:
@@ -53,9 +53,13 @@ class OmniTool(BaseModel):
                     logger.info(f"Running tool: {tool}")
                     tool(*args, **kwargs)
             except Exception as e:
-                logger.error(f"Error occurred while running tools: {e}")
+                logger.error(
+                    f"Error occurred while running tools: {e}"
+                )
             return args, kwargs
-        
+
         except Exception as error:
-            logger.error(f"Error occurred while running tools: {error}")
+            logger.error(
+                f"Error occurred while running tools: {error}"
+            )
             return args, kwargs
