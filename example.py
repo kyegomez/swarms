@@ -1,4 +1,4 @@
-from swarms import Agent, AnthropicChat
+from swarms import Agent, Anthropic
 from langchain.tools import tool
 
 
@@ -13,7 +13,7 @@ def search_api(query: str, max_results: int = 10):
 
 ## Initialize the workflow
 agent = Agent(
-    llm=AnthropicChat(),
+    llm=Anthropic(),
     max_loops="auto",
     autosave=True,
     dashboard=False,
