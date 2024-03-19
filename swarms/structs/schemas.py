@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 
 class TaskInput(BaseModel):
-    __root__: Any = Field(
+    task: Any = Field(
         ...,
         description=(
             "The input parameters for the task. Any value is allowed."
@@ -57,7 +57,7 @@ class ArtifactUpload(BaseModel):
 
 
 class StepInput(BaseModel):
-    __root__: Any = Field(
+    step: Any = Field(
         ...,
         description=(
             "Input parameters for the task step. Any value is"
@@ -68,7 +68,7 @@ class StepInput(BaseModel):
 
 
 class StepOutput(BaseModel):
-    __root__: Any = Field(
+    step: Any = Field(
         ...,
         description=(
             "Output that the task step has produced. Any value is"
