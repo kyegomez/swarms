@@ -6,7 +6,7 @@ import random
 import sys
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import yaml
 from loguru import logger
@@ -174,7 +174,7 @@ class Agent:
         agent_name: str = "swarm-worker-01",
         agent_description: str = None,
         system_prompt: str = AGENT_SYSTEM_PROMPT_3,
-        tools: List[BaseTool] = None,
+        tools: Union[List[BaseTool]] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,

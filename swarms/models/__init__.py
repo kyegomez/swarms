@@ -1,11 +1,11 @@
-from langchain_community.llms import (
-    Anthropic,
-    AzureOpenAI,
-    Cohere,
-    MosaicML,
-    OpenAI,
-    OpenAIChat,
-    Replicate,
+from swarms.models.popular_llms import (
+    AnthropicChat,
+    CohereChat,
+    MosaicMLChat,
+    OpenAILLM,
+    ReplicateLLM,
+    AzureOpenAILLM,
+    OpenAIChatLLM,
 )
 from swarms.models.base_embedding_model import BaseEmbeddingModel
 from swarms.models.base_llm import AbstractLLM  # noqa: E402
@@ -47,6 +47,7 @@ from swarms.models.wizard_storytelling import WizardLLMStoryTeller
 from swarms.models.zephyr import Zephyr  # noqa: E402
 from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
 
+
 __all__ = [
     "AbstractLLM",
     "BaseEmbeddingModel",
@@ -55,7 +56,6 @@ __all__ = [
     "CLIPQ",
     "FireFunctionCaller",
     "Fuyu",
-    "Gemini",
     "Gigabind",
     "GPT4VisionAPI",
     "HuggingfaceLLM",
@@ -71,27 +71,27 @@ __all__ = [
     "Petals",
     "QwenVLMultiModal",
     "RoboflowMultiModal",
-    "SegmentAnythingMarkGenerator",
     "SamplingParams",
     "SamplingType",
+    "SegmentAnythingMarkGenerator",
     "TimmModel",
     "TogetherLLM",
-    "AudioModality",
-    "ImageModality",
-    "MultimodalData",
-    "TextModality",
-    "VideoModality",
     "UltralyticsModel",
     "Vilt",
     "WizardLLMStoryTeller",
     "Zephyr",
     "ZeroscopeTTV",
-    "AzureChatOpenAI",
-    "OpenAIChat",
-    "Anthropic",
-    "AzureOpenAI",
-    "Cohere",
-    "MosaicML",
-    "OpenAI",
-    "Replicate",
+    "AnthropicChat",
+    "CohereChat",
+    "MosaicMLChat",
+    "OpenAILLM",
+    "ReplicateLLM",
+    "AzureOpenAILLM",
+    "OpenAIChatLLM",
+    "AudioModality",
+    "ImageModality",
+    "MultimodalData",
+    "TextModality",
+    "Gemini",
+    "VideoModality",
 ]
