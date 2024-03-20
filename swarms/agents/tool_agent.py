@@ -1,10 +1,10 @@
-from typing import Any
+from typing import Any, Optional, Callable
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.structs.agent import Agent
 from swarms.tools.format_tools import Jsonformer
 
 
-class ToolAgent(AbstractLLM):
+class ToolAgent(Agent):
     """
     Represents a tool agent that performs a specific task using a model and tokenizer.
 
@@ -67,16 +67,23 @@ class ToolAgent(AbstractLLM):
         tokenizer: Any = None,
         json_schema: Any = None,
         max_number_tokens: int = 500,
+        parsing_function: Optional[Callable] = None,
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            agent_name=name,
+            agent_description=description,
+            sop=f"{name} {description} {str(json_schema)}" * args,
+            **kwargs,
+        )
         self.name = name
         self.description = description
         self.model = model
         self.tokenizer = tokenizer
         self.json_schema = json_schema
         self.max_number_tokens = max_number_tokens
+        self.parsing_function = parsing_function
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -104,7 +111,11 @@ class ToolAgent(AbstractLLM):
                 **kwargs,
             )
 
-            out = self.toolagent()
+            if self.parsing_function:
+                out = self.parsing_function(self.toolagent())
+            else:
+                out = self.toolagent()
+
             return out
         except Exception as error:
             print(f"[Error] [ToolAgent] {error}")
