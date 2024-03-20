@@ -2,7 +2,7 @@ import os
 
 import supervision as sv
 from tqdm import tqdm
-from ultralytics_example import YOLO
+from ultralytics import YOLO
 
 from swarms.models.base_llm import AbstractLLM
 from swarms.utils.download_weights_from_url import (
