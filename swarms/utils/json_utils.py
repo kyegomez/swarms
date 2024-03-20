@@ -50,7 +50,6 @@ def base_model_to_json(base_model_instance: BaseModel) -> str:
     return json_string
 
 
-
 def str_to_json(response: str, indent: int = 3):
     """
     Converts a string representation of JSON to a JSON object.

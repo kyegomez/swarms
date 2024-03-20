@@ -64,10 +64,3 @@ out = swarmnet.run_single_agent(
     agent2.id, "Generate a 10,000 word blog on health and wellness."
 )
 print(out)
-
-
-# # Run all the agents in the swarm network on a task
-# out = swarmnet.run_many_agents(
-#     f"Summarize the blog and create a social media post: {out}"
-# )
-# print(out)

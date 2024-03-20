@@ -1,6 +1,1 @@
-from langchain.tools import (
-    BaseTool,
-    Tool,
-    tool,
-    StructuredTool,
-)  # noqa
+from langchain.tools import BaseTool, StructuredTool, Tool, tool # noqa F401
