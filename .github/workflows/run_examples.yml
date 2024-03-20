@@ -31,4 +31,4 @@ jobs:
     - name: Make Script Executable and Run
       run: |
         chmod +x ./swarms/scripts/run_examples.sh
-        ./swarms/scripts/run_examples.sh
+        ./scripts/run_examples.sh
