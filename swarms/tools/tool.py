@@ -1,6 +1,6 @@
 from langchain.tools import (
     BaseTool,
-    StructuredTool,
     Tool,
+    StructuredTool,
     tool,
 )  # noqa F401
