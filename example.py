@@ -1,18 +1,13 @@
 from swarms import Agent, Anthropic
-from langchain.tools import tool
-
-
-# Tool
-@tool
-def search_api(query: str, max_results: int = 10):
-    """
-    Search the web for the query and return the top `max_results` results.
-    """
-    return f"Search API: {query} -> {max_results} results"
 
 
 ## Initialize the workflow
 agent = Agent(
+    agent_name="Transcript Generator",
+    agent_description=(
+        "Generate a transcript for a youtube video on what swarms"
+        " are!"
+    ),
     llm=Anthropic(),
     max_loops="auto",
     autosave=True,
@@ -20,7 +15,6 @@ agent = Agent(
     streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
-    tools=[search_api],
 )
 
 # Run the workflow on a task

@@ -6,6 +6,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from swarms.utils.json_utils import str_to_json
 
+
 class HierarchicalSwarm(BaseModel):
     class Config:
         arbitrary_types_allowed = True
@@ -13,7 +14,9 @@ class HierarchicalSwarm(BaseModel):
     agents: Optional[List[str]] = Field(
         None, title="List of agents in the hierarchical swarm"
     )
-    task: Optional[str] = Field(None, title="Task to be done by the agents")
+    task: Optional[str] = Field(
+        None, title="Task to be done by the agents"
+    )
 
 
 all_agents = HierarchicalSwarm()
