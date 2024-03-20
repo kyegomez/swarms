@@ -1,4 +1,4 @@
-from swarms import Agent, AnthropicChat, tool
+from swarms import Agent, Anthropic, tool
 
 
 # Tool
@@ -17,7 +17,7 @@ agent = Agent(
         "Generate a transcript for a youtube video on what swarms"
         " are!"
     ),
-    llm=AnthropicChat(),
+    llm=Anthropic(),
     max_loops="auto",
     autosave=True,
     dashboard=False,
