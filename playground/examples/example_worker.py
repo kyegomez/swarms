@@ -27,7 +27,9 @@ worker = Worker(
 )
 
 # Running the worker with a prompt
-out = worker.run("Hello, how are you? Create an image of how your are doing!")
+out = worker.run(
+    "Hello, how are you? Create an image of how your are doing!"
+)
 
 # Printing the output
 print(out)

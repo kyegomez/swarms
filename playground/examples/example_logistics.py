@@ -48,7 +48,9 @@ productivity_agent = Agent(
 )
 
 # Initiailize safety agent
-safety_agent = Agent(llm=llm, sop=Safety_Agent_Prompt, max_loops=1, multi_modal=True)
+safety_agent = Agent(
+    llm=llm, sop=Safety_Agent_Prompt, max_loops=1, multi_modal=True
+)
 
 # Init the security agent
 security_agent = Agent(
