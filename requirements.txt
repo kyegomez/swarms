@@ -1,8 +1,10 @@
 torch==2.1.1
 transformers
 pandas
-langchain==0.1.7
-langchain-experimental
+langchain-core==0.1.22
+langchain-community==0.0.20
+langsmith==0.0.87
+langchain-openai==0.0.5
 httpx==0.24.1
 Pillow==9.4.0
 datasets==2.14.5
@@ -21,7 +23,6 @@ addict
 backoff==2.2.1
 ratelimit==2.2.1
 termcolor==2.2.0
-langchain-community
 timm
 torchvision==0.16.1
 rich==13.5.2
