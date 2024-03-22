@@ -30,10 +30,10 @@ transformers = "*"
 asyncio = ">=3.4.3,<4.0"
 einops = "0.7.0"
 google-generativeai = "0.3.1"
-langchain-core==0.1.22
-langchain-community==0.0.20
-langsmith==0.0.87
-langchain-openai==0.0.5
+langchain-core = 0.1.22
+langchain-community = 0.0.20
+langsmith = 0.0.87
+langchain-openai = 0.0.5
 faiss-cpu = "1.7.4"
 backoff = "2.2.1"
 datasets = "*"
