@@ -62,6 +62,7 @@ peft = "*"
 psutil = "*"
 timm = "*"
 supervision = "*"
+sentry-sdk = "*"
 
 [tool.poetry.dev-dependencies]
 black = "23.3.0"
