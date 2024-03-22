@@ -9,5 +9,7 @@ model = Anthropic(anthropic_api_key="")
 # print(completion_1)
 
 # Using the __call__ method
-completion_2 = model("How far is the moon from the earth?", stop=["miles", "km"])
+completion_2 = model(
+    "How far is the moon from the earth?", stop=["miles", "km"]
+)
 print(completion_2)

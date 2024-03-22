@@ -29,7 +29,9 @@ def interactive_conversation(llm):
         conv.add("user", user_input)
         if user_input.lower() == "quit":
             break
-        task = conv.return_history_as_string()  # Get the conversation history
+        task = (
+            conv.return_history_as_string()
+        )  # Get the conversation history
         out = llm(task)
         conv.add("assistant", out)
         print(

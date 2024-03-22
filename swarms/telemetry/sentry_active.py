@@ -1,4 +1,4 @@
-import os 
+import os
 from dotenv import load_dotenv
 import sentry_sdk
 
@@ -8,6 +8,7 @@ os.environ["USE_TELEMETRY"] = "True"
 
 use_telementry = os.getenv("USE_TELEMETRY")
 
+
 def activate_sentry():
     if use_telementry == "True":
         sentry_sdk.init(
@@ -15,6 +16,5 @@ def activate_sentry():
             traces_sample_rate=1.0,
             profiles_sample_rate=1.0,
             enable_tracing=True,
-            debug = True,
+            debug=True,
         )
-        

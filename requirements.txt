@@ -21,12 +21,14 @@ addict
 backoff==2.2.1
 ratelimit==2.2.1
 termcolor==2.2.0
+opencv-python==4.9.0.80
 langchain-community
 timm
 torchvision==0.16.1
 rich==13.5.2
 mkdocs
 mkdocs-material
+anthropic==0.2.5
 mkdocs-glightbox
 pre-commit==3.6.2
 psutil

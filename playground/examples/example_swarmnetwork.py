@@ -40,5 +40,7 @@ print(out)
 
 
 # Run all the agents in the swarm network on a task
-out = swarmnet.run_many_agents("Generate a 10,000 word blog on health and wellness.")
+out = swarmnet.run_many_agents(
+    "Generate a 10,000 word blog on health and wellness."
+)
 print(out)

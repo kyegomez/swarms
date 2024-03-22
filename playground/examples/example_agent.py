@@ -14,11 +14,17 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
 llm = OpenAIChat(
-    temperature=0.5, model_name="gpt-4", openai_api_key=api_key, max_tokens=4000
+    temperature=0.5,
+    model_name="gpt-4",
+    openai_api_key=api_key,
+    max_tokens=4000,
 )
 
 
-print(f'this is a test msg for stdout and stderr: {sys.stdout}, {sys.stderr}')
+print(
+    f"this is a test msg for stdout and stderr: {sys.stdout},"
+    f" {sys.stderr}"
+)
 
 ## Initialize the workflow
 agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)

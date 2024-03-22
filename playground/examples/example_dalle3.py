@@ -1,4 +1,4 @@
-'''from swarms.models import Dalle3
+"""from swarms.models import Dalle3
 
 # Create an instance of the Dalle3 class with high quality
 dalle3 = Dalle3(quality="high")
@@ -11,4 +11,4 @@ image_url = dalle3(task)
 
 # Print the generated image URL
 print(image_url)
-'''
+"""
