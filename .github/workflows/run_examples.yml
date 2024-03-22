@@ -1,14 +1,13 @@
 name: Run Examples Script
 
-on: [push]
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#    branches: [ main ]
-  # schedule:
-  #  # Runs at 3:00 AM UTC every day
-  #  - cron: '0 3 * * *'
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Runs at 3:00 AM UTC every day
+    - cron: '0 3 * * *'
 
 jobs:
   run-examples:
@@ -31,5 +30,5 @@ jobs:
 
     - name: Make Script Executable and Run
       run: |
-        chmod +x ./scripts/run_examples.sh
-        ./scripts/run_examples.sh
+        chmod +x ./swarms/scripts/run_examples.sh
+        ./swarms/scripts/run_examples.sh
