@@ -47,8 +47,6 @@ class ChromaDB:
         limit_tokens: Optional[int] = 1000,
         n_results: int = 2,
         embedding_function: Callable = None,
-        data_loader: Callable = None,
-        multimodal: bool = False,
         docs_folder: str = None,
         verbose: bool = False,
         *args,
@@ -75,20 +73,10 @@ class ChromaDB:
             **kwargs,
         )
 
-        # Data loader
-        if data_loader:
-            self.data_loader = data_loader
-        else:
-            self.data_loader = None
-
         # Embedding model
         if embedding_function:
             self.embedding_function = embedding_function
         else:
-            self.embedding_function = None
-
-        # If multimodal set the embedding model to OpenCLIP
-        if multimodal:
             self.embedding_function = None
 
         # Create ChromaDB client

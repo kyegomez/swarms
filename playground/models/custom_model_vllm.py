@@ -29,17 +29,17 @@ class vLLMLM(AbstractLLM):
         model_name: str = "acebook/opt-13b",
         tensor_parallel_size: int = 4,
         *args,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.model_name = model_name
         self.tensor_parallel_size = tensor_parallel_size
-        
+
         self.llm = LLM(
             model_name=self.model_name,
             tensor_parallel_size=self.tensor_parallel_size,
         )
-        
+
     def run(self, task: str, *args, **kwargs):
         """
         Runs the LLM model to generate output for the given task.
@@ -54,8 +54,8 @@ class vLLMLM(AbstractLLM):
 
         """
         return self.llm.generate(task)
-    
-    
+
+
 # Initializing the agent with the vLLMLM instance and other parameters
 model = vLLMLM(
     "facebook/opt-13b",

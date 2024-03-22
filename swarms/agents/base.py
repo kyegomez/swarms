@@ -1,4 +1,5 @@
-from typing import Dict, List
+from abc import abstractmethod
+from typing import Dict, List, Union, Optional
 
 
 class AbstractAgent:
@@ -36,7 +37,8 @@ class AbstractAgent:
     def reset(self):
         """(Abstract method) Reset the agent."""
 
-    def run(self, task: str):
+    @abstractmethod
+    def run(self, task: str, *args, **kwargs):
         """Run the agent once"""
 
     def _arun(self, taks: str):
@@ -53,3 +55,65 @@ class AbstractAgent:
 
     def _astep(self, message: str):
         """Asynchronous step"""
+
+    def send(
+        self,
+        message: Union[Dict, str],
+        recipient,  # add AbstractWorker
+        request_reply: Optional[bool] = None,
+    ):
+        """(Abstract method) Send a message to another worker."""
+
+    async def a_send(
+        self,
+        message: Union[Dict, str],
+        recipient,  # add AbstractWorker
+        request_reply: Optional[bool] = None,
+    ):
+        """(Aabstract async method) Send a message to another worker."""
+
+    def receive(
+        self,
+        message: Union[Dict, str],
+        sender,  # add AbstractWorker
+        request_reply: Optional[bool] = None,
+    ):
+        """(Abstract method) Receive a message from another worker."""
+
+    async def a_receive(
+        self,
+        message: Union[Dict, str],
+        sender,  # add AbstractWorker
+        request_reply: Optional[bool] = None,
+    ):
+        """(Abstract async method) Receive a message from another worker."""
+
+    def generate_reply(
+        self,
+        messages: Optional[List[Dict]] = None,
+        sender=None,  # Optional["AbstractWorker"] = None,
+        **kwargs,
+    ) -> Union[str, Dict, None]:
+        """(Abstract method) Generate a reply based on the received messages.
+
+        Args:
+            messages (list[dict]): a list of messages received.
+            sender: sender of an Agent instance.
+        Returns:
+            str or dict or None: the generated reply. If None, no reply is generated.
+        """
+
+    async def a_generate_reply(
+        self,
+        messages: Optional[List[Dict]] = None,
+        sender=None,  # Optional["AbstractWorker"] = None,
+        **kwargs,
+    ) -> Union[str, Dict, None]:
+        """(Abstract async method) Generate a reply based on the received messages.
+
+        Args:
+            messages (list[dict]): a list of messages received.
+            sender: sender of an Agent instance.
+        Returns:
+            str or dict or None: the generated reply. If None, no reply is generated.
+        """

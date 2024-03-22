@@ -12,6 +12,7 @@ Orchestrate swarms of agents for production-grade applications.
 
 </div>
 
+Individual agents are barely being deployd into production because of 5 suffocating challanges: short memory, single task threading, hallucinations, high cost, and lack of collaboration.  With Multi-agent collaboration, you can effectively eliminate all of these issues. Swarms provides you with simple, reliable, and agile primitives to build your own Swarm for your specific use case. Now, Swarms is being used in production by RBC, John Deere, and many AI startups. To learn more about the unparalled benefits about multi-agent collaboration check out this github repository for research papers or book a call with me!
 
 ----
 
@@ -21,7 +22,7 @@ Orchestrate swarms of agents for production-grade applications.
 ---
 
 ## Usage
-With Swarms, you can create structures, such as Agents, Swarms, and Workflows, that are composed of different types of tasks. Let's build a simple creative agent that will dynamically create a 10,000 word blog on health and wellness.
+
 
 Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
@@ -67,41 +68,60 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 
 
 ### `ToolAgent`
-ToolAgent is an agent that outputs JSON using any model from huggingface. It takes an example schema and performs a task, outputting JSON. It is versatile, easy to use, and customizable.
+ToolAgent is an agent that can use tools through JSON function calling. It intakes any open source model from huggingface and is extremely modular and plug in and play. We need help adding general support to all models soon.
 
 
 ```python
-# Import necessary libraries
+from pydantic import BaseModel, Field
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from swarms import ToolAgent
+from swarms.utils.json_utils import base_model_to_json
 
 # Load the pre-trained model and tokenizer
-model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v2-12b")
+model = AutoModelForCausalLM.from_pretrained(
+    "databricks/dolly-v2-12b",
+    load_in_4bit=True,
+    device_map="auto",
+)
 tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v2-12b")
 
-# Define a JSON schema for person's information
-json_schema = {
-    "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "age": {"type": "number"},
-        "is_student": {"type": "boolean"},
-        "courses": {"type": "array", "items": {"type": "string"}},
-    },
-}
+
+# Initialize the schema for the person's information
+class Schema(BaseModel):
+    name: str = Field(..., title="Name of the person")
+    agent: int = Field(..., title="Age of the person")
+    is_student: bool = Field(
+        ..., title="Whether the person is a student"
+    )
+    courses: list[str] = Field(
+        ..., title="List of courses the person is taking"
+    )
+
+
+# Convert the schema to a JSON string
+tool_schema = base_model_to_json(Schema)
 
 # Define the task to generate a person's information
-task = "Generate a person's information based on the following schema:"
+task = (
+    "Generate a person's information based on the following schema:"
+)
 
 # Create an instance of the ToolAgent class
-agent = ToolAgent(model=model, tokenizer=tokenizer, json_schema=json_schema)
+agent = ToolAgent(
+    name="dolly-function-agent",
+    description="Ana gent to create a child data",
+    model=model,
+    tokenizer=tokenizer,
+    json_schema=tool_schema,
+)
 
 # Run the agent to generate the person's information
 generated_data = agent.run(task)
 
 # Print the generated data
-print(generated_data)
+print(f"Generated data: {generated_data}")
+
 ```
 
 

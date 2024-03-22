@@ -18,25 +18,7 @@ from swarms.telemetry.user_utils import (
     get_system_info,
     get_user_device_data,
 )
-
-# # Capture data from the user's device
-# posthog.capture(
-#     "User Device Data",
-#     str(get_user_device_data()),
-# )
-
-# # Capture system information
-# posthog.capture(
-#     "System Information",
-#     str(system_info()),
-# )
-
-# # Capture the user's unique identifier
-# posthog.capture(
-#     "User Unique Identifier",
-#     str(generate_unique_identifier()),
-# )
-
+from swarms.telemetry.sentry_active import activate_sentry
 
 __all__ = [
     "log_all_calls",
@@ -54,4 +36,5 @@ __all__ = [
     "get_package_mismatches",
     "system_info",
     "get_user_device_data",
+    "activate_sentry",
 ]

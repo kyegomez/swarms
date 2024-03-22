@@ -1,11 +1,31 @@
 import datetime
+from pydantic import BaseModel, Field
 
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+class Thoughts(BaseModel):
+    text: str = Field(..., title="Thoughts")
+    reasoning: str = Field(..., title="Reasoning")
+    plan: str = Field(..., title="Plan")
+
+
+class Command(BaseModel):
+    name: str = Field(..., title="Command Name")
+    args: dict = Field({}, title="Command Arguments")
+
+
+class ResponseFormat(BaseModel):
+    thoughts: Thoughts = Field(..., title="Thoughts")
+    command: Command = Field(..., title="Command")
+
+
+response_json = ResponseFormat.model_json_schema()
+
+
 def worker_tools_sop_promp(name: str, memory: str, time=time):
-    out = """
-    You are {name}, 
+    out = f"""
+    You are {name},
     Your decisions must always be made independently without seeking user assistance. 
     Play to your strengths as an LLM and pursue simple strategies with no legal complications.
     If you have completed all your tasks, make sure to use the 'finish' command.
@@ -29,7 +49,7 @@ def worker_tools_sop_promp(name: str, memory: str, time=time):
     
     1. Internet access for searches and information gathering.
     2. Long Term memory management.
-    3. GPT-3.5 powered Agents for delegation of simple tasks.
+    3. Agents for delegation of simple tasks.
     4. File output.
     
     Performance Evaluation:
@@ -39,29 +59,18 @@ def worker_tools_sop_promp(name: str, memory: str, time=time):
     3. Reflect on past decisions and strategies to refine your approach.
     4. Every command has a cost, so be smart and efficient. Aim to complete tasks in the least number of steps.
     
-    You should only respond in JSON format as described below 
-    Response Format: 
-    {
-        'thoughts': {
-            'text': 'thoughts',
-            'reasoning': 'reasoning',
-            'plan': '- short bulleted - list that conveys - long-term plan',
-            'criticism': 'constructive self-criticism',
-            'speak': 'thoughts summary to say to user'
-        },
-        'command': {
-            'name': 'command name',
-            'args': {
-                'arg name': 'value'
-            }
-        }
-    }
+    You should only respond in JSON format as described below Response Format, you will respond only in markdown format within 6 backticks. The JSON will be in markdown format.
+    
+    ```
+    {response_json}
+    ```
+    
     Ensure the response can be parsed by Python json.loads
     System: The current time and date is {time}
     System: This reminds you of these events from your past:
     [{memory}]
     
     Human: Determine which next command to use, and respond using the format specified above:
-    """.format(name=name, time=time, memory=memory)
+    """
 
     return str(out)
