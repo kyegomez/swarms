@@ -2,7 +2,7 @@ torch==2.1.1
 transformers
 pandas
 langchain==0.1.13
-langchain-core==0.1.22
+langchain-core==0.1.33
 langchain-community==0.0.29
 langsmith==0.0.87
 langchain-openai==0.0.5
