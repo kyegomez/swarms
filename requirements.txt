@@ -1,8 +1,11 @@
 torch==2.1.1
 transformers
 pandas
-langchain==0.1.7
-langchain-experimental
+langchain==0.1.13
+langchain-core==0.1.33
+langchain-community==0.0.29
+langsmith==0.1.17
+langchain-openai==0.0.5
 httpx==0.24.1
 Pillow==9.4.0
 datasets==2.14.5
@@ -15,14 +18,13 @@ loguru==0.7.2
 optimum
 diffusers
 toml
-tiktoken==0.4.0
+tiktoken==0.5.2
 colored
 addict
 backoff==2.2.1
 ratelimit==2.2.1
 termcolor==2.2.0
 opencv-python==4.9.0.80
-langchain-community
 timm
 torchvision==0.16.1
 rich==13.5.2
@@ -33,3 +35,6 @@ mkdocs-glightbox
 pre-commit==3.6.2
 psutil
 black
+tenacity
+supervision
+sentry-sdk
