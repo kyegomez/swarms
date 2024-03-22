@@ -17,7 +17,7 @@ loguru==0.7.2
 optimum
 diffusers
 toml
-tiktoken==0.4.0
+tiktoken==0.5.2
 colored
 addict
 backoff==2.2.1
