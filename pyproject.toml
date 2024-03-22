@@ -60,6 +60,7 @@ sentence-transformers = "*"
 peft = "*"
 psutil = "*"
 timm = "*"
+supervision = "*"
 
 [tool.poetry.dev-dependencies]
 black = "23.3.0"
