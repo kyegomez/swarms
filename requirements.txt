@@ -31,3 +31,4 @@ mkdocs-glightbox
 pre-commit==3.6.2
 psutil
 black
+tenacity
