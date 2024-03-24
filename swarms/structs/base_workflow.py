@@ -19,7 +19,14 @@ class BaseWorkflow(BaseStructure):
 
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        agents: List[Agent] = None,
+        task_pool: List[Task] = None,
+        models: List[Any] = None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.task_pool = []
         self.agent_pool = []
@@ -69,13 +76,14 @@ class BaseWorkflow(BaseStructure):
         """
         Abstract method to run the workflow.
         """
-        raise NotImplementedError("You must implement this method")
+        ...
 
     def __sequential_loop(self):
         """
         Abstract method for the sequential loop.
         """
         # raise NotImplementedError("You must implement this method")
+        ...
 
     def __log(self, message: str):
         """

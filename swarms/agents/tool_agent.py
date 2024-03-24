@@ -2,6 +2,7 @@ from typing import Any, Optional, Callable
 
 from swarms.structs.agent import Agent
 from swarms.tools.format_tools import Jsonformer
+from swarms.utils.loguru_logger import logger
 
 
 class ToolAgent(Agent):
@@ -68,13 +69,14 @@ class ToolAgent(Agent):
         json_schema: Any = None,
         max_number_tokens: int = 500,
         parsing_function: Optional[Callable] = None,
+        llm: Any = None,
         *args,
         **kwargs,
     ):
         super().__init__(
             agent_name=name,
             agent_description=description,
-            sop=f"{name} {description} {str(json_schema)}" * args,
+            llm=llm,
             **kwargs,
         )
         self.name = name
@@ -101,33 +103,51 @@ class ToolAgent(Agent):
             Exception: If an error occurs during the execution of the tool agent.
         """
         try:
-            self.toolagent = Jsonformer(
-                model=self.model,
-                tokenizer=self.tokenizer,
-                json_schema=self.json_schema,
-                prompt=task,
-                max_number_tokens=self.max_number_tokens,
-                *args,
-                **kwargs,
-            )
+            if self.model:
+                logger.info(f"Running {self.name} for task: {task}")
+                self.toolagent = Jsonformer(
+                    model=self.model,
+                    tokenizer=self.tokenizer,
+                    json_schema=self.json_schema,
+                    llm=self.llm,
+                    prompt=task,
+                    max_number_tokens=self.max_number_tokens,
+                    *args,
+                    **kwargs,
+                )
 
-            if self.parsing_function:
-                out = self.parsing_function(self.toolagent())
+                if self.parsing_function:
+                    out = self.parsing_function(self.toolagent())
+                else:
+                    out = self.toolagent()
+
+                return out
+            elif self.llm:
+                logger.info(f"Running {self.name} for task: {task}")
+                self.toolagent = Jsonformer(
+                    json_schema=self.json_schema,
+                    llm=self.llm,
+                    prompt=task,
+                    max_number_tokens=self.max_number_tokens,
+                    *args,
+                    **kwargs,
+                )
+
+                if self.parsing_function:
+                    out = self.parsing_function(self.toolagent())
+                else:
+                    out = self.toolagent()
+
+                return out
+
             else:
-                out = self.toolagent()
+                raise Exception(
+                    "Either model or llm should be provided to the"
+                    " ToolAgent"
+                )
 
-            return out
         except Exception as error:
-            print(f"[Error] [ToolAgent] {error}")
+            logger.error(
+                f"Error running {self.name} for task: {task}"
+            )
             raise error
-
-    def __call__(self, task: str, *args, **kwargs):
-        """Call self as a function.
-
-        Args:
-            task (str): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        return self.run(task, *args, **kwargs)

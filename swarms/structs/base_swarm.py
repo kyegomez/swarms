@@ -1,12 +1,14 @@
-import yaml
-import json
 import asyncio
+import json
 from abc import ABC
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional, Sequence
-from swarms.utils.loguru_logger import logger
+
+import yaml
+
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.utils.loguru_logger import logger
 
 
 class AbstractSwarm(ABC):
@@ -34,7 +36,7 @@ class AbstractSwarm(ABC):
         assign_task: Assign a task to a agent
         get_all_tasks: Get all tasks
         get_finished_tasks: Get all finished tasks
-        get_pending_tasks: Get all pending tasks
+        get_pending_tasks: Get all penPding tasks
         pause_agent: Pause a agent
         resume_agent: Resume a agent
         stop_agent: Stop a agent
@@ -58,7 +60,8 @@ class AbstractSwarm(ABC):
 
     def __init__(
         self,
-        agents: List[Agent],
+        agents: List[Agent] = None,
+        models: List[Any] = None,
         max_loops: int = 200,
         callbacks: Optional[Sequence[callable]] = None,
         autosave: bool = False,
@@ -73,6 +76,7 @@ class AbstractSwarm(ABC):
     ):
         """Initialize the swarm with agents"""
         self.agents = agents
+        self.models = models
         self.max_loops = max_loops
         self.callbacks = callbacks
         self.autosave = autosave
@@ -82,6 +86,7 @@ class AbstractSwarm(ABC):
         self.stopping_function = stopping_function
         self.stopping_condition = stopping_condition
         self.stopping_condition_args = stopping_condition_args
+
         self.conversation = Conversation(
             time_enabled=True, *args, **kwargs
         )
@@ -117,6 +122,29 @@ class AbstractSwarm(ABC):
         if autosave:
             self.save_to_json(metadata_filename)
 
+        # Handle logging
+        if self.agents:
+            logger.info(
+                f"Swarm initialized with {len(self.agents)} agents"
+            )
+
+        # Handle stopping function
+        if stopping_function is not None:
+            if not callable(stopping_function):
+                raise TypeError("Stopping function must be callable.")
+            if stopping_condition_args is None:
+                stopping_condition_args = {}
+            self.stopping_condition_args = stopping_condition_args
+            self.stopping_condition = stopping_condition
+            self.stopping_function = stopping_function
+
+        # Handle stopping condition
+        if stopping_condition is not None:
+            if stopping_condition_args is None:
+                stopping_condition_args = {}
+            self.stopping_condition_args = stopping_condition_args
+            self.stopping_condition = stopping_condition
+
     # @abstractmethod
     def communicate(self):
         """Communicate with the swarm through the orchestrator, protocols, and the universal communication layer"""
@@ -124,6 +152,7 @@ class AbstractSwarm(ABC):
     # @abstractmethod
     def run(self):
         """Run the swarm"""
+        ...
 
     def __call__(
         self,
@@ -139,7 +168,11 @@ class AbstractSwarm(ABC):
         Returns:
             _type_: _description_
         """
-        return self.run(task, *args, **kwargs)
+        try:
+            return self.run(task, *args, **kwargs)
+        except Exception as error:
+            logger.error(f"Error running {self.__class__.__name__}")
+            raise error
 
     def step(self):
         """Step the swarm"""

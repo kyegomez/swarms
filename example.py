@@ -9,16 +9,17 @@ agent = Agent(
         " are!"
     ),
     llm=Anthropic(),
-    max_loops="auto",
+    max_loops=3,
     autosave=True,
     dashboard=False,
     streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
+    interactive=True,
 )
 
 # Run the workflow on a task
-agent(
+out = agent(
     "Generate a transcript for a youtube video on what swarms are!"
-    " Output a <DONE> token when done."
 )
+print(out)

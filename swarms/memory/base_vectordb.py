@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
 
 class AbstractVectorDatabase(ABC):
@@ -12,7 +12,6 @@ class AbstractVectorDatabase(ABC):
 
     """
 
-    @abstractmethod
     def connect(self):
         """
         Connect to the database.
@@ -21,7 +20,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-    @abstractmethod
     def close(self):
         """
         Close the database connection.
@@ -30,7 +28,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-    @abstractmethod
     def query(self, query: str):
         """
         Execute a database query.
@@ -42,7 +39,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-    @abstractmethod
     def fetch_all(self):
         """
         Fetch all rows from the result set.
@@ -54,7 +50,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-    @abstractmethod
     def fetch_one(self):
         """
         Fetch one row from the result set.
@@ -66,7 +61,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-    @abstractmethod
     def add(self, doc: str):
         """
         Add a new record to the database.
@@ -79,7 +73,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-    @abstractmethod
     def get(self, query: str):
         """
         Get a record from the database.
@@ -95,7 +88,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-    @abstractmethod
     def update(self, doc):
         """
         Update a record in the database.
@@ -109,7 +101,6 @@ class AbstractVectorDatabase(ABC):
 
         """
 
-    @abstractmethod
     def delete(self, message):
         """
         Delete a record from the database.

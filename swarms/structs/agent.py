@@ -19,16 +19,13 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.prompts.worker_prompt import worker_tools_sop_promp
 from swarms.structs.conversation import Conversation
-from swarms.structs.schemas import Step
 from swarms.tokenizers.base_tokenizer import BaseTokenizer
-from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.token_count_tiktoken import limit_tokens_from_string
-from swarms.utils.execution_sandbox import execute_code_in_sandbox
 
 
 # Utils
@@ -207,6 +204,10 @@ class Agent:
         evaluator: Optional[Callable] = None,
         output_json: bool = False,
         stopping_func: Optional[Callable] = None,
+        custom_loop_condition: Optional[Callable] = None,
+        sentiment_threshold: Optional[float] = None,
+        custom_exit_command: Optional[str] = "exit",
+        sentiment_analyzer: Optional[Callable] = None,
         *args,
         **kwargs,
     ):
@@ -262,6 +263,10 @@ class Agent:
         self.evaluator = evaluator
         self.output_json = output_json
         self.stopping_func = stopping_func
+        self.custom_loop_condition = custom_loop_condition
+        self.sentiment_threshold = sentiment_threshold
+        self.custom_exit_command = custom_exit_command
+        self.sentiment_analyzer = sentiment_analyzer
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -559,190 +564,161 @@ class Agent:
     ):
         """
         Run the autonomous agent loop
-
-        Args:
-            task (str): The initial task to run
-
-        Agent:
-        1. Generate a response
-        2. Check stopping condition
-        3. If stopping condition is met, stop
-        4. If stopping condition is not met, generate a response
-        5. Repeat until stopping condition is met or max_loops is reached
-
         """
         try:
-            # Activate Autonomous agent message
             self.activate_autonomous_agent()
 
-            # response = task  # or combined_prompt
-            history = self._history(self.user_name, task)
-
-            # If dashboard = True then print the dashboard
-            if self.dashboard:
-                self.print_dashboard(task)
+            if task:
+                self.short_memory.add(
+                    role=self.user_name, content=task
+                )
 
             loop_count = 0
-
             response = None
 
-            # While the max_loops is auto or the loop count is less than the max_loops
             while (
                 self.max_loops == "auto"
                 or loop_count < self.max_loops
+                # or self.custom_loop_condition()
             ):
-                # Loop count
                 loop_count += 1
                 self.loop_count_print(loop_count, self.max_loops)
                 print("\n")
 
-                # Adjust temperature, comment if no work
                 if self.dynamic_temperature_enabled:
-                    print(colored("Adjusting temperature...", "blue"))
                     self.dynamic_temperature()
 
-                # Preparing the prompt
-                task = self.agent_history_prompt(history=task)
+                task_prompt = (
+                    self.short_memory.return_history_as_string()
+                )
 
                 attempt = 0
-                while attempt < self.retry_attempts:
+                success = False
+                while attempt < self.retry_attempts and not success:
                     try:
-                        if img:
-                            response = self.llm(
-                                task,
-                                img,
-                                **kwargs,
-                            )
-                            print(response)
-                        else:
-                            response = self.llm(
-                                task,
-                                **kwargs,
-                            )
-                            print(response)
-
-                        if self.output_json:
-                            response = extract_code_from_markdown(
-                                response
-                            )
-
-                        # Code interpreter
-                        if self.code_interpreter:
-                            response = extract_code_from_markdown(
-                                response
-                            )
-                            # Execute the code in the sandbox
-                            response = execute_code_in_sandbox(
-                                response
-                            )
-                            response = task + response
-                            response = self.llm(
-                                response, *args, **kwargs
-                            )
-
-                        # Add the response to the history
-                        history.append(response)
-
-                        # Log each step
-                        step = Step(
-                            input=str(task),
-                            task_id=str(task_id),
-                            step_id=str(step_id),
-                            output=str(response),
-                            status="running",
+                        response_args = (
+                            (task_prompt, *args)
+                            if img is None
+                            else (task_prompt, img, *args)
                         )
+                        response = self.llm(*response_args, **kwargs)
+                        print(response)
+                        self.short_memory.add(
+                            role=self.agent_name, content=response
+                        )
+
+                        if self.code_interpreter:
+                            extracted_code = (
+                                extract_code_from_markdown(response)
+                            )
+                            task_prompt += extracted_code
+                            response = self.llm(
+                                task_prompt, *args, **kwargs
+                            )
+                            self.short_memory.add(
+                                role=self.agent_name, content=response
+                            )
 
                         if self.evaluator:
                             evaluated_response = self.evaluator(
                                 response
                             )
-                            out = (
-                                f"Response: {response}\nEvaluated"
-                                f" Response: {evaluated_response}"
+                            print(
+                                "Evaluated Response:"
+                                f" {evaluated_response}"
                             )
-                            out = self.short_memory.add(
-                                "Evaluator", out
+                            self.short_memory.add(
+                                role=self.agent_name,
+                                content=evaluated_response,
                             )
 
-                        # Stopping logic for agents
-                        if self.stopping_token:
-                            # Check if the stopping token is in the response
-                            if self.stopping_token in response:
-                                break
-
-                        if self.stopping_condition:
-                            if self._check_stopping_condition(
+                        # Sentiment analysis
+                        if self.sentiment_analyzer:
+                            sentiment = self.sentiment_analyzer(
                                 response
-                            ):
-                                break
+                            )
+                            print(f"Sentiment: {sentiment}")
 
-                        if self.stopping_func is not None:
-                            if self.stopping_func(response) is True:
-                                break
+                            if sentiment > self.sentiment_threshold:
+                                print(
+                                    f"Sentiment: {sentiment} is above"
+                                    " threshold:"
+                                    f" {self.sentiment_threshold}"
+                                )
+                            elif sentiment < self.sentiment_threshold:
+                                print(
+                                    f"Sentiment: {sentiment} is below"
+                                    " threshold:"
+                                    f" {self.sentiment_threshold}"
+                                )
 
-                        # If the stopping condition is met then break
-                        self.step_cache.append(step)
-                        logging.info(f"Step: {step}")
-
-                        # If parser exists then parse the response
-                        if self.parser:
-                            response = self.parser(response)
-
-                        # If tools are enabled then execute the tools
-                        if self.tools:
-                            execute_tool_by_name(
-                                response,
-                                self.tools,
-                                self.stopping_condition,
+                            # print(f"Sentiment: {sentiment}")
+                            self.short_memory.add(
+                                role=self.agent_name,
+                                content=sentiment,
                             )
 
-                        # If interactive mode is enabled then print the response and get user input
-                        if self.interactive:
-                            print(f"AI: {response}")
-                            history.append(f"AI: {response}")
-                            response = input("You: ")
-                            history.append(f"Human: {response}")
+                        success = True  # Mark as successful to exit the retry loop
 
-                        # If interactive mode is not enabled then print the response
-                        else:
-                            # print(f"AI: {response}")
-                            history.append(f"AI: {response}")
-                            # print(response)
-                        break
                     except Exception as e:
-                        logging.error(
-                            f"Error generating response: {e}"
+                        logger.error(
+                            f"Attempt {attempt+1}: Error generating"
+                            f" response: {e}"
                         )
                         attempt += 1
-                        time.sleep(self.retry_interval)
 
-                time.sleep(self.loop_interval)
-            # Add the history to the memory
-            self.short_memory.add(
-                role=self.agent_name, content=history
-            )
-
-            # If autosave is enabled then save the state
-            if self.autosave:
-                print(
-                    colored(
-                        (
-                            "Autosaving agent state to"
-                            f" {self.saved_state_path}"
-                        ),
-                        "green",
+                if not success:
+                    logger.error(
+                        "Failed to generate a valid response after"
+                        " retry attempts."
                     )
-                )
-                self.save_state(self.saved_state_path)
+                    break  # Exit the loop if all retry attempts fail
 
-            # If return history is enabled then return the response and history
-            if self.return_history:
-                return response, history
+                # Check stopping conditions
+                if (
+                    self.stopping_token
+                    and self.stopping_token in response
+                ):
+                    break
+                elif (
+                    self.stopping_condition
+                    and self._check_stopping_condition(response)
+                ):
+                    break
+                elif self.stopping_func and self.stopping_func(
+                    response
+                ):
+                    break
+
+                if self.interactive:
+                    user_input = input("You: ")
+
+                    # User-defined exit command
+                    if (
+                        user_input.lower()
+                        == self.custom_exit_command.lower()
+                    ):
+                        print("Exiting as per user request.")
+                        break
+
+                    self.short_memory.add(
+                        role=self.user_name, content=user_input
+                    )
+
+                if self.loop_interval:
+                    logger.info(
+                        f"Sleeping for {self.loop_interval} seconds"
+                    )
+                    time.sleep(self.loop_interval)
+
+            if self.autosave:
+                logger.info("Autosaving agent state.")
+                self.save_state(self.saved_state_path)
 
             return response
         except Exception as error:
-            logger.error(f"Error running agent: {error}")
-            raise
+            print(f"Error running agent: {error}")
+            raise error
 
     def __call__(self, task: str, img: str = None, *args, **kwargs):
         """Call the agent
@@ -751,7 +727,11 @@ class Agent:
             task (str): _description_
             img (str, optional): _description_. Defaults to None.
         """
-        self.run(task, img, *args, **kwargs)
+        try:
+            self.run(task, img, *args, **kwargs)
+        except Exception as error:
+            logger.error(f"Error calling agent: {error}")
+            raise
 
     def agent_history_prompt(
         self,

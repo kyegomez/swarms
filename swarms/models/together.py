@@ -119,18 +119,15 @@ class TogetherLLM(AbstractLLM):
             )
 
             out = response.json()
-            if "choices" in out and out["choices"]:
-                content = (
-                    out["choices"][0]
-                    .get("message", {})
-                    .get("content", None)
-                )
-                if self.streaming_enabled:
-                    content = self.stream_response(content)
-                return content
-            else:
-                print("No valid response in 'choices'")
-                return None
+            content = (
+                out["choices"][0]
+                .get("message", {})
+                .get("content", None)
+            )
+            if self.streaming_enabled:
+                content = self.stream_response(content)
+
+            return content
 
         except Exception as error:
             print(
