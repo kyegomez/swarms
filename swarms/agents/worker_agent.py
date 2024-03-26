@@ -1,18 +1,13 @@
-import os
 from typing import List
 
-# import faiss
-from langchain.docstore import InMemoryDocstore
-from langchain.embeddings import OpenAIEmbeddings
-
-# from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
 
+from swarms.structs.agent import Agent
 from swarms.tools.tool import BaseTool
 from swarms.utils.decorators import error_decorator, timing_decorator
 
 
-class Worker:
+class Worker(Agent):
     """
     The Worker class represents an autonomous agent that can perform tassks through
     function calls or by running a chat.

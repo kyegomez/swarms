@@ -9,8 +9,9 @@ from langchain_experimental.autonomous_agents.hugginggpt.task_planner import (
     load_chat_planner,
 )
 from transformers import load_tool
-from swarms.utils.loguru_logger import logger
+
 from swarms.structs.agent import Agent
+from swarms.utils.loguru_logger import logger
 
 
 class OmniModalAgent(Agent):

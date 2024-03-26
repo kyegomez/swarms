@@ -9,13 +9,14 @@ from dotenv import load_dotenv
 
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.markdown_message import display_markdown_message
+from swarms.memory.base_vectordb import AbstractVectorDatabase
 
 # Load environment variables
 load_dotenv()
 
 
 # Results storage using local ChromaDB
-class ChromaDB:
+class ChromaDB(AbstractVectorDatabase):
     """
 
     ChromaDB database
