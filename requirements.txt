@@ -18,6 +18,5 @@ pydantic==2.6.4
 tenacity==8.2.3
 Pillow==10.2.0
 termcolor==2.2.0
-rich==13.5.2
 psutil
 sentry-sdk

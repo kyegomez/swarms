@@ -1,5 +1,10 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agent_job import AgentJob
+from swarms.structs.agent_process import (
+    AgentProcess,
+    AgentProcessQueue,
+)
+from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.autoscaler import AutoScaler
 from swarms.structs.base import BaseStructure
 from swarms.structs.base_swarm import AbstractSwarm
@@ -74,12 +79,6 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
-from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
-from swarms.structs.agent_process import (
-    AgentProcess,
-    AgentProcessQueue,
-)
-
 
 __all__ = [
     "Agent",

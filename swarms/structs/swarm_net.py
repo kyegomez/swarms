@@ -4,7 +4,7 @@ import queue
 import threading
 from typing import List, Optional
 
-from fastapi import FastAPI
+# from fastapi import FastAPI
 
 from swarms.structs.agent import Agent
 from swarms.structs.base import BaseStructure
@@ -88,9 +88,6 @@ class SwarmNetwork(BaseStructure):
 
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
-
-        if api_enabled:
-            self.api = FastAPI()
 
         # For each agent in the pool, run it on it's own thread
         if agents is not None:
