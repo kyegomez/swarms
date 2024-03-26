@@ -1,5 +1,5 @@
 import threading
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
@@ -36,8 +36,8 @@ class TaskQueueBase(ABC):
         self.lock = threading.Lock()
 
     @synchronized_queue
-    @abstractmethod
-    def add_task(self, task: Task) -> bool:
+    # @abstractmethod
+    def add(self, task: Task) -> bool:
         """Adds a task to the queue.
 
         Args:
@@ -46,11 +46,11 @@ class TaskQueueBase(ABC):
         Returns:
             bool: True if the task was successfully added, False otherwise.
         """
-        raise NotImplementedError
+        ...
 
     @synchronized_queue
-    @abstractmethod
-    def get_task(self, agent: Agent) -> Task:
+    # @abstractmethod
+    def get(self, agent: Agent) -> Task:
         """Gets the next task from the queue.
 
         Args:
@@ -59,24 +59,24 @@ class TaskQueueBase(ABC):
         Returns:
             Task: The next task from the queue.
         """
-        raise NotImplementedError
+        ...
 
     @synchronized_queue
-    @abstractmethod
+    # @abstractmethod
     def complete_task(self, task_id: str):
         """Sets the task as completed.
 
         Args:
             task_id (str): The ID of the task to be marked as completed.
         """
-        raise NotImplementedError
+        ...
 
     @synchronized_queue
-    @abstractmethod
-    def reset_task(self, task_id: str):
+    # @abstractmethod
+    def reset(self, task_id: str):
         """Resets the task if the agent failed to complete it.
 
         Args:
             task_id (str): The ID of the task to be reset.
         """
-        raise NotImplementedError
+        ...

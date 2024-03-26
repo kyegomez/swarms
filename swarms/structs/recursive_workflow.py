@@ -36,6 +36,7 @@ class RecursiveWorkflow(BaseStructure):
         stopping_conditions: callable = None,
     ):
         self.stop_token = stop_token
+        self.stopping_conditions = stopping_conditions
         self.task_pool = []
 
         assert (
