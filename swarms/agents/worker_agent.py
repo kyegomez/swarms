@@ -4,6 +4,7 @@ from typing import List
 # import faiss
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
+
 # from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
 

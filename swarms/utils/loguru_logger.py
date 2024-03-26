@@ -9,6 +9,7 @@ logger.add(
     diagnose=True,
 )
 
+
 def loguru_logger(file_path: str = "swarms.log"):
     return logger.add(
         file_path,
@@ -18,4 +19,3 @@ def loguru_logger(file_path: str = "swarms.log"):
         backtrace=True,
         diagnose=True,
     )
-

@@ -97,10 +97,6 @@ def get_new_dataframe_name(org_img_name, func_name="update"):
     return os.path.join(head, new_file_name)
 
 
-
-
-
-
 STATIC_DIR = "static"
 
 
@@ -112,8 +108,6 @@ class AbstractUploader(ABC):
     @abstractstaticmethod
     def from_settings() -> "AbstractUploader":
         pass
-
-
 
 
 class FileType(Enum):
