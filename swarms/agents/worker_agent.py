@@ -1,10 +1,10 @@
 import os
 from typing import List
 
-import faiss
+# import faiss
 from langchain.docstore import InMemoryDocstore
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+# from langchain.vectorstores import FAISS
 from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.tools.tool import BaseTool
@@ -53,6 +53,7 @@ class Worker:
         embedding_size: int = 1536,
         search_kwargs: dict = {"k": 8},
         verbose: bool = False,
+        memory: callable = None,
         *args,
         **kwargs,
     ):
@@ -67,6 +68,7 @@ class Worker:
         self.embedding_size = embedding_size
         self.search_kwargs = search_kwargs
         self.verbose = verbose
+        self.memory = memory
 
         self.setup_tools(external_tools)
         self.setup_memory()
@@ -121,22 +123,8 @@ class Worker:
         """
         Set up memory for the worker.
         """
-        openai_api_key = (
-            os.getenv("OPENAI_API_KEY") or self.openai_api_key
-        )
         try:
-            embeddings_model = OpenAIEmbeddings(
-                openai_api_key=openai_api_key
-            )
-            embedding_size = self.embedding_size
-            index = faiss.IndexFlatL2(embedding_size)
-
-            self.vectorstore = FAISS(
-                embeddings_model.embed_query,
-                index,
-                InMemoryDocstore({}),
-                {},
-            )
+            self.vectorstore = self.memory
 
         except Exception as error:
             raise RuntimeError(
