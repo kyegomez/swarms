@@ -86,6 +86,3 @@ def get_user_device_data():
         "Swarms [Version]": check_for_package("swarms"),
     }
     return data
-
-
-#

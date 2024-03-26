@@ -1,6 +1,7 @@
 import subprocess
 
 from swarms.telemetry.check_update import check_for_update
+from termcolor import colored
 
 
 def auto_update():
@@ -13,6 +14,6 @@ def auto_update():
             )
             subprocess.run(["pip", "install", "--upgrade", "swarms"])
         else:
-            print("swarms is up to date!")
+            colored("swarms is up to date!", "red")
     except Exception as e:
         print(e)

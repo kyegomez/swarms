@@ -1,11 +1,10 @@
-from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 from swarms.tools.tool import BaseTool
+from pydantic import BaseModel
 
 
-@dataclass
-class Step:
+class Step(BaseModel):
     """
     Represents a step in a process.
 
@@ -17,8 +16,10 @@ class Step:
         tool (BaseTool): The tool used to execute the step.
     """
 
-    task: str
-    id: int
-    dep: List[int]
-    args: Dict[str, str]
-    tool: BaseTool
+    task: str = None
+    id: int = 0
+    dep: List[int] = []
+    args: Dict[str, str] = {}
+    tool: BaseTool = None
+    tools: Sequence[BaseTool] = []
+    metadata: Dict[str, str] = {}

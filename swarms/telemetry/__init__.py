@@ -1,5 +1,3 @@
-# from swarms.telemetry.posthog_utils import posthog
-
 from swarms.telemetry.log_all import log_all_calls, log_calls
 from swarms.telemetry.sys_info import (
     get_cpu_info,
