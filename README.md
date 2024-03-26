@@ -868,355 +868,68 @@ agent = Agent(
 agent.run(task=task, img=img)
 ```
 
----
-
-## Multi-Modal Model APIs
-
-### `Gemini`
-- Deploy Gemini from Google with utmost reliability with our visual chain of thought prompt that enables more reliable responses
+### Swarms Compliant Model Interface
 ```python
-import os
+from swarms import AbstractLLM
 
-from dotenv import load_dotenv
+class vLLMLM(AbstractLLM):
+    def __init__(self, model_name='default_model', tensor_parallel_size=1, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model_name = model_name
+        self.tensor_parallel_size = tensor_parallel_size
+        # Add any additional initialization here
+    
+    def run(self, task: str):
+        pass
 
-from swarms import Gemini
-from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
-
-# Load the environment variables
-load_dotenv()
-
-# Get the API key from the environment
-api_key = os.environ.get("GEMINI_API_KEY")
-
-# Initialize the language model
-llm = Gemini(
-    gemini_api_key=api_key,
-    temperature=0.5,
-    max_tokens=1000,
-    system_prompt=VISUAL_CHAIN_OF_THOUGHT,
-)
-
-# Initialize the task
-task = "This is an eye test. What do you see?"
-img = "playground/demos/multi_modal_chain_of_thought/eyetest.jpg"
-
-# Run the workflow on a task
-out = llm.run(task=task, img=img)
-print(out)
-```
-
-### `GPT4Vision`
-```python
-from swarms import GPT4VisionAPI
-
-# Initialize with default API key and custom max_tokens
-api = GPT4VisionAPI(max_tokens=1000)
-
-# Define the task and image URL
-task = "Describe the scene in the image."
-img = "https://i.imgur.com/4P4ZRxU.jpeg"
-
-# Run the GPT-4 Vision model
-response = api.run(task, img)
-
-# Print the model's response
-print(response)
-```
-
-### `QwenVLMultiModal`
-A radically simple interface for QwenVLMultiModal comes complete with Quantization to turn it on just set quantize to true!
-
-```python
-from swarms import QwenVLMultiModal
-
-# Instantiate the QwenVLMultiModal model
-model = QwenVLMultiModal(
-    model_name="Qwen/Qwen-VL-Chat",
-    device="cuda",
-    quantize=True,
-)
+# Example
+model = vLLMLM("mistral")
 
 # Run the model
-response = model("Hello, how are you?", "https://example.com/image.jpg")
-
-# Print the response
-print(response)
-```
-
-
-### `Kosmos`
-- Multi-Modal Model from microsoft!
-
-```python
-from swarms import Kosmos
-
-# Initialize the model
-model = Kosmos()
-
-# Generate
-out = model.run("Analyze the reciepts in this image", "docs.jpg")
-
-# Print the output
+out = model("Analyze these financial documents and summarize of them")
 print(out)
+
 ```
 
 
-### `Idefics`
-- Multi-Modal model from Huggingface team!
+### Swarms Compliant Agent Interface
 
 ```python
-# Import the idefics model from the swarms.models module
-from swarms.models import Idefics
+from swarms import Agent
 
-# Create an instance of the idefics model
-model = Idefics()
 
-# Define user input with an image URL and chat with the model
-user_input = (
-    "User: What is in this image?"
-    " https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"
-)
-response = model.chat(user_input)
-print(response)
+class MyCustomAgent(Agent):
 
-# Define another user input with an image URL and chat with the model
-user_input = (
-    "User: And who is that?"
-    " https://static.wikia.nocookie.net/asterix/images/2/25/R22b.gif/revision/latest?cb=20110815073052"
-)
-response = model.chat(user_input)
-print(response)
+    def __init__(self, *args, **kwargs):
 
-# Set the checkpoint of the model to "new_checkpoint"
-model.set_checkpoint("new_checkpoint")
+        super().__init__(*args, **kwargs)
 
-# Set the device of the model to "cpu"
-model.set_device("cpu")
+        # Custom initialization logic
 
-# Set the maximum length of the chat to 200
-model.set_max_length(200)
+    def custom_method(self, *args, **kwargs):
 
-# Clear the chat history of the model
-model.clear_chat_history()
+        # Implement custom logic here
+
+        pass
+
+    def run(self, task, *args, **kwargs):
+
+        # Customize the run method
+
+        response = super().run(task, *args, **kwargs)
+
+        # Additional custom logic
+
+        return response`
+
+# Model
+agent = MyCustomAgent()
+
+# Run the agent
+out = agent("Analyze and summarize these financial documents: ")
+print(out)
+
 ```
-
-## Radically Simple AI Model APIs
-We provide a vast array of language and multi-modal model APIs for you to generate text, images, music, speech, and even videos. Get started below:
-
-
-
------
-
-
-### `Anthropic`
-```python
-# Import necessary modules and classes
-from swarms.models import Anthropic
-
-# Initialize an instance of the Anthropic class
-model = Anthropic(anthropic_api_key="")
-
-# Using the run method
-completion_1 = model.run("What is the capital of France?")
-print(completion_1)
-
-# Using the __call__ method
-completion_2 = model("How far is the moon from the earth?", stop=["miles", "km"])
-print(completion_2)
-```
-
-
-### `HuggingFaceLLM`
-```python
-from swarms.models import HuggingfaceLLM
-
-# Initialize with custom configuration
-custom_config = {
-    "quantize": True,
-    "quantization_config": {"load_in_4bit": True},
-    "verbose": True,
-}
-inference = HuggingfaceLLM(
-    model_id="NousResearch/Nous-Hermes-2-Vision-Alpha", **custom_config
-)
-
-# Generate text based on a prompt
-prompt_text = (
-    "Create a list of known biggest risks of structural collapse with references"
-)
-generated_text = inference(prompt_text)
-print(generated_text)
-```
-
-### `Mixtral`
-- Utilize Mixtral in a very simple API,
-- Utilize 4bit quantization for a increased speed and less memory usage
-- Use Flash Attention 2.0 for increased speed and less memory usage
-```python
-from swarms.models import Mixtral
-
-# Initialize the Mixtral model with 4 bit and flash attention!
-mixtral = Mixtral(load_in_4bit=True, use_flash_attention_2=True)
-
-# Generate text for a simple task
-generated_text = mixtral.run("Generate a creative story.")
-
-# Print the generated text
-print(generated_text)
-```
-
-
-### `Dalle3`
-```python
-from swarms import Dalle3
-
-# Create an instance of the Dalle3 class with high quality
-dalle3 = Dalle3(quality="high")
-
-# Define a text prompt
-task = "A high-quality image of a sunset"
-
-# Generate a high-quality image from the text prompt
-image_url = dalle3(task)
-
-# Print the generated image URL
-print(image_url)
-```
-
-
-
-
-### Text to Video with `ZeroscopeTTV`
-
-```python
-# Import the model
-from swarms import ZeroscopeTTV
-
-# Initialize the model
-zeroscope = ZeroscopeTTV()
-
-# Specify the task
-task = "A person is walking on the street."
-
-# Generate the video!
-video_path = zeroscope(task)
-print(video_path)
-```
-
-
-<!-- ### ModelScope
-```python
-from swarms.models import ModelScopeAutoModel
-
-# Initialize the model
-mp = ModelScopeAutoModel(
-    model_name="AI-ModelScope/Mixtral-8x7B-Instruct-v0.1",
-)
-
-mp.run("Generate a 10,000 word blog on health and wellness.")
-```
-
-```python
-
-from swarms import CogAgent
-
-# Initialize CogAgent
-cog_agent = CogAgent()
-
-# Run the model on the tests
-cog_agent.run("Describe this scene", "images/1.jpg")
-
-``` -->
-
-
-
-----
-
-## Supported Models ✅ 
-Swarms supports various model providers like OpenAI, Huggingface, Anthropic, Google, Mistral and many more.
-
-| Provider | Provided ✅  | Module Name |
-|----------|-----------------------------|-------------|
-| OpenAI | ✅  | OpenAIChat, OpenAITTS, GPT4VisionAPI, Dalle3 |
-| Anthropic | ✅  | Anthropic |
-| Mistral | ✅  | Mistral, Mixtral |
-| Gemini/Palm | ✅  | Gemini |
-| Huggingface | ✅  | HuggingFaceLLM |
-| Modelscope | ✅  | Modelscope |
-| Vllm | ✅  | vLLM |
-
-
----
-
-# Features 🤖 
-The Swarms framework is designed with a strong emphasis on reliability, performance, and production-grade readiness. 
-Below are the key features that make Swarms an ideal choice for enterprise-level AI deployments.
-
-## 🚀 Production-Grade Readiness
-- **Scalable Architecture**: Built to scale effortlessly with your growing business needs.
-- **Enterprise-Level Security**: Incorporates top-notch security features to safeguard your data and operations.
-- **Containerization and Microservices**: Easily deployable in containerized environments, supporting microservices architecture.
-
-## ⚙️ Reliability and Robustness
-- **Fault Tolerance**: Designed to handle failures gracefully, ensuring uninterrupted operations.
-- **Consistent Performance**: Maintains high performance even under heavy loads or complex computational demands.
-- **Automated Backup and Recovery**: Features automatic backup and recovery processes, reducing the risk of data loss.
-
-## 💡 Advanced AI Capabilities
-
-The Swarms framework is equipped with a suite of advanced AI capabilities designed to cater to a wide range of applications and scenarios, ensuring versatility and cutting-edge performance.
-
-### Multi-Modal Autonomous Agents
-- **Versatile Model Support**: Seamlessly works with various AI models, including NLP, computer vision, and more, for comprehensive multi-modal capabilities.
-- **Context-Aware Processing**: Employs context-aware processing techniques to ensure relevant and accurate responses from agents.
-
-### Function Calling Models for API Execution
-- **Automated API Interactions**: Function calling models that can autonomously execute API calls, enabling seamless integration with external services and data sources.
-- **Dynamic Response Handling**: Capable of processing and adapting to responses from APIs for real-time decision making.
-
-### Varied Architectures of Swarms
-- **Flexible Configuration**: Supports multiple swarm architectures, from centralized to decentralized, for diverse application needs.
-- **Customizable Agent Roles**: Allows customization of agent roles and behaviors within the swarm to optimize performance and efficiency.
-
-### Generative Models
-- **Advanced Generative Capabilities**: Incorporates state-of-the-art generative models to create content, simulate scenarios, or predict outcomes.
-- **Creative Problem Solving**: Utilizes generative AI for innovative problem-solving approaches and idea generation.
-
-### Enhanced Decision-Making
-- **AI-Powered Decision Algorithms**: Employs advanced algorithms for swift and effective decision-making in complex scenarios.
-- **Risk Assessment and Management**: Capable of assessing risks and managing uncertain situations with AI-driven insights.
-
-### Real-Time Adaptation and Learning
-- **Continuous Learning**: Agents can continuously learn and adapt from new data, improving their performance and accuracy over time.
-- **Environment Adaptability**: Designed to adapt to different operational environments, enhancing robustness and reliability.
-
-
-## 🔄 Efficient Workflow Automation
-- **Streamlined Task Management**: Simplifies complex tasks with automated workflows, reducing manual intervention.
-- **Customizable Workflows**: Offers customizable workflow options to fit specific business needs and requirements.
-- **Real-Time Analytics and Reporting**: Provides real-time insights into agent performance and system health.
-
-## 🌐 Wide-Ranging Integration
-- **API-First Design**: Easily integrates with existing systems and third-party applications via robust APIs.
-- **Cloud Compatibility**: Fully compatible with major cloud platforms for flexible deployment options.
-- **Continuous Integration/Continuous Deployment (CI/CD)**: Supports CI/CD practices for seamless updates and deployment.
-
-## 📊 Performance Optimization
-- **Resource Management**: Efficiently manages computational resources for optimal performance.
-- **Load Balancing**: Automatically balances workloads to maintain system stability and responsiveness.
-- **Performance Monitoring Tools**: Includes comprehensive monitoring tools for tracking and optimizing performance.
-
-## 🛡️ Security and Compliance
-- **Data Encryption**: Implements end-to-end encryption for data at rest and in transit.
-- **Compliance Standards Adherence**: Adheres to major compliance standards ensuring legal and ethical usage.
-- **Regular Security Updates**: Regular updates to address emerging security threats and vulnerabilities.
-
-## 💬 Community and Support
-- **Extensive Documentation**: Detailed documentation for easy implementation and troubleshooting.
-- **Active Developer Community**: A vibrant community for sharing ideas, solutions, and best practices.
-- **Professional Support**: Access to professional support for enterprise-level assistance and guidance.
-
-Swarms framework is not just a tool but a robust, scalable, and secure partner in your AI journey, ready to tackle the challenges of modern AI applications in a business environment.
 
 ---
 
