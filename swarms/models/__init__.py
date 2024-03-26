@@ -1,8 +1,6 @@
 from swarms.models.base_embedding_model import BaseEmbeddingModel
 from swarms.models.base_llm import AbstractLLM  # noqa: E402
 from swarms.models.base_multimodal_model import BaseMultiModalModel
-from swarms.models.biogpt import BioGPT  # noqa: E402
-from swarms.models.clipq import CLIPQ  # noqa: E402
 from swarms.models.fire_function import FireFunctionCaller
 from swarms.models.fuyu import Fuyu  # noqa: E402
 from swarms.models.gemini import Gemini  # noqa: E402
@@ -52,12 +50,7 @@ from swarms.models.types import (  # noqa: E402
     TextModality,
     VideoModality,
 )
-
-# from swarms.models.ultralytics_model import UltralyticsModel
 from swarms.models.vilt import Vilt  # noqa: E402
-from swarms.models.wizard_storytelling import WizardLLMStoryTeller
-from swarms.models.zephyr import Zephyr  # noqa: E402
-from swarms.models.zeroscope import ZeroscopeTTV  # noqa: E402
 
 __all__ = [
     "AbstractLLM",
@@ -65,41 +58,34 @@ __all__ = [
     "AzureOpenAI",
     "BaseEmbeddingModel",
     "BaseMultiModalModel",
-    "BioGPT",
-    "CLIPQ",
     "Cohere",
     "FireFunctionCaller",
     "Fuyu",
-    "GPT4VisionAPI",
     "Gemini",
+    "GPT4VisionAPI",
     "HuggingfaceLLM",
     "Idefics",
     "Kosmos",
     "LayoutLMDocumentQA",
     "LavaMultiModal",
-    "Replicate",
-    "MPT7B",
     "Mistral",
     "Mixtral",
-    "MosaicML",
+    "MPT7B",
+    "MultimodalData",
     "Nougat",
     "OpenAI",
     "OpenAIChat",
     "OpenAITTS",
     "Petals",
     "QwenVLMultiModal",
+    "Replicate",
     "SamplingParams",
     "SamplingType",
     "SegmentAnythingMarkGenerator",
     "TextModality",
-    "TimmModel",
     "TogetherLLM",
     "Vilt",
-    "VideoModality",
-    "WizardLLMStoryTeller",
-    "Zephyr",
-    "ZeroscopeTTV",
     "AudioModality",
     "ImageModality",
-    "MultimodalData",
+    "VideoModality",
 ]
