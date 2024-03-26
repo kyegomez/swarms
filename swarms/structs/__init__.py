@@ -74,6 +74,7 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
+from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 
 __all__ = [
     "Agent",
@@ -139,4 +140,6 @@ __all__ = [
     "MultiProcessWorkflow",
     "MultiThreadedWorkflow",
     "AgentJob",
+    "AutoSwarm",
+    "AutoSwarmRouter",
 ]

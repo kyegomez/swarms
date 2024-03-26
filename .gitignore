@@ -29,6 +29,7 @@ stderr_log.txt
 .vscode
 .DS_STORE
 # Byte-compiled / optimized / DLL files
+Transcript Generator_state.json
 __pycache__/
 *.py[cod]
 *$py.class

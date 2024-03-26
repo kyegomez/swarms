@@ -19,7 +19,4 @@ agent = Agent(
 )
 
 # Run the workflow on a task
-out = agent(
-    "Generate a transcript for a youtube video on what swarms are!"
-)
-print(out)
+agent("Generate a transcript for a youtube video on what swarms are!")

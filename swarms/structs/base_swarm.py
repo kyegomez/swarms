@@ -2,13 +2,21 @@ import asyncio
 import json
 from abc import ABC
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+)
 
 import yaml
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import logger
+from swarms.structs.omni_agent_types import agent
 
 
 class AbstractSwarm(ABC):
@@ -178,17 +186,15 @@ class AbstractSwarm(ABC):
         """Step the swarm"""
 
     # @abstractmethod
-    def add_agent(self, agent: "Agent"):
+    def add_agent(self, agent: agent):
         """Add a agent to the swarm"""
 
     # @abstractmethod
-    def remove_agent(self, agent: "Agent"):
+    def remove_agent(self, agent: agent):
         """Remove a agent from the swarm"""
 
     # @abstractmethod
-    def broadcast(
-        self, message: str, sender: Optional["Agent"] = None
-    ):
+    def broadcast(self, message: str, sender: Optional[agent] = None):
         """Broadcast a message to all agents"""
 
     # @abstractmethod
@@ -203,29 +209,29 @@ class AbstractSwarm(ABC):
     def direct_message(
         self,
         message: str,
-        sender: "Agent",
-        recipient: "Agent",
+        sender: agent,
+        recipient: agent,
     ):
         """Send a direct message to a agent"""
 
     # @abstractmethod
-    def autoscaler(self, num_agents: int, agent: ["Agent"]):
+    def autoscaler(self, num_agents: int, agent: [agent]):
         """Autoscaler that acts like kubernetes for autonomous agents"""
 
     # @abstractmethod
-    def get_agent_by_id(self, id: str) -> "Agent":
+    def get_agent_by_id(self, id: str) -> agent:
         """Locate a agent by id"""
 
     # @abstractmethod
-    def get_agent_by_name(self, name: str) -> "Agent":
+    def get_agent_by_name(self, name: str) -> agent:
         """Locate a agent by name"""
 
     # @abstractmethod
-    def assign_task(self, agent: "Agent", task: Any) -> Dict:
+    def assign_task(self, agent: agent, task: Any) -> Dict:
         """Assign a task to a agent"""
 
     # @abstractmethod
-    def get_all_tasks(self, agent: "Agent", task: Any):
+    def get_all_tasks(self, agent: agent, task: Any):
         """Get all tasks"""
 
     # @abstractmethod
@@ -237,19 +243,19 @@ class AbstractSwarm(ABC):
         """Get all pending tasks"""
 
     # @abstractmethod
-    def pause_agent(self, agent: "Agent", agent_id: str):
+    def pause_agent(self, agent: agent, agent_id: str):
         """Pause a agent"""
 
     # @abstractmethod
-    def resume_agent(self, agent: "Agent", agent_id: str):
+    def resume_agent(self, agent: agent, agent_id: str):
         """Resume a agent"""
 
     # @abstractmethod
-    def stop_agent(self, agent: "Agent", agent_id: str):
+    def stop_agent(self, agent: agent, agent_id: str):
         """Stop a agent"""
 
     # @abstractmethod
-    def restart_agent(self, agent: "Agent"):
+    def restart_agent(self, agent: agent):
         """Restart agent"""
 
     # @abstractmethod
@@ -265,7 +271,7 @@ class AbstractSwarm(ABC):
         """Scale to a specific number of agents"""
 
     # @abstractmethod
-    def get_all_agents(self) -> List["Agent"]:
+    def get_all_agents(self) -> List[agent]:
         """Get all agents"""
 
     # @abstractmethod
@@ -453,18 +459,6 @@ class AbstractSwarm(ABC):
     def remove_llm(self, agent: Callable):
         """Remove an llm from the god mode"""
         self.agents.remove(agent)
-
-    # def add_agent(self, agent: Agent = None, *args, **kwargs):
-    #     """Add an agent to the swarm
-
-    #     Args:
-    #         agent (Agent, optional): _description_. Defaults to None.
-
-    #     Returns:
-    #         _type_: _description_
-    #     """
-    #     self.agents.append(agent)
-    #     return agent
 
     def run_all(self, task: str = None, *args, **kwargs):
         """Run all agents
