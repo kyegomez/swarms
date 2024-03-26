@@ -1,6 +1,7 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from swarms.models.base_llm import AbstractLLM
 
+
 class Petals(AbstractLLM):
     """Petals Bloom models."""
 
