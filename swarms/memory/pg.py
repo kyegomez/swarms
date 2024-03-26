@@ -5,9 +5,10 @@ from sqlalchemy import JSON, Column, String, create_engine
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
+from swarms.memory.base_vectordb import AbstractVectorDatabase
 
 
-class PostgresDB:
+class PostgresDB(AbstractVectorDatabase):
     """
     A class representing a Postgres database.
 
@@ -67,7 +68,7 @@ class PostgresDB:
 
         return VectorModel
 
-    def add_or_update_vector(
+    def add(
         self,
         vector: str,
         vector_id: Optional[str] = None,
@@ -97,7 +98,7 @@ class PostgresDB:
         except Exception as e:
             print(f"Error adding or updating vector: {e}")
 
-    def query_vectors(
+    def query(
         self, query: Any, namespace: Optional[str] = None
     ) -> List[Any]:
         """

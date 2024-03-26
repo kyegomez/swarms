@@ -25,7 +25,6 @@ class SequentialAccountingSwarm(AbstractSwarm):
             Run the swarm simulation.
 
     """
-
     def __init__(
         self,
         name: Optional[str] = "kyegomez/sequential-accounting-swarm",
@@ -35,6 +34,8 @@ class SequentialAccountingSwarm(AbstractSwarm):
         iters: Optional[int] = 100,
         max_agents: Optional[int] = 100,
         agents: Sequence[AbstractLLM] = None,
+        *args,
+        **kwargs,
     ):
         super().__init__()
         self.name = name
@@ -98,6 +99,8 @@ class AutoSwarmRouter(AbstractSwarm):
         custom_preprocess: Optional[Callable] = None,
         custom_postprocess: Optional[Callable] = None,
         custom_router: Optional[Callable] = None,
+        *args,
+        **kwargs,
     ):
         super().__init__()
         self.name = name
