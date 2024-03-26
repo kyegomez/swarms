@@ -28,6 +28,9 @@ class BaseWorkflow(BaseStructure):
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
+        self.agents = agents
+        self.task_pool = task_pool
+        self.models = models
         self.task_pool = []
         self.agent_pool = []
 
