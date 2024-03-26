@@ -75,6 +75,11 @@ from swarms.structs.utils import (
     parse_tasks,
 )
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
+from swarms.structs.agent_process import (
+    AgentProcess,
+    AgentProcessQueue,
+)
+
 
 __all__ = [
     "Agent",
@@ -142,4 +147,6 @@ __all__ = [
     "AgentJob",
     "AutoSwarm",
     "AutoSwarmRouter",
+    "AgentProcess",
+    "AgentProcessQueue",
 ]
