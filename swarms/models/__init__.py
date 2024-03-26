@@ -44,7 +44,6 @@ from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 # from swarms.models.roboflow_model import RoboflowMultiModal
 from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
 from swarms.models.sampling_params import SamplingParams, SamplingType
-from swarms.models.timm import TimmModel  # noqa: E402
 from swarms.models.together import TogetherLLM  # noqa: E402
 from swarms.models.types import (  # noqa: E402
     AudioModality,
