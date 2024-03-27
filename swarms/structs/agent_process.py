@@ -16,7 +16,6 @@ class AgentProcess(BaseModel):
     priority: int = 0
     status: str = "Waiting"
     pid: int = None
-    
 
     def set_pid(self, pid: int):
         self.pid = pid

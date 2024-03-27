@@ -12,17 +12,15 @@ class MySwarm(BaseSwarm):
         # agent 2
         # agent 3
         return "output of the swarm"
-    
-    
+
+
 # Add your custom swarm to the AutoSwarmRouter
-router = AutoSwarmRouter(
-    swarms=[MySwarm]
-)
+router = AutoSwarmRouter(swarms=[MySwarm])
 
 
 # Create an AutoSwarm instance
 autoswarm = AutoSwarm(
-    name = "AutoSwarm, an API for all swarms",
+    name="AutoSwarm, an API for all swarms",
     description="A simple API to build and run swarms",
     verbose=True,
     router=router,
