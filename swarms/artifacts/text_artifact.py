@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-
+from typing import Callable
 from swarms.artifacts.base_artifact import BaseArtifact
-from swarms.tokenizers.base_tokenizer import BaseTokenizer
 
 
 @dataclass
@@ -31,6 +30,7 @@ class TextArtifact(BaseArtifact):
     value: str
     encoding: str = "utf-8"
     encoding_error_handler: str = "strict"
+    tokenizer: Callable = None
     _embedding: list[float] = field(default_factory=list)
 
     @property
@@ -49,8 +49,8 @@ class TextArtifact(BaseArtifact):
 
         return self.embedding
 
-    def token_count(self, tokenizer: BaseTokenizer) -> int:
-        return tokenizer.count_tokens(str(self.value))
+    def token_count(self) -> int:
+        return self.tokenizer.count_tokens(str(self.value))
 
     def to_bytes(self) -> bytes:
         return self.value.encode(

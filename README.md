@@ -213,6 +213,52 @@ print(out)
 ```
 
 
+# `Agent` with Long Term Memory ++ Tools!
+An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
+
+```python
+from swarms import Agent, ChromaDB, OpenAIChat, tool
+
+# Making an instance of the ChromaDB class
+memory = ChromaDB(
+    metric="cosine",
+    n_results=3,
+    output_dir="results",
+    docs_folder="docs",
+)
+
+# Initialize a tool
+@tool
+def search_api(query: str):
+    # Add your logic here
+    return query
+
+# Initializing the agent with the Gemini instance and other parameters
+agent = Agent(
+    agent_name="Covid-19-Chat",
+    agent_description=(
+        "This agent provides information about COVID-19 symptoms."
+    ),
+    llm=OpenAIChat(),
+    max_loops="auto",
+    autosave=True,
+    verbose=True,
+    long_term_memory=memory,
+    stopping_condition="finish",
+    tools=[search_api],
+)
+
+# Defining the task and image path
+task = ("What are the symptoms of COVID-19?",)
+
+# Running the agent with the specified task and image
+out = agent.run(task)
+print(out)
+
+```
+
+
+
 
 
 
@@ -873,6 +919,10 @@ agent = Agent(
 # Run the workflow on a task
 agent.run(task=task, img=img)
 ```
+----
+
+
+## Build your own LLMs, Agents, and Swarms!
 
 ### Swarms Compliant Model Interface
 ```python
@@ -934,6 +984,16 @@ agent = MyCustomAgent()
 # Run the agent
 out = agent("Analyze and summarize these financial documents: ")
 print(out)
+
+```
+
+
+### Compliant Interface for Multi-Agent Collaboration
+
+```python
+from swarms import Agent, AbstractSwarm
+
+
 
 ```
 

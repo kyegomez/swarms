@@ -1,5 +1,4 @@
-from typing import Optional
-
+from typing import Optional, Callable
 import cv2
 import numpy as np
 import supervision as sv
@@ -12,7 +11,6 @@ from transformers import (
 )
 
 from swarms.models.base_multimodal_model import BaseMultiModalModel
-from swarms.utils.supervision_masking import masks_to_marks
 
 
 class SegmentAnythingMarkGenerator(BaseMultiModalModel):
@@ -30,6 +28,7 @@ class SegmentAnythingMarkGenerator(BaseMultiModalModel):
         device: str = "cpu",
         model_name: str = "facebook/sam-vit-huge",
         visualize_marks: bool = False,
+        masks_to_marks: Callable = sv.masks_to_marks,
         *args,
         **kwargs,
     ):
@@ -37,6 +36,7 @@ class SegmentAnythingMarkGenerator(BaseMultiModalModel):
         self.device = device
         self.model_name = model_name
         self.visualize_marks = visualize_marks
+        self.masks_to_marks = masks_to_marks
 
         self.model = SamModel.from_pretrained(
             model_name, *args, **kwargs
@@ -74,7 +74,7 @@ class SegmentAnythingMarkGenerator(BaseMultiModalModel):
         if mask is None:
             outputs = self.pipeline(image, points_per_batch=64)
             masks = np.array(outputs["masks"])
-            return masks_to_marks(masks=masks)
+            return self.masks_to_marks(masks=masks)
         else:
             inputs = self.processor(image, return_tensors="pt").to(
                 self.device
@@ -112,6 +112,6 @@ class SegmentAnythingMarkGenerator(BaseMultiModalModel):
                 )
                 masks.append(mask)
             masks = np.array(masks)
-            return masks_to_marks(masks=masks)
+            return self.masks_to_marks(masks=masks)
 
     # def visualize_img(self):

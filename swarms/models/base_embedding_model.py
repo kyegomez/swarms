@@ -4,11 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import numpy as np
-
+from typing import Callable
 from swarms.artifacts.text_artifact import TextArtifact
-from swarms.chunkers.base_chunker import BaseChunker
-from swarms.chunkers.text_chunker import TextChunker
-from swarms.tokenizers.base_tokenizer import BaseTokenizer
 from swarms.utils.exponential_backoff import ExponentialBackoffMixin
 
 
@@ -25,12 +22,8 @@ class BaseEmbeddingModel(
     """
 
     model: str = None
-    tokenizer: BaseTokenizer | None = None
-    chunker: BaseChunker = field(init=False)
-
-    def __post_init__(self) -> None:
-        if self.tokenizer:
-            self.chunker = TextChunker(tokenizer=self.tokenizer)
+    tokenizer: Callable = None
+    chunker: Callable = None
 
     def embed_text_artifact(
         self, artifact: TextArtifact

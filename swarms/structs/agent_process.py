@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from swarms.structs.omni_agent_types import agents
 from swarms.utils.loguru_logger import logger
+from typing import Callable
 
 
 class AgentProcess(BaseModel):
@@ -11,10 +12,11 @@ class AgentProcess(BaseModel):
     agent_name: str
     prompt: str
     response: str = None
-    time: callable = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    time: Callable = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     priority: int = 0
     status: str = "Waiting"
     pid: int = None
+    
 
     def set_pid(self, pid: int):
         self.pid = pid

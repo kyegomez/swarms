@@ -19,13 +19,11 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.prompts.worker_prompt import worker_tools_sop_promp
 from swarms.structs.conversation import Conversation
-from swarms.tokenizers.base_tokenizer import BaseTokenizer
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.utils.token_count_tiktoken import limit_tokens_from_string
 
 
 # Utils
@@ -184,7 +182,7 @@ class Agent:
         multi_modal: Optional[bool] = None,
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
-        tokenizer: Optional[BaseTokenizer] = None,
+        tokenizer: Optional[Any] = None,
         long_term_memory: Optional[AbstractVectorDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Any = None,
@@ -208,6 +206,7 @@ class Agent:
         sentiment_threshold: Optional[float] = None,
         custom_exit_command: Optional[str] = "exit",
         sentiment_analyzer: Optional[Callable] = None,
+        limit_tokens_from_string: Optional[Callable] = None,
         *args,
         **kwargs,
     ):
@@ -267,6 +266,7 @@ class Agent:
         self.sentiment_threshold = sentiment_threshold
         self.custom_exit_command = custom_exit_command
         self.sentiment_analyzer = sentiment_analyzer
+        self.limit_tokens_from_string = limit_tokens_from_string
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -1262,7 +1262,7 @@ class Agent:
             _type_: _description_
         """
         text = text or self.pdf_connector()
-        text = limit_tokens_from_string(text, num_limits)
+        text = self.limit_tokens_from_string(text, num_limits)
         return text
 
     def ingest_docs(self, docs: List[str], *args, **kwargs):

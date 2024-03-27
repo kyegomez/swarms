@@ -41,7 +41,6 @@ from swarms.utils.remove_json_whitespace import (
 )
 from swarms.utils.save_logs import parse_log_file
 from swarms.utils.supervision_visualizer import MarkVisualizer
-from swarms.utils.token_count_tiktoken import limit_tokens_from_string
 from swarms.utils.try_except_wrapper import try_except_wrapper
 from swarms.utils.yaml_output_parser import YamlOutputParser
 from swarms.utils.concurrent_utils import execute_concurrently
@@ -79,7 +78,7 @@ __all__ = [
     "remove_whitespace_from_yaml",
     "parse_log_file",
     "MarkVisualizer",
-    "limit_tokens_from_string",
+    # "limit_tokens_from_string",
     "try_except_wrapper",
     "YamlOutputParser",
     "execute_concurrently",
