@@ -1,4 +1,4 @@
-# `AbstractSwarm` Documentation
+# `BaseSwarm` Documentation
 
 ## Table of Contents
 
@@ -41,9 +41,9 @@ The Swarms library is designed to provide a framework for swarm simulation archi
 
 ## 2. Class Definition <a name="class-definition"></a>
 
-### `AbstractSwarm` Class
+### `BaseSwarm` Class
 
-The `AbstractSwarm` class is an abstract base class that serves as the foundation for swarm simulation architectures. It defines the core functionality and methods required to manage and interact with a swarm of workers.
+The `BaseSwarm` class is an abstract base class that serves as the foundation for swarm simulation architectures. It defines the core functionality and methods required to manage and interact with a swarm of workers.
 
 ```python
 from abc import ABC, abstractmethod
@@ -52,7 +52,7 @@ from typing import List
 from swarms.swarms.base import AbstractWorker
 
 
-class AbstractSwarm(ABC):
+class BaseSwarm(ABC):
     """
     Abstract class for swarm simulation architectures
 
@@ -513,4 +513,4 @@ swarm.save_swarm_state()
 
 ---
 
-This comprehensive documentation covers the Swarms library, including the `AbstractSwarm` class and its methods. You can use this documentation as a guide to understanding and effectively utilizing the Swarms framework for swarm simulation architectures. Feel free to explore further and adapt the library to your specific use cases.
+This comprehensive documentation covers the Swarms library, including the `BaseSwarm` class and its methods. You can use this documentation as a guide to understanding and effectively utilizing the Swarms framework for swarm simulation architectures. Feel free to explore further and adapt the library to your specific use cases.

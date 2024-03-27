@@ -67,13 +67,13 @@ The goal of the Swarm Architecture is to provide a flexible and scalable system 
 
 ## Design Components
 
-### AbstractSwarm
+### BaseSwarm
 
-The AbstractSwarm is an abstract base class which defines the basic structure of a swarm and the methods that need to be implemented. Any new swarm should inherit from this class and implement the required methods.
+The BaseSwarm is an abstract base class which defines the basic structure of a swarm and the methods that need to be implemented. Any new swarm should inherit from this class and implement the required methods.
 
 ### Swarm Classes
 
-Various Swarm classes can be implemented inheriting from the AbstractSwarm class. Each swarm class should implement the required methods for initializing the components, worker nodes, and boss node, and running the swarm.
+Various Swarm classes can be implemented inheriting from the BaseSwarm class. Each swarm class should implement the required methods for initializing the components, worker nodes, and boss node, and running the swarm.
 
 Pre-configured swarm classes with multi-modal agents can be provided for ease of use. These classes come with a default configuration of tools and agents, which can be used out of the box.
 
@@ -91,7 +91,7 @@ To use a pre-configured swarm, they can simply instantiate the corresponding swa
 
 To create a custom swarm, they need to:
 
-1. Define a new swarm class inheriting from AbstractSwarm.
+1. Define a new swarm class inheriting from BaseSwarm.
 2. Implement the required methods for the new swarm class.
 3. Instantiate the swarm class and call the run method.
 
@@ -103,7 +103,7 @@ swarm = PreConfiguredSwarm(openai_api_key)
 swarm.run_swarms(objective)
 
 # Creating custom swarm
-class CustomSwarm(AbstractSwarm):
+class CustomSwarm(BaseSwarm):
     # Implement required methods
 
 swarm = CustomSwarm(openai_api_key)

@@ -19,7 +19,7 @@ from swarms.utils.loguru_logger import logger
 from swarms.structs.omni_agent_types import agent
 
 
-class AbstractSwarm(ABC):
+class BaseSwarm(ABC):
     """
     Abstract Swarm Class for multi-agent systems
 

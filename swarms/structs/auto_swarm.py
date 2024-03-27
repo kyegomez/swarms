@@ -1,11 +1,11 @@
 from typing import Any, Callable, Dict, Optional, Sequence
 
 from swarms.models.base_llm import AbstractLLM
-from swarms.structs.base_swarm import AbstractSwarm
+from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
 
 
-class SequentialAccountingSwarm(AbstractSwarm):
+class SequentialAccountingSwarm(BaseSwarm):
     """SequentialAccountingSwarm class represents a swarm of agents that can be created automatically.
 
     Flow:
@@ -66,7 +66,7 @@ class SequentialAccountingSwarm(AbstractSwarm):
         return final
 
 
-class AutoSwarmRouter(AbstractSwarm):
+class AutoSwarmRouter(BaseSwarm):
     """AutoSwarmRouter class represents a router for the AutoSwarm class.
 
     This class is responsible for routing tasks to the appropriate swarm based on the provided name.
@@ -77,7 +77,7 @@ class AutoSwarmRouter(AbstractSwarm):
         description (str): The description of the router.
         verbose (bool): Whether to enable verbose mode.
         custom_params (dict): Custom parameters for the router.
-        swarms (list): A list of AbstractSwarm objects.
+        swarms (list): A list of BaseSwarm objects.
         custom_preprocess (callable): Custom preprocessing function for tasks.
         custom_postprocess (callable): Custom postprocessing function for task results.
         custom_router (callable): Custom routing function for tasks.
@@ -96,7 +96,7 @@ class AutoSwarmRouter(AbstractSwarm):
         description: Optional[str] = None,
         verbose: bool = False,
         custom_params: Optional[Dict[str, Any]] = None,
-        swarms: Sequence[AbstractSwarm] = None,
+        swarms: Sequence[BaseSwarm] = None,
         custom_preprocess: Optional[Callable] = None,
         custom_postprocess: Optional[Callable] = None,
         custom_router: Optional[Callable] = None,
@@ -159,7 +159,7 @@ class AutoSwarmRouter(AbstractSwarm):
             raise e
 
 
-class AutoSwarm(AbstractSwarm):
+class AutoSwarm(BaseSwarm):
     """AutoSwarm class represents a swarm of agents that can be created automatically.
 
     Flow:

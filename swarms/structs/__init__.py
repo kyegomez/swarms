@@ -7,7 +7,7 @@ from swarms.structs.agent_process import (
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.autoscaler import AutoScaler
 from swarms.structs.base import BaseStructure
-from swarms.structs.base_swarm import AbstractSwarm
+from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.block_wrapper import block
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
@@ -90,7 +90,7 @@ __all__ = [
     "AutoSwarmRouter",
     "AutoScaler",
     "BaseStructure",
-    "AbstractSwarm",
+    "BaseSwarm",
     "BaseWorkflow",
     "block",
     "ConcurrentWorkflow",
