@@ -92,17 +92,12 @@ nav:
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"
       - Idefics: "swarms/models/idefics.md"
-      - BingChat: "swarms/models/bingchat.md"
       - Kosmos: "swarms/models/kosmos.md"
       - Nougat: "swarms/models/nougat.md"
       - Dalle3: "swarms/models/dalle3.md"
       - GPT4V: "swarms/models/gpt4v.md"
-      - LayoutLMDocumentQA: "swarms/models/layoutlm_document_qa.md"
       - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
-      - ElevenLabsText2SpeechTool: "swarms/models/elevenlabs.md"
-      - OpenAITTS: "swarms/models/openai_tts.md"
       - Gemini: "swarms/models/gemini.md"
-      - ZeroscopeTTV: "swarms/models/zeroscope.md"
   - swarms.structs:
       - Foundational Structures:
         - agent: "swarms/structs/agent.md"
@@ -170,20 +165,25 @@ nav:
     - Marketing: 
       - Overview: "applications/marketing_agencies.md" 
 - Corporate:
-    - FAQ: "corporate/faq.md"
-    - Purpose: "corporate/purpose.md"
-    - Roadmap: "corporate/roadmap.md"
-    - Weaknesses: "corporate/failures.md"
-    - Design: "corporate/design.md"
-    - Flywheel: "corporate/flywheel.md"
-    - Bounties: "corporate/bounties.md"
-    - Metric: "corporate/metric.md"
-    - Distribution: "corporate/distribution"
-    - Research: "corporate/research.md"
-    - Demos: "corporate/demos.md"
-    - Architecture: "corporate/architecture.md"
-    - Checklist: "corporate/checklist.md"
-    - Hiring: "corporate/hiring.md"
-    - SwarmCloud: "corporate/swarm_cloud.md"
-    - SwarmMemo: "corporate/swarm_memo.md"
-    - Data Room: "corporate/data_room.md"
+    - Corporate Documents:
+      - Data Room: "corporate/data_room.md"
+      - SwarmMemo: "corporate/swarm_memo.md"
+      - Corporate Architecture: "corporate/architecture.md"
+      - Flywheel: "corporate/flywheel.md"
+      - Bounties: "corporate/bounties.md"
+      - Purpose: "corporate/purpose.md"
+      - Roadmap: "corporate/roadmap.md"
+    - Sales:
+      - FAQ: "corporate/faq.md"
+      - Distribution: "corporate/distribution"
+    - Product:
+      - SwarmCloud: "corporate/swarm_cloud.md"
+      - Weaknesses: "corporate/failures.md"
+      - Design: "corporate/design.md"
+      - Metric: "corporate/metric.md"
+      - Research: "corporate/research.md"
+      - Demos: "corporate/demos.md"
+      - Checklist: "corporate/checklist.md"
+    
+    
+    
