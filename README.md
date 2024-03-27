@@ -582,8 +582,7 @@ import os
 
 from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-# Import the models, structs, and telemetry modules
+from pydantic import BaseModel
 from swarms import BlocksList, Gemini, GPT4VisionAPI, Mixtral, OpenAI, ToolAgent
 
 # Load the environment variables
@@ -596,15 +595,22 @@ gemini_api_key = os.getenv("GEMINI_API_KEY")
 # Tool Agent
 model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v2-12b")
 tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v2-12b")
-json_schema = {
-    "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "age": {"type": "number"},
-        "is_student": {"type": "boolean"},
-        "courses": {"type": "array", "items": {"type": "string"}},
-    },
-}
+
+# Initialize the schema for the person's information
+class Schema(BaseModel):
+    name: str = Field(..., title="Name of the person")
+    agent: int = Field(..., title="Age of the person")
+    is_student: bool = Field(
+        ..., title="Whether the person is a student"
+    )
+    courses: list[str] = Field(
+        ..., title="List of courses the person is taking"
+    )
+
+# Convert the schema to a JSON string
+json_schema = base_model_to_json(Schema)
+
+
 toolagent = ToolAgent(model=model, tokenizer=tokenizer, json_schema=json_schema)
 
 # Blocks List which enables you to build custom swarms by adding classes or functions
