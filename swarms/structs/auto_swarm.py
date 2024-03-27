@@ -25,6 +25,7 @@ class SequentialAccountingSwarm(AbstractSwarm):
             Run the swarm simulation.
 
     """
+
     def __init__(
         self,
         name: Optional[str] = "kyegomez/sequential-accounting-swarm",
