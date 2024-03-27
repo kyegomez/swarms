@@ -2,7 +2,6 @@ import os
 import subprocess as sp
 from pathlib import Path
 
-from dotenv import load_dotenv
 from PIL import Image
 
 from swarms.models.base_multimodal_model import BaseMultiModalModel
@@ -15,9 +14,6 @@ except ImportError as error:
     print("Please install the google.generativeai package")
     print("pip install google-generativeai")
     sp.run(["pip", "install", "--upgrade", "google-generativeai"])
-
-
-load_dotenv()
 
 
 # Helpers

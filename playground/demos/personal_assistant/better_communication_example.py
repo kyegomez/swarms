@@ -3,13 +3,9 @@ import time
 
 import pygame
 import speech_recognition as sr
-from dotenv import load_dotenv
 from playsound import playsound
 
 from swarms import OpenAIChat, OpenAITTS
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 openai_api_key = os.environ.get("OPENAI_API_KEY")

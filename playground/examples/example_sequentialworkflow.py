@@ -1,8 +1,5 @@
 import os
 from swarms import OpenAIChat, Agent, SequentialWorkflow
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Load the environment variables
 api_key = os.getenv("OPENAI_API_KEY")

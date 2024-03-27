@@ -12,7 +12,7 @@ This code provides a structure for a Discord bot with advanced features such as 
 
 1. Ensure that the necessary libraries are installed:
 ```bash
-pip install discord.py python-dotenv dalle3 invoke openai
+pip install discord.py dalle3 invoke openai
 ```
 
 2. Create a `.env` file in the same directory as your bot script and add the following:

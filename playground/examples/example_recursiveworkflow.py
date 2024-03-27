@@ -1,9 +1,6 @@
 import os
-from dotenv import load_dotenv
 from swarms import OpenAIChat, Task, RecursiveWorkflow, Agent
 
-# Load environment variables from .env file
-load_dotenv()
 
 # Load environment variables
 llm = OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY"))

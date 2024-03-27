@@ -1,7 +1,5 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models import GPT4VisionAPI, OpenAIChat
 from swarms.prompts.xray_swarm_prompt import (
     TREATMENT_PLAN_PROMPT,
@@ -9,8 +7,6 @@ from swarms.prompts.xray_swarm_prompt import (
 )
 from swarms.structs.agent import Agent
 
-# Load environment variables
-load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 # Function to analyze an X-ray image

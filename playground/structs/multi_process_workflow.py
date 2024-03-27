@@ -1,10 +1,6 @@
 import os
 from swarms import Gemini, Agent
 from swarms.structs.multi_process_workflow import MultiProcessWorkflow
-from dotenv import load_dotenv
-
-# Load the environment variables
-load_dotenv()
 
 # Gemini API key
 api_key = os.getenv("GEMINI_API_KEY")

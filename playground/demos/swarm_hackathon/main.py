@@ -3,14 +3,9 @@ import csv
 import os
 from swarms import Gemini, Agent
 from swarms.memory import ChromaDB
-from dotenv import load_dotenv
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.file_processing import create_file
 from swarms.utils.loguru_logger import logger
-
-# Load ENV
-load_dotenv()
-
 
 gemini = Gemini(
     model_name="gemini-pro",

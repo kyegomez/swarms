@@ -8,10 +8,6 @@ from swarms import (
     TogetherLLM,
 )
 from swarms.memory import ChromaDB
-from dotenv import load_dotenv
-
-# load the environment variables
-load_dotenv()
 
 # Initialize the ChromaDB
 memory = ChromaDB()

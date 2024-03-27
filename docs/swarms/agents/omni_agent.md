@@ -41,13 +41,8 @@ Initialize the `OmniModalAgent` and communicate with it:
 ```python
 import os
 
-from dotenv import load_dotenv
-
 from swarms.agents.omni_modal_agent import OmniModalAgent, OpenAIChat
 from swarms.models import OpenAIChat
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")

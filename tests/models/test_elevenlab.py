@@ -2,14 +2,11 @@ import os
 from unittest.mock import mock_open, patch
 
 import pytest
-from dotenv import load_dotenv
 
 from swarms.models.eleven_labs import (
     ElevenLabsModel,
     ElevenLabsText2SpeechTool,
 )
-
-load_dotenv()
 
 # Define some test data
 SAMPLE_TEXT = "Hello, this is a test."

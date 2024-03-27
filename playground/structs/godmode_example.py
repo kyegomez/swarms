@@ -1,11 +1,7 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms import ModelParallelizer
 from swarms.models import Anthropic, Gemini, Mixtral, OpenAIChat
-
-load_dotenv()
 
 # API Keys
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")

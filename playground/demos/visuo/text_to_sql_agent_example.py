@@ -1,12 +1,8 @@
 import os
 
-from dotenv import load_dotenv
-
 # Import the OpenAIChat model and the Agent struct
 from swarms import Agent, HuggingfaceLLM
 
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")

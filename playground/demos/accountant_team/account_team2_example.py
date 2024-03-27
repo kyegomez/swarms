@@ -1,7 +1,5 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models import Anthropic, OpenAIChat
 from swarms.prompts.accountant_swarm_prompts import (
     DECISION_MAKING_PROMPT,
@@ -12,7 +10,6 @@ from swarms.structs import Agent
 from swarms.utils.pdf_to_text import pdf_to_text
 
 # Environment variables
-load_dotenv()
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
 

@@ -1,12 +1,8 @@
 import os
 
-from dotenv import load_dotenv
 from langchain.llms import OpenAIChat
 
 from swarms import Agent
-
-# Loading environment variables from .env file
-load_dotenv()
 
 # Initialize the model
 llm = OpenAIChat(

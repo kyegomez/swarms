@@ -6,7 +6,6 @@ from typing import Optional
 
 import aiohttp
 import requests
-from dotenv import load_dotenv
 from termcolor import colored
 
 from swarms.models.base_multimodal_model import BaseMultiModalModel
@@ -21,7 +20,6 @@ except ImportError:
     raise ImportError
 
 # Load environment variables
-load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 

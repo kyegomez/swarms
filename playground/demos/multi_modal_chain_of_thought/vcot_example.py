@@ -1,13 +1,9 @@
 import os
 
-from dotenv import load_dotenv
 
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
 from swarms.structs import Agent
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")

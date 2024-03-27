@@ -1,11 +1,6 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms.structs import Agent, OpenAIChat, Task
-
-# Load the environment variables
-load_dotenv()
 
 
 # Define a function to be used as the action

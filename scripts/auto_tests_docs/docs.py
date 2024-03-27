@@ -148,7 +148,7 @@ def TEST_WRITER_SOP_PROMPT(
 
    8. **Environment Variables and Secret Handling**:
       - Store secrets and configurations in environment variables.
-      - Use libraries like `python-decouple` or `python-dotenv` to load environment variables.
+      - Use libraries like `python-decouple` to load environment variables.
       - For tests, mock or set environment variables temporarily within the test environment.
 
    9. **Grouping and Marking Tests**:

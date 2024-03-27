@@ -2,13 +2,10 @@ import base64
 import os
 
 import requests
-from dotenv import load_dotenv
 
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 
-# Load environment variables
-load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 # Define prompts for various tasks

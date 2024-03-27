@@ -1,13 +1,10 @@
 import os
 import random
 
-from dotenv import load_dotenv
-
 from swarms.models import OpenAIChat
 from swarms.models.stable_diffusion import StableDiffusion
 from swarms.structs import Agent
 
-load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 stability_api_key = os.getenv("STABILITY_API_KEY")
 

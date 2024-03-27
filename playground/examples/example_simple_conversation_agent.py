@@ -1,7 +1,5 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms import (
     OpenAIChat,
     Conversation,
@@ -10,9 +8,6 @@ from swarms import (
 conv = Conversation(
     time_enabled=True,
 )
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")

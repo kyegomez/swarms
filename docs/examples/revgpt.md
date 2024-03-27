@@ -35,23 +35,16 @@ The abstraction provided in `revgpt.py` is designed to simplify your interaction
 1. **Import the Necessary Modules:**
 
 ```python
-from dotenv import load_dotenv
 from revgpt import AbstractChatGPT
 ```
 
-2. **Load Environment Variables:**
-
-```python
-load_dotenv()
-```
-
-3. **Initialize the ChatGPT Abstract Class:**
+2. **Initialize the ChatGPT Abstract Class:**
 
 ```python
 chat = AbstractChatGPT(api_key=os.getenv("ACCESS_TOKEN"), **config)
 ```
 
-4. **Start Interacting with ChatGPT:**
+3. **Start Interacting with ChatGPT:**
 
 ```python
 response = chat.ask("Hello, ChatGPT!")

@@ -3,13 +3,8 @@ import os
 from typing import Optional
 
 import requests
-from dotenv import load_dotenv
 
 from swarms.models.base_llm import AbstractLLM
-
-# Load environment variables
-load_dotenv()
-
 
 def together_api_key_env():
     """Get the API key from the environment."""

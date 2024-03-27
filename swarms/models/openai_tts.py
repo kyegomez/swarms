@@ -3,7 +3,6 @@ import subprocess
 import sys
 
 import requests
-from dotenv import load_dotenv
 
 from swarms.models.base_llm import AbstractLLM
 
@@ -14,11 +13,6 @@ except ImportError as error:
     subprocess.check_call(
         [sys.executable, "-m", "pip", "install", "pyaudio"]
     )
-
-
-# Load .env file
-load_dotenv()
-
 
 # OpenAI API Key env
 def openai_api_key_env():

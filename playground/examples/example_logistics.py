@@ -1,6 +1,5 @@
 from swarms.structs import Agent
 import os
-from dotenv import load_dotenv
 from swarms.models import GPT4VisionAPI
 from swarms.prompts.logistics import (
     Health_Security_Agent_Prompt,
@@ -12,8 +11,6 @@ from swarms.prompts.logistics import (
     Efficiency_Agent_Prompt,
 )
 
-# Load ENV
-load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 # GPT4VisionAPI

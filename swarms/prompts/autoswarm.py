@@ -48,13 +48,11 @@ copy/paste to vscode and run it without issue. Here are some tips to consider:
 Output Format: A complete Python script that is ready for copy/paste to GitHub and demo execution. It should be formatted with complete logic, proper indentation, clear variable names, and comments.
 Here is an example of a a working swarm script that you can use as a rough template for the logic:
 import os
-from dotenv import load_dotenv
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 import swarms.prompts.swarm_daddy as sdsp
 
 # Load environment variables and initialize the OpenAI Chat model
-load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 llm = OpenAIChat(model_name = "gpt-4", openai_api_key=api_key)
 
