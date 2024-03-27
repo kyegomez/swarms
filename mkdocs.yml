@@ -81,8 +81,6 @@ nav:
       - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
       - OpenAI: "swarms/models/openai.md"
-      - Zephyr: "swarms/models/zephyr.md"
-      - BioGPT: "swarms/models/biogpt.md"
       - vLLM: "swarms/models/vllm.md"
       - MPT7B: "swarms/models/mpt.md"
       - Mistral: "swarms/models/mistral.md"
@@ -97,7 +95,6 @@ nav:
       - Dalle3: "swarms/models/dalle3.md"
       - GPT4V: "swarms/models/gpt4v.md"
       - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
-      - Gemini: "swarms/models/gemini.md"
   - swarms.structs:
       - Foundational Structures:
         - agent: "swarms/structs/agent.md"
