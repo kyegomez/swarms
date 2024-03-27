@@ -6,14 +6,14 @@ import redis
 from redis.commands.graph import Graph, Node
 
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import AbstractSwarm
+from swarms.structs.base_swarm import BaseSwarm
 
 
 class SwarmRelationship:
     JOINED = "joined"
 
 
-class RedisSwarmRegistry(AbstractSwarm):
+class RedisSwarmRegistry(BaseSwarm):
     """
     Initialize the SwarmRedisRegistry object.
 

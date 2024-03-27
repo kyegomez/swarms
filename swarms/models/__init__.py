@@ -38,6 +38,7 @@ from swarms.models.popular_llms import (
     ReplicateLLM as Replicate,
 )
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
+
 # from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
 from swarms.models.sampling_params import SamplingParams, SamplingType
 from swarms.models.together import TogetherLLM  # noqa: E402
