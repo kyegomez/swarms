@@ -1,10 +1,6 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models.gemini import Gemini
-
-load_dotenv()
 
 api_key = os.environ["GEMINI_API_KEY"]
 

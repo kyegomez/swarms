@@ -17,13 +17,10 @@ Documentation agent -> Tests agent
 
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models import OpenAIChat
 from swarms.prompts.programming import DOCUMENTATION_SOP, TEST_SOP
 from swarms.structs import Agent
 
-load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 

@@ -1,12 +1,7 @@
 # Description: This is an example of how to use the Agent class to run a multi-modal workflow
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Agent, GPT4VisionAPI
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")

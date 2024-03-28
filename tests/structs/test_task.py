@@ -3,7 +3,6 @@ from datetime import timedelta
 from unittest.mock import Mock
 
 import pytest
-from dotenv import load_dotenv
 
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
@@ -11,8 +10,6 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
-
-load_dotenv()
 
 
 @pytest.fixture

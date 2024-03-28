@@ -4,13 +4,10 @@ from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import pytest
-from dotenv import load_dotenv
 
 from swarms.models import OpenAIChat
 from swarms.structs.agent import Agent, stop_when_repeats
 from swarms.utils.logger import logger
-
-load_dotenv()
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 

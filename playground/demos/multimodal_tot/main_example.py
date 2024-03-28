@@ -17,14 +17,10 @@ task: Generate an image of a swarm of bees -> Image generator -> GPT4V evaluates
 
 import os
 
-from dotenv import load_dotenv
 from termcolor import colored
 
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.models.stable_diffusion import StableDiffusion
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")

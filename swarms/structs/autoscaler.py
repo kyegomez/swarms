@@ -66,13 +66,10 @@ class AutoScaler(BaseStructure):
 
     Examples:
     >>> import os
-    >>> from dotenv import load_dotenv
     >>> # Import the OpenAIChat model and the Agent struct
     >>> from swarms.models import OpenAIChat
     >>> from swarms.structs import Agent
     >>> from swarms.structs.autoscaler import AutoScaler
-    >>> # Load the environment variables
-    >>> load_dotenv()
     >>> # Get the API key from the environment
     >>> api_key = os.environ.get("OPENAI_API_KEY")
     >>> # Initialize the language model

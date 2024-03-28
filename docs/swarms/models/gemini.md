@@ -15,7 +15,6 @@ Before using Gemini, ensure that you have the required dependencies installed. Y
 ```bash
 pip install swarms
 pip install google-generativeai
-pip install python-dotenv
 ```
 
 ### Class: Gemini

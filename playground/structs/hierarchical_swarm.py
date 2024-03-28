@@ -1,10 +1,6 @@
 import os
 from swarms import OpenAIChat, Agent
-from dotenv import load_dotenv
 
-
-# Load environment variables
-load_dotenv()
 
 # Create a chat instance
 llm = OpenAIChat(

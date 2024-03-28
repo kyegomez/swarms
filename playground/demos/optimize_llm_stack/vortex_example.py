@@ -1,13 +1,9 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 
 # import modal
-
-load_dotenv()
 
 # Model
 llm = OpenAIChat(

@@ -1,15 +1,11 @@
 import os
 
-from dotenv import load_dotenv
 from termcolor import colored
 
 from swarms.models import OpenAIChat
 from swarms.prompts.code_interpreter import CODE_INTERPRETER
 from swarms.prompts.programming import DOCUMENTATION_SOP, TEST_SOP
 from swarms.structs import Agent
-
-load_dotenv()
-
 
 FEATURE = (
     "Implement an all-new signup system in typescript using supabase"

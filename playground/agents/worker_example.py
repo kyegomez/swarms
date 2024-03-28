@@ -1,13 +1,8 @@
 # Importing necessary modules
 import os
 
-from dotenv import load_dotenv
-
 from swarms import OpenAIChat
 from swarms.agents.worker_agent import Worker
-
-# Loading environment variables from .env file
-load_dotenv()
 
 # Retrieving the OpenAI API key from environment variables
 api_key = os.getenv("OPENAI_API_KEY")

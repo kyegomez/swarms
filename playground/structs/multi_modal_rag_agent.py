@@ -1,15 +1,10 @@
 # Importing necessary modules
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Agent, OpenAIChat
 from swarms.memory.chroma_db import ChromaDB
 from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
 from swarms.tools.tool import tool
-
-# Loading environment variables from .env file
-load_dotenv()
 
 # Getting the Gemini API key from environment variables
 gemini_api_key = os.getenv("GEMINI_API_KEY")

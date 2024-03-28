@@ -1,7 +1,5 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models import GPT4VisionAPI
 from swarms.prompts.logistics import (
     Efficiency_Agent_Prompt,
@@ -15,8 +13,6 @@ from swarms.prompts.logistics import (
 from swarms.structs import Agent
 
 # from swarms.utils.banana_wrapper import banana
-
-load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 # GPT4VisionAPI or llama

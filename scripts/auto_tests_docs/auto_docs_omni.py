@@ -2,17 +2,8 @@ import inspect
 import os
 import threading
 
-from dotenv import load_dotenv
-
 from scripts.auto_tests_docs.docs import DOCUMENTATION_WRITER_SOP
 from swarms import OpenAIChat
-
-###########
-
-
-###############
-
-load_dotenv()
 
 api_key = os.getenv("OPENAI_API_KEY")
 

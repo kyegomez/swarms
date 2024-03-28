@@ -2,7 +2,6 @@ import datetime
 import os
 
 import streamlit as st
-from dotenv import load_dotenv
 
 from swarms.models import OpenAIChat
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
@@ -10,7 +9,6 @@ from swarms.models.stable_diffusion import StableDiffusion
 from swarms.structs import Agent
 
 # Load environment variables
-load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 stability_api_key = os.getenv("STABLE_API_KEY")
 
@@ -137,7 +135,6 @@ class Idea2Image(Agent):
 
 
 # Load environment variables and initialize the models
-load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 stability_api_key = os.getenv("STABLE_API_KEY")
 vision_api = GPT4VisionAPI(api_key=openai_api_key)

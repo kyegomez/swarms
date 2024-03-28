@@ -2,9 +2,7 @@ import os
 import subprocess
 
 import requests
-from dotenv import load_dotenv
 
-load_dotenv
 
 # Constants
 GITHUB_USERNAME = os.getenv("GITHUB_USERNAME")

@@ -1,17 +1,11 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Agent, OpenAIChat
 from swarms.tools.tool import tool
 
-load_dotenv()
-
 api_key = os.environ.get("OPENAI_API_KEY")
 
-
 llm = OpenAIChat(api_key=api_key)
-
 
 @tool
 def search_api(query: str) -> str:

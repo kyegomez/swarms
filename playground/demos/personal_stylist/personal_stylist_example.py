@@ -1,7 +1,5 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models import GPT4VisionAPI
 from swarms.prompts.personal_stylist import (
     ACCESSORIES_STYLIST_AGENT_PROMPT,
@@ -12,8 +10,6 @@ from swarms.prompts.personal_stylist import (
 )
 from swarms.structs import Agent
 
-# Load environment variables
-load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize GPT4VisionAPI

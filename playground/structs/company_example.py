@@ -1,11 +1,7 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Agent, OpenAIChat
 from swarms.structs.company import Company
-
-load_dotenv()
 
 llm = OpenAIChat(
     openai_api_key=os.getenv("OPENAI_API_KEY"), max_tokens=4000

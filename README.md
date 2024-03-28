@@ -42,13 +42,8 @@ Features:
 ```python
 import os
 
-from dotenv import load_dotenv
-
 # Import the OpenAIChat model and the Agent struct
 from swarms import Agent, OpenAIChat
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")
@@ -138,12 +133,7 @@ The `Worker` is a simple all-in-one agent equipped with an LLM, tools, and RAG f
 # Importing necessary modules
 import os
 
-from dotenv import load_dotenv
-
 from swarms import OpenAIChat, Worker, tool
-
-# Loading environment variables from .env file
-load_dotenv()
 
 # Retrieving the OpenAI API key from environment variables
 api_key = os.getenv("OPENAI_API_KEY")
@@ -279,11 +269,7 @@ Sequential Workflow enables you to sequentially execute tasks with `Agent` and t
 ```python
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Agent, OpenAIChat, SequentialWorkflow
-
-load_dotenv()
 
 # Load the environment variables
 api_key = os.getenv("OPENAI_API_KEY")
@@ -336,12 +322,7 @@ for task in workflow.tasks:
 ```python
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Agent, ConcurrentWorkflow, OpenAIChat, Task
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Load environment variables
 llm = OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY"))
@@ -368,12 +349,7 @@ workflow.run()
 ```python
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Agent, OpenAIChat, RecursiveWorkflow, Task
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Load environment variables
 llm = OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY"))
@@ -407,11 +383,7 @@ Plug-and-Play Integration: The structure provides a seamless integration with va
 ```python
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Anthropic, Gemini, Mixtral, ModelParallelizer, OpenAIChat
-
-load_dotenv()
 
 # API Keys
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -449,16 +421,11 @@ A Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our m
 ```python
 import os
 
-from dotenv import load_dotenv
-
 from swarms import Conversation, OpenAIChat
 
 conv = Conversation(
     time_enabled=True,
 )
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")
@@ -502,13 +469,8 @@ interactive_conversation(llm)
 ```python
 import os
 
-from dotenv import load_dotenv
-
 # Import the OpenAIChat model and the Agent struct
 from swarms import Agent, OpenAIChat, SwarmNetwork
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")
@@ -559,13 +521,7 @@ print(out)
 ```python
 import os
 
-from dotenv import load_dotenv
-
 from swarms.structs import Agent, OpenAIChat, Task
-
-# Load the environment variables
-load_dotenv()
-
 
 # Define a function to be used as the action
 def my_action():
@@ -626,13 +582,9 @@ print(f"Task result: {task.result}")
 ```python
 import os
 
-from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from pydantic import BaseModel
 from swarms import BlocksList, Gemini, GPT4VisionAPI, Mixtral, OpenAI, ToolAgent
-
-# Load the environment variables
-load_dotenv()
 
 # Get the environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -774,8 +726,6 @@ Here's a production grade swarm ready for real-world deployment in a factory and
 ```python
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models import GPT4VisionAPI
 from swarms.prompts.logistics import (
     Efficiency_Agent_Prompt,
@@ -788,8 +738,6 @@ from swarms.prompts.logistics import (
 )
 from swarms.structs import Agent
 
-# Load ENV
-load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 # GPT4VisionAPI
@@ -885,13 +833,8 @@ Run the agent with multiple modalities useful for various real-world tasks in ma
 # Description: This is an example of how to use the Agent class to run a multi-modal workflow
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.structs import Agent
-
-# Load the environment variables
-load_dotenv()
 
 # Get the API key from the environment
 api_key = os.environ.get("OPENAI_API_KEY")

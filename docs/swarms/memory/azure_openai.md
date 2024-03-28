@@ -10,7 +10,7 @@ Before we begin, it's essential to have the following prerequisites in place:
 1. **Python**: You'll need to have Python installed on your system. This guide assumes you're using Python 3.6 or later.
 2. **Azure Subscription**: You'll need an active Azure subscription to access Azure OpenAI services.
 3. **Azure OpenAI Resource**: Create an Azure OpenAI resource in your Azure subscription.
-4. **Python Packages**: Install the required Python packages, including `python-dotenv` and `swarms`.
+4. **Python Packages**: Install the required Python packages, including `swarms`.
 
 ## Setting up the Environment:
 To kick things off, we'll set up our development environment and install the necessary dependencies.
@@ -27,10 +27,10 @@ python -m venv myenv
 source myenv/bin/activate  # On Windows, use `myenv\Scripts\activate`
 ```
 
-3. **Install Required Packages**: Install the `python-dotenv` and `swarms` packages using pip.
+3. **Install Required Packages**: Install the `swarms` packages using pip.
 
 ```
-pip install python-dotenv swarms
+pip install swarms
 ```
 
 4. **Create a `.env` File**: In the root directory of your project, create a new file called `.env`. This file will store your Azure OpenAI credentials and configuration settings.
@@ -50,11 +50,7 @@ Now that we've set up our environment, let's dive into the code that connects to
 
 ```python
 import os
-from dotenv import load_dotenv
 from swarms import AzureOpenAI
-
-# Load the environment variables
-load_dotenv()
 
 # Create an instance of the AzureOpenAI class
 model = AzureOpenAI(
@@ -68,11 +64,9 @@ model = AzureOpenAI(
 
 ## Let's break down this code:
 
-1. **Import Statements**: We import the necessary modules, including `os` for interacting with the operating system, `load_dotenv` from `python-dotenv` to load environment variables, and `AzureOpenAI` from `swarms` to interact with the Azure OpenAI service.
+1. **Import Statements**: We import the necessary modules, including `os` for interacting with the operating system, `AzureOpenAI` from `swarms` to interact with the Azure OpenAI service.
 
-2. **Load Environment Variables**: We use `load_dotenv()` to load the environment variables stored in the `.env` file we created earlier.
-
-3. **Create AzureOpenAI Instance**: We create an instance of the `AzureOpenAI` class by passing in the required configuration parameters:
+2. **Create AzureOpenAI Instance**: We create an instance of the `AzureOpenAI` class by passing in the required configuration parameters:
    - `azure_endpoint`: The endpoint URL for your Azure OpenAI resource.
    - `deployment_name`: The name of the deployment you want to use.
    - `openai_api_version`: The version of the OpenAI API you want to use.

@@ -4,12 +4,9 @@ from unittest.mock import AsyncMock, Mock, mock_open, patch
 
 import pytest
 from aiohttp import ClientResponseError
-from dotenv import load_dotenv
 from requests.exceptions import RequestException
 
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
-
-load_dotenv()
 
 custom_api_key = os.environ.get("OPENAI_API_KEY")
 img = "images/swarms.jpeg"

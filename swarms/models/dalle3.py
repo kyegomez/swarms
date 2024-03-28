@@ -10,13 +10,10 @@ import backoff
 import openai
 import requests
 from cachetools import TTLCache
-from dotenv import load_dotenv
 from openai import OpenAI
 from PIL import Image
 from pydantic import field_validator
 from termcolor import colored
-
-load_dotenv()
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)

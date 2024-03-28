@@ -5,9 +5,6 @@ import uuid
 from typing import List
 
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
 
 stable_api_key = os.environ.get("STABLE_API_KEY")
 

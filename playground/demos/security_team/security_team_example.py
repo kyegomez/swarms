@@ -1,14 +1,11 @@
 import os
 
-from dotenv import load_dotenv
 from termcolor import colored
 
 import swarms.prompts.security_team as stsp
 from swarms.models import GPT4VisionAPI
 from swarms.structs import Agent
 
-# Load environment variables and initialize the Vision API
-load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 llm = GPT4VisionAPI(openai_api_key=api_key)

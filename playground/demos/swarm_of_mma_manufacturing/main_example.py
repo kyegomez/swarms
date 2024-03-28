@@ -16,13 +16,11 @@ health security agent -> quality control agent -> productivity agent -> safety a
 
 import os
 
-from dotenv import load_dotenv
 from termcolor import colored
 
 from swarms.models import GPT4VisionAPI
 from swarms.structs import Agent
 
-load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 # GPT4VisionAPI

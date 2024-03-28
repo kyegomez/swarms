@@ -1,11 +1,7 @@
 import os
 from unittest.mock import patch
 
-from dotenv import load_dotenv
-
 from swarms.memory.pg import PostgresDB
-
-load_dotenv()
 
 PSG_CONNECTION_STRING = os.getenv("PSG_CONNECTION_STRING")
 

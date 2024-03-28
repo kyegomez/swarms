@@ -1,7 +1,5 @@
 import os
 
-from dotenv import load_dotenv
-
 from swarms.models import Anthropic, OpenAIChat
 from swarms.prompts.ai_research_team import (
     PAPER_IMPLEMENTOR_AGENT_PROMPT,
@@ -12,7 +10,6 @@ from swarms.utils.pdf_to_text import pdf_to_text
 
 # Base llms
 # Environment variables
-load_dotenv()
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
 

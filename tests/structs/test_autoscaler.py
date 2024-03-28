@@ -2,13 +2,10 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
-from dotenv import load_dotenv
 
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
 from swarms.structs.autoscaler import AutoScaler
-
-load_dotenv()
 
 api_key = os.environ.get("OPENAI_API_KEY")
 llm = OpenAIChat(

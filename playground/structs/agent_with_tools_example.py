@@ -10,15 +10,9 @@ tool decorated func [search_api] -> agent which parses the docs of the tool func
 
 import os
 
-from dotenv import load_dotenv
-
 # Import the OpenAIChat model and the Agent struct
 from swarms import Agent, OpenAIChat
 from swarms.tools.tool import tool
-
-# Load the environment variables
-load_dotenv()
-
 
 # Define a tool
 @tool
