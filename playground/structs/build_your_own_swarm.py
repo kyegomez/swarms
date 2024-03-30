@@ -16,9 +16,7 @@ class MySwarm(BaseSwarm):
 
 
 # Add your custom swarm to the AutoSwarmRouter
-router = AutoSwarmRouter(
-    swarms=[MySwarm]
-)
+router = AutoSwarmRouter(swarms=[MySwarm])
 
 
 # Create an AutoSwarm instance

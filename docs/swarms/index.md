@@ -54,14 +54,8 @@ agent = Agent(
     # dynamic_temperature=False,  # Set to 'True' for dynamic temperature handling.
 )
 
-# out = agent.load_state("flow_state.json")
-# temp = agent.dynamic_temperature()
-# filter = agent.add_response_filter("Trump")
+# Load the agent with a task
 out = agent.run("Generate a 10,000 word blog on health and wellness.")
-# out = agent.validate_response(out)
-# out = agent.analyze_feedback(out)
-# out = agent.print_history_and_memory()
-# # out = agent.save_state("flow_state.json")
 # print(out)
 ```
 
