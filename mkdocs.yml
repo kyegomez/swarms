@@ -118,15 +118,6 @@ nav:
         - swarmnetwork: "swarms/structs/swarmnetwork.md"
         - groupchatmanager: "swarms/structs/groupchatmanager.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
-  - swarms.tokenizers:
-    - Language:
-      - Tokenizer: "swarms/tokenizers/tokenizer.md"
-      - CohereTokenizer: "swarms/tokenizers/coheretokenizer.md"
-      - BaseTokenizer: "swarms/tokenizers/basetokenizer.md"
-      - HuggingfaceTokenizer: "swarms/tokenizers/huggingfacetokenizer.md"
-      - SentencepieceTokenizer: "swarms/tokenizers/sentencepiecetokenizer.md"
-      - AnthropicTokenizer: "swarms/tokenizers/anthropictokenizer.md"
-      - OpenaiTokenizer: "swarms/tokenizers/openaitokenizer.md"
   - swarms.memory:
     - Building Custom Vector Memory Databases with the AbstractVectorDatabase Class: "swarms/memory/diy_memory.md"
     - Vector Databases:
@@ -149,6 +140,10 @@ nav:
       - limit_tokens_from_string: "swarms/utils/limit_tokens_from_string.md"
       - math_eval: "swarms/utils/math_eval.md"
 - Guides:
+    - Building Custom Vector Memory Databases with the AbstractVectorDatabase Class: "swarms/memory/diy_memory.md"
+    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+    - Deploying Azure OpenAI in Production: A Comprehensive Guide: "swarms/models/azure_openai.md"
+    - DIY Build Your Own Agent: "diy_your_own_agent.md"
     - Overview: "examples/index.md"
     - Agents:
       - Agent: "examples/flow.md"
