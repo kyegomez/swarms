@@ -68,6 +68,7 @@ class BaseSwarm(ABC):
 
     def __init__(
         self,
+        # name: str = "Swarm",
         agents: List[Agent] = None,
         models: List[Any] = None,
         max_loops: int = 200,
