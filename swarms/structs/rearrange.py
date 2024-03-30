@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from swarms.utils.loguru_logger import logger
 from swarms.structs.agent import Agent
-from typing import Sequence, Callable, List, Dict, Union
+from typing import Sequence, Callable
 
 
 class AgentRearrange:
@@ -16,7 +16,15 @@ class AgentRearrange:
         **kwargs,
     ):
         """
-        Initialize with a dictionary of Agent objects keyed by their names.
+        Initialize the AgentRearrange class.
+
+        Args:
+            agents (Sequence[Agent], optional): A sequence of Agent objects. Defaults to None.
+            verbose (bool, optional): Whether to enable verbose mode. Defaults to False.
+            custom_prompt (str, optional): A custom prompt string. Defaults to None.
+            callbacks (Sequence[Callable], optional): A sequence of callback functions. Defaults to None.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
         """
         if not all(isinstance(agent, Agent) for agent in agents):
             raise ValueError(
@@ -25,14 +33,18 @@ class AgentRearrange:
         self.agents = agents
         self.verbose = verbose
         self.custom_prompt = custom_prompt
-        self.callbacks = callbacks
+        self.callbacks = callbacks if callbacks is not None else []
         self.flows = defaultdict(list)
 
     def parse_pattern(self, pattern: str):
         """
         Parse the interaction pattern and setup task flows.
 
-        Pattern format: "a -> b, c -> d, e -> f"
+        Args:
+            pattern (str): The interaction pattern to parse.
+
+        Returns:
+            bool: True if the pattern parsing is successful, False otherwise.
         """
         try:
             for flow in pattern.split(","):
@@ -70,6 +82,15 @@ class AgentRearrange:
             raise e
 
     def self_find_agen_by_name(self, name: str):
+        """
+        Find an agent by its name.
+
+        Args:
+            name (str): The name of the agent to find.
+
+        Returns:
+            Agent: The Agent object if found, None otherwise.
+        """
         for agent in self.agents:
             if agent.agent_name == name:
                 return agent
@@ -80,11 +101,16 @@ class AgentRearrange:
         agents: Sequence[Agent] = None,
         pattern: str = None,
         task: str = None,
-        *args,
-        **kwargs,
+        **tasks,
     ):
         """
         Execute the task based on the specified pattern.
+
+        Args:
+            agents (Sequence[Agent], optional): A sequence of Agent objects. Defaults to None.
+            pattern (str, optional): The interaction pattern to follow. Defaults to None.
+            task (str, optional): The task to execute. Defaults to None.
+            **tasks: Additional tasks specified as keyword arguments.
         """
         try:
             if agents:
@@ -94,8 +120,8 @@ class AgentRearrange:
 
                 for source, destinations in self.flows.items():
                     for dest in destinations:
-                        # agents[dest].runt(f"{task} (from {source})")
                         dest_agent = self.self_find_agen_by_name(dest)
+                        task = tasks.get(dest, task)
 
                         if self.custom_prompt:
                             dest_agent.run(
@@ -103,21 +129,11 @@ class AgentRearrange:
                             )
                         else:
                             dest_agent.run(f"{task} (from {source})")
-
             else:
-                self.flows.clear()  # Reset previous flows
-                if not self.parse_pattern(pattern):
-                    return  # Pattern parsing failed
-
-                for source, destinations in self.flows.items():
-                    for dest in destinations:
-                        dest_agent = self.self_find_agen_by_name(dest)
-                        if self.custom_prompt:
-                            dest_agent.run(
-                                f"{task} {self.custom_prompt}"
-                            )
-                        else:
-                            dest_agent.run(f"{task} (from {source})")
+                raise ValueError(
+                    "No agents provided. Please provide agents to"
+                    " execute the task."
+                )
         except Exception as e:
             logger.error(
                 f"Error: {e} try again by providing agents and"
