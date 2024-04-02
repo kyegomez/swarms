@@ -24,7 +24,8 @@ from swarms.utils.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
-
+from swarms.tools.exec_tool import execute_tool_by_name
+from swarms.tools.function_util import process_tool_docs
 
 # Utils
 # Custom stopping condition
@@ -320,8 +321,17 @@ class Agent:
                 memory=self.short_memory.return_history_as_string(),
             )
 
-            # Append the tools prompt to the sop
-            self.sop = f"{self.sop}\n{tools_prompt}"
+            # Append the tools prompt to the short_term_memory
+            self.short_memory.add(
+                role=self.agent_name, content=tools_prompt
+            )
+            
+            # And, add the tool documentation to the memory
+            for tool in self.tools:
+                tool_docs = process_tool_docs(tool)
+                self.short_memory.add(
+                    role=self.agent_name, content=tool_docs
+                )
 
         # If the long term memory is provided then set the long term memory prompt
 
@@ -607,6 +617,19 @@ class Agent:
                             role=self.agent_name, content=response
                         )
 
+                        if self.tools:
+                            # Extract code from markdown
+                            response = extract_code_from_markdown(
+                                response
+                            )
+
+                            # Execute the tool by name
+                            execute_tool_by_name(
+                                response,
+                                self.tools,
+                                stop_token=self.stopping_token,
+                            )
+
                         if self.code_interpreter:
                             extracted_code = (
                                 extract_code_from_markdown(response)
@@ -676,8 +699,7 @@ class Agent:
 
                 # Check stopping conditions
                 if (
-                    self.stopping_token
-                    and self.stopping_token in response
+                    self.stopping_token in response
                 ):
                     break
                 elif (
@@ -685,13 +707,13 @@ class Agent:
                     and self._check_stopping_condition(response)
                 ):
                     break
-                elif self.stopping_func and self.stopping_func(
+                elif self.stopping_func is not None and self.stopping_func(
                     response
                 ):
                     break
 
                 if self.interactive:
-                    user_input = input("You: ")
+                    user_input = colored(input("You: "), "red")
 
                     # User-defined exit command
                     if (

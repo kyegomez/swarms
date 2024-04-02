@@ -138,16 +138,13 @@ class Worker(Agent):
                 ai_role=self.role,
                 tools=self.tools,
                 llm=self.llm,
-                memory=self.vectorstore.as_retriever(
-                    search_kwargs=self.search_kwargs
-                ),
+                # memory = None,
                 human_in_the_loop=self.human_in_the_loop,
             )
 
         except Exception as error:
             raise RuntimeError(f"Error setting up agent: {error}")
 
-    # @log_decorator
     @error_decorator
     @timing_decorator
     def run(self, task: str = None, *args, **kwargs):
@@ -166,7 +163,6 @@ class Worker(Agent):
         except Exception as error:
             raise RuntimeError(f"Error while running agent: {error}")
 
-    # @log_decorator
     @error_decorator
     @timing_decorator
     def __call__(self, task: str = None, *args, **kwargs):

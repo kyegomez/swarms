@@ -447,46 +447,29 @@ A Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our m
 - Reliable, this simple system will always provide responses you want.
 
 ```python
-import os
+from swarms import Agent, Anthropic
 
-from dotenv import load_dotenv
 
-from swarms import Conversation, OpenAIChat
-
-conv = Conversation(
-    time_enabled=True,
+## Initialize the workflow
+agent = Agent(
+    agent_name="Transcript Generator",
+    agent_description=(
+        "Generate a transcript for a youtube video on what swarms"
+        " are!"
+    ),
+    llm=Anthropic(),
+    max_loops=3,
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    interactive=True, # Set to True
 )
 
-# Load the environment variables
-load_dotenv()
+# Run the workflow on a task
+agent("Generate a transcript for a youtube video on what swarms are!")
 
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
-
-# Initialize the language model
-llm = OpenAIChat(openai_api_key=api_key, model_name="gpt-4")
-
-
-# Run the language model in a loop
-def interactive_conversation(llm):
-    conv = Conversation()
-    while True:
-        user_input = input("User: ")
-        conv.add("user", user_input)
-        if user_input.lower() == "quit":
-            break
-        task = conv.return_history_as_string()  # Get the conversation history
-        out = llm(task)
-        conv.add("assistant", out)
-        print(
-            f"Assistant: {out}",
-        )
-    conv.display_conversation()
-    conv.export_conversation("conversation.txt")
-
-
-# Replace with your LLM instance
-interactive_conversation(llm)
 ```
 
 
@@ -1028,6 +1011,90 @@ autoswarm.run("Analyze these financial data and give me a summary")
 
 
 ```
+
+## `AgentRearrange`
+Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships
+
+```python
+from swarms import Agent, Anthropic, AgentRearrange, 
+
+## Initialize the workflow
+agent = Agent(
+    agent_name="t",
+    agent_description=(
+        "Generate a transcript for a youtube video on what swarms"
+        " are!"
+    ),
+    system_prompt=(
+        "Generate a transcript for a youtube video on what swarms"
+        " are!"
+    ),
+    llm=Anthropic(),
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+)
+
+agent2 = Agent(
+    agent_name="t1",
+    agent_description=(
+        "Generate a transcript for a youtube video on what swarms"
+        " are!"
+    ),
+    llm=Anthropic(),
+    max_loops=1,
+    system_prompt="Summarize the transcript",
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+)
+
+agent3 = Agent(
+    agent_name="t2",
+    agent_description=(
+        "Generate a transcript for a youtube video on what swarms"
+        " are!"
+    ),
+    llm=Anthropic(),
+    max_loops=1,
+    system_prompt="Finalize the transcript",
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+)
+
+
+# Rearrange the agents
+rearrange = AgentRearrange(
+    agents=[agent, agent2, agent3],
+    verbose=True,
+    # custom_prompt="Summarize the transcript",
+)
+
+# Run the workflow on a task
+results = rearrange(
+    # pattern="t -> t1, t2 -> t2",
+    pattern="t -> t1 -> t2",
+    default_task=(
+        "Generate a transcript for a YouTube video on what swarms"
+        " are!"
+    ),
+    t="Generate a transcript for a YouTube video on what swarms are!",
+    # t2="Summarize the transcript",
+    # t3="Finalize the transcript",
+)
+# print(results)
+
+
+```
+
 
 ---
 

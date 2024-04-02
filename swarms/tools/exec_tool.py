@@ -1,4 +1,5 @@
 import json
+import concurrent.futures
 import re
 from abc import abstractmethod
 from typing import Dict, List, NamedTuple
@@ -101,7 +102,46 @@ def execute_tool_by_name(
     if action.name in tools:
         tool = tools[action.name]
         try:
-            observation = tool.run(action.args)
+            # Check if multiple tools are used
+            tool_names = [name for name in tools if name in text]
+            if len(tool_names) > 1:
+                # Execute tools concurrently
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    futures = []
+                    for tool_name in tool_names:
+                        futures.append(
+                            executor.submit(
+                                tools[tool_name].run, action.args
+                            )
+                        )
+
+                    # Wait for all futures to complete
+                    concurrent.futures.wait(futures)
+
+                    # Get results from completed futures
+                    results = [
+                        future.result()
+                        for future in futures
+                        if future.done()
+                    ]
+
+                    # Process results
+                    for result in results:
+                        # Handle errors
+                        if isinstance(result, Exception):
+                            result = (
+                                f"Error: {str(result)},"
+                                f" {type(result).__name__}, args:"
+                                f" {action.args}"
+                            )
+                        # Handle successful execution
+                        else:
+                            result = (
+                                f"Command {tool.name} returned:"
+                                f" {result}"
+                            )
+            else:
+                observation = tool.run(action.args)
         except ValidationError as e:
             observation = (
                 f"Validation Error in args: {str(e)}, args:"
@@ -121,5 +161,4 @@ def execute_tool_by_name(
             "Please refer to the 'COMMANDS' list for available "
             "commands and only respond in the specified JSON format."
         )
-
     return result

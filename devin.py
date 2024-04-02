@@ -7,11 +7,13 @@ Plan -> act in a loop until observation is met
 - Text Editor
 - Browser
 """
-from swarms import Agent, OpenAIChat, tool
+from swarms import Agent, Anthropic, tool
 import subprocess
 
 # Model
-llm = OpenAIChat()
+llm = Anthropic(
+    temperature=0.1,
+)
 
 
 # Tools
@@ -37,7 +39,7 @@ def terminal(
 @tool
 def browser(query: str):
     """
-    Search the query in the browser.
+    Search the query in the browser with the `browser` tool.
 
     Args:
         query (str): The query to search in the browser.
@@ -58,10 +60,10 @@ agent = Agent(
     system_prompt=(
         "Autonomous agent that can interact with humans and other"
         " agents. Be Helpful and Kind. Use the tools provided to"
-        " assist the user."
+        " assist the user. Return all code in markdown format."
     ),
     llm=llm,
-    max_loops=4,
+    max_loops="auto",
     autosave=True,
     dashboard=False,
     streaming_on=True,
@@ -73,5 +75,5 @@ agent = Agent(
 )
 
 # Run the agent
-out = agent("What is the weather today in palo alto?")
+out = agent("What is the weather today in palo alto use the browser tool to search for the weather?")
 print(out)
