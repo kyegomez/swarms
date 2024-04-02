@@ -34,7 +34,6 @@ from swarms.models.popular_llms import (
 )
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 
-from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
 from swarms.models.sampling_params import SamplingParams, SamplingType
 from swarms.models.together import TogetherLLM  # noqa: E402
 from swarms.models.types import (  # noqa: E402
@@ -74,7 +73,6 @@ __all__ = [
     "Replicate",
     "SamplingParams",
     "SamplingType",
-    "SegmentAnythingMarkGenerator",
     "TextModality",
     "TogetherLLM",
     "Vilt",

@@ -1,9 +1,5 @@
-import os
-
 from swarms.telemetry.bootup import bootup  # noqa: E402, F403
 from swarms.telemetry.sentry_active import activate_sentry
-
-os.environ["WANDB_SILENT"] = "true"
 
 bootup()
 activate_sentry()

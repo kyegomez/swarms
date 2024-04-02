@@ -78,6 +78,7 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
+from swarms.structs.agent_rearrange import AgentRearrange
 
 
 __all__ = [
@@ -147,4 +148,5 @@ __all__ = [
     "find_agent_by_id",
     "find_token_in_text",
     "parse_tasks",
+    "AgentRearrange",
 ]

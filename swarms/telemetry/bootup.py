@@ -1,3 +1,4 @@
+import os
 import logging
 import warnings
 
@@ -9,5 +10,6 @@ def bootup():
     """Bootup swarms"""
     disable_logging()
     logging.disable(logging.CRITICAL)
+    os.environ["WANDB_SILENT"] = "true"
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     auto_update()

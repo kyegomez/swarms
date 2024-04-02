@@ -1,8 +1,9 @@
 import logging
 from collections import defaultdict
 from typing import Callable, Sequence
-from swarms import Agent, Anthropic
+from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
+
 
 # Assuming the existence of an appropriate Agent class and logger setup
 class AgentRearrange(BaseSwarm):
@@ -12,6 +13,8 @@ class AgentRearrange(BaseSwarm):
         verbose: bool = False,
         custom_prompt: str = None,
         callbacks: Sequence[Callable] = None,
+        *args,
+        **kwargs,
     ):
         super().__init__()
         if not all(isinstance(agent, Agent) for agent in agents):
@@ -159,76 +162,76 @@ class AgentRearrange(BaseSwarm):
         return results
 
 
-## Initialize the workflow
-agent = Agent(
-    agent_name="t",
-    agent_description=(
-        "Generate a transcript for a youtube video on what swarms"
-        " are!"
-    ),
-    system_prompt=(
-        "Generate a transcript for a youtube video on what swarms"
-        " are!"
-    ),
-    llm=Anthropic(),
-    max_loops=1,
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-)
+# ## Initialize the workflow
+# agent = Agent(
+#     agent_name="t",
+#     agent_description=(
+#         "Generate a transcript for a youtube video on what swarms"
+#         " are!"
+#     ),
+#     system_prompt=(
+#         "Generate a transcript for a youtube video on what swarms"
+#         " are!"
+#     ),
+#     llm=Anthropic(),
+#     max_loops=1,
+#     autosave=True,
+#     dashboard=False,
+#     streaming_on=True,
+#     verbose=True,
+#     stopping_token="<DONE>",
+# )
 
-agent2 = Agent(
-    agent_name="t1",
-    agent_description=(
-        "Generate a transcript for a youtube video on what swarms"
-        " are!"
-    ),
-    llm=Anthropic(),
-    max_loops=1,
-    system_prompt="Summarize the transcript",
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-)
+# agent2 = Agent(
+#     agent_name="t1",
+#     agent_description=(
+#         "Generate a transcript for a youtube video on what swarms"
+#         " are!"
+#     ),
+#     llm=Anthropic(),
+#     max_loops=1,
+#     system_prompt="Summarize the transcript",
+#     autosave=True,
+#     dashboard=False,
+#     streaming_on=True,
+#     verbose=True,
+#     stopping_token="<DONE>",
+# )
 
-agent3 = Agent(
-    agent_name="t2",
-    agent_description=(
-        "Generate a transcript for a youtube video on what swarms"
-        " are!"
-    ),
-    llm=Anthropic(),
-    max_loops=1,
-    system_prompt="Finalize the transcript",
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-)
+# agent3 = Agent(
+#     agent_name="t2",
+#     agent_description=(
+#         "Generate a transcript for a youtube video on what swarms"
+#         " are!"
+#     ),
+#     llm=Anthropic(),
+#     max_loops=1,
+#     system_prompt="Finalize the transcript",
+#     autosave=True,
+#     dashboard=False,
+#     streaming_on=True,
+#     verbose=True,
+#     stopping_token="<DONE>",
+# )
 
 
-# Rearrange the agents
-rearrange = AgentRearrange(
-    agents=[agent, agent2, agent3],
-    verbose=True,
-    # custom_prompt="Summarize the transcript",
-)
+# # Rearrange the agents
+# rearrange = AgentRearrange(
+#     agents=[agent, agent2, agent3],
+#     verbose=True,
+#     # custom_prompt="Summarize the transcript",
+# )
 
-# Run the workflow on a task
-results = rearrange(
-    # pattern="t -> t1, t2 -> t2",
-    pattern="t -> t1 -> t2",
-    default_task=(
-        "Generate a transcript for a YouTube video on what swarms"
-        " are!"
-    ),
-    t="Generate a transcript for a YouTube video on what swarms are!",
-    # t2="Summarize the transcript",
-    # t3="Finalize the transcript",
-)
-# print(results)
+# # Run the workflow on a task
+# results = rearrange(
+#     # pattern="t -> t1, t2 -> t2",
+#     pattern="t -> t1 -> t2",
+#     default_task=(
+#         "Generate a transcript for a YouTube video on what swarms"
+#         " are!"
+#     ),
+#     t="Generate a transcript for a YouTube video on what swarms are!",
+#     # t2="Summarize the transcript",
+#     # t3="Finalize the transcript",
+# )
+# # print(results)
