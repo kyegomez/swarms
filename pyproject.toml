@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "4.7.0"
+version = "4.7.1"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -68,7 +68,3 @@ unfixable = []
 line-length = 70
 target-version = ['py38']
 preview = true
-
-
-[tool.poetry.scripts]
-swarms = 'swarms.cli._cli:main'

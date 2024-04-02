@@ -2,10 +2,10 @@ import logging
 from collections import defaultdict
 from typing import Callable, Sequence
 from swarms import Agent, Anthropic
-
+from swarms.structs.base_swarm import BaseSwarm
 
 # Assuming the existence of an appropriate Agent class and logger setup
-class AgentRearrange:
+class AgentRearrange(BaseSwarm):
     def __init__(
         self,
         agents: Sequence[Agent] = None,
@@ -13,6 +13,7 @@ class AgentRearrange:
         custom_prompt: str = None,
         callbacks: Sequence[Callable] = None,
     ):
+        super().__init__()
         if not all(isinstance(agent, Agent) for agent in agents):
             raise ValueError(
                 "All elements must be instances of the Agent class."
