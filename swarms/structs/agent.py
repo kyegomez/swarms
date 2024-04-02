@@ -26,6 +26,8 @@ from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.function_util import process_tool_docs
+from swarms.tools.interpreter import execute_command
+from swarms.tools.code_executor import CodeExecutor
 
 # Utils
 # Custom stopping condition
@@ -631,17 +633,25 @@ class Agent:
                             )
 
                         if self.code_interpreter:
+                            # Extract code from markdown
                             extracted_code = (
                                 extract_code_from_markdown(response)
                             )
-                            task_prompt += extracted_code
-                            response = self.llm(
-                                task_prompt, *args, **kwargs
-                            )
+                            
+                            # Execute the code
+                            # execution = execute_command(extracted_code)
+                            execution = CodeExecutor().run(extracted_code)
+                            
+                            # Add the execution to the memory
                             self.short_memory.add(
-                                role=self.agent_name, content=response
+                                role=self.agent_name, content=execution
                             )
-
+                            
+                            # Run the llm again
+                            response = self.llm(
+                                self.short_memory.return_history_as_string(), *args, **kwargs
+                            )
+                            
                         if self.evaluator:
                             evaluated_response = self.evaluator(
                                 response

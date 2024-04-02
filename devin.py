@@ -1,12 +1,3 @@
-"""
-Plan -> act in a loop until observation is met
-
-
-# Tools
-- Terminal
-- Text Editor
-- Browser
-"""
 from swarms import Agent, Anthropic, tool
 import subprocess
 
@@ -14,7 +5,6 @@ import subprocess
 llm = Anthropic(
     temperature=0.1,
 )
-
 
 # Tools
 @tool
@@ -53,6 +43,39 @@ def browser(query: str):
     webbrowser.open(url)
     return f"Searching for {query} in the browser."
 
+@tool
+def create_file(file_path: str, content: str):
+    """
+    Create a file using the file editor tool.
+
+    Args:
+        file_path (str): The path to the file.
+        content (str): The content to write to the file.
+
+    Returns:
+        str: The result of the file creation operation.
+    """
+    with open(file_path, "w") as file:
+        file.write(content)
+    return f"File {file_path} created successfully."
+
+@tool
+def file_editor(file_path: str, mode: str, content: str):
+    """
+    Edit a file using the file editor tool.
+
+    Args:
+        file_path (str): The path to the file.
+        mode (str): The mode to open the file in.
+        content (str): The content to write to the file.
+
+    Returns:
+        str: The result of the file editing operation.
+    """
+    with open(file_path, mode) as file:
+        file.write(content)
+    return f"File {file_path} edited successfully."
+
 
 # Agent
 agent = Agent(
@@ -70,10 +93,11 @@ agent = Agent(
     verbose=True,
     stopping_token="<DONE>",
     interactive=True,
-    tools=[terminal, browser],
+    tools=[terminal, browser, file_editor, create_file],
+    code_interpreter=True,
     # streaming=True,
 )
 
 # Run the agent
-out = agent("What is the weather today in palo alto use the browser tool to search for the weather?")
+out = agent("Create a new file for a plan to take over the world.")
 print(out)

@@ -24,21 +24,8 @@ class CodeExecutor:
             Executes the code and returns the output.
     """
 
-    def __init__(self, code: str = None):
-        self.code = code
-
-    def is_python_code(self, code: str = None) -> bool:
-        """
-        Checks if the given code is Python code.
-
-        Args:
-            code (str, optional): The code to be checked. Defaults to None.
-
-        Returns:
-            bool: True if the code is Python code, False otherwise.
-        """
-        code = code or self.code
-        return code.strip().startswith("python")
+    def __init__(self):
+        self.code = None
 
     def run_python(self, code: str = None) -> str:
         """
@@ -84,7 +71,6 @@ class CodeExecutor:
         Returns:
             str: The output of the code execution.
         """
-        code = code or self.code
         try:
             output = subprocess.check_output(
                 code,
@@ -96,14 +82,14 @@ class CodeExecutor:
         except Exception as e:
             return str(e)
 
-    def __call__(self) -> str:
+    def __call__(self, task: str, *args, **kwargs) -> str:
         """
         Executes the code and returns the output.
 
         Returns:
             str: The output of the code execution.
         """
-        return self.run()
+        return self.run(task, *args, **kwargs)
 
 
 # model = CodeExecutor()
