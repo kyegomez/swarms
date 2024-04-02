@@ -24,8 +24,9 @@ swarms/agents/.DS_Store
 logs
 _build
 conversation.txt
+t1_state.json
 stderr_log.txt
-
+t2_state.json
 .vscode
 .DS_STORE
 # Byte-compiled / optimized / DLL files

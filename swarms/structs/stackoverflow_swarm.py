@@ -1,14 +1,14 @@
 from typing import List
 
 from swarms.structs.agent import Agent
-from swarms.structs.base_multiagent_structure import (
-    BaseMultiAgentStructure,
+from swarms.structs.base_swarm import (
+    BaseSwarm,
 )
 from swarms.structs.conversation import Conversation
 from swarms.utils.logger import logger
 
 
-class StackOverflowSwarm(BaseMultiAgentStructure):
+class StackOverflowSwarm(BaseSwarm):
     """
     Represents a swarm of agents that work together to solve a problem or answer a question on Stack Overflow.
 

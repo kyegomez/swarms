@@ -3,7 +3,6 @@ from swarms.models.base_llm import AbstractLLM  # noqa: E402
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 from swarms.models.fire_function import FireFunctionCaller
 from swarms.models.fuyu import Fuyu  # noqa: E402
-from swarms.models.gemini import Gemini  # noqa: E402
 from swarms.models.gpt4_vision_api import GPT4VisionAPI  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
 from swarms.models.idefics import Idefics  # noqa: E402
@@ -15,7 +14,6 @@ from swarms.models.mixtral import Mixtral  # noqa: E402
 from swarms.models.mpt import MPT7B  # noqa: E402
 from swarms.models.nougat import Nougat  # noqa: E402
 from swarms.models.openai_tts import OpenAITTS  # noqa: E402
-from swarms.models.petals import Petals  # noqa: E402
 from swarms.models.popular_llms import (
     AnthropicChat as Anthropic,
 )
@@ -24,9 +22,6 @@ from swarms.models.popular_llms import (
 )
 from swarms.models.popular_llms import (
     CohereChat as Cohere,
-)
-from swarms.models.popular_llms import (
-    MosaicMLChat as MosaicML,
 )
 from swarms.models.popular_llms import (
     OpenAIChatLLM as OpenAIChat,
@@ -39,7 +34,7 @@ from swarms.models.popular_llms import (
 )
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 
-# from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
+from swarms.models.sam_supervision import SegmentAnythingMarkGenerator
 from swarms.models.sampling_params import SamplingParams, SamplingType
 from swarms.models.together import TogetherLLM  # noqa: E402
 from swarms.models.types import (  # noqa: E402
@@ -51,6 +46,7 @@ from swarms.models.types import (  # noqa: E402
 )
 from swarms.models.vilt import Vilt  # noqa: E402
 
+
 __all__ = [
     "AbstractLLM",
     "Anthropic",
@@ -60,7 +56,6 @@ __all__ = [
     "Cohere",
     "FireFunctionCaller",
     "Fuyu",
-    "Gemini",
     "GPT4VisionAPI",
     "HuggingfaceLLM",
     "Idefics",
@@ -75,16 +70,15 @@ __all__ = [
     "OpenAI",
     "OpenAIChat",
     "OpenAITTS",
-    "Petals",
     "QwenVLMultiModal",
     "Replicate",
     "SamplingParams",
     "SamplingType",
+    "SegmentAnythingMarkGenerator",
     "TextModality",
     "TogetherLLM",
     "Vilt",
     "AudioModality",
     "ImageModality",
     "VideoModality",
-    "MosaicML",
 ]

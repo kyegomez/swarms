@@ -158,7 +158,7 @@ class Agent:
         template: Optional[str] = None,
         max_loops: Optional[int] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
-        loop_interval: int = 1,
+        loop_interval: int = 0,
         retry_attempts: int = 3,
         retry_interval: int = 1,
         return_history: bool = False,

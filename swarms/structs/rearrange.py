@@ -129,11 +129,11 @@ class AgentRearrange:
                             )
                         else:
                             dest_agent.run(f"{task} (from {source})")
-            else:
-                raise ValueError(
-                    "No agents provided. Please provide agents to"
-                    " execute the task."
-                )
+            # else:
+            #     raise ValueError(
+            #         "No agents provided. Please provide agents to"
+            #         " execute the task."
+            #     )
         except Exception as e:
             logger.error(
                 f"Error: {e} try again by providing agents and"
@@ -145,9 +145,9 @@ class AgentRearrange:
 # # Example usage
 # try:
 #     agents = [
-#         Agent(name=f"b{i}") for i in range(1, 4)
+#         Agent(agent_name=f"b{i}") for i in range(1, 4)
 #     ]  # Creating agents b1, b2, b3
-#     agents.append(Agent(name="d"))  # Adding agent d
+#     agents.append(Agent(agent_name="d"))  # Adding agent d
 #     rearranger = Rearrange(agents)
 
 #     # Specifying a complex pattern for task execution

@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 import requests
 import torch
-import torchvision.transforms as T
 from PIL import Image
 from transformers import AutoModelForVision2Seq, AutoProcessor
 
@@ -154,7 +153,7 @@ class Kosmos(BaseMultiModalModel):
             image_tensor = (
                 image_tensor * reverse_norm_std + reverse_norm_mean
             )
-            pil_img = T.ToPILImage()(image_tensor)
+            # pil_img = T.ToPILImage()(image_tensor)
             image_h = pil_img.height
             image_w = pil_img.width
             image = np.array(pil_img)[:, :, [2, 1, 0]]
