@@ -98,7 +98,6 @@ agent = Agent(
     interactive=True,
     tools=[terminal, browser, file_editor, create_file],
     code_interpreter=True,
-    # streaming=True,
 )
 
 # Run the agent
