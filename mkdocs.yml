@@ -177,5 +177,8 @@ nav:
       - Demos: "corporate/demos.md"
       - Checklist: "corporate/checklist.md"
     
+    - Organization:
+      - FrontEnd Member Onboarding: "corporate/front_end_contributors.md"
+    
     
     

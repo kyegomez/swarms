@@ -26,8 +26,8 @@ from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.function_util import process_tool_docs
-from swarms.tools.interpreter import execute_command
 from swarms.tools.code_executor import CodeExecutor
+
 
 # Utils
 # Custom stopping condition
@@ -327,7 +327,7 @@ class Agent:
             self.short_memory.add(
                 role=self.agent_name, content=tools_prompt
             )
-            
+
             # And, add the tool documentation to the memory
             for tool in self.tools:
                 tool_docs = process_tool_docs(tool)
@@ -637,21 +637,26 @@ class Agent:
                             extracted_code = (
                                 extract_code_from_markdown(response)
                             )
-                            
+
                             # Execute the code
                             # execution = execute_command(extracted_code)
-                            execution = CodeExecutor().run(extracted_code)
-                            
+                            execution = CodeExecutor().run(
+                                extracted_code
+                            )
+
                             # Add the execution to the memory
                             self.short_memory.add(
-                                role=self.agent_name, content=execution
+                                role=self.agent_name,
+                                content=execution,
                             )
-                            
+
                             # Run the llm again
                             response = self.llm(
-                                self.short_memory.return_history_as_string(), *args, **kwargs
+                                self.short_memory.return_history_as_string(),
+                                *args,
+                                **kwargs,
                             )
-                            
+
                         if self.evaluator:
                             evaluated_response = self.evaluator(
                                 response
@@ -708,17 +713,16 @@ class Agent:
                     break  # Exit the loop if all retry attempts fail
 
                 # Check stopping conditions
-                if (
-                    self.stopping_token in response
-                ):
+                if self.stopping_token in response:
                     break
                 elif (
                     self.stopping_condition
                     and self._check_stopping_condition(response)
                 ):
                     break
-                elif self.stopping_func is not None and self.stopping_func(
-                    response
+                elif (
+                    self.stopping_func is not None
+                    and self.stopping_func(response)
                 ):
                     break
 

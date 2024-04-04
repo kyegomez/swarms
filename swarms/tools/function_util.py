@@ -1,5 +1,6 @@
 import inspect
 
+
 def process_tool_docs(item):
     """
     Process the documentation for a given item.
@@ -11,7 +12,7 @@ def process_tool_docs(item):
         metadata: The processed metadata containing the item's name, documentation, and source code.
     """
     # If item is an instance of a class, get its class
-    if not inspect.isclass(item) and hasattr(item, '__class__'):
+    if not inspect.isclass(item) and hasattr(item, "__class__"):
         item = item.__class__
 
     doc = inspect.getdoc(item)
