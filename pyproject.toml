@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "4.7.4"
+version = "4.7.8"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -44,6 +44,8 @@ Pillow = "10.2.0"
 rich = "13.5.2"
 psutil = "*"
 sentry-sdk = "*"
+python-dotenv = "*"
+accelerate = "0.28.0"
 
 [tool.poetry.dev-dependencies]
 black = "23.3.0"
