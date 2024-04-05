@@ -32,6 +32,7 @@ from swarms.models.popular_llms import (
 from swarms.models.popular_llms import (
     ReplicateLLM as Replicate,
 )
+from swarms.models.popular_llms import OctoAIChat
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 
 from swarms.models.sampling_params import SamplingParams, SamplingType
@@ -79,4 +80,5 @@ __all__ = [
     "AudioModality",
     "ImageModality",
     "VideoModality",
+    "OctoAIChat",
 ]

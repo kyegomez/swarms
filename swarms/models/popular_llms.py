@@ -11,6 +11,7 @@ from langchain_community.llms import (
     OpenAI,
     Replicate,
 )
+from langchain_community.llms.octoai_endpoint import OctoAIEndpoint
 
 
 class AnthropicChat(Anthropic):
@@ -44,5 +45,10 @@ class AzureOpenAILLM(AzureChatOpenAI):
 
 
 class OpenAIChatLLM(OpenAIChat):
+    def __call__(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
+
+class OctoAIChat(OctoAIEndpoint):
     def __call__(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
