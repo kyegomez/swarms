@@ -1,0 +1,23 @@
+name: "Setup environment"
+description: "Setup environment for the CI"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Python
+      uses: actions/setup-python@v4
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+    - name: Setup a local virtual environment
+      run: |
+        poetry config virtualenvs.create true --local
+        poetry config virtualenvs.in-project true --local
+      shell: bash
+    - uses: actions/cache@v3
+      name: Define a cache for the virtual environment based on the dependencies lock file
+      with:
+        path: ./.venv
+        key: venv-${{ hashFiles('poetry.lock') }}
+    - name: Install the project dependencies
+      run: poetry install
+      shell: bash
