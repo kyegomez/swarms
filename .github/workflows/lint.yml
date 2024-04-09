@@ -23,7 +23,7 @@ jobs:
     name: ruff Lint
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/library/setup
+      - uses: ./.github/library/setup/action.yml
       - uses: ruff format .
       - uses: ruff --fix .
       # - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
