@@ -10,16 +10,23 @@ description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
 homepage = "https://github.com/kyegomez/swarms"
-documentation = "https://swarms.apac.ai"  
-readme = "README.md" 
+documentation = "https://swarms.apac.ai"
+readme = "README.md"
 repository = "https://github.com/kyegomez/swarms"
-keywords = ["artificial intelligence", "deep learning", "optimizers", "Prompt Engineering", "swarms", "agents"]
+keywords = [
+    "artificial intelligence",
+    "deep learning",
+    "optimizers",
+    "Prompt Engineering",
+    "swarms",
+    "agents",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.10"
+    "Programming Language :: Python :: 3.10",
 ]
 
 
@@ -61,6 +68,8 @@ mypy-protobuf = "^3.0.0"
 
 [tool.ruff]
 line-length = 70
+
+[tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
 ignore = []
 fixable = ["ALL"]
