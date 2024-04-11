@@ -1384,6 +1384,12 @@ class Agent:
         if len(self.short_memory) > count:
             self.short_memory = self.short_memory[:count]
 
+    def add_tool(self, tool: BaseTool):
+        return self.tools.append(tool)
+
+    def add_tools(self, tools: List[BaseTool]):
+        return self.tools.extend(tools)
+
     def get_docs_from_doc_folders(self):
         """Get the docs from the files"""
         try:
