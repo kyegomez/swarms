@@ -7,23 +7,33 @@ on:
     branches: [main]
   schedule:
     # Runs at 3:00 AM UTC every day
-    - cron: '0 3 * * *'
+    - cron: "0 3 * * *"
 jobs:
   run-examples:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-      - name: Install dependencies
+      - name: Install Python
+        uses: actions/setup-python@v4
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - name: Setup a local virtual environment
         run: |
-          pip install -r requirements.txt
-          # Assuming your script might also need pytest and swarms
-          pip install pytest
-          pip install swarms
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - uses: actions/cache@v3
+        name: Define a cache for the virtual environment
+          file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install the project dependencies
+        run: poetry install
+      - name: Install OpenCV
+        run: sudo apt-get install python3-opencv
+      - name: Enter the virtual environment
+        run: source $VENV
       - name: Make Script Executable and Run
         run: |-
-          chmod +x ./swarms/scripts/run_examples.sh
-          ./swarms/scripts/run_examples.sh
+          chmod +x ./scripts/run_examples.sh
+          ./scripts/run_examples.sh

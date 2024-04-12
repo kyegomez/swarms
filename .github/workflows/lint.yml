@@ -24,3 +24,10 @@ jobs:
       - run: pip install ruff
       - run: ruff format .
       - run: ruff check --fix .
+  pylint-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+      - run: pip install pylint
+      - run: pylint .
