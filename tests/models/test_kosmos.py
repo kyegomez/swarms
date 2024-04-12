@@ -117,7 +117,7 @@ def mock_request_get(monkeypatch):
 
 
 @pytest.mark.usefixtures("mock_request_get")
-def test_multimodal_grounding(kosmos):
+def test_multimodal_grounding_2(kosmos):
     kosmos.multimodal_grounding(
         "Find the red apple in the image.", IMG_URL1
     )
@@ -153,14 +153,14 @@ def test_grounded_image_captioning_detailed(kosmos):
 
 
 @pytest.mark.usefixtures("mock_request_get")
-def test_multimodal_grounding_2(kosmos):
+def test_multimodal_grounding_3(kosmos):
     kosmos.multimodal_grounding(
         "Find the yellow fruit in the image.", IMG_URL2
     )
 
 
 @pytest.mark.usefixtures("mock_request_get")
-def test_referring_expression_comprehension_2(kosmos):
+def test_referring_expression_comprehension_3(kosmos):
     kosmos.referring_expression_comprehension(
         "Where is the water bottle?", IMG_URL3
     )
