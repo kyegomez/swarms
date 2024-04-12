@@ -7,21 +7,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/library/setup
-      - run: poetry run yamllint .
+      - uses: actions/setup-python@v5
+      - run: pip install yamllint
+      - run: yamllint .
   flake8-lint:
     runs-on: ubuntu-latest
     name: flake8 Lint
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/library/setup
-      - run: poetry run flake8 .
+      - uses: actions/setup-python@v5
+      - run: pip install flake8
+      - run: flake8 .
   ruff-lint:
     runs-on: ubuntu-latest
     name: ruff Lint
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/library/setup
-      - run: poetry run ruff format .
-      - run: poetry run ruff check --fix .
+      - uses: actions/setup-python@v5
+      - run: pip install ruff
+      - run: ruff format .
+      - run: ruff check --fix .
       # - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
