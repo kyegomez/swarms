@@ -17,7 +17,7 @@ on:
     # The branches below must be a subset of the branches above
     branches: ["master"]
   schedule:
-    - cron: '33 12 * * 5'
+    - cron: "33 12 * * 5"
 jobs:
   analyze:
     name: Analyze
@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ['python']
+        language: ["python"]
         # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
         # Use only 'java-kotlin' to analyze code written in Java, Kotlin or both
         # Use only 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
@@ -58,9 +58,6 @@ jobs:
         # queries: security-extended,security-and-quality
 
         uses: github/codeql-action/autobuild@v3
-      # ℹ️ Command-line programs to run using the OS shell.
-      # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
-
       #   If the Autobuild fails above, remove it and uncomment the following three lines.
       #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
 
@@ -68,6 +65,9 @@ jobs:
       #     echo "Run, Build Application using script"
       #     ./location_of_script_within_repo/buildscript.sh
       - name: Perform CodeQL Analysis
+        # ℹ️ Command-line programs to run using the OS shell.
+        # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{matrix.language}}"
