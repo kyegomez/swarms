@@ -24,4 +24,4 @@ jobs:
       - name: Enter the virtual environment
         run: source $VENV
       - name: Run the tests
-        run: poetry run pytest
+        run: poetry run pytest --verbose
