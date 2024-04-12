@@ -21,6 +21,8 @@ jobs:
           key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install the project dependencies
         run: poetry install
+      - name: Install OpenCV
+        run: sudo apt-get install python3-opencv
       - name: Enter the virtual environment
         run: source $VENV
       - name: Run the tests
