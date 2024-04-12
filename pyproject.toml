@@ -54,17 +54,18 @@ sentry-sdk = "*"
 python-dotenv = "*"
 accelerate = "0.28.0"
 
-[tool.poetry.dev-dependencies]
-black = "23.3.0"
-
 [tool.poetry.group.lint.dependencies]
+black = "^23.1.0"
 ruff = ">=0.0.249,<0.3.5"
 types-toml = "^0.10.8.1"
 types-pytz = "^2023.3.0.0"
-black = "^23.1.0"
 types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
 
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.1.1"
 
 [tool.ruff]
 line-length = 70
