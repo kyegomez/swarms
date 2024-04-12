@@ -2,14 +2,6 @@
 name: Lint
 on: [push, pull_request] # yamllint disable-line rule:truthy
 jobs:
-  yaml-format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-      - run: go install github.com/google/yamlfmt/cmd/yamlfmt@latest
-      - run: yamlfmt .
-      - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
   yaml-lint:
     runs-on: ubuntu-latest
     steps:
@@ -32,4 +24,3 @@ jobs:
       - run: pip install ruff
       - run: ruff format .
       - run: ruff check --fix .
-      - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
