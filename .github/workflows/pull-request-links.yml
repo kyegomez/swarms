@@ -5,10 +5,8 @@ on:
       - opened
     paths:
       - "docs/**"
-
 permissions:
   pull-requests: write
-
 jobs:
   pull-request-links:
     runs-on: ubuntu-latest

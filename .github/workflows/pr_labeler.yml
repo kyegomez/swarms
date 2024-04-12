@@ -1,9 +1,7 @@
 name: "PR Labeler"
-
 on:
   pull_request_target:
     types: ["opened", "reopened", "ready_for_review"]
-
 jobs:
   triage:
     permissions:
@@ -11,5 +9,5 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/labeler@v5
+      - uses: actions/labeler@v5
     if: ${{ github.event.pull_request.draft == false }}

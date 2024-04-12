@@ -1,6 +1,5 @@
 name: "Setup environment"
 description: "Setup environment for the CI"
-
 runs:
   using: composite
   steps:

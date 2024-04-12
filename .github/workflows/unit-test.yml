@@ -1,36 +1,26 @@
 name: build
-
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
-
+    branches: [main]
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install pytest
-        pip install swarms
-
-    - name: Run Python unit tests
-      run: pytest
-
-    - name: Verify that the Docker image for the action builds
-      run: docker build . --file Dockerfile
-
-    - name: Verify integration test results
-      run: pytest
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+          pip install swarms
+      - name: Run Python unit tests
+        run: pytest
+      - name: Verify that the Docker image for the action builds
+        run: docker build . --file Dockerfile
+      - name: Verify integration test results
+        run: pytest

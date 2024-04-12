@@ -1,11 +1,9 @@
 name: Welcome WorkAgent
-
 on:
   issues:
     types: [opened]
   pull_request_target:
     types: [opened]
-
 jobs:
   build:
     name: 👋 Welcome
@@ -16,4 +14,4 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-message: "Hello there, thank you for opening an Issue ! 🙏🏻 The team was notified and they will get back to you asap."
-          pr-message:  "Hello there, thank you for opening an PR ! 🙏🏻 The team was notified and they will get back to you asap."
+          pr-message: "Hello there, thank you for opening an PR ! 🙏🏻 The team was notified and they will get back to you asap."

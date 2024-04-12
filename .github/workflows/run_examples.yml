@@ -1,34 +1,28 @@
 name: Run Examples Script
-
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
     # Runs at 3:00 AM UTC every day
     - cron: '0 3 * * *'
-
 jobs:
   run-examples:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        # Assuming your script might also need pytest and swarms
-        pip install pytest
-        pip install swarms
-
-    - name: Make Script Executable and Run
-      run: |
-        chmod +x ./swarms/scripts/run_examples.sh
-        ./swarms/scripts/run_examples.sh
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          # Assuming your script might also need pytest and swarms
+          pip install pytest
+          pip install swarms
+      - name: Make Script Executable and Run
+        run: |-
+          chmod +x ./swarms/scripts/run_examples.sh
+          ./swarms/scripts/run_examples.sh

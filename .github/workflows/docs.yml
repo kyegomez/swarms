@@ -1,5 +1,4 @@
 name: Docs WorkAgent
-
 on:
   push:
     branches:

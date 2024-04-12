@@ -1,5 +1,4 @@
 name: release
-
 on:
   pull_request:
     types:
@@ -8,15 +7,13 @@ on:
       - master
     paths:
       - 'pyproject.toml'
-
 env:
   POETRY_VERSION: "1.4.2"
-
 jobs:
   if_release:
     if: |
-        ${{ github.event.pull_request.merged == true }}
-        && ${{ contains(github.event.pull_request.labels.*.name, 'release') }}
+      ${{ github.event.pull_request.merged == true }}
+      && ${{ contains(github.event.pull_request.labels.*.name, 'release') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,5 +42,5 @@ jobs:
       - name: Publish to PyPI
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
+        run: |-
           poetry publish
