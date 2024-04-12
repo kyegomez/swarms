@@ -102,8 +102,8 @@ class BaseSwarm(ABC):
 
         # Handle the case where the agents are not provided
         # Handle agents
-        for agent in self.agents:
-            if not isinstance(agent, Agent):
+        for agent_instance in self.agents:
+            if not isinstance(agent_instance, Agent):
                 raise TypeError("Agents must be of type Agent.")
 
         if self.agents is None:
@@ -392,26 +392,26 @@ class BaseSwarm(ABC):
         Returns:
 
         """
-        for agent in self.agents:
-            agent.reset()
+        for agent_instance in self.agents:
+            agent_instance.reset()
 
     def select_agent(self, agent_id: str):
         """
         Select an agent through their id
         """
         # Find agent with id
-        for agent in self.agents:
-            if agent.id == agent_id:
-                return agent
+        for agent_instance in self.agents:
+            if agent_instance.id == agent_id:
+                return agent_instance
 
     def select_agent_by_name(self, agent_name: str):
         """
         Select an agent through their name
         """
         # Find agent with id
-        for agent in self.agents:
-            if agent.name == agent_name:
-                return agent
+        for agent_instance in self.agents:
+            if agent_instance.name == agent_name:
+                return agent_instance
 
     def task_assignment_by_id(
         self, task: str, agent_id: str, *args, **kwargs
@@ -471,8 +471,8 @@ class BaseSwarm(ABC):
             _type_: _description_
         """
         responses = []
-        for agent in self.agents:
-            responses.append(agent(task, *args, **kwargs))
+        for agent_instance in self.agents:
+            responses.append(agent_instance(task, *args, **kwargs))
         return responses
 
     def run_on_all_agents(self, task: str = None, *args, **kwargs):

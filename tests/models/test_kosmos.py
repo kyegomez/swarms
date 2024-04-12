@@ -124,7 +124,7 @@ def test_multimodal_grounding(kosmos):
 
 
 @pytest.mark.usefixtures("mock_request_get")
-def test_referring_expression_comprehension(kosmos):
+def test_referring_expression_comprehension_2(kosmos):
     kosmos.referring_expression_comprehension(
         "Show me the green bottle.", IMG_URL2
     )

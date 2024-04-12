@@ -108,7 +108,7 @@ class Action:
     def to_json(self):
         try:
             tool_output = json.loads(self.tool_output)
-        except:
+        except json.JSONDecodeError:
             tool_output = self.tool_output
         return {
             "thought": self.thought,
