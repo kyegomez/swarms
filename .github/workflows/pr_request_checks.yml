@@ -1,3 +1,4 @@
+---
 name: Pull Request Checks
 on:
   pull_request:
@@ -14,7 +15,8 @@ jobs:
         with:
           python-version: 3.x
       - name: Install dependencies
-        run: "pip install -r requirements.txt\npip install swarms\npip install pytest \n"
+        run: "pip install -r requirements.txt\npip install swarms\npip install pytest
+          \n"
       - name: Run tests and checks
         run: |
           pytest

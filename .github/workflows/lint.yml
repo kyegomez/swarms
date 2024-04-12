@@ -1,3 +1,4 @@
+---
 name: Lint
 on: [push, pull_request] # yamllint disable-line rule:truthy
 jobs:

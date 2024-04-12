@@ -1,3 +1,4 @@
+---
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
@@ -19,7 +20,7 @@ on:
     # The branches below must be a subset of the branches above
     branches: ["master"]
   schedule:
-    - cron: '18 23 * * 4'
+    - cron: "18 23 * * 4"
 permissions:
   contents: read
 jobs:
@@ -38,7 +39,8 @@ jobs:
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@33d455949345bddfdb845fba76b57b70cc83754b
         with:
-          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
+          # Check https://github.com/codacy/codacy-analysis-cli#project-token to
+          # get your project token from your Codacy repository
           # You can also omit the token and run the tools that support default configurations
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           verbose: true
