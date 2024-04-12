@@ -7,7 +7,7 @@ runs:
     - name: Install Python
       uses: actions/setup-python@v4
     - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
+      uses: snok/install-poetry@v1
     - name: Setup a local virtual environment
       run: |
         poetry config virtualenvs.create true --local
