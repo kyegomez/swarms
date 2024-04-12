@@ -53,6 +53,7 @@ psutil = "*"
 sentry-sdk = "*"
 python-dotenv = "*"
 accelerate = "0.28.0"
+opencv-python = "^4.9.0.80"
 
 [tool.poetry.group.lint.dependencies]
 black = "^23.1.0"
