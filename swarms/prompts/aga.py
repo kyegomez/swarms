@@ -34,7 +34,7 @@ Data-Format: We ensure all the input/output data in transparent action functions
 4.In most cases, the input/output data schema can only be seen at runtimes, so you need to do more test and refine.
 
 Java-Script-Expression:
-1.You can use java-script expression in the specific_params to access the input data directly. Use it by a string startswith "=", and provide expression inside a "{{...}}" block. 
+1.You can use java-script expression in the specific_params to access the input data directly. Use it by a string startswith "=", and provide expression inside a "{{...}}" block.
 2. Use "{{$json["xxx"]}}" to obtain the "json" field in each item of the input data.
 3. You can use expression in "string" , "number", "boolean" and "json" type, such as:
 string: "=Hello {{$json["name"]}}, you are {{$json["age"]}} years old
@@ -102,7 +102,7 @@ def action_4(input_data: [{...}]): ...
 
 # Specific_params: After you give function_define, we will provide json schemas of specific_params here.
 # Trigger function has no input, and have the same output_format. So We will provide You the exmaple_output once you changed the code here.
-def trigger_1(): 
+def trigger_1():
     # comments: some comments to users. Always give/change this when defining and implmenting
     # TODOS:
     # 1. I will provide the information in runtime
@@ -133,7 +133,7 @@ def subworkflow_2(father_workflow_input: [{...}]): ...
 
 # If you defined the trigger node, we will show you the mocked trigger input here.
 # If you have implemented the workflow, we will automatically run the workflow for all the mock trigger-input and tells you the result.
-def mainWorkflow(trigger_input: [{...}]): 
+def mainWorkflow(trigger_input: [{...}]):
     # comments: some comments to users. Always give/change this when defining and implmenting
     # TODOS:
     # 1. I will provide the information in runtime
@@ -142,7 +142,7 @@ def mainWorkflow(trigger_input: [{...}]):
 
     # some complex logics here
     output_data = trigger_input
-    
+
     return output_data
 ```
 """

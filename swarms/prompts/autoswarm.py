@@ -12,8 +12,8 @@ Output Format: A single Python file of the whole agent team with capitalized con
 
 # Prompt for Swarm Assembly Agent
 SWARM_ASSEMBLY_AGENT_PROMPT = """
-With the following agent SOPs/Prompts: '{agent_sops}', your task is to create a production-ready Python script based on the SOPs generated for each agent type. 
-The script should be well-structured and production-ready. DO NOT use placeholders for any logic whatsover, ensure the python code is complete such that the user can 
+With the following agent SOPs/Prompts: '{agent_sops}', your task is to create a production-ready Python script based on the SOPs generated for each agent type.
+The script should be well-structured and production-ready. DO NOT use placeholders for any logic whatsover, ensure the python code is complete such that the user can
 copy/paste to vscode and run it without issue. Here are some tips to consider:
 
 1. **Import Statements**:
@@ -32,7 +32,7 @@ copy/paste to vscode and run it without issue. Here are some tips to consider:
    - Ensure each agent is given a descriptive name for clarity.
 
 4. **Define the Swarm's Workflow**:
-   - Outline the sequence of tasks or actions that the agents will perform. 
+   - Outline the sequence of tasks or actions that the agents will perform.
    - Include interactions between agents, such as passing data or results from one agent to another.
    - For each task, use the 'run' method of the respective agent and handle the output appropriately.
 

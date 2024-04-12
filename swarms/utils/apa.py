@@ -83,7 +83,7 @@ class TestResult:
         prompt = f"""
 This function has been executed for {self.visit_times} times. Last execution:
 1.Status: {self.runtime_status.name}
-2.Input: 
+2.Input:
 {self.input_data}
 
 3.Output:

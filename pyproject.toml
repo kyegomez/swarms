@@ -63,15 +63,14 @@ types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
 
 
-
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
 
 [tool.ruff]
-line-length = 70
+line-length = 127
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F"]
+select = ["E4", "E7", "E9", "F", "W"]
 ignore = []
 fixable = ["ALL"]
 unfixable = []

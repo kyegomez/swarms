@@ -348,9 +348,9 @@ class BaseMultiModalModel:
             _type_: _description_
         """
         META_PROMPT = """
-        For any labels or markings on an image that you reference in your response, please 
-        enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for 
-        example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be 
+        For any labels or markings on an image that you reference in your response, please
+        enclose them in square brackets ([]) and list them explicitly. Do not use ranges; for
+        example, instead of '1 - 4', list as '[1], [2], [3], [4]'. These labels could be
         numbers or letters and typically correspond to specific segments or parts of the image.
         """
         return META_PROMPT
