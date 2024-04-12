@@ -71,7 +71,7 @@ pandas = "^2.2.2"
 fastapi = "^0.110.1"
 
 [tool.ruff]
-line-length = 1234
+line-length = 127
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "W", "E501", "I", "UP"]
