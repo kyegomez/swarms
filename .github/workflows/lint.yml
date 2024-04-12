@@ -23,5 +23,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/library/setup
       - run: poetry run ruff format .
-      - run: poetry run ruff --fix .
+      - run: poetry run ruff check --fix .
       # - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
