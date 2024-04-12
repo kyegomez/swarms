@@ -9,7 +9,7 @@ jobs:
       - uses: actions/setup-go@v5
       - run: go install github.com/google/yamlfmt/cmd/yamlfmt@latest
       - run: yamlfmt .
-        # - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
+      - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
   yaml-lint:
     runs-on: ubuntu-latest
     steps:
@@ -19,7 +19,6 @@ jobs:
       - run: yamllint .
   flake8-lint:
     runs-on: ubuntu-latest
-    name: flake8 Lint
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,7 +26,6 @@ jobs:
       - run: flake8 .
   ruff-lint:
     runs-on: ubuntu-latest
-    name: ruff Lint
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
