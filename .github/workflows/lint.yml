@@ -6,24 +6,22 @@ jobs:
   yaml-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source repository
-        uses: actions/checkout@v4
-      - name: yaml Lint
-        uses: ibiqlik/action-yamllint@v3
+      - uses: actions/checkout@v4
+      - uses: ./.github/library/setup
+      - run: poetry run yamllint .
   flake8-lint:
     runs-on: ubuntu-latest
     name: flake8 Lint
     steps:
-      - name: Check out source repository
-        uses: actions/checkout@v4
-      - name: Set up Python environment
-        uses: py-actions/flake8@v2
+      - uses: actions/checkout@v4
+      - uses: ./.github/library/setup
+      - run: poetry run flake8 .
   ruff-lint:
     runs-on: ubuntu-latest
     name: ruff Lint
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/library/setup
-      - run: ruff format .
-      - run: ruff --fix .
+      - run: poetry run ruff format .
+      - run: poetry run ruff --fix .
       # - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
