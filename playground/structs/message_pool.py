@@ -1,7 +1,6 @@
-from swarms.structs.message_pool import MessagePool
 from swarms import Agent, OpenAIChat
 from swarms.memory.chroma_db import ChromaDB
-
+from swarms.structs.message_pool import MessagePool
 
 # Agents
 agent1 = Agent(

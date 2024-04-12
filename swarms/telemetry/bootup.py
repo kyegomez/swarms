@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 import warnings
 
 from swarms.telemetry.auto_upgrade_swarms import auto_update

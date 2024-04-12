@@ -3,7 +3,9 @@ Boss selects what agent to use
 B -> W1, W2, W3
 """
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
+
 from swarms.utils.json_utils import str_to_json
 
 

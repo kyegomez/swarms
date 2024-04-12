@@ -1,6 +1,7 @@
 import os
-from dotenv import load_dotenv
+
 import sentry_sdk
+from dotenv import load_dotenv
 
 load_dotenv()
 

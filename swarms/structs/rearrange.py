@@ -1,8 +1,9 @@
 import logging
 from collections import defaultdict
-from swarms.utils.loguru_logger import logger
+from typing import Callable, Sequence
+
 from swarms.structs.agent import Agent
-from typing import Sequence, Callable
+from swarms.utils.loguru_logger import logger
 
 
 class AgentRearrange:

@@ -1,13 +1,12 @@
+import inspect
 import json
 import re
-from typing import Any, List
+from typing import Any, Callable, List
+
+from termcolor import colored
 
 from swarms.prompts.tools import SCENARIOS
 from swarms.tools.tool import BaseTool
-import inspect
-from typing import Callable
-
-from termcolor import colored
 
 
 def scrape_tool_func_docs(fn: Callable) -> str:

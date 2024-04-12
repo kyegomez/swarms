@@ -1,7 +1,8 @@
 import os
-from swarms import OpenAIChat, Agent
+
 from dotenv import load_dotenv
 
+from swarms import Agent, OpenAIChat
 
 # Load environment variables
 load_dotenv()

@@ -1,14 +1,16 @@
 # Import the OpenAIChat model and the Agent struct
 import os
+
+from dotenv import load_dotenv
+
 from swarms import (
     Agent,
+    Anthropic,
     OpenAIChat,
     SwarmNetwork,
-    Anthropic,
     TogetherLLM,
 )
 from swarms.memory import ChromaDB
-from dotenv import load_dotenv
 
 # load the environment variables
 load_dotenv()

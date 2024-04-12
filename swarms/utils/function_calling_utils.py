@@ -1,7 +1,7 @@
-import concurrent.futures
-from typing import Any, Callable, Dict, List
-from inspect import iscoroutinefunction
 import asyncio
+import concurrent.futures
+from inspect import iscoroutinefunction
+from typing import Any, Callable, Dict, List
 
 
 # Helper function to run an asynchronous function in a synchronous way

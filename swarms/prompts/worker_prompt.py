@@ -1,4 +1,5 @@
 import datetime
+
 from pydantic import BaseModel, Field
 
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

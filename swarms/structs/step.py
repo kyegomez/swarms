@@ -1,7 +1,8 @@
 from typing import Dict, List, Sequence
 
-from swarms.tools.tool import BaseTool
 from pydantic import BaseModel
+
+from swarms.tools.tool import BaseTool
 
 
 class Step(BaseModel):

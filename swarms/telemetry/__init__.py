@@ -1,4 +1,5 @@
 from swarms.telemetry.log_all import log_all_calls, log_calls
+from swarms.telemetry.sentry_active import activate_sentry
 from swarms.telemetry.sys_info import (
     get_cpu_info,
     get_os_version,
@@ -16,7 +17,6 @@ from swarms.telemetry.user_utils import (
     get_system_info,
     get_user_device_data,
 )
-from swarms.telemetry.sentry_active import activate_sentry
 
 __all__ = [
     "log_all_calls",

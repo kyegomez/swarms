@@ -1,4 +1,5 @@
-from typing import Union, Sequence, List, Callable
+from typing import Callable, List, Sequence, Union
+
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 

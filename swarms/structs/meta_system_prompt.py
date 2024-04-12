@@ -1,10 +1,11 @@
-from swarms.structs.agent import Agent
 from typing import Union
-from swarms.models.popular_llms import OpenAIChat
+
 from swarms.models.base_llm import AbstractLLM
+from swarms.models.popular_llms import OpenAIChat
 from swarms.prompts.meta_system_prompt import (
     meta_system_prompt_generator,
 )
+from swarms.structs.agent import Agent
 
 meta_prompter_llm = OpenAIChat(
     system_prompt=str(meta_system_prompt_generator)

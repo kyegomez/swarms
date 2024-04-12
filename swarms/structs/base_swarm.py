@@ -15,8 +15,8 @@ import yaml
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.utils.loguru_logger import logger
 from swarms.structs.omni_agent_types import agent
+from swarms.utils.loguru_logger import logger
 
 
 class BaseSwarm(ABC):

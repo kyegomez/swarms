@@ -1,15 +1,16 @@
 import json
 from typing import Any, Dict, List, Union
 
+from pydantic import BaseModel
 from termcolor import cprint
 from transformers import PreTrainedModel, PreTrainedTokenizer
-from pydantic import BaseModel
+
+from swarms.models.base_llm import AbstractLLM
 from swarms.tools.logits_processor import (
     NumberStoppingCriteria,
     OutputNumbersTokens,
     StringStoppingCriteria,
 )
-from swarms.models.base_llm import AbstractLLM
 
 GENERATION_MARKER = "|GENERATION|"
 

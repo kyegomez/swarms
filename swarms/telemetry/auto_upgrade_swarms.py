@@ -1,7 +1,8 @@
 import subprocess
 
-from swarms.telemetry.check_update import check_for_update
 from termcolor import colored
+
+from swarms.telemetry.check_update import check_for_update
 
 
 def auto_update():

@@ -1,8 +1,10 @@
 import os
+
 from dotenv import load_dotenv
+
+import swarms.prompts.autoswarm as sdsp
 from swarms.models import OpenAIChat
 from swarms.structs import Agent
-import swarms.prompts.autoswarm as sdsp
 
 # Load environment variables and initialize the OpenAI Chat model
 load_dotenv()

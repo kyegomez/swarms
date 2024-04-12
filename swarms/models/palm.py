@@ -8,6 +8,7 @@ from langchain.llms import BaseLLM
 from langchain.pydantic_v1 import BaseModel
 from langchain.schema import Generation, LLMResult
 from langchain.utils import get_from_dict_or_env
+from pydantic import model_validator
 from tenacity import (
     before_sleep_log,
     retry,
@@ -15,7 +16,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-from pydantic import model_validator
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from typing import Callable, Sequence
+
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 

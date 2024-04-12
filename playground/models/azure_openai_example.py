@@ -1,5 +1,7 @@
 import os
+
 from dotenv import load_dotenv
+
 from swarms import AzureOpenAI
 
 # Load the environment variables
