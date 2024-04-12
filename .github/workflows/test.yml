@@ -21,5 +21,7 @@ jobs:
           key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install the project dependencies
         run: poetry install
+      - name: Enter the virtual environment
+        run: source .venv/bin/activate
       - name: Run the tests
         run: poetry run pytest
