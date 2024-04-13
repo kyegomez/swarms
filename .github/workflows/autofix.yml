@@ -1,3 +1,5 @@
+name: autofix.ci
+
 on:
   pull_request:
   push:
