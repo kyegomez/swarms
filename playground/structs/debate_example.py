@@ -268,7 +268,7 @@ topic_specifier_prompt = [
         Frame the debate topic as a problem to be solved.
         Be creative and imaginative.
         Please reply with the specified topic in {word_limit} words or less.
-        Speak directly to the presidential candidates: {*character_names,}.
+        Speak directly to the presidential candidates: {*character_names, }.
         Do not add anything else."""),
 ]
 specified_topic = ChatOpenAI(temperature=1.0)(

@@ -88,7 +88,7 @@ class ModelParallelizer:
         """Save responses to file"""
         with open(filename, "w") as file:
             table = [
-                [f"LLM {i+1}", response]
+                [f"LLM {i + 1}", response]
                 for i, response in enumerate(self.last_responses)
             ]
             file.write(table)
@@ -111,7 +111,7 @@ class ModelParallelizer:
             print(f"{i + 1}. {task}")
         print("\nLast Responses:")
         table = [
-            [f"LLM {i+1}", response]
+            [f"LLM {i + 1}", response]
             for i, response in enumerate(self.last_responses)
         ]
         print(

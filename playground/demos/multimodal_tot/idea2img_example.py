@@ -171,7 +171,7 @@ if st.button("Generate Image"):
     for i, (enriched_prompt, img_path, analysis) in enumerate(
         results
     ):
-        st.write(f"Iteration {i+1}:")
+        st.write(f"Iteration {i + 1}:")
         st.write("Enriched Prompt:", enriched_prompt)
         if img_path:
             st.image(img_path, caption="Generated Image")

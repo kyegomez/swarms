@@ -123,7 +123,7 @@ class SchemaGenerator:
             return "\n".join(command_strings + [finish_string])
         else:
             return "\n".join(
-                f"{i+1}. {item}" for i, item in enumerate(items)
+                f"{i + 1}. {item}" for i, item in enumerate(items)
             )
 
     def generate_prompt_string(self) -> str:

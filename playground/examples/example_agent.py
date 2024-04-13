@@ -26,7 +26,7 @@ print(
     f" {sys.stderr}"
 )
 
-## Initialize the workflow
+# Initialize the workflow
 agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
 # Run the workflow on a task

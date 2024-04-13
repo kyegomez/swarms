@@ -1,5 +1,5 @@
 ---
-name: Docs WorkAgent
+name: Documentation
 on:
   push:
     branches:
@@ -18,9 +18,3 @@ jobs:
       - run: pip install mkdocs-glightbox
       - run: pip install "mkdocstrings[python]"
       - run: mkdocs gh-deploy --force
-  preview:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: readthedocs/actions/preview@v1
-        with:
-          project-slug: swarms

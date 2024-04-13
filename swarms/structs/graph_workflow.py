@@ -17,7 +17,8 @@ class GraphWorkflow(BaseStructure):
         connect(from_node, to_node): Connects two nodes in the graph.
         set_entry_point(node_name): Sets the entry point node for the workflow.
         add_edge(from_node, to_node): Adds an edge between two nodes in the graph.
-        add_conditional_edges(from_node, condition, edge_dict): Adds conditional edges from a node to multiple nodes based on a condition.
+        add_conditional_edges(from_node, condition, edge_dict):
+            Adds conditional edges from a node to multiple nodes based on a condition.
         run(): Runs the workflow and returns the graph.
 
     Examples:
@@ -126,15 +127,11 @@ class GraphWorkflow(BaseStructure):
         if from_node in self.graph:
             for condition_value, to_node in edge_dict.items():
                 if to_node in self.graph:
-                    self.graph[from_node]["edges"][
-                        to_node
-                    ] = condition
+                    self.graph[from_node]["edges"][to_node] = condition
                 else:
                     raise ValueError("Node does not exist in graph")
         else:
-            raise ValueError(
-                f"Node {from_node} does not exist in graph"
-            )
+            raise ValueError(f"Node {from_node} does not exist in graph")
 
     def run(self):
         """
@@ -160,9 +157,7 @@ class GraphWorkflow(BaseStructure):
             ValueError: _description_
         """
         if node_name not in self.graph:
-            raise ValueError(
-                f"Node {node_name} does not exist in graph"
-            )
+            raise ValueError(f"Node {node_name} does not exist in graph")
 
     def _check_nodes_exist(self, from_node, to_node):
         """

@@ -19,7 +19,7 @@ llm = HuggingfaceLLM(
     temperature=0.5,
 )
 
-## Initialize the workflow
+# Initialize the workflow
 agent = Agent(
     llm=llm,
     max_loops="auto",

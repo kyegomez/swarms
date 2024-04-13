@@ -700,7 +700,7 @@ class Agent:
 
                     except Exception as e:
                         logger.error(
-                            f"Attempt {attempt+1}: Error generating"
+                            f"Attempt {attempt + 1}: Error generating"
                             f" response: {e}"
                         )
                         attempt += 1

@@ -20,9 +20,7 @@ def _hash(input: str):
     return hex_dig
 
 
-def msg_hash(
-    agent: Agent, content: str, turn: int, msg_type: str = "text"
-):
+def msg_hash(agent: Agent, content: str, turn: int, msg_type: str = "text"):
     """
     Generate a hash value for a message.
 
@@ -37,8 +35,7 @@ def msg_hash(
     """
     time = time_ns()
     return _hash(
-        f"agent: {agent.agent_name}\ncontent: {content}\ntimestamp:"
-        f" {str(time)}\nturn: {turn}\nmsg_type: {msg_type}"
+        f"agent: {agent.agent_name}\ncontent: {content}\ntimestamp:" f" {str(time)}\nturn: {turn}\nmsg_type: {msg_type}"
     )
 
 
@@ -67,11 +64,17 @@ class MessagePool:
     >>> message_pool.add(agent=agent2, content="Hello, agent1!", turn=1)
     >>> message_pool.add(agent=agent3, content="Hello, agent1!", turn=1)
     >>> message_pool.get_all_messages()
-    [{'agent': Agent(agent_name='agent1'), 'content': 'Hello, agent2!', 'turn': 1, 'visible_to': 'all', 'logged': True}, {'agent': Agent(agent_name='agent2'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}, {'agent': Agent(agent_name='agent3'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}]
+    [{'agent': Agent(agent_name='agent1'), 'content': 'Hello, agent2!', 'turn': 1, 'visible_to': 'all', 'logged': True},
+     {'agent': Agent(agent_name='agent2'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True},
+     {'agent': Agent(agent_name='agent3'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}]
     >>> message_pool.get_visible_messages(agent=agent1, turn=1)
-    [{'agent': Agent(agent_name='agent1'), 'content': 'Hello, agent2!', 'turn': 1, 'visible_to': 'all', 'logged': True}, {'agent': Agent(agent_name='agent2'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}, {'agent': Agent(agent_name='agent3'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}]
+    [{'agent': Agent(agent_name='agent1'), 'content': 'Hello, agent2!', 'turn': 1, 'visible_to': 'all', 'logged': True},
+     {'agent': Agent(agent_name='agent2'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True},
+     {'agent': Agent(agent_name='agent3'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}]
     >>> message_pool.get_visible_messages(agent=agent2, turn=1)
-    [{'agent': Agent(agent_name='agent1'), 'content': 'Hello, agent2!', 'turn': 1, 'visible_to': 'all', 'logged': True}, {'agent': Agent(agent_name='agent2'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}, {'agent': Agent(agent_name='agent3'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}]
+    [{'agent': Agent(agent_name='agent1'), 'content': 'Hello, agent2!', 'turn': 1, 'visible_to': 'all', 'logged': True},
+     {'agent': Agent(agent_name='agent2'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True},
+     {'agent': Agent(agent_name='agent3'), 'content': 'Hello, agent1!', 'turn': 1, 'visible_to': 'all', 'logged': True}]
     """
 
     def __init__(
@@ -98,9 +101,7 @@ class MessagePool:
 
         logger.info("MessagePool initialized")
         logger.info(f"Number of agents: {len(agents)}")
-        logger.info(
-            f"Agents: {[agent.agent_name for agent in agents]}"
-        )
+        logger.info(f"Agents: {[agent.agent_name for agent in agents]}")
         logger.info(f"moderator: {moderator.agent_name} is available")
         logger.info(f"Number of turns: {turns}")
 
@@ -187,18 +188,11 @@ class MessagePool:
             List[Dict]: The list of visible messages.
         """
         # Get the messages before the current turn
-        prev_messages = [
-            message
-            for message in self.messages
-            if message["turn"] < turn
-        ]
+        prev_messages = [message for message in self.messages if message["turn"] < turn]
 
         visible_messages = []
         for message in prev_messages:
-            if (
-                message["visible_to"] == "all"
-                or agent.agent_name in message["visible_to"]
-            ):
+            if message["visible_to"] == "all" or agent.agent_name in message["visible_to"]:
                 visible_messages.append(message)
         return visible_messages
 

@@ -22,7 +22,7 @@ llm = GPT4VisionAPI(
 task = "This is an eye test. What do you see?"
 img = "playground/demos/multi_modal_chain_of_thought/eyetest.jpg"
 
-## Initialize the workflow
+# Initialize the workflow
 agent = Agent(
     llm=llm,
     max_loops=2,

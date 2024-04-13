@@ -156,7 +156,7 @@ class FileHandler:
         os.makedirs(os.path.dirname(local_filename), exist_ok=True)
         with open(local_filename, "wb") as f:
             size = f.write(data)
-        print(f"Inputs: {url} ({size//1000}MB)  => {local_filename}")
+        print(f"Inputs: {url} ({size // 1000}MB)  => {local_filename}")
         return local_filename
 
     def handle(self, url: str) -> str:
@@ -170,7 +170,7 @@ class FileHandler:
                             "SERVER", "http://localhost:8000"
                         )
                     )
-                    + 1 :
+                    + 1:
                 ]
                 local_filename = (
                     Path("file") / local_filepath.split("/")[-1]
