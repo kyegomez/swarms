@@ -1,12 +1,34 @@
 ---
-# this is a config file for the github action labeler
-
-# Add 'label1' to any changes within 'example' folder or any subfolders
-example_change:
-  - example/**
-# Add 'label2' to any file changes within 'example2' folder
-example2_change: example2/*
-# Add label3 to any change to .txt files within the entire repository.
-# Quotation marks are required for the leading asterisk
-text_files:
-  - '**/*.txt'
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ["docs/**", "*.md"]
+tests:
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
+agents:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/agents/**"
+artifacts:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/artifacts/**"
+memory:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/memory/**"
+models:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/models/**"
+prompts:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/prompts/**"
+structs:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/structs/**"
+telemetry:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/telemetry/**"
+tools:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/tools/**"
+utils:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/utils/**"

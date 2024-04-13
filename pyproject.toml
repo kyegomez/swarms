@@ -80,6 +80,9 @@ fixable = ["ALL"]
 unfixable = []
 preview = true
 
+[tool.ruff.lint.per-file-ignores]
+"swarms/prompts/**.py" = ["E501"]
+
 [tool.black]
 line-length = 70
 target-version = ['py38']
