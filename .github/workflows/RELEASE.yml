@@ -7,7 +7,7 @@ on:
     branches:
       - master
     paths:
-      - 'pyproject.toml'
+      - "pyproject.toml"
 env:
   POETRY_VERSION: "1.4.2"
 jobs:

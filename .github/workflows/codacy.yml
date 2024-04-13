@@ -7,8 +7,10 @@ on:
     branches: ["master"]
   schedule:
     - cron: "0 0 * * "
+
 permissions:
   contents: read
+
 jobs:
   codacy-security-scan:
     permissions:
