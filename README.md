@@ -12,7 +12,7 @@ Orchestrate swarms of agents for production-grade applications.
 
 </div>
 
-Individual agents are barely being deployd into production because of 5 suffocating challanges: short memory, single task threading, hallucinations, high cost, and lack of collaboration.  With Multi-agent collaboration, you can effectively eliminate all of these issues. Swarms provides you with simple, reliable, and agile primitives to build your own Swarm for your specific use case. Now, Swarms is being used in production by RBC, John Deere, and many AI startups. To learn more about the unparalled benefits about multi-agent collaboration check out this github repository for research papers or book a call with me!
+Individual agents face five significant challenges that hinder their deployment in production: short memory, single-task threading, hallucinations, high cost, and lack of collaboration. Multi-agent collaboration offers a solution to all these issues. Swarms provides simple, reliable, and agile tools to create your own Swarm tailored to your specific needs. Currently, Swarms is being used in production by RBC, John Deere, and many AI startups. For more information on the unparalleled benefits of multi-agent collaboration, check out this GitHub repository for research papers or schedule a call with me!
 
 ----
 
