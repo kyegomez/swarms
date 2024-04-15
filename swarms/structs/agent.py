@@ -6,7 +6,7 @@ import random
 import sys
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import yaml
 from loguru import logger
@@ -17,7 +17,6 @@ from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
-from swarms.prompts.worker_prompt import worker_tools_sop_promp
 from swarms.structs.conversation import Conversation
 from swarms.tools.tool import BaseTool
 from swarms.utils.code_interpreter import SubprocessCodeInterpreter
@@ -25,8 +24,8 @@ from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.tools.exec_tool import execute_tool_by_name
-from swarms.tools.function_util import process_tool_docs
 from swarms.tools.code_executor import CodeExecutor
+from swarms.prompts.worker_prompt import tool_usage_worker_prompt
 
 
 # Utils
@@ -172,7 +171,7 @@ class Agent:
         agent_name: str = "swarm-worker-01",
         agent_description: str = None,
         system_prompt: str = AGENT_SYSTEM_PROMPT_3,
-        tools: Union[List[BaseTool]] = None,
+        tools: List[BaseTool] = [],
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
@@ -210,6 +209,7 @@ class Agent:
         custom_exit_command: Optional[str] = "exit",
         sentiment_analyzer: Optional[Callable] = None,
         limit_tokens_from_string: Optional[Callable] = None,
+        custom_tools_prompt: Optional[Callable] = None,
         *args,
         **kwargs,
     ):
@@ -318,21 +318,21 @@ class Agent:
 
         # If tools are provided then set the tool prompt by adding to sop
         if self.tools:
-            tools_prompt = worker_tools_sop_promp(
-                name=self.agent_name,
-                memory=self.short_memory.return_history_as_string(),
-            )
+            if custom_tools_prompt is not None:
+                tools_prompt = custom_tools_prompt(tools=self.tools)
 
-            # Append the tools prompt to the short_term_memory
-            self.short_memory.add(
-                role=self.agent_name, content=tools_prompt
-            )
-
-            # And, add the tool documentation to the memory
-            for tool in self.tools:
-                tool_docs = process_tool_docs(tool)
                 self.short_memory.add(
-                    role=self.agent_name, content=tool_docs
+                    role=self.agent_name, content=tools_prompt
+                )
+
+            else:
+                tools_prompt = tool_usage_worker_prompt(
+                    tools=self.tools
+                )
+
+                # Append the tools prompt to the short_term_memory
+                self.short_memory.add(
+                    role=self.agent_name, content=tools_prompt
                 )
 
         # If the long term memory is provided then set the long term memory prompt
@@ -713,10 +713,11 @@ class Agent:
                     break  # Exit the loop if all retry attempts fail
 
                 # Check stopping conditions
-                if self.stopping_token in response:
-                    break
+                if self.stopping_token is not None:
+                    if self.stopping_token in response:
+                        break
                 elif (
-                    self.stopping_condition
+                    self.stopping_condition is not None
                     and self._check_stopping_condition(response)
                 ):
                     break
