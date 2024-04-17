@@ -614,7 +614,7 @@ class Agent:
                             else (task_prompt, img, *args)
                         )
                         response = self.llm(*response_args, **kwargs)
-                        print(response)
+                        # print(response)
                         self.short_memory.add(
                             role=self.agent_name, content=response
                         )
@@ -695,6 +695,11 @@ class Agent:
                                 role=self.agent_name,
                                 content=sentiment,
                             )
+
+                        if self.streaming:
+                            self.streaming(response)
+                        else:
+                            print(response)
 
                         success = True  # Mark as successful to exit the retry loop
 
