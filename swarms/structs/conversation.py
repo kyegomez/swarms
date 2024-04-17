@@ -1,11 +1,12 @@
 import datetime
 import json
-from typing import Any, Optional
+from typing import Optional
 
 from termcolor import colored
 
 from swarms.memory.base_db import AbstractDatabase
 from swarms.structs.base import BaseStructure
+from typing import Any
 
 
 class Conversation(BaseStructure):

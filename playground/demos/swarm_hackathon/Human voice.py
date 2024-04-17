@@ -1,5 +1,5 @@
 import discord
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 # Discord Bot Setup
 client = discord.Client()

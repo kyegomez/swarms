@@ -1,7 +1,6 @@
 from typing import List
 
 from httpx import RequestError
-
 from swarms.memory.base_vectordb import AbstractVectorDatabase
 
 try:

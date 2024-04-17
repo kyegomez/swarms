@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable
 
 import numpy as np
-
+from typing import Callable
 from swarms.artifacts.text_artifact import TextArtifact
 from swarms.utils.exponential_backoff import ExponentialBackoffMixin
 

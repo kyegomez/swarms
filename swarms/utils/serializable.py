@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Any, Dict, List, Literal, TypedDict, Union, cast
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr
+from pydantic import ConfigDict, BaseModel, PrivateAttr
 
 
 class BaseSerialized(TypedDict):

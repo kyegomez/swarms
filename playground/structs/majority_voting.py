@@ -1,4 +1,4 @@
-from swarms import Agent, Anthropic, ChromaDB, MajorityVoting
+from swarms import Agent, MajorityVoting, ChromaDB, Anthropic
 
 # Initialize the llm
 llm = Anthropic()

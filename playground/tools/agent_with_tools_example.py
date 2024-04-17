@@ -26,7 +26,7 @@ def search_api(query: str) -> str:
     print(f"Searching API for {query}")
 
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(
     llm=llm,
     max_loops=5,

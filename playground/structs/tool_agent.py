@@ -1,5 +1,4 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
 from swarms import ToolAgent
 
 # Load the pre-trained model and tokenizer

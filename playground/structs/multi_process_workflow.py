@@ -1,9 +1,7 @@
 import os
-
-from dotenv import load_dotenv
-
-from swarms import Agent, Gemini
+from swarms import Gemini, Agent
 from swarms.structs.multi_process_workflow import MultiProcessWorkflow
+from dotenv import load_dotenv
 
 # Load the environment variables
 load_dotenv()

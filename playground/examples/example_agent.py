@@ -4,7 +4,7 @@ import sys
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms import Agent, OpenAIChat
+from swarms import OpenAIChat, Agent
 
 # Load the environment variables
 load_dotenv()
@@ -26,7 +26,7 @@ print(
     f" {sys.stderr}"
 )
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
 # Run the workflow on a task

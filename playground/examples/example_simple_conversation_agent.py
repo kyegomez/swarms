@@ -3,8 +3,8 @@ import os
 from dotenv import load_dotenv
 
 from swarms import (
-    Conversation,
     OpenAIChat,
+    Conversation,
 )
 
 conv = Conversation(

@@ -6,7 +6,7 @@ llm = GPT4VisionAPI()
 task = "What is the color of the object?"
 img = "images/swarms.jpeg"
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(
     llm=llm,
     max_loops="auto",

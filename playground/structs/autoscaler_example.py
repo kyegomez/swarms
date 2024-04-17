@@ -20,7 +20,7 @@ llm = OpenAIChat(
 )
 
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(llm=llm, max_loops=1, dashboard=True)
 
 

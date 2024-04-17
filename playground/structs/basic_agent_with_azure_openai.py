@@ -1,6 +1,6 @@
 from swarms import Agent, AzureOpenAI
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(
     llm=AzureOpenAI(),
     max_loops="auto",

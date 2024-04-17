@@ -70,7 +70,7 @@ dashboard = print(
     Topics:
     ------------------------
     {topics}
-
+    
     """,
         "blue",
     )
@@ -81,7 +81,7 @@ draft_blog = llm(DRAFT_AGENT_SYSTEM_PROMPT)
 draft_out = print(
     colored(
         f"""
-
+    
     ------------------------------------
     Drafter Writer Agent
     -----------------------------
@@ -89,7 +89,7 @@ draft_out = print(
     Draft:
     ------------------------
     {draft_blog}
-
+    
     """,
         "red",
     )
@@ -101,7 +101,7 @@ review_agent = llm(get_review_prompt(draft_blog))
 reviewed_draft = print(
     colored(
         f"""
-
+    
     ------------------------------------
     Quality Assurance Writer Agent
     -----------------------------
@@ -109,7 +109,7 @@ reviewed_draft = print(
     Complete Narrative:
     ------------------------
     {draft_blog}
-
+    
     """,
         "blue",
     )

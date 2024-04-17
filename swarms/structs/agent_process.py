@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Callable
 
 from pydantic import BaseModel
 
 from swarms.structs.omni_agent_types import agents
 from swarms.utils.loguru_logger import logger
+from typing import Callable
 
 
 class AgentProcess(BaseModel):

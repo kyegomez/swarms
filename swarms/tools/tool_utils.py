@@ -1,12 +1,13 @@
-import inspect
 import json
 import re
-from typing import Any, Callable, List
-
-from termcolor import colored
+from typing import Any, List
 
 from swarms.prompts.tools import SCENARIOS
 from swarms.tools.tool import BaseTool
+import inspect
+from typing import Callable
+
+from termcolor import colored
 
 
 def scrape_tool_func_docs(fn: Callable) -> str:
@@ -17,8 +18,7 @@ def scrape_tool_func_docs(fn: Callable) -> str:
         fn (Callable): The function to scrape.
 
     Returns:
-        str: A string containing the function's name, documentation string, and a list of its parameters.
-             Each parameter is represented as a line containing the parameter's name, default value, and annotation.
+        str: A string containing the function's name, documentation string, and a list of its parameters. Each parameter is represented as a line containing the parameter's name, default value, and annotation.
     """
     try:
         # If the function is a tool, get the original function
@@ -35,7 +35,10 @@ def scrape_tool_func_docs(fn: Callable) -> str:
                 f" {param.annotation if param.annotation is not param.empty else 'None'}"
             )
         parameters_str = "\n".join(parameters)
-        return f"Function: {fn.__name__}\nDocstring:" f" {inspect.getdoc(fn)}\nParameters:\n{parameters_str}"
+        return (
+            f"Function: {fn.__name__}\nDocstring:"
+            f" {inspect.getdoc(fn)}\nParameters:\n{parameters_str}"
+        )
     except Exception as error:
         print(
             colored(
@@ -127,7 +130,7 @@ def tools_prompt_prep(docs: str = None, scenarios: str = SCENARIOS):
     You will be provided with a list of APIs. These APIs will have a
     description and a list of parameters and return types for each tool. Your
     task involves creating varied, complex, and detailed user scenarios
-    that require to call API calls. You must select what api to call based on
+    that require to call API calls. You must select what api to call based on 
     the context of the task and the scenario.
 
     For instance, given the APIs: SearchHotels, BookHotel, CancelBooking,
@@ -158,14 +161,14 @@ def tools_prompt_prep(docs: str = None, scenarios: str = SCENARIOS):
     different combination of APIs for each scenario. All APIs must be used in
     at least one scenario. You can only use the APIs provided in the APIs
     section.
-
+    
     Note that API calls are not explicitly mentioned and their uses are
     included in parentheses. This behaviour should be mimicked in your
     response.
-
-    Output the tool usage in a strict json format with the function name and input to
+    
+    Output the tool usage in a strict json format with the function name and input to 
     the function. For example, Deliver your response in this format:
-
+    
     ‘‘‘
     {scenarios}
     ‘‘‘

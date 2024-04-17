@@ -1,6 +1,5 @@
-import torch
-
 from swarms.models import HuggingfaceLLM
+import torch
 
 try:
     inference = HuggingfaceLLM(

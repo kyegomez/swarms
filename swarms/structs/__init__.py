@@ -4,7 +4,6 @@ from swarms.structs.agent_process import (
     AgentProcess,
     AgentProcessQueue,
 )
-from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.autoscaler import AutoScaler
 from swarms.structs.base import BaseStructure
@@ -79,6 +78,8 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
+from swarms.structs.agent_rearrange import AgentRearrange
+
 
 __all__ = [
     "Agent",

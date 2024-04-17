@@ -23,7 +23,6 @@ from swarms.models.popular_llms import (
 from swarms.models.popular_llms import (
     CohereChat as Cohere,
 )
-from swarms.models.popular_llms import OctoAIChat
 from swarms.models.popular_llms import (
     OpenAIChatLLM as OpenAIChat,
 )
@@ -33,7 +32,9 @@ from swarms.models.popular_llms import (
 from swarms.models.popular_llms import (
     ReplicateLLM as Replicate,
 )
+from swarms.models.popular_llms import OctoAIChat
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
+
 from swarms.models.sampling_params import SamplingParams, SamplingType
 from swarms.models.together import TogetherLLM  # noqa: E402
 from swarms.models.types import (  # noqa: E402
@@ -44,6 +45,7 @@ from swarms.models.types import (  # noqa: E402
     VideoModality,
 )
 from swarms.models.vilt import Vilt  # noqa: E402
+
 
 __all__ = [
     "AbstractLLM",

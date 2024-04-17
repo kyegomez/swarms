@@ -18,7 +18,10 @@ def llm_instance():
 
 # Test for instantiation and attributes
 def test_llm_initialization(llm_instance):
-    assert llm_instance.model_id == "NousResearch/Nous-Hermes-2-Vision-Alpha"
+    assert (
+        llm_instance.model_id
+        == "NousResearch/Nous-Hermes-2-Vision-Alpha"
+    )
     assert llm_instance.max_length == 500
     # ... add more assertions for all default attributes
 
@@ -85,11 +88,15 @@ def test_llm_memory_consumption(llm_instance):
 )
 def test_llm_initialization_params(model_id, max_length):
     if max_length:
-        instance = HuggingfaceLLM(model_id=model_id, max_length=max_length)
+        instance = HuggingfaceLLM(
+            model_id=model_id, max_length=max_length
+        )
         assert instance.max_length == max_length
     else:
         instance = HuggingfaceLLM(model_id=model_id)
-        assert instance.max_length == 500  # Assuming 500 is the default max_length
+        assert (
+            instance.max_length == 500
+        )  # Assuming 500 is the default max_length
 
 
 # Test for setting an invalid device
@@ -137,7 +144,9 @@ def test_llm_run_output_length(mock_run, llm_instance):
 # Test the tokenizer handling special tokens correctly
 @patch("swarms.models.huggingface.HuggingfaceLLM._tokenizer.encode")
 @patch("swarms.models.huggingface.HuggingfaceLLM._tokenizer.decode")
-def test_llm_tokenizer_special_tokens(mock_decode, mock_encode, llm_instance):
+def test_llm_tokenizer_special_tokens(
+    mock_decode, mock_encode, llm_instance
+):
     mock_encode.return_value = "encoded input with special tokens"
     mock_decode.return_value = "decoded output with special tokens"
     result = llm_instance.run("test task with special tokens")
@@ -163,7 +172,9 @@ def test_llm_response_time(mock_run, llm_instance):
     start_time = time.time()
     llm_instance.run("test task for response time")
     end_time = time.time()
-    assert end_time - start_time < 1  # Assuming the response should be faster than 1 second
+    assert (
+        end_time - start_time < 1
+    )  # Assuming the response should be faster than 1 second
 
 
 # Test the logging of a warning for long inputs
@@ -186,9 +197,13 @@ def test_llm_run_model_exception(mock_generate, llm_instance):
 
 # Test the behavior when GPU is forced but not available
 @patch("torch.cuda.is_available", return_value=False)
-def test_llm_force_gpu_when_unavailable(mock_is_available, llm_instance):
+def test_llm_force_gpu_when_unavailable(
+    mock_is_available, llm_instance
+):
     with pytest.raises(EnvironmentError):
-        llm_instance.set_device("cuda")  # Attempt to set CUDA when it's not available
+        llm_instance.set_device(
+            "cuda"
+        )  # Attempt to set CUDA when it's not available
 
 
 # Test for proper cleanup after model use (releasing resources)
@@ -206,7 +221,9 @@ def test_llm_multilingual_input(mock_run, llm_instance):
     mock_run.return_value = "mocked multilingual output"
     multilingual_input = "Bonjour, ceci est un test multilingue."
     result = llm_instance.run(multilingual_input)
-    assert isinstance(result, str)  # Simple check to ensure output is string type
+    assert isinstance(
+        result, str
+    )  # Simple check to ensure output is string type
 
 
 # Test caching mechanism to prevent re-running the same inputs
@@ -221,7 +238,5 @@ def test_llm_caching_mechanism(mock_run, llm_instance):
     assert first_run_result == second_run_result
 
 
-# These tests are provided as examples.
-# In real-world scenarios, you will need to adapt these tests to the actual logic of your `HuggingfaceLLM` class.
-# For instance, "mock_model.delete.assert_called_once()" and similar lines are based on hypothetical methods and behaviors
-# that you need to replace with actual implementations.
+# These tests are provided as examples. In real-world scenarios, you will need to adapt these tests to the actual logic of your `HuggingfaceLLM` class.
+# For instance, "mock_model.delete.assert_called_once()" and similar lines are based on hypothetical methods and behaviors that you need to replace with actual implementations.

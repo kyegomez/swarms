@@ -11,7 +11,7 @@ task = (
 )
 img = "assembly_line.jpg"
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(
     llm=llm,
     max_loops=1,

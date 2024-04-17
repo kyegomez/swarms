@@ -5,7 +5,6 @@ from sqlalchemy import JSON, Column, String, create_engine
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
-
 from swarms.memory.base_vectordb import AbstractVectorDatabase
 
 

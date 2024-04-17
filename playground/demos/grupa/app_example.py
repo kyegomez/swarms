@@ -21,15 +21,15 @@ import UpperPanel from './UpperPanel';
 import LowerPanel from './LowerPanel';
 
 const MainPanel = () => {
-  const [promptInstructionForLowerPanel, setPromptInstructionForLowerPanel] = useState('');
+  const [promptInstructionForLowerPanel, setPromptInstructionForLowerPanel] = useState('');  
   const [formData, setFormData] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);  
 
   return (
     <div className="flex h-screen">
-      <UpperPanel setPromptInstructionForLowerPanel={setPromptInstructionForLowerPanel}
+      <UpperPanel setPromptInstructionForLowerPanel={setPromptInstructionForLowerPanel} 
       isLoading={isLoading}
-      setIsLoading={setIsLoading}
+      setIsLoading={setIsLoading}      
       />
       <LowerPanel promptInstruction={promptInstructionForLowerPanel} isLoading={isLoading} />
     </div>

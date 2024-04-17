@@ -15,11 +15,11 @@ llm = OpenAIChat(
     temperature=0.5,
     openai_api_key=api_key,
 )
-global_agent = Agent(llm=llm, max_loops=1)
+agent = Agent(llm=llm, max_loops=1)
 
 
 def test_autoscaler_init():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     assert autoscaler.initial_agents == 5
     assert autoscaler.scale_up_factor == 1
     assert autoscaler.idle_threshold == 0.2
@@ -33,15 +33,15 @@ def test_autoscaler_init():
 
 
 def test_autoscaler_add_task():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.add_task("task1")
     assert autoscaler.task_queue.empty() is False
 
 
 def test_autoscaler_run():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     out = autoscaler.run(
-        global_agent.id,
+        agent.id,
         "Generate a 10,000 word blog on health and wellness.",
     )
     assert (
@@ -50,31 +50,31 @@ def test_autoscaler_run():
 
 
 def test_autoscaler_add_agent():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
-    autoscaler.add_agent(global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    autoscaler.add_agent(agent)
     assert len(autoscaler.agents_pool) == 6
 
 
 def test_autoscaler_remove_agent():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
-    autoscaler.remove_agent(global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    autoscaler.remove_agent(agent)
     assert len(autoscaler.agents_pool) == 4
 
 
 def test_autoscaler_get_agent():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     agent = autoscaler.get_agent()
     assert isinstance(agent, Agent)
 
 
 def test_autoscaler_get_agent_by_id():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
-    agent = autoscaler.get_agent_by_id(global_agent.id)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
+    agent = autoscaler.get_agent_by_id(agent.id)
     assert isinstance(agent, Agent)
 
 
 def test_autoscaler_get_agent_by_id_not_found():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     agent = autoscaler.get_agent_by_id("fake_id")
     assert agent is None
 
@@ -82,13 +82,13 @@ def test_autoscaler_get_agent_by_id_not_found():
 @patch("swarms.swarms.Agent.is_healthy")
 def test_autoscaler_check_agent_health(mock_is_healthy):
     mock_is_healthy.side_effect = [False, True, True, True, True]
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.check_agent_health()
     assert mock_is_healthy.call_count == 5
 
 
 def test_autoscaler_balance_load():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.add_task("task1")
     autoscaler.add_task("task2")
     autoscaler.balance_load()
@@ -96,7 +96,7 @@ def test_autoscaler_balance_load():
 
 
 def test_autoscaler_set_scaling_strategy():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
 
     def strategy(x, y):
         return x - y
@@ -106,7 +106,7 @@ def test_autoscaler_set_scaling_strategy():
 
 
 def test_autoscaler_execute_scaling_strategy():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
 
     def strategy(x, y):
         return x - y
@@ -118,7 +118,7 @@ def test_autoscaler_execute_scaling_strategy():
 
 
 def test_autoscaler_report_agent_metrics():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     metrics = autoscaler.report_agent_metrics()
     assert set(metrics.keys()) == {
         "completion_time",
@@ -129,21 +129,21 @@ def test_autoscaler_report_agent_metrics():
 
 @patch("swarms.swarms.AutoScaler.report_agent_metrics")
 def test_autoscaler_report(mock_report_agent_metrics):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.report()
     mock_report_agent_metrics.assert_called_once()
 
 
 @patch("builtins.print")
 def test_autoscaler_print_dashboard(mock_print):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.print_dashboard()
     mock_print.assert_called()
 
 
 @patch("swarms.structs.autoscaler.logging")
 def test_check_agent_health_all_healthy(mock_logging):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     for agent in autoscaler.agents_pool:
         agent.is_healthy = MagicMock(return_value=True)
     autoscaler.check_agent_health()
@@ -152,7 +152,7 @@ def test_check_agent_health_all_healthy(mock_logging):
 
 @patch("swarms.structs.autoscaler.logging")
 def test_check_agent_health_some_unhealthy(mock_logging):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     for i, agent in enumerate(autoscaler.agents_pool):
         agent.is_healthy = MagicMock(return_value=(i % 2 == 0))
     autoscaler.check_agent_health()
@@ -161,7 +161,7 @@ def test_check_agent_health_some_unhealthy(mock_logging):
 
 @patch("swarms.structs.autoscaler.logging")
 def test_check_agent_health_all_unhealthy(mock_logging):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     for agent in autoscaler.agents_pool:
         agent.is_healthy = MagicMock(return_value=False)
     autoscaler.check_agent_health()
@@ -170,7 +170,7 @@ def test_check_agent_health_all_unhealthy(mock_logging):
 
 @patch("swarms.structs.autoscaler.Agent")
 def test_add_agent(mock_agent):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     initial_count = len(autoscaler.agents_pool)
     autoscaler.add_agent()
     assert len(autoscaler.agents_pool) == initial_count + 1
@@ -179,7 +179,7 @@ def test_add_agent(mock_agent):
 
 @patch("swarms.structs.autoscaler.Agent")
 def test_remove_agent(mock_agent):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     initial_count = len(autoscaler.agents_pool)
     autoscaler.remove_agent()
     assert len(autoscaler.agents_pool) == initial_count - 1
@@ -188,7 +188,7 @@ def test_remove_agent(mock_agent):
 @patch("swarms.structs.autoscaler.AutoScaler.add_agent")
 @patch("swarms.structs.autoscaler.AutoScaler.remove_agent")
 def test_scale(mock_remove_agent, mock_add_agent):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.scale(10)
     assert mock_add_agent.call_count == 5
     assert mock_remove_agent.call_count == 0
@@ -223,7 +223,7 @@ def test_autoscaler_initialization():
         scale_up_factor=2,
         idle_threshold=0.1,
         busy_threshold=0.8,
-        agent=global_agent,
+        agent=agent,
     )
     assert isinstance(autoscaler, AutoScaler)
     assert autoscaler.scale_up_factor == 2
@@ -232,22 +232,22 @@ def test_autoscaler_initialization():
     assert len(autoscaler.agents_pool) == 5
 
 
-def test_autoscaler_add_task_2():
-    autoscaler = AutoScaler(agent=global_agent)
+def test_autoscaler_add_task():
+    autoscaler = AutoScaler(agent=agent)
     autoscaler.add_task("task1")
     assert autoscaler.task_queue.qsize() == 1
 
 
 def test_autoscaler_scale_up():
     autoscaler = AutoScaler(
-        initial_agents=5, scale_up_factor=2, agent=global_agent
+        initial_agents=5, scale_up_factor=2, agent=agent
     )
     autoscaler.scale_up()
     assert len(autoscaler.agents_pool) == 10
 
 
 def test_autoscaler_scale_down():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.scale_down()
     assert len(autoscaler.agents_pool) == 4
 
@@ -255,7 +255,7 @@ def test_autoscaler_scale_down():
 @patch("swarms.swarms.AutoScaler.scale_up")
 @patch("swarms.swarms.AutoScaler.scale_down")
 def test_autoscaler_monitor_and_scale(mock_scale_down, mock_scale_up):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.add_task("task1")
     autoscaler.monitor_and_scale()
     mock_scale_up.assert_called_once()
@@ -265,7 +265,7 @@ def test_autoscaler_monitor_and_scale(mock_scale_down, mock_scale_up):
 @patch("swarms.swarms.AutoScaler.monitor_and_scale")
 @patch("swarms.swarms.agent.run")
 def test_autoscaler_start(mock_run, mock_monitor_and_scale):
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.add_task("task1")
     autoscaler.start()
     mock_run.assert_called_once()
@@ -273,6 +273,6 @@ def test_autoscaler_start(mock_run, mock_monitor_and_scale):
 
 
 def test_autoscaler_del_agent():
-    autoscaler = AutoScaler(initial_agents=5, agent=global_agent)
+    autoscaler = AutoScaler(initial_agents=5, agent=agent)
     autoscaler.del_agent()
     assert len(autoscaler.agents_pool) == 4

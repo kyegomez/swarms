@@ -31,7 +31,7 @@ def debate_monitor(game_description, word_limit, character_names):
     Frame the debate topic as a problem to be solved.
     Be creative and imaginative.
     Please reply with the specified topic in {word_limit} words or less.
-    Speak directly to the presidential candidates: {*character_names, }.
+    Speak directly to the presidential candidates: {*character_names,}.
     Do not add anything else.
     """
 

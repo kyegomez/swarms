@@ -237,7 +237,7 @@ class Debate:
             if self.mod_ans["debate_translation"] != "":
                 break
             else:
-                print(f"===== Debate Round-{round + 2} =====\n")
+                print(f"===== Debate Round-{round+2} =====\n")
                 self.affirmative.add_message_to_memory(
                     self.save_file["debate_prompt"].replace(
                         "##oppo_ans##", self.neg_ans

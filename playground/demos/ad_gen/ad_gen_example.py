@@ -68,7 +68,6 @@ class ProductAdConceptGenerator:
     def generate_concept(self):
         theme = random.choice(self.themes)
         context = random.choice(self.contexts)
-        style = random.choice(["medival", "modern", "futuristic", "retro"])
         return (
             f"{theme} inside a {style} {self.product_name}, {context}"
         )
@@ -89,7 +88,6 @@ image_paths = sd_api.run(creative_concept)
 
 # Generate ad copy
 ad_copy_agent = Agent(llm=llm, max_loops=1)
-social_media_platform = "Instagram"
 ad_copy_prompt = (
     f"Write a compelling {social_media_platform} ad copy for a"
     f" product photo showing {product_name} {creative_concept}."
@@ -97,7 +95,9 @@ ad_copy_prompt = (
 ad_copy = ad_copy_agent.run(task=ad_copy_prompt)
 
 # Output the results
-print("Ad Copy:", ad_copy)
+print("Creative Concept:", concept_result)
+print("Design Ideas:", design_result)
+print("Ad Copy:", copywriting_result)
 print(
     "Image Path:",
     image_paths[0] if image_paths else "No image generated",

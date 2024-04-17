@@ -66,7 +66,7 @@ llm = OpenAIChat(
 )
 
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(
     agent_name="Research Agent",
     llm=llm,

@@ -9,10 +9,10 @@ for f in /swarms/playground/examples/example_*.py; do
         echo "Skipping ${f} as it ran successfully in a previous run."
     else
         # Run the script if not previously successful
-        if python "$f" 2>>errors.txt; then
+        if /home/kye/miniconda3/envs/swarms/bin/python "$f" 2>>errors.txt; then
             echo "(${f}) ran successfully without errors."
             # Log the successful script execution
-            echo "$f" >>"$SUCCESS_LOG"
+            echo "$f" >> "$SUCCESS_LOG"
         else
             echo "Error encountered in ${f}. Check errors.txt for details."
             break

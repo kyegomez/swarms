@@ -175,7 +175,7 @@ class DistilWhisperModel:
                     # Print the chunk's transcription
                     print(
                         colored(
-                            f"Chunk {i + 1}/{len(chunks)}: ", "yellow"
+                            f"Chunk {i+1}/{len(chunks)}: ", "yellow"
                         )
                         + transcription
                     )

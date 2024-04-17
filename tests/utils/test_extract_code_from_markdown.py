@@ -7,7 +7,7 @@ from swarms.utils import extract_code_from_markdown
 def markdown_content_with_code():
     return """
     # This is a markdown document
-
+    
     Some intro text here.
 Some additional text.
 """

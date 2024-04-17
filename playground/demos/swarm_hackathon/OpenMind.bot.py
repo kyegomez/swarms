@@ -1,10 +1,10 @@
 # OpenMind.bot streamlines social interactions between personalized bots, representing users, media, and influencers, ensuring meaningful exchanges. It eliminates misunderstandings by using context-aware conversations, followed by summaries or audio recaps of these interactions for efficient communication.
 
-import datetime
 import json
-
+import datetime
 import pytz
-from flask import Flask, jsonify, request
+
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -28,7 +28,7 @@ def create_conversation():
 @app.route("/api/v1/conversations/<conversation_id>", methods=["GET"])
 def get_conversation(conversation_id):
     # Get the conversation from the database
-    with open("conversations.json") as f:
+    with open("conversations.json", "r") as f:
         conversation = json.load(f)
 
     # Return the conversation
@@ -49,7 +49,7 @@ def create_message(conversation_id):
     }
 
     # Get the conversation from the database
-    with open("conversations.json") as f:
+    with open("conversations.json", "r") as f:
         conversation = json.load(f)
 
     # Add the message to the conversation
@@ -68,7 +68,7 @@ def create_message(conversation_id):
 )
 def get_messages(conversation_id):
     # Get the conversation from the database
-    with open("conversations.json") as f:
+    with open("conversations.json", "r") as f:
         conversation = json.load(f)
 
     # Return the messages
@@ -80,7 +80,7 @@ def get_messages(conversation_id):
 )
 def get_summary(conversation_id):
     # Get the conversation from the database
-    with open("conversations.json") as f:
+    with open("conversations.json", "r") as f:
         conversation = json.load(f)
 
     # Create a summary of the conversation
@@ -98,7 +98,7 @@ def get_summary(conversation_id):
 )
 def get_audio_recap(conversation_id):
     # Get the conversation from the database
-    with open("conversations.json") as f:
+    with open("conversations.json", "r") as f:
         conversation = json.load(f)
 
     # Create an audio recap of the conversation

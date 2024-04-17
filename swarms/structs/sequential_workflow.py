@@ -186,7 +186,7 @@ class SequentialWorkflow:
         loops = 0
         while loops < self.max_loops:
             for i, agent in enumerate(self.agents):
-                logger.info(f"Agent {i + 1} is executing the task.")
+                logger.info(f"Agent {i+1} is executing the task.")
                 out = agent(self.description)
                 self.conversation.add(agent.agent_name, str(out))
                 prompt = self.conversation.return_history_as_string()

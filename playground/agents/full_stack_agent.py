@@ -10,7 +10,7 @@ def search_api(query: str, max_results: int = 10):
     return f"Search API: {query} -> {max_results} results"
 
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(
     agent_name="Youtube Transcript Generator",
     agent_description=(

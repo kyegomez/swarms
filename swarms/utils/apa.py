@@ -83,7 +83,7 @@ class TestResult:
         prompt = f"""
 This function has been executed for {self.visit_times} times. Last execution:
 1.Status: {self.runtime_status.name}
-2.Input:
+2.Input: 
 {self.input_data}
 
 3.Output:
@@ -108,7 +108,7 @@ class Action:
     def to_json(self):
         try:
             tool_output = json.loads(self.tool_output)
-        except json.JSONDecodeError:
+        except:
             tool_output = self.tool_output
         return {
             "thought": self.thought,

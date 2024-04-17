@@ -1,5 +1,5 @@
-import concurrent.futures
 import json
+import concurrent.futures
 import re
 from abc import abstractmethod
 from typing import Dict, List, NamedTuple
@@ -8,6 +8,8 @@ from langchain.schema import BaseOutputParser
 from pydantic import ValidationError
 
 from swarms.tools.tool import BaseTool
+
+from swarms.utils.loguru_logger import logger
 
 
 class AgentAction(NamedTuple):
@@ -97,6 +99,9 @@ def execute_tool_by_name(
     # Get command name and arguments
     action = output_parser.parse(text)
     tools = {t.name: t for t in tools}
+
+    logger.info(f"Tools available: {tools}")
+
     if action.name == stop_token:
         return action.args["response"]
     if action.name in tools:
@@ -109,6 +114,7 @@ def execute_tool_by_name(
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     futures = []
                     for tool_name in tool_names:
+                        logger.info(f"Executing tool: {tool_name}")
                         futures.append(
                             executor.submit(
                                 tools[tool_name].run, action.args

@@ -14,29 +14,29 @@ def sop_generator_agent_prompt(task_name: str):
 
 
     ######## SOP Structure Guide ########
-    Standard Operating Procedure for Teaching Task Documentation
+    Standard Operating Procedure for Teaching Task Documentation 
 
     Purpose: Provides guidelines for instructor agents to teach autonomous agents on documenting procedures for standardized execution of a new task.
 
-    Scope: Applies to the development of comprehensive SOP training material covering all key aspects to successfully perform unfamiliar tasks.
+    Scope: Applies to the development of comprehensive SOP training material covering all key aspects to successfully perform unfamiliar tasks. 
 
     Instructor Responsibilities:
-    - Analyze task to identify all required steps
-    - Verify agent has necessary background context
+    - Analyze task to identify all required steps 
+    - Verify agent has necessary background context  
     - Develop modular SOP content for clear understanding
     - Reinforce critical thinking at key decision points
     - Encourage questions to check ongoing comprehension
     - Be adaptive and respond to the agent’s pacing and progress
-    - Provide sufficient opportunities for practice and repetition
+    - Provide sufficient opportunities for practice and repetition  
     - Give constructive feedback on agent’s SOP drafts
     - Coach agents patiently until task proficiency is achieved
 
     Procedure to Teach SOP Creation:
 
-    1. Set Context
+    1. Set Context 
     - Outline purpose of the task and why procedure is required.
-    - Explain governing rules, principles and best practices.
-    - Define key vocabulary and terminology.
+    - Explain governing rules, principles and best practices. 
+    - Define key vocabulary and terminology. 
     - Establish standards for work quality and output.
 
     2. Demonstrate Task
@@ -44,26 +44,26 @@ def sop_generator_agent_prompt(task_name: str):
     - Clearly call out each step and decision point.
     - Explain rationale for sequence of steps.
     - Highlight areas that require caution or extra attention.
-    - Be transparent about assumptions made and exceptions.
+    - Be transparent about assumptions made and exceptions. 
 
-    3. Simplify Instruction
+    3. Simplify Instruction 
     - Modularize instructions into sections for clarity
     - Use headings, numbered lists and visual aids
     - Maintain brevity and use simple language
     - Define specialized terms, acronyms and abbreviations
-    - Provide examples to aid understanding
+    - Provide examples to aid understanding  
 
-    4. Practice Sequentially
+    4. Practice Sequentially 
     - Agent observes instructor performing task end-to-end
-    - Instructor completes task based on own SOP
+    - Instructor completes task based on own SOP 
     - Agent follows along by applying documented steps
     - Steps can be repeated for memorization
     - Agent mimics instructor to build muscle memory
 
     5. Adjust Guidance
     - Coach agent according to pace of comprehension
-    - Be adaptive to feedback and questions
-    - Identify knowledge gaps for clarification
+    - Be adaptive to feedback and questions  
+    - Identify knowledge gaps for clarification 
     - Break down complex segments for step-wise practice
     - Repeat critical sub-tasks until perfected
     - Celebrate small wins to maintain confidence
@@ -73,7 +73,7 @@ def sop_generator_agent_prompt(task_name: str):
     - Motivate questions at any time for understanding
     - Be approachable and show patience
     - Appreciate feedback from agent’s perspective
-    - Foster open conversations and positive rapport
+    - Foster open conversations and positive rapport  
 
     7. Ensure Competency
     - Agent drafts SOP proof for review
@@ -84,7 +84,7 @@ def sop_generator_agent_prompt(task_name: str):
 
     Templates:
     - SOP Structure Guide
-    - Style standards
+    - Style standards  
     - Sample SOPs
     - Revision checklist
 

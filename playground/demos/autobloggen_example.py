@@ -73,7 +73,7 @@ class AutoBlogGenSwarm:
             -----------------------------
 
             {text}
-
+            
             """,
                 "blue",
             )

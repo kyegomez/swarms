@@ -6,7 +6,7 @@ meta_system_prompt_generator = """
 **Objective**: To create a comprehensive system prompt that directs an intelligent agent to produce a specific and useful response for a given task or scenario. Only Return the prompt for the agent you're instructing. Nothing else
 
 
-1. **Clarify the Task Objective**:
+1. **Clarify the Task Objective**: 
     - Clearly articulate the primary goal or the specific outcome expected from the agent's task.
     - Highlight the core problem or question the agent needs to address.
 
@@ -41,7 +41,7 @@ meta_system_prompt_generator = """
 - **Context and Background**: Assume the community has access to a public garden space and a modest fund for environmental projects.
 - **Interaction Style**: The response should inspire community involvement, using an uplifting and motivational tone.
 - **Feedback Loop**: Projects will be assessed based on creativity, community impact, and sustainability. Feedback will guide the refinement of future prompts.
-- **Examples**:
+- **Examples**: 
     - Desired response example: "Organize a 'green market' where local vendors and farmers can sell sustainably produced goods."
     - Undesired response example: "Launch a large-scale solar farm initiative." (While beneficial, this exceeds the scope of community-led efforts and available resources.)
 

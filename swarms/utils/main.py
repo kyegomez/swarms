@@ -50,12 +50,22 @@ def get_new_image_name(org_img_name, func_name="update"):
     if len(name_split) == 1:
         most_org_file_name = name_split[0]
         recent_prev_file_name = name_split[0]
-        new_file_name = f"{this_new_uuid}_{func_name}_{recent_prev_file_name}_{most_org_file_name}.png"
+        new_file_name = "{}_{}_{}_{}.png".format(
+            this_new_uuid,
+            func_name,
+            recent_prev_file_name,
+            most_org_file_name,
+        )
     else:
         assert len(name_split) == 4
         most_org_file_name = name_split[3]
         recent_prev_file_name = name_split[0]
-        new_file_name = f"{this_new_uuid}_{func_name}_{recent_prev_file_name}_{most_org_file_name}.png"
+        new_file_name = "{}_{}_{}_{}.png".format(
+            this_new_uuid,
+            func_name,
+            recent_prev_file_name,
+            most_org_file_name,
+        )
     return os.path.join(head, new_file_name)
 
 
@@ -68,12 +78,22 @@ def get_new_dataframe_name(org_img_name, func_name="update"):
     if len(name_split) == 1:
         most_org_file_name = name_split[0]
         recent_prev_file_name = name_split[0]
-        new_file_name = f"{this_new_uuid}_{func_name}_{recent_prev_file_name}_{most_org_file_name}.csv"
+        new_file_name = "{}_{}_{}_{}.csv".format(
+            this_new_uuid,
+            func_name,
+            recent_prev_file_name,
+            most_org_file_name,
+        )
     else:
         assert len(name_split) == 4
         most_org_file_name = name_split[3]
         recent_prev_file_name = name_split[0]
-        new_file_name = f"{this_new_uuid}_{func_name}_{recent_prev_file_name}_{most_org_file_name}.csv"
+        new_file_name = "{}_{}_{}_{}.csv".format(
+            this_new_uuid,
+            func_name,
+            recent_prev_file_name,
+            most_org_file_name,
+        )
     return os.path.join(head, new_file_name)
 
 
@@ -156,7 +176,7 @@ class FileHandler:
         os.makedirs(os.path.dirname(local_filename), exist_ok=True)
         with open(local_filename, "wb") as f:
             size = f.write(data)
-        print(f"Inputs: {url} ({size // 1000}MB)  => {local_filename}")
+        print(f"Inputs: {url} ({size//1000}MB)  => {local_filename}")
         return local_filename
 
     def handle(self, url: str) -> str:
@@ -170,7 +190,7 @@ class FileHandler:
                             "SERVER", "http://localhost:8000"
                         )
                     )
-                    + 1:
+                    + 1 :
                 ]
                 local_filename = (
                     Path("file") / local_filepath.split("/")[-1]

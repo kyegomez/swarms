@@ -5,7 +5,7 @@ import warnings
 from typing import Any, Callable, Literal, Sequence
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import model_validator, ConfigDict, BaseModel, Field
 from tenacity import (
     AsyncRetrying,
     before_sleep_log,

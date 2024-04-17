@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms import Agent, OpenAIChat, SwarmNetwork
+from swarms import OpenAIChat, Agent, SwarmNetwork
 
 # Load the environment variables
 load_dotenv()
@@ -17,7 +17,7 @@ llm = OpenAIChat(
     openai_api_key=api_key,
 )
 
-# Initialize the workflow
+## Initialize the workflow
 agent = Agent(llm=llm, max_loops=1, agent_name="Social Media Manager")
 agent2 = Agent(llm=llm, max_loops=1, agent_name=" Product Manager")
 agent3 = Agent(llm=llm, max_loops=1, agent_name="SEO Manager")

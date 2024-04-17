@@ -29,8 +29,8 @@ Guidelines for Task Planning:
 
 # Generate individual code files based on the detailed task descriptions
 FILE_WRITING_PROMPT = """
-Generate individual code files based on the codebase plan. Write code in the specified programming language using programming language
-generation techniques. For each file required by the project,
+Generate individual code files based on the codebase plan. Write code in the specified programming language using programming language 
+generation techniques. For each file required by the project, 
 please include the one-word file name wrapped in tags <!--START_FILE_PATH--> and <!--END_FILE_PATH-->, followed by the file content wrapped in
 <!--START_CONTENT--> and <!--END_CONTENT--> tags. Ensure each file's details are clearly separated. Here are the details: {details}
 """
@@ -42,7 +42,7 @@ Analyze the generated code for correctness, efficiency, and adherence to best pr
 
 # Refactor the generated code to improve its structure, maintainability, and extensibility
 CODE_REFACTORING_PROMPT = """
-Given the code provided, refactor it to improve its structure, maintainability, and extensibility. Ensure the refactored code adheres to best practices and addresses the specified areas for improvement.
+Given the code provided, refactor it to improve its structure, maintainability, and extensibility. Ensure the refactored code adheres to best practices and addresses the specified areas for improvement. 
 
 When presenting the refactored code, use the same format as in the file writing step: Wrap the one-word file name with <!--START_FILE_PATH--> and <!--END_FILE_PATH--> tags, and enclose the file content with <!--START_CONTENT--> and <!--END_CONTENT--> tags. ENSURE that the end of your output contains an "<!--END_CONTENT-->" tag. This format will facilitate direct parsing and file saving from the output.
 

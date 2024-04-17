@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional
+from typing import Any, Optional, Callable
 
 from swarms.structs.agent import Agent
 from swarms.tools.format_tools import Jsonformer

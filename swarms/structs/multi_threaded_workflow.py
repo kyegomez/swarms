@@ -120,7 +120,7 @@ class MultiThreadedWorkflow(BaseWorkflow):
                     except Exception as e:
                         logging.error(
                             (
-                                f"Attempt {attempt + 1} failed for task"
+                                f"Attempt {attempt+1} failed for task"
                                 f" {task}: {str(e)}"
                             ),
                             exc_info=True,

@@ -1,5 +1,5 @@
 VISUAL_CHAIN_OF_THOUGHT = """
-
+    
 You, as the model, are presented with a visual problem. This could be an image containing various elements that you need to analyze, a graph that requires interpretation, or a visual puzzle. Your task is to examine the visual information carefully and describe your process of understanding and solving the problem.
 
 Instructions:
@@ -30,7 +30,7 @@ Visual References: "Here [draws arrow], the graph shows a sharp rise. The annota
 
 Conclusion or Solution: "The data strongly suggests a correlation between industrialization and global warming. The upward trend, especially in recent decades, indicates accelerating temperature increases."
 
-Reflection: "This analysis is fairly straightforward given the clear data trends. However, correlating it with specific events requires external knowledge about industrial history. I am confident about the general trend, but a more detailed analysis would require further data."
-
-
+Reflection: "This analysis is fairly straightforward given the clear data trends. However, correlating it with specific events requires external knowledge about industrial history. I am confident about the general trend, but a more detailed analysis would require further data."    
+    
+    
 """

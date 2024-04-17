@@ -1,13 +1,12 @@
 import concurrent
 import csv
-
-from dotenv import load_dotenv
-
 from swarms import Agent, OpenAIChat
 from swarms.memory import ChromaDB
+from dotenv import load_dotenv
+from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.file_processing import create_file
 from swarms.utils.loguru_logger import logger
-from swarms.utils.parse_code import extract_code_from_markdown
+
 
 # Load ENV
 load_dotenv()
@@ -70,7 +69,7 @@ def extract_and_create_agents(
     """
     try:
         agents = []
-        with open(csv_file_path, encoding="utf-8") as file:
+        with open(csv_file_path, mode="r", encoding="utf-8") as file:
             reader = csv.DictReader(file)
             for row in reader:
                 project_name = row[target_columns[0]]
