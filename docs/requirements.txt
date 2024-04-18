@@ -19,3 +19,4 @@ mkdocs-include-markdown-plugin
 mkdocs-enumerate-headings-plugin
 mkdocs-autolinks-plugin
 mkdocs-minify-html-plugin
+mkdocs-autolinks-plugin

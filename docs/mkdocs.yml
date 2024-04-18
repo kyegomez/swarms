@@ -38,7 +38,7 @@ plugins:
   - mkdocs-versioning
   # - mkdocs-include-markdown-plugin
   - enumerate-headings
-  - mkdocs-autolinks-plugin
+  - autolinks
 
 copyright: "&copy; TGSC, Corporation."
 extra_css:
