@@ -31,14 +31,14 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
-  - minify_html
-  - redirects
-  - mkdocs-simple-hooks
-  - awesome-pages
-  - mkdocs-versioning
-  # - mkdocs-include-markdown-plugin
-  - enumerate-headings
-  - autolinks
+  # - minify_html
+  # - redirects
+  # - mkdocs-simple-hooks
+  # - awesome-pages
+  # - mkdocs-versioning
+  # # - mkdocs-include-markdown-plugin
+  # - enumerate-headings
+  # - autolinks
 
 copyright: "&copy; TGSC, Corporation."
 extra_css:
