@@ -31,9 +31,7 @@ def test_find_most_similar_podcasts():
     graph = create_graph()
     weight_edges(graph)
     user_list = create_user_list()
-    most_similar_podcasts = find_most_similar_podcasts(
-        graph, user_list
-    )
+    most_similar_podcasts = find_most_similar_podcasts(graph, user_list)
     assert isinstance(most_similar_podcasts, list)
 
 

@@ -117,9 +117,7 @@ class AgentRearrange(BaseSwarm):
             return None
         task_to_run = specific_tasks.get(dest_agent_name, task)
         if self.custom_prompt:
-            out = dest_agent.run(
-                f"{task_to_run} {self.custom_prompt}"
-            )
+            out = dest_agent.run(f"{task_to_run} {self.custom_prompt}")
         else:
             out = dest_agent.run(f"{task_to_run} (from {source})")
         return out
@@ -138,9 +136,7 @@ class AgentRearrange(BaseSwarm):
                     results.append(result)
             else:
                 for destination in destinations:
-                    task = specific_tasks.get(
-                        destination, default_task
-                    )
+                    task = specific_tasks.get(destination, default_task)
                     destination_agent = self.self_find_agent_by_name(
                         destination
                     )
@@ -156,9 +152,7 @@ class AgentRearrange(BaseSwarm):
         **specific_tasks,
     ):
         self.flows.clear()  # Reset previous flows
-        results = self.process_flows(
-            pattern, default_task, specific_tasks
-        )
+        results = self.process_flows(pattern, default_task, specific_tasks)
         return results
 
 

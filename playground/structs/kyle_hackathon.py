@@ -6,7 +6,7 @@ from swarms import Agent, OpenAIChat
 from swarms.agents.multion_agent import MultiOnAgent
 from swarms.memory.chroma_db import ChromaDB
 from swarms.tools.tool import tool
-from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+from swarms.tools.code_interpreter import SubprocessCodeInterpreter
 
 # Load the environment variables
 load_dotenv()

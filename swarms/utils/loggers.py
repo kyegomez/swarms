@@ -16,9 +16,7 @@ from swarms.utils.apa import Action, ToolCallStatus
 
 # from autogpt.speech import say_text
 class JsonFileHandler(logging.FileHandler):
-    def __init__(
-        self, filename, mode="a", encoding=None, delay=False
-    ):
+    def __init__(self, filename, mode="a", encoding=None, delay=False):
         """
         Initializes a new instance of the class with the specified file name, mode, encoding, and delay settings.
 
@@ -88,9 +86,7 @@ class Logger:
         log_file = "activity.log"
         error_file = "error.log"
 
-        console_formatter = AutoGptFormatter(
-            "%(title_color)s %(message)s"
-        )
+        console_formatter = AutoGptFormatter("%(title_color)s %(message)s")
 
         # Create a handler for console which simulate typing
         self.typing_console_handler = TypingConsoleHandler()
@@ -381,9 +377,7 @@ class TypingConsoleHandler(logging.StreamHandler):
                 "    ", transfer_space
             )
             words = msg_transfered.split()
-            words = [
-                word.replace(transfer_enter, "\n") for word in words
-            ]
+            words = [word.replace(transfer_enter, "\n") for word in words]
             words = [
                 word.replace(transfer_space, "    ") for word in words
             ]
@@ -488,12 +482,8 @@ def print_action_base(action: Action):
         None
     """
     if action.content != "":
-        logger.typewriter_log(
-            "content:", Fore.YELLOW, f"{action.content}"
-        )
-    logger.typewriter_log(
-        "Thought:", Fore.YELLOW, f"{action.thought}"
-    )
+        logger.typewriter_log("content:", Fore.YELLOW, f"{action.content}")
+    logger.typewriter_log("Thought:", Fore.YELLOW, f"{action.thought}")
     if len(action.plan) > 0:
         logger.typewriter_log(
             "Plan:",
@@ -502,9 +492,7 @@ def print_action_base(action: Action):
         for line in action.plan:
             line = line.lstrip("- ")
             logger.typewriter_log("- ", Fore.GREEN, line.strip())
-    logger.typewriter_log(
-        "Criticism:", Fore.YELLOW, f"{action.criticism}"
-    )
+    logger.typewriter_log("Criticism:", Fore.YELLOW, f"{action.criticism}")
 
 
 def print_action_tool(action: Action):
@@ -518,21 +506,15 @@ def print_action_tool(action: Action):
         None
     """
     logger.typewriter_log("Tool:", Fore.BLUE, f"{action.tool_name}")
-    logger.typewriter_log(
-        "Tool Input:", Fore.BLUE, f"{action.tool_input}"
-    )
+    logger.typewriter_log("Tool Input:", Fore.BLUE, f"{action.tool_input}")
 
-    output = (
-        action.tool_output if action.tool_output != "" else "None"
-    )
+    output = action.tool_output if action.tool_output != "" else "None"
     logger.typewriter_log("Tool Output:", Fore.BLUE, f"{output}")
 
     color = Fore.RED
     if action.tool_output_status == ToolCallStatus.ToolCallSuccess:
         color = Fore.GREEN
-    elif (
-        action.tool_output_status == ToolCallStatus.InputCannotParsed
-    ):
+    elif action.tool_output_status == ToolCallStatus.InputCannotParsed:
         color = Fore.YELLOW
 
     logger.typewriter_log(

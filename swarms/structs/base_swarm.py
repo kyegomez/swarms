@@ -361,9 +361,7 @@ class BaseSwarm(ABC):
             task (Optional[str], optional): _description_. Defaults to None.
         """
         loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(
-            self.arun(task, *args, **kwargs)
-        )
+        result = loop.run_until_complete(self.arun(task, *args, **kwargs))
         return result
 
     def run_batch_async(self, tasks: List[str], *args, **kwargs):
@@ -533,9 +531,7 @@ class BaseSwarm(ABC):
             Agent: Instance of Agent representing the retrieved Agent, or None if not found.
         """
 
-    def join_swarm(
-        self, from_entity: Agent | Agent, to_entity: Agent
-    ):
+    def join_swarm(self, from_entity: Agent | Agent, to_entity: Agent):
         """
         Add a relationship between a Swarm and an Agent or other Swarm to the registry.
 

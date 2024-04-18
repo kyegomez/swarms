@@ -27,9 +27,7 @@ def test_set_entry_point(graph_workflow):
 
 
 def test_set_entry_point_nonexistent_node(graph_workflow):
-    with pytest.raises(
-        ValueError, match="Node does not exist in graph"
-    ):
+    with pytest.raises(ValueError, match="Node does not exist in graph"):
         graph_workflow.set_entry_point("nonexistent")
 
 
@@ -42,9 +40,7 @@ def test_add_edge(graph_workflow):
 
 def test_add_edge_nonexistent_node(graph_workflow):
     graph_workflow.add("node1", "value1")
-    with pytest.raises(
-        ValueError, match="Node does not exist in graph"
-    ):
+    with pytest.raises(ValueError, match="Node does not exist in graph"):
         graph_workflow.add_edge("node1", "nonexistent")
 
 
@@ -59,9 +55,7 @@ def test_add_conditional_edges(graph_workflow):
 
 def test_add_conditional_edges_nonexistent_node(graph_workflow):
     graph_workflow.add("node1", "value1")
-    with pytest.raises(
-        ValueError, match="Node does not exist in graph"
-    ):
+    with pytest.raises(ValueError, match="Node does not exist in graph"):
         graph_workflow.add_conditional_edges(
             "node1", "condition1", {"condition_value1": "nonexistent"}
         )

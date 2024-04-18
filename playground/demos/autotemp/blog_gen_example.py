@@ -56,15 +56,11 @@ class BlogGen:
             )
 
             chosen_topic = topic_output.split("\n")[0]
-            print(
-                colored("Selected topic: " + chosen_topic, "yellow")
-            )
+            print(colored("Selected topic: " + chosen_topic, "yellow"))
 
             # Initial draft generation with AutoTemp
-            initial_draft_prompt = (
-                self.DRAFT_WRITER_SYSTEM_PROMPT.replace(
-                    "{{CHOSEN_TOPIC}}", chosen_topic
-                )
+            initial_draft_prompt = self.DRAFT_WRITER_SYSTEM_PROMPT.replace(
+                "{{CHOSEN_TOPIC}}", chosen_topic
             )
             auto_temp_output = self.auto_temp.run(
                 initial_draft_prompt, self.temperature_range

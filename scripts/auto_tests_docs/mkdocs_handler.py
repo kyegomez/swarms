@@ -22,9 +22,7 @@ def generate_file_list(directory, output_file):
                     # Remove the file extension
                     file_name, _ = os.path.splitext(file)
                     # Write the file name and path to the output file
-                    f.write(
-                        f'- {file_name}: "swarms/utils/{file_path}"\n'
-                    )
+                    f.write(f'- {file_name}: "swarms/utils/{file_path}"\n')
 
 
 # Use the function to generate the file list

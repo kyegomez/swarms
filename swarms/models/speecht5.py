@@ -88,15 +88,11 @@ class SpeechT5:
         self.model_name = model_name
         self.vocoder_name = vocoder_name
         self.dataset_name = dataset_name
-        self.processor = SpeechT5Processor.from_pretrained(
-            self.model_name
-        )
+        self.processor = SpeechT5Processor.from_pretrained(self.model_name)
         self.model = SpeechT5ForTextToSpeech.from_pretrained(
             self.model_name
         )
-        self.vocoder = SpeechT5HifiGan.from_pretrained(
-            self.vocoder_name
-        )
+        self.vocoder = SpeechT5HifiGan.from_pretrained(self.vocoder_name)
         self.embeddings_dataset = load_dataset(
             self.dataset_name, split="validation"
         )
@@ -121,9 +117,7 @@ class SpeechT5:
     def set_model(self, model_name: str):
         """Set the model to a new model."""
         self.model_name = model_name
-        self.processor = SpeechT5Processor.from_pretrained(
-            self.model_name
-        )
+        self.processor = SpeechT5Processor.from_pretrained(self.model_name)
         self.model = SpeechT5ForTextToSpeech.from_pretrained(
             self.model_name
         )
@@ -131,9 +125,7 @@ class SpeechT5:
     def set_vocoder(self, vocoder_name):
         """Set the vocoder to a new vocoder."""
         self.vocoder_name = vocoder_name
-        self.vocoder = SpeechT5HifiGan.from_pretrained(
-            self.vocoder_name
-        )
+        self.vocoder = SpeechT5HifiGan.from_pretrained(self.vocoder_name)
 
     def set_embeddings_dataset(self, dataset_name):
         """Set the embeddings dataset to a new dataset."""

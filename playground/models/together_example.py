@@ -7,6 +7,4 @@ model = TogetherLLM(
 )
 
 # Run the model
-model.run(
-    "Generate a blog post about the best way to make money online."
-)
+model.run("Generate a blog post about the best way to make money online.")

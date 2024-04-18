@@ -21,9 +21,7 @@ def test_limit_zero_tokens():
 
 
 def test_negative_token_limit():
-    sentence = (
-        "This test will raise an exception when limit is negative."
-    )
+    sentence = "This test will raise an exception when limit is negative."
     with pytest.raises(Exception):
         limit_tokens_from_string(sentence, limit=-1)
 

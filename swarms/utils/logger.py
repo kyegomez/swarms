@@ -31,9 +31,7 @@ def log_wrapper(func):
         )
         try:
             result = func(*args, **kwargs)
-            logger.debug(
-                f"Function {func.__name__} returned {result}"
-            )
+            logger.debug(f"Function {func.__name__} returned {result}")
             return result
         except Exception as e:
             logger.error(
@@ -73,9 +71,7 @@ class Logger:
             task (str): The task associated with the message.
             message (str): The message to be logged.
         """
-        timestamp = datetime.datetime.now().strftime(
-            "%d/%m/%y %H:%M:%S"
-        )
+        timestamp = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
         formatted_message = (
             f"[{timestamp}] {level:<8} {task}\n{' ' * 29}{message}"
         )

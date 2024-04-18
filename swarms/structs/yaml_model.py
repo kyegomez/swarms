@@ -53,8 +53,7 @@ def create_yaml_schema_from_dict(
                 "type": get_type_name(model_field.outer_type_),
                 "default": field_info.default,
                 "description": (
-                    field_info.description
-                    or "No description provided."
+                    field_info.description or "No description provided."
                 ),
             }
     else:
@@ -127,7 +126,7 @@ class YamlModel(BaseModel):
         """
         return yaml.safe_dump(self.dict(), sort_keys=False)
 
-    def from_yaml(cls, yaml_str: str):
+    def from_yaml(self, cls, yaml_str: str):
         """
         Create an instance of the class from a YAML string.
 
@@ -146,13 +145,11 @@ class YamlModel(BaseModel):
             return None
 
     @staticmethod
-    def json_to_yaml(json_str: str):
+    def json_to_yaml(self, json_str: str):
         """
         Convert a JSON string to a YAML string.
         """
-        data = json.loads(
-            json_str
-        )  # Convert JSON string to dictionary
+        data = json.loads(json_str)  # Convert JSON string to dictionary
         return yaml.dump(data)
 
     def save_to_yaml(self, filename: str):
@@ -189,7 +186,7 @@ class YamlModel(BaseModel):
     #     return yaml.safe_dump(schema, sort_keys=False)
 
     def create_yaml_schema_from_dict(
-        data: Dict[str, Any], model_class: Type
+        self, data: Dict[str, Any], model_class: Type
     ) -> str:
         """
         Generate a YAML schema based on a dictionary and a class (can be a Pydantic model, regular class, or dataclass).
@@ -205,3 +202,22 @@ class YamlModel(BaseModel):
         >>> data = {'name': 'Alice', 'age: 30, 'is_active': True}
         """
         return create_yaml_schema_from_dict(data, model_class)
+
+    def yaml_to_dict(self, yaml_str: str):
+        """
+        Convert a YAML string to a Python dictionary.
+        """
+        return yaml.safe_load(yaml_str)
+
+    def dict_to_yaml(self, data: Dict[str, Any]):
+        """
+        Convert a Python dictionary to a YAML string.
+        """
+        return yaml.safe_dump(data, sort_keys=False)
+
+
+# dict = {'name': 'Alice', 'age': 30, 'is_active': True}
+
+# # Comvert the dictionary to a YAML schema dict to yaml
+# yaml_model = YamlModel().dict_to_yaml(dict)
+# print(yaml_model)

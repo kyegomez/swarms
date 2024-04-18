@@ -42,9 +42,7 @@ class GPT4VSAM(BaseMultiModalModel):
         self.device = device
         self.return_related_marks = return_related_marks
 
-        self.sam = SegmentAnythingMarkGenerator(
-            device, *args, **kwargs
-        )
+        self.sam = SegmentAnythingMarkGenerator(device, *args, **kwargs)
         self.visualizer = MarkVisualizer(*args, **kwargs)
 
     def load_img(self, img: str) -> Any:

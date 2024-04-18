@@ -34,9 +34,7 @@ class PostgresDB(AbstractVectorDatabase):
             table_name (str): The name of the table in the database.
 
         """
-        self.engine = create_engine(
-            connection_string, *args, **kwargs
-        )
+        self.engine = create_engine(connection_string, *args, **kwargs)
         self.table_name = table_name
         self.VectorModel = self._create_vector_model()
 

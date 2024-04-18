@@ -70,8 +70,7 @@ def test_sequential_workflow_initialization():
     assert workflow.max_loops == 1
     assert workflow.autosave is False
     assert (
-        workflow.saved_state_filepath
-        == "sequential_workflow_state.json"
+        workflow.saved_state_filepath == "sequential_workflow_state.json"
     )
     assert workflow.restore_state_filepath is None
     assert workflow.dashboard is False

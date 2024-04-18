@@ -44,9 +44,7 @@ class DictSharedMemory:
             entry_id = str(uuid.uuid4())
             data = {}
             epoch = datetime.datetime.utcfromtimestamp(0)
-            epoch = (
-                datetime.datetime.utcnow() - epoch
-            ).total_seconds()
+            epoch = (datetime.datetime.utcnow() - epoch).total_seconds()
             data[entry_id] = {
                 "agent": agent_id,
                 "epoch": epoch,

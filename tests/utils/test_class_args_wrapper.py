@@ -33,9 +33,7 @@ def test_print_class_parameters_error():
 def get_parameters(class_name: str):
     classes = {"Agent": Agent}
     if class_name in classes:
-        return print_class_parameters(
-            classes[class_name], api_format=True
-        )
+        return print_class_parameters(classes[class_name], api_format=True)
     else:
         return {"error": "Class not found"}
 

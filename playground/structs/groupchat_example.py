@@ -44,7 +44,5 @@ manager = Agent(
 agents = [flow1, flow2, flow3]
 
 group_chat = GroupChat(agents=agents, messages=[], max_round=10)
-chat_manager = GroupChatManager(
-    groupchat=group_chat, selector=manager
-)
+chat_manager = GroupChatManager(groupchat=group_chat, selector=manager)
 chat_history = chat_manager("Write me a riddle")

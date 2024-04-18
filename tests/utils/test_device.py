@@ -32,18 +32,14 @@ def test_multiple_gpus_available(mocker):
 def test_device_properties(mocker):
     mocker.patch("torch.cuda.is_available", return_value=True)
     mocker.patch("torch.cuda.device_count", return_value=1)
-    mocker.patch(
-        "torch.cuda.get_device_capability", return_value=(7, 5)
-    )
+    mocker.patch("torch.cuda.get_device_capability", return_value=(7, 5))
     mocker.patch(
         "torch.cuda.get_device_properties",
         return_value=MagicMock(total_memory=1000),
     )
     mocker.patch("torch.cuda.memory_allocated", return_value=200)
     mocker.patch("torch.cuda.memory_reserved", return_value=300)
-    mocker.patch(
-        "torch.cuda.get_device_name", return_value="Tesla K80"
-    )
+    mocker.patch("torch.cuda.get_device_name", return_value="Tesla K80")
     devices = check_device()
     assert len(devices) == 1
     assert str(devices[0]) == "cuda"
@@ -52,9 +48,7 @@ def test_device_properties(mocker):
 def test_memory_threshold(mocker):
     mocker.patch("torch.cuda.is_available", return_value=True)
     mocker.patch("torch.cuda.device_count", return_value=1)
-    mocker.patch(
-        "torch.cuda.get_device_capability", return_value=(7, 5)
-    )
+    mocker.patch("torch.cuda.get_device_capability", return_value=(7, 5))
     mocker.patch(
         "torch.cuda.get_device_properties",
         return_value=MagicMock(total_memory=1000),
@@ -63,9 +57,7 @@ def test_memory_threshold(mocker):
         "torch.cuda.memory_allocated", return_value=900
     )  # 90% of total memory
     mocker.patch("torch.cuda.memory_reserved", return_value=300)
-    mocker.patch(
-        "torch.cuda.get_device_name", return_value="Tesla K80"
-    )
+    mocker.patch("torch.cuda.get_device_name", return_value="Tesla K80")
     with pytest.warns(
         UserWarning,
         match=r"Memory usage for device cuda exceeds threshold",
@@ -89,14 +81,10 @@ def test_compute_capability_threshold(mocker):
     )
     mocker.patch("torch.cuda.memory_allocated", return_value=200)
     mocker.patch("torch.cuda.memory_reserved", return_value=300)
-    mocker.patch(
-        "torch.cuda.get_device_name", return_value="Tesla K80"
-    )
+    mocker.patch("torch.cuda.get_device_name", return_value="Tesla K80")
     with pytest.warns(
         UserWarning,
-        match=(
-            r"Compute capability for device cuda is below threshold"
-        ),
+        match=(r"Compute capability for device cuda is below threshold"),
     ):
         devices = check_device(
             capability_threshold=3.5

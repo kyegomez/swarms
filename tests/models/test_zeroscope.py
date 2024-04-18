@@ -25,9 +25,7 @@ def test_zeroscope_ttv_init(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_forward(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
+    mock_pipeline.from_pretrained.return_value = mock_pipeline_instance
     mock_pipeline_instance.return_value = MagicMock(
         frames="Generated frames"
     )
@@ -51,9 +49,7 @@ def test_zeroscope_ttv_forward(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_forward_error(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
+    mock_pipeline.from_pretrained.return_value = mock_pipeline_instance
     mock_pipeline_instance.return_value = MagicMock(
         frames="Generated frames"
     )
@@ -67,9 +63,7 @@ def test_zeroscope_ttv_forward_error(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_call(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
+    mock_pipeline.from_pretrained.return_value = mock_pipeline_instance
     mock_pipeline_instance.return_value = MagicMock(
         frames="Generated frames"
     )
@@ -89,9 +83,7 @@ def test_zeroscope_ttv_call(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_call_error(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
+    mock_pipeline.from_pretrained.return_value = mock_pipeline_instance
     mock_pipeline_instance.return_value = MagicMock(
         frames="Generated frames"
     )
@@ -105,9 +97,7 @@ def test_zeroscope_ttv_call_error(mock_scheduler, mock_pipeline):
 def test_zeroscope_ttv_save_video_path(mock_scheduler, mock_pipeline):
     zeroscope = ZeroscopeTTV()
     mock_pipeline_instance = MagicMock()
-    mock_pipeline.from_pretrained.return_value = (
-        mock_pipeline_instance
-    )
+    mock_pipeline.from_pretrained.return_value = mock_pipeline_instance
     mock_pipeline_instance.return_value = MagicMock(
         frames="Generated frames"
     )

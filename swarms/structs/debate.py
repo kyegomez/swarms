@@ -140,9 +140,7 @@ class Debate:
         self.affirmative.system_prompt(
             self.save_file["player_meta_prompt"]
         )
-        self.negative.system_prompt(
-            self.save_file["player_meta_prompt"]
-        )
+        self.negative.system_prompt(self.save_file["player_meta_prompt"])
         self.moderator.system_prompt(
             self.save_file["moderator_meta_prompt"]
         )
@@ -191,14 +189,10 @@ class Debate:
     def save_file_to_json(self, id):
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d_%H:%M:%S")
-        save_file_path = os.path.join(
-            self.save_file_dir, f"{id}.json"
-        )
+        save_file_path = os.path.join(self.save_file_dir, f"{id}.json")
 
         self.save_file["end_time"] = current_time
-        json_str = json.dumps(
-            self.save_file, ensure_ascii=False, indent=4
-        )
+        json_str = json.dumps(self.save_file, ensure_ascii=False, indent=4)
         with open(save_file_path, "w") as f:
             f.write(json_str)
 

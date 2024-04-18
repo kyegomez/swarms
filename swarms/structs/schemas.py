@@ -60,8 +60,7 @@ class StepInput(BaseModel):
     step: Any = Field(
         ...,
         description=(
-            "Input parameters for the task step. Any value is"
-            " allowed."
+            "Input parameters for the task step. Any value is" " allowed."
         ),
         examples=['{\n"file_to_refactor": "models.py"\n}'],
     )
@@ -82,9 +81,7 @@ class TaskRequestBody(BaseModel):
     input: str | None = Field(
         None,
         description="Input prompt for the task.",
-        examples=[
-            "Write the words you receive to the file 'output.txt'."
-        ],
+        examples=["Write the words you receive to the file 'output.txt'."],
     )
     additional_input: TaskInput | None = None
 
@@ -138,9 +135,7 @@ class Step(StepRequestBody):
         description="The name of the task step.",
         examples=["Write to file"],
     )
-    status: Status = Field(
-        ..., description="The status of the task step."
-    )
+    status: Status = Field(..., description="The status of the task step.")
     output: str | None = Field(
         None,
         description="Output of the task step.",

@@ -19,9 +19,7 @@ def test_class_with_complex_parameters():
             pass
 
     output = {"value1": "<class 'list'>", "value2": "<class 'dict'>"}
-    assert (
-        print_class_parameters(ComplexArgs, api_format=True) == output
-    )
+    assert print_class_parameters(ComplexArgs, api_format=True) == output
 
 
 def test_empty_class():
@@ -41,10 +39,7 @@ def test_class_with_no_annotations():
         "value1": "<class 'inspect._empty'>",
         "value2": "<class 'inspect._empty'>",
     }
-    assert (
-        print_class_parameters(NoAnnotations, api_format=True)
-        == output
-    )
+    assert print_class_parameters(NoAnnotations, api_format=True) == output
 
 
 def test_class_with_partial_annotations():

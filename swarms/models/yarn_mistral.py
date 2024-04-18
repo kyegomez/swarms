@@ -78,9 +78,7 @@ class YarnMistral128:
             bnb_config = BitsAndBytesConfig(**quantization_config)
 
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_id
-            )
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id,
                 quantization_config=bnb_config,

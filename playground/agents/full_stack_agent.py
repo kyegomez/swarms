@@ -14,8 +14,7 @@ def search_api(query: str, max_results: int = 10):
 agent = Agent(
     agent_name="Youtube Transcript Generator",
     agent_description=(
-        "Generate a transcript for a youtube video on what swarms"
-        " are!"
+        "Generate a transcript for a youtube video on what swarms" " are!"
     ),
     llm=Anthropic(),
     max_loops="auto",

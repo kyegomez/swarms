@@ -35,9 +35,7 @@ class ConcurrentWorkflow(BaseStructure):
     max_loops: int = 1
     max_workers: int = 5
     autosave: bool = False
-    saved_state_filepath: Optional[str] = (
-        "runs/concurrent_workflow.json"
-    )
+    saved_state_filepath: Optional[str] = "runs/concurrent_workflow.json"
     print_results: bool = False
     return_results: bool = False
     use_processes: bool = False
@@ -89,9 +87,7 @@ class ConcurrentWorkflow(BaseStructure):
                 }
                 results = []
 
-                for future in concurrent.futures.as_completed(
-                    futures
-                ):
+                for future in concurrent.futures.as_completed(futures):
                     task = futures[future]
                     try:
                         result = future.result()

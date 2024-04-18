@@ -35,9 +35,7 @@ class DialogueAgent:
             [
                 self.system_message,
                 HumanMessage(
-                    content="\n".join(
-                        self.message_history + [self.prefix]
-                    )
+                    content="\n".join(self.message_history + [self.prefix])
                 ),
             ]
         )
@@ -76,9 +74,7 @@ class DialogueSimulator:
 
     def step(self) -> tuple[str, str]:
         # 1. choose the next speaker
-        speaker_idx = self.select_next_speaker(
-            self._step, self.agents
-        )
+        speaker_idx = self.select_next_speaker(self._step, self.agents)
         speaker = self.agents[speaker_idx]
 
         # 2. next speaker sends message
@@ -116,9 +112,7 @@ class BiddingDialogueAgent(DialogueAgent):
             message_history="\n".join(self.message_history),
             recent_message=self.message_history[-1],
         )
-        bid_string = self.model(
-            [SystemMessage(content=prompt)]
-        ).content
+        bid_string = self.model([SystemMessage(content=prompt)]).content
         return bid_string
 
 
@@ -140,10 +134,12 @@ player_descriptor_system_message = SystemMessage(
 def generate_character_description(character_name):
     character_specifier_prompt = [
         player_descriptor_system_message,
-        HumanMessage(content=f"""{game_description}
+        HumanMessage(
+            content=f"""{game_description}
             Please reply with a creative description of the presidential candidate, {character_name}, in {word_limit} words or less, that emphasizes their personalities.
             Speak directly to {character_name}.
-            Do not add anything else."""),
+            Do not add anything else."""
+        ),
     ]
     character_description = ChatOpenAI(temperature=1.0)(
         character_specifier_prompt
@@ -161,10 +157,9 @@ Your goal is to be as creative as possible and make the voters think you are the
 """
 
 
-def generate_character_system_message(
-    character_name, character_header
-):
-    return SystemMessage(content=f"""{character_header}
+def generate_character_system_message(character_name, character_header):
+    return SystemMessage(
+        content=f"""{character_header}
 You will speak in the style of {character_name}, and exaggerate their personality.
 You will come up with creative ideas related to {topic}.
 Do not say the same things over and over again.
@@ -176,7 +171,8 @@ Speak only from the perspective of {character_name}.
 Stop speaking the moment you finish speaking from your perspective.
 Never forget to keep your response to {word_limit} words!
 Do not add anything else.
-    """)
+    """
+    )
 
 
 character_descriptions = [
@@ -190,9 +186,7 @@ character_headers = [
     )
 ]
 character_system_messages = [
-    generate_character_system_message(
-        character_name, character_headers
-    )
+    generate_character_system_message(character_name, character_headers)
     for character_name, character_headers in zip(
         character_names, character_headers
     )
@@ -261,7 +255,8 @@ for character_name, bidding_template in zip(
 
 topic_specifier_prompt = [
     SystemMessage(content="You can make a task more specific."),
-    HumanMessage(content=f"""{game_description}
+    HumanMessage(
+        content=f"""{game_description}
 
         You are the debate moderator.
         Please make the debate topic more specific.
@@ -269,7 +264,8 @@ topic_specifier_prompt = [
         Be creative and imaginative.
         Please reply with the specified topic in {word_limit} words or less.
         Speak directly to the presidential candidates: {*character_names,}.
-        Do not add anything else."""),
+        Do not add anything else."""
+    ),
 ]
 specified_topic = ChatOpenAI(temperature=1.0)(
     topic_specifier_prompt
@@ -298,9 +294,7 @@ def ask_for_bid(agent) -> str:
     return bid
 
 
-def select_next_speaker(
-    step: int, agents: List[DialogueAgent]
-) -> int:
+def select_next_speaker(step: int, agents: List[DialogueAgent]) -> int:
     bids = []
     for agent in agents:
         bid = ask_for_bid(agent)

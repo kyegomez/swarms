@@ -187,9 +187,7 @@ class BaseStructure(BaseModel):
     async def run_async(self, *args, **kwargs):
         """Run the structure asynchronously."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self.run, *args, **kwargs
-        )
+        return await loop.run_in_executor(None, self.run, *args, **kwargs)
 
     async def save_metadata_async(self, metadata: Dict[str, Any]):
         """Save metadata to file asynchronously.
@@ -222,9 +220,7 @@ class BaseStructure(BaseModel):
             None, self.log_error, error_message
         )
 
-    async def save_artifact_async(
-        self, artifact: Any, artifact_name: str
-    ):
+    async def save_artifact_async(self, artifact: Any, artifact_name: str):
         """Save artifact to file asynchronously.
 
         Args:
@@ -266,9 +262,7 @@ class BaseStructure(BaseModel):
             None, self.log_event, event, event_type
         )
 
-    async def asave_to_file(
-        self, data: Any, file: str, *args, **kwargs
-    ):
+    async def asave_to_file(self, data: Any, file: str, *args, **kwargs):
         """Save data to file asynchronously.
 
         Args:
@@ -357,8 +351,7 @@ class BaseStructure(BaseModel):
         """
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
             futures = [
-                executor.submit(self.run, data)
-                for data in batched_data
+                executor.submit(self.run, data) for data in batched_data
             ]
             return [future.result() for future in futures]
 
@@ -418,9 +411,7 @@ class BaseStructure(BaseModel):
             _type_: _description_
         """
         self.monitor_resources()
-        return self.run_batched(
-            batched_data, batch_size, *args, **kwargs
-        )
+        return self.run_batched(batched_data, batch_size, *args, **kwargs)
 
 
 # x = BaseStructure()

@@ -98,9 +98,7 @@ def time_limit(seconds: float):
         signal.setitimer(signal.ITIMER_REAL, 0)
 
 
-def check_function_result(
-    python_code: str, timeout: float = 5.0
-) -> Dict:
+def check_function_result(python_code: str, timeout: float = 5.0) -> Dict:
     """
     Evaluates the functional correctness of a completion by running the test
     suite provided in the problem.

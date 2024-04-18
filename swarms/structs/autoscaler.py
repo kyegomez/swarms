@@ -155,9 +155,7 @@ class AutoScaler(BaseStructure):
                 for _ in range(new_agents_counts):
                     self.agents_pool.append(self.agents[0]())
         except Exception as error:
-            print(
-                f"Error scaling up: {error} try again with a new task"
-            )
+            print(f"Error scaling up: {error} try again with a new task")
 
     def scale_down(self):
         """scale down"""
@@ -169,13 +167,10 @@ class AutoScaler(BaseStructure):
                     del self.agents_pool[-1]  # remove last agent
         except Exception as error:
             print(
-                f"Error scaling down: {error} try again with a new"
-                " task"
+                f"Error scaling down: {error} try again with a new" " task"
             )
 
-    def run(
-        self, agent_id, task: Optional[str] = None, *args, **kwargs
-    ):
+    def run(self, agent_id, task: Optional[str] = None, *args, **kwargs):
         """Run agent the task on the agent id
 
         Args:
@@ -203,11 +198,7 @@ class AutoScaler(BaseStructure):
                 sleep(60)  # check minute
                 pending_tasks = self.task_queue.qsize()
                 active_agents = sum(
-                    [
-                        1
-                        for agent in self.agents_pool
-                        if agent.is_busy()
-                    ]
+                    [1 for agent in self.agents_pool if agent.is_busy()]
                 )
 
                 if (
@@ -246,17 +237,13 @@ class AutoScaler(BaseStructure):
                     if available_agent:
                         available_agent.run(task)
         except Exception as error:
-            print(
-                f"Error starting: {error} try again with a new task"
-            )
+            print(f"Error starting: {error} try again with a new task")
 
     def check_agent_health(self):
         """Checks the health of each agent and replaces unhealthy agents."""
         for i, agent in enumerate(self.agents_pool):
             if not agent.is_healthy():
-                logging.warning(
-                    f"Replacing unhealthy agent at index {i}"
-                )
+                logging.warning(f"Replacing unhealthy agent at index {i}")
                 self.agents_pool[i] = self.agent()
 
     def balance_load(self):
@@ -273,9 +260,7 @@ class AutoScaler(BaseStructure):
                 " task"
             )
 
-    def set_scaling_strategy(
-        self, strategy: Callable[[int, int], int]
-    ):
+    def set_scaling_strategy(self, strategy: Callable[[int, int], int]):
         """Set a custom scaling strategy."""
         self.custom_scale_strategy = strategy
 

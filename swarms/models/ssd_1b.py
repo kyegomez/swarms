@@ -127,9 +127,7 @@ class SSD1B:
         if task in self.cache:
             return self.cache[task]
         try:
-            img = self.pipe(
-                prompt=task, neg_prompt=neg_prompt
-            ).images[0]
+            img = self.pipe(prompt=task, neg_prompt=neg_prompt).images[0]
 
             # Generate a unique filename for the image
             img_name = f"{uuid.uuid4()}.{self.image_format}"
@@ -223,9 +221,7 @@ class SSD1B:
                 executor.submit(self, task): task for task in tasks
             }
             results = []
-            for future in concurrent.futures.as_completed(
-                future_to_task
-            ):
+            for future in concurrent.futures.as_completed(future_to_task):
                 task = future_to_task[future]
                 try:
                     img = future.result()
@@ -272,9 +268,7 @@ class SSD1B:
         """Str method for the SSD1B class"""
         return f"SSD1B(image_url={self.image_url})"
 
-    @backoff.on_exception(
-        backoff.expo, Exception, max_tries=max_retries
-    )
+    @backoff.on_exception(backoff.expo, Exception, max_tries=max_retries)
     def rate_limited_call(self, task: str):
         """Rate limited call to the SSD1B API"""
         return self.__call__(task)

@@ -95,9 +95,7 @@ def test_initialization_with_custom_key():
 def test_run_with_exception(gpt_api):
     task = "What is in the image?"
     img_url = img
-    with patch(
-        "requests.post", side_effect=Exception("Test Exception")
-    ):
+    with patch("requests.post", side_effect=Exception("Test Exception")):
         with pytest.raises(Exception):
             gpt_api.run(task, img_url)
 
@@ -105,14 +103,10 @@ def test_run_with_exception(gpt_api):
 def test_call_method_successful_response(gpt_api):
     task = "What is in the image?"
     img_url = img
-    response_json = {
-        "choices": [{"text": "Answer from GPT-4 Vision"}]
-    }
+    response_json = {"choices": [{"text": "Answer from GPT-4 Vision"}]}
     mock_response = Mock()
     mock_response.json.return_value = response_json
-    with patch(
-        "requests.post", return_value=mock_response
-    ) as mock_post:
+    with patch("requests.post", return_value=mock_response) as mock_post:
         result = gpt_api(task, img_url)
         mock_post.assert_called_once()
     assert result == response_json
@@ -121,9 +115,7 @@ def test_call_method_successful_response(gpt_api):
 def test_call_method_with_exception(gpt_api):
     task = "What is in the image?"
     img_url = img
-    with patch(
-        "requests.post", side_effect=Exception("Test Exception")
-    ):
+    with patch("requests.post", side_effect=Exception("Test Exception")):
         with pytest.raises(Exception):
             gpt_api(task, img_url)
 
@@ -193,9 +185,7 @@ async def test_arun_json_decode_error(vision_api):
     with patch(
         "aiohttp.ClientSession.post",
         new_callable=AsyncMock,
-        return_value=AsyncMock(
-            json=AsyncMock(side_effect=ValueError)
-        ),
+        return_value=AsyncMock(json=AsyncMock(side_effect=ValueError)),
     ):
         with pytest.raises(ValueError):
             await vision_api.arun("What is this?", img)

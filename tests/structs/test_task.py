@@ -213,9 +213,7 @@ def test_task_execute_with_action(mocker):
     mock_agent = mocker.Mock(spec=Agent)
     mock_agent.run.return_value = "result"
     action = mocker.Mock()
-    task = Task(
-        description="Test task", agent=mock_agent, action=action
-    )
+    task = Task(description="Test task", agent=mock_agent, action=action)
     task.execute()
     assert task.result == "result"
     assert task.history == ["result"]

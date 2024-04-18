@@ -89,8 +89,7 @@ class TestBaseStructure:
             lines = file.readlines()
             assert len(lines) == 1
             assert (
-                lines[0]
-                == f"[{base_structure._current_timestamp()}]"
+                lines[0] == f"[{base_structure._current_timestamp()}]"
                 f" [{event_type}] {event}\n"
             )
 
@@ -136,9 +135,7 @@ class TestBaseStructure:
 
         artifact = {"key": "value"}
         artifact_name = "test_artifact"
-        await base_structure.save_artifact_async(
-            artifact, artifact_name
-        )
+        await base_structure.save_artifact_async(artifact, artifact_name)
         loaded_artifact = base_structure.load_artifact(artifact_name)
 
         assert loaded_artifact == artifact
@@ -171,8 +168,7 @@ class TestBaseStructure:
             lines = file.readlines()
             assert len(lines) == 1
             assert (
-                lines[0]
-                == f"[{base_structure._current_timestamp()}]"
+                lines[0] == f"[{base_structure._current_timestamp()}]"
                 f" [{event_type}] {event}\n"
             )
 
@@ -201,18 +197,14 @@ class TestBaseStructure:
 
     def test_run_in_thread(self):
         base_structure = BaseStructure()
-        result = base_structure.run_in_thread(
-            lambda: "Thread Test Result"
-        )
+        result = base_structure.run_in_thread(lambda: "Thread Test Result")
         assert result.result() == "Thread Test Result"
 
     def test_save_and_decompress_data(self):
         base_structure = BaseStructure()
         data = {"key": "value"}
         compressed_data = base_structure.compress_data(data)
-        decompressed_data = base_structure.decompres_data(
-            compressed_data
-        )
+        decompressed_data = base_structure.decompres_data(compressed_data)
         assert decompressed_data == data
 
     def test_run_batched(self):
@@ -226,9 +218,7 @@ class TestBaseStructure:
             batched_data, batch_size=5, func=run_function
         )
 
-        expected_result = [
-            f"Processed {data}" for data in batched_data
-        ]
+        expected_result = [f"Processed {data}" for data in batched_data]
         assert result == expected_result
 
     def test_load_config(self, tmpdir):
@@ -246,9 +236,7 @@ class TestBaseStructure:
         tmp_dir = tmpdir.mkdir("test_dir")
         base_structure = BaseStructure()
         data_to_backup = {"key": "value"}
-        base_structure.backup_data(
-            data_to_backup, backup_path=tmp_dir
-        )
+        base_structure.backup_data(data_to_backup, backup_path=tmp_dir)
         backup_files = os.listdir(tmp_dir)
 
         assert len(backup_files) == 1
@@ -283,7 +271,5 @@ class TestBaseStructure:
             batched_data, batch_size=5, func=run_function
         )
 
-        expected_result = [
-            f"Processed {data}" for data in batched_data
-        ]
+        expected_result = [f"Processed {data}" for data in batched_data]
         assert result == expected_result

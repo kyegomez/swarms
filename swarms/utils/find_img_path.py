@@ -18,7 +18,5 @@ def find_image_path(text):
         if match.group()
     ]
     matches += [match.replace("\\", "") for match in matches if match]
-    existing_paths = [
-        match for match in matches if os.path.exists(match)
-    ]
+    existing_paths = [match for match in matches if os.path.exists(match)]
     return max(existing_paths, key=len) if existing_paths else None

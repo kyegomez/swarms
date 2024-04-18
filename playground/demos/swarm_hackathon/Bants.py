@@ -24,9 +24,7 @@ async def handle_websocket(websocket, path):
             # Broadcast the message to all other users in the public group chats.
             for other_websocket in public_group_chats:
                 if other_websocket != websocket:
-                    await other_websocket.send(
-                        f"{username}: {message}"
-                    )
+                    await other_websocket.send(f"{username}: {message}")
     finally:
         # Remove the user from the list of public group chats.
         public_group_chats.remove(websocket)

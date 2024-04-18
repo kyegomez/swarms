@@ -84,7 +84,9 @@ class RedisSwarmRegistry(BaseSwarm):
         query = f"""
         {match_query}
         CREATE (a)-[r:joined]->(b) RETURN r
-        """.replace("\n", "")
+        """.replace(
+            "\n", ""
+        )
 
         self.redis_graph.query(query)
 
@@ -126,9 +128,7 @@ class RedisSwarmRegistry(BaseSwarm):
         from_node = self._entity_to_node(from_entity)
         to_node = self._entity_to_node(to_entity)
 
-        return self._add_edge(
-            from_node, to_node, SwarmRelationship.JOINED
-        )
+        return self._add_edge(from_node, to_node, SwarmRelationship.JOINED)
 
     def _persist_node(self, node: Node):
         """

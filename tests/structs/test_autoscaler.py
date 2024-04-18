@@ -44,9 +44,7 @@ def test_autoscaler_run():
         agent.id,
         "Generate a 10,000 word blog on health and wellness.",
     )
-    assert (
-        out == "Generate a 10,000 word blog on health and wellness."
-    )
+    assert out == "Generate a 10,000 word blog on health and wellness."
 
 
 def test_autoscaler_add_agent():

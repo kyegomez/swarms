@@ -5,9 +5,7 @@ from swarms.memory.base_vectordb import AbstractVectorDatabase
 try:
     import sqlite3
 except ImportError:
-    raise ImportError(
-        "Please install sqlite3 to use the SQLiteDB class."
-    )
+    raise ImportError("Please install sqlite3 to use the SQLiteDB class.")
 
 
 class SQLiteDB(AbstractVectorDatabase):

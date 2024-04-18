@@ -71,9 +71,7 @@ def test_search_memory():
     memory = ShortTermMemory()
     memory.add("user", "Hello, world!")
     assert memory.search_memory("Hello") == {
-        "short_term": [
-            (0, {"role": "user", "message": "Hello, world!"})
-        ],
+        "short_term": [(0, {"role": "user", "message": "Hello, world!"})],
         "medium_term": [],
     }
 
@@ -114,9 +112,7 @@ def test_thread_safety():
         for _ in range(1000):
             memory.add("user", "Hello, world!")
 
-    threads = [
-        threading.Thread(target=add_messages) for _ in range(10)
-    ]
+    threads = [threading.Thread(target=add_messages) for _ in range(10)]
     for thread in threads:
         thread.start()
     for thread in threads:

@@ -21,9 +21,7 @@ def test_mixtral_run(mock_model, mock_tokenizer):
     mixtral = Mixtral()
     mock_tokenizer_instance = MagicMock()
     mock_model_instance = MagicMock()
-    mock_tokenizer.from_pretrained.return_value = (
-        mock_tokenizer_instance
-    )
+    mock_tokenizer.from_pretrained.return_value = mock_tokenizer_instance
     mock_model.from_pretrained.return_value = mock_model_instance
     mock_tokenizer_instance.return_tensors = "pt"
     mock_model_instance.generate.return_value = [101, 102, 103]
@@ -45,9 +43,7 @@ def test_mixtral_run_error(mock_model, mock_tokenizer):
     mixtral = Mixtral()
     mock_tokenizer_instance = MagicMock()
     mock_model_instance = MagicMock()
-    mock_tokenizer.from_pretrained.return_value = (
-        mock_tokenizer_instance
-    )
+    mock_tokenizer.from_pretrained.return_value = mock_tokenizer_instance
     mock_model.from_pretrained.return_value = mock_model_instance
     mock_tokenizer_instance.return_tensors = "pt"
     mock_model_instance.generate.side_effect = Exception("Test error")

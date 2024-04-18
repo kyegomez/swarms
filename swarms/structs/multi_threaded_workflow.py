@@ -88,9 +88,7 @@ class MultiThreadedWorkflow(BaseWorkflow):
 
         """
         results = []
-        with ThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_task = {}
             for _ in range(self.tasks_queue.qsize()):
                 priority_task = self.tasks_queue.get_nowait()
@@ -127,9 +125,7 @@ class MultiThreadedWorkflow(BaseWorkflow):
                         )
                         if attempt + 1 < self.retry_attempts:
                             # Retry the task
-                            retry_future = executor.submit(
-                                task.execute
-                            )
+                            retry_future = executor.submit(task.execute)
                             future_to_task[retry_future] = (
                                 task,
                                 attempt + 1,
@@ -152,7 +148,5 @@ class MultiThreadedWorkflow(BaseWorkflow):
 
         """
         with self.lock:
-            logging.info(
-                f"Autosaving result for task {task}: {result}"
-            )
+            logging.info(f"Autosaving result for task {task}: {result}")
             # Actual autosave logic goes here

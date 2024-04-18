@@ -19,7 +19,7 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.tools.tool import BaseTool
-from swarms.utils.code_interpreter import SubprocessCodeInterpreter
+from swarms.tools.code_interpreter import SubprocessCodeInterpreter
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
@@ -326,9 +326,7 @@ class Agent:
                 )
 
             else:
-                tools_prompt = tool_usage_worker_prompt(
-                    tools=self.tools
-                )
+                tools_prompt = tool_usage_worker_prompt(tools=self.tools)
 
                 # Append the tools prompt to the short_term_memory
                 self.short_memory.add(
@@ -354,9 +352,7 @@ class Agent:
                 f"{self.agent_name}.log",
                 level="INFO",
                 colorize=True,
-                format=(
-                    "<green>{time}</green> <level>{message}</level>"
-                ),
+                format=("<green>{time}</green> <level>{message}</level>"),
                 backtrace=True,
                 diagnose=True,
             )
@@ -403,9 +399,7 @@ class Agent:
                 self.llm.temperature = 0.7
         except Exception as error:
             print(
-                colored(
-                    f"Error dynamically changing temperature: {error}"
-                )
+                colored(f"Error dynamically changing temperature: {error}")
             )
 
     def format_prompt(self, template, **kwargs: Any) -> str:
@@ -418,24 +412,16 @@ class Agent:
             logger.info(f"Adding task to memory: {task}")
             self.short_memory.add(f"{self.user_name}: {task}")
         except Exception as error:
-            print(
-                colored(
-                    f"Error adding task to memory: {error}", "red"
-                )
-            )
+            print(colored(f"Error adding task to memory: {error}", "red"))
 
     def add_message_to_memory(self, message: str):
         """Add the message to the memory"""
         try:
             logger.info(f"Adding message to memory: {message}")
-            self.short_memory.add(
-                role=self.agent_name, content=message
-            )
+            self.short_memory.add(role=self.agent_name, content=message)
         except Exception as error:
             print(
-                colored(
-                    f"Error adding message to memory: {error}", "red"
-                )
+                colored(f"Error adding message to memory: {error}", "red")
             )
 
     def add_message_to_memory_and_truncate(self, message: str):
@@ -549,9 +535,7 @@ class Agent:
         history = [f"{user_name}: {task}"]
         return history
 
-    def _dynamic_prompt_setup(
-        self, dynamic_prompt: str, task: str
-    ) -> str:
+    def _dynamic_prompt_setup(self, dynamic_prompt: str, task: str) -> str:
         """_dynamic_prompt_setup summary
 
         Args:
@@ -561,9 +545,7 @@ class Agent:
         Returns:
             str: _description_
         """
-        dynamic_prompt = (
-            dynamic_prompt or self.construct_dynamic_prompt()
-        )
+        dynamic_prompt = dynamic_prompt or self.construct_dynamic_prompt()
         combined_prompt = f"{dynamic_prompt}\n{task}"
         return combined_prompt
 
@@ -581,9 +563,7 @@ class Agent:
             self.activate_autonomous_agent()
 
             if task:
-                self.short_memory.add(
-                    role=self.user_name, content=task
-                )
+                self.short_memory.add(role=self.user_name, content=task)
 
             loop_count = 0
             response = None
@@ -600,9 +580,7 @@ class Agent:
                 if self.dynamic_temperature_enabled:
                     self.dynamic_temperature()
 
-                task_prompt = (
-                    self.short_memory.return_history_as_string()
-                )
+                task_prompt = self.short_memory.return_history_as_string()
 
                 attempt = 0
                 success = False
@@ -621,9 +599,7 @@ class Agent:
 
                         if self.tools:
                             # Extract code from markdown
-                            response = extract_code_from_markdown(
-                                response
-                            )
+                            response = extract_code_from_markdown(response)
 
                             # Execute the tool by name
                             execute_tool_by_name(
@@ -634,15 +610,13 @@ class Agent:
 
                         if self.code_interpreter:
                             # Extract code from markdown
-                            extracted_code = (
-                                extract_code_from_markdown(response)
+                            extracted_code = extract_code_from_markdown(
+                                response
                             )
 
                             # Execute the code
                             # execution = execute_command(extracted_code)
-                            execution = CodeExecutor().run(
-                                extracted_code
-                            )
+                            execution = CodeExecutor().run(extracted_code)
 
                             # Add the execution to the memory
                             self.short_memory.add(
@@ -658,9 +632,7 @@ class Agent:
                             )
 
                         if self.evaluator:
-                            evaluated_response = self.evaluator(
-                                response
-                            )
+                            evaluated_response = self.evaluator(response)
                             print(
                                 "Evaluated Response:"
                                 f" {evaluated_response}"
@@ -672,9 +644,7 @@ class Agent:
 
                         # Sentiment analysis
                         if self.sentiment_analyzer:
-                            sentiment = self.sentiment_analyzer(
-                                response
-                            )
+                            sentiment = self.sentiment_analyzer(response)
                             print(f"Sentiment: {sentiment}")
 
                             if sentiment > self.sentiment_threshold:
@@ -726,9 +696,8 @@ class Agent:
                     and self._check_stopping_condition(response)
                 ):
                     break
-                elif (
-                    self.stopping_func is not None
-                    and self.stopping_func(response)
+                elif self.stopping_func is not None and self.stopping_func(
+                    response
                 ):
                     break
 
@@ -826,9 +795,7 @@ class Agent:
         context = f"""
             System: This reminds you of these events from your past: [{ltr}]
         """
-        return self.short_memory.add(
-            role=self.agent_name, content=context
-        )
+        return self.short_memory.add(role=self.agent_name, content=context)
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -840,9 +807,7 @@ class Agent:
             _type_: _description_
         """
         logger.info(f"Adding memory: {message}")
-        return self.short_memory.add(
-            role=self.agent_name, content=message
-        )
+        return self.short_memory.add(role=self.agent_name, content=message)
 
     async def run_concurrent(self, tasks: List[str], **kwargs):
         """
@@ -889,9 +854,7 @@ class Agent:
                 json.dump(self.short_memory, f)
             # print(f"Saved agent history to {file_path}")
         except Exception as error:
-            print(
-                colored(f"Error saving agent history: {error}", "red")
-            )
+            print(colored(f"Error saving agent history: {error}", "red"))
 
     def load(self, file_path: str):
         """
@@ -916,23 +879,11 @@ class Agent:
         Prints the entire history and memory of the agent.
         Each message is colored and formatted for better readability.
         """
-        print(
-            colored(
-                "Agent History and Memory", "cyan", attrs=["bold"]
-            )
-        )
-        print(
-            colored(
-                "========================", "cyan", attrs=["bold"]
-            )
-        )
-        for loop_index, history in enumerate(
-            self.short_memory, start=1
-        ):
+        print(colored("Agent History and Memory", "cyan", attrs=["bold"]))
+        print(colored("========================", "cyan", attrs=["bold"]))
+        for loop_index, history in enumerate(self.short_memory, start=1):
             print(
-                colored(
-                    f"\nLoop {loop_index}:", "yellow", attrs=["bold"]
-                )
+                colored(f"\nLoop {loop_index}:", "yellow", attrs=["bold"])
             )
             for message in history:
                 speaker, _, message_text = message.partition(": ")
@@ -943,8 +894,7 @@ class Agent:
                     )
                 else:
                     print(
-                        colored(f"{speaker}:", "blue")
-                        + f" {message_text}"
+                        colored(f"{speaker}:", "blue") + f" {message_text}"
                     )
             print(colored("------------------------", "cyan"))
         print(colored("End of Agent History", "cyan", attrs=["bold"]))
@@ -975,9 +925,7 @@ class Agent:
                 self.short_memory.add(
                     role=self.agent_name, content=response
                 )
-                self.short_memory.add(
-                    role=self.user_name, content=task
-                )
+                self.short_memory.add(role=self.user_name, content=task)
             else:
                 self.short_memory.add(
                     role=self.agent_name, content=response
@@ -1054,9 +1002,7 @@ class Agent:
         Apply the response filters to the response
 
         """
-        logger.info(
-            f"Applying response filters to response: {response}"
-        )
+        logger.info(f"Applying response filters to response: {response}")
         for word in self.response_filters:
             response = response.replace(word, "[FILTERED]")
         return response
@@ -1096,9 +1042,7 @@ class Agent:
             with open(file_path, "w") as f:
                 yaml.dump(self.__dict__, f)
         except Exception as error:
-            print(
-                colored(f"Error saving agent to YAML: {error}", "red")
-            )
+            print(colored(f"Error saving agent to YAML: {error}", "red"))
 
     def save_state(self, file_path: str) -> None:
         """
@@ -1126,9 +1070,7 @@ class Agent:
                 "retry_interval": self.retry_interval,
                 "interactive": self.interactive,
                 "dashboard": self.dashboard,
-                "dynamic_temperature": (
-                    self.dynamic_temperature_enabled
-                ),
+                "dynamic_temperature": (self.dynamic_temperature_enabled),
                 "autosave": self.autosave,
                 "saved_state_path": self.saved_state_path,
                 "max_loops": self.max_loops,
@@ -1137,14 +1079,10 @@ class Agent:
             with open(file_path, "w") as f:
                 json.dump(state, f, indent=4)
 
-            saved = colored(
-                f"Saved agent state to: {file_path}", "green"
-            )
+            saved = colored(f"Saved agent state to: {file_path}", "green")
             print(saved)
         except Exception as error:
-            print(
-                colored(f"Error saving agent state: {error}", "red")
-            )
+            print(colored(f"Error saving agent state: {error}", "red"))
 
     def state_to_str(self):
         """Transform the JSON into a string"""
@@ -1163,9 +1101,7 @@ class Agent:
                 "retry_interval": self.retry_interval,
                 "interactive": self.interactive,
                 "dashboard": self.dashboard,
-                "dynamic_temperature": (
-                    self.dynamic_temperature_enabled
-                ),
+                "dynamic_temperature": (self.dynamic_temperature_enabled),
                 "autosave": self.autosave,
                 "saved_state_path": self.saved_state_path,
                 "max_loops": self.max_loops,
@@ -1214,9 +1150,7 @@ class Agent:
 
             print(f"Agent state loaded from {file_path}")
         except Exception as error:
-            print(
-                colored(f"Error loading agent state: {error}", "red")
-            )
+            print(colored(f"Error loading agent state: {error}", "red"))
 
     def retry_on_failure(
         self,
@@ -1232,9 +1166,7 @@ class Agent:
                 try:
                     return function()
                 except Exception as error:
-                    logging.error(
-                        f"Error generating response: {error}"
-                    )
+                    logging.error(f"Error generating response: {error}")
                     attempt += 1
                     time.sleep(retry_delay)
             raise Exception("All retry attempts failed")
@@ -1320,9 +1252,7 @@ class Agent:
             for doc in docs:
                 data = data_to_text(doc)
 
-            return self.short_memory.add(
-                role=self.user_name, content=data
-            )
+            return self.short_memory.add(role=self.user_name, content=data)
         except Exception as error:
             print(colored(f"Error ingesting docs: {error}", "red"))
 
@@ -1338,9 +1268,7 @@ class Agent:
         try:
             logger.info(f"Ingesting pdf: {pdf}")
             text = pdf_to_text(pdf)
-            return self.short_memory.add(
-                role=self.user_name, content=text
-            )
+            return self.short_memory.add(role=self.user_name, content=text)
         except Exception as error:
             print(colored(f"Error ingesting pdf: {error}", "red"))
 
@@ -1361,11 +1289,7 @@ class Agent:
             message = f"{agent_name}: {message}"
             return self.run(message, *args, **kwargs)
         except Exception as error:
-            print(
-                colored(
-                    f"Error sending agent message: {error}", "red"
-                )
-            )
+            print(colored(f"Error sending agent message: {error}", "red"))
 
     def truncate_history(self):
         """
@@ -1407,9 +1331,7 @@ class Agent:
             for file in files:
                 text = data_to_text(file)
 
-            return self.short_memory.add(
-                role=self.user_name, content=text
-            )
+            return self.short_memory.add(role=self.user_name, content=text)
         except Exception as error:
             print(
                 colored(

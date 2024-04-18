@@ -165,9 +165,7 @@ class MajorityVoting:
 
         # If autosave is enabled, save the conversation to a file
         if self.autosave:
-            create_file(
-                str(self.conversation), "majority_voting.json"
-            )
+            create_file(str(self.conversation), "majority_voting.json")
 
         # Log the agents
         logger.info("Initializing majority voting system")
@@ -224,9 +222,7 @@ class MajorityVoting:
 
         # If an output parser is provided, parse the responses
         if self.output_parser is not None:
-            majority_vote = self.output_parser(
-                responses, *args, **kwargs
-            )
+            majority_vote = self.output_parser(responses, *args, **kwargs)
         else:
             majority_vote = majority_voting(responses)
 

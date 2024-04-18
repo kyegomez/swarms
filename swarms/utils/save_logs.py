@@ -19,9 +19,7 @@ def parse_log_file(filename: str):
     """
     # Check if the file exists
     if not os.path.exists(filename):
-        raise FileNotFoundError(
-            f"The file {filename} does not exist."
-        )
+        raise FileNotFoundError(f"The file {filename} does not exist.")
 
     log_entries = []
 

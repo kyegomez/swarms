@@ -1,12 +1,11 @@
 from swarms import Agent, Anthropic
 
 
-## Initialize the workflow
+# Initialize the agemt
 agent = Agent(
     agent_name="Transcript Generator",
     agent_description=(
-        "Generate a transcript for a youtube video on what swarms"
-        " are!"
+        "Generate a transcript for a youtube video on what swarms" " are!"
     ),
     llm=Anthropic(),
     max_loops=3,
@@ -18,5 +17,5 @@ agent = Agent(
     interactive=True,
 )
 
-# Run the workflow on a task
+# Run the Agent on a task
 agent("Generate a transcript for a youtube video on what swarms are!")

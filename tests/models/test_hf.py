@@ -133,9 +133,7 @@ def test_llm_set_repitition_penalty(llm_instance):
 def test_llm_set_no_repeat_ngram_size(llm_instance):
     new_no_repeat_ngram_size = 6
     llm_instance.set_no_repeat_ngram_size(new_no_repeat_ngram_size)
-    assert (
-        llm_instance.no_repeat_ngram_size == new_no_repeat_ngram_size
-    )
+    assert llm_instance.no_repeat_ngram_size == new_no_repeat_ngram_size
 
 
 # Test for setting temperature
@@ -185,9 +183,7 @@ def test_llm_set_model_id(llm_instance):
 
 
 # Test for setting model
-@patch(
-    "swarms.models.huggingface.AutoModelForCausalLM.from_pretrained"
-)
+@patch("swarms.models.huggingface.AutoModelForCausalLM.from_pretrained")
 def test_llm_set_model(mock_model, llm_instance):
     mock_model.return_value = "mocked model"
     llm_instance.set_model(mock_model)

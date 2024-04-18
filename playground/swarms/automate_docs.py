@@ -100,9 +100,7 @@ class PythonDocumentationSwarm:
             with open(file_path, "w") as file:
                 file.write(doc_content)
 
-            logger.info(
-                f"Documentation generated for {item.__name__}."
-            )
+            logger.info(f"Documentation generated for {item.__name__}.")
         except Exception as e:
             logger.error(
                 f"Error processing documentation for {item.__name__}."
@@ -130,8 +128,7 @@ class PythonDocumentationSwarm:
                 thread.join()
 
             logger.info(
-                "Documentation generated in 'swarms.structs'"
-                " directory."
+                "Documentation generated in 'swarms.structs'" " directory."
             )
         except Exception as e:
             logger.error("Error running documentation process.")
@@ -143,8 +140,7 @@ class PythonDocumentationSwarm:
                 executor.map(self.process_documentation, python_items)
 
             logger.info(
-                "Documentation generated in 'swarms.structs'"
-                " directory."
+                "Documentation generated in 'swarms.structs'" " directory."
             )
         except Exception as e:
             logger.error("Error running documentation process.")

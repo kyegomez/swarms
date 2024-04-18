@@ -112,9 +112,7 @@ class Gemini(BaseMultiModalModel):
         )
 
         # Initialize the model
-        self.model = genai.GenerativeModel(
-            model_name, *args, **kwargs
-        )
+        self.model = genai.GenerativeModel(model_name, *args, **kwargs)
 
         # Check for the key
         if self.gemini_api_key is None:
@@ -211,9 +209,7 @@ class Gemini(BaseMultiModalModel):
                 raise ValueError("Please provide a Gemini API key")
 
             # Load the image
-            img = [
-                {"mime_type": type, "data": Path(img).read_bytes()}
-            ]
+            img = [{"mime_type": type, "data": Path(img).read_bytes()}]
         except Exception as error:
             print(f"Error processing image: {error}")
 

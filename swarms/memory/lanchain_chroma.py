@@ -170,9 +170,7 @@ class LangchainChromaVectorMemory(AbstractVectorDatabase):
             )
             texts = [text.page_content for text in texts]
         elif type == "cos":
-            texts = self.db.similarity_search_with_score(
-                query=query, k=k
-            )
+            texts = self.db.similarity_search_with_score(query=query, k=k)
             texts = [
                 text[0].page_content
                 for text in texts

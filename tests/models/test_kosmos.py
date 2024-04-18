@@ -16,9 +16,7 @@ def mock_image_request():
     img_data = open(TEST_IMAGE_URL, "rb").read()
     mock_resp = Mock()
     mock_resp.raw = img_data
-    with patch.object(
-        requests, "get", return_value=mock_resp
-    ) as _fixture:
+    with patch.object(requests, "get", return_value=mock_resp) as _fixture:
         yield _fixture
 
 
@@ -132,9 +130,7 @@ def test_referring_expression_comprehension(kosmos):
 
 @pytest.mark.usefixtures("mock_request_get")
 def test_referring_expression_generation(kosmos):
-    kosmos.referring_expression_generation(
-        "It is on the table.", IMG_URL3
-    )
+    kosmos.referring_expression_generation("It is on the table.", IMG_URL3)
 
 
 @pytest.mark.usefixtures("mock_request_get")

@@ -36,9 +36,7 @@ def pdf_to_text(pdf_path):
 
             return text
     except FileNotFoundError:
-        raise FileNotFoundError(
-            f"The file at {pdf_path} was not found."
-        )
+        raise FileNotFoundError(f"The file at {pdf_path} was not found.")
     except Exception as e:
         raise Exception(
             f"An error occurred while reading the PDF file: {e}"

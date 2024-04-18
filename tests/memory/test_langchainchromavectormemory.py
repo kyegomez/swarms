@@ -42,9 +42,7 @@ def test_initialization_default_settings(vector_memory):
 
 
 def test_add_entry(vector_memory, embeddings_mock):
-    with patch.object(
-        vector_memory.db, "add_texts"
-    ) as add_texts_mock:
+    with patch.object(vector_memory.db, "add_texts") as add_texts_mock:
         vector_memory.add("Example text")
         add_texts_mock.assert_called()
 
@@ -90,7 +88,5 @@ def test_search_memory_different_params(
             "similarity_search_with_score",
             return_value=expected,
         ):
-            result = vector_memory.search_memory(
-                query, k=k, type=type
-            )
+            result = vector_memory.search_memory(query, k=k, type=type)
             assert len(result) == (k if k > 0 else 0)

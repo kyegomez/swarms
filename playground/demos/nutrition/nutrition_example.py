@@ -77,9 +77,7 @@ def generate_integrated_shopping_list(
     meal_plan_output, image_analysis, user_preferences
 ):
     # Prepare the prompt for the LLM
-    fridge_contents = image_analysis["choices"][0]["message"][
-        "content"
-    ]
+    fridge_contents = image_analysis["choices"][0]["message"]["content"]
     prompt = (
         f"Based on this meal plan: {meal_plan_output}, and the"
         f" following items in the fridge: {fridge_contents},"
@@ -131,9 +129,7 @@ print("Integrated Shopping List:", integrated_shopping_list)
 with open("nutrition_output.txt", "w") as file:
     file.write("Meal Plan:\n" + meal_plan_output + "\n\n")
     file.write(
-        "Integrated Shopping List:\n"
-        + integrated_shopping_list
-        + "\n"
+        "Integrated Shopping List:\n" + integrated_shopping_list + "\n"
     )
 
 print("Outputs have been saved to nutrition_output.txt")

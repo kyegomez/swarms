@@ -16,9 +16,7 @@ def test_pass():
 
 def test_invalid_sports():
     assert (
-        vocal.generate_video(
-            "I just ate some delicious tacos", "tacos"
-        )
+        vocal.generate_video("I just ate some delicious tacos", "tacos")
         == "Invalid sports entered!! Please enter a valid sport."
     )
 

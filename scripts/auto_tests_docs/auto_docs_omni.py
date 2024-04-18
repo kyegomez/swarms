@@ -57,9 +57,7 @@ def process_documentation(
     with open(file_path, "w") as file:
         file.write(doc_content)
 
-    print(
-        f"Processed documentation for {item.__name__}. at {file_path}"
-    )
+    print(f"Processed documentation for {item.__name__}. at {file_path}")
 
 
 def main(module: str = "docs/swarms/structs"):

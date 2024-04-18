@@ -22,11 +22,7 @@ def pipeline(mock_pipeline):
 def test_init(pipeline, mock_pipeline):
     assert pipeline.task_type == "text-generation"
     assert pipeline.model_name == "meta-llama/Llama-2-13b-chat-hf"
-    assert (
-        pipeline.use_fp8 is True
-        if torch.cuda.is_available()
-        else False
-    )
+    assert pipeline.use_fp8 is True if torch.cuda.is_available() else False
     mock_pipeline.assert_called_once_with(
         "text-generation",
         "meta-llama/Llama-2-13b-chat-hf",

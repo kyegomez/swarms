@@ -55,11 +55,14 @@ def test_metrics_decorator_with_mocked_time(mocker):
         return ["tok_1", "tok_2"]
 
     metrics = decorated_func()
-    assert metrics == """
+    assert (
+        metrics
+        == """
     Time to First Token: 5
     Generation Latency: 20
     Throughput: 0.1
     """
+    )
     mocked_time.assert_any_call()
 
 

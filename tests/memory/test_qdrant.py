@@ -29,9 +29,7 @@ def test_qdrant_init(qdrant_client, mock_qdrant_client):
     assert qdrant_client.client is not None
 
 
-def test_load_embedding_model(
-    qdrant_client, mock_sentence_transformer
-):
+def test_load_embedding_model(qdrant_client, mock_sentence_transformer):
     qdrant_client._load_embedding_model("model_name")
     mock_sentence_transformer.assert_called_once_with("model_name")
 

@@ -22,7 +22,7 @@ class SubprocessCodeInterpreter:
 
     def __init__(
         self,
-        start_cmd: str = "",
+        start_cmd: str = "python3",
         debug_mode: bool = False,
     ):
         self.process = None
@@ -139,8 +139,7 @@ class SubprocessCodeInterpreter:
                     yield {"output": traceback.format_exc()}
                     yield {
                         "output": (
-                            "Retrying..."
-                            f" ({retry_count}/{max_retries})"
+                            "Retrying..." f" ({retry_count}/{max_retries})"
                         )
                     }
                     yield {"output": "Restarting process."}

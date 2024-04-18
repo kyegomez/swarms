@@ -21,9 +21,7 @@ json_schema = {
 }
 
 # Define the task to generate a person's information
-task = (
-    "Generate a person's information based on the following schema:"
-)
+task = "Generate a person's information based on the following schema:"
 
 # Create an instance of the ToolAgent class
 agent = ToolAgent(

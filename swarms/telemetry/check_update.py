@@ -37,6 +37,4 @@ def check_for_update():
     # Get the current version using pkg_resources
     current_version = pkg_resources.get_distribution("swarms").version
 
-    return version.parse(latest_version) > version.parse(
-        current_version
-    )
+    return version.parse(latest_version) > version.parse(current_version)

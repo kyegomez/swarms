@@ -44,9 +44,7 @@ class SequentialWorkflow:
     task_pool: List[Task] = None
     max_loops: int = 1
     autosave: bool = False
-    saved_state_filepath: Optional[str] = (
-        "sequential_workflow_state.json"
-    )
+    saved_state_filepath: Optional[str] = "sequential_workflow_state.json"
     restore_state_filepath: Optional[str] = None
     dashboard: bool = False
     agents: List[Agent] = None
@@ -148,14 +146,11 @@ class SequentialWorkflow:
         """
         try:
             return {
-                task.description: task.result
-                for task in self.task_pool
+                task.description: task.result for task in self.task_pool
             }
         except Exception as error:
             logger.error(
-                colored(
-                    f"Error getting task results: {error}", "red"
-                ),
+                colored(f"Error getting task results: {error}", "red"),
             )
 
     def remove_task(self, task: Task) -> None:

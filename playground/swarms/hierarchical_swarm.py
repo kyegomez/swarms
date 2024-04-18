@@ -4,7 +4,7 @@ B -> W1, W2, W3
 """
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from swarms.utils.json_utils import str_to_json
+from swarms.tools.json_utils import str_to_json
 
 
 class HierarchicalSwarm(BaseModel):

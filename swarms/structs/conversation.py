@@ -339,9 +339,7 @@ class Conversation(BaseStructure):
 
     def update_from_database(self, *args, **kwargs):
         """Update the conversation history from the database"""
-        self.database.update(
-            "conversation", self.conversation_history
-        )
+        self.database.update("conversation", self.conversation_history)
 
     def get_from_database(self, *args, **kwargs):
         """Get the conversation history from the database"""

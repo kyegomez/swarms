@@ -67,9 +67,7 @@ class AsyncWorkflow:
         except Exception as error:
             logger.error(f"[ERROR][AsyncWorkflow] {error}")
 
-    async def delete(
-        self, task: Any = None, tasks: List[Task] = None
-    ):
+    async def delete(self, task: Any = None, tasks: List[Task] = None):
         """Delete a task from the workflow"""
         try:
             if task:

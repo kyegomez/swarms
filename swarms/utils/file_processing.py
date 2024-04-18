@@ -15,9 +15,7 @@ def zip_workspace(workspace_path: str, output_filename: str):
     base_output_path = os.path.join(
         temp_dir, output_filename.replace(".zip", "")
     )
-    zip_path = shutil.make_archive(
-        base_output_path, "zip", workspace_path
-    )
+    zip_path = shutil.make_archive(base_output_path, "zip", workspace_path)
     return zip_path  # make_archive already appends .zip
 
 
@@ -62,9 +60,7 @@ def create_file(
     return file_path
 
 
-def create_file_in_folder(
-    folder_path: str, file_name: str, content: str
-):
+def create_file_in_folder(folder_path: str, file_name: str, content: str):
     """
     Creates a file in the specified folder with the given file name and content.
 

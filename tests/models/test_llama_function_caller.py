@@ -86,9 +86,7 @@ def test_llama_custom_function_invalid_arguments(llama_caller):
     )
 
     with pytest.raises(TypeError):
-        llama_caller.call_function(
-            "sample_function", arg1="arg1_value"
-        )
+        llama_caller.call_function("sample_function", arg1="arg1_value")
 
 
 # Test streaming with custom runtime

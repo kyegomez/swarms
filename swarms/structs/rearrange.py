@@ -59,9 +59,7 @@ class AgentRearrange:
                 source_name, destinations_str = parts
                 source = self.find_agent_by_name(source_name)
                 if source is None:
-                    logging.error(
-                        f"Source agent {source_name} not found."
-                    )
+                    logging.error(f"Source agent {source_name} not found.")
                     return False
 
                 destinations_names = destinations_str.split()
@@ -69,13 +67,10 @@ class AgentRearrange:
                     dest = self.find_agent_by_name(dest_name)
                     if dest is None:
                         logging.error(
-                            f"Destination agent {dest_name} not"
-                            " found."
+                            f"Destination agent {dest_name} not" " found."
                         )
                         return False
-                    self.flows[source.agent_name].append(
-                        dest.agent_name
-                    )
+                    self.flows[source.agent_name].append(dest.agent_name)
             return True
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -124,9 +119,7 @@ class AgentRearrange:
                         task = tasks.get(dest, task)
 
                         if self.custom_prompt:
-                            dest_agent.run(
-                                f"{task} {self.custom_prompt}"
-                            )
+                            dest_agent.run(f"{task} {self.custom_prompt}")
                         else:
                             dest_agent.run(f"{task} (from {source})")
             # else:
@@ -136,8 +129,7 @@ class AgentRearrange:
             #     )
         except Exception as e:
             logger.error(
-                f"Error: {e} try again by providing agents and"
-                " pattern"
+                f"Error: {e} try again by providing agents and" " pattern"
             )
             raise e
 

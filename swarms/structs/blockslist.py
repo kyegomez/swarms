@@ -102,15 +102,11 @@ class BlocksList(BaseStructure):
         return [block for block in self.blocks if block.id == id]
 
     def get_by_parent(self, parent: str):
-        return [
-            block for block in self.blocks if block.parent == parent
-        ]
+        return [block for block in self.blocks if block.parent == parent]
 
     def get_by_parent_id(self, parent_id: str):
         return [
-            block
-            for block in self.blocks
-            if block.parent_id == parent_id
+            block for block in self.blocks if block.parent_id == parent_id
         ]
 
     def get_by_parent_name(self, parent_name: str):

@@ -42,9 +42,7 @@ def test_cohere_async_api_error_handling(cohere_instance):
     cohere_instance.model = "base"
     cohere_instance.cohere_api_key = "invalid-api-key"
     with pytest.raises(Exception):
-        cohere_instance.async_call(
-            "Error handling with invalid API key."
-        )
+        cohere_instance.async_call("Error handling with invalid API key.")
 
 
 def test_cohere_stream_api_error_handling(cohere_instance):
@@ -174,12 +172,8 @@ def test_base_cohere_validate_environment_without_cohere():
 # Test cases for benchmarking generations with various models
 def test_cohere_generate_with_command_light(cohere_instance):
     cohere_instance.model = "command-light"
-    response = cohere_instance(
-        "Generate text with Command Light model."
-    )
-    assert response.startswith(
-        "Generated text with Command Light model"
-    )
+    response = cohere_instance("Generate text with Command Light model.")
+    assert response.startswith("Generated text with Command Light model")
 
 
 def test_cohere_generate_with_command(cohere_instance):
@@ -329,9 +323,7 @@ def test_cohere_call_with_long_prompt(cohere_instance):
 
 def test_cohere_call_with_max_tokens_limit_exceeded(cohere_instance):
     cohere_instance.max_tokens = 10
-    prompt = (
-        "This is a test prompt that will exceed the max tokens limit."
-    )
+    prompt = "This is a test prompt that will exceed the max tokens limit."
     with pytest.raises(ValueError):
         cohere_instance(prompt)
 
@@ -512,9 +504,7 @@ def test_cohere_representation_model_max_tokens_limit_exceeded(
     # Test handling max tokens limit exceeded error
     cohere_instance.model = "embed-english-v3.0"
     cohere_instance.max_tokens = 10
-    prompt = (
-        "This is a test prompt that will exceed the max tokens limit."
-    )
+    prompt = "This is a test prompt that will exceed the max tokens limit."
     with pytest.raises(ValueError):
         cohere_instance.embed(prompt)
 
@@ -527,9 +517,7 @@ def test_cohere_representation_model_multilingual_embedding(
 ):
     # Test using the Representation model for multilingual text embedding
     cohere_instance.model = "embed-multilingual-v3.0"
-    embedding = cohere_instance.embed(
-        "Generate multilingual embeddings."
-    )
+    embedding = cohere_instance.embed("Generate multilingual embeddings.")
     assert isinstance(embedding, list)
     assert len(embedding) > 0
 
@@ -625,18 +613,14 @@ def test_cohere_representation_model_multilingual_light_max_tokens_limit_exceede
 def test_cohere_command_light_model(cohere_instance):
     # Test using the Command Light model for text generation
     cohere_instance.model = "command-light"
-    response = cohere_instance(
-        "Generate text using Command Light model."
-    )
+    response = cohere_instance("Generate text using Command Light model.")
     assert isinstance(response, str)
 
 
 def test_cohere_base_light_model(cohere_instance):
     # Test using the Base Light model for text generation
     cohere_instance.model = "base-light"
-    response = cohere_instance(
-        "Generate text using Base Light model."
-    )
+    response = cohere_instance("Generate text using Base Light model.")
     assert isinstance(response, str)
 
 
@@ -662,9 +646,7 @@ def test_cohere_representation_model_english_classification(
 ):
     # Test using the Representation model for English text classification
     cohere_instance.model = "embed-english-v3.0"
-    classification = cohere_instance.classify(
-        "Classify English text."
-    )
+    classification = cohere_instance.classify("Classify English text.")
     assert isinstance(classification, dict)
     assert "class" in classification
     assert "score" in classification
@@ -700,9 +682,7 @@ def test_cohere_representation_model_english_light_embedding(
 ):
     # Test using the Representation model for English light text embedding
     cohere_instance.model = "embed-english-light-v3.0"
-    embedding = cohere_instance.embed(
-        "Generate English light embeddings."
-    )
+    embedding = cohere_instance.embed("Generate English light embeddings.")
     assert isinstance(embedding, list)
     assert len(embedding) > 0
 
@@ -748,9 +728,7 @@ def test_cohere_representation_model_english_light_max_tokens_limit_exceeded(
 def test_cohere_command_model(cohere_instance):
     # Test using the Command model for text generation
     cohere_instance.model = "command"
-    response = cohere_instance(
-        "Generate text using the Command model."
-    )
+    response = cohere_instance("Generate text using the Command model.")
     assert isinstance(response, str)
 
 

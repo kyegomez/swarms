@@ -61,9 +61,7 @@ class AgentOutputParser(BaseAgentOutputParser):
                 return AgentAction(
                     name="ERROR",
                     args={
-                        "error": (
-                            f"Could not parse invalid json: {text}"
-                        )
+                        "error": (f"Could not parse invalid json: {text}")
                     },
                 )
         try:

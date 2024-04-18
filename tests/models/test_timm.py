@@ -19,9 +19,7 @@ def test_timm_model_init():
 
 
 def test_timm_model_call():
-    with patch(
-        "swarms.models.timm.create_model"
-    ) as mock_create_model:
+    with patch("swarms.models.timm.create_model") as mock_create_model:
         model_name = "resnet18"
         pretrained = True
         in_chans = 3

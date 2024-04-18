@@ -52,9 +52,7 @@ def main():
     # Gathering all functions from the swarms.utils module
     functions = [
         obj
-        for name, obj in inspect.getmembers(
-            sys.modules["swarms.utils"]
-        )
+        for name, obj in inspect.getmembers(sys.modules["swarms.utils"])
         if inspect.isfunction(obj)
     ]
 

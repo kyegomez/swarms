@@ -9,9 +9,7 @@ from swarms.utils import prep_torch_inference
 
 def test_prep_torch_inference():
     model_path = "model_path"
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() else "cpu"
-    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_mock = Mock()
     model_mock.eval = Mock()
 

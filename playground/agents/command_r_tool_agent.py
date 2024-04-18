@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from swarms import ToolAgent
-from swarms.utils.json_utils import base_model_to_json
+from swarms.tools.json_utils import base_model_to_json
 
 # Model name
 model_name = "CohereForAI/c4ai-command-r-v01-4bit"
@@ -28,9 +28,7 @@ class APIExampleRequestSchema(BaseModel):
     headers: dict = Field(
         ..., description="The headers for the example request"
     )
-    body: dict = Field(
-        ..., description="The body of the example request"
-    )
+    body: dict = Field(..., description="The body of the example request")
     response: dict = Field(
         ...,
         description="The expected response of the example request",

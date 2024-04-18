@@ -15,8 +15,7 @@ try:
     import cv2
 except ImportError:
     print(
-        "OpenCV not installed. Please install OpenCV to use this"
-        " model."
+        "OpenCV not installed. Please install OpenCV to use this" " model."
     )
     raise ImportError
 
@@ -248,9 +247,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
             if not success:
                 break
             _, buffer = cv2.imencode(".jpg", frame)
-            base64_frames.append(
-                base64.b64encode(buffer).decode("utf-8")
-            )
+            base64_frames.append(base64.b64encode(buffer).decode("utf-8"))
 
         video.release()
         print(len(base64_frames), "frames read.")
@@ -433,9 +430,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
     def health_check(self):
         """Health check for the GPT4Vision model"""
         try:
-            response = requests.get(
-                "https://api.openai.com/v1/engines"
-            )
+            response = requests.get("https://api.openai.com/v1/engines")
             return response.status_code == 200
         except requests.RequestException as error:
             print(f"Health check failed: {error}")

@@ -124,9 +124,7 @@ class Jsonformer:
                 return float(response)
             except ValueError:
                 if iterations > 3:
-                    raise ValueError(
-                        "Failed to generate a valid number"
-                    )
+                    raise ValueError("Failed to generate a valid number")
 
                 return self.generate_number(
                     temperature=self.temperature * 1.3,
@@ -143,9 +141,7 @@ class Jsonformer:
                 return float(response)
             except ValueError:
                 if iterations > 3:
-                    raise ValueError(
-                        "Failed to generate a valid number"
-                    )
+                    raise ValueError("Failed to generate a valid number")
 
                 return self.generate_number(
                     temperature=self.temperature * 1.3,
@@ -169,20 +165,14 @@ class Jsonformer:
             input_tensor = self.tokenizer.encode(
                 prompt, return_tensors="pt"
             )
-            output = self.model.forward(
-                input_tensor.to(self.model.device)
-            )
+            output = self.model.forward(input_tensor.to(self.model.device))
             logits = output.logits[0, -1]
 
             # todo: this assumes that "true" and "false" are both tokenized to a single token
             # this is probably not true for all tokenizers
             # this can be fixed by looking at only the first token of both "true" and "false"
-            true_token_id = self.tokenizer.convert_tokens_to_ids(
-                "true"
-            )
-            false_token_id = self.tokenizer.convert_tokens_to_ids(
-                "false"
-            )
+            true_token_id = self.tokenizer.convert_tokens_to_ids("true")
+            false_token_id = self.tokenizer.convert_tokens_to_ids("false")
 
             result = logits[true_token_id] > logits[false_token_id]
 
@@ -227,8 +217,7 @@ class Jsonformer:
             if (
                 len(response[0]) >= len(input_tokens[0])
                 and (
-                    response[0][: len(input_tokens[0])]
-                    == input_tokens
+                    response[0][: len(input_tokens[0])] == input_tokens
                 ).all()
             ):
                 response = response[0][len(input_tokens[0]) :]
@@ -257,8 +246,7 @@ class Jsonformer:
             if (
                 len(response[0]) >= len(input_tokens[0])
                 and (
-                    response[0][: len(input_tokens[0])]
-                    == input_tokens
+                    response[0][: len(input_tokens[0])] == input_tokens
                 ).all()
             ):
                 response = response[0][len(input_tokens[0]) :]
@@ -320,9 +308,7 @@ class Jsonformer:
                 obj.append(new_obj)
             return self.generate_object(schema["properties"], new_obj)
         else:
-            raise ValueError(
-                f"Unsupported schema type: {schema_type}"
-            )
+            raise ValueError(f"Unsupported schema type: {schema_type}")
 
     def generate_array(
         self, item_schema: Dict[str, Any], obj: Dict[str, Any]
@@ -397,9 +383,7 @@ class Jsonformer:
     def get_prompt(self):
         template = """{prompt}\nOutput result in the following JSON schema format:\n{schema}\nResult: {progress}"""
         progress = json.dumps(self.value)
-        gen_marker_index = progress.find(
-            f'"{self.generation_marker}"'
-        )
+        gen_marker_index = progress.find(f'"{self.generation_marker}"')
         if gen_marker_index != -1:
             progress = progress[:gen_marker_index]
         else:

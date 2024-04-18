@@ -35,7 +35,6 @@ agent = Agent(
 )
 
 out = agent.run(
-    "Use the search api to find the best restaurants in New York"
-    " City."
+    "Use the search api to find the best restaurants in New York" " City."
 )
 print(out)

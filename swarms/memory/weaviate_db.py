@@ -126,9 +126,7 @@ class WeaviateDB(AbstractVectorDatabase):
             print(f"Error adding object: {error}")
             raise
 
-    def query(
-        self, collection_name: str, query: str, limit: int = 10
-    ):
+    def query(self, collection_name: str, query: str, limit: int = 10):
         """Query objects from a specified collection.
 
         Args:

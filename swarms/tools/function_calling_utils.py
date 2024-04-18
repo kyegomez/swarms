@@ -5,9 +5,7 @@ import asyncio
 
 
 # Helper function to run an asynchronous function in a synchronous way
-def run_async_function_in_sync(
-    func: Callable, *args, **kwargs
-) -> Any:
+def run_async_function_in_sync(func: Callable, *args, **kwargs) -> Any:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     coroutine = func(*args, **kwargs)

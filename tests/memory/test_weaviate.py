@@ -16,9 +16,7 @@ def weaviate_client_mock():
         grpc_port="mock_grpc_port",
         grpc_secure=False,
         auth_client_secret="mock_api_key",
-        additional_headers={
-            "X-OpenAI-Api-Key": "mock_openai_api_key"
-        },
+        additional_headers={"X-OpenAI-Api-Key": "mock_openai_api_key"},
         additional_config=Mock(),
     )
 
@@ -74,9 +72,7 @@ def test_update_object(weaviate_client_mock):
     # Test updating an object
     object_id = "12345"
     properties = {"name": "Jane"}
-    weaviate_client_mock.update(
-        "test_collection", object_id, properties
-    )
+    weaviate_client_mock.update("test_collection", object_id, properties)
     weaviate_client_mock.client.collections.get.assert_called_with(
         "test_collection"
     )
@@ -143,9 +139,7 @@ def test_create_collection_failure(weaviate_client_mock):
         "weaviate_client.weaviate.collections.create",
         side_effect=Exception("Create error"),
     ):
-        with pytest.raises(
-            Exception, match="Error creating collection"
-        ):
+        with pytest.raises(Exception, match="Error creating collection"):
             weaviate_client_mock.create_collection(
                 "test_collection", [{"name": "property"}]
             )

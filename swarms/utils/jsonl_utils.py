@@ -34,9 +34,7 @@ def stream_jsonl(filename: str) -> Iterable[Dict]:
                     yield json.loads(line)
 
 
-def write_jsonl(
-    filename: str, data: Iterable[Dict], append: bool = False
-):
+def write_jsonl(filename: str, data: Iterable[Dict], append: bool = False):
     """
     Write a list of dictionaries to a JSONL file.
 

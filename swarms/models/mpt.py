@@ -146,9 +146,7 @@ class MPT7B:
         self, prompts: list, temperature: float = 1.0
     ) -> list:
         """Batch generate text"""
-        self.logger.info(
-            f"Generating text for {len(prompts)} prompts..."
-        )
+        self.logger.info(f"Generating text for {len(prompts)} prompts...")
         results = []
         with torch.autocast("cuda", dtype=torch.bfloat16):
             for prompt in prompts:

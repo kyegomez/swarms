@@ -31,9 +31,7 @@ def get_swarms_verison():
         )
     except Exception as e:
         swarms_verison_cmd = str(e)
-    swarms_verison_pkg = pkg_resources.get_distribution(
-        "swarms"
-    ).version
+    swarms_verison_pkg = pkg_resources.get_distribution("swarms").version
     swarms_verison = swarms_verison_cmd, swarms_verison_pkg
     return swarms_verison
 

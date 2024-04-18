@@ -20,9 +20,7 @@ class Team(BaseModel):
         config (Optional[Json]): Configuration of the Team. Default is None.
     """
 
-    tasks: Optional[List[Task]] = Field(
-        None, description="List of tasks"
-    )
+    tasks: Optional[List[Task]] = Field(None, description="List of tasks")
     agents: Optional[List[Agent]] = Field(
         None, description="List of agents in this Team."
     )
@@ -51,9 +49,7 @@ class Team(BaseModel):
         if values.get("config"):
             config = json.loads(values.get("config"))
             if not config.get("agents") or not config.get("tasks"):
-                raise ValueError(
-                    "Config should have agents and tasks."
-                )
+                raise ValueError("Config should have agents and tasks.")
 
             values["agents"] = [
                 Agent(**agent) for agent in config["agents"]

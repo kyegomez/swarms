@@ -45,9 +45,7 @@ async def execute_code_async(code: str) -> Tuple[str, str]:
         # logging.info("Code executed successfully.")
     except Exception:
         error_message = traceback.format_exc()
-        logging.error(
-            "Code execution failed. Error: %s", error_message
-        )
+        logging.error("Code execution failed. Error: %s", error_message)
 
     # Return the new code and the error message
     return out, error_message

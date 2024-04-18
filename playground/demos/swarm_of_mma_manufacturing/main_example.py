@@ -31,9 +31,7 @@ llm = GPT4VisionAPI(openai_api_key=api_key, max_tokens=2000)
 assembly_line = (
     "playground/demos/swarm_of_mma_manufacturing/assembly_line.jpg"
 )
-red_robots = (
-    "playground/demos/swarm_of_mma_manufacturing/red_robots.jpg"
-)
+red_robots = "playground/demos/swarm_of_mma_manufacturing/red_robots.jpg"
 robots = "playground/demos/swarm_of_mma_manufacturing/robots.jpg"
 tesla_assembly_line = (
     "playground/demos/swarm_of_mma_manufacturing/tesla_assembly.jpg"
@@ -127,31 +125,19 @@ health_check = health_security_agent.run(
 
 
 print(
-    colored(
-        "--------------- Productivity agents initializing...", "green"
-    )
+    colored("--------------- Productivity agents initializing...", "green")
 )
 # Add the third task to the productivity_check_agent
 productivity_check = productivity_check_agent.run(
     health_check, assembly_line
 )
 
-print(
-    colored(
-        "--------------- Security agents initializing...", "green"
-    )
-)
+print(colored("--------------- Security agents initializing...", "green"))
 # Add the fourth task to the security_check_agent
-security_check = security_check_agent.run(
-    productivity_check, red_robots
-)
+security_check = security_check_agent.run(productivity_check, red_robots)
 
 
-print(
-    colored(
-        "--------------- Efficiency agents initializing...", "cyan"
-    )
-)
+print(colored("--------------- Efficiency agents initializing...", "cyan"))
 # Add the fifth task to the efficiency_check_agent
 efficiency_check = efficiency_check_agent.run(
     security_check, tesla_assembly_line

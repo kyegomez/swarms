@@ -16,8 +16,7 @@ def valid_schema_path(tmp_path):
     d.mkdir()
     p = d / "schema.json"
     p.write_text(
-        '{"type": "object", "properties": {"name": {"type":'
-        ' "string"}}}'
+        '{"type": "object", "properties": {"name": {"type":' ' "string"}}}'
     )
     return str(p)
 

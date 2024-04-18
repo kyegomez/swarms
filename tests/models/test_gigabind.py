@@ -11,9 +11,7 @@ except ImportError:
 
 @pytest.fixture
 def api():
-    return Gigabind(
-        host="localhost", port=8000, endpoint="embeddings"
-    )
+    return Gigabind(host="localhost", port=8000, endpoint="embeddings")
 
 
 @pytest.fixture
@@ -93,9 +91,7 @@ def test_proxy_url(api):
 
 
 def test_invalid_response(api, requests_mock):
-    requests_mock.post(
-        "http://localhost:8000/embeddings", text="not json"
-    )
+    requests_mock.post("http://localhost:8000/embeddings", text="not json")
     response = api.run(text="Hello, world!")
     assert response is None
 
@@ -110,9 +106,7 @@ def test_connection_error(api, requests_mock):
 
 
 def test_http_error(api, requests_mock):
-    requests_mock.post(
-        "http://localhost:8000/embeddings", status_code=500
-    )
+    requests_mock.post("http://localhost:8000/embeddings", status_code=500)
     response = api.run(text="Hello, world!")
     assert response is None
 

@@ -48,11 +48,7 @@ class AutoTemp:
         """
         score_text = self.llm(eval_prompt, temperature=0.5)
         score_match = re.search(r"\b\d+(\.\d)?\b", score_text)
-        return (
-            round(float(score_match.group()), 1)
-            if score_match
-            else 0.0
-        )
+        return round(float(score_match.group()), 1) if score_match else 0.0
 
     def run(self, prompt, temperature_string):
         print("Starting generation process...")

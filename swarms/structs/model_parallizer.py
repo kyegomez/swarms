@@ -136,8 +136,7 @@ class ModelParallelizer:
         try:
             with ThreadPoolExecutor() as executor:
                 future_to_llm = {
-                    executor.submit(llm, task): llm
-                    for llm in self.llms
+                    executor.submit(llm, task): llm for llm in self.llms
                 }
                 responses = []
                 for future in as_completed(future_to_llm):

@@ -96,9 +96,7 @@ for _ in range(max_iterations):
     # Evaluate the image by passing the file path
     score = evaluate_img(llm, task, img_path)
     print(
-        colored(
-            f"Evaluated Image Score: {score} for {img_path}", "cyan"
-        )
+        colored(f"Evaluated Image Score: {score} for {img_path}", "cyan")
     )
 
     # Update the best score and image path if necessary

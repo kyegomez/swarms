@@ -4,7 +4,7 @@ import threading
 
 import pytest
 
-from swarms.utils.code_interpreter import (  # Adjust the import according to your project structure
+from swarms.tools.code_interpreter import (  # Adjust the import according to your project structure
     SubprocessCodeInterpreter,
 )
 

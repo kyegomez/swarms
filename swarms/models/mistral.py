@@ -74,9 +74,9 @@ class Mistral(AbstractLLM):
         """Run the model on a given task."""
 
         try:
-            model_inputs = self.tokenizer(
-                [task], return_tensors="pt"
-            ).to(self.device)
+            model_inputs = self.tokenizer([task], return_tensors="pt").to(
+                self.device
+            )
             generated_ids = self.model.generate(
                 **model_inputs,
                 max_length=self.max_length,
@@ -85,9 +85,7 @@ class Mistral(AbstractLLM):
                 max_new_tokens=self.max_length,
                 **kwargs,
             )
-            output_text = self.tokenizer.batch_decode(generated_ids)[
-                0
-            ]
+            output_text = self.tokenizer.batch_decode(generated_ids)[0]
             return output_text
         except Exception as e:
             raise ValueError(f"Error running the model: {str(e)}")

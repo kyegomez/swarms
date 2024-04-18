@@ -154,15 +154,11 @@ class AbstractLLM(ABC):
         Returns:
             _type_: _description_
         """
-        return await asyncio.gather(
-            *(self.arun(task) for task in tasks)
-        )
+        return await asyncio.gather(*(self.arun(task) for task in tasks))
 
     def chat(self, task: str, history: str = "") -> str:
         """Chat with the model"""
-        complete_task = (
-            task + " | " + history
-        )  # Delimiter for clarity
+        complete_task = task + " | " + history  # Delimiter for clarity
         return self.run(complete_task)
 
     def __call__(self, task: str) -> str:
@@ -209,9 +205,7 @@ class AbstractLLM(ABC):
 
     def log_event(self, message: str):
         """Log an event."""
-        logging.info(
-            f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}"
-        )
+        logging.info(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}")
 
     def save_checkpoint(self, checkpoint_dir: str = "checkpoints"):
         """Save the model state."""

@@ -83,9 +83,7 @@ def test_bioinformatics_response(biogpt_instance):
 
 # 44. Test for a neuroscience question
 def test_neuroscience_response(biogpt_instance):
-    question = (
-        "Explain the function of synapses in the nervous system."
-    )
+    question = "Explain the function of synapses in the nervous system."
     response = biogpt_instance(question)
     assert response
     assert isinstance(response, str)
@@ -167,9 +165,7 @@ def test_get_config_return_type(biogpt_instance):
 # 28. Test saving model functionality by checking if files are created
 @patch.object(BioGptForCausalLM, "save_pretrained")
 @patch.object(BioGptTokenizer, "save_pretrained")
-def test_save_model(
-    mock_save_model, mock_save_tokenizer, biogpt_instance
-):
+def test_save_model(mock_save_model, mock_save_tokenizer, biogpt_instance):
     path = "test_path"
     biogpt_instance.save_model(path)
     mock_save_model.assert_called_once_with(path)
@@ -198,9 +194,7 @@ def test_print_model_metadata(biogpt_instance):
 
 # 31. Test that beam_search_decoding uses the correct number of beams
 @patch.object(BioGptForCausalLM, "generate")
-def test_beam_search_decoding_num_beams(
-    mock_generate, biogpt_instance
-):
+def test_beam_search_decoding_num_beams(mock_generate, biogpt_instance):
     biogpt_instance.beam_search_decoding("test_sentence", num_beams=7)
     _, kwargs = mock_generate.call_args
     assert kwargs["num_beams"] == 7

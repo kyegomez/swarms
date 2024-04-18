@@ -8,9 +8,7 @@ model = QwenVLMultiModal(
 )
 
 # Run the model
-response = model(
-    "Hello, how are you?", "https://example.com/image.jpg"
-)
+response = model("Hello, how are you?", "https://example.com/image.jpg")
 
 # Print the response
 print(response)

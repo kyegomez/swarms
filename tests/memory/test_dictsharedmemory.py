@@ -63,9 +63,7 @@ def test_parametrized_get_top_n(
     memory_instance, scores, agent_ids, expected_top_score
 ):
     for score, agent_id in zip(scores, agent_ids):
-        memory_instance.add(
-            score, agent_id, 1, f"Entry by {agent_id}"
-        )
+        memory_instance.add(score, agent_id, 1, f"Entry by {agent_id}")
     top_1 = memory_instance.get_top_n(1)
     top_score = next(iter(top_1.values()))["score"]
     assert (
@@ -78,9 +76,7 @@ def test_parametrized_get_top_n(
 
 def test_add_entry_invalid_input(memory_instance):
     with pytest.raises(ValueError):
-        memory_instance.add(
-            "invalid_score", "agent123", 1, "Test Entry"
-        )
+        memory_instance.add("invalid_score", "agent123", 1, "Test Entry")
 
 
 # Mocks and monkey-patching

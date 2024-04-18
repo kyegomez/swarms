@@ -20,9 +20,7 @@ def test_speecht5_init(speecht5_model):
         speecht5_model.processor, SpeechT5.processor.__class__
     )
     assert isinstance(speecht5_model.model, SpeechT5.model.__class__)
-    assert isinstance(
-        speecht5_model.vocoder, SpeechT5.vocoder.__class__
-    )
+    assert isinstance(speecht5_model.vocoder, SpeechT5.vocoder.__class__)
     assert isinstance(
         speecht5_model.embeddings_dataset, torch.utils.data.Dataset
     )
@@ -49,10 +47,7 @@ def test_speecht5_set_model(speecht5_model):
     speecht5_model.set_model(new_model_name)
     assert speecht5_model.model_name == new_model_name
     assert speecht5_model.processor.model_name == new_model_name
-    assert (
-        speecht5_model.model.config.model_name_or_path
-        == new_model_name
-    )
+    assert speecht5_model.model.config.model_name_or_path == new_model_name
     speecht5_model.set_model(old_model_name)  # Restore original model
 
 

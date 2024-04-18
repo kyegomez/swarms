@@ -51,8 +51,7 @@ class GroupChat:
     def next_agent(self, agent: Agent) -> Agent:
         """Return the next agent in the list."""
         return self.agents[
-            (self.agent_names.index(agent.name) + 1)
-            % len(self.agents)
+            (self.agent_names.index(agent.name) + 1) % len(self.agents)
         ]
 
     def select_speaker_msg(self):
@@ -122,9 +121,7 @@ class GroupChat:
         """
         formatted_messages = []
         for message in messages:
-            formatted_message = (
-                f"'{message['role']}:{message['content']}"
-            )
+            formatted_message = f"'{message['role']}:{message['content']}"
             formatted_messages.append(formatted_message)
         return "\n".join(formatted_messages)
 

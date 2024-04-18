@@ -87,8 +87,8 @@ class Kosmos(BaseMultiModalModel):
             skip_special_tokens=True,
         )[0]
 
-        processed_text, entities = (
-            self.processor.post_process_generation(generated_texts)
+        processed_text, entities = self.processor.post_process_generation(
+            generated_texts
         )
 
         return processed_text, entities
@@ -189,9 +189,7 @@ class Kosmos(BaseMultiModalModel):
                 )
                 # draw bbox
                 # random color
-                color = tuple(
-                    np.random.randint(0, 255, size=3).tolist()
-                )
+                color = tuple(np.random.randint(0, 255, size=3).tolist())
                 new_image = cv2.rectangle(
                     new_image,
                     (orig_x1, orig_y1),
@@ -210,9 +208,7 @@ class Kosmos(BaseMultiModalModel):
 
                 if (
                     y1
-                    < text_height
-                    + text_offset_original
-                    + 2 * text_spaces
+                    < text_height + text_offset_original + 2 * text_spaces
                 ):
                     y1 = (
                         orig_y1

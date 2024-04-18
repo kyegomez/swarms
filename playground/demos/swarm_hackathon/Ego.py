@@ -48,9 +48,7 @@ def generate_conversation(characters, topic):
 
 
 # Generate the conversation
-conversation = generate_conversation(
-    character_names, conversation_topic
-)
+conversation = generate_conversation(character_names, conversation_topic)
 
 # Play the conversation
 for line in conversation:

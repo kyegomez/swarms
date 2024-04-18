@@ -39,9 +39,7 @@ class RecursiveWorkflow(BaseStructure):
         self.stopping_conditions = stopping_conditions
         self.task_pool = []
 
-        assert (
-            self.stop_token is not None
-        ), "stop_token cannot be None"
+        assert self.stop_token is not None, "stop_token cannot be None"
 
     def add(self, task: Task = None, tasks: List[Task] = None):
         """Adds a task to the workflow.
@@ -80,10 +78,7 @@ class RecursiveWorkflow(BaseStructure):
             for task in self.task_pool:
                 while True:
                     result = task.run()
-                    if (
-                        result is not None
-                        and self.stop_token in result
-                    ):
+                    if result is not None and self.stop_token in result:
                         break
                     print(f"{result}")
         except Exception as error:

@@ -126,15 +126,11 @@ class GraphWorkflow(BaseStructure):
         if from_node in self.graph:
             for condition_value, to_node in edge_dict.items():
                 if to_node in self.graph:
-                    self.graph[from_node]["edges"][
-                        to_node
-                    ] = condition
+                    self.graph[from_node]["edges"][to_node] = condition
                 else:
                     raise ValueError("Node does not exist in graph")
         else:
-            raise ValueError(
-                f"Node {from_node} does not exist in graph"
-            )
+            raise ValueError(f"Node {from_node} does not exist in graph")
 
     def run(self):
         """
@@ -160,9 +156,7 @@ class GraphWorkflow(BaseStructure):
             ValueError: _description_
         """
         if node_name not in self.graph:
-            raise ValueError(
-                f"Node {node_name} does not exist in graph"
-            )
+            raise ValueError(f"Node {node_name} does not exist in graph")
 
     def _check_nodes_exist(self, from_node, to_node):
         """

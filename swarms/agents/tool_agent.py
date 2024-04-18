@@ -147,7 +147,5 @@ class ToolAgent(Agent):
                 )
 
         except Exception as error:
-            logger.error(
-                f"Error running {self.name} for task: {task}"
-            )
+            logger.error(f"Error running {self.name} for task: {task}")
             raise error

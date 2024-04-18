@@ -34,9 +34,7 @@ def text_to_video(task: str):
     step = 4  # Options: [1,2,4,8]
     repo = "ByteDance/AnimateDiff-Lightning"
     ckpt = f"animatediff_lightning_{step}step_diffusers.safetensors"
-    base = (  # Choose to your favorite base model.
-        "emilianJR/epiCRealism"
-    )
+    base = "emilianJR/epiCRealism"  # Choose to your favorite base model.
 
     adapter = MotionAdapter().to(device, dtype)
     adapter.load_state_dict(

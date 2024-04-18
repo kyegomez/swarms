@@ -123,9 +123,7 @@ class PineconeDB(AbstractVectorDatabase):
         Returns:
             str: _description_
         """
-        vector_id = (
-            vector_id if vector_id else str_to_hash(str(vector))
-        )
+        vector_id = vector_id if vector_id else str_to_hash(str(vector))
 
         params = {"namespace": namespace} | kwargs
 

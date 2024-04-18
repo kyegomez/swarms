@@ -11,9 +11,7 @@ from swarms.structs import Agent
 load_dotenv()
 
 
-FEATURE = (
-    "Implement an all-new signup system in typescript using supabase"
-)
+FEATURE = "Implement an all-new signup system in typescript using supabase"
 
 CODEBASE = """
 import React, { useState } from 'react';
@@ -68,9 +66,7 @@ feature_implementer_backend = Agent(
 )
 
 # Create another agent for a different task
-tester_agent = Agent(
-    llm=llm, max_loops=1, sop=TEST_SOP, autosave=True
-)
+tester_agent = Agent(llm=llm, max_loops=1, sop=TEST_SOP, autosave=True)
 
 # Create another agent for a different task
 documenting_agent = Agent(

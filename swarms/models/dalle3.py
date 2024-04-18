@@ -199,9 +199,7 @@ class Dalle3:
             with open(full_path, "wb") as file:
                 file.write(response.content)
         else:
-            raise ValueError(
-                f"Failed to download image from {img_url}"
-            )
+            raise ValueError(f"Failed to download image from {img_url}")
 
     def create_variations(self, img: str):
         """
@@ -249,9 +247,7 @@ class Dalle3:
                     "red",
                 )
             )
-            print(
-                colored(f"Error running Dalle3: {error.error}", "red")
-            )
+            print(colored(f"Error running Dalle3: {error.error}", "red"))
             raise error
 
     def print_dashboard(self):
@@ -310,9 +306,7 @@ class Dalle3:
                 executor.submit(self, task): task for task in tasks
             }
             results = []
-            for future in concurrent.futures.as_completed(
-                future_to_task
-            ):
+            for future in concurrent.futures.as_completed(future_to_task):
                 task = future_to_task[future]
                 try:
                     img = future.result()
@@ -359,9 +353,7 @@ class Dalle3:
         """Str method for the Dalle3 class"""
         return f"Dalle3(image_url={self.image_url})"
 
-    @backoff.on_exception(
-        backoff.expo, Exception, max_tries=max_retries
-    )
+    @backoff.on_exception(backoff.expo, Exception, max_tries=max_retries)
     def rate_limited_call(self, task: str):
         """Rate limited call to the Dalle3 API"""
         return self.__call__(task)

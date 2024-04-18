@@ -222,9 +222,7 @@ async def broadcast(
 
         await asyncio.gather(*receive_tasks)
     except Exception as error:
-        logger.error(
-            f"[ERROR][CLASS: Agent][METHOD: broadcast] {error}"
-        )
+        logger.error(f"[ERROR][CLASS: Agent][METHOD: broadcast] {error}")
         raise error
 
 
@@ -250,7 +248,5 @@ async def one_to_one(
     try:
         await receiver.receive_message(sender.ai_name, task)
     except Exception as error:
-        logger.error(
-            f"[ERROR][CLASS: Agent][METHOD: one_to_one] {error}"
-        )
+        logger.error(f"[ERROR][CLASS: Agent][METHOD: one_to_one] {error}")
         raise error

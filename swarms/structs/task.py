@@ -81,9 +81,7 @@ class Task:
         >>> task.result
 
         """
-        logger.info(
-            f"[INFO][Task] Executing task: {self.description}"
-        )
+        logger.info(f"[INFO][Task] Executing task: {self.description}")
         task = self.description
         try:
             if isinstance(self.agent, Agent):
@@ -98,9 +96,7 @@ class Task:
                     if self.action is not None:
                         self.action()
             else:
-                self.result = self.agent.run(
-                    *self.args, **self.kwargs
-                )
+                self.result = self.agent.run(*self.args, **self.kwargs)
 
             self.history.append(self.result)
         except Exception as error:
@@ -228,9 +224,7 @@ class Task:
                     else ""
                 )
 
-                result = (
-                    task.result if task.result is not None else ""
-                )
+                result = task.result if task.result is not None else ""
 
                 # Add the context of the task to the conversation
                 new_context.add(
@@ -239,9 +233,7 @@ class Task:
 
         elif task:
             description = (
-                task.description
-                if task.description is not None
-                else ""
+                task.description if task.description is not None else ""
             )
             result = task.result if task.result is not None else ""
             new_context.add(

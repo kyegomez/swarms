@@ -140,9 +140,7 @@ class AutoSwarmRouter(BaseSwarm):
 
             if self.name in self.swarm_dict:
                 # If a match is found then send the task to the swarm
-                out = self.swarm_dict[self.name].run(
-                    task, *args, **kwargs
-                )
+                out = self.swarm_dict[self.name].run(task, *args, **kwargs)
 
                 if self.custom_postprocess:
                     # If custom postprocess function is provided then run it
@@ -151,9 +149,7 @@ class AutoSwarmRouter(BaseSwarm):
                 return out
 
             # If no match is found then return None
-            raise ValueError(
-                f"Swarm with name {self.name} not found."
-            )
+            raise ValueError(f"Swarm with name {self.name} not found.")
         except Exception as e:
             logger.error(f"Error: {e}")
             raise e

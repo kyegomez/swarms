@@ -9,9 +9,7 @@ from swarms.utils import find_image_path
 
 def test_find_image_path_no_images():
     assert (
-        find_image_path(
-            "This is a test string without any image paths."
-        )
+        find_image_path("This is a test string without any image paths.")
         is None
     )
 

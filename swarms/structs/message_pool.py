@@ -98,9 +98,7 @@ class MessagePool:
 
         logger.info("MessagePool initialized")
         logger.info(f"Number of agents: {len(agents)}")
-        logger.info(
-            f"Agents: {[agent.agent_name for agent in agents]}"
-        )
+        logger.info(f"Agents: {[agent.agent_name for agent in agents]}")
         logger.info(f"moderator: {moderator.agent_name} is available")
         logger.info(f"Number of turns: {turns}")
 
@@ -188,9 +186,7 @@ class MessagePool:
         """
         # Get the messages before the current turn
         prev_messages = [
-            message
-            for message in self.messages
-            if message["turn"] < turn
+            message for message in self.messages if message["turn"] < turn
         ]
 
         visible_messages = []
