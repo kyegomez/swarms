@@ -9,7 +9,8 @@ mkdocs:
   configuration: docs/mkdocs.yml
 
 python:
-   install:
-   - requirements: docs/requirements.txt
+  use_system_site_packages: true
+
+requirements_file: docs/requirements.txt
 
 formats: []
