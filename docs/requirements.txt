@@ -9,7 +9,6 @@ mike
 mkdocs-jupyter
 mkdocs-git-committers-plugin-2
 mkdocs-git-revision-date-localized-plugin
-mkdocs-minify-plugin
 mkdocs-redirects
 mkdocs-material-extensions
 mkdocs-simple-hooks
@@ -19,3 +18,4 @@ mkdocs-mermaid2-plugin
 mkdocs-include-markdown-plugin
 mkdocs-enumerate-headings-plugin
 mkdocs-autolinks-plugin
+mkdocs-minify-html-plugin

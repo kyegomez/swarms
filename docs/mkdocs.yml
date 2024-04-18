@@ -31,7 +31,7 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
-  - mkdocs-minify-plugin
+  - minify_html
   - mkdocs-redirects
   - mkdocs-material-extensions
   - mkdocs-simple-hooks
