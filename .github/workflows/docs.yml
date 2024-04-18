@@ -1,5 +1,5 @@
-name: Docs WorkAgent
-
+---
+name: Documentation
 on:
   push:
     branches:

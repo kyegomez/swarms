@@ -10,16 +10,23 @@ description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
 homepage = "https://github.com/kyegomez/swarms"
-documentation = "https://swarms.apac.ai"  
-readme = "README.md" 
+documentation = "https://swarms.apac.ai"
+readme = "README.md"
 repository = "https://github.com/kyegomez/swarms"
-keywords = ["artificial intelligence", "deep learning", "optimizers", "Prompt Engineering", "swarms", "agents"]
+keywords = [
+    "artificial intelligence",
+    "deep learning",
+    "optimizers",
+    "Prompt Engineering",
+    "swarms",
+    "agents",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.10"
+    "Programming Language :: Python :: 3.10",
 ]
 
 
@@ -46,25 +53,35 @@ psutil = "*"
 sentry-sdk = "*"
 python-dotenv = "*"
 accelerate = "0.28.0"
-
-[tool.poetry.dev-dependencies]
-black = "23.3.0"
+opencv-python = "^4.9.0.80"
 
 [tool.poetry.group.lint.dependencies]
+black = "^23.1.0"
 ruff = ">=0.0.249,<0.3.5"
 types-toml = "^0.10.8.1"
 types-pytz = "^2023.3.0.0"
-black = "^23.1.0"
 types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
 
 
+[tool.poetry.group.test.dependencies]
+pytest = "^8.1.1"
+termcolor = "^2.4.0"
+pandas = "^2.2.2"
+fastapi = "^0.110.1"
+
 [tool.ruff]
-line-length = 70
-select = ["E4", "E7", "E9", "F"]
+line-length = 128
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
 ignore = []
 fixable = ["ALL"]
 unfixable = []
+preview = true
+
+[tool.ruff.lint.per-file-ignores]
+"swarms/prompts/**.py" = ["E501"]
 
 [tool.black]
 line-length = 70
