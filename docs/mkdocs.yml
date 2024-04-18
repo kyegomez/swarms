@@ -1,5 +1,15 @@
+
 docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
 site_name: Swarms Documentation
+site_url: https://swarms.apac.ai
+site_author: Swarms
+site_description: Orchestrate Swarms of Agents From Any Framework Like OpenAI, Langchain, and Etc for Real World Workflow Automation.
+repo_name: kyegomez/swarms
+repo_url: https://github.com/kyegomez/swarms
+edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
+copyright: TGSC Corp 2024. All rights reserved.
+
+
 plugins:
   # - glightbox
   - search
@@ -95,9 +105,10 @@ markdown_extensions:
 nav:
 - Home:
     - Overview: "index.md"
+    - Install: "install.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
     - Build an Agent: "diy_your_own_agent.md"
-    - Agent with tools: "examples/tools_agent.md"
+    - Build an Agent with tools: "examples/tools_agents.md"
 - Swarms Cloud API:
   - Overview: "swarms_cloud/main.md"
   - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
