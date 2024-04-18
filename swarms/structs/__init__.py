@@ -6,7 +6,7 @@ from swarms.structs.agent_process import (
 )
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.autoscaler import AutoScaler
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.block_wrapper import block
@@ -80,6 +80,13 @@ from swarms.structs.utils import (
 )
 from swarms.structs.agent_rearrange import AgentRearrange
 
+from swarms.structs.yaml_model import (
+    get_type_name,
+    create_yaml_schema_from_dict,
+    pydantic_type_to_yaml_schema,
+    YamlModel,
+)
+
 
 __all__ = [
     "Agent",
@@ -149,4 +156,8 @@ __all__ = [
     "find_token_in_text",
     "parse_tasks",
     "AgentRearrange",
+    "get_type_name",
+    "create_yaml_schema_from_dict",
+    "pydantic_type_to_yaml_schema",
+    "YamlModel",
 ]

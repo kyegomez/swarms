@@ -21,7 +21,7 @@ Cargo.lock
 .DS_STORE
 Cargo.lock
 swarms/agents/.DS_Store
-
+artifacts_two
 logs
 _build
 conversation.txt

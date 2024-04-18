@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 from swarms.structs.task import Task
 
 logging.basicConfig(level=logging.INFO)

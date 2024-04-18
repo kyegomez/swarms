@@ -1,7 +1,7 @@
 import multiprocessing as mp
 from typing import List, Optional
 
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 
 
 class LoadBalancer(BaseStructure):

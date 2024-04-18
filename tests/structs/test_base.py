@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pytest
 
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 
 
 class TestBaseStructure:

@@ -1,6 +1,6 @@
 from typing import Any, List, Optional
 
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 
 
 class BlocksList(BaseStructure):

@@ -1,6 +1,6 @@
 import logging
 
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 
 
 class GraphWorkflow(BaseStructure):

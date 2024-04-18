@@ -5,7 +5,7 @@ from typing import Optional
 from termcolor import colored
 
 from swarms.memory.base_db import AbstractDatabase
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 from typing import Any
 
 

@@ -67,6 +67,15 @@ You can install `swarms` with pip in a
         poetry install --extras "desktop"
         ```
 
+!!! example "NPM install |WIP|"
+
+    === "headless"
+        Get started with the NPM implementation of Swarms with this command:
+
+        ```bash
+        npm install swarms-js
+        ```
+
 
 ## Documentation
 

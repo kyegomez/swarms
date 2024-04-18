@@ -2,7 +2,7 @@ import concurrent.futures
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 from swarms.structs.task import Task
 from swarms.utils.logger import logger
 

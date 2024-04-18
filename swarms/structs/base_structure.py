@@ -2,7 +2,6 @@ import asyncio
 import concurrent.futures
 import json
 import os
-from abc import ABC
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -13,9 +12,10 @@ try:
     import gzip
 except ImportError as error:
     print(f"Error importing gzip: {error}")
+from pydantic import BaseModel
 
 
-class BaseStructure(ABC):
+class BaseStructure(BaseModel):
     """Base structure.
 
 
@@ -59,26 +59,17 @@ class BaseStructure(ABC):
         run_with_resources_batched: _description_
 
     Examples:
-
+    >>> base_structure = BaseStructure()
+    >>> base_structure
+    BaseStructure(name=None, description=None, save_metadata=True, save_artifact_path='./artifacts', save_metadata_path='./metadata', save_error_path='./errors')
     """
 
-    def __init__(
-        self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        save_metadata: bool = True,
-        save_artifact_path: Optional[str] = "./artifacts",
-        save_metadata_path: Optional[str] = "./metadata",
-        save_error_path: Optional[str] = "./errors",
-        *args,
-        **kwargs,
-    ):
-        self.name = name
-        self.description = description
-        self.save_metadata = save_metadata
-        self.save_artifact_path = save_artifact_path
-        self.save_metadata_path = save_metadata_path
-        self.save_error_path = save_error_path
+    name: Optional[str] = None
+    description: Optional[str] = None
+    save_metadata: bool = True
+    save_artifact_path: Optional[str] = "./artifacts"
+    save_metadata_path: Optional[str] = "./metadata"
+    save_error_path: Optional[str] = "./errors"
 
     def run(self, *args, **kwargs):
         """Run the structure."""
@@ -430,3 +421,8 @@ class BaseStructure(ABC):
         return self.run_batched(
             batched_data, batch_size, *args, **kwargs
         )
+
+
+# x = BaseStructure()
+
+# print(x)

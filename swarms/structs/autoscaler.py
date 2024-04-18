@@ -7,7 +7,7 @@ from typing import Callable, Dict, List, Optional
 from termcolor import colored
 
 from swarms.structs.agent import Agent
-from swarms.structs.base import BaseStructure
+from swarms.structs.base_structure import BaseStructure
 from swarms.utils.decorators import (
     error_decorator,
     log_decorator,
