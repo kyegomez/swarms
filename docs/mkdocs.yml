@@ -4,7 +4,6 @@ plugins:
   # - glightbox
   - search
   - git-authors
-  - git-commitors
   - git-revision-date
   - git-committers
 
