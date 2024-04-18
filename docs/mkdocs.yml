@@ -32,8 +32,7 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
   - minify_html
-  - mkdocs-redirects
-  - mkdocs-material-extensions
+  - redirects
   - mkdocs-simple-hooks
   - mkdocs-awesome-pages-plugin
   - mkdocs-versioning
