@@ -1,7 +1,7 @@
 **Quickstart**
 
 ## Migrate from OpenAI to Swarms in 3 lines of code
-If you’ve been using GPT-3.5 or GPT-4, switching to Octo AI is easy!
+If you’ve been using GPT-3.5 or GPT-4, switching to Swarms is easy!
 
 Swarms VLMs are available to use through our OpenAI compatible API. Additionally, if you have been building or prototyping using OpenAI’s Python SDK you can keep your code as-is and use Swarms’s VLMs models.
 
