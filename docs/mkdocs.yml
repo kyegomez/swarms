@@ -31,6 +31,16 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
+  - mkdocs-minify-plugin
+  - mkdocs-redirects
+  - mkdocs-material-extensions
+  - mkdocs-simple-hooks
+  - mkdocs-awesome-pages-plugin
+  - mkdocs-versioning
+  - mkdocs-mermaid2-plugin
+  - mkdocs-include-markdown-plugin
+  - mkdocs-enumerate-headings-plugin
+  - mkdocs-autolinks-plugin
 
 copyright: "&copy; TGSC, Corporation."
 extra_css:
@@ -93,10 +103,6 @@ nav:
 - Swarms Cloud API:
   - Overview: "swarms_cloud/main.md"
   - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
-- Contributors:
-    - Contributing: "contributing.md"
-    - Why Swarms: "why_swarms.md"
-    - The Swarms Bounty System: "swarms_bounty_system.md"
 - Swarms Framework [PY]:
   - Overview: "swarms/index.md"
   - DIY Build Your Own Agent: "diy_your_own_agent.md"
@@ -196,6 +202,8 @@ nav:
       - Checklist: "corporate/checklist.md"
     - Organization:
       - FrontEnd Member Onboarding: "corporate/front_end_contributors.md"
-    
-    
+- Contributors:
+    - Contributing: "contributing.md"
+    - Why Swarms: "why_swarms.md"
+    - The Swarms Bounty System: "swarms_bounty_system.md"    
     
