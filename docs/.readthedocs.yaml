@@ -9,8 +9,7 @@ mkdocs:
   configuration: docs/mkdocs.yml
 
 python:
-  version: 3.10
-  use_system_site_packages: true
+  version: 3.11
 
 requirements_file: docs/requirements.txt
 
