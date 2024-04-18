@@ -34,11 +34,10 @@ plugins:
   - minify_html
   - redirects
   - mkdocs-simple-hooks
-  - mkdocs-awesome-pages-plugin
+  - awesome-pages
   - mkdocs-versioning
-  - mkdocs-mermaid2-plugin
   - mkdocs-include-markdown-plugin
-  - mkdocs-enumerate-headings-plugin
+  - enumerate-headings
   - mkdocs-autolinks-plugin
 
 copyright: "&copy; TGSC, Corporation."
