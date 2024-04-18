@@ -78,7 +78,7 @@ nav:
       - ToolAgent: "swarms/agents/toolagent.md"
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-    - Deploying Azure OpenAI in Production: A Comprehensive Guide: "swarms/models/azure_openai.md"
+    - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
     - Language:
       - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"
@@ -129,7 +129,7 @@ nav:
 - Guides:
     - Building Custom Vector Memory Databases with the AbstractVectorDatabase Class: "swarms/memory/diy_memory.md"
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-    - Deploying Azure OpenAI in Production: A Comprehensive Guide: "swarms/models/azure_openai.md"
+    - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
     - DIY Build Your Own Agent: "diy_your_own_agent.md"
     - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
     - Overview: "examples/index.md"
