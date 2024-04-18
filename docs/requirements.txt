@@ -2,6 +2,10 @@ mkdocs
 mkdocs-material
 mkdocs-glightbox
 mkdocs-git-authors-plugin
-mkdocs-git-committers-plugin-2
 mkdocs-git-revision-date-plugin
 mkdocs-git-committers-plugin
+mkdocstrings 
+mike 
+mkdocs-jupyter 
+mkdocs-git-committers-plugin-2 
+mkdocs-git-revision-date-localized-plugin 
