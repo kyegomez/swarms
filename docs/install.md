@@ -31,7 +31,6 @@ You can install `swarms` with pip in a
         ```
 
 
-
 !!! example "git clone (for development)"
 
     === "virtualenv"
@@ -70,6 +69,9 @@ You can install `swarms` with pip in a
         # desktop install
         poetry install --extras "desktop"
         ```
+
+
+# Javascript
 
 !!! example "NPM install |WIP|"
 

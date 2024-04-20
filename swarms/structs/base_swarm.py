@@ -189,10 +189,27 @@ class BaseSwarm(ABC):
     # @abstractmethod
     def add_agent(self, agent: agent):
         """Add a agent to the swarm"""
+        self.agents.append(agent)
+
+    def add_agents(self, agents: List[agent]):
+        """Add a list of agents to the swarm"""
+        self.agents.extend(agents)
+
+    def add_agent_by_id(self, agent_id: str):
+        """Add a agent to the swarm by id"""
+        agent = self.get_agent_by_id(agent_id)
+        self.add_agent(agent)
 
     # @abstractmethod
     def remove_agent(self, agent: agent):
         """Remove a agent from the swarm"""
+        self.agents.remove(agent)
+
+    def get_agent_by_name(self, name: str):
+        """Get a agent by name"""
+        for agent in self.agents:
+            if agent.name == name:
+                return agent
 
     # @abstractmethod
     def broadcast(self, message: str, sender: Optional[agent] = None):
