@@ -12,6 +12,7 @@ class Schema(BaseModel):
         ..., title="List of courses the person is taking"
     )
 
+
 # Convert the schema to a JSON string
 tool_schema = Schema(
     name="Tool Name",
@@ -39,12 +40,12 @@ agent = Agent(
     verbose=True,
     interactive=True,
     # Set the output type to the tool schema which is a BaseModel
-    output_type=tool_schema, # or dict, or str
+    output_type=tool_schema,  # or dict, or str
     metadata_output_type="json",
     # List of schemas that the agent can handle
-    list_tool_schemas = [tool_schema],
-    function_calling_format_type = "OpenAI",
-    function_calling_type = "json" # or soon yaml
+    list_tool_schemas=[tool_schema],
+    function_calling_format_type="OpenAI",
+    function_calling_type="json",  # or soon yaml
 )
 
 # Run the agent to generate the person's information

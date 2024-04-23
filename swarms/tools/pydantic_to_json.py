@@ -1,4 +1,4 @@
-from typing import Any, Optional, List
+from typing import Any, List
 
 from docstring_parser import parse
 from pydantic import BaseModel
@@ -72,7 +72,7 @@ def pydantic_to_functions(
 
 
 def multi_pydantic_to_functions(
-    pydantic_types: List[BaseModel] = None
+    pydantic_types: List[BaseModel] = None,
 ) -> dict[str, Any]:
     """
     Converts multiple Pydantic types to a dictionary of functions.

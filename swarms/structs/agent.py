@@ -323,10 +323,7 @@ class Agent:
 
         # If the stopping function is provided then set the stopping condition to the stopping function
         self.short_memory = Conversation(
-            system_prompt=system_prompt,
-            time_enabled=True,
-            *args,
-            **kwargs
+            system_prompt=system_prompt, time_enabled=True, *args, **kwargs
         )
 
         # If the docs exist then ingest the docs
@@ -392,7 +389,7 @@ class Agent:
         if self.tool_schema is not None:
             logger.info("Tool schema provided")
             tool_schema_str = self.tool_schema_to_str(self.tool_schema)
-            
+
             print(tool_schema_str)
 
             # Add to the short memory
@@ -466,6 +463,48 @@ class Agent:
             self.short_memory.add(f"{self.user_name}: {task}")
         except Exception as error:
             print(colored(f"Error adding task to memory: {error}", "red"))
+
+    # ############## TOKENIZER FUNCTIONS ##############
+    def count_tokens(self, text: str) -> int:
+        """Count the number of tokens in the text."""
+        return self.tokenizer.len(text)
+
+    def tokens_per_second(self, text: str) -> float:
+        """
+        Calculates the number of tokens processed per second.
+
+        Args:
+            text (str): The input text to count tokens from.
+
+        Returns:
+            float: The number of tokens processed per second.
+        """
+        import time
+
+        start_time = time.time()
+        tokens = self.count_tokens(text)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        return tokens / elapsed_time
+
+    def time_to_generate(self, text: str) -> float:
+        """
+        Calculates the time taken to generate the output.
+
+        Args:
+            text (str): The input text to generate output from.
+
+        Returns:
+            float: The time taken to generate the output.
+        """
+        import time
+
+        start_time = time.time()
+        self.llm(text)
+        end_time = time.time()
+        return end_time - start_time
+
+    # ############## TOKENIZER FUNCTIONS ##############
 
     def add_message_to_memory(self, message: str):
         """Add the message to the memory"""
