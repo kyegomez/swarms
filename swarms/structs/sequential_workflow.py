@@ -93,36 +93,6 @@ class SequentialWorkflow:
 
         return out
 
-        # try:
-        #     # If the agent is a Task instance, we include the task in kwargs for Agent.run()
-        #     # Append the task to the task_pool list
-        #     if task:
-        #         self.task_pool.append(task)
-        #         logger.info(
-        #             f"[INFO][SequentialWorkflow] Added task {task} to"
-        #             " workflow"
-        #         )
-        #     elif tasks:
-        #         for task in tasks:
-        #             self.task_pool.append(task)
-        #             logger.info(
-        #                 "[INFO][SequentialWorkflow] Added task"
-        #                 f" {task} to workflow"
-        #             )
-        #     else:
-        #         if task and tasks is not None:
-        #             # Add the task and list of tasks to the task_pool at the same time
-        #             self.task_pool.append(task)
-        #             for task in tasks:
-        #                 self.task_pool.append(task)
-
-        # except Exception as error:
-        #     logger.error(
-        #         colored(
-        #             f"Error adding task to workflow: {error}", "red"
-        #         ),
-        #     )
-
     def reset_workflow(self) -> None:
         """Resets the workflow by clearing the results of each task."""
         try:

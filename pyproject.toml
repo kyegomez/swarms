@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "4.8.4"
+version = "4.8.6"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -51,6 +51,7 @@ python-dotenv = "*"
 accelerate = "0.28.0"
 opencv-python = "^4.9.0.80"
 yaml = "*"
+docstring_parser = "0.16"
 
 [tool.poetry.group.lint.dependencies]
 black = "^23.1.0"
@@ -69,16 +70,6 @@ fastapi = "^0.110.1"
 
 [tool.ruff]
 line-length = 75
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP"]
-ignore = []
-fixable = ["ALL"]
-unfixable = []
-preview = true
-
-[tool.ruff.lint.per-file-ignores]
-"swarms/prompts/**.py" = ["E501"]
 
 [tool.black]
 target-version = ["py38"]

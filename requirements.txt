@@ -16,3 +16,4 @@ Pillow==10.2.0
 termcolor==2.2.0
 psutil
 sentry-sdk
+docstring_parser==0.16

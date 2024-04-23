@@ -1,4 +1,4 @@
-from swarms import AutoSwarm, AutoSwarmRouter, BaseSwarm, Agent, Anthropic
+from swarms import BaseSwarm, Agent, Anthropic
 
 
 class MySwarm(BaseSwarm):

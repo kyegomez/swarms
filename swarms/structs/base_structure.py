@@ -12,10 +12,10 @@ try:
     import gzip
 except ImportError as error:
     print(f"Error importing gzip: {error}")
-from pydantic import BaseModel
+# from pydantic import BaseModel
 
 
-class BaseStructure(BaseModel):
+class BaseStructure:
     """Base structure.
 
 
@@ -64,12 +64,23 @@ class BaseStructure(BaseModel):
     BaseStructure(name=None, description=None, save_metadata=True, save_artifact_path='./artifacts', save_metadata_path='./metadata', save_error_path='./errors')
     """
 
-    name: Optional[str] = None
-    description: Optional[str] = None
-    save_metadata: bool = True
-    save_artifact_path: Optional[str] = "./artifacts"
-    save_metadata_path: Optional[str] = "./metadata"
-    save_error_path: Optional[str] = "./errors"
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        save_metadata: bool = True,
+        save_artifact_path: Optional[str] = "./artifacts",
+        save_metadata_path: Optional[str] = "./metadata",
+        save_error_path: Optional[str] = "./errors",
+    ):
+        super().__init__()
+        self.name = name
+        self.description = description
+        self.save_metadata = save_metadata
+        self.save_artifact_path = save_artifact_path
+        self.save_metadata_path = save_metadata_path
+        self.save_error_path = save_error_path
+        
 
     def run(self, *args, **kwargs):
         """Run the structure."""

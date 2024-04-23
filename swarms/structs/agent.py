@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from typing import Union
 import os
 import random
 import sys
@@ -26,6 +27,12 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.code_executor import CodeExecutor
 from swarms.prompts.worker_prompt import tool_usage_worker_prompt
+from pydantic import BaseModel
+from swarms.tools.pydantic_to_json import (
+    pydantic_to_functions,
+    multi_pydantic_to_functions,
+)
+from swarms.structs.schemas import Step, ManySteps
 
 
 # Utils
@@ -63,12 +70,16 @@ def step_id():
     return str(uuid.uuid1())
 
 
+# Agent output types
+agent_output_type = Union[BaseModel, dict, str]
+ToolUsageType = Union[BaseModel, Dict[str, Any]]
+
+
+# [FEAT][AGENT]
 class Agent:
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
     ingest any type of docs like PDFs, Txts, Markdown, Json, and etc for the agent. Here is a list of features.
-
-
 
     Args:
         llm (Any): The language model to use
@@ -155,22 +166,22 @@ class Agent:
 
     def __init__(
         self,
-        id: str = agent_id,
-        llm: Any = None,
+        id: Optional[str] = agent_id,
+        llm: Optional[Any] = None,
         template: Optional[str] = None,
         max_loops: Optional[int] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
-        loop_interval: int = 0,
-        retry_attempts: int = 3,
-        retry_interval: int = 1,
-        return_history: bool = False,
-        stopping_token: str = None,
+        loop_interval: Optional[int] = 0,
+        retry_attempts: Optional[int] = 3,
+        retry_interval: Optional[int] = 1,
+        return_history: Optional[bool] = False,
+        stopping_token: Optional[str] = None,
         dynamic_loops: Optional[bool] = False,
-        interactive: bool = False,
-        dashboard: bool = False,
-        agent_name: str = "swarm-worker-01",
-        agent_description: str = None,
-        system_prompt: str = AGENT_SYSTEM_PROMPT_3,
+        interactive: Optional[bool] = False,
+        dashboard: Optional[bool] = False,
+        agent_name: Optional[str] = "swarm-worker-01",
+        agent_description: Optional[str] = None,
+        system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
         tools: List[BaseTool] = [],
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
@@ -178,7 +189,7 @@ class Agent:
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = 8192,
-        user_name: str = "Human:",
+        user_name: Optional[str] = "Human:",
         self_healing_enabled: Optional[bool] = False,
         code_interpreter: Optional[bool] = False,
         multi_modal: Optional[bool] = None,
@@ -187,22 +198,22 @@ class Agent:
         tokenizer: Optional[Any] = None,
         long_term_memory: Optional[AbstractVectorDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
-        traceback: Any = None,
-        traceback_handlers: Any = None,
+        traceback: Optional[Any] = None,
+        traceback_handlers: Optional[Any] = None,
         streaming_on: Optional[bool] = False,
         docs: List[str] = None,
-        docs_folder: str = None,
-        verbose: bool = False,
+        docs_folder: Optional[str] = None,
+        verbose: Optional[bool] = False,
         parser: Optional[Callable] = None,
         best_of_n: Optional[int] = None,
         callback: Optional[Callable] = None,
         metadata: Optional[Dict[str, Any]] = None,
         callbacks: Optional[List[Callable]] = None,
-        logger_handler: Any = sys.stderr,
+        logger_handler: Optional[Any] = sys.stderr,
         search_algorithm: Optional[Callable] = None,
         logs_to_filename: Optional[str] = None,
         evaluator: Optional[Callable] = None,
-        output_json: bool = False,
+        output_json: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_loop_condition: Optional[Callable] = None,
         sentiment_threshold: Optional[float] = None,
@@ -210,6 +221,13 @@ class Agent:
         sentiment_analyzer: Optional[Callable] = None,
         limit_tokens_from_string: Optional[Callable] = None,
         custom_tools_prompt: Optional[Callable] = None,
+        tool_schema: ToolUsageType = None,
+        output_type: agent_output_type = None,
+        function_calling_type: str = "json",
+        output_cleaner: Optional[Callable] = None,
+        function_calling_format_type: Optional[str] = "OpenAI",
+        list_tool_schemas: Optional[List[BaseModel]] = None,
+        metadata_output_type: str = "json",
         *args,
         **kwargs,
     ):
@@ -270,6 +288,13 @@ class Agent:
         self.custom_exit_command = custom_exit_command
         self.sentiment_analyzer = sentiment_analyzer
         self.limit_tokens_from_string = limit_tokens_from_string
+        self.tool_schema = tool_schema
+        self.output_type = output_type
+        self.function_calling_type = function_calling_type
+        self.output_cleaner = output_cleaner
+        self.function_calling_format_type = function_calling_format_type
+        self.list_tool_schemas = list_tool_schemas
+        self.metadata_output_type = metadata_output_type
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -293,11 +318,15 @@ class Agent:
         )
 
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
-        if preset_stopping_token:
+        if preset_stopping_token is not None:
             self.stopping_token = "<DONE>"
 
+        # If the stopping function is provided then set the stopping condition to the stopping function
         self.short_memory = Conversation(
-            system_prompt=self.system_prompt, time_enabled=True
+            system_prompt=system_prompt,
+            time_enabled=True,
+            *args,
+            **kwargs
         )
 
         # If the docs exist then ingest the docs
@@ -358,6 +387,30 @@ class Agent:
             )
 
         # logger.info("Creating Agent {}".format(self.agent_name))
+
+        # If the tool types
+        if self.tool_schema is not None:
+            logger.info("Tool schema provided")
+            tool_schema_str = self.tool_schema_to_str(self.tool_schema)
+            
+            print(tool_schema_str)
+
+            # Add to the short memory
+            logger.info(f"Adding tool schema to memory: {tool_schema_str}")
+            self.short_memory.add(
+                role=self.user_name, content=tool_schema_str
+            )
+
+        # If a list of tool schemas:
+        if self.list_tool_schemas is not None:
+            logger.info("Tool schema provided")
+            tool_schema_str = self.tool_schemas_to_str(list_tool_schemas)
+
+            # Add to the short memory
+            logger.info(f"Adding tool schema to memory: {tool_schema_str}")
+            self.short_memory.add(
+                role=self.user_name, content=tool_schema_str
+            )
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -522,6 +575,78 @@ class Agent:
         for chunk in content:
             print(chunk, end="")
 
+    ########################## FUNCTION CALLING ##########################
+
+    def json_str_to_json(self, json_str: str):
+        """Convert a JSON string to a JSON object"""
+        return json.loads(json_str)
+
+    def json_str_to_pydantic_model(self, json_str: str, model: BaseModel):
+        """Convert a JSON string to a Pydantic model"""
+        return model.model_validate_json(json_str)
+
+    def json_str_to_dict(self, json_str: str):
+        """Convert a JSON string to a dictionary"""
+        return json.loads(json_str)
+
+    def pydantic_model_to_json_str(self, model: BaseModel):
+        return str(pydantic_to_functions(model))
+
+    def dict_to_json_str(self, dictionary: dict):
+        """Convert a dictionary to a JSON string"""
+        return json.dumps(dictionary)
+
+    def dict_to_pydantic_model(self, dictionary: dict, model: BaseModel):
+        """Convert a dictionary to a Pydantic model"""
+        return model.model_validate_json(dictionary)
+
+    # def prep_pydantic_model_for_str(self, model: BaseModel):
+    #     # Convert to Function
+    #     out = self.pydantic_model_to_json_str(model)
+
+    #     # return function_to_str(out)
+
+    def tool_schema_to_str(
+        self, tool_schema: BaseModel = None, *args, **kwargs
+    ):
+        """Convert a tool schema to a string"""
+        out = pydantic_to_functions(tool_schema)
+        return str(out)
+
+    def tool_schemas_to_str(
+        self, tool_schemas: List[BaseModel] = None, *args, **kwargs
+    ):
+        """Convert a list of tool schemas to a string"""
+        out = multi_pydantic_to_functions(tool_schemas)
+        return str(out)
+
+    def str_to_pydantic_model(self, string: str, model: BaseModel):
+        """Convert a string to a Pydantic model"""
+        return model.model_validate_json(string)
+
+    def list_str_to_pydantic_model(
+        self, list_str: List[str], model: BaseModel
+    ):
+        """Convert a list of strings to a Pydantic model"""
+        # return model.model_validate_json(list_str)
+        for string in list_str:
+            return model.model_validate_json(string)
+
+    def prepare_output_for_output_model(
+        self, output: agent_output_type = None
+    ):
+        """Prepare the output for the output model"""
+        if self.output_type == BaseModel:
+            return self.str_to_pydantic_model(output, self.output_type)
+        elif self.output_type == dict:
+            return self.dict_to_json_str(output)
+        elif self.output_type == str:
+            return output
+        else:
+            return output
+
+    ########################## FUNCTION CALLING ##########################
+
     def _history(self, user_name: str, task: str) -> str:
         """Generate the history for the history prompt
 
@@ -567,6 +692,7 @@ class Agent:
 
             loop_count = 0
             response = None
+            step_pool = []
 
             while (
                 self.max_loops == "auto"
@@ -722,9 +848,36 @@ class Agent:
                     )
                     time.sleep(self.loop_interval)
 
+                # Save Step Metadata
+                active_step = Step(
+                    task_id=task_id(),
+                    step_id=loop_count,
+                    name=task,
+                    output=response,
+                    max_loops=self.max_loops,
+                )
+
+                step_pool.append(active_step)
+
+                # Save the step pool
+                # self.step_cache = step_pool
+
             if self.autosave:
                 logger.info("Autosaving agent state.")
                 self.save_state(self.saved_state_path)
+
+            # Apply the cleaner function to the response
+            if self.output_cleaner is not None:
+                response = self.output_cleaner(response)
+
+            # Prepare the output for the output model
+            if self.output_type is not None:
+                response = self.prepare_output_for_output_model(response)
+
+            # List of steps for this task
+            ManySteps(task_id=task_id(), steps=step_pool)
+
+            # Save Many steps
 
             return response
         except Exception as error:
@@ -790,7 +943,7 @@ class Agent:
         Returns:
             str: The agent history prompt
         """
-        ltr = str(self.long_term_memory.query(query), *args, **kwargs)
+        ltr = self.long_term_memory.query(query, *args, **kwargs)
 
         context = f"""
             System: This reminds you of these events from your past: [{ltr}]
@@ -1195,7 +1348,7 @@ class Agent:
 
     def reset(self):
         """Reset the agent"""
-        self.short_memory = {}
+        self.short_memory = None
 
     def run_code(self, code: str):
         """

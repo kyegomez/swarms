@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from swarms.structs.omni_agent_types import agents
+from swarms.structs.omni_agent_types import AgentListType
 from swarms.utils.loguru_logger import logger
 from typing import Callable
 
@@ -54,7 +54,7 @@ class AgentProcessQueue:
             []
         )  # Currently use list to simulate queue
 
-    def add(self, agents: agents):
+    def add(self, agents: AgentListType):
         """
         Adds an agent process to the queue.
 

@@ -119,13 +119,13 @@ class Status(Enum):
     completed = "completed"
 
 
-class Step(StepRequestBody):
+class Step(BaseModel):
     task_id: str = Field(
         ...,
         description="The ID of the task this step belongs to.",
         examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
     )
-    step_id: str = Field(
+    step_id: int = Field(
         ...,
         description="The ID of the task step.",
         examples=["6bb1801a-fd80-45e8-899a-4dd723cc602e"],
@@ -135,7 +135,6 @@ class Step(StepRequestBody):
         description="The name of the task step.",
         examples=["Write to file"],
     )
-    status: Status = Field(..., description="The status of the task step.")
     output: str | None = Field(
         None,
         description="Output of the task step.",
@@ -145,12 +144,23 @@ class Step(StepRequestBody):
             " <write_to_file('output.txt', 'Washington')"
         ],
     )
-    additional_output: StepOutput | None = None
     artifacts: list[Artifact] = Field(
         [],
         description="A list of artifacts that the step has produced.",
     )
-    is_last: bool | None = Field(
-        False,
-        description="Whether this is the last step in the task.",
+    max_loops: int = Field(
+        1,
+        description="The maximum number of times to run the workflow.",
+    )
+
+
+class ManySteps(BaseModel):
+    task_id: str = Field(
+        ...,
+        description="The ID of the task this step belongs to.",
+        examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
+    )
+    steps: list[Step] = Field(
+        [],
+        description="A list of task steps.",
     )

@@ -14,6 +14,13 @@ from swarms.tools.tool_utils import (
     scrape_tool_func_docs,
     tool_find_by_name,
 )
+from swarms.tools.pydantic_to_json import (
+    _remove_a_key,
+    pydantic_to_functions,
+    multi_pydantic_to_functions,
+    function_to_str,
+    functions_to_str,
+)
 
 __all__ = [
     "scrape_tool_func_docs",
@@ -31,4 +38,9 @@ __all__ = [
     "preprocess_json_input",
     "AgentOutputParser",
     "execute_tool_by_name",
+    "_remove_a_key",
+    "pydantic_to_functions",
+    "multi_pydantic_to_functions",
+    "function_to_str",
+    "functions_to_str",
 ]

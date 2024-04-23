@@ -1,4 +1,4 @@
-from swarms import BaseSwarm, AutoSwarm, AutoSwarmRouter, Agent, Anthropic
+from swarms import BaseSwarm, Agent, Anthropic
 
 
 class MarketingSwarm(BaseSwarm):

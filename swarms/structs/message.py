@@ -1,4 +1,5 @@
 import datetime
+from typing import Dict, Optional
 
 
 class Message:
@@ -15,13 +16,18 @@ class Message:
     print(mes)
     """
 
-    def __init__(self, sender, content, metadata=None):
-        self.timestamp = datetime.datetime.now()
-        self.sender = sender
-        self.content = content
-        self.metadata = metadata or {}
+    def __init__(
+        self,
+        sender: str,
+        content: str,
+        metadata: Optional[Dict[str, str]] = None,
+    ):
+        self.timestamp: datetime.datetime = datetime.datetime.now()
+        self.sender: str = sender
+        self.content: str = content
+        self.metadata: Dict[str, str] = metadata or {}
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         __repr__ means...
         """

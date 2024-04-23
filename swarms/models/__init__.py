@@ -29,9 +29,6 @@ from swarms.models.popular_llms import (
 from swarms.models.popular_llms import (
     OpenAILLM as OpenAI,
 )
-from swarms.models.popular_llms import (
-    ReplicateLLM as Replicate,
-)
 from swarms.models.popular_llms import OctoAIChat
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
 

@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, List
 
+
 from swarms.structs.agent import Agent
 
 logger = logging.getLogger(__name__)
@@ -126,6 +127,7 @@ class GroupChat:
         return "\n".join(formatted_messages)
 
 
+@dataclass
 class GroupChatManager:
     """
     GroupChatManager
@@ -142,9 +144,8 @@ class GroupChatManager:
 
     """
 
-    def __init__(self, groupchat: GroupChat, selector: Agent):
-        self.groupchat = groupchat
-        self.selector = selector
+    groupchat: GroupChat
+    selector: Agent
 
     def __call__(self, task: str):
         """Call 'GroupChatManager' instance as a function.

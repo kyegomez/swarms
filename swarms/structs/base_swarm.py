@@ -16,7 +16,7 @@ import yaml
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import logger
-from swarms.structs.omni_agent_types import agent
+from swarms.structs.omni_agent_types import AgentType
 
 
 class BaseSwarm(ABC):
@@ -68,15 +68,18 @@ class BaseSwarm(ABC):
 
     def __init__(
         self,
-        # name: str = "Swarm",
-        agents: List[Agent] = None,
-        models: List[Any] = None,
-        max_loops: int = 200,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        agents: Optional[List[Agent]] = None,
+        models: Optional[List[Any]] = None,
+        max_loops: Optional[int] = 200,
         callbacks: Optional[Sequence[callable]] = None,
-        autosave: bool = False,
-        logging: bool = False,
-        return_metadata: bool = False,
-        metadata_filename: str = "multiagent_structure_metadata.json",
+        autosave: Optional[bool] = False,
+        logging: Optional[bool] = False,
+        return_metadata: Optional[bool] = False,
+        metadata_filename: Optional[
+            str
+        ] = "multiagent_structure_metadata.json",
         stopping_function: Optional[Callable] = None,
         stopping_condition: Optional[str] = "stop",
         stopping_condition_args: Optional[Dict] = None,
@@ -84,6 +87,8 @@ class BaseSwarm(ABC):
         **kwargs,
     ):
         """Initialize the swarm with agents"""
+        self.name = name
+        self.description = description
         self.agents = agents
         self.models = models
         self.max_loops = max_loops
@@ -96,30 +101,10 @@ class BaseSwarm(ABC):
         self.stopping_condition = stopping_condition
         self.stopping_condition_args = stopping_condition_args
 
+        # Initialize conversation
         self.conversation = Conversation(
             time_enabled=True, *args, **kwargs
         )
-
-        # Handle the case where the agents are not provided
-        # Handle agents
-        for agent in self.agents:
-            if not isinstance(agent, Agent):
-                raise TypeError("Agents must be of type Agent.")
-
-        if self.agents is None:
-            self.agents = []
-
-        # Handle the case where the callbacks are not provided
-        if self.callbacks is None:
-            self.callbacks = []
-
-        # Handle the case where the autosave is not provided
-        if self.autosave is None:
-            self.autosave = False
-
-        # Handle the case where the logging is not provided
-        if self.logging is None:
-            self.logging = False
 
         # Handle callbacks
         if callbacks is not None:
@@ -154,11 +139,9 @@ class BaseSwarm(ABC):
             self.stopping_condition_args = stopping_condition_args
             self.stopping_condition = stopping_condition
 
-    # @abstractmethod
     def communicate(self):
         """Communicate with the swarm through the orchestrator, protocols, and the universal communication layer"""
 
-    # @abstractmethod
     def run(self):
         """Run the swarm"""
         ...
@@ -186,12 +169,11 @@ class BaseSwarm(ABC):
     def step(self):
         """Step the swarm"""
 
-    # @abstractmethod
-    def add_agent(self, agent: agent):
+    def add_agent(self, agent: AgentType):
         """Add a agent to the swarm"""
         self.agents.append(agent)
 
-    def add_agents(self, agents: List[agent]):
+    def add_agents(self, agents: List[AgentType]):
         """Add a list of agents to the swarm"""
         self.agents.extend(agents)
 
@@ -200,8 +182,7 @@ class BaseSwarm(ABC):
         agent = self.get_agent_by_id(agent_id)
         self.add_agent(agent)
 
-    # @abstractmethod
-    def remove_agent(self, agent: agent):
+    def remove_agent(self, agent: AgentType):
         """Remove a agent from the swarm"""
         self.agents.remove(agent)
 
@@ -211,88 +192,70 @@ class BaseSwarm(ABC):
             if agent.name == name:
                 return agent
 
-    # @abstractmethod
-    def broadcast(self, message: str, sender: Optional[agent] = None):
+    def reset_all_agents(self):
+        """Resets the state of all agents."""
+        for agent in self.agents:
+            agent.reset()
+
+    def broadcast(self, message: str, sender: Optional[AgentType] = None):
         """Broadcast a message to all agents"""
 
-    # @abstractmethod
     def reset(self):
         """Reset the swarm"""
 
-    # @abstractmethod
     def plan(self, task: str):
         """agents must individually plan using a workflow or pipeline"""
 
-    # @abstractmethod
     def direct_message(
         self,
         message: str,
-        sender: agent,
-        recipient: agent,
+        sender: AgentType,
+        recipient: AgentType,
     ):
         """Send a direct message to a agent"""
 
-    # @abstractmethod
-    def autoscaler(self, num_agents: int, agent: [agent]):
+    def autoscaler(self, num_agents: int, agent: List[AgentType]):
         """Autoscaler that acts like kubernetes for autonomous agents"""
 
-    # @abstractmethod
-    def get_agent_by_id(self, id: str) -> agent:
+    def get_agent_by_id(self, id: str) -> AgentType:
         """Locate a agent by id"""
 
-    # @abstractmethod
-    def get_agent_by_name(self, name: str) -> agent:
-        """Locate a agent by name"""
-
-    # @abstractmethod
-    def assign_task(self, agent: agent, task: Any) -> Dict:
+    def assign_task(self, agent: AgentType, task: Any) -> Dict:
         """Assign a task to a agent"""
 
-    # @abstractmethod
-    def get_all_tasks(self, agent: agent, task: Any):
+    def get_all_tasks(self, agent: AgentType, task: Any):
         """Get all tasks"""
 
-    # @abstractmethod
     def get_finished_tasks(self) -> List[Dict]:
         """Get all finished tasks"""
 
-    # @abstractmethod
     def get_pending_tasks(self) -> List[Dict]:
         """Get all pending tasks"""
 
-    # @abstractmethod
-    def pause_agent(self, agent: agent, agent_id: str):
+    def pause_agent(self, agent: AgentType, agent_id: str):
         """Pause a agent"""
 
-    # @abstractmethod
-    def resume_agent(self, agent: agent, agent_id: str):
+    def resume_agent(self, agent: AgentType, agent_id: str):
         """Resume a agent"""
 
-    # @abstractmethod
-    def stop_agent(self, agent: agent, agent_id: str):
+    def stop_agent(self, agent: AgentType, agent_id: str):
         """Stop a agent"""
 
-    # @abstractmethod
-    def restart_agent(self, agent: agent):
+    def restart_agent(self, agent: AgentType):
         """Restart agent"""
 
-    # @abstractmethod
     def scale_up(self, num_agent: int):
         """Scale up the number of agents"""
 
-    # @abstractmethod
     def scale_down(self, num_agent: int):
         """Scale down the number of agents"""
 
-    # @abstractmethod
     def scale_to(self, num_agent: int):
         """Scale to a specific number of agents"""
 
-    # @abstractmethod
-    def get_all_agents(self) -> List[agent]:
+    def get_all_agents(self) -> List[AgentType]:
         """Get all agents"""
 
-    # @abstractmethod
     def get_swarm_size(self) -> int:
         """Get the size of the swarm"""
 
@@ -506,7 +469,6 @@ class BaseSwarm(ABC):
             )
         return list(responses)
 
-    # @abstractmethod
     def add_swarm_entry(self, swarm):
         """
         Add the information of a joined Swarm to the registry.

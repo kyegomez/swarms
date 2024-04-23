@@ -7,6 +7,7 @@ from langchain.output_parsers import RegexParser
 
 from swarms.structs.agent import Agent
 from swarms.utils.logger import logger
+from swarms.structs.base_swarm import BaseSwarm
 
 
 # utils
@@ -24,7 +25,7 @@ bid_parser = BidOutputParser(
 
 
 # main
-class MultiAgentCollaboration:
+class MultiAgentCollaboration(BaseSwarm):
     """
     Multi-agent collaboration class.
 
@@ -94,7 +95,10 @@ class MultiAgentCollaboration:
         saved_file_path_name: str = "multi_agent_collab.json",
         stopping_token: str = "<DONE>",
         logging: bool = True,
+        *args,
+        **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.agents = agents
         self.select_next_speaker = selection_function
         self._step = 0
@@ -106,20 +110,11 @@ class MultiAgentCollaboration:
         self.logger = logger
         self.logging = logging
 
-    def reset(self):
-        """Resets the state of all agents."""
-        for agent in self.agents:
-            agent.reset()
-
     def inject(self, name: str, message: str):
         """Injects a message into the multi-agent collaboration."""
         for agent in self.agents:
             agent.run(f"Name {name} and message: {message}")
         self._step += 1
-
-    def inject_agent(self, agent: Agent):
-        """Injects an agent into the multi-agent collaboration."""
-        self.agents.append(agent)
 
     def step(self) -> tuple[str, str]:
         """Steps through the multi-agent collaboration."""
@@ -213,46 +208,6 @@ class MultiAgentCollaboration:
             idx = director.select_next_speaker() + 1
         return idx
 
-    # def run(self, task: str):
-    #     """Runs the multi-agent collaboration."""
-    #     for step in range(self.max_iters):
-    #         speaker_idx = self.select_next_speaker_roundtable(step, self.agents)
-    #         speaker = self.agents[speaker_idx]
-    #         result = speaker.run(task)
-    #         self.results.append({"agent": speaker, "response": result})
-
-    #         if self.autosave:
-    #             self.save_state()
-    #         if result == self.stopping_token:
-    #             break
-    #     return self.results
-
-    # def run(self, task: str):
-    #     for _ in range(self.max_iters):
-    #         for step, agent, in enumerate(self.agents):
-    #             result = agent.run(task)
-    #             self.results.append({"agent": agent, "response": result})
-    #             if self.autosave:
-    #                 self.save_state()
-    #             if result == self.stopping_token:
-    #                 break
-
-    #     return self.results
-
-    # def run(self, task: str):
-    #     conversation = task
-    #     for _ in range(self.max_iters):
-    #         for agent in self.agents:
-    #             result = agent.run(conversation)
-    #             self.results.append({"agent": agent, "response": result})
-    #             conversation = result
-
-    #             if self.autosave:
-    #                 self.save()
-    #             if result == self.stopping_token:
-    #                 break
-    #     return self.results
-
     def run(self, task: str):
         conversation = task
         for _ in range(self.max_iters):
@@ -306,14 +261,3 @@ class MultiAgentCollaboration:
             f" max_iters={self.max_iters}, autosave={self.autosave},"
             f" saved_file_path_name={self.saved_file_path_name})"
         )
-
-    def performance(self):
-        """Tracks and reports the performance of each agent"""
-        performance_data = {}
-        for agent in self.agents:
-            performance_data[agent.name] = agent.get_performance_metrics()
-        return performance_data
-
-    def set_interaction_rules(self, rules):
-        """Sets the interaction rules for each agent"""
-        self.interaction_rules = rules

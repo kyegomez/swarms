@@ -83,11 +83,11 @@ class Conversation(BaseStructure):
         self.context_length = context_length
 
         # If system prompt is not None, add it to the conversation history
-        if self.system_prompt:
-            self.add("system", self.system_prompt)
+        if self.system_prompt is not None:
+            self.add("System: ", self.system_prompt)
 
         # If tokenizer then truncate
-        if tokenizer:
+        if tokenizer is not None:
             self.truncate_memory_with_tokenizer()
 
     def add(self, role: str, content: str, *args, **kwargs):
