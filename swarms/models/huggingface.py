@@ -181,7 +181,7 @@ class HuggingfaceLLM(AbstractLLM):
                 quantization_config=bnb_config,
                 *args,
                 **kwargs,
-            ).to(self.device)
+            )
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id, *args, **kwargs
