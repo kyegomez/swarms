@@ -31,7 +31,7 @@ from swarms.models.popular_llms import (
 )
 from swarms.models.popular_llms import OctoAIChat
 from swarms.models.qwen import QwenVLMultiModal  # noqa: E402
-
+from swarms.models.popular_llms import ReplicateChat as Replicate
 from swarms.models.sampling_params import SamplingParams, SamplingType
 from swarms.models.together import TogetherLLM  # noqa: E402
 from swarms.models.types import (  # noqa: E402

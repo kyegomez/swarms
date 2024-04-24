@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import yaml
 import json
 from swarms.utils.loguru_logger import logger
@@ -120,11 +120,17 @@ class YamlModel(BaseModel):
     >>> user.save_to_yaml('user.yaml')
     """
 
+    input_dict: Dict[str, Any] = Field(
+        None,
+        title="Data",
+        description="The data to be serialized to YAML.",
+    )
+
     def to_yaml(self):
         """
         Serialize the Pydantic model instance to a YAML string.
         """
-        return yaml.safe_dump(self.dict(), sort_keys=False)
+        return yaml.safe_dump(self.input_dict, sort_keys=False)
 
     def from_yaml(self, cls, yaml_str: str):
         """

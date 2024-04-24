@@ -21,6 +21,10 @@ from swarms.tools.pydantic_to_json import (
     function_to_str,
     functions_to_str,
 )
+from swarms.tools.openai_func_calling_schema import (
+    OpenAIFunctionCallSchema,
+)
+
 
 __all__ = [
     "scrape_tool_func_docs",
@@ -43,4 +47,5 @@ __all__ = [
     "multi_pydantic_to_functions",
     "function_to_str",
     "functions_to_str",
+    "OpenAIFunctionCallSchema",
 ]

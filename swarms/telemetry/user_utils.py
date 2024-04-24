@@ -3,7 +3,6 @@ import platform
 import socket
 import uuid
 
-from swarms.telemetry.check_update import check_for_package
 from swarms.telemetry.sys_info import system_info
 
 
@@ -83,6 +82,5 @@ def get_user_device_data():
         "Machine ID": get_machine_id(),
         "System Info": get_system_info(),
         "UniqueID": generate_unique_identifier(),
-        "Swarms [Version]": check_for_package("swarms"),
     }
     return data

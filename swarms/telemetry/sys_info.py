@@ -88,11 +88,10 @@ def get_package_mismatches(file_path="pyproject.toml"):
 
 
 def system_info():
-    swarms_verison = get_swarms_verison()
     return {
         "Python Version": get_python_version(),
         "Pip Version": get_pip_version(),
-        "Swarms Version": swarms_verison,
+        # "Swarms Version": swarms_verison,
         "OS Version and Architecture": get_os_version(),
         "CPU Info": get_cpu_info(),
         "RAM Info": get_ram_info(),

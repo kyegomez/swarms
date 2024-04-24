@@ -15,7 +15,14 @@ agent = Agent(
     verbose=True,
     stopping_token="<DONE>",
     interactive=True,
+    state_save_file_type="json",
+    saved_state_path="transcript_generator.json",
 )
 
 # Run the Agent on a task
-agent("Generate a transcript for a youtube video on what swarms are!")
+# out = agent("Generate a transcript for a youtube video on what swarms are!")
+check = agent.save_state(
+    "transcript_generator.json",
+    "Generate a transcript for a youtube video on what swarms are!",
+)
+print(check)

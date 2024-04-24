@@ -33,6 +33,8 @@ from swarms.tools.pydantic_to_json import (
     multi_pydantic_to_functions,
 )
 from swarms.structs.schemas import Step, ManySteps
+from swarms.telemetry.user_utils import get_user_device_data
+from swarms.structs.yaml_model import YamlModel
 
 
 # Utils
@@ -228,6 +230,7 @@ class Agent:
         function_calling_format_type: Optional[str] = "OpenAI",
         list_tool_schemas: Optional[List[BaseModel]] = None,
         metadata_output_type: str = "json",
+        state_save_file_type: str = "json",
         *args,
         **kwargs,
     ):
@@ -295,6 +298,7 @@ class Agent:
         self.function_calling_format_type = function_calling_format_type
         self.list_tool_schemas = list_tool_schemas
         self.metadata_output_type = metadata_output_type
+        self.state_save_file_type = state_save_file_type
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -903,7 +907,7 @@ class Agent:
 
             if self.autosave:
                 logger.info("Autosaving agent state.")
-                self.save_state(self.saved_state_path)
+                self.save_state(self.saved_state_path, task)
 
             # Apply the cleaner function to the response
             if self.output_cleaner is not None:
@@ -1131,7 +1135,7 @@ class Agent:
     def graceful_shutdown(self):
         """Gracefully shutdown the system saving the state"""
         print(colored("Shutting down the system...", "red"))
-        return self.save_state("flow_state.json")
+        return self.save_state(f"{self.agent_name}.json")
 
     def run_with_timeout(self, task: str, timeout: int = 60) -> str:
         """Run the loop but stop if it takes longer than the timeout"""
@@ -1236,7 +1240,10 @@ class Agent:
         except Exception as error:
             print(colored(f"Error saving agent to YAML: {error}", "red"))
 
-    def save_state(self, file_path: str) -> None:
+    def get_llm_parameters(self):
+        return str(vars(self.llm))
+
+    def save_state(self, file_path: str, task: str = None) -> None:
         """
         Saves the current state of the agent to a JSON file, including the llm parameters.
 
@@ -1247,58 +1254,96 @@ class Agent:
         >>> agent.save_state('saved_flow.json')
         """
         try:
-            logger.info(f"Saving agent state to: {file_path}")
+            logger.info(
+                f"Saving Agent {self.agent_name} state to: {file_path}"
+            )
             state = {
                 "agent_id": str(self.id),
                 "agent_name": self.agent_name,
                 "agent_description": self.agent_description,
+                "LLM": str(self.get_llm_parameters()),
                 "system_prompt": self.system_prompt,
-                "sop": self.sop,
-                "short_memory": (
-                    self.short_memory.return_history_as_string()
-                ),
+                "short_memory": self.short_memory.return_history_as_string(),
                 "loop_interval": self.loop_interval,
                 "retry_attempts": self.retry_attempts,
                 "retry_interval": self.retry_interval,
                 "interactive": self.interactive,
                 "dashboard": self.dashboard,
-                "dynamic_temperature": (self.dynamic_temperature_enabled),
+                "dynamic_temperature": self.dynamic_temperature_enabled,
                 "autosave": self.autosave,
                 "saved_state_path": self.saved_state_path,
                 "max_loops": self.max_loops,
+                "StepCache": self.step_cache,
+                "Task": task,
+                "Stopping Token": self.stopping_token,
+                "Dynamic Loops": self.dynamic_loops,
+                "tools": self.tools,
+                "sop": self.sop,
+                "sop_list": self.sop_list,
+                "context_length": self.context_length,
+                "user_name": self.user_name,
+                "self_healing_enabled": self.self_healing_enabled,
+                "code_interpreter": self.code_interpreter,
+                "multi_modal": self.multi_modal,
+                "pdf_path": self.pdf_path,
+                "list_of_pdf": self.list_of_pdf,
+                "tokenizer": self.tokenizer,
+                "long_term_memory": self.long_term_memory,
+                "preset_stopping_token": self.preset_stopping_token,
+                "traceback": self.traceback,
+                "traceback_handlers": self.traceback_handlers,
+                "streaming_on": self.streaming_on,
+                "docs": self.docs,
+                "docs_folder": self.docs_folder,
+                "verbose": self.verbose,
+                "parser": self.parser,
+                "best_of_n": self.best_of_n,
+                "callback": self.callback,
+                "metadata": self.metadata,
+                "callbacks": self.callbacks,
+                # "logger_handler": self.logger_handler,
+                "search_algorithm": self.search_algorithm,
+                "logs_to_filename": self.logs_to_filename,
+                "evaluator": self.evaluator,
+                "output_json": self.output_json,
+                "stopping_func": self.stopping_func,
+                "custom_loop_condition": self.custom_loop_condition,
+                "sentiment_threshold": self.sentiment_threshold,
+                "custom_exit_command": self.custom_exit_command,
+                "sentiment_analyzer": self.sentiment_analyzer,
+                "limit_tokens_from_string": self.limit_tokens_from_string,
+                # "custom_tools_prompt": self.custom_tools_prompt,
+                "tool_schema": self.tool_schema,
+                "output_type": self.output_type,
+                "function_calling_type": self.function_calling_type,
+                "output_cleaner": self.output_cleaner,
+                "function_calling_format_type": self.function_calling_format_type,
+                "list_tool_schemas": self.list_tool_schemas,
+                "metadata_output_type": self.metadata_output_type,
+                "user_meta_data": get_user_device_data(),
             }
 
-            with open(file_path, "w") as f:
-                json.dump(state, f, indent=4)
+            # Save as JSON
+            if self.state_save_file_type == "json":
+                with open(file_path, "w") as f:
+                    json.dump(state, f, indent=4)
 
+            # Save as YAML
+            elif self.state_save_file_type == "yaml":
+                out = YamlModel(input_dict=state).to_yaml()
+                with open(self.saved_state_path, "w") as f:
+                    f.write(out)
+
+            # Log the saved state
             saved = colored(f"Saved agent state to: {file_path}", "green")
             print(saved)
         except Exception as error:
             print(colored(f"Error saving agent state: {error}", "red"))
 
-    def state_to_str(self):
+    def state_to_str(self, task: str):
         """Transform the JSON into a string"""
         try:
-            state = {
-                "agent_id": str(self.id),
-                "agent_name": self.agent_name,
-                "agent_description": self.agent_description,
-                "system_prompt": self.system_prompt,
-                "sop": self.sop,
-                "short_memory": (
-                    self.short_memory.return_history_as_string()
-                ),
-                "loop_interval": self.loop_interval,
-                "retry_attempts": self.retry_attempts,
-                "retry_interval": self.retry_interval,
-                "interactive": self.interactive,
-                "dashboard": self.dashboard,
-                "dynamic_temperature": (self.dynamic_temperature_enabled),
-                "autosave": self.autosave,
-                "saved_state_path": self.saved_state_path,
-                "max_loops": self.max_loops,
-            }
-            out = str(state)
+            out = self.save_state(self.saved_state_path, task)
             return out
         except Exception as error:
             print(
