@@ -1,6 +1,5 @@
 # Docker Setup Guide for Contributors to Swarms
 
-## Introduction
 
 Welcome to the `swarms` project Docker setup guide. This document will help you establish a Docker-based environment for contributing to `swarms`. Docker provides a consistent and isolated environment, ensuring that all contributors can work in the same settings, reducing the "it works on my machine" syndrome.
 
@@ -23,16 +22,6 @@ This guide covers:
 - Running tests using Docker
 - Pushing changes and working with Docker Hub
 
-### Audience
-
-This guide is intended for developers and contributors to the `swarms` project who have basic knowledge of version control with Git and programming in Python.
-
-## Prerequisites
-
-Before you begin, ensure you have:
-- A GitHub account
-- Git installed on your machine
-- Basic command-line proficiency
 
 ## Docker Installation
 
@@ -143,6 +132,8 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install the 'swarms' package, assuming it's available on PyPI
+ENV SWARM_API_KEY=your_swarm_api_key_here
+ENV OPENAI_API_KEY=your_openai_key
 RUN pip install swarms
 
 # Copy the rest of the application
@@ -156,8 +147,6 @@ COPY . .
 # EXPOSE 5000
 
 # Define environment variable for the swarm to work
-ENV SWARM_API_KEY=your_swarm_api_key_here
-
 # Add Docker CMD or ENTRYPOINT script to run the application
 # CMD python your_swarm_startup_script.py
 # Or use the entrypoint script if you have one

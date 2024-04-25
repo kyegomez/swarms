@@ -109,6 +109,7 @@ nav:
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
     - Build an Agent: "diy_your_own_agent.md"
     - Build an Agent with tools: "examples/tools_agents.md"
+    - Docker Setup: docker_setup.md
 - Swarms Cloud API:
   - Overview: "swarms_cloud/main.md"
   - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
@@ -190,7 +191,7 @@ nav:
 - Corporate:
     - Corporate Documents:
       - Data Room: "corporate/data_room.md"
-      - SwarmMemo: "corporate/swarm_memo.md"
+      - The Swarm Memo: "corporate/swarm_memo.md"
       - Corporate Architecture: "corporate/architecture.md"
       - Flywheel: "corporate/flywheel.md"
       - Bounties: "corporate/bounties.md"
@@ -212,5 +213,5 @@ nav:
 - Contributors:
     - Contributing: "contributing.md"
     - Why Swarms: "why_swarms.md"
-    - The Swarms Bounty System: "swarms_bounty_system.md"    
+    - The Swarms Bounty System: "corporate/swarms_bounty_system.md"    
     
