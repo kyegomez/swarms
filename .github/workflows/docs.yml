@@ -20,4 +20,5 @@ jobs:
       - run: pip3 install mkdocs-git-authors-plugin
       - run: pip install mkdocs-jupyter==0.16.0
       - run: pip install --upgrade lxml_html_clean
+      - run: pip install mkdocs-git-committers-plugin
       - run: mkdocs gh-deploy --force -f docs/mkdocs.yml
