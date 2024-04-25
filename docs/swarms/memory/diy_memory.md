@@ -1,5 +1,3 @@
-
-
 # Building Custom Vector Memory Databases with the AbstractVectorDatabase Class
 
 In the age of large language models (LLMs) and AI-powered applications, efficient memory management has become a crucial component. Vector databases, which store and retrieve data in high-dimensional vector spaces, have emerged as powerful tools for handling the vast amounts of data generated and consumed by AI systems. However, integrating vector databases into your applications can be a daunting task, requiring in-depth knowledge of their underlying architectures and APIs.
@@ -363,6 +361,50 @@ class FAISSVectorDatabase(MyCustomVectorDatabase):
 
     # Implement other abstract methods
 
+```
+
+Now, how do you integrate a vector datbase with an agent? This is how:
+
+## Integrate Memory with `Agent`
+
+```python
+import os
+
+from dotenv import load_dotenv
+
+# Import the OpenAIChat model and the Agent struct
+from swarms import Agent, OpenAIChat
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+
+# Initilaize the chromadb client
+faiss = FAISSVectorDatabase()
+
+# Initialize the language model
+llm = OpenAIChat(
+    temperature=0.5,
+    model_name="gpt-4",
+    openai_api_key=api_key,
+    max_tokens=1000,
+)
+
+## Initialize the workflow
+agent = Agent(
+    llm=llm,
+    max_loops=4,
+    autosave=True,
+    dashboard=True,
+    long_term_memory=faiss,
+)
+
+# Run the workflow on a task
+out = agent.run("Generate a 10,000 word blog on health and wellness.")
+print(out)
 ```
 
 In this example, we define a `FAISSVectorDatabase` class that inherits from `MyCustomVectorDatabase`. Within the `__init__` method, we create a FAISS index and set the index path. We then implement the `connect()`, `close()`, `query()`, and `add()` methods specific to the FAISS library, assuming 64-dimensional vectors for simplicity.
