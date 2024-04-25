@@ -1,4 +1,4 @@
-from swarms.models.cohere_chat import Cohere
+from swarms.models import Cohere
 
 cohere = Cohere(model="command-light", cohere_api_key="")
 

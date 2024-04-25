@@ -1,5 +1,5 @@
-from swarms.models.palm import PALM
+from swarms.models import Palm
 
-palm = PALM()
+palm = Palm()
 
-out = palm("path/to/image.png")
+out = palm("what's your name")

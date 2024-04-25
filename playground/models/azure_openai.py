@@ -1,4 +1,4 @@
-from swarms.models.azure_openai_llm import AzureOpenAI
+from swarms.models import AzureOpenAI
 
 # Initialize Azure OpenAI
 model = AzureOpenAI()
