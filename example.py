@@ -20,9 +20,11 @@ agent = Agent(
 )
 
 # Run the Agent on a task
-# out = agent("Generate a transcript for a youtube video on what swarms are!")
+out = agent.run("Generate a transcript for a youtube video on what swarms are!")
+print(out)
+
+# Save the state
 check = agent.save_state(
     "transcript_generator.json",
     "Generate a transcript for a youtube video on what swarms are!",
 )
-print(check)

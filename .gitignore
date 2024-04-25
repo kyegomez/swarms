@@ -15,6 +15,7 @@ Unit Testing Agent_state.json
 Devin_state.json
 swarms/__pycache__
 artifacts
+transcript_generator.json
 venv
 .DS_Store
 Cargo.lock

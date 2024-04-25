@@ -4,12 +4,7 @@ import torch
 from termcolor import colored
 
 from swarms.models.base_llm import AbstractLLM
-
-if torch.cuda.is_available():
-    try:
-        from optimum.nvidia.pipelines import pipeline
-    except ImportError:
-        from transformers.pipelines import pipeline
+from transformers.pipelines import pipeline
 
 
 class HuggingfacePipeline(AbstractLLM):

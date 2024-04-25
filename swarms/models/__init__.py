@@ -13,6 +13,7 @@ from swarms.models.mistral import Mistral  # noqa: E402
 from swarms.models.mixtral import Mixtral  # noqa: E402
 from swarms.models.mpt import MPT7B  # noqa: E402
 from swarms.models.nougat import Nougat  # noqa: E402
+from swarms.models.palm import GooglePalm as Palm  # noqa: E402
 from swarms.models.openai_tts import OpenAITTS  # noqa: E402
 from swarms.models.popular_llms import (
     AnthropicChat as Anthropic,
@@ -42,7 +43,7 @@ from swarms.models.types import (  # noqa: E402
     VideoModality,
 )
 from swarms.models.vilt import Vilt  # noqa: E402
-
+from swarms.models.openai_embeddings import OpenAIEmbeddings
 
 __all__ = [
     "AbstractLLM",
@@ -62,20 +63,22 @@ __all__ = [
     "Mistral",
     "Mixtral",
     "MPT7B",
-    "MultimodalData",
     "Nougat",
     "OpenAI",
     "OpenAIChat",
+    "OpenAIEmbeddings",
     "OpenAITTS",
+    "OctoAIChat",
+    "Palm",
     "QwenVLMultiModal",
     "Replicate",
     "SamplingParams",
     "SamplingType",
     "TextModality",
+    "MultimodalData",
+    "ImageModality",
+    "AudioModality",
+    "VideoModality",
     "TogetherLLM",
     "Vilt",
-    "AudioModality",
-    "ImageModality",
-    "VideoModality",
-    "OctoAIChat",
 ]
