@@ -17,4 +17,5 @@ jobs:
       - run: pip install mkdocs-material
       - run: pip install mkdocs-glightbox
       - run: pip install "mkdocstrings[python]"
+      - run: pip3 install mkdocs-git-authors-plugin
       - run: mkdocs gh-deploy --force -f docs/mkdocs.yml
