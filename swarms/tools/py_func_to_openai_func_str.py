@@ -453,10 +453,8 @@ def get_openai_function_schema(
 
     return model_dump(function)
 
-def test(a: int = 1, b: int = 2):
-    return a + b
 
-# 
+#
 def get_load_param_if_needed_function(
     t: Any,
 ) -> Optional[Callable[[Dict[str, Any], Type[BaseModel]], BaseModel]]:
