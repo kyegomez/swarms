@@ -11,8 +11,12 @@ from langchain.llms.openai import OpenAI  # , OpenAIChat, AzureOpenAI
 from langchain_community.llms.octoai_endpoint import OctoAIEndpoint
 from langchain.llms.replicate import Replicate
 
+
 class AnthropicChat(Anthropic):
     def __call__(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
+    def run(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 
 
@@ -20,9 +24,15 @@ class CohereChat(Cohere):
     def __call__(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 
+    def run(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
 
 class MosaicMLChat(MosaicML):
     def __call__(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
+    def run(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 
 
@@ -30,14 +40,23 @@ class OpenAILLM(OpenAI):
     def __call__(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 
+    def run(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
 
 class ReplicateChat(Replicate):
     def __call__(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 
+    def run(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
 
 class AzureOpenAILLM(AzureChatOpenAI):
     def __call__(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
+    def run(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 
 
@@ -48,7 +67,13 @@ class OpenAIChatLLM(OpenAIChat):
     def __call__(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 
+    def run(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
 
 class OctoAIChat(OctoAIEndpoint):
     def __call__(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
+    def run(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)

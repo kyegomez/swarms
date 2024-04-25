@@ -69,6 +69,12 @@ class Conversation(BaseStructure):
         save_filepath: str = None,
         tokenizer: Any = None,
         context_length: int = 8192,
+        rules: str = None,
+        custom_rules_prompt: str = None,
+        user: str = "User:",
+        auto_save: bool = True,
+        save_as_yaml: bool = True,
+        save_as_json: bool = False,
         *args,
         **kwargs,
     ):
@@ -81,10 +87,22 @@ class Conversation(BaseStructure):
         self.conversation_history = []
         self.tokenizer = tokenizer
         self.context_length = context_length
+        self.rules = rules
+        self.custom_rules_prompt = custom_rules_prompt
+        self.user = user
+        self.auto_save = auto_save
+        self.save_as_yaml = save_as_yaml
+        self.save_as_json = save_as_json
 
         # If system prompt is not None, add it to the conversation history
         if self.system_prompt is not None:
             self.add("System: ", self.system_prompt)
+
+        if self.rules is not None:
+            self.add(user, rules)
+
+        if custom_rules_prompt is not None:
+            self.add(user, custom_rules_prompt)
 
         # If tokenizer then truncate
         if tokenizer is not None:

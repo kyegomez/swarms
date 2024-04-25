@@ -147,7 +147,6 @@ nav:
       - Foundational Structures:
         - Agent: "swarms/structs/agent.md"
         - basestructure: "swarms/structs/basestructure.md"
-        - artifactupload: "swarms/structs/artifactupload.md"
         - taskinput: "swarms/structs/taskinput.md"
         - stepinput: "swarms/structs/stepinput.md"
         - artifact: "swarms/structs/artifact.md"

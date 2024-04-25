@@ -1,4 +1,4 @@
-from swarms.utils.logger import logger
+from swarms.utils.loguru_logger import logger
 
 
 def try_except_wrapper(func, verbose: bool = False):
