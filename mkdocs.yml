@@ -65,7 +65,7 @@ extra:
       link: https://pypi.org/project/Swarms/
 theme:
     name: material
-    custom_dir: overrides
+    custom_dir: docs/overrides
     logo: assets/img/SwarmsLogoIcon.png
     palette:
       # Palette toggle for light mode
