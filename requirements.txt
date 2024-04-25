@@ -13,7 +13,7 @@ loguru==0.7.2
 pydantic==2.6.4
 tenacity==8.2.3
 Pillow==10.2.0
-termcolor==2.2.0
+termcolor==2.4.0
 psutil
 sentry-sdk
 docstring_parser==0.16
