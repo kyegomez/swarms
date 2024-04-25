@@ -50,7 +50,7 @@ sentry-sdk = "*"
 python-dotenv = "*"
 accelerate = "0.28.0"
 opencv-python = "^4.9.0.80"
-yaml = "*"
+PyYAML = "*"
 docstring_parser = "0.16"
 
 [tool.poetry.group.lint.dependencies]
