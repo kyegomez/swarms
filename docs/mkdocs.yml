@@ -130,8 +130,6 @@ nav:
       - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
       - OpenAI: "swarms/models/openai.md"
-      - vLLM: "swarms/models/vllm.md"
-      - MPT7B: "swarms/models/mpt.md"
       - Mistral: "swarms/models/mistral.md"
       - Mixtral: "swarms/models/mixtral.md"
     - MultiModal:
