@@ -98,7 +98,7 @@ def execute_tool_by_name(
     action = output_parser.parse(text)
     tools = {t.name: t for t in tools}
 
-    logger.info(f"Tools available: {tools}")
+    # logger.info(f"Tools available: {tools}")
 
     if action.name == stop_token:
         return action.args["response"]

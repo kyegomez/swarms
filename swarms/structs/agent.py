@@ -413,6 +413,12 @@ class Agent:
                 role=self.user_name, content=tool_schema_str
             )
 
+        # Name
+        self.name = agent_name
+
+        # Description
+        self.description = agent_description
+
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
         self.system_prompt = system_prompt

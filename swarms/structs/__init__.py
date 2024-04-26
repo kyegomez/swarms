@@ -11,7 +11,6 @@ from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.block_wrapper import block
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
-from swarms.structs.graph_workflow import GraphWorkflow
 from swarms.structs.groupchat import GroupChat, GroupChatManager
 from swarms.structs.majority_voting import (
     MajorityVoting,
@@ -99,7 +98,6 @@ __all__ = [
     "block",
     "ConcurrentWorkflow",
     "Conversation",
-    "GraphWorkflow",
     "GroupChat",
     "GroupChatManager",
     "MajorityVoting",

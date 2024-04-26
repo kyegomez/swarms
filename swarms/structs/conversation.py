@@ -411,3 +411,6 @@ class Conversation(BaseStructure):
                 break
 
         self.conversation_history = truncated_history
+
+    def clear(self):
+        self.conversation_history = []

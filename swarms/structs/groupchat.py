@@ -1,11 +1,8 @@
-import logging
-from dataclasses import dataclass
-from typing import Dict, List
-
-
+from dataclasses import dataclass, field
+from typing import List
+from swarms.structs.conversation import Conversation
+from swarms.utils.loguru_logger import logger
 from swarms.structs.agent import Agent
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -26,24 +23,32 @@ class GroupChat:
 
     """
 
-    agents: List[Agent]
-    messages: List[Dict]
+    agents: List[Agent] = field(default_factory=list)
     max_round: int = 10
     admin_name: str = "Admin"  # the name of the admin agent
+    group_objective: str = field(default_factory=str)
+
+    def __post_init__(self):
+        self.messages = Conversation(
+            system_prompt=self.group_objective,
+            time_enabled=True,
+            user=self.admin_name,
+        )
 
     @property
     def agent_names(self) -> List[str]:
         """Return the names of the agents in the group chat."""
-        return [agent.name for agent in self.agents]
+        return [agent.agent_name for agent in self.agents]
 
     def reset(self):
         """Reset the group chat."""
+        logger.info("Resetting Groupchat")
         self.messages.clear()
 
     def agent_by_name(self, name: str) -> Agent:
         """Find an agent whose name is contained within the given 'name' string."""
         for agent in self.agents:
-            if agent.name in name:
+            if agent.agent_name in name:
                 return agent
         raise ValueError(
             f"No agent found with a name contained in '{name}'."
@@ -52,7 +57,8 @@ class GroupChat:
     def next_agent(self, agent: Agent) -> Agent:
         """Return the next agent in the list."""
         return self.agents[
-            (self.agent_names.index(agent.name) + 1) % len(self.agents)
+            (self.agent_names.index(agent.agent_name) + 1)
+            % len(self.agents)
         ]
 
     def select_speaker_msg(self):
@@ -65,9 +71,11 @@ class GroupChat:
         Then select the next role from {self.agent_names} to play. Only return the role.
         """
 
+    # @try_except_wrapper
     def select_speaker(self, last_speaker: Agent, selector: Agent):
         """Select the next speaker."""
-        selector.update_system_message(self.select_speaker_msg())
+        logger.info("Selecting a New Speaker")
+        selector.system_prompt = self.select_speaker_msg()
 
         # Warn if GroupChat is underpopulated, without established changing behavior
         n_agents = len(self.agent_names)
@@ -77,24 +85,16 @@ class GroupChat:
                 " Direct communication would be more efficient."
             )
 
-        name = selector.generate_reply(
-            self.format_history(
-                self.messages
-                + [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Read the above conversation. Then"
-                            " select the next most suitable role"
-                            f" from {self.agent_names} to play. Only"
-                            " return the role."
-                        ),
-                    }
-                ]
-            )
+        self.messages.add(
+            role=self.admin_name,
+            content=f"Read the above conversation. Then select the next most suitable role from {self.agent_names} to play. Only return the role.",
         )
+
+        name = selector.run(self.messages.return_history_as_string())
         try:
-            return self.agent_by_name(name["content"])
+            name = self.agent_by_name(name)
+            print(name)
+            return name
         except ValueError:
             return self.next_agent(last_speaker)
 
@@ -106,25 +106,10 @@ class GroupChat:
         """
         return "\n".join(
             [
-                f"{agent.name}: {agent.system_message}"
+                f"{agent.agent_name}: {agent.system_prompt}"
                 for agent in self.agents
             ]
         )
-
-    def format_history(self, messages: List[Dict]) -> str:
-        """Format the history of the messages.
-
-        Args:
-            messages (List[Dict]): _description_
-
-        Returns:
-            str: _description_
-        """
-        formatted_messages = []
-        for message in messages:
-            formatted_message = f"'{message['role']}:{message['content']}"
-            formatted_messages.append(formatted_message)
-        return "\n".join(formatted_messages)
 
 
 @dataclass
@@ -147,6 +132,7 @@ class GroupChatManager:
     groupchat: GroupChat
     selector: Agent
 
+    # @try_except_wrapper
     def __call__(self, task: str):
         """Call 'GroupChatManager' instance as a function.
 
@@ -156,17 +142,20 @@ class GroupChatManager:
         Returns:
             _type_: _description_
         """
-        self.groupchat.messages.append(
-            {"role": self.selector.name, "content": task}
+        logger.info(
+            f"Activating Groupchat with {len(self.groupchat.agents)} Agents"
         )
+
+        self.groupchat.messages.add(self.selector.agent_name, task)
+
         for i in range(self.groupchat.max_round):
             speaker = self.groupchat.select_speaker(
                 last_speaker=self.selector, selector=self.selector
             )
-            reply = speaker.generate_reply(
-                self.groupchat.format_history(self.groupchat.messages)
+            reply = speaker.run(
+                self.groupchat.messages.return_history_as_string()
             )
-            self.groupchat.messages.append(reply)
+            self.groupchat.messages.add(speaker.agent_name, reply)
             print(reply)
             if i == self.groupchat.max_round - 1:
                 break
