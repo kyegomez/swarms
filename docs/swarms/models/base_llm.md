@@ -19,13 +19,13 @@
 
 ## 1. Introduction <a name="introduction"></a>
 
-The Language Model Interface (`AbstractLLM`) is a flexible and extensible framework for working with various language models. This documentation provides a comprehensive guide to the interface, its attributes, methods, and usage examples. Whether you're using a pre-trained language model or building your own, this interface can help streamline the process of text generation, chatbots, summarization, and more.
+The Language Model Interface (`BaseLLM`) is a flexible and extensible framework for working with various language models. This documentation provides a comprehensive guide to the interface, its attributes, methods, and usage examples. Whether you're using a pre-trained language model or building your own, this interface can help streamline the process of text generation, chatbots, summarization, and more.
 
 ## 2. Abstract Language Model <a name="abstract-language-model"></a>
 
 ### Initialization <a name="initialization"></a>
 
-The `AbstractLLM` class provides a common interface for language models. It can be initialized with various parameters to customize model behavior. Here are the initialization parameters:
+The `BaseLLM` class provides a common interface for language models. It can be initialized with various parameters to customize model behavior. Here are the initialization parameters:
 
 | Parameter              | Description                                                                                     | Default Value |
 |------------------------|-------------------------------------------------------------------------------------------------|---------------|
@@ -82,7 +82,7 @@ The `AbstractLLM` class provides a common interface for language models. It can 
 
 ### Methods <a name="methods"></a>
 
-The `AbstractLLM` class defines several methods for working with language models:
+The `BaseLLM` class defines several methods for working with language models:
 
 - `run(task: Optional[str] = None, *args, **kwargs) -> str`: Generate text using the language model. This method is abstract and must be implemented by subclasses.
 
@@ -156,18 +156,18 @@ get_generation_time() -> float`: Get the time taken for text generation.
 
 ## 3. Implementation <a name="implementation"></a>
 
-The `AbstractLLM` class serves as the base for implementing specific language models. Subclasses of `AbstractLLM` should implement the `run` method to define how text is generated for a given task. This design allows flexibility in integrating different language models while maintaining a common interface.
+The `BaseLLM` class serves as the base for implementing specific language models. Subclasses of `BaseLLM` should implement the `run` method to define how text is generated for a given task. This design allows flexibility in integrating different language models while maintaining a common interface.
 
 ## 4. Usage Examples <a name="usage-examples"></a>
 
-To demonstrate how to use the `AbstractLLM` interface, let's create an example using a hypothetical language model. We'll initialize an instance of the model and generate text for a simple task.
+To demonstrate how to use the `BaseLLM` interface, let's create an example using a hypothetical language model. We'll initialize an instance of the model and generate text for a simple task.
 
 ```python
-# Import the AbstractLLM class
-from swarms.models import AbstractLLM
+# Import the BaseLLM class
+from swarms.models import BaseLLM
 
 # Create an instance of the language model
-language_model = AbstractLLM(
+language_model = BaseLLM(
     model_name="my_language_model",
     max_tokens=50,
     temperature=0.7,
@@ -188,7 +188,7 @@ In this example, we've created an instance of our hypothetical language model, c
 
 ## 5. Additional Features <a name="additional-features"></a>
 
-The `AbstractLLM` interface provides additional features for customization and control:
+The `BaseLLM` interface provides additional features for customization and control:
 
 - `batch_run`: Generate text for a batch of tasks efficiently.
 - `arun` and `abatch_run`: Asynchronous versions of `run` and `batch_run` for concurrent text generation.
@@ -199,7 +199,7 @@ These features enhance the flexibility and utility of the interface in various a
 
 ## 6. Performance Metrics <a name="performance-metrics"></a>
 
-The `AbstractLLM` class offers methods for tracking performance metrics:
+The `BaseLLM` class offers methods for tracking performance metrics:
 
 - `_tokens_per_second`: Calculate tokens generated per second.
 - `_num_tokens`: Calculate the number of tokens in a text.
@@ -224,4 +224,4 @@ The `track_resource_utilization` method is a placeholder for tracking and report
 
 ## 9. Conclusion <a name="conclusion"></a>
 
-The Language Model Interface (`AbstractLLM`) is a versatile framework for working with language models. Whether you're using pre-trained models or developing your own, this interface provides a consistent and extensible foundation. By following the provided guidelines and examples, you can integrate and customize language models for various natural language processing tasks.
+The Language Model Interface (`BaseLLM`) is a versatile framework for working with language models. Whether you're using pre-trained models or developing your own, this interface provides a consistent and extensible foundation. By following the provided guidelines and examples, you can integrate and customize language models for various natural language processing tasks.

@@ -84,6 +84,7 @@ from swarms.structs.yaml_model import (
     pydantic_type_to_yaml_schema,
     YamlModel,
 )
+from swarms.structs.message_pool import MessagePool
 
 __all__ = [
     "Agent",
@@ -155,4 +156,5 @@ __all__ = [
     "create_yaml_schema_from_dict",
     "pydantic_type_to_yaml_schema",
     "YamlModel",
+    "MessagePool",
 ]

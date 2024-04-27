@@ -12,7 +12,7 @@ The primary objective of the `ToolAgent` class is to amplify the efficiency of d
 The `ToolAgent` class has the following definition:
 
 ```python
-class ToolAgent(AbstractLLM):
+class ToolAgent(BaseLLM):
     def __init__(
         self,
         name: str,

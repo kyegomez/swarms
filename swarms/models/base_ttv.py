@@ -5,10 +5,10 @@ from typing import List, Optional
 
 from diffusers.utils import export_to_video
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 
 
-class BaseTextToVideo(AbstractLLM):
+class BaseTextToVideo(BaseLLM):
     """BaseTextToVideo class represents prebuilt text-to-video models."""
 
     def __init__(self, *args, **kwargs):

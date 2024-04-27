@@ -167,10 +167,10 @@ nav:
         - groupchatmanager: "swarms/structs/groupchatmanager.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
   - swarms.memory:
-    - Building Custom Vector Memory Databases with the AbstractVectorDatabase Class: "swarms/memory/diy_memory.md"
+    - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
 - Guides:
-    - Building Custom Vector Memory Databases with the AbstractVectorDatabase Class: "swarms/memory/diy_memory.md"
+    - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
     - DIY Build Your Own Agent: "diy_your_own_agent.md"

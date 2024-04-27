@@ -1,20 +1,20 @@
-# Building Custom Vector Memory Databases with the AbstractVectorDatabase Class
+# Building Custom Vector Memory Databases with the BaseVectorDatabase Class
 
 In the age of large language models (LLMs) and AI-powered applications, efficient memory management has become a crucial component. Vector databases, which store and retrieve data in high-dimensional vector spaces, have emerged as powerful tools for handling the vast amounts of data generated and consumed by AI systems. However, integrating vector databases into your applications can be a daunting task, requiring in-depth knowledge of their underlying architectures and APIs.
 
-Enter the `AbstractVectorDatabase` class, a powerful abstraction layer designed to simplify the process of creating and integrating custom vector memory databases into your AI applications. By inheriting from this class, developers can build tailored vector database solutions that seamlessly integrate with their existing systems, enabling efficient storage, retrieval, and manipulation of high-dimensional data.
+Enter the `BaseVectorDatabase` class, a powerful abstraction layer designed to simplify the process of creating and integrating custom vector memory databases into your AI applications. By inheriting from this class, developers can build tailored vector database solutions that seamlessly integrate with their existing systems, enabling efficient storage, retrieval, and manipulation of high-dimensional data.
 
-In this comprehensive guide, we'll explore the `AbstractVectorDatabase` class in detail, covering its core functionality and diving deep into the process of creating custom vector memory databases using popular solutions like PostgreSQL, Pinecone, Chroma, FAISS, and more. Whether you're a seasoned AI developer or just starting to explore the world of vector databases, this guide will provide you with the knowledge and tools necessary to build robust, scalable, and efficient memory solutions for your AI applications.
+In this comprehensive guide, we'll explore the `BaseVectorDatabase` class in detail, covering its core functionality and diving deep into the process of creating custom vector memory databases using popular solutions like PostgreSQL, Pinecone, Chroma, FAISS, and more. Whether you're a seasoned AI developer or just starting to explore the world of vector databases, this guide will provide you with the knowledge and tools necessary to build robust, scalable, and efficient memory solutions for your AI applications.
 
-## Understanding the AbstractVectorDatabase Class
+## Understanding the BaseVectorDatabase Class
 
-Before we dive into the implementation details, let's take a closer look at the `AbstractVectorDatabase` class and its core functionality.
+Before we dive into the implementation details, let's take a closer look at the `BaseVectorDatabase` class and its core functionality.
 
-The `AbstractVectorDatabase` class is an abstract base class that defines the interface for interacting with a vector database. It serves as a blueprint for creating concrete implementations of vector databases, ensuring a consistent and standardized approach to database operations across different systems.
+The `BaseVectorDatabase` class is an abstract base class that defines the interface for interacting with a vector database. It serves as a blueprint for creating concrete implementations of vector databases, ensuring a consistent and standardized approach to database operations across different systems.
 
 The class provides a set of abstract methods that define the essential functionality required for working with vector databases, such as connecting to the database, executing queries, and performing CRUD (Create, Read, Update, Delete) operations.
 
-Here's a breakdown of the abstract methods defined in the `AbstractVectorDatabase` class:
+Here's a breakdown of the abstract methods defined in the `BaseVectorDatabase` class:
 
 1\. `connect()`: This method establishes a connection to the vector database.
 
@@ -34,22 +34,22 @@ Here's a breakdown of the abstract methods defined in the `AbstractVectorDatabas
 
 9\. `delete(message)`: This method deletes a record from the vector database.
 
-By inheriting from the `AbstractVectorDatabase` class and implementing these abstract methods, developers can create concrete vector database implementations tailored to their specific needs and requirements.
+By inheriting from the `BaseVectorDatabase` class and implementing these abstract methods, developers can create concrete vector database implementations tailored to their specific needs and requirements.
 
 ## Creating a Custom Vector Memory Database
 
-Now that we have a solid understanding of the `AbstractVectorDatabase` class, let's dive into the process of creating a custom vector memory database by inheriting from this class. Throughout this guide, we'll explore various vector database solutions, including PostgreSQL, Pinecone, Chroma, FAISS, and more, showcasing how to integrate them seamlessly into your AI applications.
+Now that we have a solid understanding of the `BaseVectorDatabase` class, let's dive into the process of creating a custom vector memory database by inheriting from this class. Throughout this guide, we'll explore various vector database solutions, including PostgreSQL, Pinecone, Chroma, FAISS, and more, showcasing how to integrate them seamlessly into your AI applications.
 
-### Step 1: Inherit from the AbstractVectorDatabase Class
+### Step 1: Inherit from the BaseVectorDatabase Class
 
-The first step in creating a custom vector memory database is to inherit from the `AbstractVectorDatabase` class. This will provide your custom implementation with the foundational structure and interface defined by the abstract class.
+The first step in creating a custom vector memory database is to inherit from the `BaseVectorDatabase` class. This will provide your custom implementation with the foundational structure and interface defined by the abstract class.
 
 ```python
 
 from abc import ABC, abstractmethod
-from swarms import AbstractVectorDatabase
+from swarms import BaseVectorDatabase
 
-class MyCustomVectorDatabase(AbstractVectorDatabase):
+class MyCustomVectorDatabase(BaseVectorDatabase):
 
     def __init__(self, *args, **kwargs):
 
@@ -59,17 +59,17 @@ class MyCustomVectorDatabase(AbstractVectorDatabase):
 
 ```
 
-In the example above, we define a new class `MyCustomVectorDatabase` that inherits from the `AbstractVectorDatabase` class. Within the `__init__` method, you can add any custom initialization logic specific to your vector database implementation.
+In the example above, we define a new class `MyCustomVectorDatabase` that inherits from the `BaseVectorDatabase` class. Within the `__init__` method, you can add any custom initialization logic specific to your vector database implementation.
 
 ### Step 2: Implement the Abstract Methods
 
-The next step is to implement the abstract methods defined in the `AbstractVectorDatabase` class. These methods provide the core functionality for interacting with your vector database, such as connecting, querying, and performing CRUD operations.
+The next step is to implement the abstract methods defined in the `BaseVectorDatabase` class. These methods provide the core functionality for interacting with your vector database, such as connecting, querying, and performing CRUD operations.
 
 ```python
-from swarms import AbstractVectorDatabase
+from swarms import BaseVectorDatabase
 
 
-class MyCustomVectorDatabase(AbstractVectorDatabase):
+class MyCustomVectorDatabase(BaseVectorDatabase):
 
     def __init__(self, *args, **kwargs):
 
@@ -146,7 +146,7 @@ PostgreSQL is a powerful open-source relational database management system that 
 ```python
 
 import psycopg2
-from swarms import AbstractVectorDatabase
+from swarms import BaseVectorDatabase
 
 class PostgreSQLVectorDatabase(MyCustomVectorDatabase):
 
@@ -209,7 +209,7 @@ Pinecone is a managed vector database service that provides efficient storage, r
 ```python
 
 import pinecone
-from swarms import AbstractVectorDatabase
+from swarms import BaseVectorDatabase
 
 
 class PineconeVectorDatabase(MyCustomVectorDatabase):
@@ -263,7 +263,7 @@ Chroma is an open-source vector database library that provides efficient storage
 ```python
 
 from chromadb.client import Client
-from swarms import AbstractVectorDatabase
+from swarms import BaseVectorDatabase
 
 class ChromaVectorDatabase(MyCustomVectorDatabase):
 
@@ -467,7 +467,7 @@ By following these best practices and considering potential challenges, you can 
 
 # Conclusion
 
-In this comprehensive guide, we've explored the `AbstractVectorDatabase` class and its role in simplifying the process of creating custom vector memory databases. We've covered the core functionality of the class, walked through the step-by-step process of inheriting and extending its functionality, and provided examples of integrating popular vector database solutions like PostgreSQL, Pinecone, Chroma, and FAISS.
+In this comprehensive guide, we've explored the `BaseVectorDatabase` class and its role in simplifying the process of creating custom vector memory databases. We've covered the core functionality of the class, walked through the step-by-step process of inheriting and extending its functionality, and provided examples of integrating popular vector database solutions like PostgreSQL, Pinecone, Chroma, and FAISS.
 
 Building custom vector memory databases empowers developers to create tailored and efficient data management solutions that seamlessly integrate with their AI applications. By leveraging the power of vector databases, you can unlock new possibilities in data storage, retrieval, and manipulation, enabling your AI systems to handle vast amounts of high-dimensional data with ease.
 
@@ -475,4 +475,4 @@ Remember, the journey of building custom vector memory databases is an iterative
 
 As you embark on this journey, keep in mind the importance of scalability, performance, data quality, security, and compliance. Foster an environment of collaboration, knowledge sharing, and community engagement to ensure that your custom vector memory databases are robust, reliable, and capable of meeting the ever-evolving demands of the AI landscape.
 
-So, dive in, leverage the power of the `AbstractVectorDatabase` class, and create the custom vector memory databases that will drive the future of AI-powered applications.
+So, dive in, leverage the power of the `BaseVectorDatabase` class, and create the custom vector memory databases that will drive the future of AI-powered applications.

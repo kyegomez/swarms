@@ -1,7 +1,7 @@
 from abc import ABC
 
 
-class AbstractVectorDatabase(ABC):
+class BaseVectorDatabase(ABC):
     """
     Abstract base class for a database.
 

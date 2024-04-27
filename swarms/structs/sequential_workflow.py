@@ -4,10 +4,11 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import logger
 from swarms.utils.try_except_wrapper import try_except_wrapper
+from swarms.structs.base_workflow import BaseWorkflow
 
 
 @dataclass
-class SequentialWorkflow:
+class SequentialWorkflow(BaseWorkflow):
     name: str = "Sequential Workflow"
     description: str = None
     objective: str = None
@@ -22,6 +23,7 @@ class SequentialWorkflow:
     # )  # List to store tasks
 
     def __post_init__(self):
+        super().__init__()
         self.conversation = Conversation(
             time_enabled=True,
             autosave=True,
@@ -51,35 +53,6 @@ class SequentialWorkflow:
     def reset_workflow(self) -> None:
         self.conversation = {}
 
-    # @try_except_wrapper
-    # WITH TASK POOL
-    # def run(self):
-    #     if not self.agent_pool:
-    #         raise ValueError("No agents have been added to the workflow.")
-
-    #     self.workflow_bootup()
-    #     loops = 0
-    #     prompt = None  # Initialize prompt to None; will be updated with the output of each agent
-    #     while loops < self.max_loops:
-    #         for i, agent in enumerate(self.agent_pool):
-    #             task = (
-    #                 self.task_pool[i] if prompt is None else prompt
-    #             )  # Use initial task or the output from the previous agent
-    #             logger.info(
-    #                 f"Agent: {agent.agent_name} {i+1} is executing the task"
-    #             )
-    #             logger.info("\n")
-    #             output = agent.run(task)
-    #             if output is None:
-    #                 logger.error(
-    #                     f"Agent {i+1} returned None for task: {task}"
-    #                 )
-    #                 raise ValueError(f"Agent {i+1} returned None.")
-    #             self.conversation.add(agent.agent_name, output)
-    #             prompt = output  # Update prompt with current agent's output to pass to the next agent
-    #             logger.info(f"Prompt: {prompt}")
-    #         loops += 1
-    #     return self.conversation.return_history_as_string()
     @try_except_wrapper
     def run(self):
         if not self.agent_pool:

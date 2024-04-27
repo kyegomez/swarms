@@ -7,7 +7,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from swarms.models.popular_llms import OpenAIChat
-from swarms.memory.base_vectordb import AbstractVectorDatabase
+from swarms.memory.base_vectordb import BaseVectorDatabase
 
 
 def synchronized_mem(method):
@@ -31,7 +31,7 @@ def synchronized_mem(method):
     return wrapper
 
 
-class LangchainChromaVectorMemory(AbstractVectorDatabase):
+class LangchainChromaVectorMemory(BaseVectorDatabase):
     """
     A class representing a vector memory for storing and retrieving text entries.
 

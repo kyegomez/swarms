@@ -2,14 +2,14 @@ import wave
 from abc import abstractmethod
 from typing import Optional
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 
 
-class BaseTTSModel(AbstractLLM):
+class BaseTTSModel(BaseLLM):
     """Base class for all TTS models.
 
     Args:
-        AbstractLLM (_type_): _description_
+        BaseLLM (_type_): _description_
         model_name (_type_): _description_
         voice (_type_): _description_
         chunk_size (_type_): _description_

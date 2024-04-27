@@ -20,7 +20,7 @@ def count_tokens(text: str) -> int:
     return len(text.split())
 
 
-class AbstractLLM(ABC):
+class BaseLLM(ABC):
     """Abstract Language Model that defines the interface for all language models
 
     Args:

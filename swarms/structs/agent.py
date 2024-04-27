@@ -13,7 +13,7 @@ import yaml
 from loguru import logger
 from termcolor import colored
 
-from swarms.memory.base_vectordb import AbstractVectorDatabase
+from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
@@ -25,16 +25,16 @@ from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.tools.exec_tool import execute_tool_by_name
-from swarms.tools.code_executor import CodeExecutor
 from swarms.prompts.worker_prompt import tool_usage_worker_prompt
 from pydantic import BaseModel
 from swarms.tools.pydantic_to_json import (
-    pydantic_to_functions,
-    multi_pydantic_to_functions,
+    base_model_to_openai_function,
+    multi_base_model_to_openai_function,
 )
 from swarms.structs.schemas import Step, ManySteps
 from swarms.telemetry.user_utils import get_user_device_data
 from swarms.structs.yaml_model import YamlModel
+from swarms.tools.code_interpreter import SubprocessCodeInterpreter
 
 
 # Utils
@@ -113,7 +113,7 @@ class Agent:
         pdf_path (str): The path to the pdf
         list_of_pdf (str): The list of pdf
         tokenizer (Any): The tokenizer
-        memory (AbstractVectorDatabase): The memory
+        memory (BaseVectorDatabase): The memory
         preset_stopping_token (bool): Enable preset stopping token
         traceback (Any): The traceback
         traceback_handlers (Any): The traceback handlers
@@ -198,7 +198,7 @@ class Agent:
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
         tokenizer: Optional[Any] = None,
-        long_term_memory: Optional[AbstractVectorDatabase] = None,
+        long_term_memory: Optional[BaseVectorDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Optional[Any] = None,
         traceback_handlers: Optional[Any] = None,
@@ -639,7 +639,7 @@ class Agent:
         return json.loads(json_str)
 
     def pydantic_model_to_json_str(self, model: BaseModel):
-        return str(pydantic_to_functions(model))
+        return str(base_model_to_openai_function(model))
 
     def dict_to_json_str(self, dictionary: dict):
         """Convert a dictionary to a JSON string"""
@@ -659,14 +659,14 @@ class Agent:
         self, tool_schema: BaseModel = None, *args, **kwargs
     ):
         """Convert a tool schema to a string"""
-        out = pydantic_to_functions(tool_schema)
+        out = base_model_to_openai_function(tool_schema)
         return str(out)
 
     def tool_schemas_to_str(
         self, tool_schemas: List[BaseModel] = None, *args, **kwargs
     ):
         """Convert a list of tool schemas to a string"""
-        out = multi_pydantic_to_functions(tool_schemas)
+        out = multi_base_model_to_openai_function(tool_schemas)
         return str(out)
 
     def str_to_pydantic_model(self, string: str, model: BaseModel):
@@ -790,8 +790,9 @@ class Agent:
                             )
 
                             # Execute the code
-                            # execution = execute_command(extracted_code)
-                            execution = CodeExecutor().run(extracted_code)
+                            execution = SubprocessCodeInterpreter(
+                                debug_mode=True
+                            ).run(extracted_code)
 
                             # Add the execution to the memory
                             self.short_memory.add(

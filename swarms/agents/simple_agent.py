@@ -3,7 +3,7 @@ import pkgutil
 from typing import Any
 
 import swarms.models
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 from swarms.structs.conversation import Conversation
 
 
@@ -28,13 +28,13 @@ def get_llm_by_name(name: str):
 
 # Run the language model in a loop for n iterations
 def SimpleAgent(
-    llm: AbstractLLM = None, iters: Any = "automatic", *args, **kwargs
+    llm: BaseLLM = None, iters: Any = "automatic", *args, **kwargs
 ):
     """
     A simple agent that interacts with a language model.
 
     Args:
-        llm (AbstractLLM): The language model to use for generating responses.
+        llm (BaseLLM): The language model to use for generating responses.
         iters (Any): The number of iterations or "automatic" to run indefinitely.
         *args: Additional positional arguments to pass to the language model.
         **kwargs: Additional keyword arguments to pass to the language model.

@@ -1,5 +1,5 @@
 from swarms.models.base_embedding_model import BaseEmbeddingModel
-from swarms.models.base_llm import AbstractLLM  # noqa: E402
+from swarms.models.base_llm import BaseLLM  # noqa: E402
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 from swarms.models.fire_function import FireFunctionCaller
 from swarms.models.fuyu import Fuyu  # noqa: E402
@@ -46,7 +46,7 @@ from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.openai_embeddings import OpenAIEmbeddings
 
 __all__ = [
-    "AbstractLLM",
+    "BaseLLM",
     "Anthropic",
     "AzureOpenAI",
     "BaseEmbeddingModel",

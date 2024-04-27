@@ -152,11 +152,11 @@ The Agent class provides built-in support for long-term memory, allowing agents 
 
 ```python
 
-from swarms.memory import AbstractVectorDatabase
+from swarms.memory import BaseVectorDatabase
 from swarms import Agent
 
 
-class CustomMemory(AbstractVectorDatabase):
+class CustomMemory(BaseVectorDatabase):
 
     def __init__(self, *args, **kwargs):
 
@@ -196,7 +196,7 @@ class MyCustomAgent(Agent):
 
 ```
 
-In the example above, we define a new `CustomMemory` class that inherits from the `AbstractVectorDatabase` class provided by the Agent class framework. Within the `CustomMemory` class, you can implement specialized memory management logic, such as custom indexing, retrieval, and storage mechanisms.
+In the example above, we define a new `CustomMemory` class that inherits from the `BaseVectorDatabase` class provided by the Agent class framework. Within the `CustomMemory` class, you can implement specialized memory management logic, such as custom indexing, retrieval, and storage mechanisms.
 
 Next, within the `MyCustomAgent` class, we initialize an instance of the `CustomMemory` class and assign it to the `self.long_term_memory` attribute. This custom memory instance can then be utilized within the overridden `run` method, where you can query the memory and process the results as needed.
 

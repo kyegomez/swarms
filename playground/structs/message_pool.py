@@ -1,6 +1,4 @@
-from swarms.structs.message_pool import MessagePool
-from swarms import Agent, OpenAIChat
-from swarms.memory.chroma_db import ChromaDB
+from swarms import Agent, OpenAIChat, MessagePool
 
 
 # Agents
@@ -13,7 +11,6 @@ agent1 = Agent(
     ),
     agent_name="Steve",
     agent_description="A Minecraft player agent",
-    long_term_memory=ChromaDB(),
     max_steps=1,
 )
 
@@ -26,7 +23,6 @@ agent2 = Agent(
     ),
     agent_name="Bob",
     agent_description="A Minecraft builder agent",
-    long_term_memory=ChromaDB(),
     max_steps=1,
 )
 
@@ -39,7 +35,6 @@ agent3 = Agent(
     ),
     agent_name="Alex",
     agent_description="A Minecraft explorer agent",
-    long_term_memory=ChromaDB(),
     max_steps=1,
 )
 
@@ -52,7 +47,6 @@ agent4 = Agent(
     ),
     agent_name="Ender",
     agent_description="A Minecraft adventurer agent",
-    long_term_memory=ChromaDB(),
     max_steps=1,
 )
 
@@ -65,7 +59,6 @@ moderator = Agent(
     ),
     agent_name="Admin",
     agent_description="A Minecraft moderator agent",
-    long_term_memory=ChromaDB(),
     max_steps=1,
 )
 

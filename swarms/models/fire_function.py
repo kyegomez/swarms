@@ -3,10 +3,10 @@ from typing import Any
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 
 
-class FireFunctionCaller(AbstractLLM):
+class FireFunctionCaller(BaseLLM):
     """
     A class that represents a caller for the FireFunction model.
 

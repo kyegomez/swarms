@@ -11,10 +11,10 @@ from transformers import (
     BitsAndBytesConfig,
 )
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 
 
-class HuggingfaceLLM(AbstractLLM):
+class HuggingfaceLLM(BaseLLM):
     """
     A class for running inference on a given model.
 

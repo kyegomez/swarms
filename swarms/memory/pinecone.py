@@ -3,12 +3,12 @@ from typing import Optional
 import pinecone
 from attr import define, field
 
-from swarms.memory.base_vectordb import AbstractVectorDatabase
+from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.utils.hash import str_to_hash
 
 
 @define
-class PineconeDB(AbstractVectorDatabase):
+class PineconeDB(BaseVectorDatabase):
     """
     PineconeDB is a vector storage driver that uses Pinecone as the underlying storage engine.
 

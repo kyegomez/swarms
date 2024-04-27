@@ -1,4 +1,4 @@
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 from pydantic import BaseModel
 from typing import List, Dict
 import openai
@@ -9,7 +9,7 @@ class OpenRouterRequest(BaseModel):
     messages: List[Dict[str, str]] = []
 
 
-class OpenRouterChat(AbstractLLM):
+class OpenRouterChat(BaseLLM):
     """
     A class representing an OpenRouter chat model.
 

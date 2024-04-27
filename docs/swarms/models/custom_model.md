@@ -1,6 +1,6 @@
 # How to Create A Custom Language Model
 
-When working with advanced language models, there might come a time when you need a custom solution tailored to your specific needs. Inheriting from an `AbstractLLM` in a Python framework allows developers to create custom language model classes with ease. This developer guide will take you through the process step by step.
+When working with advanced language models, there might come a time when you need a custom solution tailored to your specific needs. Inheriting from an `BaseLLM` in a Python framework allows developers to create custom language model classes with ease. This developer guide will take you through the process step by step.
 
 ### Prerequisites
 
@@ -9,22 +9,22 @@ Before you begin, ensure that you have:
 - A working knowledge of Python programming.
 - Basic understanding of object-oriented programming (OOP) in Python.
 - Familiarity with language models and natural language processing (NLP).
-- The appropriate Python framework installed, with access to `AbstractLLM`.
+- The appropriate Python framework installed, with access to `BaseLLM`.
 
 ### Step-by-Step Guide
 
-#### Step 1: Understand `AbstractLLM`
+#### Step 1: Understand `BaseLLM`
 
-The `AbstractLLM` is an abstract base class that defines a set of methods and properties which your custom language model (LLM) should implement. Abstract classes in Python are not designed to be instantiated directly but are meant to be subclasses.
+The `BaseLLM` is an abstract base class that defines a set of methods and properties which your custom language model (LLM) should implement. Abstract classes in Python are not designed to be instantiated directly but are meant to be subclasses.
 
 #### Step 2: Create a New Class
 
-Start by defining a new class that inherits from `AbstractLLM`. This class will implement the required methods defined in the abstract base class.
+Start by defining a new class that inherits from `BaseLLM`. This class will implement the required methods defined in the abstract base class.
 
 ```python
-from swarms import AbstractLLM
+from swarms import BaseLLM
 
-class vLLMLM(AbstractLLM):
+class vLLMLM(BaseLLM):
     pass
 ```
 
@@ -33,7 +33,7 @@ class vLLMLM(AbstractLLM):
 Implement the `__init__` method to initialize your custom LLM. You'll want to initialize the base class as well and define any additional parameters for your model.
 
 ```python
-class vLLMLM(AbstractLLM):
+class vLLMLM(BaseLLM):
     def __init__(self, model_name='default_model', tensor_parallel_size=1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model_name = model_name
@@ -43,10 +43,10 @@ class vLLMLM(AbstractLLM):
 
 #### Step 4: Implement Required Methods
 
-Implement the `run` method or any other abstract methods required by `AbstractLLM`. This is where you define how your model processes input and returns output.
+Implement the `run` method or any other abstract methods required by `BaseLLM`. This is where you define how your model processes input and returns output.
 
 ```python
-class vLLMLM(AbstractLLM):
+class vLLMLM(BaseLLM):
     # ... existing code ...
     
     def run(self, task, *args, **kwargs):
@@ -73,9 +73,9 @@ Depending on the requirements, you might need to integrate additional components
 Write comprehensive docstrings for your class and its methods. Good documentation is crucial for maintaining the code and for other developers who might use your model.
 
 ```python
-class vLLMLM(AbstractLLM):
+class vLLMLM(BaseLLM):
     """
-    A custom language model class that extends AbstractLLM.
+    A custom language model class that extends BaseLLM.
     
     ... more detailed docstring ...
     """
@@ -96,7 +96,7 @@ Use a version control system like Git to track changes to your model. This makes
 
 ### Conclusion
 
-By following this guide, you should now have a custom model that extends the `AbstractLLM`. Remember that the key to a successful custom LLM is understanding the base functionalities, implementing necessary changes, and testing thoroughly. Keep iterating and improving based on feedback and performance metrics.
+By following this guide, you should now have a custom model that extends the `BaseLLM`. Remember that the key to a successful custom LLM is understanding the base functionalities, implementing necessary changes, and testing thoroughly. Keep iterating and improving based on feedback and performance metrics.
 
 ### Further Reading
 
@@ -104,4 +104,4 @@ By following this guide, you should now have a custom model that extends the `Ab
 - In-depth tutorials on object-oriented programming in Python.
 - Advanced NLP techniques and optimization strategies for language models.
 
-This guide provides the fundamental steps to create custom models using `AbstractLLM`. For detailed implementation and advanced customization, it's essential to dive deeper into the specific functionalities and capabilities of the language model framework you are using.
+This guide provides the fundamental steps to create custom models using `BaseLLM`. For detailed implementation and advanced customization, it's essential to dive deeper into the specific functionalities and capabilities of the language model framework you are using.

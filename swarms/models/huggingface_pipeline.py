@@ -3,15 +3,15 @@ from abc import abstractmethod
 import torch
 from termcolor import colored
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 from transformers.pipelines import pipeline
 
 
-class HuggingfacePipeline(AbstractLLM):
+class HuggingfacePipeline(BaseLLM):
     """HuggingfacePipeline
 
     Args:
-        AbstractLLM (AbstractLLM): [description]
+        BaseLLM (BaseLLM): [description]
         task (str, optional): [description]. Defaults to "text-generation".
         model_name (str, optional): [description]. Defaults to None.
         use_fp8 (bool, optional): [description]. Defaults to False.

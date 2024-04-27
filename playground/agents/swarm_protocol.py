@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from swarms import JSON, AbstractLLM, AbstractVectorDatabase, Agent
+from swarms import JSON, BaseLLM, BaseVectorDatabase, Agent
 
 
 @dataclass
@@ -10,13 +10,13 @@ class YourAgent(Agent):
     Represents an agent in the swarm protocol.
 
     Attributes:
-        llm (AbstractLLM): The low-level module for the agent.
-        long_term_memory (AbstractVectorDatabase): The long-term memory for the agent.
+        llm (BaseLLM): The low-level module for the agent.
+        long_term_memory (BaseVectorDatabase): The long-term memory for the agent.
         tool_schema (List[JSON]): The schema for the tools used by the agent.
     """
 
-    llm: AbstractLLM
-    long_term_memory: AbstractVectorDatabase
+    llm: BaseLLM
+    long_term_memory: BaseVectorDatabase
     tool_schema: JSON
     tool_schemas: List[JSON]
 

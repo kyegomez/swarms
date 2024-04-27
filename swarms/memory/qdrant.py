@@ -1,7 +1,7 @@
 from typing import List
 
 from httpx import RequestError
-from swarms.memory.base_vectordb import AbstractVectorDatabase
+from swarms.memory.base_vectordb import BaseVectorDatabase
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -21,7 +21,7 @@ except ImportError:
     print("pip install qdrant-client")
 
 
-class Qdrant(AbstractVectorDatabase):
+class Qdrant(BaseVectorDatabase):
     """
     Qdrant class for managing collections and performing vector operations using QdrantClient.
 

@@ -5,7 +5,7 @@ from typing import Optional
 import requests
 from dotenv import load_dotenv
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 
 # Load environment variables
 load_dotenv()
@@ -16,7 +16,7 @@ def together_api_key_env():
     return os.getenv("TOGETHER_API_KEY")
 
 
-class TogetherLLM(AbstractLLM):
+class TogetherLLM(BaseLLM):
     """
     GPT-4 Vision API
 

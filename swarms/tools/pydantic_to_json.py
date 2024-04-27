@@ -14,8 +14,9 @@ def _remove_a_key(d: dict, remove_key: str) -> None:
                 _remove_a_key(d[key], remove_key)
 
 
-def pydantic_to_functions(
+def base_model_to_openai_function(
     pydantic_type: type[BaseModel],
+    output_str: bool = False,
 ) -> dict[str, Any]:
     """
     Convert a Pydantic model to a dictionary representation of functions.
@@ -57,21 +58,37 @@ def pydantic_to_functions(
     _remove_a_key(parameters, "title")
     _remove_a_key(parameters, "additionalProperties")
 
-    return {
-        "function_call": {
-            "name": pydantic_type.__class__.__name__.lower(),
-        },
-        "functions": [
-            {
+    if output_str:
+        out = {
+            "function_call": {
                 "name": pydantic_type.__class__.__name__.lower(),
-                "description": schema["description"],
-                "parameters": parameters,
             },
-        ],
-    }
+            "functions": [
+                {
+                    "name": pydantic_type.__class__.__name__.lower(),
+                    "description": schema["description"],
+                    "parameters": parameters,
+                },
+            ],
+        }
+        return str(out)
+
+    else:
+        return {
+            "function_call": {
+                "name": pydantic_type.__class__.__name__.lower(),
+            },
+            "functions": [
+                {
+                    "name": pydantic_type.__class__.__name__.lower(),
+                    "description": schema["description"],
+                    "parameters": parameters,
+                },
+            ],
+        }
 
 
-def multi_pydantic_to_functions(
+def multi_base_model_to_openai_function(
     pydantic_types: List[BaseModel] = None,
 ) -> dict[str, Any]:
     """
@@ -85,7 +102,7 @@ def multi_pydantic_to_functions(
 
     """
     functions: list[dict[str, Any]] = [
-        pydantic_to_functions(pydantic_type)["functions"][0]
+        base_model_to_openai_function(pydantic_type)["functions"][0]
         for pydantic_type in pydantic_types
     ]
 

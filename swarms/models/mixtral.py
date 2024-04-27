@@ -2,10 +2,10 @@ from typing import Optional
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 
 
-class Mixtral(AbstractLLM):
+class Mixtral(BaseLLM):
     """Mixtral model.
 
     Args:

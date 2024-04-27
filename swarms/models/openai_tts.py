@@ -5,7 +5,7 @@ import sys
 import requests
 from dotenv import load_dotenv
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 
 try:
     import wave
@@ -26,7 +26,7 @@ def openai_api_key_env():
     return openai_api_key
 
 
-class OpenAITTS(AbstractLLM):
+class OpenAITTS(BaseLLM):
     """OpenAI TTS model
 
     Attributes:

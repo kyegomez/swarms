@@ -5,10 +5,7 @@ from dotenv import load_dotenv
 from swarms import (
     Conversation,
     OpenAIChat,
-    detect_markdown,
-    extract_code_from_markdown,
 )
-from swarms.tools.code_executor import CodeExecutor
 
 conv = Conversation(
     autosave=False,
@@ -45,16 +42,6 @@ def interactive_conversation(llm, iters: int = 10):
         print(
             f"Assistant: {out}",
         )
-
-        # Code Interpreter
-        if detect_markdown(out):
-            code = extract_code_from_markdown(out)
-            if code:
-                print(f"Code: {code}")
-                executor = CodeExecutor()
-                out = executor.run(code)
-                conv.add("assistant", out)
-                # print(f"Assistant: {out}")
 
         conv.display_conversation()
         # conv.export_conversation("conversation.txt")

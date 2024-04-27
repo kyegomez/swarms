@@ -1,5 +1,4 @@
 from swarms.tools.tool import BaseTool, Tool, StructuredTool, tool
-from swarms.tools.code_executor import CodeExecutor
 from swarms.tools.exec_tool import (
     AgentAction,
     AgentOutputParser,
@@ -16,23 +15,24 @@ from swarms.tools.tool_utils import (
 )
 from swarms.tools.pydantic_to_json import (
     _remove_a_key,
-    pydantic_to_functions,
-    multi_pydantic_to_functions,
+    base_model_to_openai_function,
+    multi_base_model_to_openai_function,
     function_to_str,
     functions_to_str,
 )
 from swarms.tools.openai_func_calling_schema import (
-    OpenAIFunctionCallSchema,
+    OpenAIFunctionCallSchema as OpenAIFunctionCallSchemaBaseModel,
 )
 from swarms.tools.py_func_to_openai_func_str import (
-    get_parameter_json_schema,
-    get_required_params,
-    get_parameters,
-    get_openai_function_schema,
-    get_load_param_if_needed_function,
+    get_openai_function_schema_from_func,
     load_basemodels_if_needed,
-    serialize_to_str,
+    get_load_param_if_needed_function,
+    get_parameters,
+    get_required_params,
+    Function,
+    ToolFunction,
 )
+from swarms.tools.openai_tool_creator_decorator import create_openai_tool
 
 
 __all__ = [
@@ -40,7 +40,6 @@ __all__ = [
     "Tool",
     "StructuredTool",
     "tool",
-    "CodeExecutor",
     "AgentAction",
     "AgentOutputParser",
     "BaseAgentOutputParser",
@@ -52,16 +51,17 @@ __all__ = [
     "scrape_tool_func_docs",
     "tool_find_by_name",
     "_remove_a_key",
-    "pydantic_to_functions",
-    "multi_pydantic_to_functions",
+    "base_model_to_openai_function",
+    "multi_base_model_to_openai_function",
     "function_to_str",
     "functions_to_str",
-    "OpenAIFunctionCallSchema",
-    "get_parameter_json_schema",
-    "get_required_params",
-    "get_parameters",
-    "get_openai_function_schema",
-    "get_load_param_if_needed_function",
+    "OpenAIFunctionCallSchemaBaseModel",
+    "get_openai_function_schema_from_func",
     "load_basemodels_if_needed",
-    "serialize_to_str",
+    "get_load_param_if_needed_function",
+    "get_parameters",
+    "get_required_params",
+    "Function",
+    "ToolFunction",
+    "create_openai_tool",
 ]

@@ -1,11 +1,11 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 from swarms.structs.message import Message
 
 
-class Mistral(AbstractLLM):
+class Mistral(BaseLLM):
     """
     Mistral is an all-new llm
 

@@ -12,10 +12,10 @@ from transformers import (
     BitsAndBytesConfig,
     TextStreamer,
 )
-from swarms.models.base_llm import AbstractLLM
+from swarms.models.base_llm import BaseLLM
 
 
-class LlamaFunctionCaller(AbstractLLM):
+class LlamaFunctionCaller(BaseLLM):
     """
     A class to manage and execute Llama functions.
 

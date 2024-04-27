@@ -1,6 +1,6 @@
 from typing import Any, List, Optional, Tuple
 
-from swarms.memory.base_vectordb import AbstractVectorDatabase
+from swarms.memory.base_vectordb import BaseVectorDatabase
 
 try:
     import sqlite3
@@ -8,7 +8,7 @@ except ImportError:
     raise ImportError("Please install sqlite3 to use the SQLiteDB class.")
 
 
-class SQLiteDB(AbstractVectorDatabase):
+class SQLiteDB(BaseVectorDatabase):
     """
     A reusable class for SQLite database operations with methods for adding,
     deleting, updating, and querying data.

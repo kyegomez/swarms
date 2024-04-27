@@ -368,7 +368,7 @@ def get_missing_annotations(
     return missing, unannotated_with_default
 
 
-def get_openai_function_schema(
+def get_openai_function_schema_from_func(
     function: Callable[..., Any],
     *,
     name: Optional[str] = None,
