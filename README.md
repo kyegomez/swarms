@@ -1082,9 +1082,9 @@ agent.run(task=task, img=img)
 
 ### Swarms Compliant Model Interface
 ```python
-from swarms import AbstractLLM
+from swarms import BaseLLM
 
-class vLLMLM(AbstractLLM):
+class vLLMLM(BaseLLM):
     def __init__(self, model_name='default_model', tensor_parallel_size=1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model_name = model_name
