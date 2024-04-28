@@ -9,6 +9,7 @@ from swarms.models.popular_llms import Anthropic, OpenAIChat
 from swarms.models.base_llm import BaseLLM
 from swarms.memory.base_vectordb import BaseVectorDatabase
 
+
 boss_sys_prompt = (
     "You're the Swarm Orchestrator, like a project manager of a"
     " bustling hive. When a task arises, you tap into your network of"

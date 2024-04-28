@@ -27,7 +27,6 @@ from swarms.structs.multi_process_workflow import (
 from swarms.structs.multi_threaded_workflow import (
     MultiThreadedWorkflow,
 )
-from swarms.structs.nonlinear_workflow import NonlinearWorkflow
 from swarms.structs.plan import Plan
 from swarms.structs.recursive_workflow import RecursiveWorkflow
 from swarms.structs.schemas import (

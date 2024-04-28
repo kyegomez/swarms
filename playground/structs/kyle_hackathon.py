@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 from swarms import Agent, OpenAIChat
 from swarms.agents.multion_agent import MultiOnAgent
-from swarms.memory.chroma_db import ChromaDB
+from playground.memory.chroma_db import ChromaDB
 from swarms.tools.tool import tool
 from swarms.tools.code_interpreter import SubprocessCodeInterpreter
 

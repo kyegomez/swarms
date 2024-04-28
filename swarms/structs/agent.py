@@ -1,16 +1,16 @@
 import asyncio
 import json
 import logging
-from typing import Union
 import os
 import random
 import sys
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import yaml
 from loguru import logger
+from pydantic import BaseModel
 from termcolor import colored
 
 from swarms.memory.base_vectordb import BaseVectorDatabase
@@ -18,23 +18,21 @@ from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
-from swarms.structs.conversation import Conversation
-from swarms.tools.tool import BaseTool
-from swarms.tools.code_interpreter import SubprocessCodeInterpreter
-from swarms.utils.data_to_text import data_to_text
-from swarms.utils.parse_code import extract_code_from_markdown
-from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.prompts.worker_prompt import tool_usage_worker_prompt
-from pydantic import BaseModel
+from swarms.structs.conversation import Conversation
+from swarms.structs.schemas import ManySteps, Step
+from swarms.structs.yaml_model import YamlModel
+from swarms.telemetry.user_utils import get_user_device_data
+from swarms.tools.code_interpreter import SubprocessCodeInterpreter
+from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
     multi_base_model_to_openai_function,
 )
-from swarms.structs.schemas import Step, ManySteps
-from swarms.telemetry.user_utils import get_user_device_data
-from swarms.structs.yaml_model import YamlModel
-from swarms.tools.code_interpreter import SubprocessCodeInterpreter
+from swarms.tools.tool import BaseTool
+from swarms.utils.data_to_text import data_to_text
+from swarms.utils.parse_code import extract_code_from_markdown
+from swarms.utils.pdf_to_text import pdf_to_text
 
 
 # Utils
