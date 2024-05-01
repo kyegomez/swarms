@@ -33,6 +33,7 @@ from swarms.tools.tool import BaseTool
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.prompts.aot_prompt import algorithm_of_thoughts_sop
 
 
 # Utils
@@ -229,6 +230,9 @@ class Agent:
         list_tool_schemas: Optional[List[BaseModel]] = None,
         metadata_output_type: str = "json",
         state_save_file_type: str = "json",
+        chain_of_thoughts: bool = False,
+        algorithm_of_thoughts: bool = False,
+        tree_of_thoughts: bool = False,
         *args,
         **kwargs,
     ):
@@ -297,6 +301,9 @@ class Agent:
         self.list_tool_schemas = list_tool_schemas
         self.metadata_output_type = metadata_output_type
         self.state_save_file_type = state_save_file_type
+        self.chain_of_thoughts = chain_of_thoughts
+        self.algorithm_of_thoughts = algorithm_of_thoughts
+        self.tree_of_thoughts = tree_of_thoughts
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -416,6 +423,13 @@ class Agent:
 
         # Description
         self.description = agent_description
+
+        # If the algorithm of thoughts is enabled then set the sop to the algorithm of thoughts
+        if self.algorithm_of_thoughts is not None:
+            self.short_memory.add(
+                role=self.agent_name,
+                content=algorithm_of_thoughts_sop(objective=self.task),
+            )
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
