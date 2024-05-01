@@ -233,6 +233,7 @@ class Agent:
         chain_of_thoughts: bool = False,
         algorithm_of_thoughts: bool = False,
         tree_of_thoughts: bool = False,
+        tool_choice: str = "auto",
         *args,
         **kwargs,
     ):
@@ -304,6 +305,7 @@ class Agent:
         self.chain_of_thoughts = chain_of_thoughts
         self.algorithm_of_thoughts = algorithm_of_thoughts
         self.tree_of_thoughts = tree_of_thoughts
+        self.tool_choice = tool_choice
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:

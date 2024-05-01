@@ -221,7 +221,8 @@ def tool_usage_worker_prompt(
     
     {tool_docs}
     
-    This SOP is designed to guide you through the structured and effective use of tools. By adhering to this protocol, you will enhance your productivity and accuracy in task execution.
+    This SOP is designed to guide you through the structured and effective use of tools. 
+    By adhering to this protocol, you will enhance your productivity and accuracy in task execution.
     """
 
     return prompt
