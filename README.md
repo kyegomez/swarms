@@ -295,8 +295,7 @@ The following is an example of an agent that intakes a pydantic basemodel and ou
 
 ```python
 from pydantic import BaseModel, Field
-from swarms import Anthropic
-from swarms import Agent
+from swarms import Anthropic, Agent
 
 
 # Initialize the schema for the person's information
