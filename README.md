@@ -148,6 +148,210 @@ print(out)
 
 ```
 
+### Simple Conversational Agent
+A Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our models
+
+- Reliable conversational structure to hold messages together with dynamic handling for long context conversations and interactions with auto chunking
+- Reliable, this simple system will always provide responses you want.
+
+```python
+from swarms import Agent, Anthropic
+
+
+## Initialize the workflow
+agent = Agent(
+    agent_name="Transcript Generator",
+    agent_description=(
+        "Generate a transcript for a youtube video on what swarms"
+        " are!"
+    ),
+    llm=Anthropic(),
+    max_loops=3,
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    interactive=True, # Set to True
+)
+
+# Run the workflow on a task
+agent("Generate a transcript for a youtube video on what swarms are!")
+```
+
+## Devin
+Implementation of Devil in less than 90 lines of code with several tools:
+terminal, browser, and edit files!
+
+```python
+from swarms import Agent, Anthropic, tool
+import subprocess
+
+# Model
+llm = Anthropic(
+    temperature=0.1,
+)
+
+# Tools
+@tool
+def terminal(
+    code: str,
+):
+    """
+    Run code in the terminal.
+
+    Args:
+        code (str): The code to run in the terminal.
+
+    Returns:
+        str: The output of the code.
+    """
+    out = subprocess.run(
+        code, shell=True, capture_output=True, text=True
+    ).stdout
+    return str(out)
+
+
+@tool
+def browser(query: str):
+    """
+    Search the query in the browser with the `browser` tool.
+
+    Args:
+        query (str): The query to search in the browser.
+
+    Returns:
+        str: The search results.
+    """
+    import webbrowser
+
+    url = f"https://www.google.com/search?q={query}"
+    webbrowser.open(url)
+    return f"Searching for {query} in the browser."
+
+@tool
+def create_file(file_path: str, content: str):
+    """
+    Create a file using the file editor tool.
+
+    Args:
+        file_path (str): The path to the file.
+        content (str): The content to write to the file.
+
+    Returns:
+        str: The result of the file creation operation.
+    """
+    with open(file_path, "w") as file:
+        file.write(content)
+    return f"File {file_path} created successfully."
+
+@tool
+def file_editor(file_path: str, mode: str, content: str):
+    """
+    Edit a file using the file editor tool.
+
+    Args:
+        file_path (str): The path to the file.
+        mode (str): The mode to open the file in.
+        content (str): The content to write to the file.
+
+    Returns:
+        str: The result of the file editing operation.
+    """
+    with open(file_path, mode) as file:
+        file.write(content)
+    return f"File {file_path} edited successfully."
+
+
+# Agent
+agent = Agent(
+    agent_name="Devin",
+    system_prompt=(
+        "Autonomous agent that can interact with humans and other"
+        " agents. Be Helpful and Kind. Use the tools provided to"
+        " assist the user. Return all code in markdown format."
+    ),
+    llm=llm,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    interactive=True,
+    tools=[terminal, browser, file_editor, create_file],
+    code_interpreter=True,
+    # streaming=True,
+)
+
+# Run the agent
+out = agent("Create a new file for a plan to take over the world.")
+print(out)
+```
+
+
+## `Agent`with Pydantic BaseModel as Output Type
+The following is an example of an agent that intakes a pydantic basemodel and outputs it at the same time:
+
+```python
+from pydantic import BaseModel, Field
+from swarms import Anthropic
+from swarms import Agent
+
+
+# Initialize the schema for the person's information
+class Schema(BaseModel):
+    name: str = Field(..., title="Name of the person")
+    agent: int = Field(..., title="Age of the person")
+    is_student: bool = Field(..., title="Whether the person is a student")
+    courses: list[str] = Field(
+        ..., title="List of courses the person is taking"
+    )
+
+
+# Convert the schema to a JSON string
+tool_schema = Schema(
+    name="Tool Name",
+    agent=1,
+    is_student=True,
+    courses=["Course1", "Course2"],
+)
+
+# Define the task to generate a person's information
+task = "Generate a person's information based on the following schema:"
+
+# Initialize the agent
+agent = Agent(
+    agent_name="Person Information Generator",
+    system_prompt=(
+        "Generate a person's information based on the following schema:"
+    ),
+    # Set the tool schema to the JSON string -- this is the key difference
+    tool_schema=tool_schema,
+    llm=Anthropic(),
+    max_loops=3,
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    interactive=True,
+    # Set the output type to the tool schema which is a BaseModel
+    output_type=tool_schema,  # or dict, or str
+    metadata_output_type="json",
+    # List of schemas that the agent can handle
+    list_tool_schemas=[tool_schema],
+    function_calling_format_type="OpenAI",
+    function_calling_type="json",  # or soon yaml
+)
+
+# Run the agent to generate the person's information
+generated_data = agent.run(task)
+
+# Print the generated data
+print(f"Generated data: {generated_data}")
+
+
+```
 
 
 ### `ToolAgent`
@@ -439,210 +643,6 @@ for i in range(len(out)):
 ```
 
 
-### Simple Conversational Agent
-A Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our models
-
-- Reliable conversational structure to hold messages together with dynamic handling for long context conversations and interactions with auto chunking
-- Reliable, this simple system will always provide responses you want.
-
-```python
-from swarms import Agent, Anthropic
-
-
-## Initialize the workflow
-agent = Agent(
-    agent_name="Transcript Generator",
-    agent_description=(
-        "Generate a transcript for a youtube video on what swarms"
-        " are!"
-    ),
-    llm=Anthropic(),
-    max_loops=3,
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    interactive=True, # Set to True
-)
-
-# Run the workflow on a task
-agent("Generate a transcript for a youtube video on what swarms are!")
-```
-
-## Devin
-Implementation of Devil in less than 90 lines of code with several tools:
-terminal, browser, and edit files!
-
-```python
-from swarms import Agent, Anthropic, tool
-import subprocess
-
-# Model
-llm = Anthropic(
-    temperature=0.1,
-)
-
-# Tools
-@tool
-def terminal(
-    code: str,
-):
-    """
-    Run code in the terminal.
-
-    Args:
-        code (str): The code to run in the terminal.
-
-    Returns:
-        str: The output of the code.
-    """
-    out = subprocess.run(
-        code, shell=True, capture_output=True, text=True
-    ).stdout
-    return str(out)
-
-
-@tool
-def browser(query: str):
-    """
-    Search the query in the browser with the `browser` tool.
-
-    Args:
-        query (str): The query to search in the browser.
-
-    Returns:
-        str: The search results.
-    """
-    import webbrowser
-
-    url = f"https://www.google.com/search?q={query}"
-    webbrowser.open(url)
-    return f"Searching for {query} in the browser."
-
-@tool
-def create_file(file_path: str, content: str):
-    """
-    Create a file using the file editor tool.
-
-    Args:
-        file_path (str): The path to the file.
-        content (str): The content to write to the file.
-
-    Returns:
-        str: The result of the file creation operation.
-    """
-    with open(file_path, "w") as file:
-        file.write(content)
-    return f"File {file_path} created successfully."
-
-@tool
-def file_editor(file_path: str, mode: str, content: str):
-    """
-    Edit a file using the file editor tool.
-
-    Args:
-        file_path (str): The path to the file.
-        mode (str): The mode to open the file in.
-        content (str): The content to write to the file.
-
-    Returns:
-        str: The result of the file editing operation.
-    """
-    with open(file_path, mode) as file:
-        file.write(content)
-    return f"File {file_path} edited successfully."
-
-
-# Agent
-agent = Agent(
-    agent_name="Devin",
-    system_prompt=(
-        "Autonomous agent that can interact with humans and other"
-        " agents. Be Helpful and Kind. Use the tools provided to"
-        " assist the user. Return all code in markdown format."
-    ),
-    llm=llm,
-    max_loops="auto",
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    interactive=True,
-    tools=[terminal, browser, file_editor, create_file],
-    code_interpreter=True,
-    # streaming=True,
-)
-
-# Run the agent
-out = agent("Create a new file for a plan to take over the world.")
-print(out)
-```
-
-
-## `Agent`with Pydantic BaseModel as Output Type
-The following is an example of an agent that intakes a pydantic basemodel and outputs it at the same time:
-
-```python
-from pydantic import BaseModel, Field
-from swarms import Anthropic
-from swarms import Agent
-
-
-# Initialize the schema for the person's information
-class Schema(BaseModel):
-    name: str = Field(..., title="Name of the person")
-    agent: int = Field(..., title="Age of the person")
-    is_student: bool = Field(..., title="Whether the person is a student")
-    courses: list[str] = Field(
-        ..., title="List of courses the person is taking"
-    )
-
-
-# Convert the schema to a JSON string
-tool_schema = Schema(
-    name="Tool Name",
-    agent=1,
-    is_student=True,
-    courses=["Course1", "Course2"],
-)
-
-# Define the task to generate a person's information
-task = "Generate a person's information based on the following schema:"
-
-# Initialize the agent
-agent = Agent(
-    agent_name="Person Information Generator",
-    system_prompt=(
-        "Generate a person's information based on the following schema:"
-    ),
-    # Set the tool schema to the JSON string -- this is the key difference
-    tool_schema=tool_schema,
-    llm=Anthropic(),
-    max_loops=3,
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    interactive=True,
-    # Set the output type to the tool schema which is a BaseModel
-    output_type=tool_schema,  # or dict, or str
-    metadata_output_type="json",
-    # List of schemas that the agent can handle
-    list_tool_schemas=[tool_schema],
-    function_calling_format_type="OpenAI",
-    function_calling_type="json",  # or soon yaml
-)
-
-# Run the agent to generate the person's information
-generated_data = agent.run(task)
-
-# Print the generated data
-print(f"Generated data: {generated_data}")
-
-
-```
 
 
 ### `SwarmNetwork`
