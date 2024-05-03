@@ -1187,7 +1187,7 @@ autoswarm.run("Analyze these financial data and give me a summary")
 Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships
 
 ```python
-from swarms import Agent, Anthropic, AgentRearrange, 
+from swarms import Agent, Anthropic, AgentRearrange 
 
 ## Initialize the workflow
 agent = Agent(
