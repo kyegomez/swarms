@@ -124,7 +124,7 @@ def search_api(query: str):
     # Add your logic here
     return query
 
-# Initializing the agent with the Gemini instance and other parameters
+# Initializing the agent with the OpenAi instance and other parameters
 agent = Agent(
     agent_name="Covid-19-Chat",
     agent_description=(
