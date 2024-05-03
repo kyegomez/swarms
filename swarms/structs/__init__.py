@@ -109,7 +109,6 @@ __all__ = [
     "MultiAgentCollaboration",
     "MultiProcessWorkflow",
     "MultiThreadedWorkflow",
-    "NonlinearWorkflow",
     "Plan",
     "RecursiveWorkflow",
     "Artifact",
