@@ -80,7 +80,7 @@ memory = ChromaDB(
     docs_folder="docs",
 )
 
-# Initializing the agent with the Gemini instance and other parameters
+# Initializing the agent with the OpenAI instance and other parameters
 agent = Agent(
     agent_name="Covid-19-Chat",
     agent_description=(
