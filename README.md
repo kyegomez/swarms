@@ -872,7 +872,7 @@ print(inference)
 
 
 ## Majority Voting
-Multiple-agents will evaluate an idea based off of an parsing or evaluation function. From papers like "[More agents is all you need](https://arxiv.org/pdf/2402.05120.pdf)
+Multiple-agents will evaluate an idea based off of an parsing or evaluation function. From papers like "[More agents is all you need"](https://arxiv.org/pdf/2402.05120.pdf)
 
 ```python
 from swarms import Agent, MajorityVoting, ChromaDB, Anthropic
