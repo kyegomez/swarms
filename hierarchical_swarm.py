@@ -78,7 +78,7 @@ class HassSchema(BaseModel):
     )
 
 
-class HiearchicalSwarm(BaseSwarm):
+class HierarchicalSwarm(BaseSwarm):
     def __init__(
         self,
         director: Agent = None,
