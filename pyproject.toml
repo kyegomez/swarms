@@ -57,7 +57,7 @@ docstring_parser = "0.16"
 black = ">=23.1,<25.0"
 ruff = ">=0.0.249,<0.4.3"
 types-toml = "^0.10.8.1"
-types-pytz = "^2023.3.0.0"
+types-pytz = ">=2023.3,<2025.0"
 types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
 
