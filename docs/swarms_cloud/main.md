@@ -58,7 +58,7 @@ The AI Chat Completion API processes text and image inputs to generate conversat
 
 ## Objects
 
-### ChatMessageInput
+### Request
 
 | Field     | Type                | Description                                   | Required |
 |-----------|---------------------|-----------------------------------------------|----------|
@@ -66,14 +66,14 @@ The AI Chat Completion API processes text and image inputs to generate conversat
 | `content` | string or array     | The content of the message.                   | Yes      |
 | `name`    | string              | An optional name identifier for the sender.   | No       |
 
-### ChatCompletionResponseChoice
+### Response
 
 | Field     | Type   | Description                        |
 |-----------|--------|------------------------------------|
 | `index`   | integer| The index of the choice.           |
 | `message` | object | A `ChatMessageResponse` object.    |
 
-### UsageInfo
+#### UsageInfo
 
 | Field             | Type    | Description                                   |
 |-------------------|---------|-----------------------------------------------|
