@@ -1,6 +1,5 @@
 # Available Models
 
-```
 | Model Name            | Description                                                                                             | Input Price  | Output Price | Use Cases                                                              |
 |-----------------------|---------------------------------------------------------------------------------------------------------|--------------|--------------|------------------------------------------------------------------------|
 | **Llama3-70b**        | Llama 3 is an auto-regressive language model that uses an optimized transformer architecture.          | $0.80/1M Tokens | $1.60/1M Tokens | General natural language processing tasks.                             |
@@ -10,7 +9,6 @@
 | **XComposer2-4khd-7b** | One of the highest performing VLMs (Video Language Models).                                            | $4/1M Tokens | $8/1M Tokens | High-resolution video processing and understanding.                     |
 | **Llava-Llama-3**      | Llama3 with Multi-Modal Processing.                                                                    | $5/1M Tokens | $10/1M Tokens | Advanced multi-modal scenarios involving language and image processing. |
 | **cogvlm-chat-17b**    | Groundbreaking multimodal model designed to understand and reason about visual elements in images.     | $5/1M Tokens | $10/1M Tokens | Image-based chatbots and interactive systems.                           |
-```
 
 
 ## What models should we add?
