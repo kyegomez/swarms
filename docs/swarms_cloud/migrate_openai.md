@@ -75,6 +75,8 @@ Note that you need to supply one of Swarms’s supported LLMs as an argument, as
 ## Example output
 The code above produces the following object:
 
-```bash
+```
 ChatCompletionMessage(content="  Hello! How can I assist you today? Do you have any questions or tasks you'd like help with? Please let me know and I'll do my best to assist you.", role='assistant' function_call=None, tool_calls=None)
 ```
+
+

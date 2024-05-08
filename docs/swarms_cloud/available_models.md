@@ -1,6 +1,6 @@
 # Available Models
 
-```markdown
+```
 | Model Name            | Description                                                                                             | Input Price  | Output Price | Use Cases                                                              |
 |-----------------------|---------------------------------------------------------------------------------------------------------|--------------|--------------|------------------------------------------------------------------------|
 | **Llama3-70b**        | Llama 3 is an auto-regressive language model that uses an optimized transformer architecture.          | $0.80/1M Tokens | $1.60/1M Tokens | General natural language processing tasks.                             |

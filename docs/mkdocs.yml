@@ -189,6 +189,7 @@ nav:
       - Overview: "applications/customer_support.md"
     - Marketing: 
       - Overview: "applications/marketing_agencies.md" 
+    - Swarm of Automated Business Analysis: "applications/business-analyst-agent.md"
 - Corporate:
     - Corporate Documents:
       - Data Room: "corporate/data_room.md"
