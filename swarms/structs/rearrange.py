@@ -1,148 +1,223 @@
-import logging
-from collections import defaultdict
+from swarms import Agent
+from typing import List
+from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
-from swarms.structs.agent import Agent
-from typing import Sequence, Callable
 
 
-class AgentRearrange:
+class AgentRearrange(BaseSwarm):
+    """
+    A class representing a swarm of agents for rearranging tasks.
+
+    Attributes:
+        agents (dict): A dictionary of agents, where the key is the agent's name and the value is the agent object.
+        flow (str): The flow pattern of the tasks.
+
+    Methods:
+        __init__(agents: List[Agent] = None, flow: str = None): Initializes the AgentRearrange object.
+        add_agent(agent: Agent): Adds an agent to the swarm.
+        remove_agent(agent_name: str): Removes an agent from the swarm.
+        add_agents(agents: List[Agent]): Adds multiple agents to the swarm.
+        validate_flow(): Validates the flow pattern.
+        run(task): Runs the swarm to rearrange the tasks.
+    """
+
     def __init__(
         self,
-        agents: Sequence[Agent] = None,
-        verbose: bool = False,
-        custom_prompt: str = None,
-        callbacks: Sequence[Callable] = None,
-        *args,
-        **kwargs,
+        agents: List[Agent] = None,
+        flow: str = None,
+        max_loops: int = 1,
+        verbose: bool = True,
     ):
         """
-        Initialize the AgentRearrange class.
+        Initializes the AgentRearrange object.
 
         Args:
-            agents (Sequence[Agent], optional): A sequence of Agent objects. Defaults to None.
-            verbose (bool, optional): Whether to enable verbose mode. Defaults to False.
-            custom_prompt (str, optional): A custom prompt string. Defaults to None.
-            callbacks (Sequence[Callable], optional): A sequence of callback functions. Defaults to None.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            agents (List[Agent], optional): A list of Agent objects. Defaults to None.
+            flow (str, optional): The flow pattern of the tasks. Defaults to None.
         """
-        if not all(isinstance(agent, Agent) for agent in agents):
-            raise ValueError(
-                "All elements must be instances of the Agent class."
-            )
-        self.agents = agents
+        self.agents = {agent.name: agent for agent in agents}
+        self.flow = flow
         self.verbose = verbose
-        self.custom_prompt = custom_prompt
-        self.callbacks = callbacks if callbacks is not None else []
-        self.flows = defaultdict(list)
+        self.max_loops = max_loops
 
-    def parse_pattern(self, pattern: str):
+        if verbose is True:
+            logger.add("agent_rearrange.log")
+
+    def add_agent(self, agent: Agent):
         """
-        Parse the interaction pattern and setup task flows.
+        Adds an agent to the swarm.
 
         Args:
-            pattern (str): The interaction pattern to parse.
+            agent (Agent): The agent to be added.
+        """
+        logger.info(f"Adding agent {agent.name} to the swarm.")
+        self.agents[agent.name] = agent
+
+    def remove_agent(self, agent_name: str):
+        """
+        Removes an agent from the swarm.
+
+        Args:
+            agent_name (str): The name of the agent to be removed.
+        """
+        del self.agents[agent_name]
+
+    def add_agents(self, agents: List[Agent]):
+        """
+        Adds multiple agents to the swarm.
+
+        Args:
+            agents (List[Agent]): A list of Agent objects.
+        """
+        for agent in agents:
+            self.agents[agent.name] = agent
+
+    def validate_flow(self):
+        """
+        Validates the flow pattern.
+
+        Raises:
+            ValueError: If the flow pattern is incorrectly formatted or contains duplicate agent names.
 
         Returns:
-            bool: True if the pattern parsing is successful, False otherwise.
+            bool: True if the flow pattern is valid.
         """
-        try:
-            for flow in pattern.split(","):
-                parts = [part.strip() for part in flow.split("->")]
-                if len(parts) != 2:
-                    logging.error(
-                        f"Invalid flow pattern: {flow}. Each flow"
-                        " must have exactly one '->'."
-                    )
-                    return False
-
-                source_name, destinations_str = parts
-                source = self.find_agent_by_name(source_name)
-                if source is None:
-                    logging.error(f"Source agent {source_name} not found.")
-                    return False
-
-                destinations_names = destinations_str.split()
-                for dest_name in destinations_names:
-                    dest = self.find_agent_by_name(dest_name)
-                    if dest is None:
-                        logging.error(
-                            f"Destination agent {dest_name} not" " found."
-                        )
-                        return False
-                    self.flows[source.agent_name].append(dest.agent_name)
-            return True
-        except Exception as e:
-            logger.error(f"Error: {e}")
-            raise e
-
-    def self_find_agen_by_name(self, name: str):
-        """
-        Find an agent by its name.
-
-        Args:
-            name (str): The name of the agent to find.
-
-        Returns:
-            Agent: The Agent object if found, None otherwise.
-        """
-        for agent in self.agents:
-            if agent.agent_name == name:
-                return agent
-        return None
-
-    def __call__(
-        self,
-        agents: Sequence[Agent] = None,
-        pattern: str = None,
-        task: str = None,
-        **tasks,
-    ):
-        """
-        Execute the task based on the specified pattern.
-
-        Args:
-            agents (Sequence[Agent], optional): A sequence of Agent objects. Defaults to None.
-            pattern (str, optional): The interaction pattern to follow. Defaults to None.
-            task (str, optional): The task to execute. Defaults to None.
-            **tasks: Additional tasks specified as keyword arguments.
-        """
-        try:
-            if agents:
-                self.flows.clear()  # Reset previous flows
-                if not self.parse_pattern(pattern):
-                    return  # Pattern parsing failed
-
-                for source, destinations in self.flows.items():
-                    for dest in destinations:
-                        dest_agent = self.self_find_agen_by_name(dest)
-                        task = tasks.get(dest, task)
-
-                        if self.custom_prompt:
-                            dest_agent.run(f"{task} {self.custom_prompt}")
-                        else:
-                            dest_agent.run(f"{task} (from {source})")
-            # else:
-            #     raise ValueError(
-            #         "No agents provided. Please provide agents to"
-            #         " execute the task."
-            #     )
-        except Exception as e:
-            logger.error(
-                f"Error: {e} try again by providing agents and" " pattern"
+        if "->" not in self.flow:
+            raise ValueError(
+                "Flow must include '->' to denote the direction of the task."
             )
-            raise e
+
+        agents_in_flow = []
+        tasks = self.flow.split("->")
+        for task in tasks:
+            agent_names = [name.strip() for name in task.split(",")]
+            for agent_name in agent_names:
+                if agent_name not in self.agents:
+                    raise ValueError(
+                        f"Agent '{agent_name}' is not registered."
+                    )
+                agents_in_flow.append(agent_name)
+
+        if len(set(agents_in_flow)) != len(agents_in_flow):
+            raise ValueError(
+                "Duplicate agent names in the flow are not allowed."
+            )
+
+        print("Flow is valid.")
+        return True
+
+    def run(self, task: str, *args, **kwargs):
+        """
+        Runs the swarm to rearrange the tasks.
+
+        Args:
+            task: The initial task to be processed.
+
+        Returns:
+            str: The final processed task.
+        """
+        if not self.validate_flow():
+            return "Invalid flow configuration."
+
+        tasks = self.flow.split("->")
+        current_task = task
+
+        for task in tasks:
+            agent_names = [name.strip() for name in task.split(",")]
+            if len(agent_names) > 1:
+                # Parallel processing
+                logger.info(f"Running agents in parallel: {agent_names}")
+                results = []
+                for agent_name in agent_names:
+                    agent = self.agents[agent_name]
+                    result = agent.run(current_task, *args, **kwargs)
+                    results.append(result)
+                current_task = "; ".join(results)
+            else:
+                # Sequential processing
+                logger.info(f"Running agents sequentially: {agent_names}")
+                agent = self.agents[agent_names[0]]
+                current_task = agent.run(current_task, *args, **kwargs)
+
+        return current_task
 
 
-# # Example usage
-# try:
-#     agents = [
-#         Agent(agent_name=f"b{i}") for i in range(1, 4)
-#     ]  # Creating agents b1, b2, b3
-#     agents.append(Agent(agent_name="d"))  # Adding agent d
-#     rearranger = Rearrange(agents)
+def rearrange(
+    agents: List[Agent], flow: str, task: str = None, *args, **kwargs
+):
+    """
+    Rearranges the given list of agents based on the specified flow.
 
-#     # Specifying a complex pattern for task execution
-#     rearranger.execute("d -> b1 b2 b3, b2 -> b3", "Analyze data")
-# except ValueError as e:
-#     logging.error(e)
+    Parameters:
+        agents (List[Agent]): The list of agents to be rearranged.
+        flow (str): The flow used for rearranging the agents.
+        task (str, optional): The task to be performed during rearrangement. Defaults to None.
+        *args: Additional positional arguments.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        The result of running the agent system with the specified task.
+
+    Example:
+        agents = [agent1, agent2, agent3]
+        flow = "agent1 -> agent2, agent3"
+        task = "Perform a task"
+        rearrange(agents, flow, task)
+    """
+    agent_system = AgentRearrange(
+        agents=agents, flow=flow, *args, **kwargs
+    )
+    return agent_system.run(task, *args, **kwargs)
+
+
+# # Initialize the director agent
+# director = Agent(
+#     agent_name="Director",
+#     system_prompt="Directs the tasks for the workers",
+#     llm=Anthropic(),
+#     max_loops=1,
+#     dashboard=False,
+#     streaming_on=True,
+#     verbose=True,
+#     stopping_token="<DONE>",
+#     state_save_file_type="json",
+#     saved_state_path="director.json",
+# )
+
+# # Initialize worker 1
+# worker1 = Agent(
+#     agent_name="Worker1",
+#     system_prompt="Generates a transcript for a youtube video on what swarms are",
+#     llm=Anthropic(),
+#     max_loops=1,
+#     dashboard=False,
+#     streaming_on=True,
+#     verbose=True,
+#     stopping_token="<DONE>",
+#     state_save_file_type="json",
+#     saved_state_path="worker1.json",
+# )
+
+# # Initialize worker 2
+# worker2 = Agent(
+#     agent_name="Worker2",
+#     system_prompt="Summarizes the transcript generated by Worker1",
+#     llm=Anthropic(),
+#     max_loops=1,
+#     dashboard=False,
+#     streaming_on=True,
+#     verbose=True,
+#     stopping_token="<DONE>",
+#     state_save_file_type="json",
+#     saved_state_path="worker2.json",
+# )
+
+
+# flow = "Director -> Worker1 -> Worker2"
+# agent_system = AgentRearrange(
+#     agents=[director, worker1, worker2], flow=flow
+# )
+# # Run the system
+# output = agent_system.run(
+#     "Create a format to express and communicate swarms of llms in a structured manner for youtube"
+# )

@@ -10,15 +10,6 @@ from swarms.utils.loguru_logger import logger
 
 
 class BaseWorkflow(BaseStructure):
-    """
-    Base class for workflows.
-
-    Attributes:
-        task_pool (list): A list to store tasks.
-
-
-    """
-
     def __init__(
         self,
         agents: List[Agent] = None,

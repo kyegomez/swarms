@@ -206,6 +206,33 @@ class BaseSwarm(ABC):
     def plan(self, task: str):
         """agents must individually plan using a workflow or pipeline"""
 
+    def self_find_agent_by_name(self, name: str):
+        """
+        Find an agent by its name.
+
+        Args:
+            name (str): The name of the agent to find.
+
+        Returns:
+            Agent: The Agent object if found, None otherwise.
+        """
+        for agent in self.agents:
+            if agent.agent_name == name:
+                return agent
+        return None
+
+    def agent_exists(self, name: str):
+        """
+        Check if an agent exists in the swarm.
+
+        Args:
+            name (str): The name of the agent to check.
+
+        Returns:
+            bool: True if the agent exists, False otherwise.
+        """
+        return self.self_find_agent_by_name(name) is not None
+
     def direct_message(
         self,
         message: str,

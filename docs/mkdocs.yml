@@ -112,7 +112,9 @@ nav:
     - Docker Setup: docker_setup.md
 - Swarms Cloud API:
   - Overview: "swarms_cloud/main.md"
+  - Available Models: "swarms_cloud/available_models.md"
   - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
+  - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
 - Swarms Framework [PY]:
   - Overview: "swarms/index.md"
   - DIY Build Your Own Agent: "diy_your_own_agent.md"

@@ -1,6 +1,6 @@
 from typing import Dict, List, Sequence
 
-from swarms.tools.tool import BaseTool
+from swarms.tools.base_tool import BaseTool
 from pydantic import BaseModel
 
 

@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import json
 import logging
 import os
@@ -7,7 +8,6 @@ import sys
 import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-
 import yaml
 from loguru import logger
 from pydantic import BaseModel
@@ -15,25 +15,23 @@ from termcolor import colored
 
 from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
+from swarms.prompts.aot_prompt import algorithm_of_thoughts_sop
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
 from swarms.prompts.worker_prompt import tool_usage_worker_prompt
 from swarms.structs.conversation import Conversation
-from swarms.structs.schemas import ManySteps, Step
 from swarms.structs.yaml_model import YamlModel
 from swarms.telemetry.user_utils import get_user_device_data
+from swarms.tools.base_tool import BaseTool
 from swarms.tools.code_interpreter import SubprocessCodeInterpreter
-from swarms.tools.exec_tool import execute_tool_by_name
 from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
     multi_base_model_to_openai_function,
 )
-from swarms.tools.tool import BaseTool
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.prompts.aot_prompt import algorithm_of_thoughts_sop
 
 
 # Utils
@@ -183,7 +181,7 @@ class Agent:
         agent_name: Optional[str] = "swarm-worker-01",
         agent_description: Optional[str] = None,
         system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
-        tools: List[BaseTool] = [],
+        tools: List[BaseTool] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
@@ -213,27 +211,34 @@ class Agent:
         logger_handler: Optional[Any] = sys.stderr,
         search_algorithm: Optional[Callable] = None,
         logs_to_filename: Optional[str] = None,
-        evaluator: Optional[Callable] = None,
+        evaluator: Optional[Callable] = None,  # Custom LLM or agent
         output_json: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_loop_condition: Optional[Callable] = None,
-        sentiment_threshold: Optional[float] = None,
+        sentiment_threshold: Optional[
+            float
+        ] = None,  # Evaluate on output using an external model
         custom_exit_command: Optional[str] = "exit",
         sentiment_analyzer: Optional[Callable] = None,
         limit_tokens_from_string: Optional[Callable] = None,
+        # [Tools]
         custom_tools_prompt: Optional[Callable] = None,
         tool_schema: ToolUsageType = None,
         output_type: agent_output_type = None,
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
-        list_tool_schemas: Optional[List[BaseModel]] = None,
+        list_base_models: Optional[List[BaseModel]] = None,
         metadata_output_type: str = "json",
         state_save_file_type: str = "json",
         chain_of_thoughts: bool = False,
         algorithm_of_thoughts: bool = False,
         tree_of_thoughts: bool = False,
         tool_choice: str = "auto",
+        execute_tool: bool = False,
+        rules: str = None,
+        planning: Optional[str] = False,
+        planning_prompt: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -299,13 +304,26 @@ class Agent:
         self.function_calling_type = function_calling_type
         self.output_cleaner = output_cleaner
         self.function_calling_format_type = function_calling_format_type
-        self.list_tool_schemas = list_tool_schemas
+        self.list_base_models = list_base_models
         self.metadata_output_type = metadata_output_type
         self.state_save_file_type = state_save_file_type
         self.chain_of_thoughts = chain_of_thoughts
         self.algorithm_of_thoughts = algorithm_of_thoughts
         self.tree_of_thoughts = tree_of_thoughts
         self.tool_choice = tool_choice
+        self.execute_tool = execute_tool
+        self.planning = planning
+        self.planning_prompt = planning_prompt
+
+        # Name
+        self.name = agent_name
+
+        # Description
+        self.description = agent_description
+        # Agentic stuff
+        self.reply = ""
+        self.question = None
+        self.answer = ""
 
         # The max_loops will be set dynamically if the dynamic_loop
         if self.dynamic_loops:
@@ -319,22 +337,33 @@ class Agent:
         # If the user inputs a list of strings for the sop then join them and set the sop
         if self.sop_list:
             self.sop = "\n".join(self.sop_list)
+            self.short_memory.add(role=self.user_name, content=self.sop)
+
+        if self.sop is not None:
+            self.short_memory.add(role=self.user_name, content=self.sop)
 
         # Memory
         self.feedback = []
 
         # Initialize the code executor
-        self.code_executor = SubprocessCodeInterpreter(
-            debug_mode=True,
-        )
+        if self.code_interpreter is not False:
+            self.code_executor = SubprocessCodeInterpreter(
+                debug_mode=True,
+            )
 
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
         if preset_stopping_token is not None:
             self.stopping_token = "<DONE>"
 
-        # If the stopping function is provided then set the stopping condition to the stopping function
+        # If the system prompt is provided then set the system prompt
+        # Initialize the short term memory
         self.short_memory = Conversation(
-            system_prompt=system_prompt, time_enabled=True, *args, **kwargs
+            system_prompt=system_prompt,
+            time_enabled=True,
+            user=user_name,
+            rules=rules,
+            *args,
+            **kwargs,
         )
 
         # If the docs exist then ingest the docs
@@ -353,35 +382,31 @@ class Agent:
         # if verbose:
         #     logger.setLevel(logging.INFO)
 
+        if tools is not None:
+            self.tool_executor = BaseTool(
+                verbose=True,
+                auto_execute_tool=execute_tool,
+                functions=tools,
+            )
+
         # If tools are provided then set the tool prompt by adding to sop
-        if self.tools:
+        if self.tools is not None:
             if custom_tools_prompt is not None:
                 tools_prompt = custom_tools_prompt(tools=self.tools)
-
-                self.short_memory.add(
-                    role=self.agent_name, content=tools_prompt
-                )
-
-            else:
-                tools_prompt = tool_usage_worker_prompt(tools=self.tools)
 
                 # Append the tools prompt to the short_term_memory
                 self.short_memory.add(
                     role=self.agent_name, content=tools_prompt
                 )
 
-        # If the long term memory is provided then set the long term memory prompt
+            else:
+                # Default tool prompt
+                tools_prompt = tool_usage_worker_prompt(tools=self.tools)
 
-        # Agentic stuff
-        self.reply = ""
-        self.question = None
-        self.answer = ""
-
-        # Initialize the llm with the conditional variables
-        # self.llm = llm(*args, **kwargs)
-
-        # Step cache
-        self.step_cache = []
+                # Append the tools prompt to the short_term_memory
+                self.short_memory.add(
+                    role=self.agent_name, content=tools_prompt
+                )
 
         # Set the logger handler
         if logger_handler:
@@ -396,42 +421,51 @@ class Agent:
 
         # logger.info("Creating Agent {}".format(self.agent_name))
 
-        # If the tool types
+        # If the tool types are provided
         if self.tool_schema is not None:
-            logger.info("Tool schema provided")
-            tool_schema_str = self.tool_schema_to_str(self.tool_schema)
-
-            print(tool_schema_str)
-
-            # Add to the short memory
-            logger.info(f"Adding tool schema to memory: {tool_schema_str}")
+            # Log the tool schema
+            logger.info(
+                "Tool schema provided, Automatically converting to OpenAI function"
+            )
+            tool_schema_str = self.pydantic_model_to_json_str(
+                self.tool_schema, indent=4
+            )
+            logger.info(f"Tool Schema: {tool_schema_str}")
+            # Add the tool schema to the short memory
             self.short_memory.add(
                 role=self.user_name, content=tool_schema_str
             )
 
-        # If a list of tool schemas:
-        if self.list_tool_schemas is not None:
-            logger.info("Tool schema provided")
-            tool_schema_str = self.tool_schemas_to_str(list_tool_schemas)
+        # If a list of tool schemas is provided
+        if self.list_base_models is not None:
+            logger.info(
+                "List of tool schemas provided, Automatically converting to OpenAI function"
+            )
+            tool_schemas = multi_base_model_to_openai_function(
+                self.list_base_models
+            )
 
-            # Add to the short memory
-            logger.info(f"Adding tool schema to memory: {tool_schema_str}")
+            # Convert the tool schemas to a string
+            tool_schemas = json.dumps(tool_schemas, indent=4)
+
+            # Add the tool schema to the short memory
+            logger.info("Adding tool schema to short memory")
             self.short_memory.add(
                 role=self.user_name, content=tool_schema_str
             )
-
-        # Name
-        self.name = agent_name
-
-        # Description
-        self.description = agent_description
 
         # If the algorithm of thoughts is enabled then set the sop to the algorithm of thoughts
-        if self.algorithm_of_thoughts is not None:
+        if self.algorithm_of_thoughts is not False:
             self.short_memory.add(
                 role=self.agent_name,
                 content=algorithm_of_thoughts_sop(objective=self.task),
             )
+
+        # Return the history
+        if return_history is True:
+            logger.info(f"Beginning of Agent {self.agent_name} History")
+            logger.info(self.short_memory.return_history_as_string())
+            logger.info(f"End of Agent {self.agent_name} History")
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -630,13 +664,13 @@ class Agent:
         print("\n")
 
     def streaming(self, content: str = None):
-        """prints each chunk of content as it is generated
+        """Prints each letter of the content as it is generated.
 
         Args:
-            content (str, optional): _description_. Defaults to None.
+            content (str, optional): The content to be streamed. Defaults to None.
         """
-        for chunk in content:
-            print(chunk, end="")
+        for letter in content:
+            print(letter, end="")
 
     ########################## FUNCTION CALLING ##########################
 
@@ -652,8 +686,15 @@ class Agent:
         """Convert a JSON string to a dictionary"""
         return json.loads(json_str)
 
-    def pydantic_model_to_json_str(self, model: BaseModel):
-        return str(base_model_to_openai_function(model))
+    def pydantic_model_to_json_str(
+        self, model: BaseModel, indent, *args, **kwargs
+    ):
+        return json.dumps(
+            base_model_to_openai_function(model),
+            indent=indent,
+            *args,
+            **kwargs,
+        )
 
     def dict_to_json_str(self, dictionary: dict):
         """Convert a dictionary to a JSON string"""
@@ -710,37 +751,11 @@ class Agent:
 
     ########################## FUNCTION CALLING ##########################
 
-    def _history(self, user_name: str, task: str) -> str:
-        """Generate the history for the history prompt
-
-        Args:
-            user_name (str): _description_
-            task (str): _description_
-
-        Returns:
-            str: _description_
-        """
-        history = [f"{user_name}: {task}"]
-        return history
-
-    def _dynamic_prompt_setup(self, dynamic_prompt: str, task: str) -> str:
-        """_dynamic_prompt_setup summary
-
-        Args:
-            dynamic_prompt (str): _description_
-            task (str): _description_
-
-        Returns:
-            str: _description_
-        """
-        dynamic_prompt = dynamic_prompt or self.construct_dynamic_prompt()
-        combined_prompt = f"{dynamic_prompt}\n{task}"
-        return combined_prompt
-
     def run(
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
+        function_map: Dict[str, Callable] = None,
         *args,
         **kwargs,
     ):
@@ -750,12 +765,15 @@ class Agent:
         try:
             self.activate_autonomous_agent()
 
-            if task:
+            # Check if the task is not None
+            if task is not None:
                 self.short_memory.add(role=self.user_name, content=task)
 
             loop_count = 0
+
+            # Clear the short memory
+            # self.short_memory.clear()
             response = None
-            step_pool = []
 
             while (
                 self.max_loops == "auto"
@@ -766,36 +784,85 @@ class Agent:
                 self.loop_count_print(loop_count, self.max_loops)
                 print("\n")
 
+                # Dynamic temperature
                 if self.dynamic_temperature_enabled:
                     self.dynamic_temperature()
 
+                # Task prompt
                 task_prompt = self.short_memory.return_history_as_string()
 
                 attempt = 0
                 success = False
                 while attempt < self.retry_attempts and not success:
                     try:
+                        if self.planning is not False:
+                            plan = self.llm(self.planning_prompt)
+
+                            # Add the plan to the memory
+                            self.short_memory.add(
+                                role=self.agent_name, content=plan
+                            )
+
+                            task_prompt = (
+                                self.short_memory.return_history_as_string()
+                            )
+
                         response_args = (
                             (task_prompt, *args)
                             if img is None
                             else (task_prompt, img, *args)
                         )
                         response = self.llm(*response_args, **kwargs)
-                        # print(response)
+
+                        # Print
+                        print(response)
+
+                        # Add the response to the memory
                         self.short_memory.add(
                             role=self.agent_name, content=response
                         )
 
-                        if self.tools:
+                        # Check if tools is not None
+                        if self.tools is not None:
                             # Extract code from markdown
                             response = extract_code_from_markdown(response)
 
-                            # Execute the tool by name
-                            execute_tool_by_name(
-                                response,
-                                self.tools,
-                                stop_token=self.stopping_token,
-                            )
+                            # Execute the tool by name [OLD VERISON]
+                            # execute_tool_by_name(
+                            #     response,
+                            #     self.tools,
+                            #     stop_token=self.stopping_token,
+                            # )
+
+                            # Try executing the tool
+                            if self.execute_tool is not False:
+                                try:
+                                    logger.info("Executing tool...")
+
+                                    # Execute the tool
+                                    out = self.tool_executor.execute_tool(
+                                        response,
+                                        function_map,
+                                    )
+
+                                    print(f"Tool Output: {out}")
+
+                                    # Add the output to the memory
+                                    self.short_memory.add(
+                                        role=self.agent_name,
+                                        content=out,
+                                    )
+
+                                except Exception as error:
+                                    logger.error(
+                                        f"Error executing tool: {error}"
+                                    )
+                                    print(
+                                        colored(
+                                            f"Error executing tool: {error}",
+                                            "red",
+                                        )
+                                    )
 
                         if self.code_interpreter:
                             # Extract code from markdown
@@ -819,6 +886,10 @@ class Agent:
                                 self.short_memory.return_history_as_string(),
                                 *args,
                                 **kwargs,
+                            )
+
+                            print(
+                                f"Response after code interpretation: {response}"
                             )
 
                         if self.evaluator:
@@ -856,10 +927,7 @@ class Agent:
                                 content=sentiment,
                             )
 
-                        if self.streaming:
-                            self.streaming(response)
-                        else:
-                            print(response)
+                        # print(response)
 
                         success = True  # Mark as successful to exit the retry loop
 
@@ -912,43 +980,30 @@ class Agent:
                     )
                     time.sleep(self.loop_interval)
 
-                # Save Step Metadata
-                active_step = Step(
-                    task_id=task_id(),
-                    step_id=loop_count,
-                    name=task,
-                    output=response,
-                    max_loops=self.max_loops,
-                )
-
-                step_pool.append(active_step)
-
-                # Save the step pool
-                # self.step_cache = step_pool
-
             if self.autosave:
                 logger.info("Autosaving agent state.")
                 self.save_state(self.saved_state_path, task)
 
             # Apply the cleaner function to the response
             if self.output_cleaner is not None:
+                logger.info("Applying output cleaner to response.")
                 response = self.output_cleaner(response)
+                logger.info(f"Response after output cleaner: {response}")
 
             # Prepare the output for the output model
             if self.output_type is not None:
+                logger.info("Preparing output for output model.")
                 response = self.prepare_output_for_output_model(response)
+                print(f"Response after output model: {response}")
 
-            # List of steps for this task
-            ManySteps(task_id=task_id(), steps=step_pool)
-
-            # Save Many steps
+            # print(response)
 
             return response
         except Exception as error:
             print(f"Error running agent: {error}")
             raise error
 
-    def __call__(self, task: str, img: str = None, *args, **kwargs):
+    def __call__(self, task: str = None, img: str = None, *args, **kwargs):
         """Call the agent
 
         Args:
@@ -956,45 +1011,10 @@ class Agent:
             img (str, optional): _description_. Defaults to None.
         """
         try:
-            self.run(task, img, *args, **kwargs)
+            return self.run(task, img, *args, **kwargs)
         except Exception as error:
             logger.error(f"Error calling agent: {error}")
-            raise
-
-    def agent_history_prompt(
-        self,
-        history: str = None,
-    ):
-        """
-        Generate the agent history prompt
-
-        Args:
-            system_prompt (str): The system prompt
-            history (List[str]): The history of the conversation
-
-        Returns:
-            str: The agent history prompt
-        """
-        if self.sop:
-            system_prompt = self.system_prompt
-            agent_history_prompt = f"""
-                role: system
-                {system_prompt}
-
-                Follow this standard operating procedure (SOP) to complete tasks:
-                {self.sop}
-                
-                {history}
-            """
-            return agent_history_prompt
-        else:
-            system_prompt = self.system_prompt
-            agent_history_prompt = f"""
-                System : {system_prompt}
-                
-                {history}
-            """
-            return agent_history_prompt
+            raise error
 
     def long_term_memory_prompt(self, query: str, *args, **kwargs):
         """
@@ -1026,35 +1046,39 @@ class Agent:
         logger.info(f"Adding memory: {message}")
         return self.short_memory.add(role=self.agent_name, content=message)
 
-    async def run_concurrent(self, tasks: List[str], **kwargs):
+    async def run_concurrent(self, task: str, *args, **kwargs):
         """
-        Run a batch of tasks concurrently and handle an infinite level of task inputs.
+        Run a task concurrently.
 
         Args:
-            tasks (List[str]): A list of tasks to run.
+            task (str): The task to run.
         """
         try:
-            logger.info(f"Running concurrent tasks: {tasks}")
-            task_coroutines = [
-                self.run_async(task, **kwargs) for task in tasks
-            ]
-            completed_tasks = await asyncio.gather(*task_coroutines)
-            logger.info(f"Completed tasks: {completed_tasks}")
-            return completed_tasks
+            logger.info(f"Running concurrent task: {task}")
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(self.run, task, *args, **kwargs)
+                result = await asyncio.wrap_future(future)
+                logger.info(f"Completed task: {result}")
+                return result
         except Exception as error:
-            print(
-                colored(
-                    (
-                        f"Error running agent: {error} while running"
-                        " concurrently"
-                    ),
-                    "red",
-                )
+            logger.error(
+                f"Error running agent: {error} while running concurrently"
             )
 
     def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
+        """
+        Generate responses for multiple input sets.
+
+        Args:
+            inputs (List[Dict[str, Any]]): A list of input dictionaries containing the necessary data for each run.
+
+        Returns:
+            List[str]: A list of response strings generated for each input set.
+
+        Raises:
+            Exception: If an error occurs while running the bulk tasks.
+        """
         try:
-            """Generate responses for multiple input sets."""
             logger.info(f"Running bulk tasks: {inputs}")
             return [self.run(**input_data) for input_data in inputs]
         except Exception as error:
@@ -1116,7 +1140,7 @@ class Agent:
             print(colored("------------------------", "cyan"))
         print(colored("End of Agent History", "cyan", attrs=["bold"]))
 
-    def step(self, task: str, **kwargs):
+    def step(self, task: str, *args, **kwargs):
         """
 
         Executes a single step in the agent interaction, generating a response
@@ -1133,9 +1157,9 @@ class Agent:
 
         """
         try:
-            logger.info(f"Running a single step: {task}")
+            logger.info(f"Running a step: {task}")
             # Generate the response using lm
-            response = self.llm(task, **kwargs)
+            response = self.llm(task, *args, **kwargs)
 
             # Update the agent's history with the new interaction
             if self.interactive:
@@ -1294,7 +1318,6 @@ class Agent:
                 "autosave": self.autosave,
                 "saved_state_path": self.saved_state_path,
                 "max_loops": self.max_loops,
-                "StepCache": self.step_cache,
                 "Task": task,
                 "Stopping Token": self.stopping_token,
                 "Dynamic Loops": self.dynamic_loops,
@@ -1339,7 +1362,7 @@ class Agent:
                 "function_calling_type": self.function_calling_type,
                 "output_cleaner": self.output_cleaner,
                 "function_calling_format_type": self.function_calling_format_type,
-                "list_tool_schemas": self.list_tool_schemas,
+                "list_base_models": self.list_base_models,
                 "metadata_output_type": self.metadata_output_type,
                 "user_meta_data": get_user_device_data(),
             }

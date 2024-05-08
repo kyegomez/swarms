@@ -1,4 +1,3 @@
-from swarms.tools.tool import BaseTool, Tool, StructuredTool, tool
 from swarms.tools.exec_tool import (
     AgentAction,
     AgentOutputParser,
@@ -32,14 +31,10 @@ from swarms.tools.py_func_to_openai_func_str import (
     Function,
     ToolFunction,
 )
-from swarms.tools.openai_tool_creator_decorator import create_openai_tool
-
+from swarms.tools.openai_tool_creator_decorator import tool
+from swarms.tools.base_tool import BaseTool
 
 __all__ = [
-    "BaseTool",
-    "Tool",
-    "StructuredTool",
-    "tool",
     "AgentAction",
     "AgentOutputParser",
     "BaseAgentOutputParser",
@@ -63,5 +58,6 @@ __all__ = [
     "get_required_params",
     "Function",
     "ToolFunction",
-    "create_openai_tool",
+    "tool",
+    "BaseTool",
 ]

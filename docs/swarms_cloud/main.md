@@ -6,7 +6,7 @@ The AI Chat Completion API processes text and image inputs to generate conversat
 
 ## API Endpoints
 
-### Chat Completion
+### Chat Completion URL
 `https://api.swarms.world`
 
 

@@ -51,7 +51,7 @@ def base_model_to_openai_function(
             schema["description"] = docstring.short_description
         else:
             schema["description"] = (
-                f"Correctly extracted `{pydantic_type.__class__.__name__.lower()}` with all "
+                f"Correctly extracted `{pydantic_type.__name__}` with all "
                 f"the required parameters with correct types"
             )
 
@@ -61,11 +61,11 @@ def base_model_to_openai_function(
     if output_str:
         out = {
             "function_call": {
-                "name": pydantic_type.__class__.__name__.lower(),
+                "name": pydantic_type.__name__,
             },
             "functions": [
                 {
-                    "name": pydantic_type.__class__.__name__.lower(),
+                    "name": pydantic_type.__name__,
                     "description": schema["description"],
                     "parameters": parameters,
                 },
@@ -76,11 +76,11 @@ def base_model_to_openai_function(
     else:
         return {
             "function_call": {
-                "name": pydantic_type.__class__.__name__.lower(),
+                "name": pydantic_type.__name__,
             },
             "functions": [
                 {
-                    "name": pydantic_type.__class__.__name__.lower(),
+                    "name": pydantic_type.__name__,
                     "description": schema["description"],
                     "parameters": parameters,
                 },

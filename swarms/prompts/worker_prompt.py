@@ -1,8 +1,9 @@
 import datetime
 from pydantic import BaseModel, Field
-from swarms.tools.tool import BaseTool
+from swarms.tools.base_tool import BaseTool
 from swarms.tools.tool_utils import scrape_tool_func_docs
 from typing import List
+from swarms.tools.base_tool import BaseTool
 
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -15,7 +16,7 @@ class Thoughts(BaseModel):
 
 class Command(BaseModel):
     name: str = Field(..., title="Command Name")
-    args: dict = Field({}, title="Command Arguments")
+    parameters: dict = Field({}, title="Command Arguments")
 
 
 class ResponseFormat(BaseModel):
@@ -30,14 +31,9 @@ tool_usage_browser = """
 
 ```json
 {
-  "thoughts": {
-    "text": "To check the weather in Miami, I will use the browser tool to search for 'Miami weather'.",
-    "reasoning": "The browser tool allows me to search the web, so I can look up the current weather conditions in Miami.", 
-    "plan": "Use the browser tool to search Google for 'Miami weather'. Parse the result to get the current temperature, conditions, etc. and format that into a readable weather report."
-  },
-  "command": {
+  "functions": {
     "name": "browser", 
-    "args": {
+    "parameters": {
       "query": "Miami weather"
     }
   }
@@ -50,14 +46,9 @@ tool_usage_terminal = """
 
 ```json
 {
-  "thoughts": {
-    "text": "To check the weather in Miami, I will use the browser tool to search for 'Miami weather'.",
-    "reasoning": "The browser tool allows me to search the web, so I can look up the current weather conditions in Miami.", 
-    "plan": "Use the browser tool to search Google for 'Miami weather'. Parse the result to get the current temperature, conditions, etc. and format that into a readable weather report."
-  },
-  "command": {
+  "functions": {
     "name": "terminal", 
-    "args": {
+    "parameters": {
       "code": "uptime"
     }
   }
@@ -69,22 +60,16 @@ tool_usage_terminal = """
 
 browser_and_terminal_tool = """
 ```
-{
-  "thoughts": {
-    "text": "To analyze the latest stock market trends, I need to fetch current stock data and then process it using a script.",
-    "reasoning": "Using the browser tool to retrieve stock data ensures I have the most recent information. Following this, the terminal tool can run a script that analyzes this data to identify trends.",
-    "plan": "First, use the browser to get the latest stock prices. Then, use the terminal to execute a data analysis script on the fetched data."
-  },
-  "commands": [
+  "functions": [
     {
       "name": "browser",
-      "args": {
+      "parameters": {
         "query": "download latest stock data for NASDAQ"
       }
     },
     {
       "name": "terminal",
-      "args": {
+      "parameters": {
         "cmd": "python analyze_stocks.py"
       }
     }
@@ -98,27 +83,22 @@ browser_and_terminal_tool = """
 browser_and_terminal_tool_two = """
 ```
 {
-  "thoughts": {
-    "text": "To prepare a monthly budget report, I need current expenditure data, process it, and calculate the totals and averages.",
-    "reasoning": "The browser will fetch the latest expenditure data. The terminal will run a processing script to organize the data, and the calculator will be used to sum up expenses and compute averages.",
-    "plan": "Download the data using the browser, process it with a terminal command, and then calculate totals and averages using the calculator."
-  },
-  "commands": [
+  "functions": [
     {
       "name": "browser",
-      "args": {
+      "parameters": {
         "query": "download monthly expenditure data"
       }
     },
     {
       "name": "terminal",
-      "args": {
+      "parameters": {
         "cmd": "python process_expenditures.py"
       }
     },
     {
       "name": "calculator",
-      "args": {
+      "parameters": {
         "operation": "sum",
         "numbers": "[output_from_process_expenditures]"
       }
@@ -142,12 +122,16 @@ def parse_tools(tools: List[BaseTool] = []):
 
 # Function to generate the worker prompt
 def tool_usage_worker_prompt(
-    current_time=time, tools: List[BaseTool] = []
+    current_time=time, tools: List[callable] = []
 ):
-    tool_docs = parse_tools(tools)
+    tool_docs = BaseTool(verbose=True, functions=tools)
 
     prompt = f"""
     **Date and Time**: {current_time}
+    
+    You have been assigned a task that requires the use of various tools to gather information and execute commands. 
+    Follow the instructions provided to complete the task effectively. This SOP is designed to guide you through the structured and effective use of tools. 
+    By adhering to this protocol, you will enhance your productivity and accuracy in task execution.
 
     ### Constraints
     - Only use the tools as specified in the instructions.
@@ -167,23 +151,23 @@ def tool_usage_worker_prompt(
     1. **Browser**
        - **Purpose**: To retrieve information from the internet.
        - **Usage**:
-         - `{{"name": "browser", "args": {{"query": "search query here"}}}}`
+         - `{{"name": "browser", "parameters": {{"query": "search query here"}}}}`
          - Example: Fetch current weather in London.
-         - Command: `{{"name": "browser", "args": {{"query": "London weather"}}}}`
+         - Command: `{{"name": "browser", "parameters": {{"query": "London weather"}}}}`
          
     2. **Terminal**
        - **Purpose**: To execute system commands.
        - **Usage**:
-         - `{{"name": "terminal", "args": {{"cmd": "system command here"}}}}`
+         - `{{"name": "terminal", "parameters": {{"cmd": "system command here"}}}}`
          - Example: Check disk usage on a server.
-         - Command: `{{"name": "terminal", "args": {{"cmd": "df -h"}}}}`
+         - Command: `{{"name": "terminal", "parameters": {{"cmd": "df -h"}}}}`
          
     3. **Custom Tool** (if applicable)
        - **Purpose**: Describe specific functionality.
        - **Usage**:
-         - `{{"name": "custom_tool", "args": {{"parameter": "value"}}}}`
+         - `{{"name": "custom_tool", "parameters": {{"parameter": "value"}}}}`
          - Example: Custom analytics tool.
-         - Command: `{{"name": "custom_tool", "args": {{"data": "analyze this data"}}}}`
+         - Command: `{{"name": "custom_tool", "parameters": {{"data": "analyze this data"}}}}`
 
 
     ### Usage Examples
@@ -221,8 +205,6 @@ def tool_usage_worker_prompt(
     
     {tool_docs}
     
-    This SOP is designed to guide you through the structured and effective use of tools. 
-    By adhering to this protocol, you will enhance your productivity and accuracy in task execution.
     """
 
     return prompt
