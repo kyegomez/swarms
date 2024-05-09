@@ -23,12 +23,6 @@ You can install `swarms` with pip in a
         pip install swarms
         ```
 
-!!! example "pip install (recommended)"
-        If the installation above doesn't work try the following with PIP3
-
-        ```bash
-        pip3 install -U swarms
-        ```
 
 
 !!! example "git clone (for development)"

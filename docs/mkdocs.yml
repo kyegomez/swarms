@@ -117,11 +117,6 @@ nav:
   - Overview: "swarms/index.md"
   - DIY Build Your Own Agent: "diy_your_own_agent.md"
   - Agents with Tools: "examples/tools_agent.md"
-  - swarms.agents:
-    - Agents:
-      - WorkerAgent: "swarms/agents/workeragent.md"
-      - AbstractAgent: "swarms/agents/abstractagent.md"
-      - ToolAgent: "swarms/agents/toolagent.md"
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
@@ -164,6 +159,7 @@ nav:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
 - Guides:
+  - Agents:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
@@ -189,9 +185,6 @@ nav:
       - The Swarm Memo: "corporate/swarm_memo.md"
       - Corporate Architecture: "corporate/architecture.md"
       - Flywheel: "corporate/flywheel.md"
-      - Bounties: "corporate/bounties.md"
-      - Purpose: "corporate/purpose.md"
-      - Roadmap: "corporate/roadmap.md"
     - Sales:
       - FAQ: "corporate/faq.md"
       - Distribution: "corporate/distribution"
@@ -200,13 +193,7 @@ nav:
       - Weaknesses: "corporate/failures.md"
       - Design: "corporate/design.md"
       - Metric: "corporate/metric.md"
-      - Research: "corporate/research.md"
-      - Demos: "corporate/demos.md"
-      - Checklist: "corporate/checklist.md"
     - Organization:
       - FrontEnd Member Onboarding: "corporate/front_end_contributors.md"
 - Contributors:
     - Contributing: "contributing.md"
-    - Why Swarms: "why_swarms.md"
-    - The Swarms Bounty System: "corporate/swarms_bounty_system.md"    
-    
