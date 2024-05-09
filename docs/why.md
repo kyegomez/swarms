@@ -52,43 +52,6 @@ At its core, the Swarms Framework operates on the principle of multi-agent colla
 
 The framework's architecture is modular and extensible, allowing for the seamless integration of new agents as they become available. This flexibility ensures that the system's capabilities can continuously expand and adapt to evolving enterprise needs and technological advancements.
 
-### Key Components of the Swarms Framework
-
-To orchestrate the collaboration of multiple agents effectively, the Swarms Framework comprises several key components:
-
-1.  Agent Registry
-2.  Task Orchestrator
-3.  Memory Manager
-4.  Communication Protocol
-5.  Monitoring and Analytics
-
-## Agent Registry
-
-The Agent Registry is a centralized repository that maintains a catalog of available agents and their associated capabilities. Each agent is registered with its unique identifier, specialized tasks, input/output requirements, and resource constraints. This registry serves as a reference point for the Task Orchestrator, enabling efficient agent selection and task assignment based on the specific requirements of a given workflow.
-
-## Task Orchestrator
-
-The Task Orchestrator is the central component responsible for coordinating the execution of complex workflows across multiple agents. It receives task requests, analyzes the requirements, and dynamically constructs a task graph by selecting and sequencing the appropriate agents from the Agent Registry.
-
-The Task Orchestrator employs sophisticated algorithms and heuristics to optimize task assignments, ensuring that the right agents are assigned to the appropriate tasks based on their capabilities and resource constraints. It also manages task dependencies, parallelization, and synchronization, enabling efficient execution of multi-threaded workflows.
-
-## Memory Manager
-
-The Memory Manager is a critical component that addresses the short-term memory constraints of individual agents. It acts as a centralized repository for storing and retrieving contextual information, enabling agents to access and build upon shared knowledge across multiple tasks and interactions.
-
-The Memory Manager leverages specialized agents, such as those based on Llama Index or Pinecone, to store and index information in a structured and efficient manner. This component also manages access control and data persistence, ensuring that sensitive information is handled securely and in compliance with enterprise policies.
-
-## Communication Protocol
-
-The Communication Protocol defines the rules and mechanisms for agents to exchange information and coordinate their actions. It establishes a common language and messaging format, enabling agents to seamlessly share data, request assistance, or delegate tasks to other agents within the framework.
-
-The Communication Protocol also handles error handling, message routing, and conflict resolution, ensuring that agents can collaborate effectively and recover gracefully from failures or inconsistencies.
-
-## Monitoring and Analytics
-
-The Monitoring and Analytics component provides comprehensive visibility into the operations of the Swarms Framework. It collects and analyzes data from various components, including agent performance metrics, resource utilization, task execution logs, and error reports.
-
-This component leverages advanced analytics and visualization tools to provide insights into system performance, bottlenecks, and areas for optimization. It also supports alerting and reporting mechanisms, enabling stakeholders to monitor the system's health and make informed decisions regarding capacity planning, resource allocation, and process improvements.
 
 ## Benefits of the Swarms Framework
 
