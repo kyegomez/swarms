@@ -96,13 +96,17 @@ markdown_extensions:
   - footnotes
 nav:
 - Home:
+  - Installation:
     - Overview: "index.md"
     - Install: "install.md"
-    - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
-    - Limitations of Individual Agents: "limits_of_individual_agents.md"
+    - Docker Setup: docker_setup.md
+  - Usage Examples:
     - Build an Agent: "diy_your_own_agent.md"
     - Build an Agent with tools: "examples/tools_agents.md"
-    - Docker Setup: docker_setup.md
+  - What & Why?:
+    - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
+    - Limitations of Individual Agents: "limits_of_individual_agents.md"
+    
 - Swarms Cloud API:
   - Overview: "swarms_cloud/main.md"
   - Available Models: "swarms_cloud/available_models.md"
