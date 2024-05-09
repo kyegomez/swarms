@@ -103,7 +103,7 @@ nav:
   - Usage Examples:
     - Build an Agent: "diy_your_own_agent.md"
     - Build an Agent with tools: "examples/tools_agents.md"
-  - What & Why?:
+  - Why does Swarms Exist?:
     - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
     
@@ -146,7 +146,6 @@ nav:
         - Task: "swarms/structs/task.md"
         - YamlModel: "swarms/structs/yaml_model.md"
       - Workflows:
-        - RecursiveWorkflow: "swarms/structs/recursiveworkflow.md"
         - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
         - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         - BaseWorkflow: "swarms/structs/baseworkflow.md"      
@@ -190,7 +189,7 @@ nav:
       - Distribution: "corporate/distribution"
     - Product:
       - SwarmCloud: "corporate/swarm_cloud.md"
-      - Weaknesses: "corporate/failures.md"
+      - Weaknesses of Langchain: "corporate/failures.md"
       - Design: "corporate/design.md"
       - Metric: "corporate/metric.md"
     - Organization:
