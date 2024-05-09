@@ -479,54 +479,40 @@ Sequential Workflow enables you to sequentially execute tasks with `Agent` and t
 ✅  Utilizes Agent class
 
 ```python
-import os
-
-from dotenv import load_dotenv
-
-from swarms import Agent, OpenAIChat, SequentialWorkflow
-
-load_dotenv()
-
-# Load the environment variables
-api_key = os.getenv("OPENAI_API_KEY")
+from swarms import Agent, SequentialWorkflow, Anthropic
 
 
-# Initialize the language agent
-llm = OpenAIChat(
-    temperature=0.5, model_name="gpt-4", openai_api_key=api_key, max_tokens=4000
+# Initialize the language model agent (e.g., GPT-3)
+llm = Anthropic()
+
+# Initialize agents for individual tasks
+agent1 = Agent(
+    agent_name="Blog generator",
+    system_prompt="Generate a blog post like stephen king",
+    llm=llm,
+    max_loops=1,
+    dashboard=False,
+    tools=[],
+)
+agent2 = Agent(
+    agent_name="summarizer",
+    system_prompt="Sumamrize the blog post",
+    llm=llm,
+    max_loops=1,
+    dashboard=False,
+    tools=[],
 )
 
-
-# Initialize the agent with the language agent
-agent1 = Agent(llm=llm, max_loops=1)
-
-# Create another agent for a different task
-agent2 = Agent(llm=llm, max_loops=1)
-
-# Create another agent for a different task
-agent3 = Agent(llm=llm, max_loops=1)
-
-# Create the workflow
-workflow = SequentialWorkflow(max_loops=1)
-
-# Add tasks to the workflow
-workflow.add(
-    agent1,
-    "Generate a 10,000 word blog on health and wellness.",
-)
-
-# Suppose the next task takes the output of the first task as input
-workflow.add(
-    agent2,
-    "Summarize the generated blog",
+# Create the Sequential workflow
+workflow = SequentialWorkflow(
+    agents=[agent1, agent2], max_loops=1, verbose=False
 )
 
 # Run the workflow
-workflow.run()
+workflow.run(
+    "Generate a blog post on how swarms of agents can help businesses grow."
+)
 
-# Output the results
-for task in workflow.tasks:
-    print(f"Task: {task.description}, Result: {task.result}")
 ```
 
 
