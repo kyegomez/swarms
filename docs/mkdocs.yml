@@ -124,6 +124,7 @@ nav:
     - Language:
       - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"
+      - Llava3: "swarms/models/llama3.md"
       - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
       - OpenAI: "swarms/models/openai.md"

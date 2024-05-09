@@ -114,9 +114,8 @@ rearrange(agents, flow, task)
 Here's an example of how to use the `AgentRearrange` class and the `rearrange` function:
 
 ```python
-from swarms import Agent
+from swarms import Agent, AgentRearrange, rearrange
 from typing import List
-from agent_rearrange import AgentRearrange, rearrange
 
 # Initialize the director agent
 director = Agent(
