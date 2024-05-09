@@ -106,6 +106,7 @@ nav:
 - Home:
     - Overview: "index.md"
     - Install: "install.md"
+    - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
     - Build an Agent: "diy_your_own_agent.md"
     - Build an Agent with tools: "examples/tools_agents.md"
