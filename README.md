@@ -16,7 +16,7 @@ Individual agents face five significant challenges that hinder their deployment 
 ----
 
 ## Install
-`$ pip3 install -U swarms`
+`$ pip3 install -U swarms==4.9.7`
 
 ---
 

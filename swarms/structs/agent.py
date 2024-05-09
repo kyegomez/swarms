@@ -1332,7 +1332,7 @@ class Agent:
                 "pdf_path": self.pdf_path,
                 "list_of_pdf": self.list_of_pdf,
                 "tokenizer": self.tokenizer,
-                "long_term_memory": self.long_term_memory,
+                # "long_term_memory": self.long_term_memory,
                 "preset_stopping_token": self.preset_stopping_token,
                 "traceback": self.traceback,
                 "traceback_handlers": self.traceback_handlers,

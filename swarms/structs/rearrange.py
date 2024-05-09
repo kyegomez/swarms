@@ -1,4 +1,4 @@
-from swarms import Agent
+from swarms.structs.agent import Agent
 from typing import List
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger

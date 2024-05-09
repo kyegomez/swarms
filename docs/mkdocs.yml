@@ -150,26 +150,18 @@ nav:
       - Foundational Structures:
         - Agent: "swarms/structs/agent.md"
         - basestructure: "swarms/structs/basestructure.md"
-        - taskinput: "swarms/structs/taskinput.md"
-        - stepinput: "swarms/structs/stepinput.md"
-        - artifact: "swarms/structs/artifact.md"
-        - task: "swarms/structs/task.md"
-        - Task Queue Base: "swarms/structs/taskqueuebase.md"
+        - Task: "swarms/structs/task.md"
         - YamlModel: "swarms/structs/yaml_model.md"
-        - AgentRearrange: "swarms/structs/agent_rearrange.md"
       - Workflows:
-        - recursiveworkflow: "swarms/structs/recursiveworkflow.md"
-        - concurrentworkflow: "swarms/structs/concurrentworkflow.md"
-        - nonlinearworkflow: "swarms/structs/nonlinearworkflow.md"
-        - sequential_workflow: "swarms/structs/sequential_workflow.md"
-        - workflow: "swarms/structs/workflow.md"
-        - baseworkflow: "swarms/structs/baseworkflow.md"      
+        - RecursiveWorkflow: "swarms/structs/recursiveworkflow.md"
+        - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
+        - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
+        - BaseWorkflow: "swarms/structs/baseworkflow.md"      
       - Multi Agent Architectures:
-        - conversation: "swarms/structs/conversation.md"
-        - groupchat: "swarms/structs/groupchat.md"
-        - swarmnetwork: "swarms/structs/swarmnetwork.md"
-        - groupchatmanager: "swarms/structs/groupchatmanager.md"
+        - Conversation: "swarms/structs/conversation.md"
+        - SwarmNetwork: "swarms/structs/swarmnetwork.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
+        - AgentRearrange: "swarms/structs/agent_rearrange.md"
   - swarms.memory:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
@@ -191,7 +183,8 @@ nav:
       - Overview: "applications/customer_support.md"
     - Marketing: 
       - Overview: "applications/marketing_agencies.md" 
-    - Swarm of Automated Business Analysis: "applications/business-analyst-agent.md"
+    - Operations:
+      - Swarm of Automated Business Analysis: "applications/business-analyst-agent.md"
 - Corporate:
     - Corporate Documents:
       - Data Room: "corporate/data_room.md"
