@@ -41,14 +41,6 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
-  # - minify_html
-  # - redirects
-  # - mkdocs-simple-hooks
-  # - awesome-pages
-  # - mkdocs-versioning
-  # # - mkdocs-include-markdown-plugin
-  # - enumerate-headings
-  # - autolinks
 
 copyright: "&copy; TGSC, Corporation."
 extra_css:
@@ -150,7 +142,7 @@ nav:
   - swarms.structs:
       - Foundational Structures:
         - Agent: "swarms/structs/agent.md"
-        - basestructure: "swarms/structs/basestructure.md"
+        - BaseStructure: "swarms/structs/basestructure.md"
         - Task: "swarms/structs/task.md"
         - YamlModel: "swarms/structs/yaml_model.md"
       - Workflows:
@@ -185,7 +177,7 @@ nav:
     - Marketing: 
       - Overview: "applications/marketing_agencies.md" 
     - Operations:
-      - Swarm of Automated Business Analysis: "applications/business-analyst-agent.md"
+      - Intoducing The Swarm of Automated Business Analyts: "applications/business-analyst-agent.md"
 - Corporate:
     - Corporate Documents:
       - Data Room: "corporate/data_room.md"
