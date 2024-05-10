@@ -16,7 +16,7 @@ Swarms provides you with all the building blocks you need to build reliable, pro
 ## 💻 Install
 
 You can install `swarms` with pip in a
-[**Python>=3.8**](https://www.python.org/) environment.
+[**Python>=3.10**](https://www.python.org/) environment.
 
 !!! example "pip install (recommended)"
 

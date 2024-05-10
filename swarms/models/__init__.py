@@ -15,9 +15,7 @@ from swarms.models.mpt import MPT7B  # noqa: E402
 from swarms.models.nougat import Nougat  # noqa: E402
 from swarms.models.palm import GooglePalm as Palm  # noqa: E402
 from swarms.models.openai_tts import OpenAITTS  # noqa: E402
-from swarms.models.popular_llms import (
-    AnthropicChat as Anthropic,
-)
+from swarms.models.popular_llms import Anthropic as Anthropic
 from swarms.models.popular_llms import (
     AzureOpenAILLM as AzureOpenAI,
 )

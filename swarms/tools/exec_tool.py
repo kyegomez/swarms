@@ -7,7 +7,7 @@ from typing import Dict, List, NamedTuple
 from langchain.schema import BaseOutputParser
 from pydantic import ValidationError
 
-from swarms.tools.tool import BaseTool
+from swarms.tools.base_tool import BaseTool
 
 from swarms.utils.loguru_logger import logger
 

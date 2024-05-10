@@ -3,7 +3,7 @@ from typing import List
 from langchain_experimental.autonomous_agents import AutoGPT
 
 from swarms.structs.agent import Agent
-from swarms.tools.tool import BaseTool
+from swarms.tools.base_tool import BaseTool
 from swarms.utils.decorators import error_decorator, timing_decorator
 
 

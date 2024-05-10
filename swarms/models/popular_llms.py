@@ -12,7 +12,7 @@ from langchain_community.llms.octoai_endpoint import OctoAIEndpoint
 from langchain.llms.replicate import Replicate
 
 
-class AnthropicChat(Anthropic):
+class Anthropic(Anthropic):
     def __call__(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 

@@ -3,7 +3,7 @@ import re
 from typing import Any, List
 
 from swarms.prompts.tools import SCENARIOS
-from swarms.tools.tool import BaseTool
+from swarms.tools.base_tool import BaseTool
 import inspect
 from typing import Callable
 

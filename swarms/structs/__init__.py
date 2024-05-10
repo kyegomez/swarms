@@ -75,7 +75,7 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
-from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.structs.rearrange import AgentRearrange, rearrange
 
 from swarms.structs.yaml_model import (
     get_type_name,
@@ -155,4 +155,5 @@ __all__ = [
     "pydantic_type_to_yaml_schema",
     "YamlModel",
     "MessagePool",
+    "rearrange"
 ]

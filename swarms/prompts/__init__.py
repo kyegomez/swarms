@@ -7,7 +7,6 @@ from swarms.prompts.operations_agent_prompt import (
     OPERATIONS_AGENT_PROMPT,
 )
 from swarms.prompts.product_agent_prompt import PRODUCT_AGENT_PROMPT
-from swarms.prompts.schema_generator import SchemaGenerator
 
 __all__ = [
     "CODE_INTERPRETER",
@@ -17,5 +16,4 @@ __all__ = [
     "OPERATIONS_AGENT_PROMPT",
     "PRODUCT_AGENT_PROMPT",
     "DOCUMENTATION_WRITER_SOP",
-    "SchemaGenerator",
 ]

@@ -1,107 +1,91 @@
-from dataclasses import dataclass, field
-from typing import List, Optional
-from swarms.structs.agent import Agent
-from swarms.structs.conversation import Conversation
+import time
+import json
+
 from swarms.utils.loguru_logger import logger
-from swarms.utils.try_except_wrapper import try_except_wrapper
 from swarms.structs.base_workflow import BaseWorkflow
+from pydantic import BaseModel, Field
+from typing import List, Dict
+from swarms.structs.agent import Agent
 
 
-@dataclass
+class StepSequentialWorkflow(BaseModel):
+    agent_names: List[str] = Field(
+        ..., description="List of agent names to include in the workflow."
+    )
+    max_loops: int = Field(
+        1, description="Maximum number of loops to run the workflow."
+    )
+    verbose: bool = Field(
+        False, description="Whether to log debug information."
+    )
+    steps: Dict = Field(
+        ...,
+        description="Dictionary of steps for the workflow with each agent and its parameters.",
+    )
+    time: str = Field(
+        time.strftime("%Y-%m-%d %H:%M:%S"),
+        description="Time of the workflow.",
+    )
+
+
+# Define a class to handle the sequential workflow
 class SequentialWorkflow(BaseWorkflow):
-    name: str = "Sequential Workflow"
-    description: str = None
-    objective: str = None
-    max_loops: int = 1
-    autosave: bool = False
-    saved_state_filepath: Optional[str] = "sequential_workflow_state.json"
-    restore_state_filepath: Optional[str] = None
-    dashboard: bool = False
-    agent_pool: List[Agent] = field(default_factory=list)
-    # task_pool: List[str] = field(
-    #     default_factory=list
-    # )  # List to store tasks
+    def __init__(
+        self,
+        agents: List[Agent] = None,
+        max_loops: int = 2,
+        verbose: bool = False,
+        *args,
+        **kwargs,
+    ):
+        """
+        Initializes a SequentialWorkflow with a list of agents.
 
-    def __post_init__(self):
-        super().__init__()
-        self.conversation = Conversation(
-            time_enabled=True,
-            autosave=True,
+        :param agents: List of agents to include in the workflow.
+        """
+        self.agents = agents
+        self.max_loops = max_loops
+
+        if verbose:
+            logger.add("sequential_workflow.log", level="DEBUG")
+
+        if not self.agents:
+            raise ValueError("No agents provided for workflow")
+
+        if not self.max_loops:
+            self.max_loops = 1
+
+        # Log all the agents in the workflow
+        logger.info(
+            f"Initialized SequentialWorkflow with agents: {json.dumps([str(agent.agent_name) for agent in self.agents])}"
         )
 
-        # If objective exists then set it
-        if self.objective is not None:
-            self.conversation.system_prompt = self.objective
+    def run(self, task: str, *args, **kwargs):
+        """
+        Run the workflow starting with an initial task.
 
-    def workflow_bootup(self):
-        logger.info(f"{self.name} is activating...")
-
-        for agent in self.agent_pool:
-            logger.info(f"Agent {agent.agent_name} Activated")
-
-    @try_except_wrapper
-    def add(self, task: str, agent: Agent, *args, **kwargs):
-        self.agent_pool.append(agent)
-        # self.task_pool.append(
-        #     task
-        # )  # Store tasks corresponding to each agent
-
-        return self.conversation.add(
-            role=agent.agent_name, content=task, *args, **kwargs
-        )
-
-    def reset_workflow(self) -> None:
-        self.conversation = {}
-
-    @try_except_wrapper
-    def run(self):
-        if not self.agent_pool:
-            raise ValueError("No agents have been added to the workflow.")
-
-        self.workflow_bootup()
-        loops = 0
-        while loops < self.max_loops:
-            previous_output = None  # Initialize to None; will hold the output of the previous agent
-            for i, agent in enumerate(self.agent_pool):
-                # Fetch the last task specific to this agent from the conversation history
-                tasks_for_agent = [
-                    msg["content"]
-                    for msg in self.conversation.conversation_history
-                    if msg["role"] == agent.agent_name
-                ]
-                task = tasks_for_agent[-1] if tasks_for_agent else None
-
-                if task is None and previous_output is not None:
-                    # If no specific task for this agent, use the output from the previous agent
-                    task = previous_output
-
-                if task is None:
-                    # If no initial task is found, and there's no previous output, log error and skip this agent
+        :param task: The task to start the workflow.
+        """
+        logger.info(f"Starting workflow with task: {task}")
+        current_output = task
+        for agent in self.agents:
+            count = 0
+            while count < self.max_loops:
+                try:
+                    logger.info(f"Running agent {agent.agent_name}")
+                    current_output = agent.run(
+                        current_output, *args, **kwargs
+                    )
+                    print(current_output)
+                    count += 1
+                    logger.debug(
+                        f"Agent {agent.agent_name} completed loop {count} "
+                    )  # Log partial output for brevity
+                except Exception as e:
                     logger.error(
-                        f"No initial task found for agent {agent.agent_name}, and no previous output to use."
+                        f"Error occurred while running agent {agent.agent_name}: {str(e)}"
                     )
-                    continue
-
-                logger.info(
-                    f" \n Agent {i+1} ({agent.agent_name}) is executing the task: {task} \n"
-                )
-
-                # Space the log
-
-                output = agent.run(task)
-                if output is None:
-                    logger.error(
-                        f"Agent {agent.agent_name} returned None for task: {task}"
-                    )
-                    raise ValueError(
-                        f"Agent {agent.agent_name} returned None."
-                    )
-
-                # Update the conversation history with the new output using agent's role
-                self.conversation.add(
-                    role=agent.agent_name, content=output
-                )
-                previous_output = output  # Update the previous_output to pass to the next agent
-
-            loops += 1
-        return self.conversation.return_history_as_string()
+                    raise
+            logger.info(f"Finished running agent {agent.agent_name}")
+        logger.info("Finished running workflow")
+        return current_output

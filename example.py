@@ -1,14 +1,14 @@
-from swarms import Agent, Anthropic
+from swarms import Agent, OpenAIChat
 
 
-# Initialize the agemt
+# Initialize the agent
 agent = Agent(
     agent_name="Transcript Generator",
     agent_description=(
         "Generate a transcript for a youtube video on what swarms" " are!"
     ),
-    llm=Anthropic(),
-    max_loops=3,
+    llm=OpenAIChat(),
+    max_loops="auto",
     autosave=True,
     dashboard=False,
     streaming_on=True,
@@ -24,9 +24,3 @@ out = agent.run(
     "Generate a transcript for a youtube video on what swarms are!"
 )
 print(out)
-
-# Save the state
-check = agent.save_state(
-    "transcript_generator.json",
-    "Generate a transcript for a youtube video on what swarms are!",
-)
