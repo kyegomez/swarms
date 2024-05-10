@@ -155,5 +155,5 @@ __all__ = [
     "pydantic_type_to_yaml_schema",
     "YamlModel",
     "MessagePool",
-    "rearrange"
+    "rearrange",
 ]

@@ -314,11 +314,10 @@ class Agent:
         self.execute_tool = execute_tool
         self.planning = planning
         self.planning_prompt = planning_prompt
-
+        
+        
         # Name
         self.name = agent_name
-
-        # Description
         self.description = agent_description
         # Agentic stuff
         self.reply = ""
@@ -333,14 +332,6 @@ class Agent:
         # If multimodal = yes then set the sop to the multimodal sop
         if self.multi_modal:
             self.sop = MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1
-
-        # If the user inputs a list of strings for the sop then join them and set the sop
-        if self.sop_list:
-            self.sop = "\n".join(self.sop_list)
-            self.short_memory.add(role=self.user_name, content=self.sop)
-
-        if self.sop is not None:
-            self.short_memory.add(role=self.user_name, content=self.sop)
 
         # Memory
         self.feedback = []
@@ -451,7 +442,7 @@ class Agent:
             # Add the tool schema to the short memory
             logger.info("Adding tool schema to short memory")
             self.short_memory.add(
-                role=self.user_name, content=tool_schema_str
+                role=self.user_name, content=tool_schemas
             )
 
         # If the algorithm of thoughts is enabled then set the sop to the algorithm of thoughts
@@ -466,6 +457,15 @@ class Agent:
             logger.info(f"Beginning of Agent {self.agent_name} History")
             logger.info(self.short_memory.return_history_as_string())
             logger.info(f"End of Agent {self.agent_name} History")
+            
+        # If the user inputs a list of strings for the sop then join them and set the sop
+        if self.sop_list:
+            self.sop = "\n".join(self.sop_list)
+            self.short_memory.add(role=self.user_name, content=self.sop)
+
+        if self.sop is not None:
+            self.short_memory.add(role=self.user_name, content=self.sop)
+
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
