@@ -116,30 +116,38 @@ class AgentRearrange(BaseSwarm):
         Returns:
             str: The final processed task.
         """
-        if not self.validate_flow():
-            return "Invalid flow configuration."
+        try:
+            if not self.validate_flow():
+                return "Invalid flow configuration."
 
-        tasks = self.flow.split("->")
-        current_task = task
+            tasks = self.flow.split("->")
+            current_task = task
 
-        for task in tasks:
-            agent_names = [name.strip() for name in task.split(",")]
-            if len(agent_names) > 1:
-                # Parallel processing
-                logger.info(f"Running agents in parallel: {agent_names}")
-                results = []
-                for agent_name in agent_names:
-                    agent = self.agents[agent_name]
-                    result = agent.run(current_task, *args, **kwargs)
-                    results.append(result)
-                current_task = "; ".join(results)
-            else:
-                # Sequential processing
-                logger.info(f"Running agents sequentially: {agent_names}")
-                agent = self.agents[agent_names[0]]
-                current_task = agent.run(current_task, *args, **kwargs)
+            for task in tasks:
+                agent_names = [name.strip() for name in task.split(",")]
+                if len(agent_names) > 1:
+                    # Parallel processing
+                    logger.info(
+                        f"Running agents in parallel: {agent_names}"
+                    )
+                    results = []
+                    for agent_name in agent_names:
+                        agent = self.agents[agent_name]
+                        result = agent.run(current_task, *args, **kwargs)
+                        results.append(result)
+                    current_task = "; ".join(results)
+                else:
+                    # Sequential processing
+                    logger.info(
+                        f"Running agents sequentially: {agent_names}"
+                    )
+                    agent = self.agents[agent_names[0]]
+                    current_task = agent.run(current_task, *args, **kwargs)
 
-        return current_task
+            return current_task
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+            return e
 
 
 def rearrange(

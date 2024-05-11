@@ -314,8 +314,7 @@ class Agent:
         self.execute_tool = execute_tool
         self.planning = planning
         self.planning_prompt = planning_prompt
-        
-        
+
         # Name
         self.name = agent_name
         self.description = agent_description
@@ -457,7 +456,7 @@ class Agent:
             logger.info(f"Beginning of Agent {self.agent_name} History")
             logger.info(self.short_memory.return_history_as_string())
             logger.info(f"End of Agent {self.agent_name} History")
-            
+
         # If the user inputs a list of strings for the sop then join them and set the sop
         if self.sop_list:
             self.sop = "\n".join(self.sop_list)
@@ -465,7 +464,6 @@ class Agent:
 
         if self.sop is not None:
             self.short_memory.add(role=self.user_name, content=self.sop)
-
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""

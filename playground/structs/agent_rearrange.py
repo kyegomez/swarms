@@ -1,7 +1,6 @@
 from swarms import Agent, AgentRearrange, rearrange, Anthropic
 
 
-
 # Initialize the director agent
 
 director = Agent(
