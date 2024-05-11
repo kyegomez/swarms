@@ -80,7 +80,7 @@ memory = ChromaDB(
     docs_folder="docs",
 )
 
-# Initializing the agent with the Gemini instance and other parameters
+# Initializing the agent with the OpenAI instance and other parameters
 agent = Agent(
     agent_name="Covid-19-Chat",
     agent_description=(
@@ -124,7 +124,7 @@ def search_api(query: str):
     # Add your logic here
     return query
 
-# Initializing the agent with the Gemini instance and other parameters
+# Initializing the agent with the OpenAi instance and other parameters
 agent = Agent(
     agent_name="Covid-19-Chat",
     agent_description=(
@@ -756,7 +756,7 @@ print(f"Task result: {task.result}")
 
 
 
-### `BlockList`
+### `Blockslist`
 - Modularity and Flexibility: BlocksList allows users to create custom swarms by adding or removing different classes or functions as blocks. This means users can easily tailor the functionality of their swarm to suit their specific needs.
 
 - Ease of Management: With methods to add, remove, update, and retrieve blocks, BlocksList provides a straightforward way to manage the components of a swarm. This makes it easier to maintain and update the swarm over time.
@@ -858,7 +858,7 @@ print(inference)
 
 
 ## Majority Voting
-Multiple-agents will evaluate an idea based off of an parsing or evaluation function. From papers like "[More agents is all you need](https://arxiv.org/pdf/2402.05120.pdf)
+Multiple-agents will evaluate an idea based off of an parsing or evaluation function. From papers like "[More agents is all you need"](https://arxiv.org/pdf/2402.05120.pdf)
 
 ```python
 from swarms import Agent, MajorityVoting, ChromaDB, Anthropic
@@ -1173,7 +1173,7 @@ autoswarm.run("Analyze these financial data and give me a summary")
 Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships
 
 ```python
-from swarms import Agent, Anthropic, AgentRearrange, 
+from swarms import Agent, Anthropic, AgentRearrange 
 
 ## Initialize the workflow
 agent = Agent(

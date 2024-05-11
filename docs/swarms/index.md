@@ -763,7 +763,7 @@ print(f"Task result: {task.result}")
 
 
 
-### `BlockList`
+### `BlocksList`
 - Modularity and Flexibility: BlocksList allows users to create custom swarms by adding or removing different classes or functions as blocks. This means users can easily tailor the functionality of their swarm to suit their specific needs.
 
 - Ease of Management: With methods to add, remove, update, and retrieve blocks, BlocksList provides a straightforward way to manage the components of a swarm. This makes it easier to maintain and update the swarm over time.
