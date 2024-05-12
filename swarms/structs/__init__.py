@@ -84,6 +84,7 @@ from swarms.structs.yaml_model import (
     YamlModel,
 )
 from swarms.structs.message_pool import MessagePool
+from swarms.structs.round_robin import RoundRobinSwarm
 
 __all__ = [
     "Agent",
@@ -156,4 +157,5 @@ __all__ = [
     "YamlModel",
     "MessagePool",
     "rearrange",
+    "RoundRobinSwarm",
 ]

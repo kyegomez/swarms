@@ -154,6 +154,7 @@ nav:
         - SwarmNetwork: "swarms/structs/swarmnetwork.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
+        - RoundRobin: "swarms/structs/round_robin_swarm.md"
   - swarms.memory:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
