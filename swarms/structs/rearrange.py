@@ -1,5 +1,7 @@
-from swarms.structs.agent import Agent
 from typing import List
+
+from swarms.memory.base_vectordb import BaseVectorDatabase
+from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
 
@@ -27,6 +29,9 @@ class AgentRearrange(BaseSwarm):
         flow: str = None,
         max_loops: int = 1,
         verbose: bool = True,
+        memory_system: BaseVectorDatabase = None,
+        *args,
+        **kwargs,
     ):
         """
         Initializes the AgentRearrange object.
@@ -40,8 +45,14 @@ class AgentRearrange(BaseSwarm):
         self.verbose = verbose
         self.max_loops = max_loops
 
+        # Verbose is True
         if verbose is True:
             logger.add("agent_rearrange.log")
+
+        # Memory system
+        if memory_system is not None:
+            for agent in self.agents.values():
+                agent.long_term_memory = memory_system
 
     def add_agent(self, agent: Agent):
         """
@@ -106,7 +117,7 @@ class AgentRearrange(BaseSwarm):
         print("Flow is valid.")
         return True
 
-    def run(self, task: str, *args, **kwargs):
+    def run(self, task: str = None, img: str = None, *args, **kwargs):
         """
         Runs the swarm to rearrange the tasks.
 
@@ -123,26 +134,37 @@ class AgentRearrange(BaseSwarm):
             tasks = self.flow.split("->")
             current_task = task
 
-            for task in tasks:
-                agent_names = [name.strip() for name in task.split(",")]
-                if len(agent_names) > 1:
-                    # Parallel processing
-                    logger.info(
-                        f"Running agents in parallel: {agent_names}"
-                    )
-                    results = []
-                    for agent_name in agent_names:
-                        agent = self.agents[agent_name]
-                        result = agent.run(current_task, *args, **kwargs)
-                        results.append(result)
-                    current_task = "; ".join(results)
-                else:
-                    # Sequential processing
-                    logger.info(
-                        f"Running agents sequentially: {agent_names}"
-                    )
-                    agent = self.agents[agent_names[0]]
-                    current_task = agent.run(current_task, *args, **kwargs)
+            loop_count = 0
+            while loop_count < self.max_loops:
+                for task in tasks:
+                    agent_names = [
+                        name.strip() for name in task.split(",")
+                    ]
+                    if len(agent_names) > 1:
+                        # Parallel processing
+                        logger.info(
+                            f"Running agents in parallel: {agent_names}"
+                        )
+                        results = []
+                        for agent_name in agent_names:
+                            agent = self.agents[agent_name]
+                            result = agent.run(
+                                current_task, img, *args, **kwargs
+                            )
+                            results.append(result)
+
+                        current_task = "; ".join(results)
+                    else:
+                        # Sequential processing
+                        logger.info(
+                            f"Running agents sequentially: {agent_names}"
+                        )
+                        agent = self.agents[agent_names[0]]
+                        current_task = agent.run(
+                            current_task, img, *args, **kwargs
+                        )
+
+                loop_count += 1
 
             return current_task
         except Exception as e:
@@ -151,7 +173,11 @@ class AgentRearrange(BaseSwarm):
 
 
 def rearrange(
-    agents: List[Agent], flow: str, task: str = None, *args, **kwargs
+    agents: List[Agent] = None,
+    flow: str = None,
+    task: str = None,
+    *args,
+    **kwargs,
 ):
     """
     Rearranges the given list of agents based on the specified flow.

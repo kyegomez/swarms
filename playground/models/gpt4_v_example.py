@@ -1,11 +1,35 @@
-from swarms.models.gpt4v import GPT4Vision
+import os  # Import the os module for working with the operating system
 
-gpt4vision = GPT4Vision(openai_api_key="")
+from dotenv import (
+    load_dotenv,  # Import the load_dotenv function from the dotenv module
+)
 
-img = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/640px-VFPt_Solenoid_correct2.svg.png"
+from swarms import (
+    GPT4VisionAPI,  # Import the GPT4VisionAPI class from the swarms module
+)
 
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment variables
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Create an instance of the GPT4VisionAPI class with the API key and model name
+gpt4vision = GPT4VisionAPI(
+    openai_api_key=api_key,
+    model_name="gpt-4o",
+    max_tokens=1000,
+    openai_proxy="https://api.openai.com/v1/chat/completions",
+)
+
+# Define the URL of the image to analyze
+img = "ear.png"
+
+# Define the task to perform on the image
 task = "What is this image"
 
-answer = gpt4vision.run(task, img)
+# Run the GPT4VisionAPI on the image with the specified task
+answer = gpt4vision.run(task, img, return_json=True)
 
+# Print the answer
 print(answer)

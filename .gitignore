@@ -6,6 +6,7 @@ __pycache__/
 image/
 audio/
 video/
+artifacts_three
 dataframe/
 
 static/generated
@@ -13,6 +14,8 @@ runs
 chroma
 Unit Testing Agent_state.json
 Devin_state.json
+Medical Image Diagnostic Agent_state.json
+D_state.json
 swarms/__pycache__
 artifacts
 transcript_generator.json
@@ -21,9 +24,11 @@ venv
 Cargo.lock
 .DS_STORE
 Cargo.lock
+Medical Treatment Recommendation Agent_state.json
 swarms/agents/.DS_Store
 artifacts_two
 logs
+T_state.json
 _build
 conversation.txt
 t1_state.json

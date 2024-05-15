@@ -59,7 +59,7 @@ class RoundRobinSwarm(BaseSwarm):
             Exception: If an exception occurs during task execution.
 
         """
-        try: 
+        try:
             result = task
             n = len(self.agents)
             logger.info(f"Running the task {task} on {n} agents.")
@@ -67,7 +67,9 @@ class RoundRobinSwarm(BaseSwarm):
                 for _ in range(n):
                     current_agent = self.agents[self.index]
                     try:
-                        logger.info(f"Running Agent {current_agent.agent_name} on task {result}")
+                        logger.info(
+                            f"Running Agent {current_agent.agent_name} on task {result}"
+                        )
                         result = current_agent.run(result, *args, **kwargs)
                     except Exception as e:
                         logger.error(
@@ -79,7 +81,9 @@ class RoundRobinSwarm(BaseSwarm):
                             self.index + 1
                         ) % n  # Increment and wrap around the index
                 if self.callback:
-                    logger.info(f"Calling the callback function for loop {loop}")
+                    logger.info(
+                        f"Calling the callback function for loop {loop}"
+                    )
                     self.callback(loop, result)
             return result
         except Exception as e:

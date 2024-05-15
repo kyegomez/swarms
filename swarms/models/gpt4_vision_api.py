@@ -8,7 +8,7 @@ import aiohttp
 import requests
 from dotenv import load_dotenv
 from termcolor import colored
-
+from swarms.utils.loguru_logger import logger
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 
 try:
@@ -120,7 +120,15 @@ class GPT4VisionAPI(BaseMultiModalModel):
         return base64.b64encode(response.content).decode("utf-8")
 
     # Function to handle vision tasks
-    def run(self, task: str = None, img: str = None, *args, **kwargs):
+    def run(
+        self,
+        task: str = None,
+        img: str = None,
+        multi_imgs: list = None,
+        return_json: bool = False,
+        *args,
+        **kwargs,
+    ):
         """Run the model."""
         try:
             base64_image = self.encode_image(img)
@@ -149,31 +157,27 @@ class GPT4VisionAPI(BaseMultiModalModel):
                     },
                 ],
                 "max_tokens": self.max_tokens,
+                **kwargs,
             }
             response = requests.post(
                 self.openai_proxy, headers=headers, json=payload
             )
 
-            out = response.json()
-            if "choices" in out and out["choices"]:
-                content = (
-                    out["choices"][0]
-                    .get("message", {})
-                    .get("content", None)
-                )
-                if self.streaming_enabled:
-                    content = self.stream_response(content)
-                return content
+            # Get the response as a JSON object
+            response_json = response.json()
+
+            # Return the JSON object if return_json is True
+            if return_json is True:
+                return response_json
             else:
-                print("No valid response in 'choices'")
-                return None
+                return response_json["choices"][0]["message"]["content"]
 
         except Exception as error:
-            print(
+            logger.error(
                 f"Error with the request: {error}, make sure you"
                 " double check input types and positions"
             )
-            return None
+            raise error
 
     def video_prompt(self, frames):
         """
