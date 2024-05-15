@@ -15,7 +15,7 @@ Pillow==10.3.0
 psutil
 sentry-sdk
 python-dotenv
-accelerate==0.28.0
+accelerate==0.30.1
 opencv-python>=4.9.0.80,<4.10.0
 PyYAML
 docstring_parser==0.16
