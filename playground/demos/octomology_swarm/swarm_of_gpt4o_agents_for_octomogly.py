@@ -135,11 +135,11 @@ rearranger = AgentRearrange(
     verbose=True,
 )
 
-# image = "ear.png"
+image = "ear_4.jpg"
 
 # Run the rearranger
 out = rearranger(
-    "Diagnose the image and provide a treatment plan for the patient",
-    # image,
+    "Diagnose this medical image, it's an ear canal, be precise",
+    image,
 )
 print(out)

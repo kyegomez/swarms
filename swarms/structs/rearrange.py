@@ -1,9 +1,10 @@
 from typing import List
-
 from swarms.memory.base_vectordb import BaseVectorDatabase
-from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
+from typing import Optional, Callable, Dict
+from swarms.structs.omni_agent_types import Agent
+from swarms.structs.agent import Agent
 
 
 class AgentRearrange(BaseSwarm):
@@ -30,6 +31,8 @@ class AgentRearrange(BaseSwarm):
         max_loops: int = 1,
         verbose: bool = True,
         memory_system: BaseVectorDatabase = None,
+        human_in_the_loop: bool = False,
+        custom_human_in_the_loop: Optional[Callable[[str], str]] = None,
         *args,
         **kwargs,
     ):
@@ -41,9 +44,13 @@ class AgentRearrange(BaseSwarm):
             flow (str, optional): The flow pattern of the tasks. Defaults to None.
         """
         self.agents = {agent.name: agent for agent in agents}
-        self.flow = flow
+        self.flow = flow if flow is not None else ""
         self.verbose = verbose
-        self.max_loops = max_loops
+        self.max_loops = max_loops if max_loops > 0 else 1
+        self.memory_system = memory_system
+        self.human_in_the_loop = human_in_the_loop
+        self.custom_human_in_the_loop = custom_human_in_the_loop
+        self.swarm_history = {agent.agent_name: [] for agent in agents}
 
         # Verbose is True
         if verbose is True:
@@ -54,6 +61,12 @@ class AgentRearrange(BaseSwarm):
             for agent in self.agents.values():
                 agent.long_term_memory = memory_system
 
+        logger.info(
+            "AgentRearrange initialized with agents: {}".format(
+                list(self.agents.keys())
+            )
+        )
+
     def add_agent(self, agent: Agent):
         """
         Adds an agent to the swarm.
@@ -63,6 +76,13 @@ class AgentRearrange(BaseSwarm):
         """
         logger.info(f"Adding agent {agent.name} to the swarm.")
         self.agents[agent.name] = agent
+
+    def track_history(
+        self,
+        agent_name: str,
+        result: str,
+    ):
+        self.swarm_history[agent_name].append(result)
 
     def remove_agent(self, agent_name: str):
         """
@@ -99,16 +119,23 @@ class AgentRearrange(BaseSwarm):
             )
 
         agents_in_flow = []
+
+        # Arrow
         tasks = self.flow.split("->")
+
+        # For the task in tasks
         for task in tasks:
             agent_names = [name.strip() for name in task.split(",")]
+
+            # Loop over the agent names
             for agent_name in agent_names:
-                if agent_name not in self.agents:
+                if agent_name not in self.agents and agent_name != "H":
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
                     )
                 agents_in_flow.append(agent_name)
 
+        # If the length of the agents does not equal the length of the agents in flow
         if len(set(agents_in_flow)) != len(agents_in_flow):
             raise ValueError(
                 "Duplicate agent names in the flow are not allowed."
@@ -117,7 +144,14 @@ class AgentRearrange(BaseSwarm):
         print("Flow is valid.")
         return True
 
-    def run(self, task: str = None, img: str = None, *args, **kwargs):
+    def run(
+        self,
+        task: str = None,
+        img: str = None,
+        custom_tasks: Dict[str, str] = None,
+        *args,
+        **kwargs,
+    ):
         """
         Runs the swarm to rearrange the tasks.
 
@@ -134,6 +168,21 @@ class AgentRearrange(BaseSwarm):
             tasks = self.flow.split("->")
             current_task = task
 
+            # If custom_tasks have the agents name and tasks then combine them
+            if custom_tasks is not None:
+                c_agent_name, c_task = next(iter(custom_tasks.items()))
+
+                # Find the position of the custom agent in the tasks list
+                position = tasks.index(c_agent_name)
+
+                # If there is a prebois agent merge its task with the custom tasks
+                if position > 0:
+                    tasks[position - 1] += "->" + c_task
+                else:
+                    # If there is no prevous agent just insert the custom tasks
+                    tasks.insert(position, c_task)
+
+            # Set the loop counter
             loop_count = 0
             while loop_count < self.max_loops:
                 for task in tasks:
@@ -147,11 +196,27 @@ class AgentRearrange(BaseSwarm):
                         )
                         results = []
                         for agent_name in agent_names:
-                            agent = self.agents[agent_name]
-                            result = agent.run(
-                                current_task, img, *args, **kwargs
-                            )
-                            results.append(result)
+                            if agent_name == "H":
+                                # Human in the loop intervention
+                                if (
+                                    self.human_in_the_loop
+                                    and self.custom_human_in_the_loop
+                                ):
+                                    current_task = (
+                                        self.custom_human_in_the_loop(
+                                            current_task
+                                        )
+                                    )
+                                else:
+                                    current_task = input(
+                                        "Enter your response:"
+                                    )
+                            else:
+                                agent = self.agents[agent_name]
+                                result = agent.run(
+                                    current_task, img, *args, **kwargs
+                                )
+                                results.append(result)
 
                         current_task = "; ".join(results)
                     else:
@@ -159,11 +224,27 @@ class AgentRearrange(BaseSwarm):
                         logger.info(
                             f"Running agents sequentially: {agent_names}"
                         )
-                        agent = self.agents[agent_names[0]]
-                        current_task = agent.run(
-                            current_task, img, *args, **kwargs
-                        )
-
+                        agent_name = agent_names[0]
+                        if agent_name == "H":
+                            # Human-in-the-loop intervention
+                            if (
+                                self.human_in_the_loop
+                                and self.custom_human_in_the_loop
+                            ):
+                                current_task = (
+                                    self.custom_human_in_the_loop(
+                                        current_task
+                                    )
+                                )
+                            else:
+                                current_task = input(
+                                    "Enter the next task: "
+                                )
+                        else:
+                            agent = self.agents[agent_name]
+                            current_task = agent.run(
+                                current_task, img, *args, **kwargs
+                            )
                 loop_count += 1
 
             return current_task
