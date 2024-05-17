@@ -239,6 +239,7 @@ class Agent:
         rules: str = None,
         planning: Optional[str] = False,
         planning_prompt: Optional[str] = None,
+        device: str = None,
         *args,
         **kwargs,
     ):
@@ -314,6 +315,7 @@ class Agent:
         self.execute_tool = execute_tool
         self.planning = planning
         self.planning_prompt = planning_prompt
+        self.device = device
 
         # Name
         self.name = agent_name

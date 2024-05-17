@@ -1170,7 +1170,7 @@ autoswarm.run("Analyze these financial data and give me a summary")
 ```
 
 ## `AgentRearrange`
-Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships
+Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships. [Docs Available:](https://swarms.apac.ai/en/latest/swarms/structs/agent_rearrange/)
 
 ```python
 from swarms import Agent, AgentRearrange, rearrange, Anthropic
@@ -1256,6 +1256,25 @@ Documentation is located here at: [swarms.apac.ai](https://swarms.apac.ai)
 
 ----
 
+## File Structure
+The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
+
+```sh
+├── __init__.py
+├── agents
+├── artifacts
+├── memory
+├── models
+├── prompts
+├── structs
+├── telemetry
+├── tools
+├── utils
+└── workers
+```
+
+----
+
 ## 🫶 Contributions:
 
 The easiest way to contribute is to pick any issue with the `good first issue` tag 💪. Read the Contributing guidelines [here](/CONTRIBUTING.md). Bug Report? [File here](https://github.com/swarms/gateway/issues) | Feature Request? [File here](https://github.com/swarms/gateway/issues)
@@ -1286,58 +1305,14 @@ Join our growing community around the world, for real-time support, ideas, and d
 Book a discovery call to learn how Swarms can lower your operating costs by 40% with swarms of autonomous agents in lightspeed. [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
 
 
-
 ## Accelerate Backlog
-Help us accelerate our backlog by supporting us financially! Note, we're an open source corporation and so all the revenue we generate is through donations at the moment ;)
+Accelerate Bugs, Features, and Demos to implement by supporting us here:
 
 <a href="https://polar.sh/kyegomez"><img src="https://polar.sh/embed/fund-our-backlog.svg?org=kyegomez" /></a>
 
 
-## File Structure
-The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
-
-```sh
-├── __init__.py
-├── agents
-├── artifacts
-├── chunkers
-├── cli
-├── loaders
-├── memory
-├── models
-├── prompts
-├── structs
-├── telemetry
-├── tokenizers
-├── tools
-├── utils
-└── workers
-```
-
 ## Docker Instructions
-
-This application uses Docker with CUDA support. To build and run the Docker container, follow these steps:
-
-### Prerequisites
-
-- Make sure you have [Docker installed](https://docs.docker.com/get-docker/) on your machine.
-- Ensure your machine has an NVIDIA GPU and [NVIDIA Docker support](https://github.com/NVIDIA/nvidia-docker) installed.
-
-### Building the Docker Image
-
-To build the Docker image, navigate to the root directory containing the `Dockerfile` and run the following command:
-
-```bash
-docker build --gpus all -t swarms
-``` 
-### Running the Docker Container
-To run the Docker container, use the following command:
-
-`docker run --gpus all -p 4000:80 swarms`
-
-Replace swarms with the name of your Docker image, and replace 4000:80 with your actual port mapping. The format is hostPort:containerPort.
-
-Now, your application should be running with CUDA support!
+- [Learn More Here About Deployments In Docker]()
 
 
 ## Swarm Newsletter 🤖 🤖 🤖 📧 
