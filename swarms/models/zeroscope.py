@@ -63,9 +63,7 @@ class ZeroscopeTTV:
         self.num_frames = num_frames
 
         self.pipe = DiffusionPipeline.from_pretrained(
-            model_name,
-            torch_dtype=torch_dtype,
-            *args,
+            model_name, torch_dtype=torch_dtype, *args, **kwargs
         )
         self.pipe.scheduler = DPMSolverMultistepScheduler(
             self.pipe.scheduler.config,

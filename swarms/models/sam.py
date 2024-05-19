@@ -50,7 +50,7 @@ class SAM:
 
         self.processor = SamProcessor.from_pretrained(model_name)
 
-    def run(self, task=None, img=None, *args, **kwargs):
+    def run(self, task: str = None, img: str = None, *args, **kwargs):
         """
         Runs the SAM model on the given image and returns the segmentation scores and masks.
 

@@ -1,9 +1,10 @@
 import datetime
+from typing import List
+
 from pydantic import BaseModel, Field
+
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.tool_utils import scrape_tool_func_docs
-from typing import List
-from swarms.tools.base_tool import BaseTool
 
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

@@ -1,7 +1,6 @@
 from swarms.models.base_embedding_model import BaseEmbeddingModel
 from swarms.models.base_llm import BaseLLM  # noqa: E402
 from swarms.models.base_multimodal_model import BaseMultiModalModel
-from swarms.models.fire_function import FireFunctionCaller
 from swarms.models.fuyu import Fuyu  # noqa: E402
 from swarms.models.gpt4_vision_api import GPT4VisionAPI  # noqa: E402
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
@@ -11,7 +10,6 @@ from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
 from swarms.models.llava import LavaMultiModal  # noqa: E402
 from swarms.models.mistral import Mistral  # noqa: E402
 from swarms.models.mixtral import Mixtral  # noqa: E402
-from swarms.models.mpt import MPT7B  # noqa: E402
 from swarms.models.nougat import Nougat  # noqa: E402
 from swarms.models.palm import GooglePalm as Palm  # noqa: E402
 from swarms.models.openai_tts import OpenAITTS  # noqa: E402
@@ -42,15 +40,12 @@ from swarms.models.types import (  # noqa: E402
 )
 from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.openai_embeddings import OpenAIEmbeddings
+from swarms.models.llama3_hosted import llama3Hosted
 
 __all__ = [
-    "BaseLLM",
-    "Anthropic",
-    "AzureOpenAI",
     "BaseEmbeddingModel",
+    "BaseLLM",
     "BaseMultiModalModel",
-    "Cohere",
-    "FireFunctionCaller",
     "Fuyu",
     "GPT4VisionAPI",
     "HuggingfaceLLM",
@@ -60,23 +55,26 @@ __all__ = [
     "LavaMultiModal",
     "Mistral",
     "Mixtral",
-    "MPT7B",
     "Nougat",
-    "OpenAI",
-    "OpenAIChat",
-    "OpenAIEmbeddings",
-    "OpenAITTS",
-    "OctoAIChat",
     "Palm",
+    "OpenAITTS",
+    "Anthropic",
+    "AzureOpenAI",
+    "Cohere",
+    "OpenAIChat",
+    "OpenAI",
+    "OctoAIChat",
     "QwenVLMultiModal",
     "Replicate",
     "SamplingParams",
     "SamplingType",
-    "TextModality",
-    "MultimodalData",
-    "ImageModality",
-    "AudioModality",
-    "VideoModality",
     "TogetherLLM",
+    "AudioModality",
+    "ImageModality",
+    "MultimodalData",
+    "TextModality",
+    "VideoModality",
     "Vilt",
+    "OpenAIEmbeddings",
+    "llama3Hosted",
 ]

@@ -60,7 +60,7 @@ class Nougat:
             img = img.convert("RGB")
         return img
 
-    def __call__(self, img: str):
+    def __call__(self, img: str, *args, **kwargs):
         """Call the model with an image_path str as an input"""
         image = Image.open(img)
         pixel_values = self.processor(
@@ -72,6 +72,8 @@ class Nougat:
             pixel_values.to(self.device),
             min_length=self.min_length,
             max_new_tokens=self.max_new_tokens,
+            *args,
+            **kwargs,
         )
 
         sequence = self.processor.batch_decode(
