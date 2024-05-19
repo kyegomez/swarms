@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 
 from swarms.structs.agent import Agent
+from swarms.structs.base_swarm import BaseSwarm
 
 NAME_LIST = [
     "Affirmative side",
@@ -26,7 +27,7 @@ class DebatePlayer(Agent):
         super().__init__(llm=llm, agent_name=name, *args, **kwargs)
 
 
-class Debate:
+class Debate(BaseSwarm):
     """Create a debate
 
     Args:

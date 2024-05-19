@@ -4,10 +4,10 @@ from typing import Dict, List, Optional, Union
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.logger import logger
-
+from swarms.structs.base_swarm import BaseSwarm
 
 @dataclass
-class Company:
+class Company(BaseSwarm):
     """
     Represents a company with a hierarchical organizational structure.
     """

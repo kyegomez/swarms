@@ -50,7 +50,9 @@ class SermonSwarm(BaseSwarm):
             agent.add_message_to_memory(sermon)
 
         # Then run the agents
-        for _ in range(self.max_loops):
+        loop = 0
+        # for _ in range(self.max_loops):
+        while loop < self.max_loops:
             for agent in self.agents:
                 preach = agent.run(task, *args, **kwargs)
 
@@ -63,3 +65,6 @@ class SermonSwarm(BaseSwarm):
 
                     elif self.stop_condition in preach:
                         break
+
+            loop += 1
+            return preach

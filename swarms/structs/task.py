@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Union
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.logger import logger
+from swarms.structs.omni_agent_types import AgentType
 
 
 @dataclass
@@ -51,7 +52,7 @@ class Task:
 
     """
 
-    agent: Union[Callable, Agent]
+    agent: Union[Callable, Agent, AgentType] = None
     description: str = None
     result: Any = None
     history: List[Any] = field(default_factory=list)

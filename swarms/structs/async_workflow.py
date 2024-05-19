@@ -5,10 +5,11 @@ from typing import Any, Callable, List, Optional
 from swarms.structs.agent import Agent
 from swarms.structs.task import Task
 from swarms.utils.logger import logger
+from swarms.structs.base_swarm import BaseSwarm
 
 
 @dataclass
-class AsyncWorkflow:
+class AsyncWorkflow(BaseSwarm):
     """
     Represents an asynchronous workflow to run tasks.
 

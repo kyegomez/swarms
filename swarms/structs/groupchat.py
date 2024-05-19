@@ -3,10 +3,11 @@ from typing import List
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import logger
 from swarms.structs.agent import Agent
+from swarms.structs.base_swarm import BaseSwarm
 
 
 @dataclass
-class GroupChat:
+class GroupChat(BaseSwarm):
     """
     A group chat class that contains a list of agents and the maximum number of rounds.
 

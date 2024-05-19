@@ -34,6 +34,9 @@ class RecursiveWorkflow(BaseStructure):
         self,
         stop_token: str = "<DONE>",
         stopping_conditions: callable = None,
+        max_loops: int = 1,
+        *args,
+        **kwargs,
     ):
         self.stop_token = stop_token
         self.stopping_conditions = stopping_conditions
@@ -75,12 +78,20 @@ class RecursiveWorkflow(BaseStructure):
             None
         """
         try:
-            for task in self.task_pool:
-                while True:
-                    result = task.run()
-                    if result is not None and self.stop_token in result:
-                        break
-                    print(f"{result}")
+            loop = 0
+            while loop < self.max_loops:
+                for task in self.task_pool:
+                    while True:
+                        result = task.run()
+                        if (
+                            result is not None
+                            and self.stop_token in result
+                        ):
+                            break
+                        print(f"{result}")
+                loop += 1
+
+            return result
         except Exception as error:
             logger.warning(f"[ERROR][RecursiveWorkflow] {error}")
             raise error

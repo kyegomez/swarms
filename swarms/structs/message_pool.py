@@ -4,6 +4,7 @@ from typing import Callable, List, Optional, Sequence, Union
 
 from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import logger
+from swarms.structs.base_swarm import BaseSwarm
 
 
 def _hash(input: str):
@@ -42,7 +43,7 @@ def msg_hash(
     )
 
 
-class MessagePool:
+class MessagePool(BaseSwarm):
     """
     A class representing a message pool for agents in a swarm.
 

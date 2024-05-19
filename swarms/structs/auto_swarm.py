@@ -116,6 +116,7 @@ class AutoSwarm(BaseSwarm):
         custom_preprocess: Optional[Callable] = None,
         custom_postprocess: Optional[Callable] = None,
         custom_router: Optional[Callable] = None,
+        max_loops: int = 1,
         *args,
         **kwargs,
     ):
@@ -126,6 +127,8 @@ class AutoSwarm(BaseSwarm):
         self.custom_params = custom_params
         self.custom_preprocess = custom_preprocess
         self.custom_postprocess = custom_postprocess
+        self.custom_router = custom_router
+        self.max_loops = max_loops
         self.router = AutoSwarmRouter(
             name=name,
             description=description,
@@ -141,7 +144,32 @@ class AutoSwarm(BaseSwarm):
     def run(self, task: str = None, *args, **kwargs):
         """Run the swarm simulation."""
         try:
-            return self.router.run(task, *args, **kwargs)
+            loop = 0
+
+            while loop < self.max_loops:
+                if self.custom_preprocess:
+                    # If custom preprocess function is provided then run it
+                    logger.info("Running custom preprocess function.")
+                    task, args, kwargs = self.custom_preprocess(
+                        task, args, kwargs
+                    )
+
+                if self.custom_router:
+                    # If custom router function is provided then use it to route the task
+                    logger.info("Running custom router function.")
+                    out = self.custom_router(self, task, *args, **kwargs)
+
+                else:
+                    out = self.router.run(task, *args, **kwargs)
+
+                if self.custom_postprocess:
+                    # If custom postprocess function is provided then run it
+                    out = self.custom_postprocess(out)
+
+                # LOOP
+                loop += 1
+
+                return out
         except Exception as e:
             logger.error(
                 f"Error: {e} try optimizing the inputs and try again."

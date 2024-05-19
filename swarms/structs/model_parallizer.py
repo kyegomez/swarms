@@ -19,12 +19,12 @@ class ModelParallelizer:
     Args:
         llms (List[Callable]): A list of language models.
         retry_attempts (int): The number of retry attempts.
-        iters (int): The number of iterations to run the task.
+        max_loops (int): The number of iterations to run the task.
 
     Attributes:
         llms (List[Callable]): A list of language models.
         retry_attempts (int): The number of retry attempts.
-        iters (int): The number of iterations to run the task.
+        max_loops (int): The number of iterations to run the task.
         last_responses (List[str]): The last responses from the language
             models.
         task_history (List[str]): The task history.
@@ -52,20 +52,20 @@ class ModelParallelizer:
         self,
         llms: List[Callable] = None,
         retry_attempts: int = 3,
-        iters: int = None,
+        max_loops: int = None,
         *args,
         **kwargs,
     ):
         self.llms = llms
         self.retry_attempts = retry_attempts
-        self.iters = iters
+        self.max_loops = max_loops
         self.last_responses = None
         self.task_history = []
 
     def run(self, task: str):
         """Run the task string"""
         try:
-            for i in range(self.iters):
+            for i in range(self.max_loops):
                 with ThreadPoolExecutor() as executor:
                     responses = executor.map(
                         lambda llm: llm(task), self.llms

@@ -9,7 +9,6 @@ from swarms.utils.loguru_logger import logger
 
 
 class HiearchicalSwarm(BaseSwarm):
-    
     @beartype
     def __init__(
         self,
@@ -25,16 +24,15 @@ class HiearchicalSwarm(BaseSwarm):
         self.agents = agents
         self.max_loops = max_loops
         self.long_term_memory_system = long_term_memory_system
-        
+
         # Set the director to max_one loop
-        self.director.max_loops = 1
-        
+        if self.director.max_loops > 1:
+            self.director.max_loops = 1
+
         # Set the long term memory system of every agent to long term memory system
         if long_term_memory_system is True:
             for agent in agents:
                 agent.long_term_memory = long_term_memory_system
-                
-        
 
     def parse_function_activate_agent(
         self, json_data: str = None, *args, **kwargs
@@ -115,7 +113,7 @@ class HiearchicalSwarm(BaseSwarm):
         """
         try:
             loop = 0
-            
+
             # While the loop is less than max loops
             while loop < self.max_loops:
                 # Run the director
