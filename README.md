@@ -587,50 +587,6 @@ workflow.run()
 
 
 
-### `ModelParallelizer`
-The ModelParallelizer allows you to run multiple models concurrently, comparing their outputs. This feature enables you to easily compare the performance and results of different models, helping you make informed decisions about which model to use for your specific task.
-
-Plug-and-Play Integration: The structure provides a seamless integration with various models, including OpenAIChat, Anthropic, Mixtral, and Gemini. You can easily plug in any of these models and start using them without the need for extensive modifications or setup.
-
-
-```python
-import os
-
-from dotenv import load_dotenv
-
-from swarms import Anthropic, Gemini, Mixtral, ModelParallelizer, OpenAIChat
-
-load_dotenv()
-
-# API Keys
-anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-openai_api_key = os.getenv("OPENAI_API_KEY")
-gemini_api_key = os.getenv("GEMINI_API_KEY")
-
-# Initialize the models
-llm = OpenAIChat(openai_api_key=openai_api_key)
-anthropic = Anthropic(anthropic_api_key=anthropic_api_key)
-mixtral = Mixtral()
-gemini = Gemini(gemini_api_key=gemini_api_key)
-
-# Initialize the parallelizer
-llms = [llm, anthropic, mixtral, gemini]
-parallelizer = ModelParallelizer(llms)
-
-# Set the task
-task = "Generate a 10,000 word blog on health and wellness."
-
-# Run the task
-out = parallelizer.run(task)
-
-# Print the responses 1 by 1
-for i in range(len(out)):
-    print(f"Response from LLM {i}: {out[i]}")
-```
-
-
-
-
 ### `SwarmNetwork`
 `SwarmNetwork` provides the infrasturcture for building extremely dense and complex multi-agent applications that span across various types of agents.
 
@@ -756,106 +712,6 @@ print(f"Task result: {task.result}")
 ---
 
 
-
-### `BlockList`
-- Modularity and Flexibility: BlocksList allows users to create custom swarms by adding or removing different classes or functions as blocks. This means users can easily tailor the functionality of their swarm to suit their specific needs.
-
-- Ease of Management: With methods to add, remove, update, and retrieve blocks, BlocksList provides a straightforward way to manage the components of a swarm. This makes it easier to maintain and update the swarm over time.
-
-- Enhanced Searchability: BlocksList offers methods to get blocks by various attributes such as name, type, ID, and parent-related properties. This makes it easier for users to find and work with specific blocks in a large and complex swarm.
-
-```python
-import os
-
-from dotenv import load_dotenv
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from pydantic import BaseModel
-from swarms import BlocksList, Gemini, GPT4VisionAPI, Mixtral, OpenAI, ToolAgent
-
-# Load the environment variables
-load_dotenv()
-
-# Get the environment variables
-openai_api_key = os.getenv("OPENAI_API_KEY")
-gemini_api_key = os.getenv("GEMINI_API_KEY")
-
-# Tool Agent
-model = AutoModelForCausalLM.from_pretrained("databricks/dolly-v2-12b")
-tokenizer = AutoTokenizer.from_pretrained("databricks/dolly-v2-12b")
-
-# Initialize the schema for the person's information
-class Schema(BaseModel):
-    name: str = Field(..., title="Name of the person")
-    agent: int = Field(..., title="Age of the person")
-    is_student: bool = Field(
-        ..., title="Whether the person is a student"
-    )
-    courses: list[str] = Field(
-        ..., title="List of courses the person is taking"
-    )
-
-# Convert the schema to a JSON string
-json_schema = base_model_to_json(Schema)
-
-
-toolagent = ToolAgent(model=model, tokenizer=tokenizer, json_schema=json_schema)
-
-# Blocks List which enables you to build custom swarms by adding classes or functions
-swarm = BlocksList(
-    "SocialMediaSwarm",
-    "A swarm of social media agents",
-    [
-        OpenAI(openai_api_key=openai_api_key),
-        Mixtral(),
-        GPT4VisionAPI(openai_api_key=openai_api_key),
-        Gemini(gemini_api_key=gemini_api_key),
-    ],
-)
-
-
-# Add the new block to the swarm
-swarm.add(toolagent)
-
-# Remove a block from the swarm
-swarm.remove(toolagent)
-
-# Update a block in the swarm
-swarm.update(toolagent)
-
-# Get a block at a specific index
-block_at_index = swarm.get(0)
-
-# Get all blocks in the swarm
-all_blocks = swarm.get_all()
-
-# Get blocks by name
-openai_blocks = swarm.get_by_name("OpenAI")
-
-# Get blocks by type
-gpt4_blocks = swarm.get_by_type("GPT4VisionAPI")
-
-# Get blocks by ID
-block_by_id = swarm.get_by_id(toolagent.id)
-
-# Get blocks by parent
-blocks_by_parent = swarm.get_by_parent(swarm)
-
-# Get blocks by parent ID
-blocks_by_parent_id = swarm.get_by_parent_id(swarm.id)
-
-# Get blocks by parent name
-blocks_by_parent_name = swarm.get_by_parent_name(swarm.name)
-
-# Get blocks by parent type
-blocks_by_parent_type = swarm.get_by_parent_type(type(swarm).__name__)
-
-# Get blocks by parent description
-blocks_by_parent_description = swarm.get_by_parent_description(swarm.description)
-
-# Run the block in the swarm
-inference = swarm.run_block(toolagent, "Hello World")
-print(inference)
-```
 
 
 ## Majority Voting
@@ -1249,6 +1105,9 @@ print(output)
 
 ```
 
+## `HierarhicalSwarm`
+Coming soon...
+
 
 ---
 
@@ -1265,6 +1124,7 @@ The swarms package has been meticlously crafted for extreme use-ability and unde
 ├── agents
 ├── artifacts
 ├── memory
+├── schemas
 ├── models
 ├── prompts
 ├── structs
@@ -1313,12 +1173,11 @@ Accelerate Bugs, Features, and Demos to implement by supporting us here:
 
 
 ## Docker Instructions
-- [Learn More Here About Deployments In Docker]()
+- [Learn More Here About Deployments In Docker](https://swarms.apac.ai/en/latest/docker_setup/)
 
 
 ## Swarm Newsletter 🤖 🤖 🤖 📧 
 Sign up to the Swarm newsletter to receive  updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊
-
 
 [CLICK HERE TO SIGNUP](https://docs.google.com/forms/d/e/1FAIpQLSfqxI2ktPR9jkcIwzvHL0VY6tEIuVPd-P2fOWKnd6skT9j1EQ/viewform?usp=sf_link)
 

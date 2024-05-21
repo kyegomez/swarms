@@ -8,8 +8,7 @@ from swarms.models.idefics import Idefics  # noqa: E402
 from swarms.models.kosmos_two import Kosmos  # noqa: E402
 from swarms.models.layoutlm_document_qa import LayoutLMDocumentQA
 from swarms.models.llava import LavaMultiModal  # noqa: E402
-from swarms.models.mistral import Mistral  # noqa: E402
-from swarms.models.mixtral import Mixtral  # noqa: E402
+
 from swarms.models.nougat import Nougat  # noqa: E402
 from swarms.models.palm import GooglePalm as Palm  # noqa: E402
 from swarms.models.openai_tts import OpenAITTS  # noqa: E402
@@ -53,8 +52,6 @@ __all__ = [
     "Kosmos",
     "LayoutLMDocumentQA",
     "LavaMultiModal",
-    "Mistral",
-    "Mixtral",
     "Nougat",
     "Palm",
     "OpenAITTS",

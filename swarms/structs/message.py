@@ -1,7 +1,6 @@
-import datetime
 from typing import Dict, Optional
-
-from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel, Field
 
 
 class Message(BaseModel):
@@ -18,7 +17,7 @@ class Message(BaseModel):
     print(mes)
     """
 
-    timestamp: datetime = datetime.now()
+    timestamp: datetime = Field(default_factory=datetime.now)
     sender: str
     content: str
     metadata: Optional[Dict[str, str]] = {}

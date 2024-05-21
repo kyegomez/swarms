@@ -32,6 +32,7 @@ class llama3Hosted(BaseLLM):
         temperature: float = 0.8,
         max_tokens: int = 4000,
         system_prompt: str = "You are a helpful assistant.",
+        base_url: str = "http://34.204.8.31:30001/v1/chat/completions",
         *args,
         **kwargs,
     ):
@@ -40,6 +41,7 @@ class llama3Hosted(BaseLLM):
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.system_prompt = system_prompt
+        self.base_url = base_url
 
     def run(self, task: str, *args, **kwargs) -> str:
         """
@@ -52,7 +54,6 @@ class llama3Hosted(BaseLLM):
             str: The generated response from the Llama3 model.
 
         """
-        url = "http://34.204.8.31:30001/v1/chat/completions"
 
         payload = json.dumps(
             {
@@ -70,7 +71,7 @@ class llama3Hosted(BaseLLM):
         headers = {"Content-Type": "application/json"}
 
         response = requests.request(
-            "POST", url, headers=headers, data=payload
+            "POST", self.base_url, headers=headers, data=payload
         )
 
         response_json = response.json()

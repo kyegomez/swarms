@@ -8,7 +8,6 @@ from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
-from swarms.structs.block_wrapper import block
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.groupchat import GroupChat, GroupChatManager
@@ -21,7 +20,6 @@ from swarms.structs.majority_voting import (
 )
 from swarms.structs.message import Message
 from swarms.structs.message_pool import MessagePool
-from swarms.structs.model_parallizer import ModelParallelizer
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 from swarms.structs.multi_process_workflow import (
     MultiProcessWorkflow,
@@ -29,11 +27,11 @@ from swarms.structs.multi_process_workflow import (
 from swarms.structs.multi_threaded_workflow import (
     MultiThreadedWorkflow,
 )
-from swarms.structs.plan import Plan
+from swarms.schemas.plan import Plan
 from swarms.structs.rearrange import AgentRearrange, rearrange
 from swarms.structs.recursive_workflow import RecursiveWorkflow
 from swarms.structs.round_robin import RoundRobinSwarm
-from swarms.structs.schemas import (
+from swarms.schemas.schemas import (
     Artifact,
     ArtifactUpload,
     StepInput,
@@ -43,7 +41,7 @@ from swarms.structs.schemas import (
     TaskRequestBody,
 )
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.step import Step
+from swarms.schemas.step import Step
 from swarms.structs.swarm_net import SwarmNetwork
 from swarms.structs.swarming_architectures import (
     broadcast,
@@ -96,7 +94,6 @@ __all__ = [
     "BaseStructure",
     "BaseSwarm",
     "BaseWorkflow",
-    "block",
     "ConcurrentWorkflow",
     "Conversation",
     "GroupChat",
@@ -106,7 +103,6 @@ __all__ = [
     "most_frequent",
     "parse_code_completion",
     "Message",
-    "ModelParallelizer",
     "MultiAgentCollaboration",
     "MultiProcessWorkflow",
     "MultiThreadedWorkflow",
