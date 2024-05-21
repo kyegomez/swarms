@@ -2,13 +2,14 @@ import concurrent.futures
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
-from swarms.structs.base_structure import BaseStructure
 from swarms.structs.task import Task
 from swarms.utils.logger import logger
+from swarms.structs.agent import Agent
+from swarms.structs.base_workflow import BaseWorkflow
 
 
 @dataclass
-class ConcurrentWorkflow(BaseStructure):
+class ConcurrentWorkflow(BaseWorkflow):
     """
     ConcurrentWorkflow class for running a set of tasks concurrently using N number of autonomous agents.
 
@@ -35,13 +36,19 @@ class ConcurrentWorkflow(BaseStructure):
     max_loops: int = 1
     max_workers: int = 5
     autosave: bool = False
+    agents: List[Agent] = None
     saved_state_filepath: Optional[str] = "runs/concurrent_workflow.json"
     print_results: bool = False
     return_results: bool = False
     use_processes: bool = False
     stopping_condition: Optional[Callable] = None
 
-    def add(self, task: Task = None, tasks: List[Task] = None):
+    def add(
+        self,
+        task: Task = None,
+        agent: Agent = None,
+        tasks: List[Task] = None,
+    ):
         """Adds a task to the workflow.
 
         Args:
@@ -61,11 +68,15 @@ class ConcurrentWorkflow(BaseStructure):
                     logger.info(
                         f"Added task {task} to ConcurrentWorkflow."
                     )
+
+            if agent:
+                self.agents.append(agent)
+                logger.info(f"Added agent {agent} to ConcurrentWorkflow.")
         except Exception as error:
             logger.warning(f"[ERROR][ConcurrentWorkflow] {error}")
             raise error
 
-    def run(self, *args, **kwargs):
+    def run(self, task: str = None, *args, **kwargs):
         """
         Executes the tasks in parallel using a ThreadPoolExecutor.
 
@@ -76,8 +87,8 @@ class ConcurrentWorkflow(BaseStructure):
         Returns:
             List[Any]: A list of the results of each task, if return_results is True. Otherwise, returns None.
         """
-        loop_count = 0
-        while loop_count < self.max_loops:
+        loop = 0
+        while loop < self.max_loops:
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
@@ -100,7 +111,7 @@ class ConcurrentWorkflow(BaseStructure):
                             f"Task {task} generated an exception: {e}"
                         )
 
-            loop_count += 1
+            loop += 1
             if self.stopping_condition and self.stopping_condition(
                 results
             ):

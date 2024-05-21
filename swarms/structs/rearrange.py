@@ -3,7 +3,6 @@ from typing import Callable, Dict, List, Optional
 from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.structs.omni_agent_types import Agent
 from swarms.utils.loguru_logger import logger
 
 

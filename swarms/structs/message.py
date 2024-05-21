@@ -1,8 +1,10 @@
 import datetime
 from typing import Dict, Optional
 
+from pydantic import BaseModel
 
-class Message:
+
+class Message(BaseModel):
     """
     Represents a message with timestamp and optional metadata.
 
@@ -16,16 +18,10 @@ class Message:
     print(mes)
     """
 
-    def __init__(
-        self,
-        sender: str,
-        content: str,
-        metadata: Optional[Dict[str, str]] = None,
-    ):
-        self.timestamp: datetime.datetime = datetime.datetime.now()
-        self.sender: str = sender
-        self.content: str = content
-        self.metadata: Dict[str, str] = metadata or {}
+    timestamp: datetime = datetime.now()
+    sender: str
+    content: str
+    metadata: Optional[Dict[str, str]] = {}
 
     def __repr__(self) -> str:
         """

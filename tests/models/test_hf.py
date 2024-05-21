@@ -7,8 +7,6 @@ import torch
 from swarms.models.huggingface import HuggingfaceLLM
 
 
-
-
 # Fixture for the class instance
 @pytest.fixture
 def llm_instance():
