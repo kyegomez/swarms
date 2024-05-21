@@ -4,6 +4,7 @@ Building an Autonomous Agent in 5 minutes with:
 - Tools: Search, Browser, ETC
 - Long Term Mmeory: ChromaDB, Weaviate, Pinecone, ETC
 """
+
 from swarms import Agent, OpenAIChat, tool
 from playground.demos.agent_in_5.chroma_db import ChromaDB
 

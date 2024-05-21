@@ -6,6 +6,7 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.logger import logger
 from swarms.structs.base_swarm import BaseSwarm
 
+
 @dataclass
 class Company(BaseSwarm):
     """

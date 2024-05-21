@@ -5,14 +5,8 @@ import pytest
 import torch
 
 from swarms.models.huggingface import HuggingfaceLLM
-from unittest.mock import patch
 
-import pytest
-import torch
 
-from swarms.models.huggingface import (
-    HuggingfaceLLM,  # Replace with the actual import path
-)
 
 
 # Fixture for the class instance
