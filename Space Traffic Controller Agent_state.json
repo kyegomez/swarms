@@ -1,0 +1,6 @@
+{
+    "agent_id": "<function agent_id at 0x109536fc0>",
+    "agent_name": "Space Traffic Controller Agent",
+    "agent_description": null,
+    "LLM": "{'model_name': None, 'max_tokens': 4000, 'temperature': 0.8, 'top_k': None, 'top_p': None, 'system_prompt': 'You are a helpful assistant.', 'beam_width': None, 'num_return_sequences': None, 'seed': None, 'frequency_penalty': None, 'presence_penalty': None, 'stop_token': None, 'length_penalty': None, 'role': None, 'max_length': None, 'do_sample': None, 'early_stopping': None, 'num_beams': None, 'repition_penalty': None, 'pad_token_id': None, 'eos_token_id': None, 'bos_token_id': None, 'device': None, 'history': [], 'start_time': None, 'end_time': None, 'memory': {'input': [], 'output': [], 'task': [], 'time': [], 'role': [], 'model': []}, 'model': 'meta-llama/Meta-Llama-3-8B-Instruct'}",
+    "system_prompt": 

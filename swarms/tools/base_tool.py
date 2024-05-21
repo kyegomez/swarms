@@ -59,16 +59,19 @@ class BaseTool(BaseModel):
     auto_execute_tool: Optional[bool] = False
 
     def func_to_dict(
-        function: Callable[..., Any],
-        *,
+        function: Callable[..., Any] = None,
         name: Optional[str] = None,
-        description: str,
+        description: str = None,
+        *args,
+        **kwargs,
     ) -> Dict[str, Any]:
         try:
             return get_openai_function_schema_from_func(
                 function=function,
                 name=name,
                 description=description,
+                *args,
+                **kwargs,
             )
         except Exception as e:
             logger.error(f"An error occurred in func_to_dict: {e}")

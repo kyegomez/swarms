@@ -155,6 +155,9 @@ nav:
   - swarms.memory:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
+  - swarms.tools:
+    - Tool Decorator: "swarms/tools/decorator.md"
+    - BaseTool: "swarms/tools/base_tool.md"
 - Guides:
   - Agents:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
