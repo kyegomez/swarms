@@ -1184,5 +1184,14 @@ Sign up to the Swarm newsletter to receive  updates on the latest Autonomous age
 # License
 Apache License
 
-
-
+# Citation
+Please cite Swarms in your paper or your project if you found it beneficial in any way! Appreciate you.
+```bibtex
+@misc{swarms,
+  author = {Gomez, Kye},
+  title = {{Swarms: A Framework for Swarm Robotics}},
+  howpublished = {\url{https://github.com/kyegomez/swarms}},
+  year = {2023},
+  note = {Accessed: Date}
+}
+```
