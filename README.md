@@ -1189,7 +1189,7 @@ Please cite Swarms in your paper or your project if you found it beneficial in a
 ```bibtex
 @misc{swarms,
   author = {Gomez, Kye},
-  title = {{Swarms: A Framework for Swarm Robotics}},
+  title = {{Swarms: The Multi-Agent Collaboration Framework}},
   howpublished = {\url{https://github.com/kyegomez/swarms}},
   year = {2023},
   note = {Accessed: Date}
