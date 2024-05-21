@@ -1116,7 +1116,7 @@ Documentation is located here at: [swarms.apac.ai](https://swarms.apac.ai)
 
 ----
 
-## File Structure
+## Folder Structure
 The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
 
 ```sh
