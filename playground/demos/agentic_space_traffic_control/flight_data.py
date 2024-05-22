@@ -1,6 +1,5 @@
 import requests
 from typing import List, Dict, Any
-from swarms.tools import get_openai_function_schema_from_func
 
 
 def fetch_flights_in_area(

@@ -69,4 +69,6 @@ flow = AgentRearrange(
     max_loops=3,
 )
 # Run the flow
-flow.run("We're preparing for a launch in Cape canveral, let's begin the launch process, whats the weather like?")
+flow.run(
+    "We're preparing for a launch in Cape canveral, let's begin the launch process, whats the weather like?"
+)
