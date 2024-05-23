@@ -1,4 +1,4 @@
-from swarms import HierarchicalSwarm
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 
 # Retrieve your API key from the environment or replace with your actual key
 api_key = "sksdsds"

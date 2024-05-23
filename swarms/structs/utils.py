@@ -26,7 +26,11 @@ def parse_tasks(
 
 
 def find_agent_by_id(
-    agent_id: str = None, agents: List[Agent] = None, *args, **kwargs
+    agent_id: str = None,
+    agents: List[Agent] = None,
+    task: str = None,
+    *args,
+    **kwargs,
 ) -> Agent:
     """Find agent by id
 
@@ -39,7 +43,11 @@ def find_agent_by_id(
     """
     for agent in agents:
         if agent.id == agent_id:
-            return agent
+            if task:
+                return agent.run(task, *args, **kwargs)
+            else:
+                return agent
+
     return None
 
 

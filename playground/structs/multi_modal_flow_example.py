@@ -1,7 +1,6 @@
-# This might not work in the beginning but it's a starting point
-from swarms.structs import GPT4V, Agent
+from swarms import GPT4VisionAPI, Agent
 
-llm = GPT4V()
+llm = GPT4VisionAPI()
 
 agent = Agent(
     max_loops="auto",

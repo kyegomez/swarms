@@ -6,6 +6,25 @@ from beartype import beartype
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
+from pydantic import BaseModel, Field
+
+
+class HiearchicalRequest(BaseModel):
+    task: str = Field(
+        None,
+        title="Task",
+        description="The task to send to the director agent.",
+    )
+    agents: Agent = Field(
+        None,
+        title="Agents",
+        description="The list of agents in the hierarchical swarm.",
+    )
+    rules: str = Field(
+        None,
+        title="Rules",
+        description="The rules for the hierarchical swarm.",
+    )
 
 
 class HiearchicalSwarm(BaseSwarm):
@@ -34,6 +53,8 @@ class HiearchicalSwarm(BaseSwarm):
             for agent in agents:
                 agent.long_term_memory = long_term_memory_system
 
+        # Set the max loops of every agent to max loops
+
     def parse_function_activate_agent(
         self, json_data: str = None, *args, **kwargs
     ):
@@ -52,14 +73,30 @@ class HiearchicalSwarm(BaseSwarm):
         """
         try:
             data = json.loads(json_data)
-            name = data.get("name")
-            task = data.get("task")
 
-            response = self.select_agent_and_send_task(
-                name, task, *args, **kwargs
-            )
+            # Check if the data is a list of agent task pairs
+            if isinstance(data, list):
+                responses = []
+                # Iterate over the list of agent task pairs
+                for agent_task in data:
+                    name = agent_task.get("name")
+                    task = agent_task.get("task")
 
-            return response
+                    response = self.select_agent_and_send_task(
+                        name, task, *args, **kwargs
+                    )
+
+                    responses.append(response)
+                return responses
+            else:
+                name = data.get("name")
+                task = data.get("task")
+
+                response = self.select_agent_and_send_task(
+                    name, task, *args, **kwargs
+                )
+
+                return response
         except json.JSONDecodeError:
             logger.error("Invalid JSON data, try again.")
             raise json.JSONDecodeError
@@ -123,6 +160,8 @@ class HiearchicalSwarm(BaseSwarm):
                 response = self.parse_function_activate_agent(response)
 
                 loop += 1
+
+                task = response
 
             return response
         except Exception as e:
