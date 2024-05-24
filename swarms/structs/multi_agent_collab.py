@@ -3,28 +3,12 @@ import random
 from typing import List
 
 import tenacity
-from langchain.output_parsers import RegexParser
-
 from swarms.structs.agent import Agent
 from swarms.utils.logger import logger
 from swarms.structs.base_swarm import BaseSwarm
 
 
-# utils
-class BidOutputParser(RegexParser):
-    def get_format_instructions(self) -> str:
-        return (
-            "Your response should be an integrater delimited by"
-            " angled brackets like this: <int>"
-        )
-
-
-bid_parser = BidOutputParser(
-    regex=r"<(\d+)>", output_keys=["bid"], default_output_key="bid"
-)
-
-
-# main
+# [TODO]: Add type hints
 class MultiAgentCollaboration(BaseSwarm):
     """
     Multi-agent collaboration class.
@@ -88,8 +72,11 @@ class MultiAgentCollaboration(BaseSwarm):
 
     def __init__(
         self,
-        agents: List[Agent],
-        selection_function: callable = None,
+        name: str = "MultiAgentCollaboration",
+        description: str = "A multi-agent collaboration.",
+        director: Agent = None,
+        agents: List[Agent] = None,
+        select_next_speaker: callable = None,
         max_iters: int = 10,
         autosave: bool = True,
         saved_file_path_name: str = "multi_agent_collab.json",
@@ -99,8 +86,11 @@ class MultiAgentCollaboration(BaseSwarm):
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
+        self.name = name
+        self.description = description
+        self.director = director
         self.agents = agents
-        self.select_next_speaker = selection_function
+        self.select_next_speaker = select_next_speaker
         self._step = 0
         self.max_iters = max_iters
         self.autosave = autosave
@@ -120,7 +110,6 @@ class MultiAgentCollaboration(BaseSwarm):
         """Steps through the multi-agent collaboration."""
         speaker_idx = self.select_next_speaker(self._step, self.agents)
         speaker = self.agents[speaker_idx]
-        message = speaker.send()
         message = speaker.send()
 
         for receiver in self.agents:
@@ -146,16 +135,10 @@ class MultiAgentCollaboration(BaseSwarm):
         ),
         retry_error_callback=lambda retry_state: 0,
     )
-    def ask_for_bid(self, agent) -> str:
-        """Asks an agent for a bid."""
-        bid_string = agent.bid()
-        bid = int(bid_parser.parse(bid_string)["bid"])
-        return bid
-
-    def select_next_speaker(
+    def select_next_speaker_bid(
         self,
         step: int,
-        agents,
+        agents: List[Agent],
     ) -> int:
         """Selects the next speaker."""
         bids = []
@@ -208,11 +191,14 @@ class MultiAgentCollaboration(BaseSwarm):
             idx = director.select_next_speaker() + 1
         return idx
 
-    def run(self, task: str):
+    def run(self, task: str, *args, **kwargs):
+        # [TODO]: Add type hints
+        # [TODO]: Implement the run method using step method
         conversation = task
+
         for _ in range(self.max_iters):
             for agent in self.agents:
-                result = agent.run(conversation)
+                result = agent.run(conversation, *args, **kwargs)
                 self.results.append({"agent": agent, "response": result})
                 conversation += result
 
