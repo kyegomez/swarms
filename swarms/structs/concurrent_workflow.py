@@ -89,35 +89,70 @@ class ConcurrentWorkflow(BaseWorkflow):
         """
         loop = 0
         while loop < self.max_loops:
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=self.max_workers
-            ) as executor:
-                futures = {
-                    executor.submit(task.execute): task
-                    for task in self.task_pool
-                }
-                results = []
 
-                for future in concurrent.futures.as_completed(futures):
-                    task = futures[future]
-                    try:
-                        result = future.result()
-                        if self.print_results:
-                            logger.info(f"Task {task}: {result}")
-                        if self.return_results:
-                            results.append(result)
-                    except Exception as e:
-                        logger.error(
-                            f"Task {task} generated an exception: {e}"
-                        )
+            if self.tasks is not None:
+                with concurrent.futures.ThreadPoolExecutor(
+                    max_workers=self.max_workers
+                ) as executor:
+                    futures = {
+                        executor.submit(task.execute): task
+                        for task in self.task_pool
+                    }
+                    results = []
 
-            loop += 1
-            if self.stopping_condition and self.stopping_condition(
-                results
-            ):
+                    for future in concurrent.futures.as_completed(futures):
+                        task = futures[future]
+                        try:
+                            result = future.result()
+                            if self.print_results:
+                                logger.info(f"Task {task}: {result}")
+                            if self.return_results:
+                                results.append(result)
+                        except Exception as e:
+                            logger.error(
+                                f"Task {task} generated an exception: {e}"
+                            )
+
+                loop += 1
+                if self.stopping_condition and self.stopping_condition(
+                    results
+                ):
+                    break
+
+            elif self.agents is not None:
+                with concurrent.futures.ThreadPoolExecutor(
+                    max_workers=self.max_workers
+                ) as executor:
+                    futures = {
+                        executor.submit(agent.run): agent
+                        for agent in self.agents
+                    }
+                    results = []
+
+                    for future in concurrent.futures.as_completed(futures):
+                        agent = futures[future]
+                        try:
+                            result = future.result()
+                            if self.print_results:
+                                logger.info(f"Agent {agent}: {result}")
+                            if self.return_results:
+                                results.append(result)
+                        except Exception as e:
+                            logger.error(
+                                f"Agent {agent} generated an exception: {e}"
+                            )
+
+                loop += 1
+                if self.stopping_condition and self.stopping_condition(
+                    results
+                ):
+                    break
+
+            else:
+                logger.warning("No tasks or agents found in the workflow.")
                 break
 
-        return results if self.return_results else None
+            return results if self.return_results else None
 
     def list_tasks(self):
         """Prints a list of the tasks in the workflow."""
