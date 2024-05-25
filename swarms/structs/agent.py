@@ -20,12 +20,13 @@ from swarms.prompts.aot_prompt import algorithm_of_thoughts_sop
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
-from swarms.prompts.worker_prompt import tool_usage_worker_prompt
 from swarms.structs.conversation import Conversation
 from swarms.structs.yaml_model import YamlModel
 from swarms.telemetry.user_utils import get_user_device_data
 from swarms.tools.base_tool import BaseTool
-from swarms.tools.code_interpreter import SubprocessCodeInterpreter
+from swarms.tools.prebuilt.code_interpreter import (
+    SubprocessCodeInterpreter,
+)
 from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
     multi_base_model_to_openai_function,
@@ -33,6 +34,12 @@ from swarms.tools.pydantic_to_json import (
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.tools.py_func_to_openai_func_str import (
+    get_openai_function_schema_from_func,
+)
+from swarms.tools.func_calling_executor import openai_tool_executor
+from swarms.structs.base_structure import BaseStructure
+from swarms.prompts.tools import tool_sop_prompt
 
 
 # Utils
@@ -76,7 +83,7 @@ ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
 # [FEAT][AGENT]
-class Agent:
+class Agent(BaseStructure):
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
     ingest any type of docs like PDFs, Txts, Markdown, Json, and etc for the agent. Here is a list of features.
@@ -182,7 +189,8 @@ class Agent:
         agent_name: Optional[str] = "swarm-worker-01",
         agent_description: Optional[str] = None,
         system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
-        tools: List[BaseTool] = None,
+        # TODO: Change to callable, then parse the callable to a string
+        tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
@@ -244,6 +252,7 @@ class Agent:
         *args,
         **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.id = id
         self.llm = llm
         self.template = template
@@ -376,30 +385,69 @@ class Agent:
         #     logger.setLevel(logging.INFO)
 
         if tools is not None:
-            self.tool_executor = BaseTool(
-                verbose=True,
-                auto_execute_tool=execute_tool,
-                functions=tools,
+
+            # Add the tool prompt to the memory
+            self.short_memory.add(role="System", content=tool_sop_prompt())
+
+            # # BaseTool
+            # self.base_tool = BaseTool(
+            #     functions=tools,
+            #     verbose=verbose,
+            #     auto_execute_tool=execute_tool,
+            #     autocheck=True,
+            #     base_models=list_base_models,
+            # )
+
+            # Print number of tools
+            logger.info(f"Number of tools: {len(tools)}")
+            logger.info(
+                "Tools provided, Automatically converting to OpenAI function"
             )
 
-        # If tools are provided then set the tool prompt by adding to sop
-        if self.tools is not None:
-            if custom_tools_prompt is not None:
-                tools_prompt = custom_tools_prompt(tools=self.tools)
+            # Now the names of the tools
+            for tool in tools:
+                logger.info(f"Tool: {tool.__name__}")
 
-                # Append the tools prompt to the short_term_memory
-                self.short_memory.add(
-                    role=self.agent_name, content=tools_prompt
+            # Transform the tools into an openai schema
+            for tool in tools:
+
+                # Transform the tool into a openai function calling schema
+                tool_schema_list = get_openai_function_schema_from_func(
+                    tool,
+                    name=tool.__name__,
+                    description=tool.__doc__,
                 )
 
-            else:
-                # Default tool prompt
-                tools_prompt = tool_usage_worker_prompt(tools=self.tools)
+                # Transform the dictionary to a string
+                tool_schema_list = json.dumps(tool_schema_list, indent=4)
+                # print(tool_schema_list)
 
-                # Append the tools prompt to the short_term_memory
+                # Add the tool schema to the short memory
                 self.short_memory.add(
-                    role=self.agent_name, content=tools_prompt
+                    role="System", content=tool_schema_list
                 )
+
+            # Now create a function calling map for every tools
+            self.function_map = {tool.__name__: tool for tool in tools}
+
+        # # If tools are provided then set the tool prompt by adding to sop
+        # if self.tools is not None:
+        #     if custom_tools_prompt is not None:
+        #         tools_prompt = custom_tools_prompt(tools=self.tools)
+
+        #         # Append the tools prompt to the short_term_memory
+        #         self.short_memory.add(
+        #             role=self.agent_name, content=tools_prompt
+        #         )
+
+        #     else:
+        #         # Default tool prompt
+        #         tools_prompt = tool_usage_worker_prompt(tools=self.tools)
+
+        #         # Append the tools prompt to the short_term_memory
+        #         self.short_memory.add(
+        #             role=self.agent_name, content=tools_prompt
+        #         )
 
         # Set the logger handler
         if logger_handler:
@@ -467,6 +515,8 @@ class Agent:
 
         if self.sop is not None:
             self.short_memory.add(role=self.user_name, content=self.sop)
+
+        # If the device is not provided then get the device data
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -756,7 +806,6 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        function_map: Dict[str, Callable] = None,
         *args,
         **kwargs,
     ):
@@ -825,25 +874,20 @@ class Agent:
 
                         # Check if tools is not None
                         if self.tools is not None:
-                            # Extract code from markdown
-                            response = extract_code_from_markdown(response)
 
-                            # Execute the tool by name [OLD VERISON]
-                            # execute_tool_by_name(
-                            #     response,
-                            #     self.tools,
-                            #     stop_token=self.stopping_token,
-                            # )
+                            # Extract json from markdown
+                            response = extract_code_from_markdown(response)
 
                             # Try executing the tool
                             if self.execute_tool is not False:
                                 try:
                                     logger.info("Executing tool...")
 
-                                    # Execute the tool
-                                    out = self.tool_executor.execute_tool(
-                                        response,
-                                        function_map,
+                                    # try to Execute the tool and return a string
+                                    out = openai_tool_executor(
+                                        tools=response,
+                                        function_map=self.function_map,
+                                        return_as_string=True,
                                     )
 
                                     print(f"Tool Output: {out}")
@@ -947,9 +991,8 @@ class Agent:
                     break  # Exit the loop if all retry attempts fail
 
                 # Check stopping conditions
-                if self.stopping_token is not None:
-                    if self.stopping_token in response:
-                        break
+                # if self.stopping_token in response:
+                #     break
                 elif (
                     self.stopping_condition is not None
                     and self._check_stopping_condition(response)
@@ -993,7 +1036,7 @@ class Agent:
 
             # Prepare the output for the output model
             if self.output_type is not None:
-                logger.info("Preparing output for output model.")
+                # logger.info("Preparing output for output model.")
                 response = self.prepare_output_for_output_model(response)
                 print(f"Response after output model: {response}")
 

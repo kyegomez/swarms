@@ -5,14 +5,13 @@ from swarms.tools.py_func_to_openai_func_str import (
     get_openai_function_schema_from_func,
     load_basemodels_if_needed,
 )
-from swarms.tools.openai_tool_creator_decorator import openai_tool_executor
+from swarms.tools.func_calling_executor import openai_tool_executor
 from typing import Callable, Optional, Any, Dict, List
 from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
     multi_base_model_to_openai_function,
-    function_to_str,
-    functions_to_str,
 )
+from swarms.tools.func_to_str import function_to_str, functions_to_str
 from swarms.tools.function_util import process_tool_docs
 from typing import Union
 
@@ -330,6 +329,40 @@ class BaseTool(BaseModel):
 
         # Execute the tool
         return func(**tool_params)
+
+    def check_str_for_functions_valid(
+        self, output: str, function_map: Dict[str, Callable]
+    ):
+        """
+        Check if the output is a valid JSON string, and if the function name in the JSON matches any name in the function map.
+
+        Args:
+            output (str): The output to check.
+            function_map (dict): A dictionary mapping function names to functions.
+
+        Returns:
+            bool: True if the output is valid and the function name matches, False otherwise.
+        """
+        try:
+            # Parse the output as JSON
+            data = json.loads(output)
+
+            # Check if the output matches the schema
+            if (
+                data.get("type") == "function"
+                and "function" in data
+                and "name" in data["function"]
+            ):
+
+                # Check if the function name matches any name in the function map
+                function_name = data["function"]["name"]
+                if function_name in function_map:
+                    return True
+
+        except json.JSONDecodeError:
+            pass
+
+        return False
 
 
 # # Example function definitions and mappings

@@ -180,3 +180,38 @@ def tools_prompt_prep(docs: str = None, scenarios: str = SCENARIOS):
     ‘‘‘
     """
     return PROMPT
+
+
+def is_str_valid_func_output(
+    output: str = None, function_map: callable = None
+):
+    """
+    Check if the output is a valid JSON string, and if the function name in the JSON matches any name in the function map.
+
+    Args:
+        output (str): The output to check.
+        function_map (dict): A dictionary mapping function names to functions.
+
+    Returns:
+        bool: True if the output is valid and the function name matches, False otherwise.
+    """
+    try:
+        # Parse the output as JSON
+        data = json.loads(output)
+
+        # Check if the output matches the schema
+        if (
+            data.get("type") == "function"
+            and "function" in data
+            and "name" in data["function"]
+        ):
+
+            # Check if the function name matches any name in the function map
+            function_name = data["function"]["name"]
+            if function_name in function_map:
+                return True
+
+    except json.JSONDecodeError:
+        pass
+
+    return False

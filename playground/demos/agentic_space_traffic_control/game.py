@@ -7,7 +7,7 @@ from playground.demos.agentic_space_traffic_control.prompts import (
     WEATHER_ANALYST_SYSTEM_PROMPT,
     SPACE_TRAFFIC_CONTROLLER_SYS_PROMPT,
 )
-from playground.demos.agentic_space_traffic_control.tools import (
+from tools import (
     fetch_weather_data,
 )
 from swarms.tools import get_openai_function_schema_from_func

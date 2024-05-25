@@ -3,7 +3,7 @@ from threading import Lock
 from time import sleep
 from typing import Callable, List, Optional
 
-from swarms import Agent
+from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
 
@@ -57,6 +57,26 @@ class AgentLoadBalancer(BaseSwarm):
         }
         self.lock = Lock()
         self.cooldown_time = cooldown_time
+        self.swarm_initialization()
+
+    def swarm_initialization(self):
+        logger.info(
+            "Initializing AgentLoadBalancer with the following agents:"
+        )
+
+        # Make sure all the agents exist
+        assert self.agents, "No agents provided to the Load Balancer"
+
+        # Assert that all agents are of type Agent
+        for agent in self.agents:
+            assert isinstance(
+                agent, Agent
+            ), "All agents should be of type Agent"
+
+        for agent in self.agents:
+            logger.info(f"Agent Name: {agent.agent_name}")
+
+        logger.info("Load Balancer Initialized Successfully!")
 
     def get_available_agent(self) -> Optional[Agent]:
         """
@@ -72,6 +92,9 @@ class AgentLoadBalancer(BaseSwarm):
                 for agent in self.agents
                 if self.agent_status[agent.agent_name]
             ]
+            logger.info(
+                f"Available agents: {[agent.agent_name for agent in available_agents]}"
+            )
             if not available_agents:
                 return None
             return random.choice(available_agents)
@@ -116,7 +139,7 @@ class AgentLoadBalancer(BaseSwarm):
         for agent_name, stats in self.agent_performance.items():
             logger.info(f"{agent_name}: {stats}")
 
-    def run_task(self, task: str, *args, **kwargs) -> str:
+    def run(self, task: str, *args, **kwargs) -> str:
         """
         Run a single task using an available agent.
 
@@ -174,7 +197,7 @@ class AgentLoadBalancer(BaseSwarm):
         """
         results = []
         for task in tasks:
-            result = self.run_task(task)
+            result = self.run(task)
             results.append(result)
         return results
 
@@ -191,7 +214,7 @@ class AgentLoadBalancer(BaseSwarm):
         """
         results = []
         for _ in range(self.max_loops):
-            result = self.run_task(task)
+            result = self.run(task)
             results.append(result)
         return results
 
@@ -207,7 +230,7 @@ class AgentLoadBalancer(BaseSwarm):
 
         """
         try:
-            result = self.run_task(task)
+            result = self.run(task)
             callback(result)
         except Exception as e:
             logger.error(f"Task failed: {e}")
@@ -236,7 +259,7 @@ class AgentLoadBalancer(BaseSwarm):
 
         def target():
             try:
-                result[0] = self.run_task(task)
+                result[0] = self.run(task)
             except Exception as e:
                 exception[0] = e
 

@@ -2,10 +2,10 @@ import os
 import shutil
 
 
-def cleanup_json_logs():
+def cleanup_json_logs(name: str = None):
     # Define the root directory and the target directory
     root_dir = os.getcwd()
-    target_dir = os.path.join(root_dir, "artifacts5")
+    target_dir = os.path.join(root_dir, name)
 
     # Create the target directory if it doesn't exist
     if not os.path.exists(target_dir):
@@ -31,4 +31,4 @@ def cleanup_json_logs():
 
 
 # Call the function
-cleanup_json_logs()
+cleanup_json_logs("json_logs")

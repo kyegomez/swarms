@@ -14,6 +14,7 @@ runs
 chroma
 Unit Testing Agent_state.json
 Devin_state.json
+json_logs
 Medical Image Diagnostic Agent_state.json
 D_state.json
 swarms/__pycache__

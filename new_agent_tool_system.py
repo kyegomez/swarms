@@ -13,7 +13,7 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms import Agent, OpenAIChat
+from swarms import Agent, llama3Hosted
 
 # Load the environment variables
 load_dotenv()
@@ -56,9 +56,8 @@ def rapid_api(query: str):
 api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
-llm = OpenAIChat(
+llm = llama3Hosted(
     temperature=0.5,
-    openai_api_key=api_key,
 )
 
 
@@ -66,11 +65,13 @@ llm = OpenAIChat(
 agent = Agent(
     agent_name="Research Agent",
     llm=llm,
-    max_loops=1,
+    max_loops=3,
     dashboard=True,
     tools=[search_api, weather_api, rapid_api],
+    interactive=True,
+    execute_tool=True,
 )
 
 # Run the workflow on a task
-out = agent.run("Generate a 10,000 word blog on health and wellness.")
+out = agent.run("Use the weather tool in Miami")
 print(out)

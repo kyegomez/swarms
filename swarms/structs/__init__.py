@@ -11,7 +11,6 @@ from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.groupchat import GroupChat, GroupChatManager
-from swarms.structs.hiearchical_swarm import HiearchicalSwarm
 from swarms.structs.majority_voting import (
     MajorityVoting,
     majority_voting,
@@ -83,6 +82,10 @@ from swarms.structs.yaml_model import (
     get_type_name,
     pydantic_type_to_yaml_schema,
 )
+
+# New Swarms
+from swarms.structs.swarm_load_balancer import AgentLoadBalancer
+from swarms.structs.hiearchical_swarm import HiearchicalSwarm
 
 __all__ = [
     "Agent",

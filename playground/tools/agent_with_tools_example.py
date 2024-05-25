@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from swarms import Agent, OpenAIChat
-from swarms.tools.tool import tool
+from swarms import tool
 
 load_dotenv()
 

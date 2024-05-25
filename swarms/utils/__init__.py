@@ -1,5 +1,7 @@
 from swarms.utils.class_args_wrapper import print_class_parameters
-from swarms.tools.code_interpreter import SubprocessCodeInterpreter
+from swarms.tools.prebuilt.code_interpreter import (
+    SubprocessCodeInterpreter,
+)
 from swarms.utils.data_to_text import (
     csv_to_text,
     data_to_text,
@@ -19,7 +21,7 @@ from swarms.utils.find_img_path import find_image_path
 from swarms.utils.json_output_parser import JsonOutputParser
 from swarms.utils.llm_metrics_decorator import metrics_decorator
 from swarms.utils.markdown_message import display_markdown_message
-from swarms.tools.math_eval import math_eval
+from swarms.tools.prebuilt.math_eval import math_eval
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.remove_json_whitespace import (
