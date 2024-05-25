@@ -109,7 +109,7 @@ print(out)
 An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
 
 ```python
-from swarms import Agent, ChromaDB, OpenAIChat, tool
+from swarms import Agent, ChromaDB, OpenAIChat
 
 # Making an instance of the ChromaDB class
 memory = ChromaDB(
@@ -120,7 +120,6 @@ memory = ChromaDB(
 )
 
 # Initialize a tool
-@tool
 def search_api(query: str):
     # Add your logic here
     return query
@@ -185,7 +184,7 @@ Implementation of Devil in less than 90 lines of code with several tools:
 terminal, browser, and edit files!
 
 ```python
-from swarms import Agent, Anthropic, tool
+from swarms import Agent, Anthropic
 import subprocess
 
 # Model
@@ -194,7 +193,6 @@ llm = Anthropic(
 )
 
 # Tools
-@tool
 def terminal(
     code: str,
 ):
@@ -212,8 +210,6 @@ def terminal(
     ).stdout
     return str(out)
 
-
-@tool
 def browser(query: str):
     """
     Search the query in the browser with the `browser` tool.
@@ -230,7 +226,6 @@ def browser(query: str):
     webbrowser.open(url)
     return f"Searching for {query} in the browser."
 
-@tool
 def create_file(file_path: str, content: str):
     """
     Create a file using the file editor tool.
@@ -246,7 +241,6 @@ def create_file(file_path: str, content: str):
         file.write(content)
     return f"File {file_path} created successfully."
 
-@tool
 def file_editor(file_path: str, mode: str, content: str):
     """
     Edit a file using the file editor tool.
@@ -1106,6 +1100,14 @@ print(output)
 ```
 
 ## `HierarhicalSwarm`
+Coming soon...
+
+
+## `AgentLoadBalancer`
+Coming soon...
+
+
+## `GraphSwarm`
 Coming soon...
 
 
