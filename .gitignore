@@ -24,6 +24,7 @@ venv
 .DS_Store
 Cargo.lock
 .DS_STORE
+artifacts_logs
 Cargo.lock
 Medical Treatment Recommendation Agent_state.json
 swarms/agents/.DS_Store

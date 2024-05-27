@@ -1,15 +1,14 @@
 import logging
 import os
 import uuid
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 import chromadb
-import numpy as np
 from dotenv import load_dotenv
 
+from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.markdown_message import display_markdown_message
-from swarms.memory.base_vectordb import BaseVectorDatabase
 
 # Load environment variables
 load_dotenv()
@@ -46,7 +45,7 @@ class ChromaDB(BaseVectorDatabase):
         metric: str = "cosine",
         output_dir: str = "swarms",
         limit_tokens: Optional[int] = 1000,
-        n_results: int = 2,
+        n_results: int = 3,
         embedding_function: Callable = None,
         docs_folder: str = None,
         verbose: bool = False,
@@ -108,8 +107,6 @@ class ChromaDB(BaseVectorDatabase):
     def add(
         self,
         document: str,
-        images: List[np.ndarray] = None,
-        img_urls: List[str] = None,
         *args,
         **kwargs,
     ):
@@ -128,11 +125,12 @@ class ChromaDB(BaseVectorDatabase):
             self.collection.add(
                 ids=[doc_id],
                 documents=[document],
-                images=images,
-                uris=img_urls,
                 *args,
                 **kwargs,
             )
+            print("-----------------")
+            print("Document added successfully")
+            print("-----------------")
             return doc_id
         except Exception as e:
             raise Exception(f"Failed to add document: {str(e)}")
@@ -140,7 +138,6 @@ class ChromaDB(BaseVectorDatabase):
     def query(
         self,
         query_text: str,
-        query_images: List[np.ndarray],
         *args,
         **kwargs,
     ):
@@ -157,8 +154,7 @@ class ChromaDB(BaseVectorDatabase):
         try:
             docs = self.collection.query(
                 query_texts=[query_text],
-                query_images=query_images,
-                n_results=self.n_docs,
+                n_results=self.n_results,
                 *args,
                 **kwargs,
             )["documents"]
@@ -177,23 +173,12 @@ class ChromaDB(BaseVectorDatabase):
         """
         added_to_db = False
 
-        image_extensions = [
-            ".jpg",
-            ".jpeg",
-            ".png",
-        ]
-        images = []
         for root, dirs, files in os.walk(self.docs_folder):
             for file in files:
+                file = os.path.join(self.docs_folder, file)
                 _, ext = os.path.splitext(file)
-                if ext.lower() in image_extensions:
-                    images.append(os.path.join(root, file))
-                else:
-                    data = data_to_text(file)
-                    added_to_db = self.add([data])
-                    print(f"{file} added to Database")
-        if images:
-            added_to_db = self.add(img_urls=[images])
-            print(f"{len(images)} images added to Database ")
+                data = data_to_text(file)
+                added_to_db = self.add([data])
+                print(f"{file} added to Database")
 
         return added_to_db

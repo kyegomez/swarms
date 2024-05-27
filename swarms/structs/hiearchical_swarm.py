@@ -1,7 +1,7 @@
 import json
 from typing import List
 
-from beartype import beartype
+# from beartype import beartype
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
@@ -214,7 +214,6 @@ class HiearchicalSwarm(BaseSwarm):
             logger.error("Invalid JSON data, try again.")
             raise json.JSONDecodeError
 
-    @beartype
     def select_agent_and_send_task(
         self, name: str = None, task: str = None, *args, **kwargs
     ):
@@ -246,7 +245,6 @@ class HiearchicalSwarm(BaseSwarm):
             logger.error(f"Error: {e}")
             raise e
 
-    @beartype
     def run(self, task: str = None, *args, **kwargs):
         """
         Run the hierarchical swarm.

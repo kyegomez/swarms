@@ -11,7 +11,6 @@ agent1 = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    tools=[],
 )
 agent2 = Agent(
     agent_name="Summarizer",
@@ -19,7 +18,6 @@ agent2 = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    tools=[],
 )
 
 # Create the Sequential workflow

@@ -31,4 +31,4 @@ def cleanup_json_logs(name: str = None):
 
 
 # Call the function
-cleanup_json_logs("json_logs")
+cleanup_json_logs("artifacts_logs")
