@@ -168,6 +168,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
 
             # Return the JSON object if return_json is True
             if return_json is True:
+                print(response_json)
                 return response_json
             else:
                 return response_json["choices"][0]["message"]["content"]

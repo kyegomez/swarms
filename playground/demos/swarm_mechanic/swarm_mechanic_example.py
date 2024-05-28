@@ -25,12 +25,6 @@ llm = llama3Hosted(max_tokens=3000)
 memory = ChromaDB(output_dir="swarm_mechanic", n_results=2, verbose=True)
 
 
-# Perplexity Agent
-# def webbrowser(query: str):
-#     # put your logic here
-#     return query
-
-
 # Output
 class EvaluatorOuputSchema(BaseModel):
     evaluation: str = None

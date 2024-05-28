@@ -54,6 +54,10 @@ class AutoSwarmRouter(BaseSwarm):
         # Create a dictionary of swarms
         self.swarm_dict = {swarm.name: swarm for swarm in self.swarms}
 
+        logger.info(
+            f"AutoSwarmRouter has been initialized with {self.len_of_swarms()} swarms."
+        )
+
     def run(self, task: str = None, *args, **kwargs):
         try:
             """Run the swarm simulation and route the task to the appropriate swarm."""
@@ -91,6 +95,21 @@ class AutoSwarmRouter(BaseSwarm):
         except Exception as e:
             logger.error(f"Error: {e}")
             raise e
+
+    def len_of_swarms(self):
+        return print(len(self.swarms))
+
+    def list_available_swarms(self):
+        for swarm in self.swarms:
+            try:
+                logger.info(
+                    f"Swarm Name: {swarm.name} || Swarm Description: {swarm.description} "
+                )
+            except Exception as error:
+                logger.error(
+                    f"Error Detected You may not have swarms available: {error}"
+                )
+                raise error
 
 
 class AutoSwarm(BaseSwarm):
@@ -141,6 +160,19 @@ class AutoSwarm(BaseSwarm):
             **kwargs,
         )
 
+        if name is None:
+            raise ValueError(
+                "A name must be provided for the AutoSwarm, what swarm do you want to use?"
+            )
+
+        if verbose is True:
+            self.init_logging()
+
+    def init_logging(self):
+        logger.info("AutoSwarm has been activated. Ready for usage.")
+
+    # def name_swarm_check(self, name: str = None):
+
     def run(self, task: str = None, *args, **kwargs):
         """Run the swarm simulation."""
         try:
@@ -175,3 +207,15 @@ class AutoSwarm(BaseSwarm):
                 f"Error: {e} try optimizing the inputs and try again."
             )
             raise e
+
+    def list_all_swarms(self):
+        for swarm in self.swarms:
+            try:
+                logger.info(
+                    f"Swarm Name: {swarm.name} || Swarm Description: {swarm.description} "
+                )
+            except Exception as error:
+                logger.error(
+                    f"Error Detected You may not have swarms available: {error}"
+                )
+                raise error

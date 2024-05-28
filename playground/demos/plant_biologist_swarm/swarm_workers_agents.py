@@ -1,3 +1,11 @@
+"""
+Todo
+- Add more data in RAG for hydroponic based solutions with images and very detailed captions
+- Introduce JSON function calling for the diagnoser -> good / bad -> if bad then disease detecter agent
+- List of common desases -> if agent picks one of those diseases -> select another of available treatments
+- Fix error choice
+"""
+
 import os
 
 from dotenv import load_dotenv
@@ -22,6 +30,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # llm = llm,
 llm = GPT4VisionAPI(
     max_tokens=4000,
+    model_name="gpt-4o",
 )
 
 # Initialize Diagnoser Agent
@@ -101,7 +110,7 @@ agents = [
     harvester_agent,
 ]
 
-task = "Conduct a diagnosis on the patient's symptoms."
+task = "Conduct a diagnosis on the plants's symptoms, this wasn't grown in dirt, it grew from hydroponics"
 img = "tomato.jpg"
 
 loop = 0

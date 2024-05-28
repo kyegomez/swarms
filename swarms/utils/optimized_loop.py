@@ -30,8 +30,14 @@ def optimized_loop(
 
 # Sample data, operation, and condition for benchmarking
 data = list(range(1000000))
-operation = lambda x: x * x
-condition = lambda x: x % 2 == 0
+
+
+def operation(x):
+    return x * x
+
+
+def condition(x):
+    return x % 2 == 0
 
 
 # Define a traditional loop for comparison
