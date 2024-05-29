@@ -106,7 +106,6 @@ nav:
   - Why does Swarms Exist?:
     - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
-    
 - Swarms Cloud API:
   - Overview: "swarms_cloud/main.md"
   - Available Models: "swarms_cloud/available_models.md"
@@ -118,7 +117,7 @@ nav:
   - Overview: "swarms/index.md"
   - DIY Build Your Own Agent: "diy_your_own_agent.md"
   - Agents with Tools: "examples/tools_agent.md"
-  - Multi-Agent Orchestration: "swarms/structs/multi_agent_orchestration.md"
+  # - Multi-Agent Orchestration: "swarms/structs/multi_agent_orchestration.md"
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
@@ -143,7 +142,7 @@ nav:
         - BaseStructure: "swarms/structs/basestructure.md"
         - Task: "swarms/structs/task.md"
         - YamlModel: "swarms/structs/yaml_model.md"
-        - BaseSwarm: "swarms/structs/base_swarm.md"
+        # - BaseSwarm: "swarms/structs/base_swarm.md"
         - BaseWorkflow: "swarms/structs/baseworkflow.md"
       - Workflows:
         - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
