@@ -3,6 +3,7 @@ import subprocess
 import threading
 import time
 import traceback
+from swarms.utils.loguru_logger import logger
 
 
 class SubprocessCodeInterpreter:
@@ -24,8 +25,18 @@ class SubprocessCodeInterpreter:
         self,
         start_cmd: str = "python3",
         debug_mode: bool = False,
+        max_retries: int = 3,
+        verbose: bool = False,
+        retry_count: int = 0,
+        *args,
+        **kwargs,
     ):
         self.process = None
+        self.start_cmd = start_cmd
+        self.debug_mode = debug_mode
+        self.max_retries = max_retries
+        self.verbose = verbose
+        self.retry_count = retry_count
         self.output_queue = queue.Queue()
         self.done = threading.Event()
 
@@ -80,6 +91,7 @@ class SubprocessCodeInterpreter:
         if self.process:
             self.terminate()
 
+        logger.info(f"Starting subprocess with command: {self.start_cmd}")
         self.process = subprocess.Popen(
             self.start_cmd.split(),
             stdin=subprocess.PIPE,
@@ -100,6 +112,8 @@ class SubprocessCodeInterpreter:
             daemon=True,
         ).start()
 
+        return self.process
+
     def run(self, code: str):
         """Run the code in the subprocess
 
@@ -109,10 +123,9 @@ class SubprocessCodeInterpreter:
         Yields:
             _type_: _description_
         """
-        retry_count = 0
-        max_retries = 3
 
         # Setup
+        logger.info("Running code in subprocess")
         try:
             code = self.preprocess_code(code)
             if not self.process:
@@ -121,7 +134,7 @@ class SubprocessCodeInterpreter:
             yield {"output": traceback.format_exc()}
             return
 
-        while retry_count <= max_retries:
+        while self.retry_count <= self.max_retries:
             if self.debug_mode:
                 print(f"Running code:\n{code}\n---")
 
@@ -132,22 +145,23 @@ class SubprocessCodeInterpreter:
                 self.process.stdin.flush()
                 break
             except BaseException:
-                if retry_count != 0:
+                if self.retry_count != 0:
                     # For UX, I like to hide this if it happens once. Obviously feels better to not see errors
                     # Most of the time it doesn't matter, but we should figure out why it happens frequently with:
                     # applescript
                     yield {"output": traceback.format_exc()}
                     yield {
                         "output": (
-                            "Retrying..." f" ({retry_count}/{max_retries})"
+                            "Retrying..."
+                            f" ({self.retry_count}/{self.max_retries})"
                         )
                     }
                     yield {"output": "Restarting process."}
 
                 self.start_process()
 
-                retry_count += 1
-                if retry_count > max_retries:
+                self.retry_count += 1
+                if self.retry_count > self.max_retries:
                     yield {
                         "output": (
                             "Maximum retries reached. Could not"
@@ -209,8 +223,8 @@ class SubprocessCodeInterpreter:
 
 # interpreter = SubprocessCodeInterpreter()
 # interpreter.start_cmd = "python3"
-# for output in interpreter.run("""
+# out = interpreter.run("""
 # print("hello")
 # print("world")
-# """):
-#     print(output)
+# """)
+# print(out)

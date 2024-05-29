@@ -84,7 +84,7 @@ def perplexity_agent(task: str = None, *args, **kwargs):
     """
     out = fetch_web_articles_bing_api(
         task,
-        subscription_key=None,
+        subscription_key="940fe346f0a149ea9f34d9969359aed7",
     )
 
     # Sources
@@ -96,5 +96,7 @@ def perplexity_agent(task: str = None, *args, **kwargs):
     return agent_response
 
 
-out = perplexity_agent("What are the best ways to hold a cat?")
+out = perplexity_agent(
+    "What are the biggest GPU chips alternatives for transformer modelsm, look up Etched"
+)
 print(out)

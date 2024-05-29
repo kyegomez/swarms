@@ -118,16 +118,17 @@ nav:
   - Overview: "swarms/index.md"
   - DIY Build Your Own Agent: "diy_your_own_agent.md"
   - Agents with Tools: "examples/tools_agent.md"
+  - Multi-Agent Orchestration: "swarms/structs/multi_agent_orchestration.md"
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
-    - Language:
+    - Language Models Available:
       - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"
       - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
       - OpenAIChat: "swarms/models/openai.md"
-    - MultiModal:
+    - MultiModal Models Available:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"
@@ -142,10 +143,11 @@ nav:
         - BaseStructure: "swarms/structs/basestructure.md"
         - Task: "swarms/structs/task.md"
         - YamlModel: "swarms/structs/yaml_model.md"
+        - BaseSwarm: "swarms/structs/base_swarm.md"
+        - BaseWorkflow: "swarms/structs/baseworkflow.md"
       - Workflows:
         - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
-        - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
-        - BaseWorkflow: "swarms/structs/baseworkflow.md"      
+        - SequentialWorkflow: "swarms/structs/sequential_workflow.md"      
       - Multi Agent Architectures:
         - Conversation: "swarms/structs/conversation.md"
         - SwarmNetwork: "swarms/structs/swarmnetwork.md"
@@ -156,8 +158,7 @@ nav:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - ShortTermMemory: "swarms/memory/short_term_memory.md"
   - swarms.tools:
-    - Tool Decorator: "swarms/tools/decorator.md"
-    - BaseTool: "swarms/tools/base_tool.md"
+    - The Swarms Tool System Functions, Pydantic BaseModels as Tools, and Radical Customization: "swarms/tools/main.md"
 - Guides:
   - Agents:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"

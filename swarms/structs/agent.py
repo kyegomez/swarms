@@ -23,12 +23,10 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 from swarms.structs.conversation import Conversation
 from swarms.structs.yaml_model import YamlModel
 from swarms.telemetry.user_utils import get_user_device_data
-from swarms.tools.base_tool import BaseTool
 from swarms.tools.prebuilt.code_interpreter import (
     SubprocessCodeInterpreter,
 )
 from swarms.tools.pydantic_to_json import (
-    base_model_to_openai_function,
     multi_base_model_to_openai_function,
 )
 from swarms.utils.data_to_text import data_to_text
@@ -40,6 +38,10 @@ from swarms.tools.py_func_to_openai_func_str import (
 from swarms.tools.func_calling_executor import openai_tool_executor
 from swarms.structs.base_structure import BaseStructure
 from swarms.prompts.tools import tool_sop_prompt
+from swarms.tools.func_calling_utils import (
+    pydantic_model_to_json_str,
+    prepare_output_for_output_model,
+)
 
 
 # Utils
@@ -70,6 +72,10 @@ def task_id():
         str: A string representation of a UUID.
     """
     return str(uuid.uuid4())
+
+
+def exists(val):
+    return val is not None
 
 
 # Step ID generator
@@ -249,6 +255,7 @@ class Agent(BaseStructure):
         planning: Optional[str] = False,
         planning_prompt: Optional[str] = None,
         device: str = None,
+        custom_planning_prompt: str = None,
         *args,
         **kwargs,
     ):
@@ -347,12 +354,6 @@ class Agent(BaseStructure):
         # Memory
         self.feedback = []
 
-        # Initialize the code executor
-        if self.code_interpreter is not False:
-            self.code_executor = SubprocessCodeInterpreter(
-                debug_mode=True,
-            )
-
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
         if preset_stopping_token is not None:
             self.stopping_token = "<DONE>"
@@ -369,7 +370,7 @@ class Agent(BaseStructure):
         )
 
         # If the docs exist then ingest the docs
-        if self.docs:
+        if self.docs is not None:
             self.ingest_docs(self.docs)
 
         # If docs folder exists then get the docs from docs folder
@@ -381,22 +382,13 @@ class Agent(BaseStructure):
         #     self.truncate_history()
 
         # If verbose is enabled then set the logger level to info
-        # if verbose:
+        # if verbose is not False:
         #     logger.setLevel(logging.INFO)
 
         if tools is not None:
 
             # Add the tool prompt to the memory
             self.short_memory.add(role="System", content=tool_sop_prompt())
-
-            # # BaseTool
-            # self.base_tool = BaseTool(
-            #     functions=tools,
-            #     verbose=verbose,
-            #     auto_execute_tool=execute_tool,
-            #     autocheck=True,
-            #     base_models=list_base_models,
-            # )
 
             # Print number of tools
             logger.info(f"Number of tools: {len(tools)}")
@@ -430,27 +422,8 @@ class Agent(BaseStructure):
             # Now create a function calling map for every tools
             self.function_map = {tool.__name__: tool for tool in tools}
 
-        # # If tools are provided then set the tool prompt by adding to sop
-        # if self.tools is not None:
-        #     if custom_tools_prompt is not None:
-        #         tools_prompt = custom_tools_prompt(tools=self.tools)
-
-        #         # Append the tools prompt to the short_term_memory
-        #         self.short_memory.add(
-        #             role=self.agent_name, content=tools_prompt
-        #         )
-
-        #     else:
-        #         # Default tool prompt
-        #         tools_prompt = tool_usage_worker_prompt(tools=self.tools)
-
-        #         # Append the tools prompt to the short_term_memory
-        #         self.short_memory.add(
-        #             role=self.agent_name, content=tools_prompt
-        #         )
-
         # Set the logger handler
-        if logger_handler:
+        if exists(logger_handler):
             logger.add(
                 f"{self.agent_name}.log",
                 level="INFO",
@@ -460,15 +433,13 @@ class Agent(BaseStructure):
                 diagnose=True,
             )
 
-        # logger.info("Creating Agent {}".format(self.agent_name))
-
         # If the tool types are provided
         if self.tool_schema is not None:
             # Log the tool schema
             logger.info(
                 "Tool schema provided, Automatically converting to OpenAI function"
             )
-            tool_schema_str = self.pydantic_model_to_json_str(
+            tool_schema_str = pydantic_model_to_json_str(
                 self.tool_schema, indent=4
             )
             logger.info(f"Tool Schema: {tool_schema_str}")
@@ -478,7 +449,7 @@ class Agent(BaseStructure):
             )
 
         # If a list of tool schemas is provided
-        if self.list_base_models is not None:
+        if exists(self.list_base_models):
             logger.info(
                 "List of tool schemas provided, Automatically converting to OpenAI function"
             )
@@ -509,11 +480,11 @@ class Agent(BaseStructure):
             logger.info(f"End of Agent {self.agent_name} History")
 
         # If the user inputs a list of strings for the sop then join them and set the sop
-        if self.sop_list:
+        if exists(self.sop_list):
             self.sop = "\n".join(self.sop_list)
             self.short_memory.add(role=self.user_name, content=self.sop)
 
-        if self.sop is not None:
+        if exists(self.sop):
             self.short_memory.add(role=self.user_name, content=self.sop)
 
         # If the device is not provided then get the device data
@@ -615,11 +586,13 @@ class Agent(BaseStructure):
 
     # ############## TOKENIZER FUNCTIONS ##############
 
-    def add_message_to_memory(self, message: str):
+    def add_message_to_memory(self, message: str, *args, **kwargs):
         """Add the message to the memory"""
         try:
             logger.info(f"Adding message to memory: {message}")
-            self.short_memory.add(role=self.agent_name, content=message)
+            self.short_memory.add(
+                role=self.agent_name, content=message, *args, **kwargs
+            )
         except Exception as error:
             print(
                 colored(f"Error adding message to memory: {error}", "red")
@@ -725,83 +698,6 @@ class Agent(BaseStructure):
 
     ########################## FUNCTION CALLING ##########################
 
-    def json_str_to_json(self, json_str: str):
-        """Convert a JSON string to a JSON object"""
-        return json.loads(json_str)
-
-    def json_str_to_pydantic_model(self, json_str: str, model: BaseModel):
-        """Convert a JSON string to a Pydantic model"""
-        return model.model_validate_json(json_str)
-
-    def json_str_to_dict(self, json_str: str):
-        """Convert a JSON string to a dictionary"""
-        return json.loads(json_str)
-
-    def pydantic_model_to_json_str(
-        self, model: BaseModel, indent, *args, **kwargs
-    ):
-        return json.dumps(
-            base_model_to_openai_function(model),
-            indent=indent,
-            *args,
-            **kwargs,
-        )
-
-    def dict_to_json_str(self, dictionary: dict):
-        """Convert a dictionary to a JSON string"""
-        return json.dumps(dictionary)
-
-    def dict_to_pydantic_model(self, dictionary: dict, model: BaseModel):
-        """Convert a dictionary to a Pydantic model"""
-        return model.model_validate_json(dictionary)
-
-    # def prep_pydantic_model_for_str(self, model: BaseModel):
-    #     # Convert to Function
-    #     out = self.pydantic_model_to_json_str(model)
-
-    #     # return function_to_str(out)
-
-    def tool_schema_to_str(
-        self, tool_schema: BaseModel = None, *args, **kwargs
-    ):
-        """Convert a tool schema to a string"""
-        out = base_model_to_openai_function(tool_schema)
-        return str(out)
-
-    def tool_schemas_to_str(
-        self, tool_schemas: List[BaseModel] = None, *args, **kwargs
-    ):
-        """Convert a list of tool schemas to a string"""
-        out = multi_base_model_to_openai_function(tool_schemas)
-        return str(out)
-
-    def str_to_pydantic_model(self, string: str, model: BaseModel):
-        """Convert a string to a Pydantic model"""
-        return model.model_validate_json(string)
-
-    def list_str_to_pydantic_model(
-        self, list_str: List[str], model: BaseModel
-    ):
-        """Convert a list of strings to a Pydantic model"""
-        # return model.model_validate_json(list_str)
-        for string in list_str:
-            return model.model_validate_json(string)
-
-    def prepare_output_for_output_model(
-        self, output: agent_output_type = None
-    ):
-        """Prepare the output for the output model"""
-        if self.output_type == BaseModel:
-            return self.str_to_pydantic_model(output, self.output_type)
-        elif self.output_type == dict:
-            return self.dict_to_json_str(output)
-        elif self.output_type == str:
-            return output
-        else:
-            return output
-
-    ########################## FUNCTION CALLING ##########################
-
     def run(
         self,
         task: Optional[str] = None,
@@ -815,27 +711,22 @@ class Agent(BaseStructure):
         try:
             self.activate_autonomous_agent()
 
-            # Check if the task is not None
-            if task is not None:
-                self.short_memory.add(role=self.user_name, content=task)
+            # Add task to memory
+            self.short_memory.add(role=self.user_name, content=task)
 
+            # Set the loop count
             loop_count = 0
 
             # Clear the short memory
-            # self.short_memory.clear()
-            response = None
+            # response = None
 
-            while (
-                self.max_loops == "auto"
-                or loop_count < self.max_loops
-                # or self.custom_loop_condition()
-            ):
+            while self.max_loops == "auto" or loop_count < self.max_loops:
                 loop_count += 1
                 self.loop_count_print(loop_count, self.max_loops)
                 print("\n")
 
                 # Dynamic temperature
-                if self.dynamic_temperature_enabled:
+                if self.dynamic_temperature_enabled is True:
                     self.dynamic_temperature()
 
                 # Task prompt
@@ -845,17 +736,6 @@ class Agent(BaseStructure):
                 success = False
                 while attempt < self.retry_attempts and not success:
                     try:
-                        if self.planning is not False:
-                            plan = self.llm(self.planning_prompt)
-
-                            # Add the plan to the memory
-                            self.short_memory.add(
-                                role=self.agent_name, content=plan
-                            )
-
-                            task_prompt = (
-                                self.short_memory.return_history_as_string()
-                            )
 
                         response_args = (
                             (task_prompt, *args)
@@ -874,68 +754,10 @@ class Agent(BaseStructure):
 
                         # Check if tools is not None
                         if self.tools is not None:
+                            self.parse_and_execute_tools(response)
 
-                            # Extract json from markdown
-                            response = extract_code_from_markdown(response)
-
-                            # Try executing the tool
-                            if self.execute_tool is not False:
-                                try:
-                                    logger.info("Executing tool...")
-
-                                    # try to Execute the tool and return a string
-                                    out = openai_tool_executor(
-                                        tools=response,
-                                        function_map=self.function_map,
-                                        return_as_string=True,
-                                    )
-
-                                    print(f"Tool Output: {out}")
-
-                                    # Add the output to the memory
-                                    self.short_memory.add(
-                                        role=self.agent_name,
-                                        content=out,
-                                    )
-
-                                except Exception as error:
-                                    logger.error(
-                                        f"Error executing tool: {error}"
-                                    )
-                                    print(
-                                        colored(
-                                            f"Error executing tool: {error}",
-                                            "red",
-                                        )
-                                    )
-
-                        if self.code_interpreter:
-                            # Extract code from markdown
-                            extracted_code = extract_code_from_markdown(
-                                response
-                            )
-
-                            # Execute the code
-                            execution = SubprocessCodeInterpreter(
-                                debug_mode=True
-                            ).run(extracted_code)
-
-                            # Add the execution to the memory
-                            self.short_memory.add(
-                                role=self.agent_name,
-                                content=execution,
-                            )
-
-                            # Run the llm again
-                            response = self.llm(
-                                self.short_memory.return_history_as_string(),
-                                *args,
-                                **kwargs,
-                            )
-
-                            print(
-                                f"Response after code interpretation: {response}"
-                            )
+                        if exists(self.code_interpreter):
+                            self.code_interpreter_execution(response)
 
                         if self.evaluator:
                             evaluated_response = self.evaluator(response)
@@ -1037,7 +859,7 @@ class Agent(BaseStructure):
             # Prepare the output for the output model
             if self.output_type is not None:
                 # logger.info("Preparing output for output model.")
-                response = self.prepare_output_for_output_model(response)
+                response = prepare_output_for_output_model(response)
                 print(f"Response after output model: {response}")
 
             # print(response)
@@ -1059,6 +881,40 @@ class Agent(BaseStructure):
         except Exception as error:
             logger.error(f"Error calling agent: {error}")
             raise error
+
+    def parse_and_execute_tools(self, response: str, *args, **kwargs):
+        # Extract json from markdown
+        response = extract_code_from_markdown(response)
+
+        # Try executing the tool
+        if self.execute_tool is not False:
+            try:
+                logger.info("Executing tool...")
+
+                # try to Execute the tool and return a string
+                out = openai_tool_executor(
+                    tools=response,
+                    function_map=self.function_map,
+                    *args,
+                    **kwargs,
+                )
+
+                print(f"Tool Output: {out}")
+
+                # Add the output to the memory
+                self.short_memory.add(
+                    role=self.agent_name,
+                    content=out,
+                )
+
+            except Exception as error:
+                logger.error(f"Error executing tool: {error}")
+                print(
+                    colored(
+                        f"Error executing tool: {error}",
+                        "red",
+                    )
+                )
 
     def long_term_memory_prompt(self, query: str, *args, **kwargs):
         """
@@ -1089,6 +945,27 @@ class Agent(BaseStructure):
         """
         logger.info(f"Adding memory: {message}")
         return self.short_memory.add(role=self.agent_name, content=message)
+
+    def plan(self, task: str, *args, **kwargs):
+        """
+        Plan the task
+
+        Args:
+            task (str): The task to plan
+        """
+        try:
+            if exists(self.planning_prompt):
+                # Join the plan and the task
+                planning_prompt = f"{self.planning_prompt} {task}"
+                plan = self.llm(planning_prompt)
+
+            # Add the plan to the memory
+            self.short_memory.add(role=self.agent_name, content=plan)
+
+            return None
+        except Exception as error:
+            logger.error(f"Error planning task: {error}")
+            raise error
 
     async def run_concurrent(self, task: str, *args, **kwargs):
         """
@@ -1281,6 +1158,34 @@ class Agent(BaseStructure):
         """
         logger.info(f"Adding response filter: {filter_word}")
         self.reponse_filters.append(filter_word)
+
+    def code_interpreter_execution(
+        self, code: str, *args, **kwargs
+    ) -> str:
+        # Extract code from markdown
+        extracted_code = extract_code_from_markdown(code)
+
+        # Execute the code
+        execution = SubprocessCodeInterpreter(debug_mode=True).run(
+            extracted_code
+        )
+
+        # Add the execution to the memory
+        self.short_memory.add(
+            role=self.agent_name,
+            content=execution,
+        )
+
+        # Run the llm again
+        response = self.llm(
+            self.short_memory.return_history_as_string(),
+            *args,
+            **kwargs,
+        )
+
+        print(f"Response after code interpretation: {response}")
+
+        return response
 
     def apply_reponse_filters(self, response: str) -> str:
         """
@@ -1639,11 +1544,18 @@ class Agent(BaseStructure):
         if len(self.short_memory) > count:
             self.short_memory = self.short_memory[:count]
 
-    def add_tool(self, tool: BaseTool):
+    def add_tool(self, tool: Callable):
         return self.tools.append(tool)
 
-    def add_tools(self, tools: List[BaseTool]):
+    def add_tools(self, tools: List[Callable]):
         return self.tools.extend(tools)
+
+    def remove_tool(self, tool: Callable):
+        return self.tools.remove(tool)
+
+    def remove_tools(self, tools: List[Callable]):
+        for tool in tools:
+            self.tools.remove(tool)
 
     def get_docs_from_doc_folders(self):
         """Get the docs from the files"""
