@@ -65,10 +65,12 @@ class OpenAIChatLLM(OpenAIChat):
         super().__init__(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):
-        return self.invoke(*args, **kwargs)
+        out = self.invoke(*args, **kwargs)
+        return out.content.strip()
 
     def run(self, *args, **kwargs):
-        return self.invoke(*args, **kwargs)
+        out = self.invoke(*args, **kwargs)
+        return out.content.strip()
 
 
 class OctoAIChat(OctoAIEndpoint):

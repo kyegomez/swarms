@@ -1,5 +1,4 @@
-from swarms import Agent
-from swarms.models.llama3_hosted import llama3Hosted
+from swarms import Agent, OpenAIChat
 
 
 # Initialize the agent
@@ -8,7 +7,7 @@ agent = Agent(
     agent_description=(
         "Generate a transcript for a youtube video on what swarms" " are!"
     ),
-    llm=llama3Hosted(),
+    llm=OpenAIChat(),
     max_loops="auto",
     autosave=True,
     dashboard=False,

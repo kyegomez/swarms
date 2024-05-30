@@ -18,7 +18,7 @@ def cleanup_json_logs(name: str = None):
             if (
                 filename.endswith(".json")
                 or filename.endswith(".log")
-                or filename.endswith(".txt")
+                # or filename.endswith(".txt")
             ):
                 # Construct the full file paths
                 file_path = os.path.join(dirpath, filename)
