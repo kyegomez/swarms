@@ -1,5 +1,22 @@
 from swarms import Agent, OpenAIChat
 
+import logging
+import contextlib
+from http.client import HTTPConnection
+
+HTTPConnection.debuglevel = 1
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
+
+for x in (
+        "httpcore",
+        "requests.packages.urllib3"):
+    alog = logging.getLogger(x)
+    alog.setLevel(logging.DEBUG)
+    alog.propagate = True
+
+    
 
 # Initialize the agent
 agent = Agent(

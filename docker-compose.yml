@@ -1,0 +1,18 @@
+version: "3"
+services:
+  swarms:
+    image: swarm
+    build : .
+    environment:
+      - OPENAI_API_KEY=sk-1234
+      - OPENAI_API_BASE=http://100.96.149.57:7091
+#    command: 
+
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
