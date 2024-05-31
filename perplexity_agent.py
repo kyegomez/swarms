@@ -9,11 +9,13 @@ $ pip install swarms
 - 
 """
 
-from swarms import Agent
-from swarms.models.llama3_hosted import llama3Hosted
+from swarms import Agent, OpenAIChat
 from playground.memory.chromadb_example import ChromaDB
 from swarms.tools.prebuilt.bing_api import fetch_web_articles_bing_api
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Let's create a text file with the provided prompt.
 
@@ -53,7 +55,11 @@ memory = ChromaDB(
 )
 
 
-llm = llama3Hosted(temperature=0.2, max_tokens=3500)
+llm = OpenAIChat(
+    temperature=0.2,
+    max_tokens=3500,
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+)
 
 
 # Initialize the agent
@@ -84,7 +90,7 @@ def perplexity_agent(task: str = None, *args, **kwargs):
     """
     out = fetch_web_articles_bing_api(
         task,
-        subscription_key="940fe346f0a149ea9f34d9969359aed7",
+        subscription_key=os.getenv("BING_API_KEY"),
     )
 
     # Sources
@@ -97,6 +103,6 @@ def perplexity_agent(task: str = None, *args, **kwargs):
 
 
 out = perplexity_agent(
-    "What are the biggest GPU chips alternatives for transformer modelsm, look up Etched"
+    "What are the indian food restaurant names in standford university avenue? What are their cost ratios"
 )
 print(out)
