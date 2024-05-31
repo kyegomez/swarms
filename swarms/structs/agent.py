@@ -756,7 +756,7 @@ class Agent(BaseStructure):
                         if self.tools is not None:
                             self.parse_and_execute_tools(response)
 
-                        if exists(self.code_interpreter):
+                        if self.code_interpreter is not False:
                             self.code_interpreter_execution(response)
 
                         if self.evaluator:
