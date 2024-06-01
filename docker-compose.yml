@@ -1,19 +1,22 @@
-version: "3"
+#version: "3"
 services:
   swarms:
     image: swarm
     build : .
+    network_mode: host
+    ipc: host
+
     environment:
       - OPENAI_API_KEY=sk-1234
 #      - OPENAI_API_BASE=http://100.96.149.57:7091
-      - OPENAI_API_BASE=http://127.0.0.1:5000
+      - OPENAI_API_BASE=http://localhost:5000/v1
     command: python3 example.py
 
     restart: always
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
