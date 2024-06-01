@@ -5,8 +5,9 @@ services:
     build : .
     environment:
       - OPENAI_API_KEY=sk-1234
-      - OPENAI_API_BASE=http://100.96.149.57:7091
-#    command: 
+#      - OPENAI_API_BASE=http://100.96.149.57:7091
+      - OPENAI_API_BASE=http://127.0.0.1:5000
+    command: python3 example.py
 
     restart: always
     deploy:
