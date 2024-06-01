@@ -1,4 +1,4 @@
-import torch
+#import torch
 from transformers import (
     LogitsWarper,
     PreTrainedTokenizer,
@@ -13,7 +13,7 @@ class StringStoppingCriteria(StoppingCriteria):
 
     def __call__(
         self,
-        input_ids: torch.LongTensor,
+        input_ids,
         _,
     ) -> bool:
         if len(input_ids[0]) <= self.prompt_length:
@@ -42,8 +42,8 @@ class NumberStoppingCriteria(StoppingCriteria):
 
     def __call__(
         self,
-        input_ids: torch.LongTensor,
-        scores: torch.FloatTensor,
+        input_ids,
+        scores,
     ) -> bool:
         decoded = self.tokenizer.decode(
             input_ids[0][self.prompt_length :],
@@ -74,7 +74,7 @@ class OutputNumbersTokens(LogitsWarper):
         self.tokenizer = tokenizer
         self.tokenized_prompt = tokenizer(prompt, return_tensors="pt")
         vocab_size = len(tokenizer)
-        self.allowed_mask = torch.zeros(vocab_size, dtype=torch.bool)
+        #self.allowed_mask = torch.zeros(vocab_size, dtype=torch.bool)
 
         for _, token_id in tokenizer.get_vocab().items():
             token_str = tokenizer.decode(token_id).strip()

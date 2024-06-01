@@ -718,7 +718,7 @@ class Agent(BaseStructure):
             loop_count = 0
 
             # Clear the short memory
-            # response = None
+            response = "ERROR"
 
             while self.max_loops == "auto" or loop_count < self.max_loops:
                 loop_count += 1

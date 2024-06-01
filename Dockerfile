@@ -16,6 +16,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Copy the current directory contents into the container at /app
 COPY scripts /app/scripts
 COPY swarms /app/swarms
+COPY example.py /app/example.py
 
 # Make port 80 available to the world outside this container
 EXPOSE 80
