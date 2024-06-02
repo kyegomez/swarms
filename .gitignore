@@ -11,6 +11,7 @@ dataframe/
 
 static/generated
 runs
+artifacts_five
 chroma
 Unit Testing Agent_state.json
 Devin_state.json
