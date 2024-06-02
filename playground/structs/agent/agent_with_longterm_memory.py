@@ -32,7 +32,7 @@ agent = Agent(
     max_loops=4,
     autosave=True,
     dashboard=True,
-    long_term_memory=ChromaDB(),
+    long_term_memory=chromadb,
 )
 
 # Run the workflow on a task

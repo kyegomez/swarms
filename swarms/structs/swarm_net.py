@@ -1,17 +1,55 @@
+"""
+Todo
+- [ ] Test the new api feature
+- [ ] Add the agent schema for every agent -- following OpenAI assistaants schema
+- [ ] then add the swarm schema for the swarm url: /v1/swarms/{swarm_name}/agents/{agent_id}
+- [ ] Add the agent schema for the agent url: /v1/swarms/{swarm_name}/agents/{agent_id}
+"""
+
 import asyncio
-import logging
+import multiprocessing
 import queue
 import threading
-from typing import List, Optional
+from typing import Dict, List, Optional
 
-# from fastapi import FastAPI
+import tenacity
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
-from swarms.structs.base_structure import BaseStructure
-from swarms.utils.logger import logger  # noqa: F401
+from swarms.structs.base_swarm import BaseSwarm
+from swarms.utils.loguru_logger import logger
 
 
-class SwarmNetwork(BaseStructure):
+# Pydantic models
+class TaskRequest(BaseModel):
+    task: str
+
+
+# Pydantic models
+class TaskResponse(BaseModel):
+    result: str
+
+
+class AgentInfo(BaseModel):
+    agent_name: str
+    agent_description: str
+
+
+class SwarmInfo(BaseModel):
+    swarm_name: str
+    swarm_description: str
+    agents: List[AgentInfo]
+
+
+# Helper function to get the number of workers
+def get_number_of_workers():
+    return multiprocessing.cpu_count()
+
+
+# [TODO] Add the agent schema for every agent -- following OpenAI assistaants schema
+class SwarmNetwork(BaseSwarm):
     """
     SwarmNetwork class
 
@@ -68,15 +106,23 @@ class SwarmNetwork(BaseStructure):
 
     def __init__(
         self,
+        name: str = None,
+        description: str = None,
         agents: List[Agent] = None,
         idle_threshold: float = 0.2,
         busy_threshold: float = 0.7,
         api_enabled: Optional[bool] = False,
         logging_enabled: Optional[bool] = False,
+        api_on: Optional[bool] = False,
+        host: str = "0.0.0.0",
+        port: int = 8000,
+        swarm_callable: Optional[callable] = None,
         *args,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
+        self.name = name
+        self.description = description
         self.agents = agents
         self.task_queue = queue.Queue()
         self.idle_threshold = idle_threshold
@@ -84,15 +130,37 @@ class SwarmNetwork(BaseStructure):
         self.lock = threading.Lock()
         self.api_enabled = api_enabled
         self.logging_enabled = logging_enabled
-        self.agent_pool = []
+        self.host = host
+        self.port = port
+        self.swarm_callable = swarm_callable
 
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
+        # Ensure that the agents list is not empty
+        if not agents:
+            raise ValueError("The agents list cannot be empty")
+
+        # Create a dictionary of agents for easy access
+        self.agent_dict = {agent.id: agent for agent in agents}
 
         # For each agent in the pool, run it on it's own thread
         if agents is not None:
             for agent in agents:
-                self.agent_pool.append(agent)
+                self.agents.append(agent)
+
+        # Create the FastAPI instance
+        if api_on is True:
+            logger.info("Creating FastAPI instance")
+            self.app = FastAPI(debug=True, *args, **kwargs)
+
+            self.app.add_middleware(
+                CORSMiddleware,
+                allow_origins=["*"],
+                allow_credentials=True,
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+
+            logger.info("Routes set for creation")
+            self._create_routes()
 
     def add_task(self, task):
         """Add task to the task queue
@@ -145,6 +213,98 @@ class SwarmNetwork(BaseStructure):
             )
             raise error
 
+    def _create_routes(self) -> None:
+        """
+        Creates the routes for the API.
+        """
+        # Extensive logginbg
+        logger.info("Creating routes for the API")
+
+        # Routes available
+        logger.info(
+            "Routes available: /v1/swarms, /v1/health, /v1/swarms/{swarm_name}/agents/{agent_id}, /v1/swarms/{swarm_name}/run"
+        )
+
+        @self.app.get("/v1/swarms", response_model=SwarmInfo)
+        async def get_swarms() -> SwarmInfo:
+            try:
+                logger.info("Getting swarm information")
+                return SwarmInfo(
+                    swarm_name=self.swarm_name,
+                    swarm_description=self.swarm_description,
+                    agents=[
+                        AgentInfo(
+                            agent_name=agent.agent_name,
+                            agent_description=agent.agent_description,
+                        )
+                        for agent in self.agents
+                    ],
+                )
+            except Exception as e:
+                logger.error(f"Error getting swarm information: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail="Internal Server Error"
+                )
+
+        @self.app.get("/v1/health")
+        async def get_health() -> Dict[str, str]:
+            try:
+                logger.info("Checking health status")
+                return {"status": "healthy"}
+            except Exception as e:
+                logger.error(f"Error checking health status: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail="Internal Server Error"
+                )
+
+        @self.app.get(f"/v1/swarms/{self.swarm_name}/agents/{{agent_id}}")
+        async def get_agent_info(agent_id: str) -> AgentInfo:
+            try:
+                logger.info(f"Getting information for agent {agent_id}")
+                agent = self.agent_dict.get(agent_id)
+                if not agent:
+                    raise HTTPException(
+                        status_code=404, detail="Agent not found"
+                    )
+                return AgentInfo(
+                    agent_name=agent.agent_name,
+                    agent_description=agent.agent_description,
+                )
+            except Exception as e:
+                logger.error(f"Error getting agent information: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail="Internal Server Error"
+                )
+
+        @self.app.post(
+            f"/v1/swarms/{self.swarm_name}/agents/{{agent_id}}/run",
+            response_model=TaskResponse,
+        )
+        async def run_agent_task(
+            task_request: TaskRequest,
+        ) -> TaskResponse:
+            try:
+                logger.info("Running agent task")
+                # Assuming only one agent in the swarm for this example
+                agent = self.agents[0]
+                logger.info(f"Running agent task: {task_request.task}")
+                result = agent.run(task_request.task)
+                return TaskResponse(result=result)
+            except Exception as e:
+                logger.error(f"Error running agent task: {str(e)}")
+                raise HTTPException(
+                    status_code=500, detail="Internal Server Error"
+                )
+
+    def get_app(self) -> FastAPI:
+        """
+        Returns the FastAPI instance.
+
+        Returns:
+            FastAPI: The FastAPI instance.
+        """
+        return self.app
+
     def run_single_agent(
         self, agent_id, task: Optional[str], *args, **kwargs
     ):
@@ -162,7 +322,7 @@ class SwarmNetwork(BaseStructure):
         """
         self.logger.info(f"Running task {task} on agent {agent_id}")
         try:
-            for agent in self.agent_pool:
+            for agent in self.agents:
                 if agent.id == agent_id:
                     out = agent.run(task, *args, **kwargs)
             return out
@@ -184,8 +344,7 @@ class SwarmNetwork(BaseStructure):
         self.logger.info(f"Running task {task} on all agents")
         try:
             return [
-                agent.run(task, *args, **kwargs)
-                for agent in self.agent_pool
+                agent.run(task, *args, **kwargs) for agent in self.agents
             ]
         except Exception as error:
             logger.error(f"Error running task on agents: {error}")
@@ -196,8 +355,8 @@ class SwarmNetwork(BaseStructure):
         self.logger.info("[Listing all active agents]")
 
         try:
-            # Assuming self.agent_pool is a list of agent objects
-            for agent in self.agent_pool:
+            # Assuming self.agents is a list of agent objects
+            for agent in self.agents:
                 self.logger.info(
                     f"[Agent] [ID: {agent.id}] [Name:"
                     f" {agent.agent_name}] [Description:"
@@ -219,7 +378,7 @@ class SwarmNetwork(BaseStructure):
         self.logger.info(f"Getting agent {agent_id}")
 
         try:
-            for agent in self.agent_pool:
+            for agent in self.agents:
                 if agent.id == agent_id:
                     return agent
             raise ValueError(f"No agent found with ID {agent_id}")
@@ -235,7 +394,7 @@ class SwarmNetwork(BaseStructure):
         """
         self.logger.info(f"Adding agent {agent} to pool")
         try:
-            self.agent_pool.append(agent)
+            self.agents.append(agent)
         except Exception as error:
             print(f"Error adding agent to pool: {error}")
             raise error
@@ -248,9 +407,9 @@ class SwarmNetwork(BaseStructure):
         """
         self.logger.info(f"Removing agent {agent_id} from pool")
         try:
-            for agent in self.agent_pool:
+            for agent in self.agents:
                 if agent.id == agent_id:
-                    self.agent_pool.remove(agent)
+                    self.agents.remove(agent)
                     return
             raise ValueError(f"No agent found with ID {agent_id}")
         except Exception as error:
@@ -281,7 +440,7 @@ class SwarmNetwork(BaseStructure):
         self.logger.info(f"Scaling up agent pool by {num_agents}")
         try:
             for _ in range(num_agents):
-                self.agent_pool.append(Agent())
+                self.agents.append(Agent())
         except Exception as error:
             print(f"Error scaling up agent pool: {error}")
             raise error
@@ -293,32 +452,56 @@ class SwarmNetwork(BaseStructure):
             num_agents (int, optional): _description_. Defaults to 1.
         """
         for _ in range(num_agents):
-            self.agent_pool.pop()
+            self.agents.pop()
 
-    # - Create APIs for each agent in the pool (optional) with fastapi
-    def create_apis_for_agents(self):
-        """Create APIs for each agent in the pool (optional) with fastapi
-
-        Returns:
-            _type_: _description_
-        """
-        self.apis = []
-        for agent in self.agent_pool:
-            self.api.get(f"/{agent.id}")
-
-            def run_agent(task: str, *args, **kwargs):
-                return agent.run(task, *args, **kwargs)
-
-            self.apis.append(self.api)
-
-    def run(self):
+    @tenacity.retry(
+        wait=tenacity.wait_fixed(1),
+        stop=tenacity.stop_after_attempt(3),
+        retry=tenacity.retry_if_exception_type(Exception),
+    )
+    def run(self, *args, **kwargs):
         """run the swarm network"""
-        # Observe all agents in the pool
-        self.logger.info("Starting the SwarmNetwork")
+        app = self.get_app()
 
-        for agent in self.agent_pool:
-            self.logger.info(f"Starting agent {agent.id}")
-            self.logger.info(
-                f"[Agent][{agent.id}] [Status] [Running] [Awaiting"
-                " Task]"
+        try:
+            import uvicorn
+
+            logger.info(
+                f"Running the swarm network with {len(self.agents)} on {self.host}:{self.port}"
             )
+            uvicorn.run(
+                app,
+                host=self.host,
+                port=self.port,
+                # workers=get_number_of_workers(),
+                *args,
+                **kwargs,
+            )
+
+            return app
+        except Exception as error:
+            logger.error(f"Error running the swarm network: {error}")
+            raise error
+
+
+# # # Example usage
+# if __name__ == "__main__":
+
+#     agent1 = Agent(
+#         agent_name="Covid-19-Chat",
+#         agent_description="This agent provides information about COVID-19 symptoms.",
+#         llm=OpenAIChat(),
+#         max_loops="auto",
+#         autosave=True,
+#         verbose=True,
+#         stopping_condition="finish",
+#     )
+
+#     agents = [agent1]  # Add more agents as needed
+#     swarm_name = "HealthSwarm"
+#     swarm_description = (
+#         "A swarm of agents providing health-related information."
+#     )
+
+#     agent_api = SwarmNetwork(swarm_name, swarm_description, agents)
+#     agent_api.run()

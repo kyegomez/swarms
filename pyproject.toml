@@ -48,7 +48,6 @@ Pillow = "10.3.0"
 psutil = "*"
 sentry-sdk = "*"
 python-dotenv = "*"
-opencv-python-headless = "*"
 PyYAML = "*"
 docstring_parser = "0.16"
 

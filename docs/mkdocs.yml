@@ -103,9 +103,14 @@ nav:
   - Usage Examples:
     - Build an Agent: "diy_your_own_agent.md"
     - Build an Agent with tools: "examples/tools_agents.md"
+    # Add an examples with building agents
+    # Add multiple blogs on orchestrating agents with different types of frameworks
   - Why does Swarms Exist?:
     - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
+  - References:
+    - Agent Glossary: "swarms/glossary.md"
+    - List of The Best Multi-Agent Papers: "swarms/papers.md"
 - Swarms Cloud API:
   - Overview: "swarms_cloud/main.md"
   - Available Models: "swarms_cloud/available_models.md"

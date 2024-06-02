@@ -17,7 +17,7 @@ from playground.demos.plant_biologist_swarm.prompts import (
     treatment_recommender_agent,
 )
 
-from swarms import Agent, GPT4VisionAPI
+from swarms import Agent, Fuyu
 
 
 # Load the OpenAI API key from the .env file
@@ -28,9 +28,9 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 
 # llm = llm,
-llm = GPT4VisionAPI(
+llm = Fuyu(
     max_tokens=4000,
-    model_name="gpt-4o",
+    openai_api_key=api_key,
 )
 
 # Initialize Diagnoser Agent

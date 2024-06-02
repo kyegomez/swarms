@@ -1,15 +1,33 @@
 import os
-
 from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from swarms import Agent
-from swarms.models import Anthropic
+from swarms.models import OpenAIChat
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.structs.rearrange import AgentRearrange
+from fastapi import FastAPI
+from typing import Optional, List, Dict, Any
 
 # Load the environment variables
 load_dotenv()
+
+# LLM
+llm = GPT4VisionAPI(
+    model_name="gpt-4-1106-vision-preview",
+    max_tokens=3000,
+)
+openai = OpenAIChat(
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    max_tokens=3000,
+)
+
+
+# Setup the FastAPI app
+app = FastAPI()
+
+
 
 
 def DIAGNOSIS_SYSTEM_PROMPT() -> str:
@@ -60,86 +78,103 @@ def TREATMENT_PLAN_SYSTEM_PROMPT() -> str:
     """
 
 
-class DiagnosisSchema(BaseModel):
-    image_name: str = Field(
-        ...,
-        title="Image Name",
-        description="The name of the image to be diagnosed",
+class LLMConfig(BaseModel):
+    model_name: str
+    max_tokens: int
+
+class AgentConfig(BaseModel):
+    agent_name: str
+    system_prompt: str
+    llm: LLMConfig
+    max_loops: int
+    autosave: bool
+    dashboard: bool
+
+class AgentRearrangeConfig(BaseModel):
+    agents: List[AgentConfig]
+    flow: str
+    max_loops: int
+    verbose: bool
+
+
+class AgentRunResult(BaseModel):
+    agent_name: str
+    output: Dict[str, Any]
+    tokens_generated: int
+
+class RunAgentsResponse(BaseModel):
+    results: List[AgentRunResult]
+    total_tokens_generated: int
+    
+class AgentRearrangeResponse(BaseModel):
+    results: List[AgentRunResult]
+    total_tokens_generated: int
+    
+class RunConfig(BaseModel):
+    task: str = Field(..., title="The task to run")
+    flow: str = "D -> T"
+    image: Optional[str] = None  # Optional image path as a string
+    max_loops: Optional[int] = 1
+
+
+@app.get("/v1/health")
+async def health_check():
+    return JSONResponse(content={"status": "healthy"})
+
+@app.get("/v1/models_available")
+async def models_available():
+    available_models = {
+        "models": [
+            {"name": "gpt-4-1106-vision-preview", "type": "vision"},
+            {"name": "openai-chat", "type": "text"}
+        ]
+    }
+    return JSONResponse(content=available_models)
+
+
+@app.get("/v1/swarm/completions")
+async def run_agents(run_config: RunConfig):
+    # Diagnoser agent
+    diagnoser = Agent(
+        # agent_name="Medical Image Diagnostic Agent",
+        agent_name="D",
+        system_prompt=DIAGNOSIS_SYSTEM_PROMPT(),
+        llm=llm,
+        max_loops=1,
+        autosave=True,
+        dashboard=True,
     )
-    task: str = Field(
-        ...,
-        title="Task",
-        description="The task to be performed on the image",
-    )
-    diagnosis: str = Field(
-        ..., title="Diagnosis", description="The diagnosis of the image"
-    )
 
 
-class TreatMentSchema(BaseModel):
-    image_name: str = Field(
-        ...,
-        title="Image Name",
-        description="The name of the image to be treated",
-    )
-    task: str = Field(
-        ...,
-        title="Task",
-        description="The task to be performed on the image",
-    )
-    treatment: str = Field(
-        ..., title="Treatment", description="The treatment of the image"
+    # Agent 2 the treatment plan provider
+    treatment_plan_provider = Agent(
+        # agent_name="Medical Treatment Recommendation Agent",
+        agent_name="T",
+        system_prompt=TREATMENT_PLAN_SYSTEM_PROMPT(),
+        llm=openai,
+        max_loops=1,
+        autosave=True,
+        dashboard=True,
     )
 
+    # Agent 3 the re-arranger
+    rearranger = AgentRearrange(
+        agents=[diagnoser, treatment_plan_provider],
+        flow=run_config.flow,
+        max_loops=run_config.max_loops,
+        verbose=True,
+    )
 
-# LLM
-llm = GPT4VisionAPI(
-    openai_api_key=os.getenv("OPENAI_API_KEY"),
-    model_name="gpt-4o",
-    max_tokens=1000,
-)
-
-# Anthropic
-anthropic = Anthropic(
-    anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
-)
-
-# Diagnoser agent
-diagnoser = Agent(
-    # agent_name="Medical Image Diagnostic Agent",
-    agent_name="D",
-    system_prompt=DIAGNOSIS_SYSTEM_PROMPT(),
-    llm=llm,
-    max_loops=1,
-    autosave=True,
-    dashboard=True,
-)
+    # Run the rearranger
+    out = rearranger(
+        run_config.task,
+        image=run_config.image,
+    )
+    
+    return JSONResponse(content=out)
 
 
-# Agent 2 the treatment plan provider
-treatment_plan_provider = Agent(
-    # agent_name="Medical Treatment Recommendation Agent",
-    agent_name="T",
-    system_prompt=TREATMENT_PLAN_SYSTEM_PROMPT(),
-    llm=anthropic,
-    max_loops=1,
-    autosave=True,
-    dashboard=True,
-)
-
-# Agent 3 the re-arranger
-rearranger = AgentRearrange(
-    agents=[diagnoser, treatment_plan_provider],
-    flow="D -> T",
-    max_loops=1,
-    verbose=True,
-)
-
-image = "ear_4.jpg"
-
-# Run the rearranger
-out = rearranger(
-    "Diagnose this medical image, it's an ear canal, be precise",
-    image,
-)
-print(out)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+    

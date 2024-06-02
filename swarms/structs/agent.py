@@ -333,6 +333,9 @@ class Agent(BaseStructure):
         self.planning = planning
         self.planning_prompt = planning_prompt
         self.device = device
+        self.custom_planning_prompt = custom_planning_prompt
+        self.rules = rules
+        self.custom_tools_prompt = custom_tools_prompt
 
         # Name
         self.name = agent_name
