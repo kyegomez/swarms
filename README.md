@@ -280,7 +280,7 @@ agent = Agent(
 )
 
 # Run the agent
-out = agent("Create a new file for a plan to take over the world.")
+out = agent("Create a new file for a plan to create abundance in the world. Save the file and also display the contents of the file.")
 print(out)
 ```
 
