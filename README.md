@@ -181,7 +181,7 @@ agent("Generate a transcript for a youtube video on what swarms are!")
 ```
 
 ## Devin
-Implementation of Devil in less than 90 lines of code with several tools:
+Implementation of Devin in less than 90 lines of code with several tools:
 terminal, browser, and edit files!
 
 ```python
