@@ -71,7 +71,8 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
 
 ```python
-from swarms import Agent, ChromaDB, OpenAIChat
+from swarms import Agent, OpenAIChat
+from playground.memory.chromadb_example import ChromaDB # Copy and paste the code and put it in your own local directory.
 
 # Making an instance of the ChromaDB class
 memory = ChromaDB(
