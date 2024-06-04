@@ -119,10 +119,23 @@ nav:
   - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
   - Under The Hood The Swarm Cloud Serving Infrastructure: "swarms_cloud/architecture.md"
 - Swarms Framework [PY]:
-  - Overview: "swarms/index.md"
-  - DIY Build Your Own Agent: "diy_your_own_agent.md"
-  - Agents with Tools: "examples/tools_agent.md"
-  # - Multi-Agent Orchestration: "swarms/structs/multi_agent_orchestration.md"
+  - Models:
+    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+    - Models Available: "swarms/models/index.md"
+    - MultiModal Models Available: "swarms/models/multimodal_models.md"
+  - Agents:
+    - Getting started with Agents: "diy_your_own_agent.md"
+    - Tools: 
+      - The Swarms Tool System Functions, Pydantic BaseModels as Tools, and Radical Customization: "swarms/tools/main.md"
+    - Memory:
+      - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
+      - ShortTermMemory: "swarms/memory/short_term_memory.md"
+  - Multi-Agent Collaboration:
+      - Conversation: "swarms/structs/conversation.md"
+      - SwarmNetwork: "swarms/structs/swarmnetwork.md"
+      - MajorityVoting: "swarms/structs/majorityvoting.md"
+      - AgentRearrange: "swarms/structs/agent_rearrange.md"
+- Swarms Framework Reference:
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
@@ -158,11 +171,6 @@ nav:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
-  - swarms.memory:
-    - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
-    - ShortTermMemory: "swarms/memory/short_term_memory.md"
-  - swarms.tools:
-    - The Swarms Tool System Functions, Pydantic BaseModels as Tools, and Radical Customization: "swarms/tools/main.md"
 - Guides:
   - Agents:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
