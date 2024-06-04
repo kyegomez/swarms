@@ -126,16 +126,17 @@ nav:
   - Contributors:
     - Contributing: "contributing.md"
 - Swarms Framework Reference:
+  - Overview: "swarms/index.md"
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
-    - Language Models Available:
+    - Language Models:
       - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"
       - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
       - OpenAIChat: "swarms/models/openai.md"
-    - MultiModal Models Available:
+    - MultiModal Models :
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"
@@ -144,6 +145,7 @@ nav:
       - Nougat: "swarms/models/nougat.md"
       - Dalle3: "swarms/models/dalle3.md"
       - GPT4VisionAPI: "swarms/models/gpt4v.md"
+      - GPT4o: "swarms/models/gpt4o.md"
   - swarms.structs:
       - Foundational Structures:
         - Agent: "swarms/structs/agent.md"

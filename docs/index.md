@@ -1,6 +1,6 @@
 # Swarms Documentation
 
-Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, Swarms empowers agents to work together seamlessly, tackling complex tasks.
+Orchestrate enterprise-grade agents for multi-agent collaboration and orchestration to automate real-world problems.
 
 <div style="display:flex; margin:0 auto; justify-content: center;">
     <div style="width:25%">
@@ -92,37 +92,37 @@ Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By 
         <h2>Examples</h2>
         <ul>
             <li>
-                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/prep-for-a-meeting">
+                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/prep-for-a-meeting">
                     Prepare for meetings
                 </a>
             </li>
             <li>
-                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/trip_planner">
+                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/trip_planner">
                     Trip Planner Crew
                 </a>
             </li>
             <li>
-                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/instagram_post">
+                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/instagram_post">
                     Create Instagram Post
                 </a>
             </li>
             <li>
-                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/stock_analysis">
+                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/stock_analysis">
                     Stock Analysis
                 </a>
             </li>
             <li>
-                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/game-builder-crew">
+                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/game-builder-crew">
                     Game Generator
                 </a>
             </li>
             <li>
-                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/Swarms-LangGraph">
+                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/Swarms-LangGraph">
                     Drafting emails with LangGraph
                 </a>
             </li>
             <li>
-                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/landing_page_generator">
+                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/landing_page_generator">
                     Landing Page Generator
                 </a>
             </li>
