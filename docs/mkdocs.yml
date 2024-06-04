@@ -46,15 +46,14 @@ copyright: "&copy; TGSC, Corporation."
 extra_css:
   - assets/css/extra.css
 extra:
+  analytics:
+    provider: google
+    property: G-N5DYRKYB2H
   social:
-    - icon: fontawesome/solid/house
-      link: assets/img/SwarmsLogoIcon.png
-    - icon: fontawesome/brands/discord
-      link: https://discord.gg/qUtxnK2NMf
+    - icon: fontawesome/brands/twitter
+      link: https://x.com/KyeGomezB
     - icon: fontawesome/brands/github
-      link: https://github.com/kyegomez/Swarms/
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/Swarms/
+      link: https://github.com/kyegomez/swarms
 theme:
     name: material
     custom_dir: overrides
@@ -96,6 +95,7 @@ markdown_extensions:
   - footnotes
 
 nav:
+  - Home: "/"
   - Installation:
     - Overview: "index.md"
     - Install: "swarms/install/install.md"
