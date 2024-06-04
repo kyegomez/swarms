@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import FastAPI, HTTPException
 
-from swarms import Agent, ChromaDB, OpenAIChat
+from swarms import Agent, OpenAIChat
 from swarms.schemas.assistants_api import (
     AssistantRequest,
     AssistantResponse,

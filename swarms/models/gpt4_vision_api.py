@@ -151,9 +151,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
                 "max_tokens": self.max_tokens,
                 **kwargs,
             }
-            response = requests.post(
-                self.openai_proxy, headers=headers, json=payload
-            )
+            response = requests.post(headers=headers, json=payload)
 
             # Get the response as a JSON object
             response_json = response.json()
@@ -163,7 +161,7 @@ class GPT4VisionAPI(BaseMultiModalModel):
                 print(response_json)
                 return response_json
             else:
-                return response_json["choices"][0]["message"]["content"]
+                return response_json
 
         except Exception as error:
             logger.error(

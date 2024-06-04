@@ -9,6 +9,7 @@ Todo
 import os
 
 from dotenv import load_dotenv
+
 from playground.demos.plant_biologist_swarm.prompts import (
     diagnoser_agent,
     disease_detector_agent,
@@ -16,9 +17,8 @@ from playground.demos.plant_biologist_swarm.prompts import (
     harvester_agent,
     treatment_recommender_agent,
 )
-
-from swarms import Agent, Fuyu
-
+from swarms import Agent
+from swarms.models.gpt_o import GPT4o
 
 # Load the OpenAI API key from the .env file
 load_dotenv()
@@ -28,10 +28,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 
 # llm = llm,
-llm = Fuyu(
-    max_tokens=4000,
-    openai_api_key=api_key,
-)
+llm = GPT4o(max_tokens=200, openai_api_key=os.getenv("OPENAI_API_KEY"))
 
 # Initialize Diagnoser Agent
 diagnoser_agent = Agent(
@@ -40,8 +37,8 @@ diagnoser_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    streaming_on=True,
-    verbose=True,
+    # streaming_on=True,
+    # verbose=True,
     # saved_state_path="diagnoser.json",
     multi_modal=True,
     autosave=True,
@@ -54,8 +51,8 @@ harvester_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    streaming_on=True,
-    verbose=True,
+    # streaming_on=True,
+    # verbose=True,
     # saved_state_path="harvester.json",
     multi_modal=True,
     autosave=True,
@@ -68,8 +65,8 @@ growth_predictor_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    streaming_on=True,
-    verbose=True,
+    # streaming_on=True,
+    # verbose=True,
     # saved_state_path="growth_predictor.json",
     multi_modal=True,
     autosave=True,
@@ -82,8 +79,8 @@ treatment_recommender_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    streaming_on=True,
-    verbose=True,
+    # streaming_on=True,
+    # verbose=True,
     # saved_state_path="treatment_recommender.json",
     multi_modal=True,
     autosave=True,
@@ -96,8 +93,8 @@ disease_detector_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    streaming_on=True,
-    verbose=True,
+    # streaming_on=True,
+    # verbose=True,
     # saved_state_path="disease_detector.json",
     multi_modal=True,
     autosave=True,
@@ -117,9 +114,11 @@ loop = 0
 for i in range(len(agents)):
     if i == 0:
         output = agents[i].run(task, img)
+        print(output)
 
     else:
         output = agents[i].run(output, img)
+        print(output)
 
     # Add extensive logging for each agent
     print(f"Agent {i+1} - {agents[i].agent_name}")
