@@ -94,40 +94,37 @@ markdown_extensions:
   - tables
   - def_list
   - footnotes
+
 nav:
-- Home:
   - Installation:
     - Overview: "index.md"
-    - Install: "install.md"
-    - Docker Setup: docker_setup.md
+    - Install: "swarms/install/install.md"
+    - Docker Setup: "swarms/install/docker_setup.md"
   - Usage Examples:
-    - Build an Agent: "diy_your_own_agent.md"
-    - Build an Agent with tools: "examples/tools_agents.md"
-    # Add an examples with building agents
-    # Add multiple blogs on orchestrating agents with different types of frameworks
-  - Why does Swarms Exist?:
-    - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
-    - Limitations of Individual Agents: "limits_of_individual_agents.md"
-  - References:
-    - Agent Glossary: "swarms/glossary.md"
-    - List of The Best Multi-Agent Papers: "swarms/papers.md"
-- Swarms Framework [PY]:
-  - Models:
-    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-    - Models Available: "swarms/models/index.md"
-    - MultiModal Models Available: "swarms/models/multimodal_models.md"
-  - Agents:
-    - Getting started with Agents: "diy_your_own_agent.md"
-    - Tools: 
-      - The Swarms Tool System Functions, Pydantic BaseModels as Tools, and Radical Customization: "swarms/tools/main.md"
-    - Memory:
-      - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
-      - ShortTermMemory: "swarms/memory/short_term_memory.md"
-  - Multi-Agent Collaboration:
+    - Models:
+      - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+      - Models Available: "swarms/models/index.md"
+      - MultiModal Models Available: "swarms/models/multimodal_models.md"
+    - Agents:
+      - Getting started with Agents: "swarms/structs/diy_your_own_agent.md"
+      - Tools: 
+        - The Swarms Tool System Functions, Pydantic BaseModels as Tools, and Radical Customization: "swarms/tools/main.md"
+      - Memory:
+        - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
+        - ShortTermMemory: "swarms/memory/short_term_memory.md"
+    - Multi-Agent Collaboration:
       - Conversation: "swarms/structs/conversation.md"
       - SwarmNetwork: "swarms/structs/swarmnetwork.md"
       - MajorityVoting: "swarms/structs/majorityvoting.md"
       - AgentRearrange: "swarms/structs/agent_rearrange.md"
+    - Why does Swarms Exist?:
+      - Why Swarms? Orchestrating Agents for Enterprise Automation: "swarms/purpose/why.md"
+      - Limitations of Individual Agents: "swarms/purpose/limits_of_individual_agents.md"
+  - References:
+    - Agent Glossary: "swarms/glossary.md"
+    - List of The Best Multi-Agent Papers: "swarms/papers.md"
+  - Contributors:
+    - Contributing: "contributing.md"
 - Swarms Framework Reference:
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
@@ -172,19 +169,16 @@ nav:
   - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
   - Under The Hood The Swarm Cloud Serving Infrastructure: "swarms_cloud/architecture.md"
 - Guides:
-  - Agents:
-    - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
+  # - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
+  - Models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
+  - Agents:
+    - Agent: "examples/flow.md"
     - DIY Build Your Own Agent: "diy_your_own_agent.md"
     - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
-    - Overview: "examples/index.md"
-    - Agents:
-      - Agent: "examples/flow.md"
-      - OmniAgent: "examples/omni_agent.md"
-    - Swarms:
-      - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
-    - 2O+ Autonomous Agent Blogs: "examples/ideas.md"
+  - Swarms:
+    - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
 - Applications:
     - CustomerSupport: 
       - Overview: "applications/customer_support.md"
@@ -208,5 +202,3 @@ nav:
       - Metric: "corporate/metric.md"
     - Organization:
       - FrontEnd Member Onboarding: "corporate/front_end_contributors.md"
-- Contributors:
-    - Contributing: "contributing.md"
