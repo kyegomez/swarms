@@ -1,3 +1,4 @@
+
 import requests
 from PIL import Image
 from transformers import AutoModelForVision2Seq, AutoProcessor
@@ -13,6 +14,23 @@ def is_overlapping(rect1, rect2):
 
 
 class Kosmos(BaseMultiModalModel):
+    """A class representing the Kosmos model.
+
+    This model is used for multi-modal tasks such as grounding, referring expression comprehension,
+    referring expression generation, grounded VQA, grounded image captioning, and more.
+
+    Args:
+        model_name (str): The name or path of the pre-trained model.
+        max_new_tokens (int): The maximum number of new tokens to generate.
+        verbose (bool): Whether to print verbose output.
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
+
+    Attributes:
+        max_new_tokens (int): The maximum number of new tokens to generate.
+        model (AutoModelForVision2Seq): The pre-trained model for vision-to-sequence tasks.
+        processor (AutoProcessor): The pre-trained processor for vision-to-sequence tasks.
+    """
 
     def __init__(
         self,
@@ -37,10 +55,10 @@ class Kosmos(BaseMultiModalModel):
         """Get image from url
 
         Args:
-            url (str): url of image
+            url (str): The URL of the image.
 
         Returns:
-            _type_: _description_
+            PIL.Image: The image object.
         """
         return Image.open(requests.get(url, stream=True).raw)
 
@@ -48,8 +66,8 @@ class Kosmos(BaseMultiModalModel):
         """Run the model
 
         Args:
-            task (str): task to run
-            image (str): img url
+            task (str): The task to run.
+            image (str): The URL of the image.
         """
         inputs = self.processor(
             text=task, images=image, return_tensors="pt"
