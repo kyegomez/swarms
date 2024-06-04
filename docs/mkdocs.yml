@@ -111,13 +111,6 @@ nav:
   - References:
     - Agent Glossary: "swarms/glossary.md"
     - List of The Best Multi-Agent Papers: "swarms/papers.md"
-- Swarms Cloud API:
-  - Overview: "swarms_cloud/main.md"
-  - Available Models: "swarms_cloud/available_models.md"
-  - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
-  - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
-  - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
-  - Under The Hood The Swarm Cloud Serving Infrastructure: "swarms_cloud/architecture.md"
 - Swarms Framework [PY]:
   - Models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
@@ -171,6 +164,13 @@ nav:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
+- Swarms Cloud API:
+  - Overview: "swarms_cloud/main.md"
+  - Available Models: "swarms_cloud/available_models.md"
+  - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
+  - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
+  - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
+  - Under The Hood The Swarm Cloud Serving Infrastructure: "swarms_cloud/architecture.md"
 - Guides:
   - Agents:
     - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"

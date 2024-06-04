@@ -1,89 +1,131 @@
-<div align="center">
-  <p>
-    <a align="center" href="" target="_blank">
-      <img
-        width="850"
-        src="https://github.com/kyegomez/swarms/raw/master/images/swarmslogobanner.png"
-      >
-    </a>
-  </p>
+# Swarms Documentation
+
+Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, Swarms empowers agents to work together seamlessly, tackling complex tasks.
+
+<div style="display:flex; margin:0 auto; justify-content: center;">
+    <div style="width:25%">
+        <h2>Core Concepts</h2>
+        <ul>
+            <li>
+                <a href="./core-concepts/Agents">
+                    Agents
+                </a>
+            </li>
+            <li>
+                <a href="./core-concepts/Tasks">
+                    Tasks
+                </a>
+            </li>
+            <li>
+                <a href="./core-concepts/Tools">
+                    Tools
+                </a>
+            </li>
+            <li>
+                <a href="./core-concepts/Processes">
+                    Processes
+                </a>
+            </li>
+            <li>
+                <a href="./core-concepts/Crews">
+                    Crews
+                </a>
+            </li>
+            <li>
+                <a href="./core-concepts/Memory">
+                    Memory
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div style="width:30%">
+        <h2>How-To Guides</h2>
+        <ul>
+            <li>
+                <a href="./how-to/Installing-Swarms">
+                    Installing Swarms
+                </a>
+            </li>
+            <li>
+                <a href="./how-to/Creating-a-Crew-and-kick-it-off">
+                    Getting Started
+                </a>
+            </li>
+            <li>
+                <a href="./how-to/Create-Custom-Tools">
+                    Create Custom Tools
+                </a>
+            </li>
+            <li>
+                <a href="./how-to/Sequential">
+                    Using Sequential Process
+                </a>
+            </li>
+            <li>
+                <a href="./how-to/Hierarchical">
+                    Using Hierarchical Process
+                </a>
+            </li>
+            <li>
+                <a href="./how-to/LLM-Connections">
+                    Connecting to LLMs
+                </a>
+            </li>
+            <li>
+                <a href="./how-to/Customizing-Agents">
+                    Customizing Agents
+                </a>
+            </li>
+            <li>
+                <a href="./how-to/Human-Input-on-Execution">
+                    Human Input on Execution
+                </a>
+            </li>
+            <li>
+                <a href="./how-to/AgentOps-Observability">
+                    Agent Monitoring with AgentOps
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div style="width:30%">
+        <h2>Examples</h2>
+        <ul>
+            <li>
+                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/prep-for-a-meeting">
+                    Prepare for meetings
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/trip_planner">
+                    Trip Planner Crew
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/instagram_post">
+                    Create Instagram Post
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/stock_analysis">
+                    Stock Analysis
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/game-builder-crew">
+                    Game Generator
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/Swarms-LangGraph">
+                    Drafting emails with LangGraph
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://github.com/joaomdmoura/Swarms-examples/tree/main/landing_page_generator">
+                    Landing Page Generator
+                </a>
+            </li>
+        </ul>
+    </div>
 </div>
-
-## 👋 Hello
-
-Swarms provides you with all the building blocks you need to build reliable, production-grade, and scalable multi-agent apps!
-
-## 💻 Install
-
-You can install `swarms` with pip in a
-[**Python>=3.10**](https://www.python.org/) environment.
-
-!!! example "pip install (recommended)"
-
-    === "headless"
-        The headless installation of `swarms` is designed for environments where graphical user interfaces (GUI) are not needed, making it more lightweight and suitable for server-side applications.
-
-        ```bash
-        pip install swarms
-        ```
-
-
-!!! example "git clone (for development)"
-
-    === "virtualenv"
-
-        ```bash
-        # clone repository and navigate to root directory
-        git clone https://github.com/kyegomez/swarms.git
-        cd swarms
-
-        # setup python environment and activate it
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-
-        # headless install
-        pip install -e "."
-
-        # desktop install
-        pip install -e ".[desktop]"
-        ```
-
-    === "poetry"
-
-        ```bash
-        # clone repository and navigate to root directory
-        git clone https://github.com/kyegomez/swarms.git
-        cd swarms
-
-        # setup python environment and activate it
-        poetry env use python3.10
-        poetry shell
-
-        # headless install
-        poetry install
-
-        # desktop install
-        poetry install --extras "desktop"
-        ```
-
-!!! example "NPM install |WIP|"
-
-    === "headless"
-        Get started with the NPM implementation of Swarms with this command:
-
-        ```bash
-        npm install swarms-js
-        ```
-
-
-## Documentation
-
-[Learn more about swarms →](swarms/)
-
-
-## Examples
-
-Check out Swarms examples for building agents, data retrieval, and more.
-
-[Checkout Swarms examples →](examples/)
