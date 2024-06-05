@@ -7,33 +7,28 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
         <h2>Core Concepts</h2>
         <ul>
             <li>
-                <a href="./core-concepts/Agents">
+                <a href="swarms/structs/agent.md">
                     Agents
-                </a>
-            </li>
-            <li>
-                <a href="./core-concepts/Tasks">
-                    Tasks
-                </a>
-            </li>
-            <li>
-                <a href="./core-concepts/Tools">
-                    Tools
-                </a>
-            </li>
-            <li>
-                <a href="./core-concepts/Processes">
-                    Processes
-                </a>
-            </li>
-            <li>
-                <a href="./core-concepts/Crews">
-                    Crews
                 </a>
             </li>
             <li>
                 <a href="./core-concepts/Memory">
                     Memory
+                </a>
+            </li>
+            <li>
+                <a href="swarms/tools/main.md">
+                    Tools
+                </a>
+            </li>
+            <li>
+                <a href="swarms/structs/task.md">
+                    Tasks
+                </a>
+            </li>
+            <li>
+                <a href="./core-concepts/Processes">
+                    Multi-Agent Orchestration
                 </a>
             </li>
         </ul>

@@ -93,7 +93,6 @@ markdown_extensions:
   - tables
   - def_list
   - footnotes
-
 nav:
   - Home: "/"
   - Installation:

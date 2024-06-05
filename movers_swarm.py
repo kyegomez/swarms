@@ -47,6 +47,7 @@ Instructions:
 
 """
 
+
 def movers_agent_system_prompt():
     return """
     The Movers Agent is responsible for providing users with fixed-cost estimates for moving services 
@@ -75,8 +76,8 @@ def movers_agent_system_prompt():
     4. Users can click "negotiate" to simulate negotiation via Retell API, adjusting the price within a predefined range.
     """
 
-# Example usage
 
+# Example usage
 
 
 # Initialize
