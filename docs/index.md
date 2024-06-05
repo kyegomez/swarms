@@ -38,17 +38,17 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
             </li>
         </ul>
     </div>
-    <div style="width:30%">
+    <div style="width:25%">
         <h2>How-To Guides</h2>
         <ul>
             <li>
-                <a href="./how-to/Installing-Swarms">
+                <a href="swarms/install/install.md">
                     Installing Swarms
                 </a>
             </li>
             <li>
-                <a href="./how-to/Creating-a-Crew-and-kick-it-off">
-                    Getting Started
+                <a href="swarms/install/docker_setup.md">
+                    Docker Setup
                 </a>
             </li>
             <li>
@@ -57,13 +57,13 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
                 </a>
             </li>
             <li>
-                <a href="./how-to/Sequential">
-                    Using Sequential Process
+                <a href="swarms/structs/agent_rearrange.md">
+                    Multi-Agent Flows
                 </a>
             </li>
             <li>
-                <a href="./how-to/Hierarchical">
-                    Using Hierarchical Process
+                <a href="swarms/structs/sequential_workflow.md">
+                    Sequential Workflows
                 </a>
             </li>
             <li>
@@ -88,22 +88,22 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
             </li>
         </ul>
     </div>
-    <div style="width:30%">
+    <div style="width:25%">
         <h2>Examples</h2>
         <ul>
             <li>
-                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/prep-for-a-meeting">
-                    Prepare for meetings
+                <a target='_blank' href="applications/business-analyst-agent.md">
+                    Swarm of Buisness Analysts for Business Reports
                 </a>
             </li>
             <li>
-                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/trip_planner">
-                    Trip Planner Crew
+                <a target='_blank' href="https://medium.com/@kyeg/building-compliance-agents-with-chroma-db-llama3-sop-prompting-0ed3e73559d2">
+                    Compliance Swarm for Customer Privacy
                 </a>
             </li>
             <li>
-                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/instagram_post">
-                    Create Instagram Post
+                <a target='_blank' href="https://medium.com/@kyeg/announcing-neosapiens-self-replicating-swarms-0a47410aafa7">
+                    Self-Replicating Hiearchical Swarms
                 </a>
             </li>
             <li>
@@ -124,6 +124,31 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
             <li>
                 <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/landing_page_generator">
                     Landing Page Generator
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div style="width:25%">
+        <h2>Community</h2>
+        <ul>
+            <li>
+                <a target='_blank' href="https://discord.gg/3Zck7nX6">
+                    Join the Swarms Community!
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://github.com/kyegomez/swarm-ecosystem">
+                    Swarms Ecosystem
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://cal.com/swarms/swarms-onboarding-session">
+                    Support Team
+                </a>
+            </li>
+            <li>
+                <a target='_blank' href="https://cal.com/swarms/swarms-onboarding-session">
+                    Book a 1 on 1 Call With Founder: Kye
                 </a>
             </li>
         </ul>

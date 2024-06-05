@@ -35,8 +35,6 @@ def parse_and_merge_logs(logs: List[Dict[str, str]]) -> str:
 
 def fetch_web_articles_bing_api(
     query: str = None,
-    subscription_key: str = check_bing_api_key(),
-    return_str: bool = False,
 ) -> List[Dict[str, str]]:
     """
     Fetches four articles from Bing Web Search API based on the given query.
@@ -48,8 +46,7 @@ def fetch_web_articles_bing_api(
     Returns:
     List[Dict[str, str]]: A list of dictionaries containing article details.
     """
-    if subscription_key is None:
-        subscription_key = check_bing_api_key()
+    subscription_key = check_bing_api_key()
 
     url = "https://api.bing.microsoft.com/v7.0/search"
     headers = {"Ocp-Apim-Subscription-Key": subscription_key}
