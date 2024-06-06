@@ -12,7 +12,7 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
                 </a>
             </li>
             <li>
-                <a href="./core-concepts/Memory">
+                <a href="swarms/memory/diy_memory.md">
                     Memory
                 </a>
             </li>
@@ -27,7 +27,7 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
                 </a>
             </li>
             <li>
-                <a href="./core-concepts/Processes">
+                <a href="swarms/structs/agent_rearrange.md">
                     Multi-Agent Orchestration
                 </a>
             </li>
@@ -99,26 +99,6 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
             <li>
                 <a target='_blank' href="https://medium.com/@kyeg/announcing-neosapiens-self-replicating-swarms-0a47410aafa7">
                     Self-Replicating Hiearchical Swarms
-                </a>
-            </li>
-            <li>
-                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/stock_analysis">
-                    Stock Analysis
-                </a>
-            </li>
-            <li>
-                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/game-builder-crew">
-                    Game Generator
-                </a>
-            </li>
-            <li>
-                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/Swarms-LangGraph">
-                    Drafting emails with LangGraph
-                </a>
-            </li>
-            <li>
-                <a target='_blank' href="https://github.com/kyegomez/Swarms-examples/tree/main/landing_page_generator">
-                    Landing Page Generator
                 </a>
             </li>
         </ul>

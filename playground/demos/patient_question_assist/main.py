@@ -116,7 +116,6 @@ for name, prompt in zip(agent_names, system_prompts):
         saved_state_path=f"{name.lower().replace(' ', '_')}.json",
         # docs_folder="data", # Folder of docs to parse and add to the agent's memory
         # long_term_memory=memory,
-        # dynamic_temperature_enabled=True,
         # pdf_path="docs/medical_papers.pdf",
         # list_of_pdf=["docs/medical_papers.pdf", "docs/medical_papers_2.pdf"],
         # docs=["docs/medicalx_papers.pdf", "docs/medical_papers_2.txt"],
