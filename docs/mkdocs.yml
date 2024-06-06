@@ -1,4 +1,181 @@
 
+# docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
+# site_name: Swarms Documentation
+# site_url: https://swarms.apac.ai
+# site_author: Swarms
+# site_description: Orchestrate Swarms of Agents From Any Framework Like OpenAI, Langchain, and Etc for Real World Workflow Automation.
+# repo_name: kyegomez/swarms
+# repo_url: https://github.com/kyegomez/swarms
+# edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
+# copyright: TGSC Corp 2024. All rights reserved.
+
+
+# plugins:
+#   # - glightbox
+#   - search
+#   - git-authors
+#   - mkdocs-jupyter:
+#         kernel_name: python3
+#         execute: false
+#         include_source: True
+#         include_requirejs: true
+#   - mkdocstrings:
+#       default_handler: python
+#       handlers:
+#         python:
+#           options:
+#             parameter_headings: true
+#             paths: [supervision]
+#             load_external_modules: true
+#             allow_inspection: true
+#             show_bases: true
+#             group_by_category: true
+#             docstring_style: google
+#             show_symbol_type_heading: true
+#             show_symbol_type_toc: true
+#             show_category_heading: true
+#           domains: [std, py]
+#   - git-committers:
+#       repository: kyegomez/swarms
+#       branch: master
+#       # token: !ENV ["GITHUB_TOKEN"]
+#   - git-revision-date-localized:
+#       enable_creation_date: true
+# extra_css:
+#   - assets/css/extra.css
+# extra:
+#   social:
+#     - icon: fontawesome/brands/twitter
+#       link: https://x.com/KyeGomezB
+#     - icon: fontawesome/brands/github
+#       link: https://github.com/kyegomez/swarms
+# theme:
+#     name: material
+#     custom_dir: overrides
+#     logo: assets/img/SwarmsLogoIcon.png
+#     palette:
+#       # Palette toggle for light mode
+#     - scheme: default
+#       primary: black
+#       toggle:
+#         icon: material/brightness-7 
+#         name: Switch to dark mode
+#     # Palette toggle for dark mode
+#     - scheme: slate
+#       primary: black
+#       toggle:
+#         icon: material/brightness-4
+#         name: Switch to light mode
+#     features:
+#         - content.code.copy
+#         - content.code.annotate
+#         - navigation.tabs
+#         - navigation.sections
+#         - navigation.expand
+#         - navigation.top
+#         - announce.dismiss
+# markdown_extensions:
+#   - pymdownx.highlight:
+#       anchor_linenums: true
+#       line_spans: __span
+#       pygments_lang_class: true
+#   - admonition
+#   - pymdownx.inlinehilite
+#   - pymdownx.snippets
+#   - pymdownx.superfences
+#   - pymdownx.details
+#   - pymdownx.tabbed
+#   - tables
+#   - def_list
+#   - footnotes
+# nav:
+#   - Home:
+#     - Installation:
+#       - Overview: "index.md"
+#       - Install: "swarms/install/install.md"
+#       - Docker Setup: "swarms/install/docker_setup.md"
+#     - Usage Examples:
+#       - Overview: "swarms/usage/index.md" # Explains how the framework is decomposed into agents, models, and swarms
+#       - Models:
+#         - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+#         - Models Available: "swarms/models/index.md"
+#         - MultiModal Models Available: "swarms/models/multimodal_models.md"
+#       - Agents:
+#         - Getting started with Agents: "swarms/structs/diy_your_own_agent.md"
+#         - Tools: 
+#           - Functions, Pydantic BaseModels, and More: "swarms/tools/main.md"
+#         - Memory:
+#           - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
+#           - ShortTermMemory: "swarms/memory/short_term_memory.md"
+#       - Multi-Agent Collaboration:
+#         - SwarmNetwork: "swarms/structs/swarmnetwork.md"
+#         - AgentRearrange: "swarms/structs/agent_rearrange.md"
+#       - Why does Swarms Exist?:
+#     - References:
+#       - Agent Glossary: "swarms/glossary.md"
+#       - List of The Best Multi-Agent Papers: "swarms/papers.md"
+#     - Contributors:
+#       - Contributing: "contributing.md"
+# - Reference:
+#   - Overview: "swarms/index.md"
+#   # - Framework Structure: "swarms/structs/tree.md" # Explains the tree structure of the framework and where things are located
+#   - swarms.models:
+#     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+#     - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
+#     - Language Models:
+#       - BaseLLM: "swarms/models/base_llm.md"
+#       - Overview: "swarms/models/index.md"
+#       - HuggingFaceLLM: "swarms/models/huggingface.md"
+#       - Anthropic: "swarms/models/anthropic.md"
+#       - OpenAIChat: "swarms/models/openai.md"
+#     - MultiModal Models :
+#       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
+#       - Fuyu: "swarms/models/fuyu.md"
+#       - Vilt: "swarms/models/vilt.md"
+#       - Idefics: "swarms/models/idefics.md"
+#       - Kosmos: "swarms/models/kosmos.md"
+#       - Nougat: "swarms/models/nougat.md"
+#       - Dalle3: "swarms/models/dalle3.md"
+#       - GPT4VisionAPI: "swarms/models/gpt4v.md"
+#       - GPT4o: "swarms/models/gpt4o.md"
+#   - swarms.structs:
+#       - Foundational Structures:
+#         - Agent: "swarms/structs/agent.md"
+#         - BaseStructure: "swarms/structs/basestructure.md"
+#         - Task: "swarms/structs/task.md"
+#         - YamlModel: "swarms/structs/yaml_model.md"
+#         # - BaseSwarm: "swarms/structs/base_swarm.md"
+#         - BaseWorkflow: "swarms/structs/baseworkflow.md"
+#       - Workflows:
+#         - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
+#         - SequentialWorkflow: "swarms/structs/sequential_workflow.md"      
+#       - Multi Agent Architectures:
+#         - Conversation: "swarms/structs/conversation.md"
+#         - SwarmNetwork: "swarms/structs/swarmnetwork.md"
+#         - MajorityVoting: "swarms/structs/majorityvoting.md"
+#         - AgentRearrange: "swarms/structs/agent_rearrange.md"
+#         - RoundRobin: "swarms/structs/round_robin_swarm.md"
+# - Swarms Cloud API:
+#   - Overview: "swarms_cloud/main.md"
+#   - Available Models: "swarms_cloud/available_models.md"
+#   - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
+#   - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
+#   - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
+#   - Under The Hood The Swarm Cloud Serving Infrastructure: "swarms_cloud/architecture.md"
+# - Guides:
+#   # - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
+#   - Models:
+#     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+#     - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
+#   - Agents:
+#     - Agent: "examples/flow.md"
+#     - DIY Build Your Own Agent: "diy_your_own_agent.md"
+#     - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
+#   - Swarms:
+#     - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
+
+
+
 docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
 site_name: Swarms Documentation
 site_url: https://swarms.apac.ai
@@ -41,14 +218,20 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
+
+copyright: "&copy; TGSC, Corporation."
 extra_css:
   - assets/css/extra.css
 extra:
   social:
-    - icon: fontawesome/brands/twitter
-      link: https://x.com/KyeGomezB
+    - icon: fontawesome/solid/house
+      link: assets/img/SwarmsLogoIcon.png
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/qUtxnK2NMf
     - icon: fontawesome/brands/github
-      link: https://github.com/kyegomez/swarms
+      link: https://github.com/kyegomez/Swarms/
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/Swarms/
 theme:
     name: material
     custom_dir: overrides
@@ -89,45 +272,41 @@ markdown_extensions:
   - def_list
   - footnotes
 nav:
-  - Home:
-    - Installation:
-      - Overview: "index.md"
-      - Install: "swarms/install/install.md"
-      - Docker Setup: "swarms/install/docker_setup.md"
-    - Usage Examples:
-      - Models:
-        - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-        - Models Available: "swarms/models/index.md"
-        - MultiModal Models Available: "swarms/models/multimodal_models.md"
-      - Agents:
-        - Getting started with Agents: "swarms/structs/diy_your_own_agent.md"
-        - Tools: 
-          - Functions, Pydantic BaseModels, and More: "swarms/tools/main.md"
-        - Memory:
-          - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
-          - ShortTermMemory: "swarms/memory/short_term_memory.md"
-      - Multi-Agent Collaboration:
-        - SwarmNetwork: "swarms/structs/swarmnetwork.md"
-        - AgentRearrange: "swarms/structs/agent_rearrange.md"
-      - Why does Swarms Exist?:
-    - References:
-      - Agent Glossary: "swarms/glossary.md"
-      - List of The Best Multi-Agent Papers: "swarms/papers.md"
-    - Contributors:
-      - Contributing: "contributing.md"
-- Reference:
+- Home:
+  - Installation:
+    - Overview: "index.md"
+    - Install: "install.md"
+    - Docker Setup: docker_setup.md
+  - Usage Examples:
+    - Build an Agent: "diy_your_own_agent.md"
+    - Build an Agent with tools: "examples/tools_agents.md"
+  - Why does Swarms Exist?:
+    - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
+    - Limitations of Individual Agents: "limits_of_individual_agents.md"
+    
+- Swarms Cloud API:
+  - Overview: "swarms_cloud/main.md"
+  - Available Models: "swarms_cloud/available_models.md"
+  - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
+  - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
+  - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
+- Swarms Framework [PY]:
   - Overview: "swarms/index.md"
-  - Framework Structure: "swarms/structs/tree.md"
+  - DIY Build Your Own Agent: "diy_your_own_agent.md"
+  - Agents with Tools: "examples/tools_agent.md"
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
-    - Language Models:
+    - Language:
       - BaseLLM: "swarms/models/base_llm.md"
       - Overview: "swarms/models/index.md"
+      - Llava3: "swarms/models/llama3.md"
       - HuggingFaceLLM: "swarms/models/huggingface.md"
       - Anthropic: "swarms/models/anthropic.md"
-      - OpenAIChat: "swarms/models/openai.md"
-    - MultiModal Models :
+      - OpenAI: "swarms/models/openai.md"
+      - Mistral: "swarms/models/mistral.md"
+      - Mixtral: "swarms/models/mixtral.md"
+    - MultiModal:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Fuyu: "swarms/models/fuyu.md"
       - Vilt: "swarms/models/vilt.md"
@@ -135,40 +314,63 @@ nav:
       - Kosmos: "swarms/models/kosmos.md"
       - Nougat: "swarms/models/nougat.md"
       - Dalle3: "swarms/models/dalle3.md"
-      - GPT4VisionAPI: "swarms/models/gpt4v.md"
-      - GPT4o: "swarms/models/gpt4o.md"
+      - GPT4V: "swarms/models/gpt4v.md"
+      - DistilWhisperModel: "swarms/models/distilled_whisperx.md"
   - swarms.structs:
       - Foundational Structures:
         - Agent: "swarms/structs/agent.md"
         - BaseStructure: "swarms/structs/basestructure.md"
         - Task: "swarms/structs/task.md"
         - YamlModel: "swarms/structs/yaml_model.md"
-        # - BaseSwarm: "swarms/structs/base_swarm.md"
-        - BaseWorkflow: "swarms/structs/baseworkflow.md"
       - Workflows:
         - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
-        - SequentialWorkflow: "swarms/structs/sequential_workflow.md"      
+        - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
+        - BaseWorkflow: "swarms/structs/baseworkflow.md"      
       - Multi Agent Architectures:
         - Conversation: "swarms/structs/conversation.md"
         - SwarmNetwork: "swarms/structs/swarmnetwork.md"
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
-- Swarms Cloud API:
-  - Overview: "swarms_cloud/main.md"
-  - Available Models: "swarms_cloud/available_models.md"
-  - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
-  - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
-  - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
-  - Under The Hood The Swarm Cloud Serving Infrastructure: "swarms_cloud/architecture.md"
+  - swarms.memory:
+    - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
+    - ShortTermMemory: "swarms/memory/short_term_memory.md"
 - Guides:
-  # - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
-  - Models:
+  - Agents:
+    - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
-  - Agents:
-    - Agent: "examples/flow.md"
     - DIY Build Your Own Agent: "diy_your_own_agent.md"
     - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
-  - Swarms:
-    - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
+    - Overview: "examples/index.md"
+    - Agents:
+      - Agent: "examples/flow.md"
+      - OmniAgent: "examples/omni_agent.md"
+    - Swarms:
+      - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
+    - 2O+ Autonomous Agent Blogs: "examples/ideas.md"
+- Applications:
+    - CustomerSupport: 
+      - Overview: "applications/customer_support.md"
+    - Marketing: 
+      - Overview: "applications/marketing_agencies.md" 
+    - Operations:
+      - Intoducing The Swarm of Automated Business Analyts: "applications/business-analyst-agent.md"
+- Corporate:
+    - Corporate Documents:
+      - Data Room: "corporate/data_room.md"
+      - The Swarm Memo: "corporate/swarm_memo.md"
+      - Corporate Architecture: "corporate/architecture.md"
+      - Flywheel: "corporate/flywheel.md"
+    - Sales:
+      - FAQ: "corporate/faq.md"
+      - Distribution: "corporate/distribution"
+    - Product:
+      - SwarmCloud: "corporate/swarm_cloud.md"
+      - Weaknesses of Langchain: "corporate/failures.md"
+      - Design: "corporate/design.md"
+      - Metric: "corporate/metric.md"
+    - Organization:
+      - FrontEnd Member Onboarding: "corporate/front_end_contributors.md"
+- Contributors:
+    - Contributing: "contributing.md"
