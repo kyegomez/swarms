@@ -1,4 +1,4 @@
-# Swarms Documentation
+# Swarms
 
 Orchestrate enterprise-grade agents for multi-agent collaboration and orchestration to automate real-world problems.
 

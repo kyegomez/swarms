@@ -41,8 +41,6 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
-
-copyright: "&copy; TGSC, Corporation."
 extra_css:
   - assets/css/extra.css
 extra:
@@ -124,7 +122,7 @@ nav:
     - List of The Best Multi-Agent Papers: "swarms/papers.md"
   - Contributors:
     - Contributing: "contributing.md"
-- Swarms Framework Reference:
+- SwarmsReference:
   - Overview: "swarms/index.md"
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
