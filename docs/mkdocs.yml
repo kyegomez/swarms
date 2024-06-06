@@ -122,8 +122,9 @@ nav:
     - List of The Best Multi-Agent Papers: "swarms/papers.md"
   - Contributors:
     - Contributing: "contributing.md"
-- SwarmsReference:
+- Reference:
   - Overview: "swarms/index.md"
+  - Framework Structure: "swarms/structs/tree.md"
   - swarms.models:
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
@@ -178,26 +179,3 @@ nav:
     - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
   - Swarms:
     - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
-- Applications:
-    - CustomerSupport: 
-      - Overview: "applications/customer_support.md"
-    - Marketing: 
-      - Overview: "applications/marketing_agencies.md" 
-    - Operations:
-      - Intoducing The Swarm of Automated Business Analyts: "applications/business-analyst-agent.md"
-- Corporate:
-    - Corporate Documents:
-      - Data Room: "corporate/data_room.md"
-      - The Swarm Memo: "corporate/swarm_memo.md"
-      - Corporate Architecture: "corporate/architecture.md"
-      - Flywheel: "corporate/flywheel.md"
-    - Sales:
-      - FAQ: "corporate/faq.md"
-      - Distribution: "corporate/distribution"
-    - Product:
-      - SwarmCloud: "corporate/swarm_cloud.md"
-      - Weaknesses of Langchain: "corporate/failures.md"
-      - Design: "corporate/design.md"
-      - Metric: "corporate/metric.md"
-    - Organization:
-      - FrontEnd Member Onboarding: "corporate/front_end_contributors.md"
