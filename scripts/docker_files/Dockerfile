@@ -1,7 +1,7 @@
 
 # ==================================
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -27,7 +27,7 @@ COPY . .
 # EXPOSE 5000
 
 # # Define environment variable for the swarm to work
-ENV OPENAI_API_KEY=your_swarm_api_key_here
+# ENV OPENAI_API_KEY=your_swarm_api_key_here
 
 # If you're using `CMD` to execute a Python script, make sure it's executable
-RUN chmod +x example.py
+# RUN chmod +x example.py

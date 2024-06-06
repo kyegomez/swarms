@@ -14,6 +14,7 @@ from swarms.memory.base_vectordb import BaseVectorDatabase
 import time
 from swarms.utils.loguru_logger import logger
 from pydantic import BaseModel, Field
+from typing import Any
 
 
 class SwarmCommunicationProtocol(BaseModel):
@@ -31,6 +32,31 @@ class SwarmCommunicationProtocol(BaseModel):
 
 
 class SCP(BaseStructure):
+    """
+    Represents the Swarm Communication Protocol (SCP).
+
+    SCP is responsible for managing agents and their communication within a swarm.
+
+    Args:
+        agents (List[AgentType]): A list of agents participating in the swarm.
+        memory_system (BaseVectorDatabase, optional): The memory system used by the agents. Defaults to None.
+
+    Attributes:
+        agents (List[AgentType]): A list of agents participating in the swarm.
+        memory_system (BaseVectorDatabase): The memory system used by the agents.
+
+    Methods:
+        message_log(agent: AgentType, task: str = None, message: str = None) -> str:
+            Logs a message from an agent and adds it to the memory system.
+
+        run_single_agent(agent: AgentType, task: str, *args, **kwargs) -> Any:
+            Runs a task for a single agent and logs the output.
+
+        send_message(agent: AgentType, message: str):
+            Sends a message to an agent and logs it.
+
+    """
+
     def __init__(
         self,
         agents: List[AgentType],
@@ -55,7 +81,19 @@ class SCP(BaseStructure):
 
     def message_log(
         self, agent: AgentType, task: str = None, message: str = None
-    ):
+    ) -> str:
+        """
+        Logs a message from an agent and adds it to the memory system.
+
+        Args:
+            agent (AgentType): The agent that generated the message.
+            task (str, optional): The task associated with the message. Defaults to None.
+            message (str, optional): The message content. Defaults to None.
+
+        Returns:
+            str: The JSON-encoded log message.
+
+        """
         log = {
             "agent_name": agent.agent_name,
             "task": task,
@@ -73,7 +111,18 @@ class SCP(BaseStructure):
 
     def run_single_agent(
         self, agent: AgentType, task: str, *args, **kwargs
-    ):
+    ) -> Any:
+        """
+        Runs a task for a single agent and logs the output.
+
+        Args:
+            agent (AgentType): The agent to run the task for.
+            task (str): The task to be executed.
+
+        Returns:
+            Any: The output of the task.
+
+        """
         # Send the message to the agent
         output = agent.run(task)
 
@@ -88,4 +137,12 @@ class SCP(BaseStructure):
         return output
 
     def send_message(self, agent: AgentType, message: str):
+        """
+        Sends a message to an agent and logs it.
+
+        Args:
+            agent (AgentType): The agent to send the message to.
+            message (str): The message to be sent.
+
+        """
         agent.receieve_mesage(self.message_log(agent, message))

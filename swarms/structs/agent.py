@@ -88,6 +88,34 @@ agent_output_type = Union[BaseModel, dict, str]
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
+def retrieve_tokens(text, num_tokens):
+    """
+    Retrieve a specified number of tokens from a given text.
+
+    Parameters:
+    text (str): The input text string.
+    num_tokens (int): The number of tokens to retrieve.
+
+    Returns:
+    str: A string containing the specified number of tokens from the input text.
+    """
+    # Initialize an empty list to store tokens
+    tokens = []
+    token_count = 0
+
+    # Split the text into words while counting tokens
+    for word in text.split():
+        tokens.append(word)
+        token_count += 1
+        if token_count == num_tokens:
+            break
+
+    # Join the selected tokens back into a string
+    result = " ".join(tokens)
+
+    return result
+
+
 # [FEAT][AGENT]
 class Agent(BaseStructure):
     """
@@ -256,6 +284,7 @@ class Agent(BaseStructure):
         planning_prompt: Optional[str] = None,
         device: str = None,
         custom_planning_prompt: str = None,
+        memory_chunk_size: int = 2000,
         *args,
         **kwargs,
     ):
@@ -336,6 +365,7 @@ class Agent(BaseStructure):
         self.custom_planning_prompt = custom_planning_prompt
         self.rules = rules
         self.custom_tools_prompt = custom_tools_prompt
+        self.memory_chunk_size = memory_chunk_size
 
         # Name
         self.name = agent_name
@@ -739,21 +769,41 @@ class Agent(BaseStructure):
                 success = False
                 while attempt < self.retry_attempts and not success:
                     try:
+                        if self.long_term_memory is not None:
+                            memory_retrieval = (
+                                self.long_term_memory_prompt(
+                                    task, *args, **kwargs
+                                )
+                            )
+                            # print(len(memory_retrieval))
 
-                        response_args = (
-                            (task_prompt, *args)
-                            if img is None
-                            else (task_prompt, img, *args)
-                        )
-                        response = self.llm(*response_args, **kwargs)
+                            # Merge the task prompt with the memory retrieval
+                            task_prompt = f"{task_prompt} Documents: Available {memory_retrieval}"
 
-                        # Print
-                        print(response)
+                            response = self.llm(
+                                task_prompt, *args, **kwargs
+                            )
+                            print(response)
 
-                        # Add the response to the memory
-                        self.short_memory.add(
-                            role=self.agent_name, content=response
-                        )
+                            self.short_memory.add(
+                                role=self.agent_name, content=response
+                            )
+
+                        else:
+                            response_args = (
+                                (task_prompt, *args)
+                                if img is None
+                                else (task_prompt, img, *args)
+                            )
+                            response = self.llm(*response_args, **kwargs)
+
+                            # Print
+                            print(response)
+
+                            # Add the response to the memory
+                            self.short_memory.add(
+                                role=self.agent_name, content=response
+                            )
 
                         # Check if tools is not None
                         if self.tools is not None:
@@ -930,12 +980,16 @@ class Agent(BaseStructure):
         Returns:
             str: The agent history prompt
         """
+        # Query the long term memory database
         ltr = self.long_term_memory.query(query, *args, **kwargs)
+        ltr = str(ltr)
 
-        context = f"""
-            System: This reminds you of these events from your past: [{ltr}]
-        """
-        return self.short_memory.add(role=self.agent_name, content=context)
+        # Retrieve only the chunk size of the memory
+        ltr = retrieve_tokens(ltr, self.memory_chunk_size)
+
+        print(len(ltr))
+        # print(f"Long Term Memory Query: {ltr}")
+        return ltr
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -1258,7 +1312,7 @@ class Agent(BaseStructure):
                 "agent_id": str(self.id),
                 "agent_name": self.agent_name,
                 "agent_description": self.agent_description,
-                "LLM": str(self.get_llm_parameters()),
+                # "LLM": str(self.get_llm_parameters()),
                 "system_prompt": self.system_prompt,
                 "short_memory": self.short_memory.return_history_as_string(),
                 "loop_interval": self.loop_interval,

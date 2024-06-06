@@ -2,6 +2,10 @@
 
 In the rapidly evolving landscape of artificial intelligence (AI) and automation, a new paradigm is emerging: the orchestration of multiple agents working in collaboration to tackle complex tasks. This approach, embodied by the Swarms Framework, aims to address the fundamental limitations of individual agents and unlocks the true potential of AI-driven automation in enterprise operations.
 
+Individual agents are plagued by the same issues: short term memory constraints, hallucinations, single task limitations, lack of collaboration, and cost inefficiences.
+
+[Learn more here from a list of compiled agent papers](https://github.com/kyegomez/awesome-multi-agent-papers)
+
 ## The Purpose of Swarms: Overcoming Agent Limitations
 
 Individual agents, while remarkable in their own right, face several inherent challenges that hinder their ability to effectively automate enterprise operations at scale. These limitations include:
