@@ -28,8 +28,6 @@ openai = OpenAIChat(
 app = FastAPI()
 
 
-
-
 def DIAGNOSIS_SYSTEM_PROMPT() -> str:
     return """
     **System Prompt for Medical Image Diagnostic Agent**
@@ -82,6 +80,7 @@ class LLMConfig(BaseModel):
     model_name: str
     max_tokens: int
 
+
 class AgentConfig(BaseModel):
     agent_name: str
     system_prompt: str
@@ -89,6 +88,7 @@ class AgentConfig(BaseModel):
     max_loops: int
     autosave: bool
     dashboard: bool
+
 
 class AgentRearrangeConfig(BaseModel):
     agents: List[AgentConfig]
@@ -102,14 +102,17 @@ class AgentRunResult(BaseModel):
     output: Dict[str, Any]
     tokens_generated: int
 
+
 class RunAgentsResponse(BaseModel):
     results: List[AgentRunResult]
     total_tokens_generated: int
-    
+
+
 class AgentRearrangeResponse(BaseModel):
     results: List[AgentRunResult]
     total_tokens_generated: int
-    
+
+
 class RunConfig(BaseModel):
     task: str = Field(..., title="The task to run")
     flow: str = "D -> T"
@@ -121,12 +124,13 @@ class RunConfig(BaseModel):
 async def health_check():
     return JSONResponse(content={"status": "healthy"})
 
+
 @app.get("/v1/models_available")
 async def models_available():
     available_models = {
         "models": [
             {"name": "gpt-4-1106-vision-preview", "type": "vision"},
-            {"name": "openai-chat", "type": "text"}
+            {"name": "openai-chat", "type": "text"},
         ]
     }
     return JSONResponse(content=available_models)
@@ -144,7 +148,6 @@ async def run_agents(run_config: RunConfig):
         autosave=True,
         dashboard=True,
     )
-
 
     # Agent 2 the treatment plan provider
     treatment_plan_provider = Agent(
@@ -170,11 +173,11 @@ async def run_agents(run_config: RunConfig):
         run_config.task,
         image=run_config.image,
     )
-    
+
     return JSONResponse(content=out)
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
-    

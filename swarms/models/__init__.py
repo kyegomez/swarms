@@ -40,6 +40,7 @@ from swarms.models.types import (  # noqa: E402
 from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.openai_embeddings import OpenAIEmbeddings
 from swarms.models.llama3_hosted import llama3Hosted
+from swarms.models.gpt_o import GPT4o
 
 __all__ = [
     "BaseEmbeddingModel",
@@ -74,4 +75,5 @@ __all__ = [
     "Vilt",
     "OpenAIEmbeddings",
     "llama3Hosted",
+    "GPT4o",
 ]

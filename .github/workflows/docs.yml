@@ -1,4 +1,3 @@
----
 name: Documentation
 on:
   push:

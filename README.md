@@ -71,7 +71,8 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
 
 ```python
-from swarms import Agent, ChromaDB, OpenAIChat
+from swarms import Agent, OpenAIChat
+from playground.memory.chromadb_example import ChromaDB # Copy and paste the code and put it in your own local directory.
 
 # Making an instance of the ChromaDB class
 memory = ChromaDB(
@@ -180,7 +181,7 @@ agent("Generate a transcript for a youtube video on what swarms are!")
 ```
 
 ## Devin
-Implementation of Devil in less than 90 lines of code with several tools:
+Implementation of Devin in less than 90 lines of code with several tools:
 terminal, browser, and edit files!
 
 ```python
@@ -404,56 +405,6 @@ generated_data = agent.run(task)
 print(f"Generated data: {generated_data}")
 
 ```
-
-
-### `Worker`
-The `Worker` is a simple all-in-one agent equipped with an LLM, tools, and RAG for low level tasks.
-
-✅ Plug in and Play LLM. Utilize any LLM from anywhere and any framework
-
-✅ Reliable RAG: Utilizes FAISS for efficient RAG but it's modular so you can use any DB.
-
-✅ Multi-Step Parallel Function Calling: Use any tool
-
-```python
-# Importing necessary modules
-import os
-
-from dotenv import load_dotenv
-
-from swarms import OpenAIChat, Worker, tool
-
-# Loading environment variables from .env file
-load_dotenv()
-
-# Retrieving the OpenAI API key from environment variables
-api_key = os.getenv("OPENAI_API_KEY")
-
-
-# Create a tool
-@tool
-def search_api(query: str):
-    pass
-
-
-# Creating a Worker instance
-worker = Worker(
-    name="My Worker",
-    role="Worker",
-    human_in_the_loop=False,
-    tools=[search_api],
-    temperature=0.5,
-    llm=OpenAIChat(openai_api_key=api_key),
-)
-
-# Running the worker with a prompt
-out = worker.run("Hello, how are you? Create an image of how your are doing!")
-
-# Printing the output
-print(out)
-```
-
-------
 
 
 
@@ -1188,6 +1139,7 @@ Apache License
 
 # Citation
 Please cite Swarms in your paper or your project if you found it beneficial in any way! Appreciate you.
+
 ```bibtex
 @misc{swarms,
   author = {Gomez, Kye},

@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "5.1.4"
+version = "5.1.6"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -42,7 +42,7 @@ toml = "*"
 pypdf = "4.1.0"
 ratelimit = "2.2.1"
 loguru = "0.7.2"
-pydantic = "2.7.1"
+pydantic = "2.7.2"
 tenacity = "8.3.0"
 Pillow = "10.3.0"
 psutil = "*"
@@ -50,10 +50,13 @@ sentry-sdk = "*"
 python-dotenv = "*"
 PyYAML = "*"
 docstring_parser = "0.16"
+fastapi = "*"
+openai = ">=1.30.1,<2.0"
+
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<25.0"
-ruff = ">=0.0.249,<0.4.6"
+ruff = ">=0.0.249,<0.4.8"
 types-toml = "^0.10.8.1"
 types-pytz = ">=2023.3,<2025.0"
 types-chardet = "^5.0.4.6"

@@ -1,14 +1,14 @@
 import logging
 import os
 import uuid
-from typing import Callable, Optional
+from typing import Optional
 
 import chromadb
 from dotenv import load_dotenv
 
-from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.markdown_message import display_markdown_message
+from swarms.memory.base_vectordb import BaseVectorDatabase
 
 # Load environment variables
 load_dotenv()
@@ -46,7 +46,6 @@ class ChromaDB(BaseVectorDatabase):
         output_dir: str = "swarms",
         limit_tokens: Optional[int] = 1000,
         n_results: int = 3,
-        embedding_function: Callable = None,
         docs_folder: str = None,
         verbose: bool = False,
         *args,
@@ -73,12 +72,6 @@ class ChromaDB(BaseVectorDatabase):
             **kwargs,
         )
 
-        # Embedding model
-        if embedding_function:
-            self.embedding_function = embedding_function
-        else:
-            self.embedding_function = None
-
         # Create ChromaDB client
         self.client = chromadb.Client()
 
@@ -86,8 +79,6 @@ class ChromaDB(BaseVectorDatabase):
         self.collection = chroma_client.get_or_create_collection(
             name=output_dir,
             metadata={"hnsw:space": metric},
-            embedding_function=self.embedding_function,
-            # data_loader=self.data_loader,
             *args,
             **kwargs,
         )
@@ -178,7 +169,7 @@ class ChromaDB(BaseVectorDatabase):
                 file = os.path.join(self.docs_folder, file)
                 _, ext = os.path.splitext(file)
                 data = data_to_text(file)
-                added_to_db = self.add([data])
+                added_to_db = self.add(str(data))
                 print(f"{file} added to Database")
 
         return added_to_db
