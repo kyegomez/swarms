@@ -14,7 +14,7 @@ plugins:
   - git-authors
   - mkdocs-jupyter:
         kernel_name: python3
-        execute: false
+        #execute: false   # default
         include_source: true
         include_requirejs: true
   # - mkdocstrings:
