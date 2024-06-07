@@ -1,4 +1,4 @@
-docs_dir: 'docs'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
+docs_dir: 'docs'
 site_name: "Swarms Documentation"
 site_url: https://swarms.world
 site_author: Swarms
@@ -14,10 +14,10 @@ plugins:
   - search
   - git-authors
   - mkdocs-jupyter:
-        kernel_name: python3
-        execute: false
-        include_source: True
-        include_requirejs: true
+    kernel_name: python3
+    execute: false
+    include_source: True
+    include_requirejs: true
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -49,15 +49,14 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/kyegomez/swarms
 theme:
-    name: material
-    custom_dir: overrides
-    logo: assets/img/SwarmsLogoIcon.png
-    palette:
-      # Palette toggle for light mode
+  name: material
+  custom_dir: overrides
+  logo: assets/img/SwarmsLogoIcon.png
+  palette:  # Palette toggle for light mode
     - scheme: default
       primary: black
       toggle:
-        icon: material/brightness-7 
+        icon: material/brightness-7
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
@@ -65,14 +64,14 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-    features:
-        - content.code.copy
-        - content.code.annotate
-        - navigation.tabs
-        - navigation.sections
-        - navigation.expand
-        - navigation.top
-        - announce.dismiss
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - announce.dismiss
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -89,31 +88,31 @@ markdown_extensions:
   - footnotes
 nav:
   - Home:
-    - Installation:
-      - Overview: "index.md"
-      - Install: "swarms/install/install.md"
-      - Docker Setup: "swarms/install/docker_setup.md"
-    - Usage Examples:
-      - Models:
-        - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-        - Models Available: "swarms/models/index.md"
-        - MultiModal Models Available: "swarms/models/multimodal_models.md"
-      - Agents:
-        - Getting started with Agents: "swarms/structs/diy_your_own_agent.md"
-        - Tools: 
-          - Functions, Pydantic BaseModels, and More: "swarms/tools/main.md"
-        - Memory:
-          - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
-          - ShortTermMemory: "swarms/memory/short_term_memory.md"
-      - Multi-Agent Collaboration:
-        - SwarmNetwork: "swarms/structs/swarmnetwork.md"
-        - AgentRearrange: "swarms/structs/agent_rearrange.md"
-      - Why does Swarms Exist?:
+      - Installation:
+          - Overview: "index.md"
+          - Install: "swarms/install/install.md"
+          - Docker Setup: "swarms/install/docker_setup.md"
+      - Usage Examples:
+          - Models:
+              - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+              - Models Available: "swarms/models/index.md"
+              - MultiModal Models Available: "swarms/models/multimodal_models.md"
+          - Agents:
+              - Getting started with Agents: "swarms/structs/diy_your_own_agent.md"
+              - Tools:
+                  - Functions, Pydantic BaseModels, and More: "swarms/tools/main.md"
+              - Memory:
+                  - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
+                  - ShortTermMemory: "swarms/memory/short_term_memory.md"
+            - Multi-Agent Collaboration:
+                - SwarmNetwork: "swarms/structs/swarmnetwork.md"
+                - AgentRearrange: "swarms/structs/agent_rearrange.md"
+            - Why does Swarms Exist?:
     - References:
-      - Agent Glossary: "swarms/glossary.md"
-      - List of The Best Multi-Agent Papers: "swarms/papers.md"
+        - Agent Glossary: "swarms/glossary.md"
+        - List of The Best Multi-Agent Papers: "swarms/papers.md"
     - Contributors:
-      - Contributing: "contributing.md"
+        - Contributing: "contributing.md"
   - Reference:
     - Overview: "swarms/index.md"
     - Framework Structure: "swarms/structs/tree.md"
