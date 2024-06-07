@@ -14,6 +14,7 @@ jobs:
         with:
           python-version: "3.10"
       - run: pip install mkdocs-material
+      - run: pip install mkdocs-same-dir
       - run: pip install mkdocs-glightbox
       - run: pip install "mkdocstrings[python]"
       - run: pip3 install mkdocs-git-authors-plugin
