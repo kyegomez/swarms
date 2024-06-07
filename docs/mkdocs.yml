@@ -9,7 +9,8 @@ repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
 
 plugins:
-  - search  
+  - search
+  - same-dir
   # - git-authors
   # - mkdocs-jupyter:
   #   kernel_name: python3
