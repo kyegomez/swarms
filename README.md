@@ -34,9 +34,12 @@ The performance impact is rated on a scale from one to five stars, with multi-ag
 
 # Usage Examples 🤖
 
+### Google Collab Example
 Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
+
+---
 
 ## `Agents`
 A fully plug-and-play autonomous agent powered by an LLM extended by a long-term memory database, and equipped with function calling for tool usage! By passing in an LLM, you can create a fully autonomous agent with extreme customization and reliability, ready for real-world task automation!
