@@ -1,4 +1,3 @@
-
 docs_dir: 'docs'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
 site_name: "Swarms Documentation"
 site_url: https://swarms.world
