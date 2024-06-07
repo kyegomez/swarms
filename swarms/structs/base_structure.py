@@ -68,7 +68,7 @@ class BaseStructure:
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        save_metadata: bool = True,
+        save_metadata_on: bool = True,
         save_artifact_path: Optional[str] = "./artifacts",
         save_metadata_path: Optional[str] = "./metadata",
         save_error_path: Optional[str] = "./errors",
@@ -76,7 +76,7 @@ class BaseStructure:
         super().__init__()
         self.name = name
         self.description = description
-        self.save_metadata = save_metadata
+        self.save_metadata_on = save_metadata_on
         self.save_artifact_path = save_artifact_path
         self.save_metadata_path = save_metadata_path
         self.save_error_path = save_error_path

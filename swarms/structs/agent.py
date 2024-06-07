@@ -35,13 +35,13 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.tools.py_func_to_openai_func_str import (
     get_openai_function_schema_from_func,
 )
-from swarms.tools.func_calling_executor import openai_tool_executor
 from swarms.structs.base_structure import BaseStructure
 from swarms.prompts.tools import tool_sop_prompt
 from swarms.tools.func_calling_utils import (
     pydantic_model_to_json_str,
     prepare_output_for_output_model,
 )
+from swarms.tools.tool_parse_exec import parse_and_execute_json
 
 
 # Utils
@@ -285,6 +285,7 @@ class Agent(BaseStructure):
         device: str = None,
         custom_planning_prompt: str = None,
         memory_chunk_size: int = 2000,
+        agent_ops_on: bool = False,
         *args,
         **kwargs,
     ):
@@ -366,6 +367,7 @@ class Agent(BaseStructure):
         self.rules = rules
         self.custom_tools_prompt = custom_tools_prompt
         self.memory_chunk_size = memory_chunk_size
+        self.agent_ops_on = agent_ops_on
 
         # Name
         self.name = agent_name
@@ -376,12 +378,12 @@ class Agent(BaseStructure):
         self.answer = ""
 
         # The max_loops will be set dynamically if the dynamic_loop
-        if self.dynamic_loops:
+        if self.dynamic_loops is True:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
 
         # If multimodal = yes then set the sop to the multimodal sop
-        if self.multi_modal:
+        if self.multi_modal is True:
             self.sop = MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1
 
         # Memory
@@ -403,54 +405,26 @@ class Agent(BaseStructure):
         )
 
         # If the docs exist then ingest the docs
-        if self.docs is not None:
+        if exists(self.docs):
             self.ingest_docs(self.docs)
 
         # If docs folder exists then get the docs from docs folder
-        if self.docs_folder:
+        if exists(self.docs_folder):
             self.get_docs_from_doc_folders()
 
-        # If tokenizer and context length exists then:
-        # if self.tokenizer and self.context_length:
-        #     self.truncate_history()
-
-        # If verbose is enabled then set the logger level to info
-        # if verbose is not False:
-        #     logger.setLevel(logging.INFO)
-
         if tools is not None:
-
+            logger.info(
+                "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
+            )
             # Add the tool prompt to the memory
             self.short_memory.add(role="System", content=tool_sop_prompt())
 
             # Print number of tools
+            logger.info("Tools granted, initializing tool protocol.")
             logger.info(f"Number of tools: {len(tools)}")
-            logger.info(
-                "Tools provided, Automatically converting to OpenAI function"
-            )
-
-            # Now the names of the tools
-            for tool in tools:
-                logger.info(f"Tool: {tool.__name__}")
 
             # Transform the tools into an openai schema
-            for tool in tools:
-
-                # Transform the tool into a openai function calling schema
-                tool_schema_list = get_openai_function_schema_from_func(
-                    tool,
-                    name=tool.__name__,
-                    description=tool.__doc__,
-                )
-
-                # Transform the dictionary to a string
-                tool_schema_list = json.dumps(tool_schema_list, indent=4)
-                # print(tool_schema_list)
-
-                # Add the tool schema to the short memory
-                self.short_memory.add(
-                    role="System", content=tool_schema_list
-                )
+            self.convert_tool_into_openai_schema()
 
             # Now create a function calling map for every tools
             self.function_map = {tool.__name__: tool for tool in tools}
@@ -521,6 +495,23 @@ class Agent(BaseStructure):
             self.short_memory.add(role=self.user_name, content=self.sop)
 
         # If the device is not provided then get the device data
+
+        # if agent ops is enabled then import agent ops
+        if agent_ops_on is True:
+            try:
+                from swarms.utils.agent_ops_check import (
+                    try_import_agentops,
+                )
+
+                # Try importing agent ops
+                logger.info(
+                    "Agent Ops Initializing, ensure that you have the agentops API key and the pip package installed."
+                )
+                try_import_agentops()
+            except ImportError:
+                logger.error(
+                    "Could not import agentops, try installing agentops: $ pip3 install agentops"
+                )
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -751,7 +742,7 @@ class Agent(BaseStructure):
             loop_count = 0
 
             # Clear the short memory
-            # response = None
+            response = None
 
             while self.max_loops == "auto" or loop_count < self.max_loops:
                 loop_count += 1
@@ -807,7 +798,17 @@ class Agent(BaseStructure):
 
                         # Check if tools is not None
                         if self.tools is not None:
-                            self.parse_and_execute_tools(response)
+                            # self.parse_and_execute_tools(response)
+                            tool_call_output = parse_and_execute_json(
+                                self.tools, response, parse_md=True
+                            )
+                            logger.info(
+                                f"Tool Call Output: {tool_call_output}"
+                            )
+                            self.short_memory.add(
+                                role=self.agent_name,
+                                content=tool_call_output,
+                            )
 
                         if self.code_interpreter is not False:
                             self.code_interpreter_execution(response)
@@ -916,6 +917,8 @@ class Agent(BaseStructure):
                 print(f"Response after output model: {response}")
 
             # print(response)
+            if self.agent_ops_on is True:
+                self.check_end_session_agentops()
 
             return response
         except Exception as error:
@@ -937,7 +940,7 @@ class Agent(BaseStructure):
 
     def parse_and_execute_tools(self, response: str, *args, **kwargs):
         # Extract json from markdown
-        response = extract_code_from_markdown(response)
+        # response = extract_code_from_markdown(response)
 
         # Try executing the tool
         if self.execute_tool is not False:
@@ -945,11 +948,8 @@ class Agent(BaseStructure):
                 logger.info("Executing tool...")
 
                 # try to Execute the tool and return a string
-                out = openai_tool_executor(
-                    tools=response,
-                    function_map=self.function_map,
-                    *args,
-                    **kwargs,
+                out = parse_and_execute_json(
+                    self.tools, response, parse_md=True, *args, **kwargs
                 )
 
                 print(f"Tool Output: {out}")
@@ -980,6 +980,8 @@ class Agent(BaseStructure):
         Returns:
             str: The agent history prompt
         """
+        logger.info("Querying long term memory database")
+
         # Query the long term memory database
         ltr = self.long_term_memory.query(query, *args, **kwargs)
         ltr = str(ltr)
@@ -987,7 +989,6 @@ class Agent(BaseStructure):
         # Retrieve only the chunk size of the memory
         ltr = retrieve_tokens(ltr, self.memory_chunk_size)
 
-        print(len(ltr))
         # print(f"Long Term Memory Query: {ltr}")
         return ltr
 
@@ -1633,3 +1634,59 @@ class Agent(BaseStructure):
                     "red",
                 )
             )
+
+    def check_end_session_agentops(self):
+        if self.agent_ops_on is True:
+            try:
+                from swarms.utils.agent_ops_check import (
+                    end_session_agentops,
+                )
+
+                # Try ending the session
+                return end_session_agentops()
+            except ImportError:
+                logger.error(
+                    "Could not import agentops, try installing agentops: $ pip3 install agentops"
+                )
+
+    def convert_tool_into_openai_schema(self):
+        # Transform the tools into an openai schema
+        try:
+            for tool in self.tools:
+                # Transform the tool into a openai function calling schema
+                name = tool.__name__
+                description = tool.__doc__
+
+                try:
+                    logger.info(
+                        "Tool -> OpenAI Schema Process Starting Now."
+                    )
+                    tool_schema_list = (
+                        get_openai_function_schema_from_func(
+                            tool, name=name, description=description
+                        )
+                    )
+
+                    # Transform the dictionary to a string
+                    tool_schema_list = json.dumps(
+                        tool_schema_list, indent=4
+                    )
+
+                    # Add the tool schema to the short memory
+                    self.short_memory.add(
+                        role="System", content=tool_schema_list
+                    )
+
+                    logger.info(
+                        f"Conversion process successful, the tool {name} has been integrated with the agent successfully."
+                    )
+                except Exception as error:
+                    logger.info(
+                        f"There was an error converting your tool into a OpenAI certified function calling schema. Add documentation and type hints: {error}"
+                    )
+                    raise error
+        except Exception as error:
+            logger.info(
+                f"Error detected: {error} make sure you have inputted a callable and that it has documentation as docstrings"
+            )
+            raise error

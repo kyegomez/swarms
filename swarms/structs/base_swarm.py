@@ -1,3 +1,4 @@
+import uuid
 import asyncio
 import json
 from abc import ABC
@@ -17,11 +18,12 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import logger
 from swarms.structs.omni_agent_types import AgentType
+from swarms.memory.base_vectordb import BaseVectorDatabase
 
 
 class BaseSwarm(ABC):
     """
-    Abstract Swarm Class for multi-agent systems
+    Base Swarm Class for all multi-agent systems
 
     Attributes:
         agents (List[Agent]): A list of agents
@@ -83,6 +85,10 @@ class BaseSwarm(ABC):
         stopping_function: Optional[Callable] = None,
         stopping_condition: Optional[str] = "stop",
         stopping_condition_args: Optional[Dict] = None,
+        agentops_on: Optional[bool] = False,
+        speaker_selection_func: Optional[Callable] = None,
+        rules: Optional[str] = None,
+        collective_memory_system: Optional[BaseVectorDatabase] = False,
         *args,
         **kwargs,
     ):
@@ -100,10 +106,28 @@ class BaseSwarm(ABC):
         self.stopping_function = stopping_function
         self.stopping_condition = stopping_condition
         self.stopping_condition_args = stopping_condition_args
+        self.agentops_on = agentops_on
+        self.speaker_selection_func = speaker_selection_func
+        self.rules = rules
+        self.collective_memory_system = collective_memory_system
+
+        # Ensure that agents is exists
+        if self.agents is None:
+            raise ValueError("Agents must be provided.")
+
+        # Ensure that agents is a list
+        if not isinstance(self.agents, list):
+            logger.error("Agents must be a list.")
+            raise TypeError("Agents must be a list.")
+
+        # Ensure that agents is not empty
+        if len(self.agents) == 0:
+            logger.error("Agents list must not be empty.")
+            raise ValueError("Agents list must not be empty.")
 
         # Initialize conversation
         self.conversation = Conversation(
-            time_enabled=True, *args, **kwargs
+            time_enabled=True, rules=self.rules, *args, **kwargs
         )
 
         # Handle callbacks
@@ -115,12 +139,6 @@ class BaseSwarm(ABC):
         # Handle autosave
         if autosave:
             self.save_to_json(metadata_filename)
-
-        # Handle logging
-        if self.agents:
-            logger.info(
-                f"Swarm initialized with {len(self.agents)} agents"
-            )
 
         # Handle stopping function
         if stopping_function is not None:
@@ -139,8 +157,27 @@ class BaseSwarm(ABC):
             self.stopping_condition_args = stopping_condition_args
             self.stopping_condition = stopping_condition
 
+        # If agentops is enabled, try to import agentops
+        if agentops_on is True:
+            for agent in self.agents:
+                agent.agent_ops_on = True
+
+        # Handle speaker selection function
+        if speaker_selection_func is not None:
+            if not callable(speaker_selection_func):
+                raise TypeError(
+                    "Speaker selection function must be callable."
+                )
+            self.speaker_selection_func = speaker_selection_func
+
+        # Agents dictionary with agent name as key and agent object as value
+        self.agents_dict = {
+            agent.agent_name: agent for agent in self.agents
+        }
+
     def communicate(self):
         """Communicate with the swarm through the orchestrator, protocols, and the universal communication layer"""
+        ...
 
     def run(self):
         """Run the swarm"""
@@ -218,6 +255,21 @@ class BaseSwarm(ABC):
         """
         for agent in self.agents:
             if agent.agent_name == name:
+                return agent
+        return None
+
+    def self_find_agent_by_id(self, id: uuid.UUID):
+        """
+        Find an agent by its id.
+
+        Args:
+            id (str): The id of the agent to find.
+
+        Returns:
+            Agent: The Agent object if found, None otherwise.
+        """
+        for agent in self.agents:
+            if agent.id == id:
                 return agent
         return None
 
@@ -390,24 +442,6 @@ class BaseSwarm(ABC):
             task (Optional[str], optional): _description_. Defaults to None.
         """
         return self.batched_run(tasks, *args, **kwargs)
-
-    def reset_all_agents(self):
-        """Reset all agents
-
-        Returns:
-
-        """
-        for agent in self.agents:
-            agent.reset()
-
-    def select_agent(self, agent_id: str):
-        """
-        Select an agent through their id
-        """
-        # Find agent with id
-        for agent in self.agents:
-            if agent.id == agent_id:
-                return agent
 
     def select_agent_by_name(self, agent_name: str):
         """
@@ -650,3 +684,6 @@ class BaseSwarm(ABC):
 
     def __contains__(self, value):
         return value in self.agents
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
