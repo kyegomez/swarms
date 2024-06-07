@@ -107,7 +107,7 @@ nav:
               - Multi-Agent Collaboration:
                 - SwarmNetwork: "swarms/structs/swarmnetwork.md"
                 - AgentRearrange: "swarms/structs/agent_rearrange.md"
-            - Why does Swarms Exist?:
+              - Why does Swarms Exist?:
     - References:
         - Agent Glossary: "swarms/glossary.md"
         - List of The Best Multi-Agent Papers: "swarms/papers.md"
