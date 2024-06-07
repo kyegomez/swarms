@@ -13,7 +13,7 @@ Orchestrate swarms of agents for production-grade applications.
 </div>
 
 
-Here's a table detailing the features available in a swarms framework, focusing on models, models APIs, agents with tools, memory, and multi-agent orchestration. The table includes feature names, descriptions, performance impact ratings, and documentation links.
+Swarms is an enterprise grade and production ready multi-agent collaboration framework that enables you to orchestrate many agents to work collaboratively at scale to automate real-world activities.
 
 | **Feature**                  | **Description**                                                                                                                                                       | **Performance Impact** | **Documentation Link**        |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|-------------------------------|
