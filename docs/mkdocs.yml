@@ -33,12 +33,12 @@ plugins:
             show_symbol_type_toc: true
             show_category_heading: true
           domains: [std, py]
-  # - git-committers:
-  #     repository: kyegomez/swarms
-  #     branch: master
-  #     # token: !ENV ["GITHUB_TOKEN"]
-  # - git-revision-date-localized:
-  #     enable_creation_date: true
+  - git-committers:
+      repository: kyegomez/swarms
+      branch: master
+      # token: !ENV ["GITHUB_TOKEN"]
+  - git-revision-date-localized:
+      enable_creation_date: true
 
 
 extra_css:
