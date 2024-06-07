@@ -1,4 +1,5 @@
 docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
+copyright: "&copy; TGSC Corp 2024. All rights reserved."
 site_name: Swarms Documentation
 site_url: https://swarms.world
 site_author: Swarms
@@ -6,7 +7,6 @@ site_description: "Orchestrate Swarms of Agents From Any Framework Like OpenAI, 
 repo_name: kyegomez/swarms
 repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
-copyright: "&copy; TGSC Corp 2024. All rights reserved.""
 
 plugins:
   # - glightbox
@@ -103,7 +103,6 @@ nav:
   - Why does Swarms Exist?:
     - Why Swarms? Orchestrating Agents for Enterprise Automation: "why.md"
     - Limitations of Individual Agents: "limits_of_individual_agents.md"
-    
 - Swarms Cloud API:
   - Overview: "swarms_cloud/main.md"
   - Available Models: "swarms_cloud/available_models.md"
