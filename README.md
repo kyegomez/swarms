@@ -1,8 +1,28 @@
-![Swarming banner icon](images/swarmslogobanner.png)
-
 <div align="center">
+  <a href="https://swarms.world">
+    <img src="[https://raw.githubusercontent.com/AgentOps-AI/agentops/35d5682866921a9e28d8ef66ae3c3b3d92d8fa6b/img/logo.png](https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png?raw=true)" style="margin: 15px; max-width: 300px" width="50%" alt="Logo">
+  </a>
+</div>
+<p align="center">
+  <em>Multi-Agent Orchestration is incredibly difficult, and we're making it very simple.</em>
+</p>
 
-Orchestrate swarms of agents for production-grade applications.
+<p align="center">
+    <a href="https://pypi.org/project/agentops/" target="_blank">
+        <img alt="Python" src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" />
+        <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
+    </a>
+</p>
+<p align="center">
+<a href="https://twitter.com/swarms_corp/">🐦 Twitter</a>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<a href="https://discord.gg/RVCz3yxr">📢 Discord</a>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<a href="https://swarms.world/explorer">Swarms Platform</a>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<a href="https://docs.swarms.world">📙 Documentation</a>
+</p>
+
 
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)[![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
 
@@ -10,7 +30,11 @@ Orchestrate swarms of agents for production-grade applications.
 
 [![Share on Reddit](https://img.shields.io/badge/-Share%20on%20Reddit-orange)](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=Swarms%20-%20the%20future%20of%20AI) [![Share on Hacker News](https://img.shields.io/badge/-Share%20on%20Hacker%20News-orange)](https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&t=Swarms%20-%20the%20future%20of%20AI) [![Share on Pinterest](https://img.shields.io/badge/-Share%20on%20Pinterest-red)](https://pinterest.com/pin/create/button/?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&media=https%3A%2F%2Fexample.com%2Fimage.jpg&description=Swarms%20-%20the%20future%20of%20AI) [![Share on WhatsApp](https://img.shields.io/badge/-Share%20on%20WhatsApp-green)](https://api.whatsapp.com/send?text=Check%20out%20Swarms%20-%20the%20future%20of%20AI%20%23swarms%20%23AI%0A%0Ahttps%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
-</div>
+
+
+
+
+
 
 
 Swarms is an enterprise grade and production ready multi-agent collaboration framework that enables you to orchestrate many agents to work collaboratively at scale to automate real-world activities.
