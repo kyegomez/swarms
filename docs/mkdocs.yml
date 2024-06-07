@@ -104,7 +104,7 @@ nav:
               - Memory:
                   - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
                   - ShortTermMemory: "swarms/memory/short_term_memory.md"
-            - Multi-Agent Collaboration:
+              - Multi-Agent Collaboration:
                 - SwarmNetwork: "swarms/structs/swarmnetwork.md"
                 - AgentRearrange: "swarms/structs/agent_rearrange.md"
             - Why does Swarms Exist?:
