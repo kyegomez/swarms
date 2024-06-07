@@ -1,8 +1,28 @@
-![Swarming banner icon](images/swarmslogobanner.png)
-
 <div align="center">
+  <a href="https://swarms.world">
+    <img src="https://github.com/kyegomez/swarms/blob/master/images/swarmslogobanner.png" style="margin: 15px; max-width: 300px" width="50%" alt="Logo">
+  </a>
+</div>
+<p align="center">
+  <em>Multi-Agent Orchestration is incredibly painful swarms is making it simple, seamless, and reliable. </em>
+</p>
 
-Orchestrate swarms of agents for production-grade applications.
+<p align="center">
+    <a href="https://pypi.org/project/swarms/" target="_blank">
+        <img alt="Python" src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" />
+        <img alt="Version" src="https://img.shields.io/pypi/v/swarms?style=for-the-badge&color=3670A0">
+    </a>
+</p>
+<p align="center">
+<a href="https://twitter.com/swarms_corp/">🐦 Twitter</a>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<a href="https://discord.gg/RVCz3yxr">📢 Discord</a>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<a href="https://swarms.world/explorer">Swarms Platform</a>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<a href="https://docs.swarms.world">📙 Documentation</a>
+</p>
+
 
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)[![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
 
@@ -10,25 +30,42 @@ Orchestrate swarms of agents for production-grade applications.
 
 [![Share on Reddit](https://img.shields.io/badge/-Share%20on%20Reddit-orange)](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=Swarms%20-%20the%20future%20of%20AI) [![Share on Hacker News](https://img.shields.io/badge/-Share%20on%20Hacker%20News-orange)](https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&t=Swarms%20-%20the%20future%20of%20AI) [![Share on Pinterest](https://img.shields.io/badge/-Share%20on%20Pinterest-red)](https://pinterest.com/pin/create/button/?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&media=https%3A%2F%2Fexample.com%2Fimage.jpg&description=Swarms%20-%20the%20future%20of%20AI) [![Share on WhatsApp](https://img.shields.io/badge/-Share%20on%20WhatsApp-green)](https://api.whatsapp.com/send?text=Check%20out%20Swarms%20-%20the%20future%20of%20AI%20%23swarms%20%23AI%0A%0Ahttps%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
-</div>
 
 
-Individual agents face 5 significant challenges that hinder their deployment in production: short memory, single-task threading, hallucinations, high cost, and lack of collaboration. Multi-agent collaboration offers a solution to all these issues. Swarms provides simple, reliable, and agile tools to create your own Swarm tailored to your specific needs. Currently, Swarms is being used in production by RBC, John Deere, and many AI startups.
+
+
+
+
+
+Swarms is an enterprise grade and production ready multi-agent collaboration framework that enables you to orchestrate many agents to work collaboratively at scale to automate real-world activities.
+
+| **Feature**                  | **Description**                                                                                                                                                       | **Performance Impact** | **Documentation Link**        |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|-------------------------------|
+| Models                       | Pre-trained models that can be utilized for various tasks within the swarm framework.                                                                                  | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
+| Models APIs                  | APIs to interact with and utilize the models effectively, providing interfaces for inference, training, and fine-tuning.                                               | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
+| Agents with Tools            | Agents equipped with specialized tools to perform specific tasks more efficiently, such as data processing, analysis, or interaction with external systems.            | ⭐⭐⭐⭐                   | [Documentation](https://medium.com/@kyeg/the-swarms-tool-system-functions-pydantic-basemodels-as-tools-and-radical-customization-c2a2e227b8ca)            |
+| Agents with Memory                       | Mechanisms for agents to store and recall past interactions, improving learning and adaptability over time.                                                            | ⭐⭐⭐⭐                   | [Documentation]()            |
+| Multi-Agent Orchestration    | Coordination of multiple agents to work together seamlessly on complex tasks, leveraging their individual strengths to achieve higher overall performance.              | ⭐⭐⭐⭐⭐                  | [Documentation]()            |
+
+The performance impact is rated on a scale from one to five stars, with multi-agent orchestration being the highest due to its ability to combine the strengths of multiple agents and optimize task execution.
+
 ----
 
-## Install
+## Install 💻
 `$ pip3 install -U swarms`
 
 ---
 
-## Usage
+# Usage Examples 🤖
 
-
+### Google Collab Example
 Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
-### `Agent`
+---
+
+## `Agents`
 A fully plug-and-play autonomous agent powered by an LLM extended by a long-term memory database, and equipped with function calling for tool usage! By passing in an LLM, you can create a fully autonomous agent with extreme customization and reliability, ready for real-world task automation!
 
 Features:
@@ -67,7 +104,7 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 ```
 
 
-# `Agent` with Long Term Memory
+### `Agent` + Long Term Memory
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
 
 ```python
@@ -106,7 +143,7 @@ print(out)
 ```
 
 
-# `Agent` with Long Term Memory ++ Tools!
+### `Agent` ++ Long Term Memory ++ Tools!
 An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
 
 ```python
@@ -149,40 +186,10 @@ print(out)
 
 ```
 
-### Simple Conversational Agent
-A Plug in and play conversational agent with `GPT4`, `Mixytral`, or any of our models
 
-- Reliable conversational structure to hold messages together with dynamic handling for long context conversations and interactions with auto chunking
-- Reliable, this simple system will always provide responses you want.
-
-```python
-from swarms import Agent, Anthropic
-
-
-## Initialize the workflow
-agent = Agent(
-    agent_name="Transcript Generator",
-    agent_description=(
-        "Generate a transcript for a youtube video on what swarms"
-        " are!"
-    ),
-    llm=Anthropic(),
-    max_loops=3,
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    interactive=True, # Set to True
-)
-
-# Run the workflow on a task
-agent("Generate a transcript for a youtube video on what swarms are!")
-```
-
-## Devin
+### Devin
 Implementation of Devin in less than 90 lines of code with several tools:
-terminal, browser, and edit files!
+terminal, browser, and edit files.
 
 ```python
 from swarms import Agent, Anthropic
@@ -286,7 +293,7 @@ print(out)
 ```
 
 
-## `Agent`with Pydantic BaseModel as Output Type
+### `Agent`with Pydantic BaseModel as Output Type
 The following is an example of an agent that intakes a pydantic basemodel and outputs it at the same time:
 
 ```python
@@ -348,6 +355,49 @@ print(f"Generated data: {generated_data}")
 
 ```
 
+### Multi Modal Autonomous Agent
+Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
+
+```python
+# Description: This is an example of how to use the Agent class to run a multi-modal workflow
+import os
+
+from dotenv import load_dotenv
+
+from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarms.structs import Agent
+
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+# Initialize the language model
+llm = GPT4VisionAPI(
+    openai_api_key=api_key,
+    max_tokens=500,
+)
+
+# Initialize the task
+task = (
+    "Analyze this image of an assembly line and identify any issues such as"
+    " misaligned parts, defects, or deviations from the standard assembly"
+    " process. IF there is anything unsafe in the image, explain why it is"
+    " unsafe and how it could be improved."
+)
+img = "assembly_line.jpg"
+
+## Initialize the workflow
+agent = Agent(
+    llm=llm, max_loops="auto", autosave=True, dashboard=True, multi_modal=True
+)
+
+# Run the workflow on a task
+agent.run(task=task, img=img)
+```
+----
+
 
 ### `ToolAgent`
 ToolAgent is an agent that can use tools through JSON function calling. It intakes any open source model from huggingface and is extremely modular and plug in and play. We need help adding general support to all models soon.
@@ -407,12 +457,95 @@ print(f"Generated data: {generated_data}")
 ```
 
 
+### `Task`
+For deeper control of your agent stack, `Task` is a simple structure for task execution with the `Agent`. Imagine zapier like LLM-based workflow automation.
+
+✅ Task is a structure for task execution with the Agent. 
+
+✅ Tasks can have descriptions, scheduling, triggers, actions, conditions, dependencies, priority, and a history. 
+
+✅ The Task structure allows for efficient workflow automation with LLM-based agents.
+
+```python
+import os
+
+from dotenv import load_dotenv
+
+from swarms.structs import Agent, OpenAIChat, Task
+
+# Load the environment variables
+load_dotenv()
+
+
+# Define a function to be used as the action
+def my_action():
+    print("Action executed")
+
+
+# Define a function to be used as the condition
+def my_condition():
+    print("Condition checked")
+    return True
+
+
+# Create an agent
+agent = Agent(
+    llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
+    max_loops=1,
+    dashboard=False,
+)
+
+# Create a task
+task = Task(
+    description=(
+        "Generate a report on the top 3 biggest expenses for small"
+        " businesses and how businesses can save 20%"
+    ),
+    agent=agent,
+)
+
+# Set the action and condition
+task.set_action(my_action)
+task.set_condition(my_condition)
+
+# Execute the task
+print("Executing task...")
+task.run()
+
+# Check if the task is completed
+if task.is_completed():
+    print("Task completed")
+else:
+    print("Task not completed")
+
+# Output the result of the task
+print(f"Task result: {task.result}")
+```
+
+---
 
 
 
 
 
 ----
+
+
+# Multi-Agent Orchestration:
+Swarms was designed to faciliate the communication between many different and specialized agents from a vast array of other frameworks such as langchain, autogen, crew, and more.
+
+In traditional swarm theory, there are many types of swarms usually for very specialized use-cases and problem sets. Such as Hiearchical and sequential are great for accounting and sales, because there is usually a boss coordinator agent that distributes a workload to other specialized agents.
+
+
+| **Name**                      | **Description**                                                                                                                                                         | **Code Link**               | **Use Cases**                                                                                     |
+|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|---------------------------------------------------------------------------------------------------|
+| Hierarchical Swarms           | A system where agents are organized in a hierarchy, with higher-level agents coordinating lower-level agents to achieve complex tasks.                                   | [Code Link](#)              | Manufacturing process optimization, multi-level sales management, healthcare resource coordination |
+| Agent Rearrange               | A setup where agents rearrange themselves dynamically based on the task requirements and environmental conditions.                                                       | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)              | Adaptive manufacturing lines, dynamic sales territory realignment, flexible healthcare staffing  |
+| Concurrent Workflows          | Agents perform different tasks simultaneously, coordinating to complete a larger goal.                                                                                  | [Code Link](#)              | Concurrent production lines, parallel sales operations, simultaneous patient care processes       |
+| Sequential Coordination       | Agents perform tasks in a specific sequence, where the completion of one task triggers the start of the next.                                                           | [Code Link](https://docs.swarms.world/en/latest/swarms/structs/sequential_workflow/)              | Step-by-step assembly lines, sequential sales processes, stepwise patient treatment workflows     |
+| Parallel Processing           | Agents work on different parts of a task simultaneously to speed up the overall process.                                                                                | [Code Link](#)              | Parallel data processing in manufacturing, simultaneous sales analytics, concurrent medical tests  |
+
+
 
 ### `SequentialWorkflow`
 Sequential Workflow enables you to sequentially execute tasks with `Agent` and then pass the output into the next agent and onwards until you have specified your max loops. `SequentialWorkflow` is wonderful for real-world business tasks like sending emails, summarizing documents, and analyzing data.
@@ -588,78 +721,7 @@ out = swarmnet.run_many_agents("Generate a 10,000 word blog on health and wellne
 print(out)
 ```
 
-
-### `Task`
-`Task` is a simple structure for task execution with the `Agent`. Imagine zapier for LLM-based workflow automation
-
-✅ Task is a structure for task execution with the Agent. 
-
-✅ Tasks can have descriptions, scheduling, triggers, actions, conditions, dependencies, priority, and a history. 
-
-✅ The Task structure allows for efficient workflow automation with LLM-based agents.
-
-```python
-import os
-
-from dotenv import load_dotenv
-
-from swarms.structs import Agent, OpenAIChat, Task
-
-# Load the environment variables
-load_dotenv()
-
-
-# Define a function to be used as the action
-def my_action():
-    print("Action executed")
-
-
-# Define a function to be used as the condition
-def my_condition():
-    print("Condition checked")
-    return True
-
-
-# Create an agent
-agent = Agent(
-    llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
-    max_loops=1,
-    dashboard=False,
-)
-
-# Create a task
-task = Task(
-    description=(
-        "Generate a report on the top 3 biggest expenses for small"
-        " businesses and how businesses can save 20%"
-    ),
-    agent=agent,
-)
-
-# Set the action and condition
-task.set_action(my_action)
-task.set_condition(my_condition)
-
-# Execute the task
-print("Executing task...")
-task.run()
-
-# Check if the task is completed
-if task.is_completed():
-    print("Task completed")
-else:
-    print("Task not completed")
-
-# Output the result of the task
-print(f"Task result: {task.result}")
-```
-
----
-
-
-
-
-## Majority Voting
+### Majority Voting
 Multiple-agents will evaluate an idea based off of an parsing or evaluation function. From papers like "[More agents is all you need](https://arxiv.org/pdf/2402.05120.pdf)
 
 ```python
@@ -707,7 +769,7 @@ mv = MajorityVoting(
 mv.run("What is your stance on healthcare?")
 ```
 
-## Real-World Deployment
+### Real-World Deployment
 
 ### Multi-Agent Swarm for Logistics
 Here's a production grade swarm ready for real-world deployment in a factory and logistics settings like warehouses. This swarm can automate 3 costly and inefficient workflows, safety checks, productivity checks, and warehouse security.
@@ -820,48 +882,6 @@ efficiency_analysis = efficiency_agent.run(
 ---
 
 
-## `Multi Modal Autonomous Agents`
-Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
-
-```python
-# Description: This is an example of how to use the Agent class to run a multi-modal workflow
-import os
-
-from dotenv import load_dotenv
-
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
-from swarms.structs import Agent
-
-# Load the environment variables
-load_dotenv()
-
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
-
-# Initialize the language model
-llm = GPT4VisionAPI(
-    openai_api_key=api_key,
-    max_tokens=500,
-)
-
-# Initialize the task
-task = (
-    "Analyze this image of an assembly line and identify any issues such as"
-    " misaligned parts, defects, or deviations from the standard assembly"
-    " process. IF there is anything unsafe in the image, explain why it is"
-    " unsafe and how it could be improved."
-)
-img = "assembly_line.jpg"
-
-## Initialize the workflow
-agent = Agent(
-    llm=llm, max_loops="auto", autosave=True, dashboard=True, multi_modal=True
-)
-
-# Run the workflow on a task
-agent.run(task=task, img=img)
-```
-----
 
 
 ## Build your own LLMs, Agents, and Swarms!
