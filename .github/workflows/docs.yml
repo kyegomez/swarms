@@ -15,10 +15,9 @@ jobs:
           python-version: "3.10"
       - run: pip install mkdocs-material
       - run: pip install mkdocs-same-dir
-      - run: pip install mkdocs-glightbox
-      - run: pip install "mkdocstrings[python]"
       - run: pip3 install mkdocs-git-authors-plugin
       - run: pip install mkdocs-jupyter==0.16.0
+      - run: pip install "mkdocstrings[python]"
       - run: pip install --upgrade lxml_html_clean
       - run: pip install mkdocs-git-committers-plugin
       - run: pip3 install mkdocs-git-revision-date-localized-plugin
