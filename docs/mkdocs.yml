@@ -13,10 +13,10 @@ plugins:
   - same-dir
   - git-authors
   - mkdocs-jupyter:
-    kernel_name: python3
-    execute: false
-    include_source: true
-    include_requirejs: true
+        kernel_name: python3
+        execute: false
+        include_source: true
+        include_requirejs: true
   # - mkdocstrings:
   #     default_handler: python
   #     handlers:
