@@ -17,23 +17,22 @@ Swarms is an enterprise grade and production ready multi-agent collaboration fra
 
 | **Feature**                  | **Description**                                                                                                                                                       | **Performance Impact** | **Documentation Link**        |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|-------------------------------|
-| Models                       | Pre-trained models that can be utilized for various tasks within the swarm framework.                                                                                  | ⭐⭐⭐                    | [Documentation](#)            |
-| Models APIs                  | APIs to interact with and utilize the models effectively, providing interfaces for inference, training, and fine-tuning.                                               | ⭐⭐⭐                    | [Documentation](#)            |
-| Agents with Tools            | Agents equipped with specialized tools to perform specific tasks more efficiently, such as data processing, analysis, or interaction with external systems.            | ⭐⭐⭐⭐                   | [Documentation](#)            |
-| Memory                       | Mechanisms for agents to store and recall past interactions, improving learning and adaptability over time.                                                            | ⭐⭐⭐⭐                   | [Documentation](#)            |
-| Multi-Agent Orchestration    | Coordination of multiple agents to work together seamlessly on complex tasks, leveraging their individual strengths to achieve higher overall performance.              | ⭐⭐⭐⭐⭐                  | [Documentation](#)            |
+| Models                       | Pre-trained models that can be utilized for various tasks within the swarm framework.                                                                                  | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
+| Models APIs                  | APIs to interact with and utilize the models effectively, providing interfaces for inference, training, and fine-tuning.                                               | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
+| Agents with Tools            | Agents equipped with specialized tools to perform specific tasks more efficiently, such as data processing, analysis, or interaction with external systems.            | ⭐⭐⭐⭐                   | [Documentation](https://medium.com/@kyeg/the-swarms-tool-system-functions-pydantic-basemodels-as-tools-and-radical-customization-c2a2e227b8ca)            |
+| Memory                       | Mechanisms for agents to store and recall past interactions, improving learning and adaptability over time.                                                            | ⭐⭐⭐⭐                   | [Documentation]()            |
+| Multi-Agent Orchestration    | Coordination of multiple agents to work together seamlessly on complex tasks, leveraging their individual strengths to achieve higher overall performance.              | ⭐⭐⭐⭐⭐                  | [Documentation]()            |
 
 The performance impact is rated on a scale from one to five stars, with multi-agent orchestration being the highest due to its ability to combine the strengths of multiple agents and optimize task execution.
 
 ----
 
-## Install
+## Install 💻
 `$ pip3 install -U swarms`
 
 ---
 
-## Usage
-
+# Usage Examples 🤖
 
 Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
@@ -329,7 +328,7 @@ print(f"Generated data: {generated_data}")
 
 ```
 
-### `Multi Modal Autonomous Agents`
+### Multi Modal Autonomous Agent
 Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
 
 ```python
@@ -431,6 +430,72 @@ print(f"Generated data: {generated_data}")
 ```
 
 
+### `Task`
+For deeper control of your agent stack, `Task` is a simple structure for task execution with the `Agent`. Imagine zapier like LLM-based workflow automation.
+
+✅ Task is a structure for task execution with the Agent. 
+
+✅ Tasks can have descriptions, scheduling, triggers, actions, conditions, dependencies, priority, and a history. 
+
+✅ The Task structure allows for efficient workflow automation with LLM-based agents.
+
+```python
+import os
+
+from dotenv import load_dotenv
+
+from swarms.structs import Agent, OpenAIChat, Task
+
+# Load the environment variables
+load_dotenv()
+
+
+# Define a function to be used as the action
+def my_action():
+    print("Action executed")
+
+
+# Define a function to be used as the condition
+def my_condition():
+    print("Condition checked")
+    return True
+
+
+# Create an agent
+agent = Agent(
+    llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
+    max_loops=1,
+    dashboard=False,
+)
+
+# Create a task
+task = Task(
+    description=(
+        "Generate a report on the top 3 biggest expenses for small"
+        " businesses and how businesses can save 20%"
+    ),
+    agent=agent,
+)
+
+# Set the action and condition
+task.set_action(my_action)
+task.set_condition(my_condition)
+
+# Execute the task
+print("Executing task...")
+task.run()
+
+# Check if the task is completed
+if task.is_completed():
+    print("Task completed")
+else:
+    print("Task not completed")
+
+# Output the result of the task
+print(f"Task result: {task.result}")
+```
+
+---
 
 
 
@@ -628,77 +693,6 @@ print(out)
 out = swarmnet.run_many_agents("Generate a 10,000 word blog on health and wellness.")
 print(out)
 ```
-
-
-### `Task`
-`Task` is a simple structure for task execution with the `Agent`. Imagine zapier for LLM-based workflow automation
-
-✅ Task is a structure for task execution with the Agent. 
-
-✅ Tasks can have descriptions, scheduling, triggers, actions, conditions, dependencies, priority, and a history. 
-
-✅ The Task structure allows for efficient workflow automation with LLM-based agents.
-
-```python
-import os
-
-from dotenv import load_dotenv
-
-from swarms.structs import Agent, OpenAIChat, Task
-
-# Load the environment variables
-load_dotenv()
-
-
-# Define a function to be used as the action
-def my_action():
-    print("Action executed")
-
-
-# Define a function to be used as the condition
-def my_condition():
-    print("Condition checked")
-    return True
-
-
-# Create an agent
-agent = Agent(
-    llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
-    max_loops=1,
-    dashboard=False,
-)
-
-# Create a task
-task = Task(
-    description=(
-        "Generate a report on the top 3 biggest expenses for small"
-        " businesses and how businesses can save 20%"
-    ),
-    agent=agent,
-)
-
-# Set the action and condition
-task.set_action(my_action)
-task.set_condition(my_condition)
-
-# Execute the task
-print("Executing task...")
-task.run()
-
-# Check if the task is completed
-if task.is_completed():
-    print("Task completed")
-else:
-    print("Task not completed")
-
-# Output the result of the task
-print(f"Task result: {task.result}")
-```
-
----
-
-
-
 
 ### Majority Voting
 Multiple-agents will evaluate an idea based off of an parsing or evaluation function. From papers like "[More agents is all you need](https://arxiv.org/pdf/2402.05120.pdf)
