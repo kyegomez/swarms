@@ -145,7 +145,7 @@ nav:
               - BaseWorkflow: "swarms/structs/baseworkflow.md"
           - Workflows:
               - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
-              - SequentialWorkflow: "swarms/structs/sequential_workflow.md"    
+              - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
           - Multi Agent Architectures:
               - Conversation: "swarms/structs/conversation.md"
               - SwarmNetwork: "swarms/structs/swarmnetwork.md"
