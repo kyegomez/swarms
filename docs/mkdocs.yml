@@ -1,4 +1,3 @@
-
 docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
 site_name: Swarms Documentation
 site_url: https://swarms.world
@@ -7,8 +6,7 @@ site_description: "Orchestrate Swarms of Agents From Any Framework Like OpenAI, 
 repo_name: kyegomez/swarms
 repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
-copyright: TGSC Corp 2024. All rights reserved.
-
+copyright: "&copy; TGSC Corp 2024. All rights reserved.""
 
 plugins:
   # - glightbox
@@ -42,7 +40,7 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
 
-copyright: "&copy; TGSC, Corporation."
+
 extra_css:
   - assets/css/extra.css
 extra:
