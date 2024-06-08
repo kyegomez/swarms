@@ -7,27 +7,27 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
         <h2>Core Concepts</h2>
         <ul>
             <li>
-                <a href="swarms/structs/agent.md">
+                <a href="swarms/structs/agent">
                     Agents
                 </a>
             </li>
             <li>
-                <a href="swarms/memory/diy_memory.md">
+                <a href="swarms/memory/diy_memory">
                     Memory
                 </a>
             </li>
             <li>
-                <a href="swarms/tools/main.md">
+                <a href="swarms/tools/main">
                     Tools
                 </a>
             </li>
             <li>
-                <a href="swarms/structs/task.md">
+                <a href="swarms/structs/task">
                     Tasks
                 </a>
             </li>
             <li>
-                <a href="swarms/structs/agent_rearrange.md">
+                <a href="swarms/structs/agent_rearrange">
                     Multi-Agent Orchestration
                 </a>
             </li>
@@ -37,12 +37,12 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
         <h2>How-To Guides</h2>
         <ul>
             <li>
-                <a href="swarms/install/install.md">
+                <a href="swarms/install/install">
                     Installing Swarms
                 </a>
             </li>
             <li>
-                <a href="swarms/install/docker_setup.md">
+                <a href="swarms/install/docker_setup">
                     Docker Setup
                 </a>
             </li>
@@ -52,12 +52,12 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
                 </a>
             </li>
             <li>
-                <a href="swarms/structs/agent_rearrange.md">
+                <a href="swarms/structs/agent_rearrange">
                     Multi-Agent Flows
                 </a>
             </li>
             <li>
-                <a href="swarms/structs/sequential_workflow.md">
+                <a href="swarms/structs/sequential_workflow">
                     Sequential Workflows
                 </a>
             </li>
@@ -87,7 +87,7 @@ Orchestrate enterprise-grade agents for multi-agent collaboration and orchestrat
         <h2>Examples</h2>
         <ul>
             <li>
-                <a target='_blank' href="applications/business-analyst-agent.md">
+                <a target='_blank' href="applications/business-analyst-agent">
                     Swarm of Buisness Analysts for Business Reports
                 </a>
             </li>
