@@ -687,3 +687,13 @@ class BaseSwarm(ABC):
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def agent_error_handling_check(self):
+        try:
+            if self.agents is None:
+                message = "You have not passed in any agents, you need to input agents to run a swarm"
+                logger.info(message)
+                raise ValueError(message)
+        except Exception as error:
+            logger.info(error)
+            raise error
