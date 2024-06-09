@@ -97,6 +97,10 @@ class HiearchicalSwarm(BaseSwarm):
         self.max_loops = max_loops
         self.long_term_memory_system = long_term_memory_system
         self.custom_parse_function = custom_parse_function
+        self.rules = rules
+
+        # Check to see agents is not empty
+        self.agent_error_handling_check()
 
         # Set the director to max_one loop
         if self.director.max_loops > 1:
@@ -112,7 +116,7 @@ class HiearchicalSwarm(BaseSwarm):
 
         # Initialize the conversation message pool
         self.swarm_history = Conversation(
-            time_enabled=True,
+            time_enabled=True, *args, **kwargs
         )
 
     def swarm_initialization(self, *args, **kwargs):
