@@ -107,7 +107,7 @@ nav:
       - Workflows: "swarms/structs/workflows.md"
       - Multi-Agent Architectures: "swarms/structs/multi_agent_architectures.md"
   - Reference:
-      - Overview: "swarms/index.md"
+      - Overview: "swarms/framework_structure.md"
       - Models:
           - How to Create A Custom Language Model: "swarms/models/custom_model.md"
           - Models Available: "swarms/models/index.md"
