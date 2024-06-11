@@ -93,12 +93,24 @@ class MixtureOfAgents(BaseSwarm):
             logger.error(f"Error checking final agent: {e}")
 
     def swarm_initialization(self):
+        """
+        Initializes the swarm by logging the swarm name, description, and the number of agents.
+        """
         # Name, description, and logger
         logger.info(f"Initializing swarm {self.name}.")
         logger.info(f"Description: {self.description}")
         logger.info(f"Initializing swarm with {len(self.agents)} agents.")
 
     def run(self, task: str = None, *args, **kwargs):
+        """
+        Runs the swarm with the given task and returns the conversation history.
+
+        Args:
+            task (str): The task to be performed by the swarm.
+
+        Returns:
+            str: The conversation history as a string.
+        """
         try:
             # Running the swarm
             logger.info(f"Running swarm {self.name}.")

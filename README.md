@@ -1082,10 +1082,9 @@ Coming soon...
 Coming soon...
 
 ## `MixtureOfAgents`
-This is an implementation from the paper: "Mixture-of-Agents Enhances Large Language Model
-Capabilities" by together.ai, it achieves SOTA on AlpacaEval 2.0, MT-Bench and FLASK, surpassing GPT-4 Omni. 
+This is an implementation from the paper: "Mixture-of-Agents Enhances Large Language Model Capabilities" by together.ai, it achieves SOTA on AlpacaEval 2.0, MT-Bench and FLASK, surpassing GPT-4 Omni. Great for tasks that need to be parallelized and then sequentially fed into another loop
 
-```
+```python
 from swarms import Agent, OpenAIChat
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 

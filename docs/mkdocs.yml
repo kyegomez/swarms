@@ -97,13 +97,14 @@ nav:
     - Overview: "swarms/"
     - Models: "swarms/models/index.md"
     - Agents:
+      - Overview: "swarms/structs/index.md"
       - Build Agents: "swarms/structs/diy_your_own_agent.md"
       - Agents with Memory: "swarms/memory/diy_memory.md"
       - Agents with tools: "swarms/tools/main.md"
-      # - Integrating Agents from Langchain, CrewAI, and Autogen: "swarms"
     - Multi-Agent Collaboration: 
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Workflows: "swarms/structs/workflows.md"
+      - Multi-Agent Architectures: "swarms/structs/multi_agent_architectures.md"
   - Reference:
       - Overview: "swarms/index.md"
       - Models:
@@ -149,6 +150,7 @@ nav:
               - MajorityVoting: "swarms/structs/majorityvoting.md"
               - AgentRearrange: "swarms/structs/agent_rearrange.md"
               - RoundRobin: "swarms/structs/round_robin_swarm.md"
+              - Mixture of Agents: "swarms/structs/moa.md"
   - Swarms Cloud API:
       - Overview: "swarms_cloud/main.md"
       - Available Models: "swarms_cloud/available_models.md"
