@@ -1,6 +1,6 @@
-## MixtureOfAgents Framework Conceptual Breakdown
+## Swarms Framework Conceptual Breakdown
 
-The `MixtureOfAgents` framework is a sophisticated structure designed to orchestrate the collaborative work of multiple agents in a hierarchical manner. This breakdown provides a conceptual and visual representation of the framework, highlighting the interactions between models, tools, memory, agents, and swarms.
+The `swarms` framework is a sophisticated structure designed to orchestrate the collaborative work of multiple agents in a hierarchical manner. This breakdown provides a conceptual and visual representation of the framework, highlighting the interactions between models, tools, memory, agents, and swarms.
 
 ### Hierarchical Structure
 
@@ -13,7 +13,7 @@ The framework can be visualized as a multi-layered hierarchy:
 
 ### Visual Representation
 
-Below are visual graphs illustrating the hierarchical and tree structure of the `MixtureOfAgents` framework.
+Below are visual graphs illustrating the hierarchical and tree structure of the `swarms` framework.
 
 #### 1. Foundational Components: Models, Tools, Memory
 
@@ -102,10 +102,10 @@ graph TD;
 
 ### Directory Breakdown
 
-The directory structure of the `MixtureOfAgents` framework is organized to support its hierarchical architecture:
+The directory structure of the `swarms` framework is organized to support its hierarchical architecture:
 
 ```sh
-MixtureOfAgents/
+swarms/
 ├── agents/
 ├── artifacts/
 ├── marketplace/
@@ -122,6 +122,6 @@ MixtureOfAgents/
 
 ### Summary
 
-The `MixtureOfAgents` framework is designed to facilitate complex multi-agent interactions through a structured and layered approach. By leveraging foundational components like models, tools, and memory, individual agents are empowered to perform specialized tasks. These agents are then coordinated within swarms to achieve collective goals, and swarms are managed within high-level structs to orchestrate sophisticated workflows.
+The `swarms` framework is designed to facilitate complex multi-agent interactions through a structured and layered approach. By leveraging foundational components like models, tools, and memory, individual agents are empowered to perform specialized tasks. These agents are then coordinated within swarms to achieve collective goals, and swarms are managed within high-level structs to orchestrate sophisticated workflows.
 
-This hierarchical design ensures scalability, flexibility, and robustness, making the `MixtureOfAgents` framework a powerful tool for various applications in AI, data analysis, optimization, and beyond.
+This hierarchical design ensures scalability, flexibility, and robustness, making the `swarms` framework a powerful tool for various applications in AI, data analysis, optimization, and beyond.
