@@ -12,11 +12,11 @@ plugins:
   - search
   - same-dir
   - git-authors
-  # - mkdocs-jupyter:
-  #       kernel_name: python3
-  #       #execute: false   # default
-  #       include_source: true
-  #       include_requirejs: true
+  - mkdocs-jupyter:
+        kernel_name: python3
+        #execute: false   # default
+        include_source: true
+        include_requirejs: true
   - mkdocstrings:
       default_handler: python
       handlers:
