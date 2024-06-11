@@ -94,7 +94,6 @@ nav:
     - Docker Setup: "swarms/install/docker_setup.md"
     - Contributing: "contributing.md"
   - Framework:
-    - Overview: "swarms/"
     - Models: "swarms/models/index.md"
     - Agents:
       - Overview: "swarms/structs/index.md"
