@@ -93,6 +93,7 @@ nav:
     - Install: "swarms/install/install.md"
     - Docker Setup: "swarms/install/docker_setup.md"
     - Contributing: "contributing.md"
+    - Multi-Agent Repository Template: "swarms/install/mulit-agent_template.md"
   - Framework:
     - Overview: "swarms/index.md"
     - Models: "swarms/models/index.md"
