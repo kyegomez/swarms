@@ -40,7 +40,7 @@ class MixtureOfAgents(BaseSwarm):
         agents: List[Agent] = None,
         max_loops: int = 1,
         verbose: bool = True,
-        layers: int = None,
+        layers: int = 3,
         rules: str = None,
         final_agent: Agent = None,
         auto_save: bool = False,
@@ -71,18 +71,26 @@ class MixtureOfAgents(BaseSwarm):
         self.swarm_initialization()
 
     def agent_check(self):
-        if not isinstance(self.agents, list):
-            raise TypeError("Input must be a list of agents.")
-        for agent in self.agents:
-            if not isinstance(agent, Agent):
-                raise TypeError(
-                    "Input must be a list of agents."
-                    "Each agent must be an instance of Agent."
-                )
+        try:
+            if not isinstance(self.agents, list):
+                raise TypeError("Input must be a list of agents.")
+            for agent in self.agents:
+                if not isinstance(agent, Agent):
+                    raise TypeError(
+                        "Input must be a list of agents."
+                        "Each agent must be an instance of Agent."
+                    )
+        except TypeError as e:
+            logger.error(f"Error checking agents: {e}")
 
     def final_agent_check(self):
-        if not isinstance(self.final_agent, Agent):
-            raise TypeError("Final agent must be an instance of Agent.")
+        try:
+            if not isinstance(self.final_agent, Agent):
+                raise TypeError(
+                    "Final agent must be an instance of Agent."
+                )
+        except TypeError as e:
+            logger.error(f"Error checking final agent: {e}")
 
     def swarm_initialization(self):
         # Name, description, and logger

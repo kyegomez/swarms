@@ -86,6 +86,7 @@ from swarms.structs.yaml_model import (
     get_type_name,
     pydantic_type_to_yaml_schema,
 )
+from swarms.structs.mixture_of_agents import MixtureOfAgents
 
 __all__ = [
     "Agent",
@@ -158,4 +159,5 @@ __all__ = [
     "RoundRobinSwarm",
     "HiearchicalSwarm",
     "AgentLoadBalancer",
+    "MixtureOfAgents",
 ]
