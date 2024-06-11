@@ -1,4 +1,3 @@
-
 docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
 site_name: Swarms Documentation
 site_url: https://swarms.apac.ai
@@ -90,10 +89,22 @@ markdown_extensions:
   - footnotes
 nav:
   - Home:
-      - Overview: "index.md"
-      - Install: "swarms/install/install.md"
-      - Docker Setup: "swarms/install/docker_setup.md"
+    - Overview: "index.md"
+    - Install: "swarms/install/install.md"
+    - Docker Setup: "swarms/install/docker_setup.md"
+    - Contributing: "contributing.md"
   - Framework:
+    - Overview: "swarms/"
+    - Models: "swarms/models/index.md"
+    - Agents:
+      - Build Agents: "swarms/structs/diy_your_own_agent.md"
+      - Agents with Memory: "swarms/memory/diy_memory.md"
+      - Agents with tools: "swarms/tools/main.md"
+      # - Integrating Agents from Langchain, CrewAI, and Autogen: "swarms"
+    - Multi-Agent Collaboration: 
+      - Overview: "swarms/structs/multi_agent_orchestration.md"
+      - Workflows: "swarms/structs/workflows.md"
+  - Reference:
       - Overview: "swarms/index.md"
       - Models:
           - How to Create A Custom Language Model: "swarms/models/custom_model.md"
@@ -158,5 +169,3 @@ nav:
   - References:
       - Agent Glossary: "swarms/glossary.md"
       - List of The Best Multi-Agent Papers: "swarms/papers.md"
-  - Contributors:
-      - Contributing: "contributing.md"
