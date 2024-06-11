@@ -169,15 +169,53 @@ For further reading and background information on the concepts used in the `Mixt
 #### Example 1: Basic Initialization and Run
 
 ```python
-from swarms import MixtureOfAgents, Agent
+from swarms import MixtureOfAgents, Agent, OpenAIOpenAIChat
 
 # Define agents
-agent1 = Agent(name="Agent1")
-agent2 = Agent(name="Agent2")
-final_agent = Agent(name="FinalAgent")
+director = Agent(
+    agent_name="Director",
+    system_prompt="Directs the tasks for the accountants",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="director.json",
+)
+
+# Initialize accountant 1
+accountant1 = Agent(
+    agent_name="Accountant1",
+    system_prompt="Prepares financial statements",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="accountant1.json",
+)
+
+# Initialize accountant 2
+accountant2 = Agent(
+    agent_name="Accountant2",
+    system_prompt="Audits financial records",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="accountant2.json",
+)
+
 
 # Initialize the MixtureOfAgents
-moe_swarm = MixtureOfAgents(agents=[agent1, agent2], final_agent=final_agent)
+moe_swarm = MixtureOfAgents(agents=[director, accountant1, accountant2], final_agent=director)
 
 # Run the swarm
 history = moe_swarm.run(task="Perform task X.")
@@ -187,19 +225,55 @@ print(history)
 #### Example 2: Verbose Output and Auto-Save
 
 ```python
-from swarms import MixtureOfAgents, Agent
+from swarms import MixtureOfAgents, Agent, OpenAIOpenAIChat
 
-# Define
+# Define Agents
+# Define agents
+director = Agent(
+    agent_name="Director",
+    system_prompt="Directs the tasks for the accountants",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="director.json",
+)
 
- agents
-agent1 = Agent(name="Agent1")
-agent2 = Agent(name="Agent2")
-final_agent = Agent(name="FinalAgent")
+# Initialize accountant 1
+accountant1 = Agent(
+    agent_name="Accountant1",
+    system_prompt="Prepares financial statements",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="accountant1.json",
+)
+
+# Initialize accountant 2
+accountant2 = Agent(
+    agent_name="Accountant2",
+    system_prompt="Audits financial records",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="accountant2.json",
+)
 
 # Initialize the MixtureOfAgents with verbose output and auto-save enabled
 moe_swarm = MixtureOfAgents(
-    agents=[agent1, agent2],
-    final_agent=final_agent,
+    agents=[director, accountant1, accountant2],
+    final_agent=director,
     verbose=True,
     auto_save=True
 )
@@ -212,17 +286,55 @@ print(history)
 #### Example 3: Custom Rules and Multiple Layers
 
 ```python
-from swarms import MixtureOfAgents, Agent
+from swarms import MixtureOfAgents, Agent, OpenAIOpenAIChat
 
 # Define agents
-agent1 = Agent(name="Agent1")
-agent2 = Agent(name="Agent2")
-final_agent = Agent(name="FinalAgent")
+# Initialize the director agent
+director = Agent(
+    agent_name="Director",
+    system_prompt="Directs the tasks for the accountants",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="director.json",
+)
+
+# Initialize accountant 1
+accountant1 = Agent(
+    agent_name="Accountant1",
+    system_prompt="Prepares financial statements",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="accountant1.json",
+)
+
+# Initialize accountant 2
+accountant2 = Agent(
+    agent_name="Accountant2",
+    system_prompt="Audits financial records",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="accountant2.json",
+)
 
 # Initialize the MixtureOfAgents with custom rules and multiple layers
 moe_swarm = MixtureOfAgents(
-    agents=[agent1, agent2],
-    final_agent=final_agent,
+    agents=[director, accountant1, accountant2],
+    final_agent=director,
     layers=5,
     rules="Custom rules for the swarm"
 )
