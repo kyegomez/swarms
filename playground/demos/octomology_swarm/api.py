@@ -1,13 +1,11 @@
 import os
 from dotenv import load_dotenv
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from swarms import Agent
 from swarms.models import OpenAIChat
 from swarms.models.gpt4_vision_api import GPT4VisionAPI
 from swarms.structs.rearrange import AgentRearrange
-from fastapi import FastAPI
 from typing import Optional, List, Dict, Any
 
 # Load the environment variables
@@ -25,7 +23,7 @@ openai = OpenAIChat(
 
 
 # Setup the FastAPI app
-app = FastAPI()
+# app = FastAPI()
 
 
 def DIAGNOSIS_SYSTEM_PROMPT() -> str:
@@ -120,64 +118,53 @@ class RunConfig(BaseModel):
     max_loops: Optional[int] = 1
 
 
-@app.get("/v1/health")
-async def health_check():
-    return JSONResponse(content={"status": "healthy"})
+# @app.get("/v1/health")
+# async def health_check():
+#     return JSONResponse(content={"status": "healthy"})
 
 
-@app.get("/v1/models_available")
-async def models_available():
-    available_models = {
-        "models": [
-            {"name": "gpt-4-1106-vision-preview", "type": "vision"},
-            {"name": "openai-chat", "type": "text"},
-        ]
-    }
-    return JSONResponse(content=available_models)
+# @app.get("/v1/models_available")
+# async def models_available():
+#     available_models = {
+#         "models": [
+#             {"name": "gpt-4-1106-vision-preview", "type": "vision"},
+#             {"name": "openai-chat", "type": "text"},
+#         ]
+#     }
+#     return JSONResponse(content=available_models)
 
 
-@app.get("/v1/swarm/completions")
-async def run_agents(run_config: RunConfig):
-    # Diagnoser agent
-    diagnoser = Agent(
-        # agent_name="Medical Image Diagnostic Agent",
-        agent_name="D",
-        system_prompt=DIAGNOSIS_SYSTEM_PROMPT(),
-        llm=llm,
-        max_loops=1,
-        autosave=True,
-        dashboard=True,
-    )
+# @app.get("/v1/swarm/completions")
+# async def run_agents(run_config: RunConfig):
+# Diagnoser agent
+diagnoser = Agent(
+    # agent_name="Medical Image Diagnostic Agent",
+    agent_name="D",
+    system_prompt=DIAGNOSIS_SYSTEM_PROMPT(),
+    llm=llm,
+    max_loops=1,
+    autosave=True,
+    dashboard=True,
+)
 
-    # Agent 2 the treatment plan provider
-    treatment_plan_provider = Agent(
-        # agent_name="Medical Treatment Recommendation Agent",
-        agent_name="T",
-        system_prompt=TREATMENT_PLAN_SYSTEM_PROMPT(),
-        llm=openai,
-        max_loops=1,
-        autosave=True,
-        dashboard=True,
-    )
+# Agent 2 the treatment plan provider
+treatment_plan_provider = Agent(
+    # agent_name="Medical Treatment Recommendation Agent",
+    agent_name="T",
+    system_prompt=TREATMENT_PLAN_SYSTEM_PROMPT(),
+    llm=openai,
+    max_loops=1,
+    autosave=True,
+    dashboard=True,
+)
 
-    # Agent 3 the re-arranger
-    rearranger = AgentRearrange(
-        agents=[diagnoser, treatment_plan_provider],
-        flow=run_config.flow,
-        max_loops=run_config.max_loops,
-        verbose=True,
-    )
+# Agent 3 the re-arranger
+rearranger = AgentRearrange(
+    agents=[diagnoser, treatment_plan_provider],
+    flow="D -> T",
+    max_loops=1,
+    verbose=True,
+)
 
-    # Run the rearranger
-    out = rearranger(
-        run_config.task,
-        image=run_config.image,
-    )
-
-    return JSONResponse(content=out)
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Run the agents
+results = rearranger.run("")
