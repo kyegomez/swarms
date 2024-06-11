@@ -16,7 +16,7 @@ jobs:
       - run: pip install mkdocs-material
       - run: pip install mkdocs-same-dir
       - run: pip3 install mkdocs-git-authors-plugin
-      - run: pip install mkdocs-jupyter==0.16.0
+      - run: pip install mkdocs-jupyter
       - run: pip install "mkdocstrings[python]"
       - run: pip install --upgrade lxml_html_clean
       - run: pip install mkdocs-git-committers-plugin
