@@ -164,10 +164,10 @@ nav:
           # - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
       - Agents:
           - Agent: "examples/flow.md"
-          - DIY Build Your Own Agent: "diy_your_own_agent.md"
-          - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
+          - DIY Build Your Own Agent: "structs/diy_your_own_agent.md"
+          # - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
       - Swarms:
-          - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
+          - SequentialWorkflow: "structs/sequential_workflow.md"
   - References:
       - Agent Glossary: "swarms/glossary.md"
       - List of The Best Multi-Agent Papers: "swarms/papers.md"
