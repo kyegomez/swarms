@@ -103,15 +103,15 @@ nav:
       - Agents with tools: "swarms/tools/main.md"
     - Multi-Agent Collaboration: 
       - Overview: "swarms/structs/multi_agent_orchestration.md"
-      - Workflows: "swarms/structs/workflows.md"
-      - Multi-Agent Architectures: "swarms/structs/multi_agent_architectures.md"
+      - Workflows: "swarms/structs/workflow.md"
+      - Multi-Agent Architectures: "swarms/structs/multi_agent_orchestration.md"
   - Reference:
       - Overview: "swarms/framework_structure.md"
       - Models:
           - How to Create A Custom Language Model: "swarms/models/custom_model.md"
           - Models Available: "swarms/models/index.md"
-          - MultiModal Models Available: "swarms/models/multimodal_models.md"
-          - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
+          # - MultiModal Models Available: "swarms/models/multimodal_models.md"
+          # - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
           - Language Models:
               - BaseLLM: "swarms/models/base_llm.md"
               - HuggingFaceLLM: "swarms/models/huggingface.md"
@@ -161,7 +161,7 @@ nav:
   - Guides:
       - Models:
           - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-          - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
+          # - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
       - Agents:
           - Agent: "examples/flow.md"
           - DIY Build Your Own Agent: "diy_your_own_agent.md"
