@@ -52,7 +52,10 @@ The performance impact is rated on a scale from one to five stars, with multi-ag
 ----
 
 ## Install 💻
-`$ pip3 install -U swarms`
+
+```bash
+$ pip3 install -U swarms
+```
 
 ---
 
@@ -92,7 +95,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
 llm = OpenAIChat(
-    temperature=0.5, model_name="gpt-4", openai_api_key=api_key, max_tokens=4000
+    temperature=0.5, openai_api_key=api_key, max_tokens=4000
 )
 
 
