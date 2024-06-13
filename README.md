@@ -52,7 +52,10 @@ The performance impact is rated on a scale from one to five stars, with multi-ag
 ----
 
 ## Install 💻
-`$ pip3 install -U swarms`
+
+```bash
+$ pip3 install -U swarms
+```
 
 ---
 
