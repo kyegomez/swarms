@@ -49,7 +49,7 @@
 - Case Studies and Use Cases
 
 
-## **Introdution**
+## **Introduction**
 Swarms provides automation-as-a-service through swarms of autonomous agents that work together as a team. We enable our customers to build, deploy, and scale production-grade multi-agent applications to automate real-world tasks.
 
 ### **Vision**
@@ -69,7 +69,7 @@ The team has thousands of hours building and optimizing autonomous agents. Leade
 Key milestones: get 80K framework users in January 2024, start contracts in target verticals, introduce commercial products in 2025 with various pricing models.
 
 ### **Resources**
-- [Swarm Pre-Seed Deck](https://drive.google.com/file/d/1n8o2mjORbG96uDfx4TabjnyieludYaZz/view?usp=sharing)
+- [Swarm Pre-Seed Deck](https://www.dropbox.com/scl/fi/qglgu970d921zbuge3rig/Swarms_Pitch_Deck_compressed.pdf?rlkey=2b6mbv4k4pfn44xwr5h3dzra2&e=1&st=0rp0mst4&dl=0)
 - [Swarm Memo](https://docs.google.com/document/d/1hS_nv_lFjCqLfnJBoF6ULY9roTbSgSuCkvXvSUSc7Lo/edit?usp=sharing)
 
 
