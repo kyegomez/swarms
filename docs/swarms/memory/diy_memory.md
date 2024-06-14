@@ -46,7 +46,6 @@ The first step in creating a custom vector memory database is to inherit from th
 
 ```python
 
-from abc import ABC, abstractmethod
 from swarms import BaseVectorDatabase
 
 class MyCustomVectorDatabase(BaseVectorDatabase):
