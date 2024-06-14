@@ -1,6 +1,9 @@
 from swarms.telemetry.bootup import bootup  # noqa: E402, F403
 from swarms.telemetry.sentry_active import activate_sentry
 
+from splash_message import splash
+
+splash()
 bootup()
 activate_sentry()
 
