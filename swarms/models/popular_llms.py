@@ -10,6 +10,7 @@ from langchain.llms.mosaicml import MosaicML
 from langchain.llms.openai import OpenAI  # , OpenAIChat, AzureOpenAI
 from langchain_community.llms.octoai_endpoint import OctoAIEndpoint
 from langchain.llms.replicate import Replicate
+from langchain_community.llms.fireworks import Fireworks  # noqa: F401
 
 
 class Anthropic(Anthropic):

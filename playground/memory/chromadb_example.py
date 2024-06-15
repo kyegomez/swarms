@@ -166,10 +166,10 @@ class ChromaDB(BaseVectorDatabase):
 
         for root, dirs, files in os.walk(self.docs_folder):
             for file in files:
-                file = os.path.join(self.docs_folder, file)
-                _, ext = os.path.splitext(file)
-                data = data_to_text(file)
+                file_path = os.path.join(root, file)  # Change this line
+                _, ext = os.path.splitext(file_path)
+                data = data_to_text(file_path)
                 added_to_db = self.add(str(data))
-                print(f"{file} added to Database")
+                print(f"{file_path} added to Database")
 
         return added_to_db

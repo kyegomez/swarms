@@ -59,7 +59,7 @@ class SCP(BaseStructure):
 
     def __init__(
         self,
-        agents: List[AgentType],
+        agents: List[AgentType] = None,
         memory_system: BaseVectorDatabase = None,
         *args,
         **kwargs,

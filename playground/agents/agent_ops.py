@@ -1,12 +1,11 @@
 from swarms import Agent, OpenAIChat
 
-
 # Initialize the agent
 agent = Agent(
-    agent_name="Transcript Generator",
-    system_prompt="Generate a transcript for a youtube video on what swarms are!",
+    agent_name="Accounting Agent",
+    system_prompt="Generate a financial report for the company's quarterly earnings.",
     agent_description=(
-        "Generate a transcript for a youtube video on what swarms" " are!"
+        "Generate a financial report for the company's quarterly earnings."
     ),
     llm=OpenAIChat(),
     max_loops=1,
@@ -17,9 +16,11 @@ agent = Agent(
     stopping_token="<DONE>",
     interactive=False,
     state_save_file_type="json",
-    saved_state_path="transcript_generator.json",
+    saved_state_path="accounting_agent.json",
     agent_ops_on=True,
 )
 
 # Run the Agent on a task
-agent.run("Generate a transcript for a youtube video on what swarms are!")
+agent.run(
+    "Generate a financial report for the company's quarterly earnings!"
+)

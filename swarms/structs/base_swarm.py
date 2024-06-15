@@ -1,6 +1,6 @@
-import uuid
 import asyncio
 import json
+import uuid
 from abc import ABC
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import (
@@ -14,11 +14,11 @@ from typing import (
 
 import yaml
 
+from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.utils.loguru_logger import logger
 from swarms.structs.omni_agent_types import AgentType
-from swarms.memory.base_vectordb import BaseVectorDatabase
+from swarms.utils.loguru_logger import logger
 
 
 class BaseSwarm(ABC):
@@ -89,6 +89,7 @@ class BaseSwarm(ABC):
         speaker_selection_func: Optional[Callable] = None,
         rules: Optional[str] = None,
         collective_memory_system: Optional[BaseVectorDatabase] = False,
+        agent_ops_on: bool = False,
         *args,
         **kwargs,
     ):
@@ -110,6 +111,7 @@ class BaseSwarm(ABC):
         self.speaker_selection_func = speaker_selection_func
         self.rules = rules
         self.collective_memory_system = collective_memory_system
+        self.agent_ops_on = agent_ops_on
 
         # Ensure that agents is exists
         if self.agents is None:
@@ -169,6 +171,11 @@ class BaseSwarm(ABC):
                     "Speaker selection function must be callable."
                 )
             self.speaker_selection_func = speaker_selection_func
+
+        # Add the check for all the agents to see if agent ops is on!
+        if agent_ops_on is True:
+            for agent in self.agents:
+                agent.agent_ops_on = True
 
         # Agents dictionary with agent name as key and agent object as value
         self.agents_dict = {
@@ -697,3 +704,40 @@ class BaseSwarm(ABC):
         except Exception as error:
             logger.info(error)
             raise error
+
+    def swarm_initialization(self, *args, **kwargs):
+        """
+        Initializes the hierarchical swarm.
+
+        Args:
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            None
+
+        """
+        logger.info(f"Initializing the hierarchical swarm: {self.name}")
+        logger.info(f"Purpose of this swarm: {self.description}")
+
+        # Now log number of agnets and their names
+        logger.info(f"Number of agents: {len(self.agents)}")
+        logger.info(
+            f"Agent names: {[agent.name for agent in self.agents]}"
+        )
+
+        # Now see if agents is not empty
+        if len(self.agents) == 0:
+            logger.info("No agents found. Please add agents to the swarm.")
+            return None
+
+        # Now see if director is not empty
+        if self.director is None:
+            logger.info(
+                "No director found. Please add a director to the swarm."
+            )
+            return None
+
+        logger.info(
+            f"Initialization complete for the hierarchical swarm: {self.name}"
+        )

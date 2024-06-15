@@ -5,6 +5,7 @@ from typing import List, Any
 from swarms.structs.conversation import Conversation
 from pydantic import BaseModel
 from swarms.utils.loguru_logger import logger
+from swarms.memory.base_vectordb import BaseVectorDatabase
 
 
 class AgentRun(BaseModel):
@@ -45,6 +46,7 @@ class MixtureOfAgents(BaseSwarm):
         final_agent: Agent = None,
         auto_save: bool = False,
         saved_file_name: str = "moe_swarm.json",
+        scp: BaseVectorDatabase = None,
     ):
         self.name = name
         self.description = description
@@ -56,6 +58,7 @@ class MixtureOfAgents(BaseSwarm):
         self.final_agent = final_agent
         self.auto_save = auto_save
         self.saved_file_name = saved_file_name
+        self.scp = scp
 
         # Check the agents
         self.agent_check()
@@ -69,6 +72,23 @@ class MixtureOfAgents(BaseSwarm):
 
         # Initialize the swarm
         self.swarm_initialization()
+
+        # Communication Protocol
+        self.communication_protocol()
+
+    def communication_protocol(self):
+        try:
+            # Memory system
+            logger.info(
+                "Initializing SCP --- Swarm Communication Protocol"
+            )
+
+            if self.scp is not None:
+                for agent in self.agents.values():
+                    agent.long_term_memory = self.scp
+                    logger.info("Agents have been integrated with SCP:")
+        except Exception as e:
+            logger.error(f"Error initializing SCP: {e}")
 
     def agent_check(self):
         try:
@@ -97,7 +117,7 @@ class MixtureOfAgents(BaseSwarm):
         Initializes the swarm by logging the swarm name, description, and the number of agents.
         """
         # Name, description, and logger
-        logger.info(f"Initializing swarm {self.name}.")
+        logger.info(f"Initializing Mixture of Agents Swarm: {self.name}.")
         logger.info(f"Description: {self.description}")
         logger.info(f"Initializing swarm with {len(self.agents)} agents.")
 
@@ -116,9 +136,11 @@ class MixtureOfAgents(BaseSwarm):
             logger.info(f"Running swarm {self.name}.")
 
             self.conversation.add("user", task)
+            # self.scp.add(f"User: {task}")
 
             # Conversation history
             history = self.conversation.return_history_as_string()
+            # self.scp.add(f"Conversation History: {history}")
 
             agent_runs = []
             layer = 0
@@ -129,13 +151,16 @@ class MixtureOfAgents(BaseSwarm):
                 responses = []
                 for agent in self.agents:
                     out = agent.run(history, *args, **kwargs)
+                    # self.scp.add(
+                    #     f"Agent: {agent.agent_name} Output: {out}"
+                    # )
                     responses.append((agent.agent_name, out))
                     agent_runs.append(
                         AgentRun(agent_name=agent.agent_name, output=out)
                     )
 
                     # Log the agent run
-                    logger.info(f"Agent {agent.agent_name} output: {out}")
+                    # logger.info(f"Agent {agent.agent_name} output: {out}")
 
                 # Add all the responses to the conversation
                 logger.info("Adding responses to the conversation.")
@@ -144,6 +169,7 @@ class MixtureOfAgents(BaseSwarm):
 
                 # Update the history
                 history = self.conversation.return_history_as_string()
+                # self.scp.add(f"Conversation History: {history}")
 
                 layer += 1
 
@@ -154,6 +180,9 @@ class MixtureOfAgents(BaseSwarm):
                 "Running the final output agent on the conversation history."
             )
             final_output = self.final_agent.run(history, *args, **kwargs)
+            # self.scp.add(
+            #     f"Final Agent: {self.final_agent.agent_name} Output: {final_output}"
+            # )
             self.conversation.add(
                 self.final_agent.agent_name, final_output
             )

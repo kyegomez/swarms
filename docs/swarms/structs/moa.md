@@ -225,7 +225,7 @@ print(history)
 #### Example 2: Verbose Output and Auto-Save
 
 ```python
-from swarms import MixtureOfAgents, Agent, OpenAIOpenAIChat
+from swarms import MixtureOfAgents, Agent, OpenAIChat
 
 # Define Agents
 # Define agents

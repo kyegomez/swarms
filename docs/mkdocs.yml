@@ -97,11 +97,15 @@ nav:
   - Framework:
     - Overview: "swarms/index.md"
     - Models: "swarms/models/index.md"
+      - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+      - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
     - Agents:
       - Overview: "swarms/structs/index.md"
       - Build Agents: "swarms/structs/diy_your_own_agent.md"
       - Agents with Memory: "swarms/memory/diy_memory.md"
       - Agents with tools: "swarms/tools/main.md"
+      - DIY Build Your Own Agent: "diy_your_own_agent.md"
+      - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
     - Multi-Agent Collaboration: 
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Workflows: "swarms/structs/workflows.md"
@@ -159,16 +163,6 @@ nav:
       - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
       - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
       - Under The Hood The Swarm Cloud Serving Infrastructure: "swarms_cloud/architecture.md"
-  - Guides:
-      - Models:
-          - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-          - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
-      - Agents:
-          - Agent: "examples/flow.md"
-          - DIY Build Your Own Agent: "diy_your_own_agent.md"
-          - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
-      - Swarms:
-          - SequentialWorkflow: "examples/reliable_autonomous_agents.md"
   - References:
       - Agent Glossary: "swarms/glossary.md"
       - List of The Best Multi-Agent Papers: "swarms/papers.md"

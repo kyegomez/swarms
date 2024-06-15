@@ -111,37 +111,50 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
 
 ```python
+import os
+
+from dotenv import load_dotenv
+
+# Import the OpenAIChat model and the Agent struct
 from swarms import Agent, OpenAIChat
-from playground.memory.chromadb_example import ChromaDB # Copy and paste the code and put it in your own local directory.
+from playground.memory.chromadb_example import ChromaDB
 
-# Making an instance of the ChromaDB class
-memory = ChromaDB(
+# Load the environment variables
+load_dotenv()
+
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
+
+
+# Initilaize the chromadb client
+chromadb = ChromaDB(
     metric="cosine",
-    n_results=3,
-    output_dir="results",
-    docs_folder="docs",
+    output_dir="scp",
+    docs_folder="artifacts",
 )
 
-# Initializing the agent with the Gemini instance and other parameters
+# Initialize the language model
+llm = OpenAIChat(
+    temperature=0.5,
+    openai_api_key=api_key,
+    max_tokens=1000,
+)
+
+## Initialize the workflow
 agent = Agent(
-    agent_name="Covid-19-Chat",
-    agent_description=(
-        "This agent provides information about COVID-19 symptoms."
-    ),
-    llm=OpenAIChat(),
-    max_loops="auto",
+    llm=llm,
+    name = "Health and Wellness Blog",
+    system_prompt="Generate a 10,000 word blog on health and wellness.",
+    max_loops=4,
     autosave=True,
-    verbose=True,
-    long_term_memory=memory,
-    stopping_condition="finish",
+    dashboard=True,
+    long_term_memory=chromadb,
+    memory_chunk_size=300,
 )
 
-# Defining the task and image path
-task = ("What are the symptoms of COVID-19?",)
+# Run the workflow on a task
+agent.run("Generate a 10,000 word blog on health and wellness.")
 
-# Running the agent with the specified task and image
-out = agent.run(task)
-print(out)
 
 ```
 

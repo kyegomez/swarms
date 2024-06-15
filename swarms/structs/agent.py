@@ -513,6 +513,9 @@ class Agent(BaseStructure):
                     "Could not import agentops, try installing agentops: $ pip3 install agentops"
                 )
 
+        # Check the parameters
+        self.check_parameters()
+
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
         self.system_prompt = system_prompt
@@ -720,6 +723,19 @@ class Agent(BaseStructure):
         for letter in content:
             print(letter, end="")
 
+    def check_parameters(self):
+        if self.llm is None:
+            raise ValueError("Language model is not provided")
+
+        if self.system_prompt is None:
+            raise ValueError("System prompt is not provided")
+
+        if self.max_loops is None:
+            raise ValueError("Max loops is not provided")
+
+        if self.agent_name is None:
+            raise ValueError("Agent name is not provided")
+
     ########################## FUNCTION CALLING ##########################
 
     def run(
@@ -781,6 +797,14 @@ class Agent(BaseStructure):
                             )
 
                         else:
+
+                            if exists(self.tokenizer):
+                                task_prompt = (
+                                    self.count_and_shorten_context_window(
+                                        task_prompt
+                                    )
+                                )
+
                             response_args = (
                                 (task_prompt, *args)
                                 if img is None
@@ -789,7 +813,10 @@ class Agent(BaseStructure):
                             response = self.llm(*response_args, **kwargs)
 
                             # Print
-                            print(response)
+                            if self.streaming_on is True:
+                                response = self.stream_response(response)
+                            else:
+                                print(response)
 
                             # Add the response to the memory
                             self.short_memory.add(
@@ -826,27 +853,7 @@ class Agent(BaseStructure):
 
                         # Sentiment analysis
                         if self.sentiment_analyzer:
-                            sentiment = self.sentiment_analyzer(response)
-                            print(f"Sentiment: {sentiment}")
-
-                            if sentiment > self.sentiment_threshold:
-                                print(
-                                    f"Sentiment: {sentiment} is above"
-                                    " threshold:"
-                                    f" {self.sentiment_threshold}"
-                                )
-                            elif sentiment < self.sentiment_threshold:
-                                print(
-                                    f"Sentiment: {sentiment} is below"
-                                    " threshold:"
-                                    f" {self.sentiment_threshold}"
-                                )
-
-                            # print(f"Sentiment: {sentiment}")
-                            self.short_memory.add(
-                                role=self.agent_name,
-                                content=sentiment,
-                            )
+                            self.sentiment_analysis_handler(response)
 
                         # print(response)
 
@@ -920,9 +927,15 @@ class Agent(BaseStructure):
             if self.agent_ops_on is True:
                 self.check_end_session_agentops()
 
-            return response
+            if self.return_history:
+                return self.short_memory.return_history_as_string()
+            else:
+                return response
+
         except Exception as error:
-            print(f"Error running agent: {error}")
+            logger.info(
+                f"Error running agent: {error} optimize your input parameters"
+            )
             raise error
 
     def __call__(self, task: str = None, img: str = None, *args, **kwargs):
@@ -984,12 +997,11 @@ class Agent(BaseStructure):
 
         # Query the long term memory database
         ltr = self.long_term_memory.query(query, *args, **kwargs)
-        ltr = str(ltr)
+        # ltr = str(ltr)
 
         # Retrieve only the chunk size of the memory
+        logger.info(f"Chunking to {self.memory_chunk_size}")
         ltr = retrieve_tokens(ltr, self.memory_chunk_size)
-
-        # print(f"Long Term Memory Query: {ltr}")
         return ltr
 
     def add_memory(self, message: str):
@@ -1690,3 +1702,122 @@ class Agent(BaseStructure):
                 f"Error detected: {error} make sure you have inputted a callable and that it has documentation as docstrings"
             )
             raise error
+
+    def memory_query(self, task: str = None, *args, **kwargs):
+        try:
+            if self.long_term_memory is not None:
+                memory_retrieval = self.long_term_memory_prompt(
+                    task, *args, **kwargs
+                )
+                # print(len(memory_retrieval))
+
+                # Merge the task prompt with the memory retrieval
+                task_prompt = (
+                    f"{task} Documents Available: {memory_retrieval}"
+                )
+
+                response = self.llm(task_prompt, *args, **kwargs)
+                print(response)
+
+                self.short_memory.add(
+                    role=self.agent_name, content=response
+                )
+                return response
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
+
+    def sentiment_analysis_handler(self, response: str = None):
+        try:
+            # Sentiment analysis
+            if self.sentiment_analyzer:
+                sentiment = self.sentiment_analyzer(response)
+                print(f"Sentiment: {sentiment}")
+
+                if sentiment > self.sentiment_threshold:
+                    print(
+                        f"Sentiment: {sentiment} is above"
+                        " threshold:"
+                        f" {self.sentiment_threshold}"
+                    )
+                elif sentiment < self.sentiment_threshold:
+                    print(
+                        f"Sentiment: {sentiment} is below"
+                        " threshold:"
+                        f" {self.sentiment_threshold}"
+                    )
+
+                # print(f"Sentiment: {sentiment}")
+                self.short_memory.add(
+                    role=self.agent_name,
+                    content=sentiment,
+                )
+        except Exception as e:
+            print(f"Error occurred during sentiment analysis: {e}")
+
+    def count_and_shorten_context_window(
+        self, history: str, *args, **kwargs
+    ):
+        """
+        Count the number of tokens in the context window and shorten it if it exceeds the limit.
+
+        Args:
+            history (str): The history of the conversation.
+
+        Returns:
+            str: The shortened context window.
+        """
+        # Count the number of tokens in the context window
+        count = self.tokenizer.count_tokens(history)
+
+        # Shorten the context window if it exceeds the limit, keeping the last n tokens, need to implement the indexing
+        if count > self.context_length:
+            history = history[-self.context_length :]
+
+        return history
+
+    def output_cleaner_and_output_type(
+        self, response: str, *args, **kwargs
+    ):
+        # Apply the cleaner function to the response
+        if self.output_cleaner is not None:
+            logger.info("Applying output cleaner to response.")
+            response = self.output_cleaner(response)
+            logger.info(f"Response after output cleaner: {response}")
+
+        # Prepare the output for the output model
+        if self.output_type is not None:
+            # logger.info("Preparing output for output model.")
+            response = prepare_output_for_output_model(response)
+            print(f"Response after output model: {response}")
+
+        return response
+
+    def stream_response(self, response: str, delay: float = 0.1) -> None:
+        """
+        Streams the response token by token.
+
+        Args:
+            response (str): The response text to be streamed.
+            delay (float, optional): Delay in seconds between printing each token. Default is 0.1 seconds.
+
+        Raises:
+            ValueError: If the response is not provided.
+            Exception: For any errors encountered during the streaming process.
+
+        Example:
+            response = "This is a sample response from the API."
+            stream_response(response)
+        """
+        # Check for required inputs
+        if not response:
+            raise ValueError("Response is required.")
+
+        try:
+            # Stream and print the response token by token
+            for token in response.split():
+                print(token, end=" ", flush=True)
+                time.sleep(delay)
+            print()  # Ensure a newline after streaming
+        except Exception as e:
+            print(f"An error occurred during streaming: {e}")

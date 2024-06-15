@@ -1,26 +1,22 @@
+"""
+
+Boss -> json containig orders in JSON -> list of agents -> send orders to every agent
+
+
+# Requirements
+- Boss needs to know which agents are available [PROMPTING]
+- Boss needs to output json commands sending tasks to every agent with the task and name
+- Worker agents need to return a response to the boss
+-> Boss returns the final output to the user
+"""
+
 import json
 from typing import List
-
-# from beartype import beartype
-
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
 from pydantic import BaseModel, Field
 from swarms.structs.conversation import Conversation
-
-
-class HiearchicalRequest(BaseModel):
-    task: str = Field(
-        None,
-        title="Task",
-        description="The task to send to the director agent.",
-    )
-    agent_name: str = Field(
-        None,
-        title="Agent Name",
-        description="The name of the agent to send the task to.",
-    )
 
 
 class HiearchicalRequestDict(BaseModel):
@@ -42,16 +38,6 @@ class HiearchicalRequestDict(BaseModel):
                 "agent_name": "agent_name",
             }
         }
-
-
-"""
-Boss -> json -> workers -> json -> Boss
-
-
-Parse the JSON data and activate the selected agent.
-
-parse -> execute
-"""
 
 
 class HiearchicalSwarm(BaseSwarm):
@@ -86,6 +72,7 @@ class HiearchicalSwarm(BaseSwarm):
         long_term_memory_system: BaseSwarm = None,
         custom_parse_function: callable = None,
         rules: str = None,
+        custom_director_prompt: str = None,
         *args,
         **kwargs,
     ):
@@ -98,6 +85,7 @@ class HiearchicalSwarm(BaseSwarm):
         self.long_term_memory_system = long_term_memory_system
         self.custom_parse_function = custom_parse_function
         self.rules = rules
+        self.custom_director_prompt = custom_director_prompt
 
         # Check to see agents is not empty
         self.agent_error_handling_check()
@@ -118,6 +106,16 @@ class HiearchicalSwarm(BaseSwarm):
         self.swarm_history = Conversation(
             time_enabled=True, *args, **kwargs
         )
+
+        # Set the worker agents as tools for the director
+        for agent in self.agents:
+            self.director.add_tool(agent)
+
+        # Set the has prompt for the director,
+        if custom_director_prompt is not None:
+            self.director.system_prompt = custom_director_prompt
+        else:
+            self.director.system_prompt = self.has_sop()
 
     def swarm_initialization(self, *args, **kwargs):
         """
@@ -155,6 +153,23 @@ class HiearchicalSwarm(BaseSwarm):
         logger.info(
             f"Initialization complete for the hierarchical swarm: {self.name}"
         )
+
+    def agent_error_handling_check(self):
+        """
+        Check if the agents list is not empty.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If the agents list is empty.
+
+        """
+        if len(self.agents) == 0:
+            raise ValueError(
+                "No agents found. Please add agents to the swarm."
+            )
+        return None
 
     def find_agent_by_name(self, agent_name: str = None, *args, **kwargs):
         """
@@ -288,3 +303,54 @@ class HiearchicalSwarm(BaseSwarm):
         except Exception as e:
             logger.error(f"Error: {e}")
             raise e
+
+    def run_worker_agent(
+        self, name: str = None, task: str = None, *args, **kwargs
+    ):
+        """
+        Run the worker agent.
+
+        Args:
+            name (str): The name of the worker agent.
+            task (str): The task to send to the worker agent.
+
+        Returns:
+            str: The response from the worker agent.
+
+        Raises:
+            Exception: If an error occurs while running the worker agent.
+
+        """
+        try:
+            # Find the agent by name
+            agent = self.find_agent_by_name(name)
+
+            # Run the agent
+            response = agent.run(task, *args, **kwargs)
+
+            return response
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise e
+
+    def has_sop(self):
+        # We need to check the name of the agents and their description or system prompt
+        # TODO: Provide many shot examples of the agents available and even maybe what tools they have access to
+        # TODO: Provide better reasoning prompt tiles, such as when do you use a certain agent and specific
+        # Things NOT to do.
+        return f"""
+        
+        You're a director boss agent orchestrating worker agents with tasks. Select an agent most relevant to 
+        the input task and give them a task. If there is not an agent relevant to the input task then say so and be simple and direct.
+        These are the available agents available call them if you need them for a specific 
+        task or operation:
+        
+        Number of agents: {len(self.agents)}
+        Agents Available: {
+            [
+                {"name": agent.name, "description": agent.system_prompt}
+                for agent in self.agents
+            ]
+        }
+    
+        """

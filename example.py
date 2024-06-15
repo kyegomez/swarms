@@ -40,10 +40,11 @@ agent = Agent(
     dynamic_temperature_enabled=True,
     dashboard=False,
     verbose=True,
+    streaming_on=True,
     # interactive=True, # Set to False to disable interactive mode
     # stopping_token="<DONE>",
     # saved_state_path="accounting_agent.json",
-    tools=[calculate_profit, generate_report],
+    # tools=[calculate_profit, generate_report],
     # docs_folder="docs",
     # pdf_path="docs/accounting_agent.pdf",
 )
