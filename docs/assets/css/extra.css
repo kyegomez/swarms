@@ -1,25 +1,73 @@
-/* Set the main background color to black */
+/* Set the main background color to black and text color to white */
 body {
     background-color: black;
-    color: white; /* Ensure text is visible */
+    color: white;
 }
 
-/* Set other elements you want to customize */
-.md-nav, .md-header, .md-footer {
+/* Customizing headers, navigation, and footer */
+.md-header, .md-nav, .md-footer {
     background-color: black;
+    border-bottom: 2px solid red; /* Red borders */
 }
 
 .md-main__inner {
     background-color: black;
 }
 
-/* Set a secondary color (red) for specific elements */
-.md-nav__item:hover, .md-footer__inner, a {
-    background-color: red;
-    color: white; /* Ensure text is visible */
+/* Customize links */
+a {
+    color: red;
+    text-decoration: none;
+    border-bottom: 1px solid red;
 }
 
-/* Further customization as needed */
+a:hover {
+    color: white;
+    border-bottom: 1px solid white;
+}
+
+/* Code blocks and inline code */
+.md-typeset code, .md-typeset pre {
+    background-color: #333;
+    color: red;
+    border-left: 4px solid red;
+}
+
+/* Customize sidebar */
+.md-sidebar {
+    background-color: black;
+    border-right: 2px solid red;
+}
+
+/* Customize buttons */
+.md-button {
+    background-color: red;
+    color: black;
+    border: 2px solid red;
+}
+
+.md-button:hover {
+    background-color: white;
+    border: 2px solid white;
+    color: black;
+}
+
+/* Customize tables */
+.md-typeset table {
+    border: 2px solid red;
+    background-color: #333;
+}
+
+.md-typeset table th, .md-typeset table td {
+    border: 1px solid red;
+}
+
+/* Additional styling */
+.md-nav__link:hover, .md-footer__inner {
+    background-color: red;
+    color: black;
+}
+
 
 .md-typeset__table {
    min-width: 100%;
