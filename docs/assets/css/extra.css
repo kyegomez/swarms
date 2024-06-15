@@ -5,3 +5,12 @@
 .md-typeset table:not([class]) {
     display: table;
 }
+
+body {
+    background-color: black;
+    color: red;
+}
+
+a {
+    color: red;
+}
