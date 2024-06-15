@@ -1,3 +1,26 @@
+/* Set the main background color to black */
+body {
+    background-color: black;
+    color: white; /* Ensure text is visible */
+}
+
+/* Set other elements you want to customize */
+.md-nav, .md-header, .md-footer {
+    background-color: black;
+}
+
+.md-main__inner {
+    background-color: black;
+}
+
+/* Set a secondary color (red) for specific elements */
+.md-nav__item:hover, .md-footer__inner, a {
+    background-color: red;
+    color: white; /* Ensure text is visible */
+}
+
+/* Further customization as needed */
+
 .md-typeset__table {
    min-width: 100%;
 }
@@ -6,11 +29,3 @@
     display: table;
 }
 
-body {
-    background-color: black;
-    color: red;
-}
-
-a {
-    color: red;
-}
