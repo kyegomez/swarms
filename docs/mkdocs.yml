@@ -96,7 +96,8 @@ nav:
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
   - Framework:
     - Overview: "swarms/index.md"
-    - Models: "swarms/models/index.md"
+    - Models: 
+      - Overview: "swarms/models/index.md"
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
       - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
     - Agents:
