@@ -95,7 +95,7 @@ nav:
     - Contributing: "contributing.md"
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
   - Framework:
-    - Overview: "swarms/index.md"
+    - Overview: "swarms/framework/index.md"
     - Models: 
       - Overview: "swarms/models/index.md"
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
@@ -134,6 +134,7 @@ nav:
               - GPT4VisionAPI: "swarms/models/gpt4v.md"
               - GPT4o: "swarms/models/gpt4o.md"
       - Agents:
+          - Agent: "swarms/structs/agent.md"
           - Overview: "swarms/structs/diy_your_own_agent.md"
           - Tools: 
               - Functions, Pydantic BaseModels, and More: "swarms/tools/main.md"
@@ -142,12 +143,11 @@ nav:
               - ShortTermMemory: "swarms/memory/short_term_memory.md"
       - Structs:
           - Foundational Structures:
-              - Agent: "swarms/structs/agent.md"
               - BaseStructure: "swarms/structs/basestructure.md"
               - Task: "swarms/structs/task.md"
               - YamlModel: "swarms/structs/yaml_model.md"
-              - BaseWorkflow: "swarms/structs/baseworkflow.md"
           - Workflows:
+              - BaseWorkflow: "swarms/structs/baseworkflow.md"
               - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
               - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
           - Multi Agent Architectures:

@@ -303,9 +303,7 @@ class YouSearchAgent:
         if not isinstance(task, str):
             raise TypeError("Task must be a string")
 
-        headers = {
-            "X-API-Key": os.getenv("YOU_API_KEY")
-        }
+        headers = {"X-API-Key": os.getenv("YOU_API_KEY")}
         params = {"query": task}
 
         try:
