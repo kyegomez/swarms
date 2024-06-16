@@ -1,8 +1,8 @@
 docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
-site_name: Swarms Documentation
-site_url: https://swarms.apac.ai
+site_name: Swarms
+site_url: https://docs.swarms.world
 site_author: Swarms
-site_description: Orchestrate Swarms of Agents From Any Framework Like OpenAI, Langchain, and Etc for Real World Workflow Automation.
+site_description: The Enterprise-Grade Production-Ready Multi-Agent Framework
 repo_name: kyegomez/swarms
 repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
