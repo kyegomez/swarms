@@ -107,12 +107,13 @@ nav:
       - Agents with tools: "swarms/tools/main.md"
       - DIY Build Your Own Agent: "diy_your_own_agent.md"
       - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
+      - Functions, Pydantic BaseModels, and More: "swarms/tools/main.md"
     - Multi-Agent Collaboration: 
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Workflows: "swarms/structs/workflows.md"
       - Multi-Agent Architectures: "swarms/structs/multi_agent_architectures.md"
   - Reference:
-      - Overview: "swarms/framework/reference.md.md"
+      - Overview: "swarms/structs/index.md"
       - Models:
           - How to Create A Custom Language Model: "swarms/models/custom_model.md"
           - Models Available: "swarms/models/index.md"
@@ -135,12 +136,6 @@ nav:
               - GPT4o: "swarms/models/gpt4o.md"
       - Agents:
           - Agent: "swarms/structs/agent.md"
-          - Overview: "swarms/structs/diy_your_own_agent.md"
-          - Tools: 
-              - Functions, Pydantic BaseModels, and More: "swarms/tools/main.md"
-          - Memory:
-              - Building Custom Vector Memory Databases with the BaseVectorDatabase Class: "swarms/memory/diy_memory.md"
-              - ShortTermMemory: "swarms/memory/short_term_memory.md"
       - Structs:
           - Foundational Structures:
               - BaseStructure: "swarms/structs/basestructure.md"
