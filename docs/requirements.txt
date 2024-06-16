@@ -25,7 +25,6 @@ mkdocs-jupyter
 mkdocstrings
 mkdocs-git-revision-date-localized-plugin
 mkdocs-mermaid2-plugin
-mkdocs-disqus
 pymdown-extensions
 markdown
 mkdocs-material-extensions
