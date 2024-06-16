@@ -20,12 +20,3 @@ mkdocs-enumerate-headings-plugin
 mkdocs-autolinks-plugin
 mkdocs-minify-html-plugin
 mkdocs-autolinks-plugin
-mkdocs-git-authors-plugin
-mkdocs-jupyter
-mkdocstrings
-mkdocs-git-revision-date-localized-plugin
-mkdocs-mermaid2-plugin
-pymdown-extensions
-markdown
-mkdocs-material-extensions
-pygments

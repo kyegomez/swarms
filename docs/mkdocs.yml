@@ -10,36 +10,36 @@ copyright: TGSC Corp 2024. All rights reserved.
 
 
 plugins:
+  # - glightbox
   - search
   - git-authors
   - mkdocs-jupyter:
-      kernel_name: python3
-      execute: false
-      include_source: True
-      include_requirejs: True
+        kernel_name: python3
+        execute: false
+        include_source: True
+        include_requirejs: true
   - mkdocstrings:
       default_handler: python
       handlers:
         python:
           options:
-            parameter_headings: True
+            parameter_headings: true
             paths: [supervision]
-            load_external_modules: True
-            allow_inspection: True
-            show_bases: True
-            group_by_category: True
+            load_external_modules: true
+            allow_inspection: true
+            show_bases: true
+            group_by_category: true
             docstring_style: google
-            show_symbol_type_heading: True
-            show_symbol_type_toc: True
-            show_category_heading: True
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            show_category_heading: true
           domains: [std, py]
+  - git-committers:
+      repository: kyegomez/swarms
+      branch: master
+      # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
-      enable_creation_date: True
-  - versioning
-  - table-of-contents
-  - mermaid2
-  - disqus:
-      site_name: your-disqus-site-name
+      enable_creation_date: true
 extra_css:
   - assets/css/extra.css
 extra:
@@ -48,39 +48,36 @@ extra:
       link: https://x.com/KyeGomezB
     - icon: fontawesome/brands/github
       link: https://github.com/kyegomez/swarms
-  analytics:
-    provider: google
-    tracking_id: YOUR_TRACKING_ID
 theme:
-  name: material
-  custom_dir: overrides
-  logo: assets/img/SwarmsLogoIcon.png
-  palette:
+    name: material
+    custom_dir: overrides
+    logo: assets/img/SwarmsLogoIcon.png
+    palette:
+      # Palette toggle for light mode
     - scheme: default
       primary: black
       toggle:
         icon: material/brightness-7 
         name: Switch to dark mode
+    # Palette toggle for dark mode
     - scheme: slate
       primary: black
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-  features:
-    - content.code.copy
-    - content.code.annotate
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - announce.dismiss
-    - toc.integrate
-    - toc.expand
+    features:
+        - content.code.copy
+        - content.code.annotate
+        - navigation.tabs
+        - navigation.sections
+        - navigation.expand
+        - navigation.top
+        - announce.dismiss
 markdown_extensions:
   - pymdownx.highlight:
-      anchor_linenums: True
+      anchor_linenums: true
       line_spans: __span
-      pygments_lang_class: True
+      pygments_lang_class: true
   - admonition
   - pymdownx.inlinehilite
   - pymdownx.snippets
@@ -90,9 +87,6 @@ markdown_extensions:
   - tables
   - def_list
   - footnotes
-  - pymdownx.mermaid
-  - toc
-  - pymdownx.tasklist
 nav:
   - Home:
     - Overview: "index.md"
