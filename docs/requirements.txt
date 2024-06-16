@@ -20,7 +20,6 @@ mkdocs-enumerate-headings-plugin
 mkdocs-autolinks-plugin
 mkdocs-minify-html-plugin
 mkdocs-autolinks-plugin
-mkdocs-search>=2.9.0
 mkdocs-git-authors-plugin>=0.5.1
 mkdocs-jupyter>=0.20.0
 mkdocstrings>=0.18.1
