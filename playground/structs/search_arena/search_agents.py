@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 from swarms import Agent, OpenAIChat
 from swarms.tools.prebuilt.bing_api import fetch_web_articles_bing_api
-from swarms.utils.loguru_logger import logger
 
 load_dotenv()
 

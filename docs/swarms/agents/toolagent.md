@@ -1,8 +1,5 @@
 # ToolAgent Documentation
 
-
-### Overview and Introduction
-
 The `ToolAgent` class represents an intelligent agent capable of performing a specific task using a pre-trained model and tokenizer. It leverages the Transformer models of the Hugging Face `transformers` library to generate outputs that adhere to a specific JSON schema. This provides developers with a flexible tool for creating bots, text generators, and conversational AI agents. The `ToolAgent` operates based on a JSON schema provided by you, the user. Using the schema, the agent applies the provided model and tokenizer to generate structured text data that matches the specified format.
 
 The primary objective of the `ToolAgent` class is to amplify the efficiency of developers and AI practitioners by simplifying the process of generating meaningful outputs that navigate the complexities of the model and tokenizer.

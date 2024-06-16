@@ -1,7 +1,5 @@
 # YamlModel: A Pydantic Model for YAML Data
 
-### Introduction
-
 The `YamlModel` class, derived from `BaseModel` in Pydantic, offers a convenient way to work with YAML data in your Python applications. It provides methods for serialization (converting to YAML), deserialization (creating an instance from YAML), and schema generation. This documentation will delve into the functionalities of `YamlModel` and guide you through its usage with illustrative examples.
 
 ### Purpose and Functionality
