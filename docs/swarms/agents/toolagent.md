@@ -4,26 +4,6 @@ The `ToolAgent` class represents an intelligent agent capable of performing a sp
 
 The primary objective of the `ToolAgent` class is to amplify the efficiency of developers and AI practitioners by simplifying the process of generating meaningful outputs that navigate the complexities of the model and tokenizer.
 
-### Class Definition
-
-The `ToolAgent` class has the following definition:
-
-```python
-class ToolAgent(BaseLLM):
-    def __init__(
-        self,
-        name: str,
-        description: str,
-        model: Any,
-        tokenizer: Any,
-        json_schema: Any,
-        *args,
-        **kwargs,
-    )
-    def run(self, task: str, *args, **kwargs)
-    def __call__(self, task: str, *args, **kwargs)
-```
-
 ### Arguments
 
 The `ToolAgent` class takes the following arguments:

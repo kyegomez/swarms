@@ -17,17 +17,7 @@ Below are visual graphs illustrating the hierarchical and tree structure of the 
 
 #### 1. Foundational Components: Models, Tools, Memory
 
-```mermaid
-graph TD;
-    Models --> Agents
-    Tools --> Agents
-    Memory --> Agents
-    subgraph Foundational_Components
-        Models
-        Tools
-        Memory
-    end
-```
+![Diagram](assets/img/agent_def.png)
 
 #### 2. Agents and Their Interactions
 
