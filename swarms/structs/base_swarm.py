@@ -113,8 +113,10 @@ class BaseSwarm(ABC):
         self.collective_memory_system = collective_memory_system
         self.agent_ops_on = agent_ops_on
 
+        logger.info("Reliability checks activated.")
         # Ensure that agents is exists
         if self.agents is None:
+            logger.info("Agents must be provided.")
             raise ValueError("Agents must be provided.")
 
         # Ensure that agents is a list

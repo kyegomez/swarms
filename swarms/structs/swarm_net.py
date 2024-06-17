@@ -120,7 +120,7 @@ class SwarmNetwork(BaseSwarm):
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(agents=agents, *args, **kwargs)
         self.name = name
         self.description = description
         self.agents = agents

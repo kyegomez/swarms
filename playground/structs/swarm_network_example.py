@@ -2,12 +2,11 @@
 import os
 from swarms import (
     Agent,
-    OpenAIChat,
     SwarmNetwork,
-    Anthropic,
+    OpenAIChat,
     TogetherLLM,
 )
-from swarms.memory import ChromaDB
+from playground.memory.chromadb_example import ChromaDB
 from dotenv import load_dotenv
 
 # load the environment variables
@@ -22,7 +21,7 @@ llm = OpenAIChat(
 )
 
 # Initialize the Anthropic
-anthropic = Anthropic(max_tokens=3000)
+anthropic = OpenAIChat(max_tokens=3000)
 
 # TogeterLM
 together_llm = TogetherLLM(
