@@ -42,13 +42,12 @@ agent = Agent(
     verbose=True,
     streaming_on=True,
     # interactive=True, # Set to False to disable interactive mode
-    # stopping_token="<DONE>",
-    # saved_state_path="accounting_agent.json",
+    saved_state_path="accounting_agent.json",
     # tools=[calculate_profit, generate_report],
     # docs_folder="docs",
     # pdf_path="docs/accounting_agent.pdf",
 )
 
 agent.run(
-    "We're the Swarm Corporation, our total revenue is $100,000 and our total expenses are $50,000."
+    "We're the Swarm Corporation, our total revenue is $100,000 and our total expenses are $50,000, is our revenue good?"
 )

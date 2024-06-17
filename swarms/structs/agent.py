@@ -1793,7 +1793,7 @@ class Agent(BaseStructure):
 
         return response
 
-    def stream_response(self, response: str, delay: float = 0.1) -> None:
+    def stream_response(self, response: str, delay: float = 0.01) -> None:
         """
         Streams the response token by token.
 

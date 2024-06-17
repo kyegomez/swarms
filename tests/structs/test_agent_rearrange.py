@@ -1,5 +1,5 @@
 import pytest
-from agent_rearrange import AgentRearrange
+from swarms.structs.rearrange import AgentRearrange
 
 
 # Mocking the Agent class
