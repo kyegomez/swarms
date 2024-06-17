@@ -724,8 +724,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
-from swarms.structs import Agent
+from swarms import GPT4VisionAPI, Agent
 
 # Load the environment variables
 load_dotenv()
