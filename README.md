@@ -103,7 +103,7 @@ llm = OpenAIChat(
 agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
 # Run the workflow on a task
-agent.run("Generate a 10,000 word blog on health and wellness.")
+agent.run("Generate a 10,000 word article on health and wellness for men under 50.")
 ```
 
 
