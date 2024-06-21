@@ -1,4 +1,10 @@
 from swarms import Agent, OpenAIChat
+from swarms.agents.multion_wrapper import MultiOnAgent
+
+model = MultiOnAgent(
+    url="https://tesla.com",
+)
+
 
 
 def calculate_profit(revenue: float, expenses: float):
@@ -28,6 +34,16 @@ def generate_report(company_name: str, profit: float):
     """
     return f"The profit for {company_name} is ${profit}."
 
+def browser_automation(task: str = None):
+    """
+    Run a task on the browser automation agent.
+
+    Args:
+        task (str): The task to be executed on the browser automation agent.
+    """
+    out = model.run(task)
+    return out
+
 
 # Initialize the agent
 agent = Agent(
@@ -46,8 +62,9 @@ agent = Agent(
     # tools=[calculate_profit, generate_report],
     # docs_folder="docs",
     # pdf_path="docs/accounting_agent.pdf",
+    # tools=[browser_automation],
 )
 
 agent.run(
-    "We're the Swarm Corporation, our total revenue is $100,000 and our total expenses are $50,000, is our revenue good?"
+    "Calculate the profit for Tesla with a revenue of $100,000 and expenses of $50,000."
 )
