@@ -1,4 +1,3 @@
-
 from swarms import Agent, AgentRearrange, OpenAIChat
 from swarms.agents.multion_wrapper import MultiOnAgent
 

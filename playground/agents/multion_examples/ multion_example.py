@@ -2,8 +2,11 @@ import os
 import threading
 from swarms.agents.multion_wrapper import MultiOnAgent
 
+
 def run_model(api_key):
-    model = MultiOnAgent(api_key=api_key, max_steps=500, url="https://x.com")
+    model = MultiOnAgent(
+        api_key=api_key, max_steps=500, url="https://x.com"
+    )
     out = model.run(
         """
         click on the 'Tweet' button to start a new tweet and post it saying: $pip3 install swarms
@@ -11,6 +14,7 @@ def run_model(api_key):
         """
     )
     print(out)
+
 
 # Create a list to store the threads
 threads = []

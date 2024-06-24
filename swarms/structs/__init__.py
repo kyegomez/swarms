@@ -45,7 +45,8 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # New Swarms
 from swarms.structs.swarm_load_balancer import AgentLoadBalancer
-from swarms.structs.swarm_net import SwarmNetwork
+
+# from swarms.structs.swarm_net import SwarmNetwork
 from swarms.structs.swarming_architectures import (
     broadcast,
     circular_swarm,
@@ -87,6 +88,8 @@ from swarms.structs.yaml_model import (
     pydantic_type_to_yaml_schema,
 )
 from swarms.structs.mixture_of_agents import MixtureOfAgents
+from swarms.structs.graph_workflow import GraphWorkflow
+
 
 __all__ = [
     "Agent",
@@ -120,7 +123,7 @@ __all__ = [
     "TaskRequestBody",
     "SequentialWorkflow",
     "Step",
-    "SwarmNetwork",
+    # "SwarmNetwork",
     "broadcast",
     "circular_swarm",
     "exponential_swarm",
@@ -160,4 +163,5 @@ __all__ = [
     "HiearchicalSwarm",
     "AgentLoadBalancer",
     "MixtureOfAgents",
+    "GraphWorkflow",
 ]

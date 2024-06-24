@@ -134,6 +134,8 @@ nav:
         - GPT4o: "swarms/models/gpt4o.md"
     - Agents:
       - Agent: "swarms/structs/agent.md"
+    - Artifacts:
+      - Overview: "swarms/artifacts/artifact.md"
     - Structs:
       - Foundational Structures:
         - BaseStructure: "swarms/structs/basestructure.md"

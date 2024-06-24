@@ -45,7 +45,7 @@ class ChromaDB(BaseVectorDatabase):
         metric: str = "cosine",
         output_dir: str = "swarms",
         limit_tokens: Optional[int] = 1000,
-        n_results: int = 3,
+        n_results: int = 1,
         docs_folder: str = None,
         verbose: bool = False,
         *args,
@@ -131,7 +131,7 @@ class ChromaDB(BaseVectorDatabase):
         query_text: str,
         *args,
         **kwargs,
-    ):
+    ) -> str:
         """
         Query documents from the ChromaDB collection.
 
@@ -143,13 +143,24 @@ class ChromaDB(BaseVectorDatabase):
             dict: The retrieved documents.
         """
         try:
+            logging.info(f"Querying documents for: {query_text}")
             docs = self.collection.query(
                 query_texts=[query_text],
                 n_results=self.n_results,
                 *args,
                 **kwargs,
             )["documents"]
-            return docs[0]
+
+            # Convert into a string
+            out = ""
+            for doc in docs:
+                out += f"{doc}\n"
+
+            # Display the retrieved document
+            display_markdown_message(f"Query: {query_text}")
+            display_markdown_message(f"Retrieved Document: {out}")
+            return out
+
         except Exception as e:
             raise Exception(f"Failed to query documents: {str(e)}")
 

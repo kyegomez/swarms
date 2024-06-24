@@ -1,6 +1,3 @@
-# pip3 install multion
-# pip3 install swarms
-from multion.client import MultiOn
 import os
 from swarms.models.base_llm import BaseLLM
 
@@ -47,6 +44,14 @@ class MultiOnAgent(BaseLLM):
     ):
         super().__init__(*args, **kwargs)
         self.name = name
+
+        try:
+            from multion.client import MultiOn
+        except ImportError:
+            raise ImportError(
+                "The MultiOn package is not installed. Please install it using 'pip install multion'."
+            )
+
         self.client = MultiOn(api_key=api_key)
         self.url = url
         self.system_prompt = system_prompt
@@ -67,9 +72,8 @@ class MultiOnAgent(BaseLLM):
             local=True,
             max_steps=self.max_steps,
         )
-        
+
         # response = response.json()
-        
+
         # print(response.message)
         return str(response.message)
-    

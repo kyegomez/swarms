@@ -282,3 +282,12 @@ def rearrange(
         agents=agents, flow=flow, *args, **kwargs
     )
     return agent_system.run(task, *args, **kwargs)
+
+
+# out = AgentRearrange(
+#     agents=[agent1, agent2, agent3],
+#     flow="agent1 -> agent2, agent3, swarm",
+#     task="Perform a task",
+#     swarm = "agent1 -> agent2, agent3, swarm"
+
+# )
