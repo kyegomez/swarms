@@ -526,7 +526,7 @@ class Agent(BaseStructure):
                 logger.info(f"Temperature: {self.llm.temperature}")
             else:
                 # Use a default temperature
-                self.llm.temperature = 0.7
+                self.llm.temperature = 1
         except Exception as error:
             print(
                 colored(f"Error dynamically changing temperature: {error}")

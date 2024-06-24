@@ -1,4 +1,6 @@
 from swarms import Agent, OpenAIChat
+from dotenv import load_dotenv
+load_dotenv()
 
 import logging
 import contextlib
@@ -24,7 +26,9 @@ agent = Agent(
     agent_description=(
         "Generate a transcript for a youtube video on what swarms" " are!"
     ),
-    llm=OpenAIChat(),
+    llm=OpenAIChat(
+        model_name = "petals-sauerkraut",
+    ),
     max_loops="auto",
     autosave=True,
     dashboard=False,
@@ -34,6 +38,7 @@ agent = Agent(
     interactive=True,
     state_save_file_type="json",
     saved_state_path="transcript_generator.json",
+
 )
 
 # Run the Agent on a task
