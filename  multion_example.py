@@ -8,10 +8,7 @@ def run_model(api_key):
         api_key=api_key, max_steps=500, url="https://x.com"
     )
     out = model.run(
-        """
-        click on the 'Tweet' button to start a new tweet and post it saying: $pip3 install swarms
-
-        """
+        ""
     )
     print(out)
 

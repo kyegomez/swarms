@@ -28,7 +28,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 
 # llm = llm,
-llm = GPT4o(max_tokens=200, openai_api_key=os.getenv("OPENAI_API_KEY"))
+llm = GPT4o(max_tokens=3000, openai_api_key=os.getenv("OPENAI_API_KEY"))
 
 # Initialize Diagnoser Agent
 diagnoser_agent = Agent(
@@ -42,6 +42,7 @@ diagnoser_agent = Agent(
     # saved_state_path="diagnoser.json",
     multi_modal=True,
     autosave=True,
+    streaming_on=True,
 )
 
 # Initialize Harvester Agent
@@ -56,6 +57,7 @@ harvester_agent = Agent(
     # saved_state_path="harvester.json",
     multi_modal=True,
     autosave=True,
+    streaming_on=True,
 )
 
 # Initialize Growth Predictor Agent
@@ -70,6 +72,7 @@ growth_predictor_agent = Agent(
     # saved_state_path="growth_predictor.json",
     multi_modal=True,
     autosave=True,
+    streaming_on=True,
 )
 
 # Initialize Treatment Recommender Agent
@@ -84,6 +87,7 @@ treatment_recommender_agent = Agent(
     # saved_state_path="treatment_recommender.json",
     multi_modal=True,
     autosave=True,
+    streaming_on=True,
 )
 
 # Initialize Disease Detector Agent
@@ -98,6 +102,7 @@ disease_detector_agent = Agent(
     # saved_state_path="disease_detector.json",
     multi_modal=True,
     autosave=True,
+    streaming_on=True,
 )
 agents = [
     diagnoser_agent,
@@ -108,7 +113,7 @@ agents = [
 ]
 
 task = "Conduct a diagnosis on the plants's symptoms, this wasn't grown in dirt, it grew from hydroponics"
-img = "tomato.jpg"
+img = "bad_tomato.jpg"
 
 loop = 0
 for i in range(len(agents)):

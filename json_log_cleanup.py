@@ -31,4 +31,4 @@ def cleanup_json_logs(name: str = None):
 
 
 # Call the function
-cleanup_json_logs("arifacts_swarmm_o1")
+cleanup_json_logs("agriculture_swarm")
