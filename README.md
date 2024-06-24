@@ -103,7 +103,7 @@ llm = OpenAIChat(
 agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 
 # Run the workflow on a task
-agent.run("Generate a 10,000 word blog on health and wellness.")
+agent.run("Generate a 10,000 word article on health and wellness for men under 50.")
 ```
 
 
@@ -114,7 +114,7 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 import os
 from dotenv import load_dotenv
 from swarms import Agent, OpenAIChat
-from playground.memory.chromadb_example import ChromaDB
+from swarms.playground.memory.chromadb_example import ChromaDB
 import logging
 import os
 import uuid
