@@ -63,7 +63,7 @@ forecaster_agent = Agent(
     agent_name="Forecaster Agent",
     system_prompt="You're the forecaster agent, your purpose is to predict the future of a company! Give numbers and numbers, don't summarize we need numbers",
     # agent_description="Generate a profit report for a company!",
-    llm=Anthropic(max_tokens=4000, anthropic_api_key="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"),
+    llm=Anthropic(max_tokens=4000),
     max_loops=1,
     autosave=True,
     dynamic_temperature_enabled=True,
