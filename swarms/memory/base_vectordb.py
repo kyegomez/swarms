@@ -1,4 +1,5 @@
 from abc import ABC
+from swarms.utils.loguru_logger import logger
 
 
 class BaseVectorDatabase(ABC):
@@ -112,3 +113,37 @@ class BaseVectorDatabase(ABC):
             id (int): The ID of the record to be deleted.
 
         """
+
+    def print_all(self):
+        """
+        Print all records in the database.
+
+        This method prints all records in the specified table in the database.
+
+        """
+        pass
+
+    def log_query(self, query: str = None):
+        """
+        Log the query.
+
+        This method logs the query that was executed on the database.
+
+        Parameters:
+            query (str): The query that was executed.
+
+        """
+        logger.info(f"Query: {query}")
+
+    def log_retrieved_data(self, data: list = None):
+        """
+        Log the retrieved data.
+
+        This method logs the data that was retrieved from the database.
+
+        Parameters:
+            data (dict): The data that was retrieved.
+
+        """
+        for d in data:
+            logger.info(f"Retrieved Data: {d}")

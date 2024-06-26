@@ -1,37 +1,13 @@
-from swarms import Agent, Anthropic, tool, ChromaDB
+from swarms import Agent, OpenAIChat  # ChromaDB
 import subprocess
-from pydantic import BaseModel
-
-
-# Initilaize the chromadb client
-chromadb = ChromaDB(
-    metric="cosine",
-    output="results",
-    docs_folder="docs",
-)
-
-
-# Create a schema for the code revision tool
-class CodeRevisionSchema(BaseModel):
-    code: str = None
-    revision: str = None
-
-
-# iNitialize the schema
-tool_schema = CodeRevisionSchema(
-    code="print('Hello, World!')",
-    revision="print('What is 2+2')",
-)
-
 
 # Model
-llm = Anthropic(
+llm = OpenAIChat(
     temperature=0.1,
 )
 
 
 # Tools
-@tool
 def terminal(
     code: str,
 ):
@@ -50,7 +26,6 @@ def terminal(
     return str(out)
 
 
-@tool
 def browser(query: str):
     """
     Search the query in the browser with the `browser` tool.
@@ -68,7 +43,6 @@ def browser(query: str):
     return f"Searching for {query} in the browser."
 
 
-@tool
 def create_file(file_path: str, content: str):
     """
     Create a file using the file editor tool.
@@ -85,7 +59,6 @@ def create_file(file_path: str, content: str):
     return f"File {file_path} created successfully."
 
 
-@tool
 def file_editor(file_path: str, mode: str, content: str):
     """
     Edit a file using the file editor tool.
@@ -120,15 +93,13 @@ agent = Agent(
     stopping_token="<DONE>",
     interactive=True,
     tools=[terminal, browser, file_editor, create_file],
-    long_term_memory=chromadb,
-    output_type=tool_schema,  # or dict, or str
+    # long_term_memory=chromadb,
     metadata_output_type="json",
     # List of schemas that the agent can handle
-    list_tool_schemas=[tool_schema],
+    # list_tool_schemas=[tool_schema],
     function_calling_format_type="OpenAI",
     function_calling_type="json",  # or soon yaml
 )
 
 # Run the agent
-out = agent.run("Create a new file for a plan to take over the world.")
-print(out)
+agent.run("Create a new file for a plan to take over the world.")

@@ -22,7 +22,6 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.yaml_model import YamlModel
-from swarms.telemetry.user_utils import get_user_device_data
 from swarms.tools.prebuilt.code_interpreter import (
     SubprocessCodeInterpreter,
 )
@@ -42,6 +41,7 @@ from swarms.tools.func_calling_utils import (
     prepare_output_for_output_model,
 )
 from swarms.tools.tool_parse_exec import parse_and_execute_json
+from swarms.models.tiktoken_wrapper import TikTokenizer
 
 
 # Utils
@@ -86,34 +86,6 @@ def step_id():
 # Agent output types
 agent_output_type = Union[BaseModel, dict, str]
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
-
-
-def retrieve_tokens(text, num_tokens):
-    """
-    Retrieve a specified number of tokens from a given text.
-
-    Parameters:
-    text (str): The input text string.
-    num_tokens (int): The number of tokens to retrieve.
-
-    Returns:
-    str: A string containing the specified number of tokens from the input text.
-    """
-    # Initialize an empty list to store tokens
-    tokens = []
-    token_count = 0
-
-    # Split the text into words while counting tokens
-    for word in text.split():
-        tokens.append(word)
-        token_count += 1
-        if token_count == num_tokens:
-            break
-
-    # Join the selected tokens back into a string
-    result = " ".join(tokens)
-
-    return result
 
 
 # [FEAT][AGENT]
@@ -237,7 +209,7 @@ class Agent(BaseStructure):
         multi_modal: Optional[bool] = None,
         pdf_path: Optional[str] = None,
         list_of_pdf: Optional[str] = None,
-        tokenizer: Optional[Any] = None,
+        tokenizer: Optional[Any] = TikTokenizer(),
         long_term_memory: Optional[BaseVectorDatabase] = None,
         preset_stopping_token: Optional[bool] = False,
         traceback: Optional[Any] = None,
@@ -404,6 +376,9 @@ class Agent(BaseStructure):
             **kwargs,
         )
 
+        # Check the parameters
+        self.agent_initialization()
+
         # If the docs exist then ingest the docs
         if exists(self.docs):
             self.ingest_docs(self.docs)
@@ -419,9 +394,8 @@ class Agent(BaseStructure):
             # Add the tool prompt to the memory
             self.short_memory.add(role="System", content=tool_sop_prompt())
 
-            # Print number of tools
-            logger.info("Tools granted, initializing tool protocol.")
-            logger.info(f"Number of tools: {len(tools)}")
+            # Log the tools
+            logger.info(f"Tools provided: Accessing {len(tools)} tools")
 
             # Transform the tools into an openai schema
             self.convert_tool_into_openai_schema()
@@ -513,8 +487,10 @@ class Agent(BaseStructure):
                     "Could not import agentops, try installing agentops: $ pip3 install agentops"
                 )
 
-        # Check the parameters
-        self.check_parameters()
+        # if tokenizer is None:
+        #     self.tokenizer = TikTokenizer()
+        # else:
+        #     self.tokenizer = None
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -524,6 +500,22 @@ class Agent(BaseStructure):
         """Allow users to provide feedback on the responses."""
         self.feedback.append(feedback)
         logging.info(f"Feedback received: {feedback}")
+
+    def agent_initialization(self):
+        try:
+            print(
+                colored(
+                    (
+                        "Initializing Autonomous Agent"
+                        f" {self.agent_name}..."
+                    ),
+                    "yellow",
+                )
+            )
+
+            self.check_parameters()
+        except ValueError as e:
+            print(f"Error: {str(e)}")
 
     def _check_stopping_condition(self, response: str) -> bool:
         """Check if the stopping condition is met."""
@@ -574,7 +566,7 @@ class Agent(BaseStructure):
     # ############## TOKENIZER FUNCTIONS ##############
     def count_tokens(self, text: str) -> int:
         """Count the number of tokens in the text."""
-        return self.tokenizer.len(text)
+        return self.tokenizer.count_tokens(text)
 
     def tokens_per_second(self, text: str) -> float:
         """
@@ -670,39 +662,14 @@ class Agent(BaseStructure):
     def activate_autonomous_agent(self):
         """Print the autonomous agent activation message"""
         try:
-            print(
-                colored(
-                    (
-                        "Initializing Autonomous Agent"
-                        f" {self.agent_name}..."
-                    ),
-                    "yellow",
-                )
-            )
-            print(
-                colored(
-                    "Autonomous Agent Activated.",
-                    "cyan",
-                    attrs=["bold"],
-                )
-            )
-            print(
-                colored(
-                    "All systems operational. Executing task...",
-                    "green",
-                )
-            )
+            logger.info("Autonomous Agent Activated.")
+            logger.info("All systems operational. Executing task...")
         except Exception as error:
-            print(
-                colored(
-                    (
-                        "Error activating autonomous agent. Try"
-                        " optimizing your parameters..."
-                    ),
-                    "red",
-                )
+            logger.error(
+                "Error activating autonomous agent. Try optimizing your parameters..."
             )
-            print(error)
+            logger.error(error)
+        return None
 
     def loop_count_print(self, loop_count, max_loops):
         """loop_count_print summary
@@ -727,14 +694,8 @@ class Agent(BaseStructure):
         if self.llm is None:
             raise ValueError("Language model is not provided")
 
-        if self.system_prompt is None:
-            raise ValueError("System prompt is not provided")
-
         if self.max_loops is None:
             raise ValueError("Max loops is not provided")
-
-        if self.agent_name is None:
-            raise ValueError("Agent name is not provided")
 
     ########################## FUNCTION CALLING ##########################
 
@@ -759,6 +720,9 @@ class Agent(BaseStructure):
 
             # Clear the short memory
             response = None
+
+            if self.tokenizer is not None:
+                self.check_available_tokens()
 
             while self.max_loops == "auto" or loop_count < self.max_loops:
                 loop_count += 1
@@ -918,10 +882,10 @@ class Agent(BaseStructure):
                 logger.info(f"Response after output cleaner: {response}")
 
             # Prepare the output for the output model
-            if self.output_type is not None:
-                # logger.info("Preparing output for output model.")
-                response = prepare_output_for_output_model(response)
-                print(f"Response after output model: {response}")
+            # if self.output_type is not None:
+            #     # logger.info("Preparing output for output model.")
+            #     response = prepare_output_for_output_model(response)
+            #     print(f"Response after output model: {response}")
 
             # print(response)
             if self.agent_ops_on is True:
@@ -993,16 +957,31 @@ class Agent(BaseStructure):
         Returns:
             str: The agent history prompt
         """
-        logger.info("Querying long term memory database")
+        try:
+            logger.info(f"Querying long term memory database for {query}")
+            ltr = self.long_term_memory.query(query, *args, **kwargs)
 
-        # Query the long term memory database
-        ltr = self.long_term_memory.query(query, *args, **kwargs)
-        # ltr = str(ltr)
+            # Count the tokens
+            logger.info("Couting tokens of retrieved document")
+            ltr_count = self.tokenizer.count_tokens(ltr)
+            logger.info(f"Retrieved document token count {ltr_count}")
 
-        # Retrieve only the chunk size of the memory
-        logger.info(f"Chunking to {self.memory_chunk_size}")
-        ltr = retrieve_tokens(ltr, self.memory_chunk_size)
-        return ltr
+            if ltr_count > self.memory_chunk_size:
+                logger.info(
+                    f"Truncating memory by {self.memory_chunk_size}"
+                )
+                out = self.truncate_string_by_tokens(
+                    ltr, self.memory_chunk_size
+                )
+                logger.info(
+                    f"Memory truncated by {self.memory_chunk_size}"
+                )
+
+            # Retrieve only the chunk size of the memory
+            return out
+        except Exception as error:
+            logger.error(f"Error querying long term memory: {error}")
+            raise error
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -1228,6 +1207,7 @@ class Agent(BaseStructure):
         """
         logger.info(f"Adding response filter: {filter_word}")
         self.reponse_filters.append(filter_word)
+        return None
 
     def code_interpreter_execution(
         self, code: str, *args, **kwargs
@@ -1340,7 +1320,7 @@ class Agent(BaseStructure):
                 "Task": task,
                 "Stopping Token": self.stopping_token,
                 "Dynamic Loops": self.dynamic_loops,
-                "tools": self.tools,
+                # "tools": # For loop to get the tools, and convert them to a string
                 "sop": self.sop,
                 "sop_list": self.sop_list,
                 "context_length": self.context_length,
@@ -1350,7 +1330,7 @@ class Agent(BaseStructure):
                 "multi_modal": self.multi_modal,
                 "pdf_path": self.pdf_path,
                 "list_of_pdf": self.list_of_pdf,
-                "tokenizer": self.tokenizer,
+                # "tokenizer": self.tokenizer,
                 # "long_term_memory": self.long_term_memory,
                 "preset_stopping_token": self.preset_stopping_token,
                 "traceback": self.traceback,
@@ -1383,7 +1363,7 @@ class Agent(BaseStructure):
                 "function_calling_format_type": self.function_calling_format_type,
                 "list_base_models": self.list_base_models,
                 "metadata_output_type": self.metadata_output_type,
-                "user_meta_data": get_user_device_data(),
+                # "user_meta_data": get_user_device_data(),
             }
 
             # Save as JSON
@@ -1543,7 +1523,7 @@ class Agent(BaseStructure):
         """Ingest the docs into the memory
 
         Args:
-            docs (List[str]): _description_
+            docs (List[str]): Documents of pdfs, text, csvs
 
         Returns:
             _type_: _description_
@@ -1560,10 +1540,7 @@ class Agent(BaseStructure):
         """Ingest the pdf into the memory
 
         Args:
-            pdf (str): _description_
-
-        Returns:
-            _type_: _description_
+            pdf (str): file path of pdf
         """
         try:
             logger.info(f"Ingesting pdf: {pdf}")
@@ -1590,29 +1567,6 @@ class Agent(BaseStructure):
             return self.run(message, *args, **kwargs)
         except Exception as error:
             print(colored(f"Error sending agent message: {error}", "red"))
-
-    def truncate_history(self):
-        """
-        Truncates the short-term memory of the agent based on the count of tokens.
-
-        The method counts the tokens in the short-term memory using the tokenizer and
-        compares it with the length of the memory. If the length of the memory is greater
-        than the count, the memory is truncated to match the count.
-
-        Parameters:
-            None
-
-        Returns:
-            None
-        """
-        # Count the short term history with the tokenizer
-        count = self.tokenizer.count_tokens(
-            self.short_memory.return_history_as_string()
-        )
-
-        # Now the logic that truncates the memory if it's more than the count
-        if len(self.short_memory) > count:
-            self.short_memory = self.short_memory[:count]
 
     def add_tool(self, tool: Callable):
         return self.tools.append(tool)
@@ -1663,6 +1617,7 @@ class Agent(BaseStructure):
 
     def convert_tool_into_openai_schema(self):
         # Transform the tools into an openai schema
+        logger.info("Converting tools into OpenAI function calling schema")
         try:
             for tool in self.tools:
                 # Transform the tool into a openai function calling schema
@@ -1671,7 +1626,7 @@ class Agent(BaseStructure):
 
                 try:
                     logger.info(
-                        "Tool -> OpenAI Schema Process Starting Now."
+                        f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
                     )
                     tool_schema_list = (
                         get_openai_function_schema_from_func(
@@ -1793,7 +1748,7 @@ class Agent(BaseStructure):
 
         return response
 
-    def stream_response(self, response: str, delay: float = 0.01) -> None:
+    def stream_response(self, response: str, delay: float = 0.001) -> None:
         """
         Streams the response token by token.
 
@@ -1821,3 +1776,126 @@ class Agent(BaseStructure):
             print()  # Ensure a newline after streaming
         except Exception as e:
             print(f"An error occurred during streaming: {e}")
+
+    def dynamic_context_window(self):
+        """
+        dynamic_context_window essentially clears everything execep
+        the system prompt and leaves the rest of the contxt window
+        for RAG query tokens
+
+        """
+        # Count the number of tokens in the short term memory
+        logger.info("Dynamic context window shuffling enabled")
+        count = self.tokenizer.count_tokens(
+            self.short_memory.return_history_as_string()
+        )
+        logger.info(f"Number of tokens in memory: {count}")
+
+        # Dynamically allocating everything except the system prompt to be dynamic
+        # We need to query the short_memory dict, for the system prompt slot
+        # Then delete everything after that
+
+        if count > self.context_length:
+            self.short_memory = self.short_memory[-self.context_length :]
+            logger.info(
+                f"Short term memory has been truncated to {self.context_length} tokens"
+            )
+        else:
+            logger.info("Short term memory is within the limit")
+
+        # Return the memory as a string or update the short term memory
+        # return memory
+
+    def check_available_tokens(self):
+        # Log the amount of tokens left in the memory and in the task
+        if self.tokenizer is not None:
+            tokens_used = self.tokenizer.count_tokens(
+                self.short_memory.return_history_as_string()
+            )
+            logger.info(
+                f"Tokens available: {tokens_used - self.context_length}"
+            )
+        return tokens_used
+
+    def tokens_checks(self):
+        # Check the tokens available
+        tokens_used = self.tokenizer.count_tokens(
+            self.short_memory.return_history_as_string()
+        )
+        out = self.check_available_tokens()
+
+        logger.info(
+            f"Tokens available: {out} Context Length: {self.context_length} Tokens in memory: {tokens_used}"
+        )
+
+        return out
+
+    def truncate_string_by_tokens(
+        self, input_string: str, limit: int
+    ) -> str:
+        """
+        Truncate a string if it exceeds a specified number of tokens using a given tokenizer.
+
+        :param input_string: The input string to be tokenized and truncated.
+        :param tokenizer: The tokenizer function to be used for tokenizing the input string.
+        :param max_tokens: The maximum number of tokens allowed.
+        :return: The truncated string if it exceeds the maximum number of tokens; otherwise, the original string.
+        """
+        # Tokenize the input string
+        tokens = self.tokenizer.count_tokens(input_string)
+
+        # Check if the number of tokens exceeds the maximum limit
+        if len(tokens) > limit:
+            # Truncate the tokens to the maximum allowed tokens
+            truncated_tokens = tokens[: self.context_length]
+            # Join the truncated tokens back to a string
+            truncated_string = " ".join(truncated_tokens)
+            return truncated_string
+        else:
+            return input_string
+
+    def if_tokens_exceeds_context_length(self):
+        # Check if tokens exceeds the context length
+        try:
+            tokens_used = self.tokenizer.count_tokens(
+                self.short_memory.return_history_as_string()
+            )
+            if tokens_used > self.context_length:
+                logger.warning("Tokens used exceeds the context length.")
+                logger.info(
+                    f"Tokens available: {tokens_used - self.context_length}"
+                )
+                return True
+            else:
+                return False
+        except Exception as e:
+            logger.error(f"Error checking tokens: {e}")
+            return None
+
+    def tokens_operations(self, input_string: str) -> str:
+        """
+        Perform various operations on tokens of an input string.
+
+        :param input_string: The input string to be processed.
+        :return: The processed string.
+        """
+        # Tokenize the input string
+        tokens = self.tokenizer.count_tokens(input_string)
+
+        # Check if the number of tokens exceeds the maximum limit
+        if len(tokens) > self.context_length:
+            # Truncate the tokens to the maximum allowed tokens
+            truncated_tokens = tokens[: self.context_length]
+            # Join the truncated tokens back to a string
+            truncated_string = " ".join(truncated_tokens)
+            return truncated_string
+        else:
+            # Log the amount of tokens left in the memory and in the task
+            if self.tokenizer is not None:
+                tokens_used = self.tokenizer.count_tokens(
+                    self.short_memory.return_history_as_string()
+                )
+                logger.info(
+                    f"Tokens available: {tokens_used - self.context_length}"
+                )
+            return input_string

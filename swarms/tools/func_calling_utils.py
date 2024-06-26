@@ -29,6 +29,18 @@ def json_str_to_dict(json_str: str) -> dict:
 def pydantic_model_to_json_str(
     model: BaseModel, indent: int, *args, **kwargs
 ) -> str:
+    """
+    Converts a Pydantic model to a JSON string.
+
+    Args:
+        model (BaseModel): The Pydantic model to convert.
+        indent (int): The number of spaces to use for indentation.
+        *args: Additional positional arguments to pass to `json.dumps`.
+        **kwargs: Additional keyword arguments to pass to `json.dumps`.
+
+    Returns:
+        str: The JSON string representation of the Pydantic model.
+    """
     return json.dumps(
         base_model_to_openai_function(model),
         indent=indent,
@@ -80,8 +92,16 @@ def str_to_pydantic_model(string: str, model: BaseModel) -> BaseModel:
 def list_str_to_pydantic_model(
     list_str: List[str], model: BaseModel
 ) -> BaseModel:
-    """Convert a list of strings to a Pydantic model"""
-    # return model.model_validate_json(list_str)
+    """Convert a list of strings to a Pydantic model.
+
+    Args:
+        list_str (List[str]): The list of strings to be converted.
+        model (BaseModel): The Pydantic model to convert the strings to.
+
+    Returns:
+        BaseModel: The Pydantic model with the converted strings.
+
+    """
     for string in list_str:
         return model.model_validate_json(string)
 
@@ -90,7 +110,16 @@ def prepare_output_for_output_model(
     output_type: Union[str, Dict, BaseModel],
     output: Union[str, Dict, BaseModel] = None,
 ) -> Union[BaseModel, str]:
-    """Prepare the output for the output model"""
+    """Prepare the output for the output model.
+
+    Args:
+        output_type (Union[str, Dict, BaseModel]): The type of the output.
+        output (Union[str, Dict, BaseModel], optional): The output data. Defaults to None.
+
+    Returns:
+        Union[BaseModel, str]: The prepared output.
+
+    """
     if output_type == BaseModel:
         return str_to_pydantic_model(output, output_type)
     elif output_type == dict:

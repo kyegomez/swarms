@@ -10,11 +10,11 @@ import asyncio
 import multiprocessing
 import queue
 import threading
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import tenacity
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+
+# from fastapi import FastAPI
 from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
@@ -141,26 +141,21 @@ class SwarmNetwork(BaseSwarm):
         # Create a dictionary of agents for easy access
         self.agent_dict = {agent.id: agent for agent in agents}
 
-        # For each agent in the pool, run it on it's own thread
-        if agents is not None:
-            for agent in agents:
-                self.agents.append(agent)
+        # # Create the FastAPI instance
+        # if api_on is True:
+        #     logger.info("Creating FastAPI instance")
+        #     self.app = FastAPI(debug=True, *args, **kwargs)
 
-        # Create the FastAPI instance
-        if api_on is True:
-            logger.info("Creating FastAPI instance")
-            self.app = FastAPI(debug=True, *args, **kwargs)
+        #     self.app.add_middleware(
+        #         CORSMiddleware,
+        #         allow_origins=["*"],
+        #         allow_credentials=True,
+        #         allow_methods=["*"],
+        #         allow_headers=["*"],
+        #     )
 
-            self.app.add_middleware(
-                CORSMiddleware,
-                allow_origins=["*"],
-                allow_credentials=True,
-                allow_methods=["*"],
-                allow_headers=["*"],
-            )
-
-            logger.info("Routes set for creation")
-            self._create_routes()
+        #     logger.info("Routes set for creation")
+        #     self._create_routes()
 
     def add_task(self, task):
         """Add task to the task queue
@@ -213,97 +208,97 @@ class SwarmNetwork(BaseSwarm):
             )
             raise error
 
-    def _create_routes(self) -> None:
-        """
-        Creates the routes for the API.
-        """
-        # Extensive logginbg
-        logger.info("Creating routes for the API")
+    # def _create_routes(self) -> None:
+    #     """
+    #     Creates the routes for the API.
+    #     """
+    #     # Extensive logginbg
+    #     logger.info("Creating routes for the API")
 
-        # Routes available
-        logger.info(
-            "Routes available: /v1/swarms, /v1/health, /v1/swarms/{swarm_name}/agents/{agent_id}, /v1/swarms/{swarm_name}/run"
-        )
+    #     # Routes available
+    #     logger.info(
+    #         "Routes available: /v1/swarms, /v1/health, /v1/swarms/{swarm_name}/agents/{agent_id}, /v1/swarms/{swarm_name}/run"
+    #     )
 
-        @self.app.get("/v1/swarms", response_model=SwarmInfo)
-        async def get_swarms() -> SwarmInfo:
-            try:
-                logger.info("Getting swarm information")
-                return SwarmInfo(
-                    swarm_name=self.swarm_name,
-                    swarm_description=self.swarm_description,
-                    agents=[
-                        AgentInfo(
-                            agent_name=agent.agent_name,
-                            agent_description=agent.agent_description,
-                        )
-                        for agent in self.agents
-                    ],
-                )
-            except Exception as e:
-                logger.error(f"Error getting swarm information: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail="Internal Server Error"
-                )
+    #     @self.app.get("/v1/swarms", response_model=SwarmInfo)
+    #     async def get_swarms() -> SwarmInfo:
+    #         try:
+    #             logger.info("Getting swarm information")
+    #             return SwarmInfo(
+    #                 swarm_name=self.swarm_name,
+    #                 swarm_description=self.swarm_description,
+    #                 agents=[
+    #                     AgentInfo(
+    #                         agent_name=agent.agent_name,
+    #                         agent_description=agent.agent_description,
+    #                     )
+    #                     for agent in self.agents
+    #                 ],
+    #             )
+    #         except Exception as e:
+    #             logger.error(f"Error getting swarm information: {str(e)}")
+    #             raise HTTPException(
+    #                 status_code=500, detail="Internal Server Error"
+    #             )
 
-        @self.app.get("/v1/health")
-        async def get_health() -> Dict[str, str]:
-            try:
-                logger.info("Checking health status")
-                return {"status": "healthy"}
-            except Exception as e:
-                logger.error(f"Error checking health status: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail="Internal Server Error"
-                )
+    #     @self.app.get("/v1/health")
+    #     async def get_health() -> Dict[str, str]:
+    #         try:
+    #             logger.info("Checking health status")
+    #             return {"status": "healthy"}
+    #         except Exception as e:
+    #             logger.error(f"Error checking health status: {str(e)}")
+    #             raise HTTPException(
+    #                 status_code=500, detail="Internal Server Error"
+    #             )
 
-        @self.app.get(f"/v1/swarms/{self.swarm_name}/agents/{{agent_id}}")
-        async def get_agent_info(agent_id: str) -> AgentInfo:
-            try:
-                logger.info(f"Getting information for agent {agent_id}")
-                agent = self.agent_dict.get(agent_id)
-                if not agent:
-                    raise HTTPException(
-                        status_code=404, detail="Agent not found"
-                    )
-                return AgentInfo(
-                    agent_name=agent.agent_name,
-                    agent_description=agent.agent_description,
-                )
-            except Exception as e:
-                logger.error(f"Error getting agent information: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail="Internal Server Error"
-                )
+    #     @self.app.get(f"/v1/swarms/{self.swarm_name}/agents/{{agent_id}}")
+    #     async def get_agent_info(agent_id: str) -> AgentInfo:
+    #         try:
+    #             logger.info(f"Getting information for agent {agent_id}")
+    #             agent = self.agent_dict.get(agent_id)
+    #             if not agent:
+    #                 raise HTTPException(
+    #                     status_code=404, detail="Agent not found"
+    #                 )
+    #             return AgentInfo(
+    #                 agent_name=agent.agent_name,
+    #                 agent_description=agent.agent_description,
+    #             )
+    #         except Exception as e:
+    #             logger.error(f"Error getting agent information: {str(e)}")
+    #             raise HTTPException(
+    #                 status_code=500, detail="Internal Server Error"
+    #             )
 
-        @self.app.post(
-            f"/v1/swarms/{self.swarm_name}/agents/{{agent_id}}/run",
-            response_model=TaskResponse,
-        )
-        async def run_agent_task(
-            task_request: TaskRequest,
-        ) -> TaskResponse:
-            try:
-                logger.info("Running agent task")
-                # Assuming only one agent in the swarm for this example
-                agent = self.agents[0]
-                logger.info(f"Running agent task: {task_request.task}")
-                result = agent.run(task_request.task)
-                return TaskResponse(result=result)
-            except Exception as e:
-                logger.error(f"Error running agent task: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail="Internal Server Error"
-                )
+    #     @self.app.post(
+    #         f"/v1/swarms/{self.swarm_name}/agents/{{agent_id}}/run",
+    #         response_model=TaskResponse,
+    #     )
+    #     async def run_agent_task(
+    #         task_request: TaskRequest,
+    #     ) -> TaskResponse:
+    #         try:
+    #             logger.info("Running agent task")
+    #             # Assuming only one agent in the swarm for this example
+    #             agent = self.agents[0]
+    #             logger.info(f"Running agent task: {task_request.task}")
+    #             result = agent.run(task_request.task)
+    #             return TaskResponse(result=result)
+    #         except Exception as e:
+    #             logger.error(f"Error running agent task: {str(e)}")
+    #             raise HTTPException(
+    #                 status_code=500, detail="Internal Server Error"
+    #             )
 
-    def get_app(self) -> FastAPI:
-        """
-        Returns the FastAPI instance.
+    # def get_app(self) -> FastAPI:
+    #     """
+    #     Returns the FastAPI instance.
 
-        Returns:
-            FastAPI: The FastAPI instance.
-        """
-        return self.app
+    #     Returns:
+    #         FastAPI: The FastAPI instance.
+    #     """
+    #     return self.app
 
     def run_single_agent(
         self, agent_id, task: Optional[str], *args, **kwargs

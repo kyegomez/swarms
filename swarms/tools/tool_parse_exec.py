@@ -10,7 +10,7 @@ def parse_and_execute_json(
     parse_md: bool = False,
 ):
     """
-    Parses and executes a JSON string containing function name and parameters.
+    Parses and executes a JSON string containing function names and parameters.
 
     Args:
         functions (List[callable]): A list of callable functions.
@@ -18,7 +18,7 @@ def parse_and_execute_json(
         parse_md (bool): Flag indicating whether to extract code from Markdown.
 
     Returns:
-        The result of executing the function with the parsed parameters, or None if an error occurs.
+        A dictionary containing the results of executing the functions with the parsed parameters.
 
     """
     if parse_md:
@@ -30,19 +30,25 @@ def parse_and_execute_json(
 
         loguru.logger.info(f"Extracted code: {json_string}")
         data = json.loads(json_string)
-        function_name = data.get("function", {}).get("name")
-        parameters = data.get("function", {}).get("parameters")
+        function_list = data.get("functions", [])
 
-        # Check if the function name is in the function dictionary
-        if function_name in function_dict:
-            # Call the function with the parsed parameters
-            result = function_dict[function_name](**parameters)
-            return result
-        else:
-            loguru.logger.warning(
-                f"No function named '{function_name}' found."
-            )
-            return None
+        results = {}
+        for function_data in function_list:
+            function_name = function_data.get("name")
+            parameters = function_data.get("parameters")
+
+            # Check if the function name is in the function dictionary
+            if function_name in function_dict:
+                # Call the function with the parsed parameters
+                result = function_dict[function_name](**parameters)
+                results[function_name] = result
+            else:
+                loguru.logger.warning(
+                    f"No function named '{function_name}' found."
+                )
+                results[function_name] = None
+
+        return results
     except Exception as e:
         loguru.logger.error(f"Error: {e}")
         return None

@@ -61,6 +61,7 @@ class MixtureOfAgents(BaseSwarm):
         self.scp = scp
 
         # Check the agents
+        self.reliability_check()
         self.agent_check()
         self.final_agent_check()
 
@@ -75,6 +76,16 @@ class MixtureOfAgents(BaseSwarm):
 
         # Communication Protocol
         self.communication_protocol()
+
+    def reliability_check(self):
+        if self.final_agent is None:
+            raise ValueError("Final agent is not defined.")
+
+        if self.agents is None:
+            raise ValueError("Agents are not defined.")
+
+        if self.layers is None:
+            raise ValueError("Layers are not defined.")
 
     def communication_protocol(self):
         try:
