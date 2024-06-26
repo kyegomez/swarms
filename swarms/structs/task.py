@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Union
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.utils.logger import logger
+from swarms.utils.loguru_logger import logger
 from swarms.structs.omni_agent_types import AgentType
 
 

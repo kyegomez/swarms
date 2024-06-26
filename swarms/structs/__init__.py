@@ -38,6 +38,7 @@ from swarms.structs.multi_process_workflow import (
 from swarms.structs.multi_threaded_workflow import (
     MultiThreadedWorkflow,
 )
+from swarms.structs.swarm_net import SwarmNetwork
 from swarms.structs.rearrange import AgentRearrange, rearrange
 from swarms.structs.recursive_workflow import RecursiveWorkflow
 from swarms.structs.round_robin import RoundRobinSwarm
@@ -164,4 +165,5 @@ __all__ = [
     "AgentLoadBalancer",
     "MixtureOfAgents",
     "GraphWorkflow",
+    "SwarmNetwork",
 ]

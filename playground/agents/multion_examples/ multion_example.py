@@ -7,9 +7,7 @@ def run_model(api_key):
     model = MultiOnAgent(
         api_key=api_key, max_steps=500, url="https://x.com"
     )
-    out = model.run(
-        ""
-    )
+    out = model.run("")
     print(out)
 
 
