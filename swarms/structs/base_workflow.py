@@ -10,6 +10,34 @@ from swarms.utils.loguru_logger import logger
 
 
 class BaseWorkflow(BaseStructure):
+    """
+    Base class for defining a workflow.
+
+    Args:
+        agents (List[Agent], optional): A list of agents participating in the workflow. Defaults to None.
+        task_pool (List[Task], optional): A list of tasks in the workflow. Defaults to None.
+        models (List[Any], optional): A list of models used in the workflow. Defaults to None.
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
+
+    Attributes:
+        agents (List[Agent]): A list of agents participating in the workflow.
+        task_pool (List[Task]): A list of tasks in the workflow.
+        models (List[Any]): A list of models used in the workflow.
+
+    Methods:
+        add_task: Adds a task or a list of tasks to the task pool.
+        add_agent: Adds an agent to the workflow.
+        run: Abstract method to run the workflow.
+        reset: Resets the workflow by clearing the results of each task.
+        get_task_results: Returns the results of each task in the workflow.
+        remove_task: Removes a task from the workflow.
+        update_task: Updates the arguments of a task in the workflow.
+        delete_task: Deletes a task from the workflow.
+        save_workflow_state: Saves the workflow state to a json file.
+        add_objective_to_workflow: Adds an objective to the workflow.
+        load_workflow_state: Loads the workflow state from a json file and restores the workflow state.
+    """
     def __init__(
         self,
         agents: List[Agent] = None,

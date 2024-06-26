@@ -89,7 +89,7 @@ from swarms.structs.yaml_model import (
     pydantic_type_to_yaml_schema,
 )
 from swarms.structs.mixture_of_agents import MixtureOfAgents
-from swarms.structs.graph_workflow import GraphWorkflow
+from swarms.structs.graph_workflow import GraphWorkflow, Node, NodeType
 
 
 __all__ = [
@@ -124,7 +124,7 @@ __all__ = [
     "TaskRequestBody",
     "SequentialWorkflow",
     "Step",
-    # "SwarmNetwork",
+    "SwarmNetwork",
     "broadcast",
     "circular_swarm",
     "exponential_swarm",
@@ -165,5 +165,6 @@ __all__ = [
     "AgentLoadBalancer",
     "MixtureOfAgents",
     "GraphWorkflow",
-    "SwarmNetwork",
+    "Node",
+    "NodeType",
 ]
