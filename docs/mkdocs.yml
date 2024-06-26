@@ -152,6 +152,7 @@ nav:
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
         - Mixture of Agents: "swarms/structs/moa.md"
+        - GraphWorkflow: "swarms/structs/graph_workflow.md"
   - Swarms Cloud API:
     - Overview: "swarms_cloud/main.md"
     - Available Models: "swarms_cloud/available_models.md"
