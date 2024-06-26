@@ -134,9 +134,12 @@ print("Execution results:", results)
 Below is a comprehensive example demonstrating the creation and execution of a workflow graph:
 
 ```python
-from swarms import Agent, OpenAIChat
+
 import os
+
 from dotenv import load_dotenv
+
+from swarms import Agent, Edge, GraphWorkflow, Node, NodeType, OpenAIChat
 
 load_dotenv()
 
@@ -155,7 +158,9 @@ def sample_task():
 wf_graph = GraphWorkflow()
 wf_graph.add_node(Node(id="agent1", type=NodeType.AGENT, agent=agent1))
 wf_graph.add_node(Node(id="agent2", type=NodeType.AGENT, agent=agent2))
-wf_graph.add_node(Node(id="task1", type=NodeType.TASK, callable=sample_task))
+wf_graph.add_node(
+    Node(id="task1", type=NodeType.TASK, callable=sample_task)
+)
 wf_graph.add_edge(Edge(source="agent1", target="task1"))
 wf_graph.add_edge(Edge(source="agent2", target="task1"))
 
@@ -167,6 +172,7 @@ print(wf_graph.visualize())
 # Run the workflow
 results = wf_graph.run()
 print("Execution results:", results)
+
 ```
 
 In this example, we set up a workflow graph with two agents and one task. We define the entry and end points, visualize the graph, and then execute the workflow, capturing and printing the results.
