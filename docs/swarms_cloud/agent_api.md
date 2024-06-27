@@ -29,7 +29,7 @@ This endpoint returns a list of available model names. It is useful for clients 
 ```python
 import requests
 
-response = requests.get("http://localhost:8000/v1/models")
+response = requests.get("http://api.swarms.world/v1/models")
 print(response.json())
 ```
 
@@ -40,6 +40,8 @@ print(response.json())
 **Request Model:** `AgentInput`
 
 **Response Model:** `AgentOutput`
+
+**URL:** `http://api.swarms.world/v1/agent/completions`
 
 **Description:**
 This endpoint handles the completion request for an agent configured with the given input parameters. It processes the request and returns the completion results.
@@ -139,7 +141,7 @@ class AgentInput(BaseModel):
     task: str = None
 
 agent_input = AgentInput(task="Generate a summary of the provided text.")
-response = requests.post("http://localhost:8000/v1/agent/completions", json=agent_input.dict())
+response = requests.post("http://api.swarms.world/v1/agent/completions", json=agent_input.dict())
 print(response.json())
 ```
 
