@@ -1,111 +1,217 @@
-# `MajorityVoting` Documentation
+# MajorityVoting Module Documentation
 
-## Overview
+The `MajorityVoting` module provides a mechanism for performing majority voting among a group of agents. Majority voting is a decision rule that selects the option which has the majority of votes. This is particularly useful in systems where multiple agents provide responses to a query, and the most common response needs to be identified as the final output.
 
-The `swarms.structs` library provides a flexible architecture for creating and managing swarms of agents capable of performing tasks and making decisions based on majority voting. This documentation will guide you through the `MajorityVoting` class, explaining its purpose, architecture, and usage with examples.
+### Key Concepts
 
-## Table of Contents
+- **Majority Voting**: A method to determine the most common response from a set of answers.
+- **Agents**: Entities (e.g., models, algorithms) that provide responses to tasks or queries.
+- **Output Parser**: A function that processes the responses from the agents before performing the majority voting.
 
-- [Introduction](#introduction)
-- [Installation](#installation)
-- [The `MajorityVoting` Class](#the-majorityvoting-class)
-  - [Class Definition](#class-definition)
-  - [Parameters](#parameters)
-  - [Methods](#methods)
-    - [`__init__`](#__init__)
-    - [`run`](#run)
-- [Usage Examples](#usage-examples)
-  - [Basic Usage](#basic-usage)
-  - [Concurrent Execution](#concurrent-execution)
-  - [Asynchronous Execution](#asynchronous-execution)
-- [Advanced Features](#advanced-features)
-- [Troubleshooting and FAQ](#troubleshooting-and-faq)
-- [Conclusion](#conclusion)
-- [References](#references)
+## Function Definitions
 
-## Introduction
+### Function: `majority_voting`
 
-The `swarms.structs` library introduces a mode of distributed computation through "agents" that collaborate to determine the outcome of tasks using a majority voting system. It becomes crucial in scenarios where collective decision-making is preferred over individual agent accuracy.
+Performs majority voting on a list of answers and returns the most common answer.
 
-## Installation
+#### Parameters
 
-To install the `swarms.structs` library, run the following command:
+| Parameter | Type     | Description                  |
+|-----------|----------|------------------------------|
+| `answers` | `List[str]` | A list of answers from different agents. |
 
-```bash
-pip install swarms-structs
-```
+#### Returns
 
-## The `MajorityVoting` Class
+| Return Value | Type  | Description                            |
+|--------------|-------|----------------------------------------|
+| `answer`     | `str` | The most common answer in the list. If the list is empty, returns "I don't know". |
 
-The `MajorityVoting` class is a high-level abstraction used to coordinate a group of agents that perform tasks and return results. These results are then aggregated to form a majority vote, determining the final output.
+## Class Definitions
 
-### Class Definition
+### Class: `MajorityVoting`
 
-### Parameters
+Class representing a majority voting system for agents.
 
-| Parameter       | Type       | Default  | Description                                                          |
-|-----------------|------------|----------|----------------------------------------------------------------------|
-| agents          | List[Agent]| Required | A list of agent instances to participate in the voting process.      |
-| concurrent      | bool       | False    | Enables concurrent execution using threading if set to `True`.      |
-| multithreaded   | bool       | False    | Enables execution using multiple threads if set to `True`.          |
-| multiprocess    | bool       | False    | Enables execution using multiple processes if set to `True`.        |
-| asynchronous    | bool       | False    | Enables asynchronous execution if set to `True`.                    |
-| output_parser   | callable   | None     | A function to parse the output from the majority voting function.   |
-| autosave        | bool       | False    | Enables automatic saving of the process state if set to `True`. (currently not used in source code) |
-| verbose         | bool       | False    | Enables verbose logging if set to `True`.                           |
+#### Parameters
 
-### Methods
+| Parameter        | Type         | Description                                                                 |
+|------------------|--------------|-----------------------------------------------------------------------------|
+| `agents`         | `List[Agent]`| A list of agents to be used in the majority voting system.                  |
+| `output_parser`  | `Callable`   | A function used to parse the output of the agents. If not provided, the default `majority_voting` function is used. |
+| `autosave`       | `bool`       | A boolean indicating whether to autosave the conversation to a file. Default is `False`. |
+| `verbose`        | `bool`       | A boolean indicating whether to enable verbose logging. Default is `False`. |
 
-#### `__init__`
+### Method: `__init__`
 
-The constructor for the `MajorityVoting` class. Initializes a new majority voting system with the given configuration.
+Initializes the `MajorityVoting` system.
 
-*This method doesn't return any value.*
+#### Parameters
 
-#### `run`
+| Parameter        | Type           | Description                                                                 |
+|------------------|----------------|-----------------------------------------------------------------------------|
+| `agents`         | `List[Agent]`  | A list of agents to be used in the majority voting system.                  |
+| `output_parser`  | `Callable`     | A function used to parse the output of the agents. Default is the `majority_voting` function. |
+| `autosave`       | `bool`         | A boolean indicating whether to autosave the conversation to a file. Default is `False`. |
+| `verbose`        | `bool`         | A boolean indicating whether to enable verbose logging. Default is `False`. |
+| `args`           | `tuple`        | Additional positional arguments.                                            |
+| `kwargs`         | `dict`         | Additional keyword arguments.                                               |
 
-Executes the given task by all participating agents and aggregates the results through majority voting.
+### Method: `run`
 
-| Parameter | Type      | Description                      |
-|-----------|-----------|----------------------------------|
-| task      | str       | The task to be performed.        |
-| *args     | list      | Additional positional arguments. |
-| **kwargs  | dict      | Additional keyword arguments.    |
+Runs the majority voting system and returns the majority vote.
 
-*Returns:* List[Any] - The result based on the majority vote.
+#### Parameters
+
+| Parameter | Type       | Description                              |
+|-----------|------------|------------------------------------------|
+| `task`    | `str`      | The task to be performed by the agents.  |
+| `args`    | `tuple`    | Variable length argument list.           |
+| `kwargs`  | `dict`     | Arbitrary keyword arguments.             |
+
+#### Returns
+
+| Return Value | Type      | Description                          |
+|--------------|-----------|--------------------------------------|
+| `results`    | `List[Any]` | The majority vote.                    |
 
 ## Usage Examples
 
-### Basic Usage
+### Example 1: Basic Majority Voting
 
 ```python
 from swarms.structs.agent import Agent
 from swarms.structs.majority_voting import MajorityVoting
 
+# Initialize agents
+agents = [
+    Agent(
+        agent_name="Devin",
+        system_prompt=(
+            "Autonomous agent that can interact with humans and other"
+            " agents. Be Helpful and Kind. Use the tools provided to"
+            " assist the user. Return all code in markdown format."
+        ),
+        llm=llm,
+        max_loops="auto",
+        autosave=True,
+        dashboard=False,
+        streaming_on=True,
+        verbose=True,
+        stopping_token="<DONE>",
+        interactive=True,
+        tools=[terminal, browser, file_editor, create_file],
+        code_interpreter=True,
+    ),
+    Agent(
+        agent_name="Codex",
+        system_prompt=(
+            "An AI coding assistant capable of writing and understanding"
+            " code snippets in various programming languages."
+        ),
+        llm=llm,
+        max_loops="auto",
+        autosave=True,
+        dashboard=False,
+        streaming_on=True,
+        verbose=True,
+        stopping_token="<DONE>",
+        interactive=True,
+        tools=[terminal, browser, file_editor, create_file],
+        code_interpreter=True,
+    ),
+    Agent(
+        agent_name="Tabnine",
+        system_prompt=(
+            "A code completion AI that provides suggestions for code"
+            " completion and code improvements."
+        ),
+        llm=llm,
+        max_loops="auto",
+        autosave=True,
+        dashboard=False,
+        streaming_on=True,
+        verbose=True,
+        stopping_token="<DONE>",
+        interactive=True,
+        tools=[terminal, browser, file_editor, create_file],
+        code_interpreter=True,
+    ),
+]
 
-def create_agent(name):
-    return Agent(name)
-
-
-agents = [create_agent(name) for name in ["GPT-3", "Codex", "Tabnine"]]
+# Create MajorityVoting instance
 majority_voting = MajorityVoting(agents)
+
+# Run the majority voting system
 result = majority_voting.run("What is the capital of France?")
-print(result)  # Output: Paris
+print(result)  # Output: 'Paris'
 ```
 
-### Concurrent Execution
+### Example 2: Running a Task with Detailed Outputs
 
 ```python
-majority_voting = MajorityVoting(agents, concurrent=True)
-result = majority_voting.run("What is the largest continent?")
-print(result)  # Example Output: Asia
+from swarms.structs.agent import Agent
+from swarms.structs.majority_voting import MajorityVoting
+
+# Initialize agents
+agents = [
+    Agent(
+        agent_name="Devin",
+        system_prompt=(
+            "Autonomous agent that can interact with humans and other"
+            " agents. Be Helpful and Kind. Use the tools provided to"
+            " assist the user. Return all code in markdown format."
+        ),
+        llm=llm,
+        max_loops="auto",
+        autosave=True,
+        dashboard=False,
+        streaming_on=True,
+        verbose=True,
+        stopping_token="<DONE>",
+        interactive=True,
+        tools=[terminal, browser, file_editor, create_file],
+        code_interpreter=True,
+    ),
+    Agent(
+        agent_name="Codex",
+        system_prompt=(
+            "An AI coding assistant capable of writing and understanding"
+            " code snippets in various programming languages."
+        ),
+        llm=llm,
+        max_loops="auto",
+        autosave=True,
+        dashboard=False,
+        streaming_on=True,
+        verbose=True,
+        stopping_token="<DONE>",
+        interactive=True,
+        tools=[terminal, browser, file_editor, create_file],
+        code_interpreter=True,
+    ),
+    Agent(
+        agent_name="Tabnine",
+        system_prompt=(
+            "A code completion AI that provides suggestions for code"
+            " completion and code improvements."
+        ),
+        llm=llm,
+        max_loops="auto",
+        autosave=True,
+        dashboard=False,
+        streaming_on=True,
+        verbose=True,
+        stopping_token="<DONE>",
+        interactive=True,
+        tools=[terminal, browser, file_editor, create_file],
+        code_interpreter=True,
+    ),
+]
+
+# Create MajorityVoting instance
+majority_voting = MajorityVoting(agents)
+
+# Run the majority voting system with a different task
+result = majority_voting.run("Create a new file for a plan to take over the world.")
+print(result)
 ```
-
-### Asynchronous Execution
-
-```python
-majority_voting = MajorityVoting(agents, asynchronous=True)
-result = majority_voting.run("What is the square root of 16?")
-print(result)  # Output: 4
-```
-
