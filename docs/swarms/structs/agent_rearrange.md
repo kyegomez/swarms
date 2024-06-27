@@ -113,7 +113,7 @@ rearrange(agents, flow, task)
 Here's an example of how to use the `AgentRearrange` class and the `rearrange` function:
 
 ```python
-from swarms import Agent, AgentRearrange, rearrange
+from swarms import Agent, AgentRearrange
 from typing import List
 
 # Initialize the director agent
@@ -167,10 +167,6 @@ flow = "Accounting Director -> Accountant 1 -> Accountant 2"
 # Using AgentRearrange class
 agent_system = AgentRearrange(agents=agents, flow=flow)
 output = agent_system.run("Process monthly financial statements")
-print(output)
-
-# Using rearrange function
-output = rearrange(agents, flow, "Process monthly financial statements")
 print(output)
 
 ```

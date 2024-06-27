@@ -158,10 +158,10 @@ nav:
         - AutoSwarmRouter: "swarms/structs/auto_swarm_router.md"
         - AutoSwarm: "swarms/structs/auto_swarm.md"
         - GroupChat: "swarms/structs/group_chat.md"
-        
   - Swarms Cloud API:
     - Overview: "swarms_cloud/main.md"
     - Available Models: "swarms_cloud/available_models.md"
+    - Agent API: "swarms_cloud/agent_api.md"
     - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
     - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
     - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
