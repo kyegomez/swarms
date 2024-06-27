@@ -4,6 +4,13 @@ The Swarms API provides endpoints to interact with various language models, mana
 
 URL: `https://api.swarms.world`
 
+## Key Features
+- Dynamic Model Switching: Easily switch between different language models based on user input.
+- Token Counting: Efficiently count tokens using the tiktoken library.
+- Agent Configuration: Configure and run agents with detailed settings for various tasks.
+- CORS Handling: Support for Cross-Origin Resource Sharing (CORS) to allow web-based clients to interact with the API.
+
+
 ## Endpoints
 
 ### `/v1/models`
