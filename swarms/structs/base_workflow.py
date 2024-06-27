@@ -38,6 +38,7 @@ class BaseWorkflow(BaseStructure):
         add_objective_to_workflow: Adds an objective to the workflow.
         load_workflow_state: Loads the workflow state from a json file and restores the workflow state.
     """
+
     def __init__(
         self,
         agents: List[Agent] = None,

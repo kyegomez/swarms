@@ -2,6 +2,7 @@ import os
 import shutil
 from loguru import logger
 
+
 def cleanup_json_logs(name: str = None):
     # Define the root directory and the target directory
     root_dir = os.getcwd()
@@ -46,7 +47,9 @@ def cleanup_json_logs(name: str = None):
         shutil.rmtree(chroma_folder)
         logger.info(f"Deleted Chroma folder at {chroma_folder}")
 
-    logger.info(f"All JSON, LOG and TXT files have been moved to {target_dir}")
+    logger.info(
+        f"All JSON, LOG and TXT files have been moved to {target_dir}"
+    )
 
 
 # Call the function

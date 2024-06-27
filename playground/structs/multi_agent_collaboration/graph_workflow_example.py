@@ -1,4 +1,3 @@
-
 import os
 
 from dotenv import load_dotenv
@@ -9,15 +8,15 @@ load_dotenv()
 
 api_key = os.environ.get("OPENAI_API_KEY")
 
-llm = OpenAIChat(
-    temperature=0.5, openai_api_key=api_key, max_tokens=4000
-)
+llm = OpenAIChat(temperature=0.5, openai_api_key=api_key, max_tokens=4000)
 agent1 = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
 agent2 = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
+
 
 def sample_task():
     print("Running sample task")
     return "Task completed"
+
 
 wf_graph = GraphWorkflow()
 wf_graph.add_node(Node(id="agent1", type=NodeType.AGENT, agent=agent1))

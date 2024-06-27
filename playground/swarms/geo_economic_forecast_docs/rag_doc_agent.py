@@ -25,7 +25,6 @@ Always prioritize accuracy, depth of analysis, and clarity in your responses. Us
 """
 
 
-
 # Initialize the agent
 agent = Agent(
     agent_name="Geo Expert AI",
@@ -55,7 +54,6 @@ agent = Agent(
     # interactive=True,
     # long_term_memory=ChromaDB(docs_folder="heinz_docs", output_dir="geoexpert_output"),
 )
-
 
 
 # Initialize the agent
@@ -91,11 +89,13 @@ forecaster_agent = Agent(
 
 # Initialize the swarm
 swarm = MixtureOfAgents(
-    agents = [agent, forecaster_agent],
-    final_agent = forecaster_agent,
-    layers = 1,
+    agents=[agent, forecaster_agent],
+    final_agent=forecaster_agent,
+    layers=1,
 )
 
 # Run the swarm
-out = swarm.run("what is the economic impact of China from technology decoupling, and how is that impact measured? What is the forecast or economic, give some numbers")
+out = swarm.run(
+    "what is the economic impact of China from technology decoupling, and how is that impact measured? What is the forecast or economic, give some numbers"
+)
 print(out)

@@ -39,7 +39,9 @@ class ConcurrentWorkflow(BaseWorkflow):
     return_results: bool = False
     stopping_condition: Optional[Callable] = None
 
-    def run(self, task: Optional[str] = None, *args, **kwargs) -> Optional[List[Any]]:
+    def run(
+        self, task: Optional[str] = None, *args, **kwargs
+    ) -> Optional[List[Any]]:
         """
         Executes the tasks in parallel using multiple threads.
 
@@ -59,7 +61,12 @@ class ConcurrentWorkflow(BaseWorkflow):
                 logger.warning("No agents found in the workflow.")
                 break
 
-            threads = [threading.Thread(target=self.execute_agent, args=(agent, task)) for agent in self.agents]
+            threads = [
+                threading.Thread(
+                    target=self.execute_agent, args=(agent, task)
+                )
+                for agent in self.agents
+            ]
 
             for thread in threads:
                 thread.start()
@@ -68,11 +75,19 @@ class ConcurrentWorkflow(BaseWorkflow):
                 thread.join()
 
             if self.return_results:
-                results.extend([thread.result for thread in threads if hasattr(thread, 'result')])
+                results.extend(
+                    [
+                        thread.result
+                        for thread in threads
+                        if hasattr(thread, "result")
+                    ]
+                )
 
             loop += 1
-            
-            if self.stopping_condition and self.stopping_condition(results):
+
+            if self.stopping_condition and self.stopping_condition(
+                results
+            ):
                 break
 
         return results if self.return_results else None
@@ -85,8 +100,10 @@ class ConcurrentWorkflow(BaseWorkflow):
     def save(self):
         """Saves the state of the workflow to a file."""
         self.save_state(self.saved_state_filepath)
-        
-    def execute_agent(self, agent: Agent, task: Optional[str] = None, *args, **kwargs):
+
+    def execute_agent(
+        self, agent: Agent, task: Optional[str] = None, *args, **kwargs
+    ):
         try:
             result = agent.run(task, *args, **kwargs)
             if self.print_results:
@@ -95,16 +112,26 @@ class ConcurrentWorkflow(BaseWorkflow):
                 return result
         except Exception as e:
             logger.error(f"Agent {agent} generated an exception: {e}")
-            
 
 
 api_key = os.environ["OPENAI_API_KEY"]
 
 # Model
 swarm = ConcurrentWorkflow(
-    agents = [Agent(llm=OpenAIChat(openai_api_key=api_key, max_tokens=4000,), max_loops=4, dashboard=False)],
+    agents=[
+        Agent(
+            llm=OpenAIChat(
+                openai_api_key=api_key,
+                max_tokens=4000,
+            ),
+            max_loops=4,
+            dashboard=False,
+        )
+    ],
 )
 
 
 # Run the workflow
-swarm.run("Generate a report on the top 3 biggest expenses for small businesses and how businesses can save 20%")
+swarm.run(
+    "Generate a report on the top 3 biggest expenses for small businesses and how businesses can save 20%"
+)

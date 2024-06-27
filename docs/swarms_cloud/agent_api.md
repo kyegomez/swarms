@@ -2,6 +2,8 @@
 
 The Swarms API provides endpoints to interact with various language models, manage agent configurations, and handle token counting. This documentation covers the available endpoints, input and output models, and detailed examples for each endpoint.
 
+URL: `https://api.swarms.world`
+
 ## Endpoints
 
 ### `/v1/models`
