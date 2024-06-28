@@ -50,77 +50,65 @@ Executes a specified task across all agents in a round-robin manner, cycling thr
 In this example, `RoundRobinSwarm` is used to distribute network requests evenly among a group of servers. This is common in scenarios where load balancing is crucial for maintaining system responsiveness and scalability.
 
 ```python
-from swarms.structs.round_robin import RoundRobinSwarm
-from swarms import Agent
+from swarms import Agent, OpenAIChat,  RoundRobinSwarm
 
-# Define server agents
-server1 = Agent(agent_name="Server1", system_prompt="Handle network requests")
-server2 = Agent(agent_name="Server2", system_prompt="Handle network requests")
-server3 = Agent(agent_name="Server3", system_prompt="Handle network requests")
 
-# Initialize the swarm with server agents
-network_load_balancer = RoundRobinSwarm(agents=[server1, server2, server3], verbose=True)
+# Initialize the LLM
+llm = OpenAIChat()
 
-# Define a network request task
-task = "Process incoming network request"
+# Define sales agents
+sales_agent1 = Agent(
+    agent_name="Sales Agent 1 - Automation Specialist",
+    system_prompt="You're Sales Agent 1, your purpose is to generate sales for a company by focusing on the benefits of automating accounting processes!",
+    agent_description="Generate sales by focusing on the benefits of automation!",
+    llm=llm,
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    context_length=1000,
+)
 
-# Simulate processing of multiple requests
-for _ in range(10):  # Assume 10 incoming requests
-    results = network_load_balancer.run(task)
-    print("Request processed:", results)
+sales_agent2 = Agent(
+    agent_name="Sales Agent 2 - Cost Saving Specialist",
+    system_prompt="You're Sales Agent 2, your purpose is to generate sales for a company by emphasizing the cost savings of using swarms of agents!",
+    agent_description="Generate sales by emphasizing cost savings!",
+    llm=llm,
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    context_length=1000,
+)
+
+sales_agent3 = Agent(
+    agent_name="Sales Agent 3 - Efficiency Specialist",
+    system_prompt="You're Sales Agent 3, your purpose is to generate sales for a company by highlighting the efficiency and accuracy of our swarms of agents in accounting processes!",
+    agent_description="Generate sales by highlighting efficiency and accuracy!",
+    llm=llm,
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    context_length=1000,
+)
+
+# Initialize the swarm with sales agents
+sales_swarm = RoundRobinSwarm(agents=[sales_agent1, sales_agent2, sales_agent3], verbose=True)
+
+# Define a sales task
+task = "Generate a sales email for an accountant firm executive to sell swarms of agents to automate their accounting processes."
+
+# Distribute sales tasks to different agents
+for _ in range(5):  # Repeat the task 5 times
+    results = sales_swarm.run(task)
+    print("Sales generated:", results)
 ```
 
-### Example 2: Document Review Process
 
-This example demonstrates how `RoundRobinSwarm` can be used to distribute parts of a document among different reviewers in a sequential manner, ensuring that each part of the document is reviewed by different agents.
-
-```python
-from swarms.structs.round_robin import RoundRobinSwarm
-from swarms import Agent
-
-# Define reviewer agents
-reviewer1 = Agent(agent_name="Reviewer1", system_prompt="Review document section")
-reviewer2 = Agent(agent_name="Reviewer2", system_prompt="Review document section")
-reviewer3 = Agent(agent_name="Reviewer3", system_prompt="Review document section")
-
-# Initialize the swarm with reviewer agents
-document_review_swarm = RoundRobinSwarm(agents=[reviewer1, reviewer2, reviewer3], verbose=True)
-
-# Define a document review task
-task = "Review section of the document"
-
-# Distribute sections of the document to different reviewers
-for section in range(5):  # Assume the document has 5 sections
-    results = document_review_swarm.run(task)
-    print(f"Section {section + 1} reviewed:", results)
-```
-
-### Example 3: Multi-Stage Data Processing
-
-In this scenario, `RoundRobinSwarm` facilitates a multi-stage data processing pipeline where data passes through multiple agents, each performing a specific type of data processing in sequence.
-
-```python
-from swarms.structs.round_robin import RoundRobinSwarm
-from swarms import Agent
-
-# Define data processing agents
-preprocessor = Agent(agent_name="Preprocessor", system_prompt="Preprocess data")
-analyzer = Agent(agent_name="Analyzer", system_prompt="Analyze data")
-summarizer = Agent(agent_name="Summarizer", system_prompt="Summarize analysis results")
-
-# Initialize the swarm with data processing agents
-data_processing_swarm = RoundRobinSwarm(agents=[preprocessor, analyzer, summarizer], verbose=True)
-
-# Define a data processing task
-task = "Initial raw data"
-
-# Run the data through the processing pipeline
-results = data_processing_swarm.run(task)
-print("Final results from data processing:", results)
-```
-
-These examples provide a glimpse into how the `RoundRobinSwarm` class can be adapted to various domains and applications, showcasing its versatility in managing tasks and resources in a distributed environment.
-```
 
 ## Conclusion
 

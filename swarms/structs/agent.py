@@ -15,33 +15,33 @@ from pydantic import BaseModel
 from termcolor import colored
 
 from swarms.memory.base_vectordb import BaseVectorDatabase
+from swarms.models.tiktoken_wrapper import TikTokenizer
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.aot_prompt import algorithm_of_thoughts_sop
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
+from swarms.prompts.tools import tool_sop_prompt
+from swarms.structs.base_structure import BaseStructure
 from swarms.structs.conversation import Conversation
 from swarms.structs.yaml_model import YamlModel
+from swarms.tools.func_calling_utils import (
+    prepare_output_for_output_model,
+    pydantic_model_to_json_str,
+)
 from swarms.tools.prebuilt.code_interpreter import (
     SubprocessCodeInterpreter,
+)
+from swarms.tools.py_func_to_openai_func_str import (
+    get_openai_function_schema_from_func,
 )
 from swarms.tools.pydantic_to_json import (
     multi_base_model_to_openai_function,
 )
+from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.tools.py_func_to_openai_func_str import (
-    get_openai_function_schema_from_func,
-)
-from swarms.structs.base_structure import BaseStructure
-from swarms.prompts.tools import tool_sop_prompt
-from swarms.tools.func_calling_utils import (
-    pydantic_model_to_json_str,
-    prepare_output_for_output_model,
-)
-from swarms.tools.tool_parse_exec import parse_and_execute_json
-from swarms.models.tiktoken_wrapper import TikTokenizer
 
 
 # Utils

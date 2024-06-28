@@ -32,6 +32,7 @@ def cleanup_json_logs(name: str = None):
     # Delete Chroma and Ruff cache
     chroma_cache = os.path.join(root_dir, ".chroma_cache")
     ruff_cache = os.path.join(root_dir, ".ruff_cache")
+    dist_cache = os.path.join(root_dir, "dist")
 
     if os.path.exists(chroma_cache):
         shutil.rmtree(chroma_cache)
@@ -40,6 +41,10 @@ def cleanup_json_logs(name: str = None):
     if os.path.exists(ruff_cache):
         shutil.rmtree(ruff_cache)
         logger.info(f"Deleted Ruff cache at {ruff_cache}")
+        
+    if os.path.exists(dist_cache):
+        shutil.rmtree(dist_cache)
+        logger.info(f"Deleted the dist cache at {dist_cache}")
 
     # Delete the "chroma" folder
     chroma_folder = os.path.join(root_dir, "chroma")
@@ -53,4 +58,4 @@ def cleanup_json_logs(name: str = None):
 
 
 # Call the function
-cleanup_json_logs("heinz_swarm")
+cleanup_json_logs("artifactss_23")
