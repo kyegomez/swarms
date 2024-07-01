@@ -51,7 +51,7 @@ The performance impact is rated on a scale from one to five stars, with multi-ag
 
 ----
 
-## Requirments
+## Requirements
 - `python3.10` or above!
 - `.env` file with API keys from your providers like `OpenAI`, `Anthropic`
 
