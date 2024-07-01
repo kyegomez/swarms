@@ -1361,13 +1361,16 @@ out = swarm.run("Prepare financial statements and audit financial records")
 print(out)
 ```
 
+## Onboarding Session
+Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
+
 
 
 
 ---
 
 ## Documentation
-Documentation is located here at: [swarms.apac.ai](https://swarms.apac.ai)
+Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 
 ----
 
