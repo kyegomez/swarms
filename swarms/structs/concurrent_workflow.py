@@ -1,164 +1,115 @@
-import concurrent.futures
-from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional
-
-from swarms.structs.task import Task
-from swarms.utils.logger import logger
+import threading
+from queue import Queue
+from typing import List
 from swarms.structs.agent import Agent
-from swarms.structs.base_workflow import BaseWorkflow
+from swarms.utils.loguru_logger import logger
+from dotenv import load_dotenv
+import os
+from swarms.models.popular_llms import OpenAIChat
 
 
-@dataclass
-class ConcurrentWorkflow(BaseWorkflow):
-    """
-    ConcurrentWorkflow class for running a set of tasks concurrently using N number of autonomous agents.
-
-    Args:
-        max_workers (int): The maximum number of workers to use for the ThreadPoolExecutor.
-        autosave (bool): Whether to save the state of the workflow to a file. Default is False.
-        saved_state_filepath (str): The filepath to save the state of the workflow to. Default is "runs/concurrent_workflow.json".
-        print_results (bool): Whether to print the results of each task. Default is False.
-        return_results (bool): Whether to return the results of each task. Default is False.
-        use_processes (bool): Whether to use processes instead of threads. Default is False.
-
-    Examples:
-    >>> from swarms.models import OpenAIChat
-    >>> from swarms.structs import ConcurrentWorkflow
-    >>> llm = OpenAIChat(openai_api_key="")
-    >>> workflow = ConcurrentWorkflow(max_workers=5)
-    >>> workflow.add("What's the weather in miami", llm)
-    >>> workflow.add("Create a report on these metrics", llm)
-    >>> workflow.run()
-    >>> workflow.tasks
-    """
-
-    task_pool: List[Dict] = field(default_factory=list)
-    max_loops: int = 1
-    max_workers: int = 5
-    autosave: bool = False
-    agents: List[Agent] = None
-    saved_state_filepath: Optional[str] = "runs/concurrent_workflow.json"
-    print_results: bool = False
-    return_results: bool = False
-    use_processes: bool = False
-    stopping_condition: Optional[Callable] = None
-
-    def add(
-        self,
-        task: Task = None,
-        agent: Agent = None,
-        tasks: List[Task] = None,
-    ):
-        """Adds a task to the workflow.
+class ConcurrentWorkflow:
+    def __init__(self, agents: List[Agent], max_loops: int):
+        """
+        Initializes the ConcurrentWorkflow with the given parameters.
 
         Args:
-            task (Task): _description_
-            tasks (List[Task]): _description_
+            agents (List[Agent]): The list of agents to initialize.
+            max_loops (int): The maximum number of loops each agent can run.
+        """
+        self.max_loops = max_loops
+        self.agents = agents
+        self.num_agents = len(agents)
+        self.output_queue = Queue()
+
+    def run_agent(self, agent: Agent, task: str) -> None:
+        """
+        Runs a given agent on the specified task once.
+
+        Args:
+            agent (Agent): The agent to run.
+            task (str): The task for the agent to execute.
         """
         try:
-            if tasks:
-                for task in tasks:
-                    self.task_pool.append(task)
-                    logger.info(
-                        f"Added task {task} to ConcurrentWorkflow."
-                    )
-            else:
-                if task:
-                    self.task_pool.append(task)
-                    logger.info(
-                        f"Added task {task} to ConcurrentWorkflow."
-                    )
+            logger.info(f"Running agent {agent} on task '{task}'")
+            result = agent.run(task)
+            logger.info(
+                f"Agent {agent} completed task with result: {result}"
+            )
 
-            if agent:
-                self.agents.append(agent)
-                logger.info(f"Added agent {agent} to ConcurrentWorkflow.")
-        except Exception as error:
-            logger.warning(f"[ERROR][ConcurrentWorkflow] {error}")
-            raise error
+            if result is None:
+                raise ValueError("Received None as result")
 
-    def run(self, task: str = None, *args, **kwargs):
+            self.output_queue.put(result)
+        except Exception as e:
+            logger.error(f"Error running agent {agent}: {e}")
+            self.output_queue.put(f"Error: {e}")
+
+    def process_agent_outputs(self, task: str) -> None:
         """
-        Executes the tasks in parallel using a ThreadPoolExecutor.
+        Processes outputs from agents and conditionally sends them to other agents.
 
         Args:
-            print_results (bool): Whether to print the results of each task. Default is False.
-            return_results (bool): Whether to return the results of each task. Default is False.
+            task (str): The task for the agents to execute.
+        """
+        while not self.output_queue.empty():
+            result = self.output_queue.get()
+            if isinstance(result, str) and result.startswith("Error:"):
+                logger.error(result)
+            else:
+                logger.info(f"Processing result: {result}")
+                for next_agent in self.agents:
+                    self.run_agent(next_agent, task)
+
+    def run(self, task: str) -> str:
+        """
+        Runs a list of agents concurrently on the same task using threads.
+
+        Args:
+            task (str): The task for the agents to execute.
 
         Returns:
-            List[Any]: A list of the results of each task, if return_results is True. Otherwise, returns None.
+            str: The final result of the concurrent execution.
         """
-        loop = 0
-        while loop < self.max_loops:
+        threads = []
 
-            if self.tasks is not None:
-                with concurrent.futures.ThreadPoolExecutor(
-                    max_workers=self.max_workers
-                ) as executor:
-                    futures = {
-                        executor.submit(task.execute): task
-                        for task in self.task_pool
-                    }
-                    results = []
+        try:
+            for agent in self.agents:
+                thread = threading.Thread(
+                    target=self.run_agent, args=(agent, task)
+                )
+                thread.start()
+                threads.append(thread)
 
-                    for future in concurrent.futures.as_completed(futures):
-                        task = futures[future]
-                        try:
-                            result = future.result()
-                            if self.print_results:
-                                logger.info(f"Task {task}: {result}")
-                            if self.return_results:
-                                results.append(result)
-                        except Exception as e:
-                            logger.error(
-                                f"Task {task} generated an exception: {e}"
-                            )
+            for thread in threads:
+                thread.join()
 
-                loop += 1
-                if self.stopping_condition and self.stopping_condition(
-                    results
-                ):
-                    break
+            # self.process_agent_outputs(task)
+        except Exception as e:
+            logger.error(f"Error in concurrent workflow: {e}")
 
-            elif self.agents is not None:
-                with concurrent.futures.ThreadPoolExecutor(
-                    max_workers=self.max_workers
-                ) as executor:
-                    futures = {
-                        executor.submit(agent.run): agent
-                        for agent in self.agents
-                    }
-                    results = []
+        return None
 
-                    for future in concurrent.futures.as_completed(futures):
-                        agent = futures[future]
-                        try:
-                            result = future.result()
-                            if self.print_results:
-                                logger.info(f"Agent {agent}: {result}")
-                            if self.return_results:
-                                results.append(result)
-                        except Exception as e:
-                            logger.error(
-                                f"Agent {agent} generated an exception: {e}"
-                            )
 
-                loop += 1
-                if self.stopping_condition and self.stopping_condition(
-                    results
-                ):
-                    break
+# Load the environment variables
+load_dotenv()
 
-            else:
-                logger.warning("No tasks or agents found in the workflow.")
-                break
+# Get the API key from the environment
+api_key = os.environ.get("OPENAI_API_KEY")
 
-            return results if self.return_results else None
+# Initialize the language model (assuming this should be done outside the class and passed to it)
+llm = OpenAIChat(temperature=0.5, openai_api_key=api_key, max_tokens=4000)
 
-    def list_tasks(self):
-        """Prints a list of the tasks in the workflow."""
-        for task in self.task_pool:
-            logger.info(task)
+# Initialize agents
+agents = [
+    Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
+    for _ in range(1)
+]
 
-    def save(self):
-        """Saves the state of the workflow to a file."""
-        self.save_state(self.saved_state_filepath)
+# Task to be executed by each agent
+task = "Generate a 10,000 word blog on health and wellness."
+
+# Initialize and run the ConcurrentWorkflow
+workflow = ConcurrentWorkflow(agents=agents, max_loops=1)
+result = workflow.run(task)
+logger.info(f"Final result: {result}")

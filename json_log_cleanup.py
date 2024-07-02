@@ -41,7 +41,7 @@ def cleanup_json_logs(name: str = None):
     if os.path.exists(ruff_cache):
         shutil.rmtree(ruff_cache)
         logger.info(f"Deleted Ruff cache at {ruff_cache}")
-        
+
     if os.path.exists(dist_cache):
         shutil.rmtree(dist_cache)
         logger.info(f"Deleted the dist cache at {dist_cache}")
@@ -58,4 +58,4 @@ def cleanup_json_logs(name: str = None):
 
 
 # Call the function
-cleanup_json_logs("artifactss_23")
+cleanup_json_logs("sequential_workflow_agents")

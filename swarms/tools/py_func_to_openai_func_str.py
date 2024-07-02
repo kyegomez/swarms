@@ -372,7 +372,7 @@ def get_openai_function_schema_from_func(
     function: Callable[..., Any],
     *,
     name: Optional[str] = None,
-    description: str,
+    description: str = None,
 ) -> Dict[str, Any]:
     """Get a JSON schema for a function as defined by the OpenAI API
 
