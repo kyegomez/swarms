@@ -1,0 +1,3 @@
+Llm = OpenAI()
+
+Llm.chat('')
