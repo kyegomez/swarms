@@ -30,16 +30,6 @@ def generate_report(company_name: str, profit: float):
     return f"The profit for {company_name} is ${profit}."
 
 
-EMAIL_DETECT_APPOINT = """
-
-if the user gives you an email address, then call the appointment function to schedule a meeting with the user.
-
-SCHEMA OF THE FUNCTION:
-
-
-"""
-
-
 def write_memory_to_rag(memory_name: str, memory: str):
     """
     Writes the memory to the RAG model for fine-tuning.
@@ -66,7 +56,6 @@ agent = Agent(
     llm=Anthropic(),
     max_loops="auto",
     autosave=True,
-    sop_list=[EMAIL_DETECT_APPOINT],
     # dynamic_temperature_enabled=True,
     dashboard=False,
     verbose=True,
