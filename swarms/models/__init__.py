@@ -14,6 +14,7 @@ from swarms.models.nougat import Nougat  # noqa: E402
 from swarms.models.openai_embeddings import OpenAIEmbeddings
 from swarms.models.openai_tts import OpenAITTS  # noqa: E402
 from swarms.models.palm import GooglePalm as Palm  # noqa: E402
+from swarms.models.gemini import Gemini
 from swarms.models.popular_llms import Anthropic as Anthropic
 from swarms.models.popular_llms import (
     AzureOpenAILLM as AzureOpenAI,
@@ -46,6 +47,7 @@ __all__ = [
     "BaseLLM",
     "BaseMultiModalModel",
     "Fuyu",
+    "Gemini",
     "GPT4VisionAPI",
     "HuggingfaceLLM",
     "Idefics",
