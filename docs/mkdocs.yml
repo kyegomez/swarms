@@ -167,6 +167,14 @@ nav:
     - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
     - Enterprise Guide to High-Performance Multi-Agent LLM Deployments: "swarms_cloud/production_deployment.md"
     - Under The Hood The Swarm Cloud Serving Infrastructure: "swarms_cloud/architecture.md"
+  - Swarms Memory:
+    - Overview: "swarms_memory/memory/index.md"
+    - Memory Systems:
+      - ChromaDB: "swarms_memory/memory/chromadb.md"
+      - Pinecone: "swarms_memory/memory/pinecone.md"
+      - Redis: "swarms_memory/memory/redis.md"
+      - Faiss: "swarms_memory/memory/faiss.md"
+      - HNSW: "swarms_memory/memory/hnsw.md"
   - References:
     - Agent Glossary: "swarms/glossary.md"
     - List of The Best Multi-Agent Papers: "swarms/papers.md"
