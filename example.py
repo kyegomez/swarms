@@ -1,6 +1,4 @@
-from swarms import Agent
-from langchain_community.llms.anthropic import Anthropic
-
+from swarms import Agent, Anthropic
 
 def calculate_profit(revenue: float, expenses: float):
     """
@@ -28,24 +26,6 @@ def generate_report(company_name: str, profit: float):
         str: The report for the company's profit.
     """
     return f"The profit for {company_name} is ${profit}."
-
-
-def write_memory_to_rag(memory_name: str, memory: str):
-    """
-    Writes the memory to the RAG model for fine-tuning.
-
-    Args:
-        memory_name (str): The name of the memory.
-        memory (str): The memory to be written to the RAG model.
-    """
-    # Write the memory to the RAG model for fine-tuning
-    from playground.memory.chromadb_example import ChromaDB
-
-    db = ChromaDB(output_dir=memory_name)
-
-    db.add(memory)
-
-    return None
 
 
 # Initialize the agent

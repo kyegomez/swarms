@@ -58,4 +58,4 @@ def cleanup_json_logs(name: str = None):
 
 
 # Call the function
-cleanup_json_logs("sequential_workflow_agents")
+cleanup_json_logs("social_media_swarm")

@@ -1,5 +1,5 @@
 from typing import List
-from swarms import Agent
+from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import logger
 from swarms.structs.rearrange import AgentRearrange
 
