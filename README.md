@@ -927,7 +927,7 @@ autoswarm.run("Analyze these financial data and give me a summary")
 Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships. [Docs Available:](https://swarms.apac.ai/en/latest/swarms/structs/agent_rearrange/)
 
 ```python
-from swarms import Agent, AgentRearrange, rearrange, Anthropic
+from swarms import Agent, AgentRearrange, Anthropic
 
 
 # Initialize the director agent
@@ -988,16 +988,6 @@ agent_system = AgentRearrange(agents=agents, flow=flow)
 output = agent_system.run(
     "Create a format to express and communicate swarms of llms in a structured manner for youtube"
 )
-print(output)
-
-
-# Using rearrange function
-output = rearrange(
-    agents,
-    flow,
-    "Create a format to express and communicate swarms of llms in a structured manner for youtube",
-)
-
 print(output)
 
 ```
