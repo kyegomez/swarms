@@ -1,6 +1,6 @@
 from swarms import Agent, OpenAIChat
 from swarms.structs.mixture_of_agents import MixtureOfAgents
-from playground.memory.chromadb_example import ChromaDB
+from swarms_memory import ChromaDB
 
 
 SEC_DATA = """

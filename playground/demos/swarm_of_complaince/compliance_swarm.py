@@ -11,7 +11,7 @@ Todo [Improvements]
 
 from swarms import Agent
 from swarms.models.llama3_hosted import llama3Hosted
-from playground.memory.chromadb_example import ChromaDB
+from swarms_memory import ChromaDB
 
 
 # Model

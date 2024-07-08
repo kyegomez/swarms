@@ -15,7 +15,7 @@ task -> Understanding Agent [understands the problem better] -> Summarize of the
 
 from swarms import Agent, llama3Hosted, AgentRearrange
 from pydantic import BaseModel
-from playground.memory.chromadb_example import ChromaDB
+from swarms_memory import ChromaDB
 
 # Initialize the language model agent (e.g., GPT-3)
 llm = llama3Hosted(max_tokens=3000)

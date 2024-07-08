@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
 from swarms import Agent, OpenAIChat
-from playground.memory.chromadb_example import ChromaDB
+from swarms_memory import ChromaDB
 
 # Load the environment variables
 load_dotenv()
