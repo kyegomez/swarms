@@ -30,7 +30,7 @@ llm2 = Anthropic(
 
 # Agents
 paper_summarizer_agent = Agent(
-    agent_name = "paper_summarizer_agent",
+    agent_name="paper_summarizer_agent",
     llm=llm2,
     sop=PAPER_SUMMARY_ANALYZER,
     max_loops=1,
@@ -39,7 +39,7 @@ paper_summarizer_agent = Agent(
 )
 
 paper_implementor_agent = Agent(
-    agent_name = "paper_implementor_agent",
+    agent_name="paper_implementor_agent",
     llm=llm1,
     sop=PAPER_IMPLEMENTOR_AGENT_PROMPT,
     max_loops=1,
@@ -49,7 +49,7 @@ paper_implementor_agent = Agent(
 )
 
 pytorch_pseudocode_agent = Agent(
-    agent_name = "pytorch_pseudocode_agent",
+    agent_name="pytorch_pseudocode_agent",
     llm=llm1,
     sop=PAPER_IMPLEMENTOR_AGENT_PROMPT,
     max_loops=1,
@@ -66,10 +66,13 @@ task = f"""
 """
 
 
-agents = [paper_summarizer_agent, paper_implementor_agent, pytorch_pseudocode_agent]
+agents = [
+    paper_summarizer_agent,
+    paper_implementor_agent,
+    pytorch_pseudocode_agent,
+]
 
 flow = "paper_summarizer_agent -> paper_implementor_agent -> pytorch_pseudocode_agent"
 
 swarm = rearrange(agents, flow, task)
 print(swarm)
-

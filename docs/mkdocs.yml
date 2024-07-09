@@ -172,9 +172,9 @@ nav:
     - Memory Systems:
       - ChromaDB: "swarms_memory/chromadb.md"
       - Pinecone: "swarms_memory/pinecone.md"
-      - Redis: "swarms_memory/redis.md"
+      # - Redis: "swarms_memory/redis.md"
       - Faiss: "swarms_memory/faiss.md"
-      - HNSW: "swarms_memory/hnsw.md"
+      # - HNSW: "swarms_memory/hnsw.md"
   - References:
     - Agent Glossary: "swarms/glossary.md"
     - List of The Best Multi-Agent Papers: "swarms/papers.md"

@@ -26,7 +26,7 @@
 
 [![GitHub issues](https://img.shields.io/github/issues/kyegomez/swarms)](https://github.com/kyegomez/swarms/issues) [![GitHub forks](https://img.shields.io/github/forks/kyegomez/swarms)](https://github.com/kyegomez/swarms/network) [![GitHub stars](https://img.shields.io/github/stars/kyegomez/swarms)](https://github.com/kyegomez/swarms/stargazers) [![GitHub license](https://img.shields.io/github/license/kyegomez/swarms)](https://github.com/kyegomez/swarms/blob/main/LICENSE)[![GitHub star chart](https://img.shields.io/github/stars/kyegomez/swarms?style=social)](https://star-history.com/#kyegomez/swarms)[![Dependency Status](https://img.shields.io/librariesio/github/kyegomez/swarms)](https://libraries.io/github/kyegomez/swarms) [![Downloads](https://static.pepy.tech/badge/swarms/month)](https://pepy.tech/project/swarms)
 
-[![Join the Agora discord](https://img.shields.io/discord/1110910277110743103?label=Discord&logo=discord&logoColor=white&style=plastic&color=d7b023)![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
+![Share on Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Share%20%40kyegomez/swarms)](https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20AI%20project:%20&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on Facebook](https://img.shields.io/badge/Share-%20facebook-blue)](https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms) [![Share on LinkedIn](https://img.shields.io/badge/Share-%20linkedin-blue)](https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=&summary=&source=)
 
 [![Share on Reddit](https://img.shields.io/badge/-Share%20on%20Reddit-orange)](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&title=Swarms%20-%20the%20future%20of%20AI) [![Share on Hacker News](https://img.shields.io/badge/-Share%20on%20Hacker%20News-orange)](https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&t=Swarms%20-%20the%20future%20of%20AI) [![Share on Pinterest](https://img.shields.io/badge/-Share%20on%20Pinterest-red)](https://pinterest.com/pin/create/button/?url=https%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms&media=https%3A%2F%2Fexample.com%2Fimage.jpg&description=Swarms%20-%20the%20future%20of%20AI) [![Share on WhatsApp](https://img.shields.io/badge/-Share%20on%20WhatsApp-green)](https://api.whatsapp.com/send?text=Check%20out%20Swarms%20-%20the%20future%20of%20AI%20%23swarms%20%23AI%0A%0Ahttps%3A%2F%2Fgithub.com%2Fkyegomez%2Fswarms)
 
@@ -39,21 +39,12 @@
 
 Swarms is an enterprise grade and production ready multi-agent collaboration framework that enables you to orchestrate many agents to work collaboratively at scale to automate real-world activities.
 
-| **Feature**                  | **Description**                                                                                                                                                       | **Performance Impact** | **Documentation Link**        |
-|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|-------------------------------|
-| Models                       | Pre-trained models that can be utilized for various tasks within the swarm framework.                                                                                  | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
-| Models APIs                  | APIs to interact with and utilize the models effectively, providing interfaces for inference, training, and fine-tuning.                                               | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
-| Agents with Tools            | Agents equipped with specialized tools to perform specific tasks more efficiently, such as data processing, analysis, or interaction with external systems.            | ⭐⭐⭐⭐                   | [Documentation](https://medium.com/@kyeg/the-swarms-tool-system-functions-pydantic-basemodels-as-tools-and-radical-customization-c2a2e227b8ca)            |
-| Agents with Memory                       | Mechanisms for agents to store and recall past interactions, improving learning and adaptability over time.                                                            | ⭐⭐⭐⭐                   | [Documentation](https://github.com/kyegomez/swarms/blob/master/playground/structs/agent/agent_with_longterm_memory.py)            |
-| Multi-Agent Orchestration    | Coordination of multiple agents to work together seamlessly on complex tasks, leveraging their individual strengths to achieve higher overall performance.              | ⭐⭐⭐⭐⭐                  | [Documentation]()            |
-
-The performance impact is rated on a scale from one to five stars, with multi-agent orchestration being the highest due to its ability to combine the strengths of multiple agents and optimize task execution.
-
 ----
 
 ## Requirements
 - `python3.10` or above!
-- `.env` file with API keys from your providers like `OpenAI`, `Anthropic`
+- `.env` file with API keys from your providers like `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+- `$ pip install -U swarms` And, don't forget to install swarms!
 
 ## Install 💻
 
@@ -65,7 +56,6 @@ $ pip3 install -U swarms
 
 # Usage Examples 🤖
 
-### Google Collab Example
 Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
@@ -630,14 +620,7 @@ In traditional swarm theory, there are many types of swarms usually for very spe
 
 
 ### `SequentialWorkflow`
-Sequential Workflow enables you to sequentially execute tasks with `Agent` and then pass the output into the next agent and onwards until you have specified your max loops. `SequentialWorkflow` is wonderful for real-world business tasks like sending emails, summarizing documents, and analyzing data.
-
-
-✅  Save and Restore Workflow states!
-
-✅  Multi-Modal Support for Visual Chaining
-
-✅  Utilizes Agent class
+Sequential Workflow enables you to sequentially execute tasks with `Agent` and then pass the output into the next agent and onwards until you have specified your max loops.
 
 ```python
 from swarms import Agent, SequentialWorkflow, Anthropic
@@ -676,253 +659,7 @@ workflow.run(
 
 ```
 
-
-
-### `ConcurrentWorkflow`
-`ConcurrentWorkflow` runs all the tasks all at the same time with the inputs you give it!
-
-
-```python
-import os
-
-from dotenv import load_dotenv
-
-from swarms import Agent, ConcurrentWorkflow, OpenAIChat, Task
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Load environment variables
-llm = OpenAIChat(openai_api_key=os.getenv("OPENAI_API_KEY"))
-
-agent = Agent(llm=llm, max_loops=1)
-
-# Create a workflow
-workflow = ConcurrentWorkflow(max_workers=5)
-
-# Create tasks
-task1 = Task(agent, "What's the weather in miami")
-task2 = Task(agent, "What's the weather in new york")
-task3 = Task(agent, "What's the weather in london")
-
-# Add tasks to the workflow
-workflow.add(tasks=[task1, task2, task3])
-
-# Run the workflow
-workflow.run()
-```
-
-
-
-### `SwarmNetwork`
-`SwarmNetwork` provides the infrasturcture for building extremely dense and complex multi-agent applications that span across various types of agents.
-
-✅ Efficient Task Management: SwarmNetwork's intelligent agent pool and task queue management system ensures tasks are distributed evenly across agents. This leads to efficient use of resources and faster task completion.
-
-✅ Scalability: SwarmNetwork can dynamically scale the number of agents based on the number of pending tasks. This means it can handle an increase in workload by adding more agents, and conserve resources when the workload is low by reducing the number of agents.
-
-✅ Versatile Deployment Options: With SwarmNetwork, each agent can be run on its own thread, process, container, machine, or even cluster. This provides a high degree of flexibility and allows for deployment that best suits the user's needs and infrastructure.
-
-```python
-import os
-
-from dotenv import load_dotenv
-
-# Import the OpenAIChat model and the Agent struct
-from swarms import Agent, OpenAIChat, SwarmNetwork
-
-# Load the environment variables
-load_dotenv()
-
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
-
-# Initialize the language model
-llm = OpenAIChat(
-    temperature=0.5,
-    openai_api_key=api_key,
-)
-
-## Initialize the workflow
-agent = Agent(llm=llm, max_loops=1, agent_name="Social Media Manager")
-agent2 = Agent(llm=llm, max_loops=1, agent_name=" Product Manager")
-agent3 = Agent(llm=llm, max_loops=1, agent_name="SEO Manager")
-
-
-# Load the swarmnet with the agents
-swarmnet = SwarmNetwork(
-    agents=[agent, agent2, agent3],
-)
-
-# List the agents in the swarm network
-out = swarmnet.list_agents()
-print(out)
-
-# Run the workflow on a task
-out = swarmnet.run_single_agent(
-    agent2.id, "Generate a 10,000 word blog on health and wellness."
-)
-print(out)
-
-
-# Run all the agents in the swarm network on a task
-out = swarmnet.run_many_agents("Generate a 10,000 word blog on health and wellness.")
-print(out)
-```
-
-### Majority Voting
-Multiple-agents will evaluate an idea based off of an parsing or evaluation function. From papers like "[More agents is all you need](https://arxiv.org/pdf/2402.05120.pdf)
-
-```python
-from swarms import Agent, MajorityVoting, ChromaDB, Anthropic
-
-# Initialize the llm
-llm = Anthropic()
-
-# Agents
-agent1 = Agent(
-    llm = llm,
-    system_prompt="You are the leader of the Progressive Party. What is your stance on healthcare?",
-    agent_name="Progressive Leader",
-    agent_description="Leader of the Progressive Party",
-    long_term_memory=ChromaDB(),
-    max_steps=1,
-)
-
-agent2 = Agent(
-    llm=llm,
-    agent_name="Conservative Leader",
-    agent_description="Leader of the Conservative Party",
-    long_term_memory=ChromaDB(),
-    max_steps=1,
-)
-
-agent3 = Agent(
-    llm=llm,
-    agent_name="Libertarian Leader",
-    agent_description="Leader of the Libertarian Party",
-    long_term_memory=ChromaDB(),
-    max_steps=1,
-)
-
-# Initialize the majority voting
-mv = MajorityVoting(
-    agents=[agent1, agent2, agent3],
-    output_parser=llm.majority_voting,
-    autosave=False,
-    verbose=True,
-)
-
-
-# Start the majority voting
-mv.run("What is your stance on healthcare?")
-```
-## Build your own LLMs, Agents, and Swarms!
-
-### Swarms Compliant Model Interface
-```python
-from swarms import BaseLLM
-
-class vLLMLM(BaseLLM):
-    def __init__(self, model_name='default_model', tensor_parallel_size=1, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.model_name = model_name
-        self.tensor_parallel_size = tensor_parallel_size
-        # Add any additional initialization here
-    
-    def run(self, task: str):
-        pass
-
-# Example
-model = vLLMLM("mistral")
-
-# Run the model
-out = model("Analyze these financial documents and summarize of them")
-print(out)
-
-```
-
-
-### Swarms Compliant Agent Interface
-
-```python
-from swarms import Agent
-
-
-class MyCustomAgent(Agent):
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-
-        # Custom initialization logic
-
-    def custom_method(self, *args, **kwargs):
-
-        # Implement custom logic here
-
-        pass
-
-    def run(self, task, *args, **kwargs):
-
-        # Customize the run method
-
-        response = super().run(task, *args, **kwargs)
-
-        # Additional custom logic
-
-        return response`
-
-# Model
-agent = MyCustomAgent()
-
-# Run the agent
-out = agent("Analyze and summarize these financial documents: ")
-print(out)
-
-```
-
-
-### Compliant Interface for Multi-Agent Collaboration
-
-```python
-from swarms import AutoSwarm, AutoSwarmRouter, BaseSwarm
-
-
-# Build your own Swarm
-class MySwarm(BaseSwarm):
-    def __init__(self, name="kyegomez/myswarm", *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.name = name
-
-    def run(self, task: str, *args, **kwargs):
-        # Add your multi-agent logic here
-        # agent 1
-        # agent 2
-        # agent 3
-        return "output of the swarm"
-
-
-# Add your custom swarm to the AutoSwarmRouter
-router = AutoSwarmRouter(
-    swarms=[MySwarm]
-)
-
-
-# Create an AutoSwarm instance
-autoswarm = AutoSwarm(
-    name="kyegomez/myswarm",
-    description="A simple API to build and run swarms",
-    verbose=True,
-    router=router,
-)
-
-
-# Run the AutoSwarm
-autoswarm.run("Analyze these financial data and give me a summary")
-
-
-```
+------
 
 ## `AgentRearrange`
 Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships. [Docs Available:](https://swarms.apac.ai/en/latest/swarms/structs/agent_rearrange/)
@@ -1070,10 +807,10 @@ out = swarm.run("Prepare financial statements and audit financial records")
 print(out)
 ```
 
+----------
+
 ## Onboarding Session
 Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who will show you how to get started with the installation, usage examples, and starting to build your custom use case! [CLICK HERE](https://cal.com/swarms/swarms-onboarding-session)
-
-
 
 
 ---
@@ -1082,6 +819,13 @@ Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who
 Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 
 ----
+
+
+## Docker Instructions
+- [Learn More Here About Deployments In Docker](https://swarms.apac.ai/en/latest/docker_setup/)
+
+
+-----
 
 ## Folder Structure
 The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
@@ -1115,6 +859,22 @@ Swarms is an open-source project, and contributions are VERY welcome. If you wan
 
 ----
 
+
+
+## Swarm Newsletter 🤖 🤖 🤖 📧 
+Sign up to the Swarm newsletter to receive  updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊
+
+[CLICK HERE TO SIGNUP](https://docs.google.com/forms/d/e/1FAIpQLSfqxI2ktPR9jkcIwzvHL0VY6tEIuVPd-P2fOWKnd6skT9j1EQ/viewform?usp=sf_link)
+
+## Discovery Call
+Book a discovery call to learn how Swarms can lower your operating costs by 40% with swarms of autonomous agents in lightspeed. [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
+
+
+## Accelerate Backlog
+Accelerate Bugs, Features, and Demos to implement by supporting us here:
+
+<a href="https://polar.sh/kyegomez"><img src="https://polar.sh/embed/fund-our-backlog.svg?org=kyegomez" /></a>
+
 ## Community
 
 Join our growing community around the world, for real-time support, ideas, and discussions on Swarms 😊 
@@ -1128,25 +888,6 @@ Join our growing community around the world, for real-time support, ideas, and d
 - Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks [Sign up here](https://lu.ma/5p2jnc2v)
 
 ---
-
-## Discovery Call
-Book a discovery call to learn how Swarms can lower your operating costs by 40% with swarms of autonomous agents in lightspeed. [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
-
-
-## Accelerate Backlog
-Accelerate Bugs, Features, and Demos to implement by supporting us here:
-
-<a href="https://polar.sh/kyegomez"><img src="https://polar.sh/embed/fund-our-backlog.svg?org=kyegomez" /></a>
-
-
-## Docker Instructions
-- [Learn More Here About Deployments In Docker](https://swarms.apac.ai/en/latest/docker_setup/)
-
-
-## Swarm Newsletter 🤖 🤖 🤖 📧 
-Sign up to the Swarm newsletter to receive  updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊
-
-[CLICK HERE TO SIGNUP](https://docs.google.com/forms/d/e/1FAIpQLSfqxI2ktPR9jkcIwzvHL0VY6tEIuVPd-P2fOWKnd6skT9j1EQ/viewform?usp=sf_link)
 
 # License
 Apache License

@@ -1,6 +1,10 @@
-from swarms.models.openai_models import OpenAIChat
+import os
+from swarms.models import OpenAIChat
 
-openai = OpenAIChat(openai_api_key="", verbose=False)
+# Load doten
+openai = OpenAIChat(
+    openai_api_key=os.getenv("OPENAI_API_KEY"), verbose=False
+)
 
 chat = openai("What are quantum fields?")
 print(chat)

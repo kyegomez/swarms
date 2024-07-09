@@ -1,5 +1,6 @@
 from swarms import Agent, Anthropic
 
+
 def calculate_profit(revenue: float, expenses: float):
     """
     Calculates the profit by subtracting expenses from revenue.

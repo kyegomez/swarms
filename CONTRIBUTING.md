@@ -153,7 +153,3 @@ Please replace `/path/to/directory` with the actual path where the `code-quality
 
 If you're asking for a specific content or functionality inside `code-quality.sh` related to YAPF or other code quality tools, you would need to edit the `code-quality.sh` script to include the desired commands, such as running YAPF on a directory. The contents of `code-quality.sh` would dictate exactly what happens when you run it.
 
-
-## 📄 license
-
-By contributing, you agree that your contributions will be licensed under an [MIT license](https://github.com/kyegomez/swarms/blob/develop/LICENSE.md).

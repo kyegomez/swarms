@@ -236,7 +236,7 @@ boss_agent_creator = Agent(
 
 def run_jamba_swarm(task: str = None):
     logger.info(f"Making plan for the task: {task}")
-    out = planning_agent.run(task)
+    planning_agent.run(task)
 
     memory = planning_agent.short_memory.return_history_as_string()
 

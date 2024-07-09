@@ -4,7 +4,7 @@ import pinecone
 from attr import define, field
 
 from swarms.memory.base_vectordb import BaseVectorDatabase
-from swarms.utils.hash import str_to_hash
+from swarms.utils import str_to_hash
 
 
 @define
