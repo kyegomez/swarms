@@ -164,6 +164,7 @@ An LLM equipped with long term memory and tools, a full stack agent capable of a
 import logging
 from dotenv import load_dotenv
 from swarms import Agent, OpenAIChat
+from swarms_memory import ChromaDB
 import subprocess
 
 # Making an instance of the ChromaDB class
