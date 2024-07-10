@@ -75,29 +75,54 @@ Features:
 
 ```python
 import os
+from swarms import Agent, Anthropic
 
-from dotenv import load_dotenv
 
-# Import the OpenAIChat model and the Agent struct
-from swarms import Agent, OpenAIChat
-
-# Load the environment variables
-load_dotenv()
-
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
-
-# Initialize the language model
-llm = OpenAIChat(
-    temperature=0.5, openai_api_key=api_key, max_tokens=4000
+# Initialize the agent
+agent = Agent(
+    agent_name="Accounting Assistant",
+    system_prompt="You're the accounting agent, your purpose is to generate a profit report for a company!",
+    agent_description="Generate a profit report for a company!",
+    llm=Anthropic(
+        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+    ),
+    max_loops="auto",
+    autosave=True,
+    # dynamic_temperature_enabled=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="accounting_agent.json",
+    # tools=[
+    #     # calculate_profit,
+    #     # generate_report,
+    #     # search_knowledge_base,
+    #     # write_memory_to_rag,
+    #     # search_knowledge_base,
+    #     # generate_speech,
+    # ],
+    stopping_token="Stop!",
+    interactive=True,
+    # docs_folder="docs",
+    # pdf_path="docs/accounting_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    # user_name="User",
+    # # docs=
+    # # docs_folder="docs",
+    # retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=1000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 
+agent.run(
+    "Search the knowledge base for the swarms github framework and how it works"
+)
 
-## Initialize the workflow
-agent = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
-
-# Run the workflow on a task
-agent.run("Generate a 10,000 word blog on health and wellness.")
 ```
 
 
@@ -131,6 +156,7 @@ llm = OpenAIChat(
 ## Initialize the workflow
 agent = Agent(
     llm=llm,
+    agent_name: str = "WellNess Agent",
     name = "Health and Wellness Blog",
     system_prompt="Generate a 10,000 word blog on health and wellness.",
     max_loops=4,

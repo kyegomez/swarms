@@ -77,3 +77,12 @@ registry.add("Marketing Specialist", growth_agent1)
 registry.add("Sales Specialist", growth_agent2)
 registry.add("Product Development Specialist", growth_agent3)
 registry.add("Customer Service Specialist", growth_agent4)
+
+
+# Query the agents
+registry.get("Marketing Specialist")
+registry.get("Sales Specialist")
+registry.get("Product Development Specialist")
+
+# Get all the agents
+registry.list_agents()
