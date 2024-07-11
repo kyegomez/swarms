@@ -30,3 +30,4 @@ pandas>=2.2.2
 fastapi>=0.110.1
 networkx
 swarms-memory
+pre-commit

@@ -125,7 +125,6 @@ agent.run(
 
 ```
 
------
 
 ### `Agent` + Long Term Memory
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
@@ -172,7 +171,7 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 
 
 ```
------
+
 
 ### `Agent` ++ Long Term Memory ++ Tools!
 An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
@@ -285,7 +284,7 @@ out = agent("Create a new file for a plan to take over the world.")
 print(out)
 
 ```
-----
+
 
 ### Devin
 Implementation of Devin in less than 90 lines of code with several tools:
@@ -391,7 +390,7 @@ agent = Agent(
 out = agent("Create a new file for a plan to take over the world.")
 print(out)
 ```
----------------
+
 
 ### `Agent`with Pydantic BaseModel as Output Type
 The following is an example of an agent that intakes a pydantic basemodel and outputs it at the same time:
@@ -454,28 +453,22 @@ print(f"Generated data: {generated_data}")
 
 
 ```
------
 
 ### Multi Modal Autonomous Agent
 Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
 
 ```python
-# Description: This is an example of how to use the Agent class to run a multi-modal workflow
 import os
-
 from dotenv import load_dotenv
-
 from swarms import GPT4VisionAPI, Agent
 
 # Load the environment variables
 load_dotenv()
 
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the language model
 llm = GPT4VisionAPI(
-    openai_api_key=api_key,
+    openai_api_key=os.environ.get("OPENAI_API_KEY"),
     max_tokens=500,
 )
 
@@ -490,11 +483,16 @@ img = "assembly_line.jpg"
 
 ## Initialize the workflow
 agent = Agent(
-    llm=llm, max_loops="auto", autosave=True, dashboard=True, multi_modal=True
+    agent_name = "Multi-ModalAgent",
+    llm=llm, 
+    max_loops="auto", 
+    autosave=True, 
+    dashboard=True, 
+    multi_modal=True
 )
 
 # Run the workflow on a task
-agent.run(task=task, img=img)
+agent.run(task, img)
 ```
 ----
 
@@ -555,7 +553,7 @@ generated_data = agent.run(task)
 print(f"Generated data: {generated_data}")
 
 ```
-----------------
+
 
 ### `Task`
 For deeper control of your agent stack, `Task` is a simple structure for task execution with the `Agent`. Imagine zapier like LLM-based workflow automation.
@@ -761,8 +759,49 @@ print(output)
 ## `HierarhicalSwarm`
 Coming soon...
 
+
 ## `GraphSwarm`
-Coming soon...
+
+```python
+import os
+
+from dotenv import load_dotenv
+
+from swarms import Agent, Edge, GraphWorkflow, Node, NodeType, OpenAIChat
+
+load_dotenv()
+
+api_key = os.environ.get("OPENAI_API_KEY")
+
+llm = OpenAIChat(
+    temperature=0.5, openai_api_key=api_key, max_tokens=4000
+)
+agent1 = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
+agent2 = Agent(llm=llm, max_loops=1, autosave=True, dashboard=True)
+
+def sample_task():
+    print("Running sample task")
+    return "Task completed"
+
+wf_graph = GraphWorkflow()
+wf_graph.add_node(Node(id="agent1", type=NodeType.AGENT, agent=agent1))
+wf_graph.add_node(Node(id="agent2", type=NodeType.AGENT, agent=agent2))
+wf_graph.add_node(
+    Node(id="task1", type=NodeType.TASK, callable=sample_task)
+)
+wf_graph.add_edge(Edge(source="agent1", target="task1"))
+wf_graph.add_edge(Edge(source="agent2", target="task1"))
+
+wf_graph.set_entry_points(["agent1", "agent2"])
+wf_graph.set_end_points(["task1"])
+
+print(wf_graph.visualize())
+
+# Run the workflow
+results = wf_graph.run()
+print("Execution results:", results)
+
+```
 
 ## `MixtureOfAgents`
 This is an implementation from the paper: "Mixture-of-Agents Enhances Large Language Model Capabilities" by together.ai, it achieves SOTA on AlpacaEval 2.0, MT-Bench and FLASK, surpassing GPT-4 Omni. Great for tasks that need to be parallelized and then sequentially fed into another loop

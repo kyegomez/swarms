@@ -175,6 +175,9 @@ nav:
       # - Redis: "swarms_memory/redis.md"
       - Faiss: "swarms_memory/faiss.md"
       # - HNSW: "swarms_memory/hnsw.md"
+  - Swarms Platform:
+    - Overview: "swarms_platform/index.md"
+    - Prompts API: "swarms_platform/prompts_api.md"
   - References:
     - Agent Glossary: "swarms/glossary.md"
     - List of The Best Multi-Agent Papers: "swarms/papers.md"

@@ -1,11 +1,13 @@
 from swarms import Agent, Anthropic
+import os
+
 
 # Initialize the agent
 agent = Agent(
     agent_name="Accounting Assistant",
     system_prompt="You're the accounting agent, your purpose is to generate a profit report for a company!",
     agent_description="Generate a profit report for a company!",
-    llm=Anthropic(),
+    llm=Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")),
     max_loops="auto",
     autosave=True,
     # dynamic_temperature_enabled=True,

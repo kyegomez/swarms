@@ -258,6 +258,9 @@ class Agent(BaseStructure):
         custom_planning_prompt: str = None,
         memory_chunk_size: int = 2000,
         agent_ops_on: bool = False,
+        log_directory: str = None,
+        project_path: str = None,
+        tool_system_prompt: str = tool_sop_prompt(),
         *args,
         **kwargs,
     ):
@@ -340,6 +343,9 @@ class Agent(BaseStructure):
         self.custom_tools_prompt = custom_tools_prompt
         self.memory_chunk_size = memory_chunk_size
         self.agent_ops_on = agent_ops_on
+        self.log_directory = log_directory
+        self.project_path = project_path
+        self.tool_system_prompt = tool_system_prompt
 
         # Name
         self.name = agent_name
@@ -392,7 +398,9 @@ class Agent(BaseStructure):
                 "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
             )
             # Add the tool prompt to the memory
-            self.short_memory.add(role="System", content=tool_sop_prompt())
+            self.short_memory.add(
+                role="Instructions", content=tool_system_prompt
+            )
 
             # Log the tools
             logger.info(f"Tools provided: Accessing {len(tools)} tools")
@@ -429,23 +437,8 @@ class Agent(BaseStructure):
                 role=self.user_name, content=tool_schema_str
             )
 
-        # If a list of tool schemas is provided
-        if exists(self.list_base_models):
-            logger.info(
-                "List of tool schemas provided, Automatically converting to OpenAI function"
-            )
-            tool_schemas = multi_base_model_to_openai_function(
-                self.list_base_models
-            )
-
-            # Convert the tool schemas to a string
-            tool_schemas = json.dumps(tool_schemas, indent=4)
-
-            # Add the tool schema to the short memory
-            logger.info("Adding tool schema to short memory")
-            self.short_memory.add(
-                role=self.user_name, content=tool_schemas
-            )
+        # If multiple base models, then conver them.
+        self.handle_multiple_base_models()
 
         # If the algorithm of thoughts is enabled then set the sop to the algorithm of thoughts
         if self.algorithm_of_thoughts is not False:
@@ -468,29 +461,8 @@ class Agent(BaseStructure):
         if exists(self.sop):
             self.short_memory.add(role=self.user_name, content=self.sop)
 
-        # If the device is not provided then get the device data
-
-        # if agent ops is enabled then import agent ops
-        if agent_ops_on is True:
-            try:
-                from swarms.utils.agent_ops_check import (
-                    try_import_agentops,
-                )
-
-                # Try importing agent ops
-                logger.info(
-                    "Agent Ops Initializing, ensure that you have the agentops API key and the pip package installed."
-                )
-                try_import_agentops()
-            except ImportError:
-                logger.error(
-                    "Could not import agentops, try installing agentops: $ pip3 install agentops"
-                )
-
-        # if tokenizer is None:
-        #     self.tokenizer = TikTokenizer()
-        # else:
-        #     self.tokenizer = None
+        # If agent_ops is on => activate agentops
+        self.activate_agentops()
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -789,17 +761,7 @@ class Agent(BaseStructure):
 
                         # Check if tools is not None
                         if self.tools is not None:
-                            # self.parse_and_execute_tools(response)
-                            tool_call_output = parse_and_execute_json(
-                                self.tools, response, parse_md=True
-                            )
-                            logger.info(
-                                f"Tool Call Output: {tool_call_output}"
-                            )
-                            self.short_memory.add(
-                                role=self.agent_name,
-                                content=tool_call_output,
-                            )
+                            self.parse_function_call_and_execute(response)
 
                         if self.code_interpreter is not False:
                             self.code_interpreter_execution(response)
@@ -1813,8 +1775,9 @@ class Agent(BaseStructure):
                 self.short_memory.return_history_as_string()
             )
             logger.info(
-                f"Tokens available: {tokens_used - self.context_length}"
+                f"Tokens available: {self.context_length - tokens_used}"
             )
+
         return tokens_used
 
     def tokens_checks(self):
@@ -1899,3 +1862,101 @@ class Agent(BaseStructure):
                     f"Tokens available: {tokens_used - self.context_length}"
                 )
             return input_string
+
+    def parse_function_call_and_execute(self, response: str):
+        """
+        Parses a function call from the given response and executes it.
+
+        Args:
+            response (str): The response containing the function call.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: If there is an error parsing and executing the function call.
+        """
+        try:
+            if self.tools is not None:
+                tool_call_output = parse_and_execute_json(
+                    self.tools, response, parse_md=True
+                )
+
+                if tool_call_output is not str:
+                    tool_call_output = str(tool_call_output)
+
+                logger.info(f"Tool Call Output: {tool_call_output}")
+                self.short_memory.add(
+                    role=self.agent_name,
+                    content=tool_call_output,
+                )
+
+                return tool_call_output
+        except Exception as error:
+            logger.error(
+                f"Error parsing and executing function call: {error}"
+            )
+            print(
+                colored(
+                    f"Error parsing and executing function call: {error}",
+                    "red",
+                )
+            )
+            # Add better logging and extreme handling here
+            # Log the error with more details
+            logger.exception(
+                "An error occurred during parsing and executing function call"
+            )
+            # Raise a custom exception with the error message
+            raise Exception(
+                "Error parsing and executing function call"
+            ) from error
+
+    def activate_agentops(self):
+        if self.agent_ops_on is True:
+            try:
+                from swarms.utils.agent_ops_check import (
+                    try_import_agentops,
+                )
+
+                # Try importing agent ops
+                logger.info(
+                    "Agent Ops Initializing, ensure that you have the agentops API key and the pip package installed."
+                )
+                try_import_agentops()
+
+                logger.info("Agentops successfully activated!")
+            except ImportError:
+                logger.error(
+                    "Could not import agentops, try installing agentops: $ pip3 install agentops"
+                )
+
+    def handle_multiple_base_models(self) -> None:
+        try:
+            # If a list of tool schemas is provided
+            logger.info("Adding multiple base models as tools --->")
+            if exists(self.list_base_models):
+                logger.info(
+                    "List of tool schemas provided, Automatically converting to OpenAI function"
+                )
+                tool_schemas = multi_base_model_to_openai_function(
+                    self.list_base_models
+                )
+
+                # Convert the tool schemas to a string
+                tool_schemas = json.dumps(tool_schemas, indent=4)
+
+                # Add the tool schema to the short memory
+                logger.info("Adding tool schema to short memory")
+                self.short_memory.add(
+                    role=self.user_name, content=tool_schemas
+                )
+
+                return logger.info(
+                    "Successfully integrated multiple tools"
+                )
+        except Exception as error:
+            logger.info(
+                f"Error with the base models, check the base model types and make sure they are initialized {error}"
+            )
+            raise error
