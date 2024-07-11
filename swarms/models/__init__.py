@@ -41,6 +41,7 @@ from swarms.models.types import (  # noqa: E402
     VideoModality,
 )
 from swarms.models.vilt import Vilt  # noqa: E402
+from swarms.models.popular_llms import FireWorksAI
 
 __all__ = [
     "BaseEmbeddingModel",
@@ -77,4 +78,5 @@ __all__ = [
     "OpenAIEmbeddings",
     "llama3Hosted",
     "GPT4o",
+    "FireWorksAI",
 ]

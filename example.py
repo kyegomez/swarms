@@ -1,62 +1,4 @@
-from swarms import Agent
-from langchain_community.llms.anthropic import Anthropic
-
-
-def calculate_profit(revenue: float, expenses: float):
-    """
-    Calculates the profit by subtracting expenses from revenue.
-
-    Args:
-        revenue (float): The total revenue.
-        expenses (float): The total expenses.
-
-    Returns:
-        float: The calculated profit.
-    """
-    return revenue - expenses
-
-
-def generate_report(company_name: str, profit: float):
-    """
-    Generates a report for a company's profit.
-
-    Args:
-        company_name (str): The name of the company.
-        profit (float): The calculated profit.
-
-    Returns:
-        str: The report for the company's profit.
-    """
-    return f"The profit for {company_name} is ${profit}."
-
-
-EMAIL_DETECT_APPOINT = """
-
-if the user gives you an email address, then call the appointment function to schedule a meeting with the user.
-
-SCHEMA OF THE FUNCTION:
-
-
-"""
-
-
-def write_memory_to_rag(memory_name: str, memory: str):
-    """
-    Writes the memory to the RAG model for fine-tuning.
-
-    Args:
-        memory_name (str): The name of the memory.
-        memory (str): The memory to be written to the RAG model.
-    """
-    # Write the memory to the RAG model for fine-tuning
-    from playground.memory.chromadb_example import ChromaDB
-
-    db = ChromaDB(output_dir=memory_name)
-
-    db.add(memory)
-
-    return None
-
+from swarms import Agent, Anthropic
 
 # Initialize the agent
 agent = Agent(
@@ -66,7 +8,6 @@ agent = Agent(
     llm=Anthropic(),
     max_loops="auto",
     autosave=True,
-    sop_list=[EMAIL_DETECT_APPOINT],
     # dynamic_temperature_enabled=True,
     dashboard=False,
     verbose=True,

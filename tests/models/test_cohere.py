@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 from dotenv import load_dotenv
 
-from swarms.models import BaseCohere, Cohere
+from swarms import Cohere
 
 # Load the environment variables
 load_dotenv()
@@ -154,7 +154,7 @@ def test_base_cohere_validate_environment():
         "cohere_api_key": "my-api-key",
         "user_agent": "langchain",
     }
-    validated_values = BaseCohere.validate_environment(values)
+    validated_values = Cohere.validate_environment(values)
     assert "client" in validated_values
     assert "async_client" in validated_values
 
@@ -166,7 +166,7 @@ def test_base_cohere_validate_environment_without_cohere():
     }
     with patch.dict("sys.modules", {"cohere": None}):
         with pytest.raises(ImportError):
-            BaseCohere.validate_environment(values)
+            Cohere.validate_environment(values)
 
 
 # Test cases for benchmarking generations with various models

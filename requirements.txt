@@ -29,3 +29,4 @@ termcolor>=2.4.0
 pandas>=2.2.2
 fastapi>=0.110.1
 networkx
+swarms-memory

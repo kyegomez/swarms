@@ -1,6 +1,6 @@
 ## Building Analyst Agents with Swarms to write Business Reports
 
-> Jupyter Notebook accompanying this post is accessible at: [Business Analyst Agent Notebook](https://github.com/kyegomez/swarms/blob/master/playground/business-analyst-agent.ipynb)
+> Jupyter Notebook accompanying this post is accessible at: [Business Analyst Agent Notebook](https://github.com/kyegomez/swarms/blob/master/playground/demos/business_analysis_swarm/business-analyst-agent.ipynb)
 
 Solving a business problem often involves preparing a Business Case Report. This report comprehensively analyzes the problem, evaluates potential solutions, and provides evidence-based recommendations and an implementation plan to effectively address the issue and drive business value. While the process of preparing one requires an experienced business analyst, the workflow can be augmented using AI agents. Two candidates stick out as areas to work on:
 

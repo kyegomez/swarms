@@ -1,5 +1,5 @@
 from swarms import Agent, OpenAIChat
-from playground.memory.chromadb_example import ChromaDB
+from swarms_memory import ChromaDB
 from swarms.models.tiktoken_wrapper import TikTokenizer
 
 # Initialize the agent

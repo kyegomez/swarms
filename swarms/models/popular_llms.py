@@ -80,3 +80,11 @@ class OctoAIChat(OctoAIEndpoint):
 
     def run(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
+
+
+class FireWorksAI(Fireworks):
+    def __call__(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)
+
+    def run(self, *args, **kwargs):
+        return self.invoke(*args, **kwargs)

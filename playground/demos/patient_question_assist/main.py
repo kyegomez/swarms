@@ -1,6 +1,6 @@
 from swarms import Agent, OpenAIChat
 from typing import List
-from playground.memory.chromadb_example import ChromaDB
+from swarms_memory import ChromaDB
 
 memory = ChromaDB(
     metric="cosine",

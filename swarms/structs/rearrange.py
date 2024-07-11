@@ -50,6 +50,7 @@ class AgentRearrange(BaseSwarm):
         self.human_in_the_loop = human_in_the_loop
         self.custom_human_in_the_loop = custom_human_in_the_loop
         self.swarm_history = {agent.agent_name: [] for agent in agents}
+        self.sub_swarm = {}
 
         # Verbose is True
         if verbose is True:
@@ -65,6 +66,14 @@ class AgentRearrange(BaseSwarm):
                 list(self.agents.keys())
             )
         )
+
+    def add_sub_swarm(self, name: str, flow: str):
+        self.sub_swarm[name] = flow
+        logger.info(f"Sub-swarm {name} added with flow: {flow}")
+
+    def set_custom_flow(self, flow: str):
+        self.flow = flow
+        logger.info(f"Custom flow set: {flow}")
 
     def add_agent(self, agent: Agent):
         """
@@ -250,6 +259,77 @@ class AgentRearrange(BaseSwarm):
         except Exception as e:
             logger.error(f"An error occurred: {e}")
             return e
+
+    def process_agent_or_swarm(
+        self, name: str, task: str, img: str, *args, **kwargs
+    ):
+        """
+
+        process_agent_or_swarm: Processes the agent or sub-swarm based on the given name.
+
+        Args:
+            name (str): The name of the agent or sub-swarm to process.
+            task (str): The task to be executed.
+            img (str): The image to be processed by the agents.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            str: The result of the last executed task.
+
+        """
+        if name.startswith("Human"):
+            return self.human_intervention(task)
+        elif name in self.sub_swarm:
+            return self.run_sub_swarm(task, name, img, *args, **kwargs)
+        else:
+            agent = self.agents[name]
+            return agent.run(task, *args, **kwargs)
+
+    def human_intervention(self, task: str) -> str:
+        if self.human_in_the_loop and self.custom_human_in_the_loop:
+            return self.custom_human_in_the_loop(task)
+        else:
+            return input(
+                "Human intervention required. Enter your response: "
+            )
+
+    def run_sub_swarm(
+        self, swarm_name: str, task: str, img: str, *args, **kwargs
+    ):
+        """
+        Runs a sub-swarm by executing a sequence of tasks on a set of agents.
+
+        Args:
+            swarm_name (str): The name of the sub-swarm to run.
+            task (str): The initial task to be executed.
+            img (str): The image to be processed by the agents.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            str: The result of the last executed task.
+
+        """
+        sub_flow = self.sub_swarm[swarm_name]
+        sub_tasks = sub_flow.split("->")
+        current_task = task
+
+        for sub_task in sub_tasks:
+            agent_names = [name.strip() for name in sub_task.split(",")]
+            if len(agent_names) > 1:
+                results = []
+                for agent_name in agent_names:
+                    result = self.process_agent_or_swarm(
+                        agent_name, current_task, img, *args, **kwargs
+                    )
+                    results.append(result)
+                current_task = "; ".join(results)
+            else:
+                current_task = self.process_agent_or_swarm(
+                    agent_names[0], current_task, img, *args, **kwargs
+                )
+        return current_task
 
 
 def rearrange(

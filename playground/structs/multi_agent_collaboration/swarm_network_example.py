@@ -6,7 +6,7 @@ from swarms import (
     OpenAIChat,
     TogetherLLM,
 )
-from playground.memory.chromadb_example import ChromaDB
+from swarms_memory import ChromaDB
 from dotenv import load_dotenv
 
 # load the environment variables

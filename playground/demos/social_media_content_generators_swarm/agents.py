@@ -12,18 +12,6 @@ Example:
 
 from swarms import Agent, OpenAIChat
 
-# # Memory
-# memory = ChromaDB(
-#     output_dir="social_media_marketing",
-#     docs_folder="docs",
-# )
-
-# Memory for instagram
-# memory = ChromaDB(
-#     output_dir="social_media_marketing",
-#     docs_folder="docs",
-# )
-
 llm = OpenAIChat(max_tokens=4000)
 
 
