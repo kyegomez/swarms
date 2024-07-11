@@ -957,6 +957,7 @@ class Agent(BaseStructure):
         Returns:
             str: The agent history prompt
         """
+        out = ""
         try:
             logger.info(f"Querying long term memory database for {query}")
             ltr = self.long_term_memory.query(query, *args, **kwargs)
