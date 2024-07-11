@@ -125,6 +125,7 @@ agent.run(
 
 ```
 
+-----
 
 ### `Agent` + Long Term Memory
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
@@ -171,7 +172,7 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 
 
 ```
-
+-----
 
 ### `Agent` ++ Long Term Memory ++ Tools!
 An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
@@ -284,7 +285,7 @@ out = agent("Create a new file for a plan to take over the world.")
 print(out)
 
 ```
-
+----
 
 ### Devin
 Implementation of Devin in less than 90 lines of code with several tools:
@@ -390,7 +391,7 @@ agent = Agent(
 out = agent("Create a new file for a plan to take over the world.")
 print(out)
 ```
-
+---------------
 
 ### `Agent`with Pydantic BaseModel as Output Type
 The following is an example of an agent that intakes a pydantic basemodel and outputs it at the same time:
@@ -453,6 +454,7 @@ print(f"Generated data: {generated_data}")
 
 
 ```
+-----
 
 ### Multi Modal Autonomous Agent
 Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
@@ -553,7 +555,7 @@ generated_data = agent.run(task)
 print(f"Generated data: {generated_data}")
 
 ```
-
+----------------
 
 ### `Task`
 For deeper control of your agent stack, `Task` is a simple structure for task execution with the `Agent`. Imagine zapier like LLM-based workflow automation.
@@ -758,11 +760,6 @@ print(output)
 
 ## `HierarhicalSwarm`
 Coming soon...
-
-
-## `AgentLoadBalancer`
-Coming soon...
-
 
 ## `GraphSwarm`
 Coming soon...
