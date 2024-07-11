@@ -76,6 +76,17 @@ You can install `swarms` with pip in a
         npm install swarms-js
         ```
 
+## Environment Variables
+
+Environment variables are used in Swarms for holding API Keys and other system configuration. See .env.example for others.
+
+The initial ones to set are:
+
+```
+OPENAI_API_KEY="sk-..." # your OpenAI key
+USE_TELEMETRY="True"    # or "False" if you would like to disable telemetry
+```
+
 
 ## Documentation
 
