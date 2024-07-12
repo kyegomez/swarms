@@ -299,8 +299,6 @@ print(f"Generated data: {generated_data}")
 ## References and Resources
 
 - [Transformers Documentation](https://huggingface.co/transformers/)
-- [Databricks Dolly v2](https://www.databricks.com/product/dolly)
-- [Jsonformer](https://github.com/swarms/jsonformer)
 - [Loguru Logger](https://loguru.readthedocs.io/en/stable/)
 
 This documentation provides a comprehensive guide to the `ToolAgent` class, including its initialization, usage, and practical examples. By following the detailed instructions and examples, developers can effectively utilize the `ToolAgent` for various tasks involving model and tokenizer-based operations.
