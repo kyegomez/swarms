@@ -100,6 +100,7 @@ nav:
     - Models:
       - Overview: "swarms/models/index.md"
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+      - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
     - Agents:
       - Overview: "swarms/structs/index.md"
       - Build Agents: "swarms/structs/diy_your_own_agent.md"
