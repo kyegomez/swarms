@@ -6,10 +6,11 @@
 A Hierarchical Swarm architecture organizes the agents in a tree-like structure. Higher-level agents delegate tasks to lower-level agents, which can further divide tasks among themselves. This structure allows for efficient task distribution and scalability.
 
 **Use-Cases:**
+
 - Complex decision-making processes where tasks can be broken down into subtasks.
+
 - Multi-stage workflows such as data processing pipelines or hierarchical reinforcement learning.
 
-**Mermaid Graph:**
 ```mermaid
 graph TD
     A[Root Agent] --> B1[Sub-Agent 1]
@@ -31,7 +32,6 @@ In a Parallel Swarm architecture, multiple agents operate independently and simu
 - Tasks that can be processed independently, such as parallel data analysis.
 - Large-scale simulations where multiple scenarios are run in parallel.
 
-**Mermaid Graph:**
 ```mermaid
 graph LR
     A[Coordinator Agent] --> B1[Sub-Agent 1]
@@ -49,9 +49,9 @@ A Sequential Swarm architecture processes tasks in a linear sequence. Each agent
 
 **Use-Cases:**
 - Workflows where each step depends on the previous one, such as assembly lines or sequential data processing.
+
 - Scenarios requiring strict order of operations.
 
-**Mermaid Graph:**
 ```mermaid
 graph TD
     A[First Agent] --> B[Second Agent]
@@ -68,9 +68,9 @@ In a Round Robin Swarm architecture, tasks are distributed cyclically among a se
 
 **Use-Cases:**
 - Load balancing in distributed systems.
+
 - Scenarios requiring fair distribution of tasks to avoid overloading any single agent.
 
-**Mermaid Graph:**
 ```mermaid
 graph TD
     A[Coordinator Agent] --> B1[Sub-Agent 1]
@@ -92,9 +92,9 @@ A Federated Swarm architecture involves multiple independent swarms collaboratin
 
 **Use-Cases:**
 - Distributed learning systems where data is processed across multiple nodes.
+
 - Scenarios requiring collaboration between different teams or departments.
 
-**Mermaid Graph:**
 ```mermaid
 graph TD
     A[Central Coordinator]
@@ -124,9 +124,9 @@ A Star Swarm architecture features a central agent that coordinates the activiti
 
 **Use-Cases:**
 - Centralized decision-making processes.
+
 - Scenarios requiring a central authority to coordinate multiple workers.
 
-**Mermaid Graph:**
 ```mermaid
 graph TD
     A[Central Agent] --> B1[Peripheral Agent 1]
@@ -144,9 +144,9 @@ A Mesh Swarm architecture allows for a fully connected network of agents where e
 
 **Use-Cases:**
 - Complex systems requiring high fault tolerance and redundancy.
+
 - Scenarios involving dynamic and frequent communication between agents.
 
-**Mermaid Graph:**
 ```mermaid
 graph TD
     A1[Agent 1] --> A2[Agent 2]
@@ -166,9 +166,9 @@ A Cascade Swarm architecture involves a chain of agents where each agent trigger
 
 **Use-Cases:**
 - Multi-stage processing tasks such as data transformation pipelines.
+
 - Event-driven architectures where one event triggers subsequent actions.
 
-**Mermaid Graph:**
 ```mermaid
 graph TD
     A[Trigger Agent] --> B[Agent 1]
@@ -186,9 +186,9 @@ A Hybrid Swarm architecture combines elements of various architectures to suit s
 
 **Use-Cases:**
 - Complex workflows requiring a mix of different processing strategies.
+
 - Custom scenarios tailored to specific operational requirements.
 
-**Mermaid Graph:**
 ```mermaid
 graph TD
     A[Root Agent] --> B1[Sub-Agent 1]
