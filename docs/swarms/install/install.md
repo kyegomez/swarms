@@ -1,3 +1,6 @@
+
+# Swarms Installation Guide
+
 <div align="center">
   <p>
     <a align="center" href="" target="_blank">
@@ -9,78 +12,135 @@
   </p>
 </div>
 
-# Installation Guide
-
 You can install `swarms` with pip in a
 [**Python>=3.10**](https://www.python.org/) environment.
 
-!!! example "pip install (recommended)"
+## Prerequisites
 
-    === "headless"
-        The headless installation of `swarms` is designed for environments where graphical user interfaces (GUI) are not needed, making it more lightweight and suitable for server-side applications.
+Before you begin, ensure you have the following installed:
 
-        ```bash
-        pip install swarms
-        ```
+- Python 3.10 or higher: [Download Python](https://www.python.org/)
+- pip (specific version recommended): `pip >= 21.0`
+- git (for cloning the repository): [Download Git](https://git-scm.com/)
 
+## Installation Options
 
+=== "pip (Recommended)"
 
-!!! example "git clone (for development)"
+    #### Headless Installation
 
-    === "virtualenv"
+    The headless installation of `swarms` is designed for environments where graphical user interfaces (GUI) are not needed, making it more lightweight and suitable for server-side applications.
 
-        ```bash
-        # clone repository and navigate to root directory
-        git clone https://github.com/kyegomez/swarms.git
-        cd swarms
+    ```bash
+    pip install swarms
+    ```
 
-        # setup python environment and activate it
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
+=== "Development Installation"
 
-        # headless install
-        pip install -e "."
+    === "Using virtualenv"
 
-        # desktop install
-        pip install -e ".[desktop]"
-        ```
+        1. **Clone the repository and navigate to the root directory:**
 
-    === "poetry"
+            ```bash
+            git clone https://github.com/kyegomez/swarms.git
+            cd swarms
+            ```
 
-        ```bash
-        # clone repository and navigate to root directory
-        git clone https://github.com/kyegomez/swarms.git
-        cd swarms
+        2. **Setup Python environment and activate it:**
 
-        # setup python environment and activate it
-        poetry env use python3.10
-        poetry shell
+            ```bash
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install --upgrade pip
+            ```
 
-        # headless install
-        poetry install
+        3. **Install Swarms:**
 
-        # desktop install
-        poetry install --extras "desktop"
-        ```
+            - Headless install:
 
+                ```bash
+                pip install -e .
+                ```
 
-# Javascript
+            - Desktop install:
 
-!!! example "NPM install |WIP|"
+                ```bash
+                pip install -e .[desktop]
+                ```
 
-    === "headless"
-        Get started with the NPM implementation of Swarms with this command:
+    === "Using Anaconda"
 
-        ```bash
-        npm install swarms-js
-        ```
+        1. **Create and activate an Anaconda environment:**
 
+            ```bash
+            conda create -n swarms python=3.10
+            conda activate swarms
+            ```
+
+        2. **Clone the repository and navigate to the root directory:**
+
+            ```bash
+            git clone https://github.com/kyegomez/swarms.git
+            cd swarms
+            ```
+
+        3. **Install Swarms:**
+
+            - Headless install:
+
+                ```bash
+                pip install -e .
+                ```
+
+            - Desktop install:
+
+                ```bash
+                pip install -e .[desktop]
+                ```
+
+    === "Using Poetry"
+
+        1. **Clone the repository and navigate to the root directory:**
+
+            ```bash
+            git clone https://github.com/kyegomez/swarms.git
+            cd swarms
+            ```
+
+        2. **Setup Python environment and activate it:**
+
+            ```bash
+            poetry env use python3.10
+            poetry shell
+            ```
+
+        3. **Install Swarms:**
+
+            - Headless install:
+
+                ```bash
+                poetry install
+                ```
+
+            - Desktop install:
+
+                ```bash
+                poetry install --extras "desktop"
+                ```
+
+## Javascript
+
+=== "NPM install (Work in Progress)"
+
+    Get started with the NPM implementation of Swarms:
+
+    ```bash
+    npm install swarms-js
+    ```
 
 ## Documentation
 
-[Learn more about swarms →](swarms/)
-
+[Learn more about Swarms →](swarms/)
 
 ## Examples
 
