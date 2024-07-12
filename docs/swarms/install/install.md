@@ -1,4 +1,3 @@
-
 # Swarms Installation Guide
 
 <div align="center">
@@ -128,6 +127,156 @@ Before you begin, ensure you have the following installed:
                 poetry install --extras "desktop"
                 ```
 
+=== "Using Docker"
+
+    Docker is an excellent option for creating isolated and reproducible environments, suitable for both development and production.
+
+    1. **Pull the Docker image:**
+
+        ```bash
+        docker pull kyegomez/swarms
+        ```
+
+    2. **Run the Docker container:**
+
+        ```bash
+        docker run -it --rm kyegomez/swarms
+        ```
+
+    3. **Build and run a custom Docker image:**
+
+        ```dockerfile
+        # Dockerfile
+        FROM python:3.10-slim
+
+        # Set up environment
+        WORKDIR /app
+        COPY . /app
+
+        # Install dependencies
+        RUN pip install --upgrade pip && \
+            pip install -e .
+
+        CMD ["python", "your_script.py"]
+        ```
+
+        ```bash
+        # Build and run the Docker image
+        docker build -t swarms-custom .
+        docker run -it --rm swarms-custom
+        ```
+
+=== "Using Kubernetes"
+
+    Kubernetes provides an automated way to deploy, scale, and manage containerized applications.
+
+    1. **Create a Deployment YAML file:**
+
+        ```yaml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: swarms-deployment
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: swarms
+          template:
+            metadata:
+              labels:
+                app: swarms
+            spec:
+              containers:
+              - name: swarms
+                image: kyegomez/swarms
+                ports:
+                - containerPort: 8080
+        ```
+
+    2. **Apply the Deployment:**
+
+        ```bash
+        kubectl apply -f deployment.yaml
+        ```
+
+    3. **Expose the Deployment:**
+
+        ```bash
+        kubectl expose deployment swarms-deployment --type=LoadBalancer --name=swarms-service
+        ```
+
+=== "CI/CD Pipelines"
+
+    Integrating Swarms into your CI/CD pipeline ensures automated testing and deployment.
+
+    #### Using GitHub Actions
+
+    ```yaml
+    # .github/workflows/ci.yml
+    name: CI
+
+    on:
+      push:
+        branches: [ main ]
+      pull_request:
+        branches: [ main ]
+
+    jobs:
+      build:
+
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v2
+        - name: Set up Python
+          uses: actions/setup-python@v2
+          with:
+            python-version: 3.10
+        - name: Install dependencies
+          run: |
+            python -m venv venv
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -e .
+        - name: Run tests
+          run: |
+            source venv/bin/activate
+            pytest
+    ```
+
+    #### Using Jenkins
+
+    ```groovy
+    pipeline {
+        agent any
+
+        stages {
+            stage('Clone repository') {
+                steps {
+                    git 'https://github.com/kyegomez/swarms.git'
+                }
+            }
+            stage('Setup Python') {
+                steps {
+                    sh 'python3 -m venv venv'
+                    sh 'source venv/bin/activate && pip install --upgrade pip'
+                }
+            }
+            stage('Install dependencies') {
+                steps {
+                    sh 'source venv/bin/activate && pip install -e .'
+                }
+            }
+            stage('Run tests') {
+                steps {
+                    sh 'source venv/bin/activate && pytest'
+                }
+            }
+        }
+    }
+    ```
+
 ## Javascript
 
 === "NPM install (Work in Progress)"
@@ -137,13 +286,3 @@ Before you begin, ensure you have the following installed:
     ```bash
     npm install swarms-js
     ```
-
-## Documentation
-
-[Learn more about Swarms →](swarms/)
-
-## Examples
-
-Check out Swarms examples for building agents, data retrieval, and more.
-
-[Checkout Swarms examples →](examples/)
