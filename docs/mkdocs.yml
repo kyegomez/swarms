@@ -125,7 +125,6 @@ nav:
   - Home:
     - Overview: "index.md"
     - Install: "swarms/install/install.md"
-    # - Get Started: "swarms/ins"
     - Docker Setup: "swarms/install/docker_setup.md"
     - Contributing: "contributing.md"
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
@@ -138,14 +137,16 @@ nav:
       - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
     - Agents:
       - Overview: "swarms/structs/index.md"
-      - Build Agents: "swarms/structs/diy_your_own_agent.md"
+      - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
       - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
       - Tool Usage and Function Calling: "swarms/tools/main.md"
       - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
+      - Integrating Agents from Langchain, Griptape, CrewAI, Autogen, and more!: "swarms/agents/third_party.md"
     - Multi-Agent Collaboration:
       - Overview: "swarms/structs/multi_agent_orchestration.md"
+      - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Workflows: "swarms/structs/workflows.md"
-      - Multi-Agent Architectures: "swarms/structs/multi_agent_architectures.md"
+      # - Multi-Agent Architectures: "swarms/structs/multi_agent_architectures.md"
   - Reference:
     - Overview: "swarms/structs/index.md"
     - Models:
