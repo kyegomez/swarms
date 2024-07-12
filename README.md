@@ -157,7 +157,6 @@ llm = OpenAIChat(
 agent = Agent(
     llm=llm,
     agent_name = "WellNess Agent",
-    name = "Health and Wellness Blog",
     system_prompt="Generate a 10,000 word blog on health and wellness.",
     max_loops=4,
     autosave=True,
