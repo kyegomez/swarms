@@ -104,10 +104,9 @@ nav:
     - Agents:
       - Overview: "swarms/structs/index.md"
       - Build Agents: "swarms/structs/diy_your_own_agent.md"
-      - Agents with Memory: "swarms/memory/diy_memory.md"
-      - Agents with Tools: "swarms/tools/main.md"
-      - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
-      - Tasks: Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
+      - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
+      - Tool Usage and Function Calling: "swarms/tools/main.md"
+      - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
     - Multi-Agent Collaboration:
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Workflows: "swarms/structs/workflows.md"
@@ -135,7 +134,8 @@ nav:
         - GPT4o: "swarms/models/gpt4o.md"
     - Agents:
       - Agent: "swarms/structs/agent.md"
-      - Tasks: "swarms/structs/task.md"
+      - Task: "swarms/structs/task.md"
+      - ToolAgent: "swarms/agents/tool_agent.md"
     - Artifacts:
       - Overview: "swarms/artifacts/artifact.md"
     - Structs:
