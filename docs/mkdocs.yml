@@ -99,13 +99,13 @@ nav:
     - Models:
       - Overview: "swarms/models/index.md"
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-      - Deploying Azure OpenAI in Production, A Comprehensive Guide: "swarms/models/azure_openai.md"
     - Agents:
       - Overview: "swarms/structs/index.md"
       - Build Agents: "swarms/structs/diy_your_own_agent.md"
       - Agents with Memory: "swarms/memory/diy_memory.md"
       - Agents with Tools: "swarms/tools/main.md"
       - Equipping Autonomous Agents with Tools: "examples/tools_agent.md"
+      - Tasks: Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
     - Multi-Agent Collaboration:
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Workflows: "swarms/structs/workflows.md"
@@ -134,6 +134,7 @@ nav:
         - GPT4o: "swarms/models/gpt4o.md"
     - Agents:
       - Agent: "swarms/structs/agent.md"
+      - Tasks: "swarms/structs/task.md"
     - Artifacts:
       - Overview: "swarms/artifacts/artifact.md"
     - Structs:
