@@ -8,7 +8,6 @@ repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
 copyright: TGSC Corp 2024. All rights reserved.
 
-
 plugins:
   # - glightbox
   - search
@@ -91,9 +90,11 @@ nav:
   - Home:
     - Overview: "index.md"
     - Install: "swarms/install/install.md"
+    # - Get Started: "swarms/ins"
     - Docker Setup: "swarms/install/docker_setup.md"
     - Contributing: "contributing.md"
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
+    - Swarm Ecosystem: "swarms/ecosystem.md"
   - Framework:
     - Overview: "swarms/framework/index.md"
     - Models:
@@ -116,7 +117,6 @@ nav:
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
       - Models Available: "swarms/models/index.md"
       - MultiModal Models Available: "swarms/models/multimodal_models.md"
-      - Deploying Azure OpenAI in Production A Comprehensive Guide: "swarms/models/azure_openai.md"
       - Language Models:
         - BaseLLM: "swarms/models/base_llm.md"
         - HuggingFaceLLM: "swarms/models/huggingface.md"
