@@ -149,18 +149,11 @@ chromadb = ChromaDB(
 
 # Initialize the agent
 agent = Agent(
-<<<<<<< HEAD
-    llm=llm,
-    agent_name = "WellNess Agent",
-    system_prompt="Generate a 10,000 word blog on health and wellness.",
-    max_loops=4,
-=======
     agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     agent_description="Agent creates ",
     llm=Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")),
     max_loops="auto",
->>>>>>> e0f65ebc ([DOCS][CLEANUP][Examples])
     autosave=True,
     # dynamic_temperature_enabled=True,
     dashboard=False,
