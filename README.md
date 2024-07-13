@@ -76,13 +76,14 @@ Features:
 ```python
 import os
 from swarms import Agent, Anthropic
-
+from swarms.prompts.finance_agent_sys_prompt import FINANCIAL_AGENT_SYS_PROMPT
+from swarms.utils.data_to_text import data_to_text
 
 # Initialize the agent
 agent = Agent(
-    agent_name="Accounting Assistant",
-    system_prompt="You're the accounting agent, your purpose is to generate a profit report for a company!",
-    agent_description="Generate a profit report for a company!",
+    agent_name="Financial-Analysis-Agent",
+    system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+    agent_description="Agent creates ",
     llm=Anthropic(
         anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
     ),
@@ -93,84 +94,110 @@ agent = Agent(
     verbose=True,
     streaming_on=True,
     # interactive=True, # Set to False to disable interactive mode
-    saved_state_path="accounting_agent.json",
-    # tools=[
-    #     # calculate_profit,
-    #     # generate_report,
-    #     # search_knowledge_base,
-    #     # write_memory_to_rag,
-    #     # search_knowledge_base,
-    #     # generate_speech,
-    # ],
-    stopping_token="Stop!",
-    interactive=True,
-    # docs_folder="docs",
-    # pdf_path="docs/accounting_agent.pdf",
+    dynamic_temperature_enabled=True,
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
     # sop="Calculate the profit for a company.",
     # sop_list=["Calculate the profit for a company."],
-    # user_name="User",
+    user_name="swarms_corp",
     # # docs=
     # # docs_folder="docs",
-    # retry_attempts=3,
+    retry_attempts=3,
     # context_length=1000,
     # tool_schema = dict
-    context_length=1000,
+    context_length=200000,
     # agent_ops_on=True,
     # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 
+
+contract = data_to_text("your_contract_pdf.pdf")
+
 agent.run(
-    "Search the knowledge base for the swarms github framework and how it works"
+    f"Analyze the following contract and give me a full summary: {contract}"
 )
 
 ```
 
+-----
 
-### `Agent` + Long Term Memory
+### Agent with RAG
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
 
 ```python
 import os
-from dotenv import load_dotenv
-from swarms import Agent, OpenAIChat
+
 from swarms_memory import ChromaDB
 
-# Get the API key from the environment
-api_key = os.environ.get("OPENAI_API_KEY")
-
+from swarms import Agent, Anthropic
+from swarms.prompts.finance_agent_sys_prompt import (
+    FINANCIAL_AGENT_SYS_PROMPT,
+)
+from swarms.utils.data_to_text import data_to_text
 
 # Initilaize the chromadb client
 chromadb = ChromaDB(
     metric="cosine",
-    output_dir="scp",
-    docs_folder="artifacts",
+    output_dir="fiance_agent_rag",
+    # docs_folder="artifacts", # Folder of your documents
 )
 
-# Initialize the language model
-llm = OpenAIChat(
-    temperature=0.5,
-    openai_api_key=api_key,
-    max_tokens=1000,
-)
 
-## Initialize the workflow
+# Initialize the agent
 agent = Agent(
+<<<<<<< HEAD
     llm=llm,
     agent_name = "WellNess Agent",
     system_prompt="Generate a 10,000 word blog on health and wellness.",
     max_loops=4,
+=======
+    agent_name="Financial-Analysis-Agent",
+    system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+    agent_description="Agent creates ",
+    llm=Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")),
+    max_loops="auto",
+>>>>>>> e0f65ebc ([DOCS][CLEANUP][Examples])
     autosave=True,
-    dashboard=True,
-    long_term_memory=chromadb,
-    memory_chunk_size=300,
+    # dynamic_temperature_enabled=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    # interactive=True, # Set to False to disable interactive mode
+    dynamic_temperature_enabled=True,
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 
-# Run the workflow on a task
-agent.run("Generate a 10,000 word blog on health and wellness.")
+
+contract = data_to_text("your_contract_pdf.pdf")
+
+agent.run(
+    f"Analyze the following contract and give me a full summary: {contract}"
+)
 
 
 ```
 
+-------
 
 ### `Agent` ++ Long Term Memory ++ Tools!
 An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
@@ -190,7 +217,7 @@ memory = ChromaDB(
     docs_folder="docs",
 )
 
-# Tools
+# Tools in swarms are simple python functions and docstrings
 def terminal(
     code: str,
 ):
@@ -283,6 +310,8 @@ out = agent("Create a new file for a plan to take over the world.")
 print(out)
 
 ```
+
+-------
 
 
 ### Devin

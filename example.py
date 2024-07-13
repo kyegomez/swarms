@@ -1,6 +1,6 @@
-from swarms import Agent, Anthropic
 import os
 
+from swarms import Agent, Anthropic
 
 # Initialize the agent
 agent = Agent(
