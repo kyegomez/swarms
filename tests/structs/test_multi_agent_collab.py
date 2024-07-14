@@ -57,6 +57,7 @@ worker2 = Agent(
 # Create a list of agents
 agents = [director, worker1, worker2]
 
+
 @pytest.fixture
 def collaboration():
     return MultiAgentCollaboration(agents)

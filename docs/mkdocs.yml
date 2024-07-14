@@ -131,8 +131,6 @@ nav:
     - Swarm Ecosystem: "swarms/ecosystem.md"
   - Framework:
     - Overview: "swarms/framework/index.md"
-    - Contributing: 
-      - Tests: "swarms/framework/test.md"
     - Models:
       - Overview: "swarms/models/index.md"
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
@@ -148,6 +146,8 @@ nav:
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Workflows: "swarms/structs/workflows.md"
+    - Contributing: 
+      - Tests: "swarms/framework/test.md"
   - Reference:
     - Overview: "swarms/structs/index.md"
     - Models:
