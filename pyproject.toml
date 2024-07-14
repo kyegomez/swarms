@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "5.3.5"
+version = "5.3.7"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -24,7 +24,12 @@ keywords = [
     "transformers",
     "multi-agent",
     "swarms of agents",
-    "chicken nuggets",
+    "Enterprise-Grade",
+    "Production-Grade",
+    "Agents",
+    "Multi-Grade-Agents",
+    "Swarms",
+
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
