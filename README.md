@@ -83,7 +83,6 @@ from swarms.utils.data_to_text import data_to_text
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    agent_description="Agent creates ",
     llm=Anthropic(
         anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
     ),
