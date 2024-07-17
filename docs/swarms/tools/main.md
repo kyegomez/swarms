@@ -198,7 +198,7 @@ agent = Agent(
         generate_invoice,
         summarize_expenses
     ],
-    list_tool_schemas_json=create_tool_schema(),
+    list_base_models_json=create_tool_schema(),
 )
 ```
 
@@ -274,7 +274,7 @@ agent = Agent(
         summarize_expenses,
         custom_accounting_tool
     ],
-    list_tool_schemas_json=create_tool_schema(),
+    list_base_models_json=create_tool_schema(),
 )
 ```
 
@@ -325,7 +325,7 @@ advanced_agent = AdvancedAccountingAgent(
         summarize_expenses,
         custom_accounting_tool
     ],
-    list_tool_schemas_json=create_tool_schema(),
+    list_base_models_json=create_tool_schema(),
 )
 
 # Call custom methods
@@ -367,7 +367,7 @@ agent = Agent(
     function_calling_format_type="OpenAI",
     function_calling_type="json",
     tools=[process_data_frame],
-    list_tool_schemas_json=create_tool_schema(),
+    list_base_models_json=create_tool_schema(),
 )
 
 # Example task: Process a data frame

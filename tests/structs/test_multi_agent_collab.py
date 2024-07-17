@@ -66,7 +66,7 @@ def collaboration():
 def test_collaboration_initialization(collaboration):
     assert len(collaboration.agents) == 2
     assert callable(collaboration.select_next_speaker)
-    assert collaboration.max_iters == 10
+    assert collaboration.max_loops == 10
     assert collaboration.results == []
     assert collaboration.logging is True
 
@@ -113,7 +113,7 @@ def test_select_next_speaker(collaboration):
 def test_run(collaboration):
     collaboration.run()
     for agent in collaboration.agents:
-        assert agent.step == collaboration.max_iters
+        assert agent.step == collaboration.max_loops
 
 
 def test_format_results(collaboration):

@@ -45,7 +45,7 @@ from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 
 # New Swarms
-from swarms.structs.swarm_load_balancer import AgentLoadBalancer
+# from swarms.structs.swarm_load_balancer import AgentLoadBalancer
 
 # from swarms.structs.swarm_net import SwarmNetwork
 from swarms.structs.swarming_architectures import (
@@ -167,7 +167,7 @@ __all__ = [
     "rearrange",
     "RoundRobinSwarm",
     "HiearchicalSwarm",
-    "AgentLoadBalancer",
+    # "AgentLoadBalancer",
     "MixtureOfAgents",
     "GraphWorkflow",
     "Node",

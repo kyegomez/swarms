@@ -31,7 +31,7 @@ agent = Agent(
     # autosave=True,
     dashboard=False,
     verbose=True,
-    # sop=list_tool_schemas_json,
+    # sop=list_base_models_json,
     # sop_list=[
     #     prep_weather_tool_prompt
     # ],  # Set the output type to the tool schema which is a BaseModel
@@ -48,7 +48,7 @@ agent = Agent(
 agent2 = Agent(
     agent_name="Space Traffic Controller Agent",
     system_prompt=SPACE_TRAFFIC_CONTROLLER_SYS_PROMPT,
-    # sop=list_tool_schemas_json,
+    # sop=list_base_models_json,
     llm=llama3Hosted(),
     max_loops=1,
     # autosave=True,

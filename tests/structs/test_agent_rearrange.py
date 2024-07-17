@@ -54,7 +54,7 @@ def test_add_agents(agent_rearrange):
 
 
 def test_validate_flow_valid(agent_rearrange):
-    assert agent_rearrange.validate_flow() == True
+    assert agent_rearrange.validate_flow() is True
 
 
 def test_validate_flow_invalid(agent_rearrange):

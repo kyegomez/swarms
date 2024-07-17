@@ -1,12 +1,14 @@
 import os
-
 from swarms import Agent, Anthropic
+from swarms.prompts.finance_agent_sys_prompt import (
+    FINANCIAL_AGENT_SYS_PROMPT,
+)
+from swarms.utils.data_to_text import data_to_text
 
 # Initialize the agent
 agent = Agent(
-    agent_name="Accounting Assistant",
-    system_prompt="You're the accounting agent, your purpose is to generate a profit report for a company!",
-    agent_description="Generate a profit report for a company!",
+    agent_name="Financial-Analysis-Agent",
+    system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     llm=Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")),
     max_loops="auto",
     autosave=True,
@@ -15,33 +17,29 @@ agent = Agent(
     verbose=True,
     streaming_on=True,
     # interactive=True, # Set to False to disable interactive mode
-    saved_state_path="accounting_agent.json",
-    # tools=[
-    #     # calculate_profit,
-    #     # generate_report,
-    #     # search_knowledge_base,
-    #     # write_memory_to_rag,
-    #     # search_knowledge_base,
-    #     # generate_speech,
-    # ],
-    stopping_token="Stop!",
-    interactive=True,
-    # docs_folder="docs",
-    # pdf_path="docs/accounting_agent.pdf",
+    dynamic_temperature_enabled=True,
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
     # sop="Calculate the profit for a company.",
     # sop_list=["Calculate the profit for a company."],
-    # user_name="User",
+    user_name="swarms_corp",
     # # docs=
     # # docs_folder="docs",
-    # retry_attempts=3,
+    retry_attempts=3,
     # context_length=1000,
     # tool_schema = dict
-    context_length=1000,
+    context_length=200000,
     # agent_ops_on=True,
-    # tree_of_thoughts=True,
     # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 
+
+contract = data_to_text("your_contract_pdf.pdf")
+
 agent.run(
-    "Search the knowledge base for the swarms github framework and how it works"
+    f"Analyze the following contract and give me a full summary: {contract}"
 )

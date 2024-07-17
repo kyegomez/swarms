@@ -189,7 +189,7 @@ agent = Agent(
     agent_name="Account Management Agent",
     system_prompt=ACCOUNT_MANAGEMENT_SYSTEM_PROMPT,
     # sop_list=[GLOSSARY_PROMPTS, FEW_SHORT_PROMPTS],
-    # sop=list_tool_schemas_json,
+    # sop=list_base_models_json,
     llm=llama3Hosted(
         max_tokens=3000,
     ),

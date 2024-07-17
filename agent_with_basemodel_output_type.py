@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from swarms import Anthropic
+from swarms import OpenAIChat
 from swarms import Agent
 
 
@@ -31,8 +31,8 @@ agent = Agent(
         "Generate a person's information based on the following schema:"
     ),
     # Set the tool schema to the JSON string -- this is the key difference
-    tool_schema=tool_schema,
-    llm=Anthropic(),
+    # tool_schema=tool_schema,
+    llm=OpenAIChat(),
     max_loops=3,
     autosave=True,
     dashboard=False,
@@ -40,10 +40,10 @@ agent = Agent(
     verbose=True,
     interactive=True,
     # Set the output type to the tool schema which is a BaseModel
-    output_type=tool_schema,  # or dict, or str
+    # output_type=tool_schema,  # or dict, or str
     metadata_output_type="json",
     # List of schemas that the agent can handle
-    list_tool_schemas=[tool_schema],
+    list_base_models=[tool_schema],
     function_calling_format_type="OpenAI",
     function_calling_type="json",  # or soon yaml
 )

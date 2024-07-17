@@ -330,7 +330,7 @@ for character_name, character_system_message, bidding_template in zip(
         )
     )
 
-max_iters = 10
+max_loops = 10
 n = 0
 
 simulator = DialogueSimulator(
@@ -341,7 +341,7 @@ simulator.inject("Debate Moderator", specified_topic)
 print(f"(Debate Moderator): {specified_topic}")
 print("\n")
 
-while n < max_iters:
+while n < max_loops:
     name, message = simulator.step()
     print(f"({name}): {message}")
     print("\n")

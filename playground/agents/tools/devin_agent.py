@@ -96,7 +96,7 @@ agent = Agent(
     # long_term_memory=chromadb,
     metadata_output_type="json",
     # List of schemas that the agent can handle
-    # list_tool_schemas=[tool_schema],
+    # list_base_models=[tool_schema],
     function_calling_format_type="OpenAI",
     function_calling_type="json",  # or soon yaml
 )

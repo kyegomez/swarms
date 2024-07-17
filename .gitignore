@@ -23,7 +23,7 @@ D_state.json
 artifacts_six
 artifacts_seven
 swarms/__pycache__
-artifacts
+artifacts_once
 transcript_generator.json
 venv
 .DS_Store

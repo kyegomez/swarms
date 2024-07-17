@@ -217,6 +217,8 @@ nav:
   - Swarms Platform:
     - Overview: "swarms_platform/index.md"
     - Prompts API: "swarms_platform/prompts_api.md"
+  - Guides:
+    - Comparing LLM Provider Pricing A Guide for Enterprises: "guides/pricing.md"
   - References:
     - Agent Glossary: "swarms/glossary.md"
     - List of The Best Multi-Agent Papers: "swarms/papers.md"
