@@ -33,8 +33,9 @@ fiancial_analyst = Agent(
     retry_attempts=3,
     # context_length=1000,
     # tool_schema = dict
-    context_length=200000,
+    context_length=160000,
     # agent_ops_on=True,
+    interactive=True,
     # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 
