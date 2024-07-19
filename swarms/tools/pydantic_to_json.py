@@ -50,7 +50,7 @@ def base_model_to_openai_function(
     schema = pydantic_type.model_json_schema()
 
     # Fetch the name of the class
-    name = type(pydantic_type).__name__
+    name = pydantic_type.__name__
 
     docstring = parse(pydantic_type.__doc__ or "")
     parameters = {
@@ -73,8 +73,8 @@ def base_model_to_openai_function(
             schema["description"] = docstring.short_description
         else:
             schema["description"] = (
-                f"Correctly extracted `{name}` with all "
-                f"the required parameters with correct types"
+                f"Strictly adhere to `{name}`'s format with all "
+                f"the required parameters and using the correct types"
             )
 
     _remove_a_key(parameters, "title")
