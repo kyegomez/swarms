@@ -1,25 +1,34 @@
+"""
+* WORKING
+
+What this script does:
+Structured output example
+
+Requirements:
+Add the folowing API key(s) in your .env file:
+   - OPENAI_API_KEY (this example works best with Openai bc it uses openai function calling structure)
+
+Note:
+If you are running playground examples in the project files directly (without swarms installed via PIP),
+make sure to add the project root to your PYTHONPATH by running the following command in the project's root directory:
+  'export PYTHONPATH=$(pwd):$PYTHONPATH'
+"""
+
 from pydantic import BaseModel, Field
-from swarms import OpenAIChat
-from swarms import Agent
+from swarms import Agent, OpenAIChat
 
 
 # Initialize the schema for the person's information
 class Schema(BaseModel):
+    """
+    This is a pydantic class describing the format of a structured output
+    """
     name: str = Field(..., title="Name of the person")
     agent: int = Field(..., title="Age of the person")
     is_student: bool = Field(..., title="Whether the person is a student")
     courses: list[str] = Field(
         ..., title="List of courses the person is taking"
     )
-
-
-# Convert the schema to a JSON string
-tool_schema = Schema(
-    name="Tool Name",
-    agent=1,
-    is_student=True,
-    courses=["Course1", "Course2"],
-)
 
 # Define the task to generate a person's information
 task = "Generate a person's information based on the following schema:"
@@ -30,22 +39,13 @@ agent = Agent(
     system_prompt=(
         "Generate a person's information based on the following schema:"
     ),
-    # Set the tool schema to the JSON string -- this is the key difference
-    # tool_schema=tool_schema,
     llm=OpenAIChat(),
-    max_loops=3,
-    autosave=True,
-    dashboard=False,
+    max_loops=1,
     streaming_on=True,
     verbose=True,
-    interactive=True,
-    # Set the output type to the tool schema which is a BaseModel
-    # output_type=tool_schema,  # or dict, or str
-    metadata_output_type="json",
     # List of schemas that the agent can handle
-    list_base_models=[tool_schema],
-    function_calling_format_type="OpenAI",
-    function_calling_type="json",  # or soon yaml
+    list_base_models=[Schema],
+    agent_ops_on=True
 )
 
 # Run the agent to generate the person's information
