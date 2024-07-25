@@ -129,7 +129,7 @@ nav:
     - Contributing: "contributing.md"
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
     - Swarm Ecosystem: "swarms/ecosystem.md"
-    - The Vision: "swarms/vision.md"
+    - The Vision: "swarms/framework/vision.md"
   - Framework:
     - Overview: "swarms/framework/index.md"
     - Models:
