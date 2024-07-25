@@ -11,6 +11,7 @@ dataframe/
 
 static/generated
 runs
+Financial-Analysis-Agent_state.json
 artifacts_five
 chroma
 Accounting Assistant_state.json

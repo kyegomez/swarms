@@ -9,8 +9,9 @@ from swarms.prompts.finance_agent_sys_prompt import (
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Create an instance of the OpenAIChat class
-model = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini")
-
+model = OpenAIChat(
+    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+)
 
 # Initialize the agent
 agent = Agent(
@@ -19,12 +20,10 @@ agent = Agent(
     llm=model,
     max_loops="auto",
     autosave=True,
-    # dynamic_temperature_enabled=True,
     dashboard=False,
     verbose=True,
     streaming_on=True,
     # interactive=True, # Set to False to disable interactive mode
-    dynamic_temperature_enabled=True,
     saved_state_path="finance_agent.json",
     # tools=[Add your functions here# ],
     # stopping_token="Stop!",

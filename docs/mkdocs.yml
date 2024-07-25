@@ -129,6 +129,7 @@ nav:
     - Contributing: "contributing.md"
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
     - Swarm Ecosystem: "swarms/ecosystem.md"
+    - The Vision: "swarms/vision.md"
   - Framework:
     - Overview: "swarms/framework/index.md"
     - Models:
@@ -153,7 +154,7 @@ nav:
     - Models:
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
       - Models Available: "swarms/models/index.md"
-      - MultiModal Models Available: "swarms/models/multimodal_models.md"
+      - Multi Modal Models Available: "swarms/models/multimodal_models.md"
       - Language Models:
         - BaseLLM: "swarms/models/base_llm.md"
         - HuggingFaceLLM: "swarms/models/huggingface.md"
@@ -211,9 +212,7 @@ nav:
     - Memory Systems:
       - ChromaDB: "swarms_memory/chromadb.md"
       - Pinecone: "swarms_memory/pinecone.md"
-      # - Redis: "swarms_memory/redis.md"
       - Faiss: "swarms_memory/faiss.md"
-      # - HNSW: "swarms_memory/hnsw.md"
   - Swarms Platform:
     - Overview: "swarms_platform/index.md"
     - Prompts API: "swarms_platform/prompts_api.md"

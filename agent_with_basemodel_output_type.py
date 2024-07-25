@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from swarms import OpenAIChat
 from swarms import Agent
+import os
 
 
 # Initialize the schema for the person's information
@@ -32,7 +33,9 @@ agent = Agent(
     ),
     # Set the tool schema to the JSON string -- this is the key difference
     # tool_schema=tool_schema,
-    llm=OpenAIChat(),
+    llm=OpenAIChat(
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+    ),
     max_loops=3,
     autosave=True,
     dashboard=False,
