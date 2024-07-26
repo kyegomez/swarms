@@ -74,19 +74,19 @@ Features:
 ✅ Long term memory database with RAG (ChromaDB, Pinecone, Qdrant)
 
 ```python
-import os
-from swarms import Agent, Anthropic
-from swarms.prompts.finance_agent_sys_prompt import FINANCIAL_AGENT_SYS_PROMPT
-from swarms.utils.data_to_text import data_to_text
+from swarms import Agent, OpenAIChat
+from swarms.prompts.finance_agent_sys_prompt import (
+    FINANCIAL_AGENT_SYS_PROMPT,
+)
+
+model = OpenAIChat()
 
 # Initialize the agent
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    llm=Anthropic(
-        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-    ),
-    max_loops="auto",
+    llm=model,
+    max_loops=1,
     autosave=True,
     # dynamic_temperature_enabled=True,
     dashboard=False,
@@ -114,12 +114,9 @@ agent = Agent(
 )
 
 
-contract = data_to_text("your_contract_pdf.pdf")
-
 agent.run(
-    f"Analyze the following contract and give me a full summary: {contract}"
+    "What are the components of a startups stock incentive equity plan"
 )
-
 ```
 
 -----

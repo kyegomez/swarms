@@ -1,4 +1,5 @@
 import sys
+from swarms.utils.try_except_wrapper import try_except_wrapper
 
 try:
     import pypdf
@@ -10,7 +11,8 @@ except ImportError:
     sys.exit(1)
 
 
-def pdf_to_text(pdf_path):
+@try_except_wrapper
+def pdf_to_text(pdf_path: str) -> str:
     """
     Converts a PDF file to a string of text.
 

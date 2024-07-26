@@ -1,24 +1,33 @@
 import datetime
 import os
 import platform
-import sys
 import traceback
 
 from loguru import logger
 
-# Configuring loguru to log to both the console and a file
-logger.remove()  # Remove default logger configuration
-logger.add(
-    sys.stderr,
-    level="ERROR",
-    format="<red>{time}</red> - <level>{level}</level> - <level>{message}</level>",
-)
-logger.add(
-    "error.log", level="ERROR", format="{time} - {level} - {message}"
-)
+# Remove default logger configuration
+logger.remove()
+
+# Define the path for the log folder
+log_folder = os.path.join(os.getcwd(), "errors")
+
+try:
+    # Create the log folder if it doesn't exist
+    os.makedirs(log_folder, exist_ok=True)
+except PermissionError:
+    logger.error(f"Permission denied: '{log_folder}'")
+except Exception as e:
+    logger.error(f"An error occurred while creating the log folder: {e}")
+else:
+    # If the folder was created successfully, add a new logger
+    logger.add(
+        os.path.join(log_folder, "error_{time}.log"),
+        level="ERROR",
+        format="<red>{time}</red> - <level>{level}</level> - <level>{message}</level>",
+    )
 
 
-def report_error(error: Exception) -> None:
+def report_error(error: Exception):
     """
     Logs an error message and provides instructions for reporting the issue on Swarms GitHub
     or joining the community on Discord for real-time support.
@@ -48,13 +57,14 @@ def report_error(error: Exception) -> None:
 
     error_message = (
         f"\n"
+        f"------------------Error: {error}-----------------------\n"
         f"#########################################\n"
         f"#                                       #\n"
         f"#           ERROR DETECTED!             #\n"
         f"#                                       #\n"
         f"#                                       #\n"
         f"#                                       #\n"
-        f"#            {error}                    #\n"
+        f"#                                       #\n"
         f"#########################################\n"
         f"\n"
         f"Error Message: {context_info['exception_message']} ({context_info['exception_type']})\n"
@@ -85,9 +95,7 @@ def report_error(error: Exception) -> None:
         f"-----------------------------------------\n"
     )
 
-    logger.error(error_message)
-
-    return None
+    return logger.error(error_message)
 
 
 # # Example usage:

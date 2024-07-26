@@ -261,6 +261,11 @@ class Agent(BaseStructure):
         log_directory: str = None,
         project_path: str = None,
         tool_system_prompt: str = tool_sop_prompt(),
+        max_tokens: int = 4096,
+        top_p: float = 0.9,
+        top_k: int = None,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
         *args,
         **kwargs,
     ):
@@ -346,6 +351,11 @@ class Agent(BaseStructure):
         self.log_directory = log_directory
         self.project_path = project_path
         self.tool_system_prompt = tool_system_prompt
+        self.max_tokens = max_tokens
+        self.top_p = top_p
+        self.top_k = top_k
+        self.frequency_penalty = frequency_penalty
+        self.presence_penalty = presence_penalty
 
         # Name
         self.name = agent_name
@@ -472,6 +482,20 @@ class Agent(BaseStructure):
         """Allow users to provide feedback on the responses."""
         self.feedback.append(feedback)
         logging.info(f"Feedback received: {feedback}")
+
+    def initialize_llm(self, llm: Any) -> None:
+        return llm(
+            system_prompt=self.system_prompt,
+            max_tokens=self.max_tokens,
+            context_length=self.context_length,
+            temperature=self.temperature,
+            top_p=self.top_p,
+            top_k=self.top_k,
+            frequency_penalty=self.frequency_penalty,
+            presence_penalty=self.presence_penalty,
+            stop=self.stopping_token,
+            engine=self.engine,
+        )
 
     def agent_initialization(self):
         try:
@@ -692,6 +716,7 @@ class Agent(BaseStructure):
 
             # Clear the short memory
             response = None
+            all_responses = []
 
             if self.tokenizer is not None:
                 self.check_available_tokens()
@@ -728,9 +753,11 @@ class Agent(BaseStructure):
                             )
                             print(response)
 
+                            # Add to memory
                             self.short_memory.add(
                                 role=self.agent_name, content=response
                             )
+                            all_responses.append(response)
 
                         else:
 
@@ -853,10 +880,12 @@ class Agent(BaseStructure):
             if self.agent_ops_on is True:
                 self.check_end_session_agentops()
 
+            final_response = " ".join(all_responses)
+
             if self.return_history:
                 return self.short_memory.return_history_as_string()
             else:
-                return response
+                return final_response
 
         except Exception as error:
             logger.info(
@@ -1578,47 +1607,52 @@ class Agent(BaseStructure):
                 )
 
     def convert_tool_into_openai_schema(self):
-        # Transform the tools into an openai schema
         logger.info("Converting tools into OpenAI function calling schema")
-        try:
+
+        if callable(self.tools):
             for tool in self.tools:
                 # Transform the tool into a openai function calling schema
                 name = tool.__name__
                 description = tool.__doc__
+                logger.info(
+                    f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
+                )
+                tool_schema_list = get_openai_function_schema_from_func(
+                    tool, name=name, description=description
+                )
 
-                try:
-                    logger.info(
-                        f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
-                    )
-                    tool_schema_list = (
-                        get_openai_function_schema_from_func(
-                            tool, name=name, description=description
-                        )
-                    )
+                # Transform the dictionary to a string
+                tool_schema_list = json.dumps(tool_schema_list, indent=4)
 
-                    # Transform the dictionary to a string
-                    tool_schema_list = json.dumps(
-                        tool_schema_list, indent=4
-                    )
+                # Add the tool schema to the short memory
+                self.short_memory.add(
+                    role="System", content=tool_schema_list
+                )
 
-                    # Add the tool schema to the short memory
-                    self.short_memory.add(
-                        role="System", content=tool_schema_list
-                    )
+                logger.info(
+                    f"Conversion process successful, the tool {name} has been integrated with the agent successfully."
+                )
 
-                    logger.info(
-                        f"Conversion process successful, the tool {name} has been integrated with the agent successfully."
-                    )
-                except Exception as error:
-                    logger.info(
-                        f"There was an error converting your tool into a OpenAI certified function calling schema. Add documentation and type hints: {error}"
-                    )
-                    raise error
-        except Exception as error:
-            logger.info(
-                f"Error detected: {error} make sure you have inputted a callable and that it has documentation as docstrings"
-            )
-            raise error
+        else:
+            for tool in self.tools:
+
+                # Parse the json for the name of the function
+                name = tool["name"]
+                description = tool["description"]
+
+                # Transform the dict into a string
+                tool_schema_list = json.dumps(tool, indent=4)
+
+                # Add the tool schema to the short memory
+                self.short_memory.add(
+                    role="System", content=tool_schema_list
+                )
+
+                logger.info(
+                    f"Conversion process successful, the tool {name} has been integrated with the agent successfully."
+                )
+
+        return None
 
     def memory_query(self, task: str = None, *args, **kwargs):
         try:

@@ -3,7 +3,6 @@ from swarms.models.base_llm import BaseLLM  # noqa: E402
 from swarms.models.base_multimodal_model import BaseMultiModalModel
 from swarms.models.fuyu import Fuyu  # noqa: E402
 from swarms.models.gpt4_vision_api import GPT4VisionAPI  # noqa: E402
-from swarms.models.gpt_o import GPT4o
 from swarms.models.huggingface import HuggingfaceLLM  # noqa: E402
 from swarms.models.idefics import Idefics  # noqa: E402
 from swarms.models.kosmos_two import Kosmos  # noqa: E402
@@ -75,6 +74,5 @@ __all__ = [
     "Vilt",
     "OpenAIEmbeddings",
     "llama3Hosted",
-    "GPT4o",
     "FireWorksAI",
 ]

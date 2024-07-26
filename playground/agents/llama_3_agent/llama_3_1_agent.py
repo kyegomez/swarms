@@ -1,9 +1,13 @@
-from swarms import Agent, OpenAIChat
+from swarms import Agent, HuggingfaceLLM
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
 
-model = OpenAIChat()
+model = HuggingfaceLLM(
+    model_id="meta-llama/Meta-Llama-3.1-8B",
+    max_tokens=4000,
+    temperature=0.1,
+)
 
 # Initialize the agent
 agent = Agent(
