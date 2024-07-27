@@ -266,6 +266,7 @@ class Agent(BaseStructure):
         top_k: int = None,
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
+        temperature: float = 0.1,
         *args,
         **kwargs,
     ):
@@ -356,6 +357,7 @@ class Agent(BaseStructure):
         self.top_k = top_k
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
+        self.temperature
 
         # Name
         self.name = agent_name
@@ -472,7 +474,8 @@ class Agent(BaseStructure):
             self.short_memory.add(role=self.user_name, content=self.sop)
 
         # If agent_ops is on => activate agentops
-        self.activate_agentops()
+        if agent_ops_on is True:
+            self.activate_agentops()
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -483,19 +486,19 @@ class Agent(BaseStructure):
         self.feedback.append(feedback)
         logging.info(f"Feedback received: {feedback}")
 
-    def initialize_llm(self, llm: Any) -> None:
-        return llm(
-            system_prompt=self.system_prompt,
-            max_tokens=self.max_tokens,
-            context_length=self.context_length,
-            temperature=self.temperature,
-            top_p=self.top_p,
-            top_k=self.top_k,
-            frequency_penalty=self.frequency_penalty,
-            presence_penalty=self.presence_penalty,
-            stop=self.stopping_token,
-            engine=self.engine,
-        )
+    # TODO: Implement the function
+    # def initialize_llm(self, llm: Any) -> None:
+    #     return llm(
+    #         system_prompt=self.system_prompt,
+    #         max_tokens=self.max_tokens,
+    #         context_length=self.context_length,
+    #         temperature=self.temperature,
+    #         top_p=self.top_p,
+    #         top_k=self.top_k,
+    #         frequency_penalty=self.frequency_penalty,
+    #         presence_penalty=self.presence_penalty,
+    #         stop=self.stopping_token,
+    #     )
 
     def agent_initialization(self):
         try:
@@ -718,8 +721,8 @@ class Agent(BaseStructure):
             response = None
             all_responses = []
 
-            if self.tokenizer is not None:
-                self.check_available_tokens()
+            # if self.tokenizer is not None:
+            #     self.check_available_tokens()
 
             while self.max_loops == "auto" or loop_count < self.max_loops:
                 loop_count += 1
@@ -733,6 +736,7 @@ class Agent(BaseStructure):
                 # Task prompt
                 task_prompt = self.short_memory.return_history_as_string()
 
+                # Parameters
                 attempt = 0
                 success = False
                 while attempt < self.retry_attempts and not success:
@@ -743,6 +747,14 @@ class Agent(BaseStructure):
                                     task, *args, **kwargs
                                 )
                             )
+
+                            if exists(self.tokenizer):
+                                task_prompt = (
+                                    self.count_and_shorten_context_window(
+                                        memory_retrieval
+                                    )
+                                )
+
                             # Merge the task prompt with the memory retrieval
                             task_prompt = f"{task_prompt} Documents: Available {memory_retrieval}"
 
@@ -758,14 +770,6 @@ class Agent(BaseStructure):
                             all_responses.append(response)
 
                         else:
-
-                            if exists(self.tokenizer):
-                                task_prompt = (
-                                    self.count_and_shorten_context_window(
-                                        task_prompt
-                                    )
-                                )
-
                             response_args = (
                                 (task_prompt, *args)
                                 if img is None
@@ -1996,3 +2000,23 @@ class Agent(BaseStructure):
                 f"Error with the base models, check the base model types and make sure they are initialized {error}"
             )
             raise error
+
+    async def count_tokens_and_subtract_from_context_window(
+        self, response: str, *args, **kwargs
+    ):
+        """
+        Count the number of tokens in the response and subtract it from the context window.
+
+        Args:
+            response (str): The response to count the tokens from.
+
+        Returns:
+            str: The response after counting the tokens and subtracting it from the context window.
+        """
+        # Count the number of tokens in the response
+        tokens = self.tokenizer.count_tokens(response)
+
+        # Subtract the number of tokens from the context window
+        self.context_length -= len(tokens)
+
+        return response

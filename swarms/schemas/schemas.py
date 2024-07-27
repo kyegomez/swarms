@@ -16,35 +16,6 @@ class TaskInput(BaseModel):
     )
 
 
-class Artifact(BaseModel):
-    """
-    Represents an artifact.
-
-    Attributes:
-        artifact_id (str): Id of the artifact.
-        file_name (str): Filename of the artifact.
-        relative_path (str, optional): Relative path of the artifact in the agent's workspace.
-    """
-
-    artifact_id: str = Field(
-        ...,
-        description="Id of the artifact",
-        examples=["b225e278-8b4c-4f99-a696-8facf19f0e56"],
-    )
-    file_name: str = Field(
-        ...,
-        description="Filename of the artifact",
-        examples=["main.py"],
-    )
-    relative_path: str | None = Field(
-        None,
-        description=(
-            "Relative path of the artifact in the agent's workspace"
-        ),
-        examples=["python/code/"],
-    )
-
-
 class ArtifactUpload(BaseModel):
     file: bytes = Field(..., description="File to upload")
     relative_path: str | None = Field(
@@ -86,22 +57,22 @@ class TaskRequestBody(BaseModel):
     additional_input: TaskInput | None = None
 
 
-class Task(TaskRequestBody):
-    task_id: str = Field(
-        ...,
-        description="The ID of the task.",
-        examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
-    )
-    artifacts: list[Artifact] = Field(
-        [],
-        description="A list of artifacts that the task has produced.",
-        examples=[
-            [
-                "7a49f31c-f9c6-4346-a22c-e32bc5af4d8e",
-                "ab7b4091-2560-4692-a4fe-d831ea3ca7d6",
-            ]
-        ],
-    )
+# class Task(TaskRequestBody):
+#     task_id: str = Field(
+#         ...,
+#         description="The ID of the task.",
+#         examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
+#     )
+#     artifacts: list[Artifact] = Field(
+#         [],
+#         description="A list of artifacts that the task has produced.",
+#         examples=[
+#             [
+#                 "7a49f31c-f9c6-4346-a22c-e32bc5af4d8e",
+#                 "ab7b4091-2560-4692-a4fe-d831ea3ca7d6",
+#             ]
+#         ],
+#     )
 
 
 class StepRequestBody(BaseModel):
@@ -144,7 +115,7 @@ class Step(BaseModel):
             " <write_to_file('output.txt', 'Washington')"
         ],
     )
-    artifacts: list[Artifact] = Field(
+    artifacts: list[Any] = Field(
         [],
         description="A list of artifacts that the step has produced.",
     )
