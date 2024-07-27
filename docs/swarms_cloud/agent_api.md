@@ -27,7 +27,6 @@ This endpoint returns a list of available model names. It is useful for clients 
 ```json
 [
     "OpenAIChat",
-    "GPT4o",
     "GPT4VisionAPI",
     "Anthropic"
 ]

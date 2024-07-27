@@ -215,7 +215,7 @@ class AgricultureOptimizationSwarm(BaseSwarm):
     def __init__(
         self,
         name: str = "jeremy/agricultural-optimization-gpt4o",
-        description: str = "A swarm utilizing GPT4o for agricultural optimization.",
+        description: str = "A swarm utilizing GPT4VisionAPI for agricultural optimization.",
         agents: List[Agent] = agents,
         *args,
         **kwargs,

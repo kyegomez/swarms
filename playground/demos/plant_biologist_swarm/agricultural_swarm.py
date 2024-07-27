@@ -18,7 +18,7 @@ from playground.demos.plant_biologist_swarm.prompts import (
     treatment_recommender_agent,
 )
 from swarms import Agent
-from swarms.models.gpt_o import GPT4o
+from swarms.models.gpt_o import GPT4VisionAPI
 
 # Load the OpenAI API key from the .env file
 load_dotenv()
@@ -28,7 +28,9 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 
 # llm = llm,
-llm = GPT4o(max_tokens=3000, openai_api_key=os.getenv("OPENAI_API_KEY"))
+llm = GPT4VisionAPI(
+    max_tokens=3000, openai_api_key=os.getenv("OPENAI_API_KEY")
+)
 
 # Initialize Diagnoser Agent
 diagnoser_agent = Agent(

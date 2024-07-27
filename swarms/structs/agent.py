@@ -743,8 +743,6 @@ class Agent(BaseStructure):
                                     task, *args, **kwargs
                                 )
                             )
-                            # print(len(memory_retrieval))
-
                             # Merge the task prompt with the memory retrieval
                             task_prompt = f"{task_prompt} Documents: Available {memory_retrieval}"
 
@@ -786,6 +784,8 @@ class Agent(BaseStructure):
                                 role=self.agent_name, content=response
                             )
 
+                            all_responses.append(response)
+
                         # Check if tools is not None
                         if self.tools is not None:
                             self.parse_function_call_and_execute(response)
@@ -803,6 +803,8 @@ class Agent(BaseStructure):
                                 role=self.agent_name,
                                 content=evaluated_response,
                             )
+
+                            all_responses.append(evaluated_response)
 
                         # Sentiment analysis
                         if self.sentiment_analyzer:

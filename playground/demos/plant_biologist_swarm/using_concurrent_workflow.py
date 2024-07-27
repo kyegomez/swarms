@@ -10,7 +10,7 @@ from playground.demos.plant_biologist_swarm.prompts import (
 )
 
 from swarms import Agent, ConcurrentWorkflow
-from swarms.models.gpt_o import GPT4o
+from swarms.models.gpt_o import GPT4VisionAPI
 
 
 # Load the OpenAI API key from the .env file
@@ -19,8 +19,8 @@ load_dotenv()
 # Initialize the OpenAI API key
 api_key = os.environ.get("OPENAI_API_KEY")
 
-# GPT4o
-llm = GPT4o(
+# GPT4VisionAPI
+llm = GPT4VisionAPI(
     max_tokens=4000,
 )
 

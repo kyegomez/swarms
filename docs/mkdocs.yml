@@ -168,7 +168,6 @@ nav:
         - Nougat: "swarms/models/nougat.md"
         - Dalle3: "swarms/models/dalle3.md"
         - GPT4VisionAPI: "swarms/models/gpt4v.md"
-        - GPT4o: "swarms/models/gpt4o.md"
     - Agents:
       - Agent: "swarms/structs/agent.md"
       - Task: "swarms/structs/task.md"
