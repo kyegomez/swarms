@@ -671,10 +671,14 @@ class Agent(BaseStructure):
 
     ########################## FUNCTION CALLING ##########################
 
-    def response_readability(self, response) -> str:
-        """Specifies the name of the agent in capital letters in pink and the response text in blue."""
+    def readability(self, response:str) -> str:
+        """
+        Specifies the name of the agent in capital letters in pink and the response text in blue.
+        Add space above.
+        """
+        print("\n")
         return f"\033[1;35m{self.name.upper()}:\033[0m \033[34m{response}\033[0m"
-
+    
     def run(
         self,
         task: Optional[str] = None,
@@ -730,7 +734,7 @@ class Agent(BaseStructure):
                             response = self.llm(
                                 task_prompt, *args, **kwargs
                             )
-                            print(self.response_readability(response))
+                            print(self.readability(response))
 
                             self.short_memory.add(
                                 role=self.agent_name, content=response
@@ -750,7 +754,7 @@ class Agent(BaseStructure):
                                 if img is None
                                 else (task_prompt, img, *args)
                             )
-                            response = self.response_readability(self.llm(*response_args, **kwargs))
+                            response = self.readability(self.llm(*response_args, **kwargs))
 
                             # Print
                             if self.streaming_on is True:
