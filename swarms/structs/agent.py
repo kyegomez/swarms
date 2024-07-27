@@ -357,7 +357,7 @@ class Agent(BaseStructure):
         self.top_k = top_k
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
-        self.temperature
+        self.temperature = temperature
 
         # Name
         self.name = agent_name
@@ -808,7 +808,7 @@ class Agent(BaseStructure):
                                 content=evaluated_response,
                             )
 
-                            all_responses.append(evaluated_response)
+                            # all_responses.append(evaluated_response)
 
                         # Sentiment analysis
                         if self.sentiment_analyzer:
@@ -886,7 +886,10 @@ class Agent(BaseStructure):
             if self.agent_ops_on is True:
                 self.check_end_session_agentops()
 
+            # final_response = " ".join(all_responses)
+            all_responses = [response for response in all_responses if response is not None]
             final_response = " ".join(all_responses)
+
 
             if self.return_history:
                 return self.short_memory.return_history_as_string()
