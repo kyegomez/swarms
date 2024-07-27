@@ -141,7 +141,7 @@ nav:
       - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
       - Tool Usage and Function Calling: "swarms/tools/main.md"
       - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
-      - Integrating Agents from Langchain, Griptape, CrewAI, Autogen, and more!: "swarms/agents/third_party.md"
+      # - Integrating Agents from Langchain, Griptape, CrewAI, Autogen, and more!: "swarms/agents/third_party.md"
     - Multi-Agent Collaboration:
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
@@ -153,7 +153,6 @@ nav:
     - Models:
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
       - Models Available: "swarms/models/index.md"
-      - Multi Modal Models Available: "swarms/models/multimodal_models.md"
       - Language Models:
         - BaseLLM: "swarms/models/base_llm.md"
         - HuggingFaceLLM: "swarms/models/huggingface.md"
@@ -161,6 +160,7 @@ nav:
         - OpenAIChat: "swarms/models/openai.md"
         # - TogetherAI: "swarms/models/togetherai.md"
       - MultiModal Models:
+        - Multi Modal Models Available: "swarms/models/multimodal_models.md"
         - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
         - GPT4VisionAPI: "swarms/models/gpt4v.md"
     - Agents:
@@ -212,8 +212,8 @@ nav:
     # - Agents API:
     #   - Overview: "swarms_platform/agents_api.md"
     #   - Fetch Agents: "swarms_platform/fetch_agents.md"
-  - Guides:
-    - Comparing LLM Provider Pricing A Guide for Enterprises: "guides/pricing.md"
+  # - Guides:
+  #   - Comparing LLM Provider Pricing A Guide for Enterprises: "guides/pricing.md"
   - References:
     - Agent Glossary: "swarms/glossary.md"
     - List of The Best Multi-Agent Papers: "swarms/papers.md"
