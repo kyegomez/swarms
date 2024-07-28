@@ -31,8 +31,7 @@ receipt_analyzer_agent = Agent(
     # # docs=
     # # docs_folder="docs",
     retry_attempts=3,
-    # tool_schema = dict
-    # agent_ops_on=True,
+    # tool_schema = dict,
     # long_term_memory=ChromaDB(docs_folder="artifacts"),
     # multi_modal=True
 )
@@ -63,8 +62,7 @@ analyst_agent = Agent(
     # # docs=
     # # docs_folder="docs",
     retry_attempts=3,
-    # tool_schema = dict
-    # agent_ops_on=True,
+    # tool_schema = dict,
     # long_term_memory=ChromaDB(docs_folder="artifacts"),
     # multi_modal=True,
 )

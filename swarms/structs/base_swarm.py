@@ -89,7 +89,6 @@ class BaseSwarm(ABC):
         speaker_selection_func: Optional[Callable] = None,
         rules: Optional[str] = None,
         collective_memory_system: Optional[BaseVectorDatabase] = False,
-        agent_ops_on: bool = False,
         *args,
         **kwargs,
     ):
@@ -111,7 +110,6 @@ class BaseSwarm(ABC):
         self.speaker_selection_func = speaker_selection_func
         self.rules = rules
         self.collective_memory_system = collective_memory_system
-        self.agent_ops_on = agent_ops_on
 
         logger.info("Reliability checks activated.")
         # Ensure that agents is exists
@@ -161,11 +159,6 @@ class BaseSwarm(ABC):
             self.stopping_condition_args = stopping_condition_args
             self.stopping_condition = stopping_condition
 
-        # If agentops is enabled, try to import agentops
-        if agentops_on is True:
-            for agent in self.agents:
-                agent.agent_ops_on = True
-
         # Handle speaker selection function
         if speaker_selection_func is not None:
             if not callable(speaker_selection_func):
@@ -173,11 +166,6 @@ class BaseSwarm(ABC):
                     "Speaker selection function must be callable."
                 )
             self.speaker_selection_func = speaker_selection_func
-
-        # Add the check for all the agents to see if agent ops is on!
-        if agent_ops_on is True:
-            for agent in self.agents:
-                agent.agent_ops_on = True
 
         # Agents dictionary with agent name as key and agent object as value
         self.agents_dict = {
@@ -693,9 +681,6 @@ class BaseSwarm(ABC):
 
     def __contains__(self, value):
         return value in self.agents
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
 
     def agent_error_handling_check(self):
         try:

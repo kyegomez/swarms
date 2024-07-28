@@ -35,7 +35,6 @@ agent = Agent(
     context_length=200000,
     # tool_schema=
     # tools
-    # agent_ops_on=True,
     # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 

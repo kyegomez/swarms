@@ -114,7 +114,6 @@ agent = Agent(
     # context_length=1000,
     # tool_schema = dict
     context_length=200000,
-    # agent_ops_on=True,
     # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 

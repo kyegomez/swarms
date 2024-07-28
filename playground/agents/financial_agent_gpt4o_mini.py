@@ -40,7 +40,6 @@ agent = Agent(
     # tool_schema = dict
     context_length=200000,
     interactive=True,
-    # agent_ops_on=True,
     # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 

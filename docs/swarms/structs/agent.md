@@ -88,7 +88,6 @@ Swarm Agent is a powerful autonomous agent framework designed to connect Languag
 | `device` | A string representing the device on which the agent should run. |
 | `custom_planning_prompt` | A string representing a custom prompt for planning. |
 | `memory_chunk_size` | An integer representing the maximum size of memory chunks for long-term memory retrieval. |
-| `agent_ops_on` | A boolean indicating whether agent operations should be enabled. |
 
 ### `Agent` Methods
 

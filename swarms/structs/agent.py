@@ -257,7 +257,6 @@ class Agent(BaseStructure):
         device: str = None,
         custom_planning_prompt: str = None,
         memory_chunk_size: int = 2000,
-        agent_ops_on: bool = False,
         log_directory: str = None,
         project_path: str = None,
         tool_system_prompt: str = tool_sop_prompt(),
@@ -348,7 +347,6 @@ class Agent(BaseStructure):
         self.rules = rules
         self.custom_tools_prompt = custom_tools_prompt
         self.memory_chunk_size = memory_chunk_size
-        self.agent_ops_on = agent_ops_on
         self.log_directory = log_directory
         self.project_path = project_path
         self.tool_system_prompt = tool_system_prompt
@@ -472,10 +470,6 @@ class Agent(BaseStructure):
 
         if exists(self.sop):
             self.short_memory.add(role=self.user_name, content=self.sop)
-
-        # If agent_ops is on => activate agentops
-        if agent_ops_on is True:
-            self.activate_agentops()
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -883,8 +877,6 @@ class Agent(BaseStructure):
             #     print(f"Response after output model: {response}")
 
             # print(response)
-            if self.agent_ops_on is True:
-                self.check_end_session_agentops()
 
             # final_response = " ".join(all_responses)
             all_responses = [response for response in all_responses if response is not None]
@@ -1601,20 +1593,6 @@ class Agent(BaseStructure):
                 )
             )
 
-    def check_end_session_agentops(self):
-        if self.agent_ops_on is True:
-            try:
-                from swarms.utils.agent_ops_check import (
-                    end_session_agentops,
-                )
-
-                # Try ending the session
-                return end_session_agentops()
-            except ImportError:
-                logger.error(
-                    "Could not import agentops, try installing agentops: $ pip3 install agentops"
-                )
-
     def convert_tool_into_openai_schema(self):
         logger.info("Converting tools into OpenAI function calling schema")
 
@@ -1954,25 +1932,6 @@ class Agent(BaseStructure):
             raise Exception(
                 "Error parsing and executing function call"
             ) from error
-
-    def activate_agentops(self):
-        if self.agent_ops_on is True:
-            try:
-                from swarms.utils.agent_ops_check import (
-                    try_import_agentops,
-                )
-
-                # Try importing agent ops
-                logger.info(
-                    "Agent Ops Initializing, ensure that you have the agentops API key and the pip package installed."
-                )
-                try_import_agentops()
-
-                logger.info("Agentops successfully activated!")
-            except ImportError:
-                logger.error(
-                    "Could not import agentops, try installing agentops: $ pip3 install agentops"
-                )
 
     def handle_multiple_base_models(self) -> None:
         try:

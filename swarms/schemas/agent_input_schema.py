@@ -84,7 +84,6 @@ class AgentSchema(BaseModel):
     device: Optional[str] = Field(default=None)
     custom_planning_prompt: Optional[str] = Field(default=None)
     memory_chunk_size: Optional[int] = Field(default=2000, ge=0)
-    agent_ops_on: Optional[bool] = Field(default=False)
     log_directory: Optional[str] = Field(default=None)
     project_path: Optional[str] = Field(default=None)
     tool_system_prompt: Optional[str] = Field(default="tool_sop_prompt()")

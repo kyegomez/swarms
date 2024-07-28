@@ -653,7 +653,6 @@ revenue_maximalist_agent = Agent(
     dashboard=False,
     state_save_file_type="json",
     saved_state_path="revenue_maximalist_analyst.json",
-    # agent_ops_on=True,
     # # long_term_memory=memory,
     # context_length=10000,
 )
@@ -666,7 +665,6 @@ cost_control_agent = Agent(
     dashboard=False,
     state_save_file_type="json",
     saved_state_path="operational_efficiency.json",
-    # agent_ops_on=True,
     # # long_term_memory=memory,
 )
 
@@ -678,7 +676,6 @@ investment_analyst_agent = Agent(
     dashboard=False,
     state_save_file_type="json",
     saved_state_path="strategic_investment_analyst.json",
-    # agent_ops_on=True,
     # # long_term_memory=memory,
 )
 
@@ -690,7 +687,6 @@ sales_marketing_agent = Agent(
     dashboard=False,
     state_save_file_type="json",
     saved_state_path="sales_marketing_agent.json",
-    # agent_ops_on=True,
     # # long_term_memory=memory,
     # context_length=8192,
 )
