@@ -677,7 +677,7 @@ class Agent(BaseStructure):
         Add space above.
         """
         print("\n")
-        return f"\033[1;35m{self.name.upper()}:\033[0m \033[34m{response}\033[0m"
+        return f"\033[1;34m{self.name.upper()}:\033[0m {response}"
     
     def run(
         self,
