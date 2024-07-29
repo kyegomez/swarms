@@ -1,34 +1,37 @@
 # Documentation for `getAllPrompts` API Endpoint
 
-The `getAllPrompts` API endpoint is a part of the `swarms.world` application, designed to fetch all prompt records from the database. This endpoint is crucial for retrieving various prompts stored in the `swarms_cloud_prompts` table, including their metadata such as name, description, use cases, and tags. It provides an authenticated way to access this data, ensuring that only authorized users can retrieve the information.
+The `getAllPrompts` API endpoint is a part of the `swarms.world` application, designed to fetch all prompt records from the database. This endpoint is crucial for retrieving various prompts stored in the `swarms_cloud_prompts` table, including their metadata such as name, description, use cases, and tags.
 
 ## Purpose
 
-The primary purpose of this API endpoint is to provide a secure method for clients to fetch a list of prompts stored in the `swarms_cloud_prompts` table. It ensures data integrity and security by using an authentication guard and handles various HTTP methods and errors gracefully.
+The primary purpose of this API endpoint is to provide a method for clients to fetch a list of prompts stored in the `swarms_cloud_prompts` table, with the ability to filter by name, tags, and use cases.
 
 ## API Endpoint Definition
 
-### Endpoint URL
+### Fetch All Prompts
+
+#### Endpoint URL
 
 ```
-https://swarms.world/get-prompt
+https://swarms.world/get-prompts
 ```
 
-### HTTP Method
+#### HTTP Method
 
 ```
 GET
 ```
 
-### Request Headers
+### Query Parameters
 
-| Header         | Type   | Required | Description                 |
-|----------------|--------|----------|-----------------------------|
-| Authorization  | String | Yes      | Bearer token for API access |
+- **name** (optional): A substring to match against the prompt name. The query is case-insensitive.
+- **tag** (optional): A comma-separated list of tags to filter prompts by. The query matches any of the provided tags, and is case-insensitive.
+- **use_case** (optional): A substring to match against the use case titles within the `use_cases` array. The query is case-insensitive.
+- **use_case_description** (optional): A substring to match against the use case descriptions within the `use_cases` array. The query is case-insensitive.
 
-### Response
+#### Response
 
-#### Success Response (200)
+##### Success Response (200)
 
 Returns an array of prompts.
 
@@ -39,28 +42,25 @@ Returns an array of prompts.
     "name": "string",
     "description": "string",
     "prompt": "string",
-    "use_cases": "string",
+    "use_cases": [
+      {
+        "title": "string",
+        "description": "string"
+      }
+    ],
     "tags": "string"
   },
   ...
 ]
 ```
 
-#### Error Responses
+##### Error Responses
 
 - **405 Method Not Allowed**
 
   ```json
   {
     "error": "Method <method> Not Allowed"
-  }
-  ```
-
-- **401 Unauthorized**
-
-  ```json
-  {
-    "error": "API Key is missing"
   }
   ```
 
@@ -72,27 +72,100 @@ Returns an array of prompts.
   }
   ```
 
-## Request Handling
+### Fetch Prompt by ID
+
+#### Endpoint URL
+
+```
+https://swarms.world/get-prompts/[id]
+```
+
+#### HTTP Method
+
+```
+GET
+```
+
+#### Response
+
+##### Success Response (200)
+
+Returns a single prompt by ID.
+
+```json
+{
+  "id": "string",
+  "name": "string",
+  "description": "string",
+  "prompt": "string",
+  "use_cases": [
+    {
+      "title": "string",
+      "description": "string"
+    }
+  ],
+  "tags": "string"
+}
+```
+
+##### Error Responses
+
+- **404 Not Found**
+
+  ```json
+  {
+    "error": "Prompt not found"
+  }
+  ```
+
+- **500 Internal Server Error**
+
+  ```json
+  {
+    "error": "Could not fetch prompt"
+  }
+  ```
+
+### Request Handling
 
 1. **Method Validation**: The endpoint only supports the `GET` method. If a different HTTP method is used, it responds with a `405 Method Not Allowed` status.
-2. **Authentication**: The request must include a valid Bearer token in the `Authorization` header. If the token is missing, a `401 Unauthorized` status is returned.
-3. **Authorization Check**: The token is validated using the `AuthApiGuard` class. If the token is invalid, an appropriate error response is returned based on the status received from the guard.
-4. **Database Query**: The endpoint queries the `swarms_cloud_prompts` table using the `supabaseAdmin` client to fetch prompt data.
-5. **Response**: On success, it returns the prompt data in JSON format. In case of an error during the database query, a `500 Internal Server Error` status is returned.
 
-## Code Example
+2. **Database Query**:
 
-### JavaScript (Node.js)
+   - **Fetching All Prompts**: The endpoint uses the `supabaseAdmin` client to query the `swarms_cloud_prompts` table. Filters are applied based on the query parameters (`name`, `tag`, and `use_cases`).
+   - **Fetching a Prompt by ID**: The endpoint retrieves a single prompt from the `swarms_cloud_prompts` table by its unique ID.
+
+3. **Response**: On success, it returns the prompt data in JSON format. In case of an error during the database query, a `500 Internal Server Error` status is returned. For fetching by ID, if the prompt is not found, it returns a `404 Not Found` status.
+
+### Code Example
+
+#### JavaScript (Node.js)
 
 ```javascript
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
-const getPrompts = async () => {
-  const response = await fetch('https://swarms.world/get-prompt', {
-    method: 'GET',
-    headers: {
-      'Authorization': 'Bearer YOUR_API_KEY'
+// Fetch all prompts with optional filters
+const getPrompts = async (filters) => {
+  const queryString = new URLSearchParams(filters).toString();
+  const response = await fetch(
+    `https://swarms.world/get-prompts?${queryString}`,
+    {
+      method: "GET",
     }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Error: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  console.log(data);
+};
+
+// Fetch prompt by ID
+const getPromptById = async (id) => {
+  const response = await fetch(`https://swarms.world/get-prompts/${id}`, {
+    method: "GET",
   });
 
   if (!response.ok) {
@@ -103,19 +176,24 @@ const getPrompts = async () => {
   console.log(data);
 };
 
-getPrompts().catch(console.error);
+// Example usage
+getPrompts({
+  name: "example",
+  tag: "tag1,tag2",
+  use_case: "example",
+  use_case_description: "description",
+}).catch(console.error);
+getPromptById("123").catch(console.error);
 ```
 
-### Python
+#### Python
 
 ```python
 import requests
 
-def get_prompts():
-    headers = {
-        'Authorization': 'Bearer YOUR_API_KEY'
-    }
-    response = requests.get('https://swarms.world/get-prompt', headers=headers)
+# Fetch all prompts with optional filters
+def get_prompts(filters):
+    response = requests.get('https://swarms.world/get-prompts', params=filters)
 
     if response.status_code != 200:
         raise Exception(f'Error: {response.status_code}, {response.text}')
@@ -123,17 +201,32 @@ def get_prompts():
     data = response.json()
     print(data)
 
-get_prompts()
+# Fetch prompt by ID
+def get_prompt_by_id(id):
+    response = requests.get(f'https://swarms.world/get-prompts/{id}')
+
+    if response.status_code != 200:
+        raise Exception(f'Error: {response.status_code}, {response.text}')
+
+    data = response.json()
+    print(data)
+
+# Example usage
+get_prompts({'name': 'example', 'tag': 'tag1,tag2', 'use_case': 'example', 'use_case_description': 'description'})
+get_prompt_by_id('123')
 ```
 
-### cURL
+#### cURL
 
 ```sh
-curl -X GET https://swarms.world/get-prompt \
--H "Authorization: Bearer YOUR_API_KEY"
+# Fetch all prompts with optional filters
+curl -X GET "https://swarms.world/get-prompts?name=example&tag=tag1,tag2&use_case=example&use_case_description=description"
+
+# Fetch prompt by ID
+curl -X GET https://swarms.world/get-prompts/123
 ```
 
-### Go
+#### Go
 
 ```go
 package main
@@ -142,18 +235,39 @@ import (
     "fmt"
     "io/ioutil"
     "net/http"
+    "net/url"
 )
 
-func getPrompts() {
-    client := &http.Client{}
-    req, err := http.NewRequest("GET", "https://swarms.world/get-prompt", nil)
+func getPrompts(filters map[string]string) {
+    baseURL := "https://swarms.world/get-prompts"
+    query := url.Values{}
+    for key, value := range filters {
+        query.Set(key, value)
+    }
+    fullURL := fmt.Sprintf("%s?%s", baseURL, query.Encode())
+
+    resp, err := http.Get(fullURL)
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        body, _ := ioutil.ReadAll(resp.Body)
+        panic(fmt.Sprintf("Error: %d, %s", resp.StatusCode, string(body)))
+    }
+
+    body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         panic(err)
     }
 
-    req.Header.Add("Authorization", "Bearer YOUR_API_KEY")
+    fmt.Println(string(body))
+}
 
-    resp, err := client.Do(req)
+func getPromptById(id string) {
+    url := fmt.Sprintf("https://swarms.world/get-prompts/%s", id)
+    resp, err := http.Get(url)
     if err != nil {
         panic(err)
     }
@@ -173,24 +287,30 @@ func getPrompts() {
 }
 
 func main() {
-    getPrompts()
+    filters := map[string]string{
+        "name":                  "example",
+        "tag":                   "tag1,tag2",
+        "use_case":        "example",
+        "use_case_description":  "description",
+    }
+    getPrompts(filters)
+    getPromptById("123")
 }
 ```
 
-### Attributes Table
+#### Attributes Table
 
-| Attribute     | Type   | Description                                                |
-|---------------|--------|------------------------------------------------------------|
-| id            | String | Unique identifier for the prompt                            |
-| name          | String | Name of the prompt                                          |
-| description   | String | Description of the prompt                                   |
-| prompt        | String | The actual prompt text                                      |
-| use_cases     | String | Use cases for the prompt                                    |
-| tags          | String | Tags associated with the prompt                             |
+| Attribute   | Type   | Description                      |
+| ----------- | ------ | -------------------------------- |
+| id          | String | Unique identifier for the prompt |
+| name        | String | Name of the prompt               |
+| description | String | Description of the prompt        |
+| prompt      | String | The actual prompt text           |
+| use_cases   | Array  | Use cases for the prompt         |
+| tags        | String | Tags associated with the prompt  |
 
 ## Additional Information and Tips
 
-- Ensure your API key is kept secure and not exposed in client-side code.
 - Handle different error statuses appropriately to provide clear feedback to users.
 - Consider implementing rate limiting and logging for better security and monitoring.
 
