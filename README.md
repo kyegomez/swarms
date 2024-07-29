@@ -289,8 +289,7 @@ agent = Agent(
     stopping_token="<DONE>",
     interactive=True,
     tools=[terminal, browser, file_editor, create_file],
-    code_interpreter=True,
-    # streaming=True,
+    streaming=True,
     long_term_memory=memory,
 )
 
@@ -399,8 +398,7 @@ agent = Agent(
     stopping_token="<DONE>",
     interactive=True,
     tools=[terminal, browser, file_editor, create_file],
-    code_interpreter=True,
-    # streaming=True,
+    streaming=True,
 )
 
 # Run the agent
