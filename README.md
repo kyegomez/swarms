@@ -133,7 +133,6 @@ from swarms import Agent, Anthropic
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from swarms.utils.data_to_text import data_to_text
 
 # Initilaize the chromadb client
 chromadb = ChromaDB(
@@ -177,12 +176,10 @@ agent = Agent(
 )
 
 
-contract = data_to_text("your_contract_pdf.pdf")
 
 agent.run(
-    f"Analyze the following contract and give me a full summary: {contract}"
+    "What are the components of a startups stock incentive equity plan"
 )
-
 
 ```
 
