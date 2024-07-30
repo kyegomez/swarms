@@ -525,7 +525,16 @@ class Agent(BaseStructure):
                 colored(f"Error dynamically changing temperature: {error}")
             )
 
+    def printtier(self, response:str) -> str:
+        """
+        Specifies the name of the agent in capital letters in pink and the response text in blue.
+        Add space above.
+        """
+        print("\n")
+        return print(f"\033[1;34m{self.name.upper()}:\033[0m {response}")
+
     def extract_json(self, response:str):
+        """Extracts the JSON structure from the response."""
         stack = []
         for i, char in enumerate(response):
             if char == '{':
@@ -540,6 +549,7 @@ class Agent(BaseStructure):
         raise ValueError("No valid JSON structure found in the input string")
 
     def pydantic_validation(self, response:str)-> Type[BaseModel]:
+        """Validates the response using Pydantic."""
         function_call, parameters = self.extract_json(response)
         selected_base_model = next((model for model in self.list_base_models if model.__name__ == function_call), None)
         return selected_base_model.__pydantic_validator__.validate_json(parameters, strict=True)
@@ -691,14 +701,6 @@ class Agent(BaseStructure):
             raise ValueError("Max loops is not provided")
 
     ########################## FUNCTION CALLING ##########################
-
-    def printtier(self, response:str) -> str:
-        """
-        Specifies the name of the agent in capital letters in pink and the response text in blue.
-        Add space above.
-        """
-        print("\n")
-        return print(f"\033[1;34m{self.name.upper()}:\033[0m {response}")
     
     def run(
         self,
