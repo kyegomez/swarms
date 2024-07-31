@@ -47,6 +47,10 @@ extra:
       link: https://x.com/KyeGomezB
     - icon: fontawesome/brands/github
       link: https://github.com/kyegomez/swarms
+    - icon: fontawesome/brands/twitter
+      link: https://x.com/swarms_corp
+    - icon: fontawesome/brands/discord
+      link: https://discord.com/servers/agora-999382051935506503
 theme:
     name: material
     custom_dir: overrides
@@ -139,15 +143,17 @@ nav:
       - Overview: "swarms/structs/index.md"
       - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
       - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
-      - Tool Usage and Function Calling: "swarms/tools/main.md"
+      - Tool Usage and Function Calling: "swarms/tools/build_tool.md"
       - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
       # - Integrating Agents from Langchain, Griptape, CrewAI, Autogen, and more!: "swarms/agents/third_party.md"
     - Multi-Agent Collaboration:
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
-      - Workflows: "swarms/structs/workflows.md"
+      - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
+      # - Workflows: "swarms/structs/workflows.md"
     - Contributing: 
       - Tests: "swarms/framework/test.md"
+      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
   - Reference:
     - Overview: "swarms/structs/index.md"
     - Models:
@@ -165,6 +171,7 @@ nav:
         - GPT4VisionAPI: "swarms/models/gpt4v.md"
     - Agents:
       - Agent: "swarms/structs/agent.md"
+      - Tools: "swarms/agents/build_tool.md"
       - Task: "swarms/structs/task.md"
       - ToolAgent: "swarms/agents/tool_agent.md"
     - Artifacts:
@@ -216,4 +223,3 @@ nav:
   #   - Comparing LLM Provider Pricing A Guide for Enterprises: "guides/pricing.md"
   - References:
     - Agent Glossary: "swarms/glossary.md"
-    - List of The Best Multi-Agent Papers: "swarms/papers.md"

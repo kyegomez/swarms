@@ -790,12 +790,13 @@ class Agent(BaseStructure):
 
                             all_responses.append(response)
 
-                        # Check if tools is not None
+                        # TODO: Implement reliablity check
                         if self.tools is not None:
-                            self.parse_function_call_and_execute(response)
+                            # self.parse_function_call_and_execute(response)
+                            self.parse_and_execute_tools(response)
 
-                        if self.code_interpreter is not False:
-                            self.code_interpreter_execution(response)
+                        # if self.code_interpreter is not False:
+                        #     self.code_interpreter_execution(response)
 
                         if self.evaluator:
                             evaluated_response = self.evaluator(response)
@@ -887,9 +888,12 @@ class Agent(BaseStructure):
                 self.check_end_session_agentops()
 
             # final_response = " ".join(all_responses)
-            all_responses = [response for response in all_responses if response is not None]
+            all_responses = [
+                response
+                for response in all_responses
+                if response is not None
+            ]
             final_response = " ".join(all_responses)
-
 
             if self.return_history:
                 return self.short_memory.return_history_as_string()
@@ -1618,48 +1622,46 @@ class Agent(BaseStructure):
     def convert_tool_into_openai_schema(self):
         logger.info("Converting tools into OpenAI function calling schema")
 
-        if callable(self.tools):
-            for tool in self.tools:
-                # Transform the tool into a openai function calling schema
-                name = tool.__name__
-                description = tool.__doc__
-                logger.info(
-                    f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
-                )
-                tool_schema_list = get_openai_function_schema_from_func(
-                    tool, name=name, description=description
-                )
+        # if callable(self.tools):
+        for tool in self.tools:
+            # Transform the tool into a openai function calling schema
+            name = tool.__name__
+            description = tool.__doc__
+            logger.info(
+                f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
+            )
+            tool_schema_list = get_openai_function_schema_from_func(
+                tool, name=name, description=description
+            )
 
-                # Transform the dictionary to a string
-                tool_schema_list = json.dumps(tool_schema_list, indent=4)
+            # Transform the dictionary to a string
+            tool_schema_list = json.dumps(tool_schema_list, indent=4)
 
-                # Add the tool schema to the short memory
-                self.short_memory.add(
-                    role="System", content=tool_schema_list
-                )
+            # Add the tool schema to the short memory
+            self.short_memory.add(role="System", content=tool_schema_list)
 
-                logger.info(
-                    f"Conversion process successful, the tool {name} has been integrated with the agent successfully."
-                )
+            logger.info(
+                f"Conversion process successful, the tool {name} has been integrated with the agent successfully."
+            )
 
-        else:
-            for tool in self.tools:
+        # else:
+        #     for tool in self.tools:
 
-                # Parse the json for the name of the function
-                name = tool["name"]
-                description = tool["description"]
+        #         # Parse the json for the name of the function
+        #         name = tool["name"]
+        #         description = tool["description"]
 
-                # Transform the dict into a string
-                tool_schema_list = json.dumps(tool, indent=4)
+        #         # Transform the dict into a string
+        #         tool_schema_list = json.dumps(tool, indent=4)
 
-                # Add the tool schema to the short memory
-                self.short_memory.add(
-                    role="System", content=tool_schema_list
-                )
+        #         # Add the tool schema to the short memory
+        #         self.short_memory.add(
+        #             role="System", content=tool_schema_list
+        #         )
 
-                logger.info(
-                    f"Conversion process successful, the tool {name} has been integrated with the agent successfully."
-                )
+        #         logger.info(
+        #             f"Conversion process successful, the tool {name} has been integrated with the agent successfully."
+        #         )
 
         return None
 

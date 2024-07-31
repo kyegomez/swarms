@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from swarms import Agent, OpenAIChat
-from playground.memory.chroma_db import ChromaDB
+from swarms_memory import ChromaDB
 from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
 from swarms import tool
 

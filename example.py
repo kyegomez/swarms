@@ -1,9 +1,16 @@
+import os
 from swarms import Agent, OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
 
-model = OpenAIChat()
+# Get the OpenAI API key from the environment variable
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Create an instance of the OpenAIChat class
+model = OpenAIChat(
+    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+)
 
 # Initialize the agent
 agent = Agent(
@@ -19,7 +26,7 @@ agent = Agent(
     # interactive=True, # Set to False to disable interactive mode
     dynamic_temperature_enabled=True,
     saved_state_path="finance_agent.json",
-    # tools=[Add your functions here# ],
+    # tools=[#Add your functions here# ],
     # stopping_token="Stop!",
     # interactive=True,
     # docs_folder="docs", # Enter your folder name
@@ -36,7 +43,6 @@ agent = Agent(
     # tool_schema=
     # tools
     # agent_ops_on=True,
-    # long_term_memory=ChromaDB(docs_folder="artifacts"),
 )
 
 
