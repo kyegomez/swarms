@@ -134,7 +134,6 @@ nav:
     # - Philosophy: "swarms/framework/philosophy.md"
     # - Roadmap: "swarms/framework/roadmap.md"
   - Swarms Python Framework:
-    # - Installation:
     - Install: "swarms/install/install.md"
     - Docker Setup: "swarms/install/docker_setup.md"
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
@@ -168,11 +167,9 @@ nav:
     - Artifacts:
       - Overview: "swarms/artifacts/artifact.md"
     - Multi Agent Collaboration:
-      - Multi-Agent Collaboration:
       - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
-
       - Conversation: "swarms/structs/conversation.md"
       - SwarmNetwork: "swarms/structs/swarmnetwork.md"
       - MajorityVoting: "swarms/structs/majorityvoting.md"
@@ -192,10 +189,9 @@ nav:
         #   - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         #   - MultiProcessingWorkflow: "swarms/structs/multi_processing_workflow.md"
     - Structs:
-      - Foundational Structures:
-        - BaseStructure: "swarms/structs/basestructure.md"
-        - Task: "swarms/structs/task.md"
-        - YamlModel: "swarms/structs/yaml_model.md"
+      - BaseStructure: "swarms/structs/basestructure.md"
+      - Task: "swarms/structs/task.md"
+      - YamlModel: "swarms/structs/yaml_model.md"
     - Contributing: 
       - Tests: "swarms/framework/test.md"
       - Contributing: "contributing.md"
