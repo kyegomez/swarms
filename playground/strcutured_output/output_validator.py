@@ -39,7 +39,13 @@ def symbol_must_exists(symbol= str) -> str:
 # Initialize the schema for the person's information
 class StockInfo(BaseModel):
     """
-    Describing a stock and it's infos
+    To create a StockInfo, you need to return a JSON object with the following format:
+    {
+        "function_call": "StockInfo",
+        "parameters": {
+            ...
+        }
+    } 
     """
     name: str = Field(..., title="Name of the company")
     description: str = Field(..., title="Description of the company")

@@ -27,14 +27,17 @@ sys.path.insert(0, os.getcwd())
 from pydantic import BaseModel, Field
 from swarms import Agent, OpenAIChat
 
-import agentops
-
-agentops.start_session()
 
 # Initialize the schema for the person's information
 class PersonInfo(BaseModel):
     """
-    This is a pydantic model describing the format of a structured output
+    To create a PersonInfo, you need to return a JSON object with the following format:
+    {
+        "function_call": "PersonInfo",
+        "parameters": {
+            ...
+        }
+    }   
     """
     name: str = Field(..., title="Name of the person")
     agent: int = Field(..., title="Age of the person")
