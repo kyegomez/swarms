@@ -2,7 +2,7 @@ docs_dir: '.'  # replace with the correct path if your documentation files are n
 site_name: Swarms
 site_url: https://docs.swarms.world
 site_author: Swarms
-site_description: The Enterprise-Grade Production-Ready Multi-Agent Framework
+site_description: The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework
 repo_name: kyegomez/swarms
 repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
@@ -57,6 +57,7 @@ theme:
     logo: assets/img/swarms-logo.png
     palette:
       # Palette toggle for light mode
+      accent: red
     - scheme: default
       primary: black
       toggle:
@@ -127,38 +128,23 @@ markdown_extensions:
   - pymdownx.tilde
 nav:
   - Home:
-    - Install: "swarms/install/install.md"
-    - Docker Setup: "swarms/install/docker_setup.md"
-    - Contributing: "contributing.md"
-    - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
-    - Swarm Ecosystem: "swarms/ecosystem.md"
+    - Overview: "index.md"
+    # - Swarm Ecosystem: "swarms/ecosystem.md"
     - The Vision: "swarms/framework/vision.md"
-  - Framework:
-    - Overview: "swarms/framework/index.md"
+    # - Philosophy: "swarms/framework/philosophy.md"
+    # - Roadmap: "swarms/framework/roadmap.md"
+  - Swarms Python Framework:
+    - Installation:
+      - Install: "swarms/install/install.md"
+      - Docker Setup: "swarms/install/docker_setup.md"
+      - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
+      # - Getting Started with Agents: "swarms/install/getting_started.md"
+      # - Getting Started with Multi-Agent Collaboration
     - Models:
       - Overview: "swarms/models/index.md"
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-      - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
-    - Agents:
-      - Overview: "swarms/structs/index.md"
-      - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
-      - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
-      - Tool Usage and Function Calling: "swarms/tools/build_tool.md"
-      - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
-      # - Integrating Agents from Langchain, Griptape, CrewAI, Autogen, and more!: "swarms/agents/third_party.md"
-    - Multi-Agent Collaboration:
-      - Overview: "swarms/structs/multi_agent_orchestration.md"
-      - Swarm Architectures: "swarms/concept/swarm_architectures.md"
-      - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
-      # - Workflows: "swarms/structs/workflows.md"
-    - Contributing: 
-      - Tests: "swarms/framework/test.md"
-      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
-  - Reference:
-    - Overview: "swarms/structs/index.md"
-    - Models:
-      - How to Create A Custom Language Model: "swarms/models/custom_model.md"
       - Models Available: "swarms/models/index.md"
+      - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
       - Language Models:
         - BaseLLM: "swarms/models/base_llm.md"
         - HuggingFaceLLM: "swarms/models/huggingface.md"
@@ -166,39 +152,54 @@ nav:
         - OpenAIChat: "swarms/models/openai.md"
         # - TogetherAI: "swarms/models/togetherai.md"
       - MultiModal Models:
-        - Multi Modal Models Available: "swarms/models/multimodal_models.md"
         - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
+        - Multi Modal Models Available: "swarms/models/multimodal_models.md"
         - GPT4VisionAPI: "swarms/models/gpt4v.md"
     - Agents:
-      - Agent: "swarms/structs/agent.md"
-      - Tools: "swarms/agents/build_tool.md"
-      - Task: "swarms/structs/task.md"
-      - ToolAgent: "swarms/agents/tool_agent.md"
+      - Overview: "swarms/structs/index.md"
+      - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
+      - Complete Agent API: "swarms/structs/agent.md"
+      - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
+      - Tools:
+        - Tools: "swarms/agents/build_tool.md"
+        - ToolAgent: "swarms/agents/tool_agent.md"
+      - RAG or Long Term Memory:
+        - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
     - Artifacts:
       - Overview: "swarms/artifacts/artifact.md"
+    - Multi Agent Collaboration:
+      - Multi-Agent Collaboration:
+      - Overview: "swarms/structs/multi_agent_orchestration.md"
+      - Swarm Architectures: "swarms/concept/swarm_architectures.md"
+      - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
+
+      - Conversation: "swarms/structs/conversation.md"
+      - SwarmNetwork: "swarms/structs/swarmnetwork.md"
+      - MajorityVoting: "swarms/structs/majorityvoting.md"
+      - AgentRearrange: "swarms/structs/agent_rearrange.md"
+      - RoundRobin: "swarms/structs/round_robin_swarm.md"
+      - Mixture of Agents: "swarms/structs/moa.md"
+      - GraphWorkflow: "swarms/structs/graph_workflow.md"
+      - AsyncWorkflow: "swarms/structs/async_workflow.md"
+      - AutoSwarmRouter: "swarms/structs/auto_swarm_router.md"
+      - AutoSwarm: "swarms/structs/auto_swarm.md"
+      - GroupChat: "swarms/structs/group_chat.md"
+      - AgentRegistry: "swarms/structs/agent_registry.md"
+      # - Workflows: "swarms/structs/workflows.md"
+      # - Workflows:
+        #   - BaseWorkflow: "swarms/structs/base_workflow.md"
+        #   - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
+        #   - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
+        #   - MultiProcessingWorkflow: "swarms/structs/multi_processing_workflow.md"
     - Structs:
       - Foundational Structures:
         - BaseStructure: "swarms/structs/basestructure.md"
         - Task: "swarms/structs/task.md"
         - YamlModel: "swarms/structs/yaml_model.md"
-      - Multi Agent Architectures:
-        - Workflows:
-          - BaseWorkflow: "swarms/structs/base_workflow.md"
-          - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
-          - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
-          - MultiProcessingWorkflow: "swarms/structs/multi_processing_workflow.md"
-        - Conversation: "swarms/structs/conversation.md"
-        - SwarmNetwork: "swarms/structs/swarmnetwork.md"
-        - MajorityVoting: "swarms/structs/majorityvoting.md"
-        - AgentRearrange: "swarms/structs/agent_rearrange.md"
-        - RoundRobin: "swarms/structs/round_robin_swarm.md"
-        - Mixture of Agents: "swarms/structs/moa.md"
-        - GraphWorkflow: "swarms/structs/graph_workflow.md"
-        - AsyncWorkflow: "swarms/structs/async_workflow.md"
-        - AutoSwarmRouter: "swarms/structs/auto_swarm_router.md"
-        - AutoSwarm: "swarms/structs/auto_swarm.md"
-        - GroupChat: "swarms/structs/group_chat.md"
-        - AgentRegistry: "swarms/structs/agent_registry.md"
+    - Contributing: 
+      - Tests: "swarms/framework/test.md"
+      - Contributing: "contributing.md"
+      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
   - Swarms Cloud API:
     - Overview: "swarms_cloud/main.md"
     - Available Models: "swarms_cloud/available_models.md"
