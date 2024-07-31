@@ -56,8 +56,6 @@ theme:
     custom_dir: overrides
     logo: assets/img/swarms-logo.png
     palette:
-      # Palette toggle for light mode
-      accent: red
     - scheme: default
       primary: black
       toggle:
