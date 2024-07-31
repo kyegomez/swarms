@@ -134,12 +134,12 @@ nav:
     # - Philosophy: "swarms/framework/philosophy.md"
     # - Roadmap: "swarms/framework/roadmap.md"
   - Swarms Python Framework:
-    - Installation:
-      - Install: "swarms/install/install.md"
-      - Docker Setup: "swarms/install/docker_setup.md"
-      - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
-      # - Getting Started with Agents: "swarms/install/getting_started.md"
-      # - Getting Started with Multi-Agent Collaboration
+    # - Installation:
+    - Install: "swarms/install/install.md"
+    - Docker Setup: "swarms/install/docker_setup.md"
+    - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
+    # - Getting Started with Agents: "swarms/install/getting_started.md"
+    # - Getting Started with Multi-Agent Collaboration
     - Models:
       - Overview: "swarms/models/index.md"
       - How to Create A Custom Language Model: "swarms/models/custom_model.md"
