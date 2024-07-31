@@ -1,8 +1,6 @@
-### Swarms Tool Documentation Page
+### Swarms Tool Documentation
 
-Welcome to the Swarms Tool Documentation! 
-
-Here you will find examples and guidelines on how to build and use tools in the Swarms environment. A tool is a Python function designed to perform specific tasks, with clear type annotations and comprehensive docstrings. Below are examples of tools to help you get started.
+A tool is a Python function designed to perform specific tasks, with clear type annotations and comprehensive docstrings. Below are examples of tools to help you get started.
 
 # Rules
 
@@ -29,9 +27,6 @@ To create a tool in the Swarms environment, follow these rules:
 
 
 ### Example Tools
-
-
-
 
 
 ### Examples and Anti-Examples
@@ -351,3 +346,239 @@ By following the examples provided, you can create your own tools to perform var
 
 
 
+## Integrate tools into Agent
+To integrate tools into an agent, you'd simply just pass in a callable function with types and documentation into the agent class.
+
+```python
+
+
+from swarms import Agent, OpenAIChat  # ChromaDB
+import subprocess
+
+# Model
+llm = OpenAIChat(
+    temperature=0.1,
+)
+
+
+# Tools
+def terminal(
+    code: str,
+):
+    """
+    Run code in the terminal.
+
+    Args:
+        code (str): The code to run in the terminal.
+
+    Returns:
+        str: The output of the code.
+    """
+    out = subprocess.run(
+        code, shell=True, capture_output=True, text=True
+    ).stdout
+    return str(out)
+
+
+def browser(query: str):
+    """
+    Search the query in the browser with the `browser` tool.
+
+    Args:
+        query (str): The query to search in the browser.
+
+    Returns:
+        str: The search results.
+    """
+    import webbrowser
+
+    url = f"https://www.google.com/search?q={query}"
+    webbrowser.open(url)
+    return f"Searching for {query} in the browser."
+
+
+def create_file(file_path: str, content: str):
+    """
+    Create a file using the file editor tool.
+
+    Args:
+        file_path (str): The path to the file.
+        content (str): The content to write to the file.
+
+    Returns:
+        str: The result of the file creation operation.
+    """
+    with open(file_path, "w") as file:
+        file.write(content)
+    return f"File {file_path} created successfully."
+
+
+def file_editor(file_path: str, mode: str, content: str):
+    """
+    Edit a file using the file editor tool.
+
+    Args:
+        file_path (str): The path to the file.
+        mode (str): The mode to open the file in.
+        content (str): The content to write to the file.
+
+    Returns:
+        str: The result of the file editing operation.
+    """
+    with open(file_path, mode) as file:
+        file.write(content)
+    return f"File {file_path} edited successfully."
+
+
+# Agent
+agent = Agent(
+    agent_name="Devin",
+    system_prompt=(
+        "Autonomous agent that can interact with humans and other"
+        " agents. Be Helpful and Kind. Use the tools provided to"
+        " assist the user. Return all code in markdown format."
+    ),
+    llm=llm,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    interactive=True,
+    tools=[terminal, browser, file_editor, create_file],
+    # long_term_memory=chromadb,
+    metadata_output_type="json",
+    # List of schemas that the agent can handle
+    # list_base_models=[tool_schema],
+    function_calling_format_type="OpenAI",
+    function_calling_type="json",  # or soon yaml
+)
+
+# Run the agent
+agent.run("Create a new file for a plan to take over the world.")
+
+```
+
+
+## Example 2
+
+
+```python
+
+import os
+
+import requests
+
+from swarms import Agent, OpenAIChat
+
+# Get the OpenAI API key from the environment variable
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Create an instance of the OpenAIChat class
+model = OpenAIChat(
+    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+)
+
+
+def fetch_financial_news(
+    query: str = "Nvidia news", num_articles: int = 5
+) -> str:
+    """
+    Fetches financial news from the Google News API and returns a formatted string of the top news.
+
+    Args:
+        api_key (str): Your Google News API key.
+        query (str): The query term to search for news. Default is "financial".
+        num_articles (int): The number of top articles to fetch. Default is 5.
+
+    Returns:
+        str: A formatted string of the top financial news articles.
+
+    Raises:
+        ValueError: If the API response is invalid or there are no articles found.
+        requests.exceptions.RequestException: If there is an error with the request.
+    """
+    url = "https://newsapi.org/v2/everything"
+    params = {
+        "q": query,
+        "apiKey": os.getenv("NEWSAPI_KEY"),
+        "pageSize": num_articles,
+        "sortBy": "relevancy",
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        if "articles" not in data or len(data["articles"]) == 0:
+            raise ValueError("No articles found or invalid API response.")
+
+        articles = data["articles"]
+        formatted_articles = []
+
+        for i, article in enumerate(articles, start=1):
+            title = article.get("title", "No Title")
+            description = article.get("description", "No Description")
+            url = article.get("url", "No URL")
+            formatted_articles.append(
+                f"{i}. {title}\nDescription: {description}\nRead more: {url}\n"
+            )
+
+        return "\n".join(formatted_articles)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Request Error: {e}")
+        raise
+    except ValueError as e:
+        print(f"Value Error: {e}")
+        raise
+
+
+# # Example usage:
+# api_key = "ceabc81a7d8f45febfedadb27177f3a3"
+# print(fetch_financial_news(api_key))
+
+
+# Initialize the agent
+agent = Agent(
+    agent_name="Financial-Analysis-Agent",
+    # system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops=2,
+    autosave=True,
+    # dynamic_temperature_enabled=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    # interactive=True, # Set to False to disable interactive mode
+    dynamic_temperature_enabled=True,
+    saved_state_path="finance_agent.json",
+    tools=[fetch_financial_news],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # tool_schema=
+    # tools
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
+
+# Run the agent
+response = agent("What are the latest financial news on Nvidia?")
+print(response)
+
+
+```

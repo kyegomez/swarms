@@ -13,6 +13,7 @@ static/generated
 runs
 Financial-Analysis-Agent_state.json
 artifacts_five
+errors
 chroma
 Accounting Assistant_state.json
 Unit Testing Agent_state.json

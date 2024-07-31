@@ -17,7 +17,7 @@ SWARMS_LOGO = """
 RED_COLOR_CODE = "\033[91m"
 RESET_COLOR_CODE = "\033[0m"
 
-# print(RED_COLOR_CODE + SWARMS_LOGO + RESET_COLOR_CODE)
+print(RED_COLOR_CODE + SWARMS_LOGO + RESET_COLOR_CODE)
 
 
 def main():
@@ -87,5 +87,5 @@ def main():
         parser.print_help()
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

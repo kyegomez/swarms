@@ -5,12 +5,12 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "5.4.4"
+version = "5.4.5"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
 homepage = "https://github.com/kyegomez/swarms"
-documentation = "https://swarms.world"
+documentation = "https://docs.swarms.world"
 readme = "README.md"
 repository = "https://github.com/kyegomez/swarms"
 keywords = [
@@ -30,7 +30,11 @@ keywords = [
     "Multi-Grade-Agents",
     "Swarms",
     "Transformers",
-
+    "LLMs",
+    "Prompt Engineering",
+    "Agents",
+    "Generative Agents",
+    "Generative AI",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -69,7 +73,8 @@ networkx = "*"
 swarms-memory = "*"
 
 
-
+# [tool.poetry.scripts]
+# swarms = "swarms.cli:main"
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<25.0"

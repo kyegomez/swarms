@@ -3,9 +3,6 @@ import os
 import requests
 
 from swarms import Agent, OpenAIChat
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
 
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("OPENAI_API_KEY")
@@ -90,7 +87,7 @@ agent = Agent(
     # interactive=True, # Set to False to disable interactive mode
     dynamic_temperature_enabled=True,
     saved_state_path="finance_agent.json",
-    # tools=[fetch_financial_news],
+    tools=[fetch_financial_news],
     # stopping_token="Stop!",
     # interactive=True,
     # docs_folder="docs", # Enter your folder name
@@ -111,23 +108,6 @@ agent = Agent(
 )
 
 
-def run_finance_agent(query: str) -> str:
-    """
-    Runs the financial analysis agent with the given query.
-
-    Args:
-        query (str): The user query to run the agent with.
-
-    Returns:
-        str: The response from the financial analysis agent.
-    """
-    query = fetch_financial_news(query)
-    print(query)
-    response = agent(query)
-    return response
-
-
-# Example usage:
-query = "Nvidia news"
-response = run_finance_agent(f"Summarize the latest Nvidia financial news {query}")
+# Run the agent
+response = agent("What are the latest financial news on Nvidia?")
 print(response)
