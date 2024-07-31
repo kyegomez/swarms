@@ -9,7 +9,6 @@ agent_risk_analysis = Agent(
     max_loops=1,
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
 )
@@ -22,7 +21,6 @@ agent_compliance_check = Agent(
     max_loops=1,
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
 )
@@ -35,7 +33,6 @@ agent_report_generation = Agent(
     max_loops=1,
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
 )

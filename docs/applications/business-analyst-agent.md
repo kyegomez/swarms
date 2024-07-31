@@ -129,7 +129,7 @@ agent = Agent(
     max_loops=1,
     autosave=True,
     dashboard=False,
-    streaming_on=True,
+
     verbose=True,
     interactive=False,
     # Set the output type to the tool schema which is a BaseModel
@@ -618,7 +618,6 @@ worker_agent = WorkerAgent(
     max_loops="auto",
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
     interactive=True,

@@ -66,7 +66,6 @@ sales_agent1 = Agent(
     autosave=True,
     dashboard=False,
     verbose=True,
-    streaming_on=True,
     context_length=1000,
 )
 
@@ -79,7 +78,6 @@ sales_agent2 = Agent(
     autosave=True,
     dashboard=False,
     verbose=True,
-    streaming_on=True,
     context_length=1000,
 )
 
@@ -92,7 +90,6 @@ sales_agent3 = Agent(
     autosave=True,
     dashboard=False,
     verbose=True,
-    streaming_on=True,
     context_length=1000,
 )
 

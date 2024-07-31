@@ -48,7 +48,6 @@ Swarm Agent is a powerful autonomous agent framework designed to connect Languag
 | `preset_stopping_token` | A boolean indicating whether the agent should use a preset stopping token. |
 | `traceback` | An object used for traceback handling. |
 | `traceback_handlers` | A list of traceback handlers. |
-| `streaming_on` | A boolean indicating whether the agent should stream its responses. |
 | `docs` | A list of document paths or contents to be ingested. |
 | `docs_folder` | The path to a folder containing documents to be ingested. |
 | `verbose` | A boolean indicating whether the agent should print verbose output. |

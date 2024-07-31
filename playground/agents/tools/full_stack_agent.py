@@ -20,7 +20,6 @@ agent = Agent(
     max_loops="auto",
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
     tools=[search_api],

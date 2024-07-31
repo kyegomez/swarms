@@ -19,7 +19,6 @@ agent1 = Agent(
     metadata="json",
     function_calling_format_type="OpenAI",
     function_calling_type="json",
-    streaming_on=True,
 )
 
 agent2 = Agent(
@@ -32,7 +31,6 @@ agent2 = Agent(
     metadata="json",
     function_calling_format_type="OpenAI",
     function_calling_type="json",
-    streaming_on=True,
 )
 
 agent3 = Agent(
@@ -45,7 +43,6 @@ agent3 = Agent(
     metadata="json",
     function_calling_format_type="OpenAI",
     function_calling_type="json",
-    streaming_on=True,
 )
 
 

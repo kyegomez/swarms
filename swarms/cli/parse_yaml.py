@@ -18,7 +18,6 @@ class AgentInput(BaseModel):
     dynamic_temperature_enabled: bool = False
     dashboard: bool = False
     verbose: bool = False
-    streaming_on: bool = True
     saved_state_path: Optional[str] = None
     sop: Optional[str] = None
     sop_list: Optional[List[str]] = None
@@ -65,7 +64,6 @@ def parse_yaml_to_json(yaml_str: str) -> str:
 # dynamic_temperature_enabled: true
 # dashboard: true
 # verbose: true
-# streaming_on: false
 # saved_state_path: "/path/to/state"
 # sop: "Standard operating procedure"
 # sop_list: ["step1", "step2"]
@@ -99,7 +97,6 @@ def create_agent_from_yaml(yaml_path: str) -> None:
         ),
         dashboard=agent_config.get("dashboard", False),
         verbose=agent_config.get("verbose", False),
-        streaming_on=agent_config.get("streaming_on", True),
         saved_state_path=agent_config.get("saved_state_path"),
         retry_attempts=agent_config.get("retry_attempts", 3),
         context_length=agent_config.get("context_length", 8192),

@@ -18,7 +18,6 @@ agent = Agent(
     max_loops="auto",  # Set the maximum number of loops to "auto"
     autosave=True,  # Enable autosave feature
     dashboard=False,  # Disable the dashboard
-    streaming_on=True,  # Enable streaming
     verbose=True,  # Enable verbose mode
     stopping_token="<DONE>",  # Set the stopping token to "<DONE>"
     interactive=True,  # Enable interactive mode

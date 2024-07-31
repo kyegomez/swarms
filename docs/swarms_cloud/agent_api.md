@@ -68,7 +68,6 @@ This endpoint handles the completion request for an agent configured with the gi
     "dynamic_temperature_enabled": false,
     "dashboard": false,
     "verbose": false,
-    "streaming_on": true,
     "saved_state_path": null,
     "sop": null,
     "sop_list": null,
@@ -93,7 +92,6 @@ This endpoint handles the completion request for an agent configured with the gi
         "dynamic_temperature_enabled": false,
         "dashboard": false,
         "verbose": false,
-        "streaming_on": true,
         "saved_state_path": null,
         "sop": null,
         "sop_list": null,
@@ -140,7 +138,6 @@ class AgentInput(BaseModel):
     dynamic_temperature_enabled: bool = False
     dashboard: bool = False
     verbose: bool = False
-    streaming_on: bool = True
     saved_state_path: str = None
     sop: str = None
     sop_list: List[str] = None
@@ -171,7 +168,6 @@ The `AgentInput` class defines the structure of the input data required to confi
 | `dynamic_temperature_enabled`  | `bool`          | `False`         | Whether dynamic temperature adjustment is enabled.              |
 | `dashboard`                    | `bool`          | `False`         | Whether to enable the dashboard feature.                        |
 | `verbose`                      | `bool`          | `False`         | Whether to enable verbose logging.                              |
-| `streaming_on`                 | `bool`          | `True`          | Whether to enable streaming of responses.                       |
 | `saved_state_path`             | `str` or `None` | `None`          | Path to save the agent's state.                                 |
 | `sop`                          | `str` or `None` | `None`          | Standard operating procedures for the agent.                    |
 | `sop_list`                     | `List[str]` or `None` | `None`    | A list of standard operating procedures.                        |

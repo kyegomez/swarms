@@ -22,7 +22,6 @@ agent = Agent(
     # dynamic_temperature_enabled=True,
     dashboard=False,
     verbose=True,
-    streaming_on=True,
     # interactive=True, # Set to False to disable interactive mode
     dynamic_temperature_enabled=True,
     saved_state_path="finance_agent.json",

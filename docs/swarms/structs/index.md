@@ -241,7 +241,6 @@ agent = Agent(
     max_loops="auto",
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
     interactive=True,
@@ -297,7 +296,6 @@ agent = Agent(
     max_loops=3,
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
     interactive=True,
     # Set the output type to the tool schema which is a BaseModel

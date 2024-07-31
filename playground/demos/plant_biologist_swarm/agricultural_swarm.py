@@ -37,12 +37,10 @@ diagnoser_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    # streaming_on=True,
     # verbose=True,
     # saved_state_path="diagnoser.json",
     multi_modal=True,
     autosave=True,
-    streaming_on=True,
 )
 
 # Initialize Harvester Agent
@@ -52,12 +50,10 @@ harvester_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    # streaming_on=True,
     # verbose=True,
     # saved_state_path="harvester.json",
     multi_modal=True,
     autosave=True,
-    streaming_on=True,
 )
 
 # Initialize Growth Predictor Agent
@@ -67,12 +63,10 @@ growth_predictor_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    # streaming_on=True,
     # verbose=True,
     # saved_state_path="growth_predictor.json",
     multi_modal=True,
     autosave=True,
-    streaming_on=True,
 )
 
 # Initialize Treatment Recommender Agent
@@ -82,12 +76,10 @@ treatment_recommender_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    # streaming_on=True,
     # verbose=True,
     # saved_state_path="treatment_recommender.json",
     multi_modal=True,
     autosave=True,
-    streaming_on=True,
 )
 
 # Initialize Disease Detector Agent
@@ -97,12 +89,10 @@ disease_detector_agent = Agent(
     llm=llm,
     max_loops=1,
     dashboard=False,
-    # streaming_on=True,
     # verbose=True,
     # saved_state_path="disease_detector.json",
     multi_modal=True,
     autosave=True,
-    streaming_on=True,
 )
 agents = [
     diagnoser_agent,

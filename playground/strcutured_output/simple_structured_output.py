@@ -14,14 +14,27 @@ make sure to add the project root to your PYTHONPATH by running the following co
   'export PYTHONPATH=$(pwd):$PYTHONPATH'
 """
 
+################ Adding project root to PYTHONPATH ################################
+# If you are running playground examples in the project files directly, use this: 
+
+import sys
+import os
+
+sys.path.insert(0, os.getcwd())
+
+################ Adding project root to PYTHONPATH ################################
+
 from pydantic import BaseModel, Field
 from swarms import Agent, OpenAIChat
 
+import agentops
+
+agentops.start_session()
 
 # Initialize the schema for the person's information
-class Schema(BaseModel):
+class PersonInfo(BaseModel):
     """
-    This is a pydantic class describing the format of a structured output
+    This is a pydantic model describing the format of a structured output
     """
     name: str = Field(..., title="Name of the person")
     agent: int = Field(..., title="Age of the person")
@@ -30,22 +43,22 @@ class Schema(BaseModel):
         ..., title="List of courses the person is taking"
     )
 
-# Define the task to generate a person's information
-task = "Generate a person's information based on the following schema:"
-
 # Initialize the agent
 agent = Agent(
     agent_name="Person Information Generator",
     system_prompt=(
-        "Generate a person's information based on the following schema:"
+        "Generate a person's information"
     ),
     llm=OpenAIChat(),
     max_loops=1,
     verbose=True,
-    # List of schemas that the agent can handle
-    list_base_models=[Schema],
-    agent_ops_on=True
+    # List of pydantic models that the agent can use
+    list_base_models=[PersonInfo],
+    output_validation=True
 )
+
+# Define the task to generate a person's information
+task = "Generate a person's information"
 
 # Run the agent to generate the person's information
 generated_data = agent.run(task)

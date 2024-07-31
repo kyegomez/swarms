@@ -6,7 +6,6 @@ agent = Agent(
     max_loops=1,
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
 )
 

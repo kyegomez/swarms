@@ -128,7 +128,6 @@ class Agent(BaseStructure):
         preset_stopping_token (bool): Enable preset stopping token
         traceback (Any): The traceback
         traceback_handlers (Any): The traceback handlers
-        streaming_on (bool): Enable streaming
 
     Methods:
         run: Run the agent
@@ -214,7 +213,6 @@ class Agent(BaseStructure):
         preset_stopping_token: Optional[bool] = False,
         traceback: Optional[Any] = None,
         traceback_handlers: Optional[Any] = None,
-        streaming_on: Optional[bool] = False,
         docs: List[str] = None,
         docs_folder: Optional[str] = None,
         verbose: Optional[bool] = False,
@@ -303,7 +301,6 @@ class Agent(BaseStructure):
         self.preset_stopping_token = preset_stopping_token
         self.traceback = traceback
         self.traceback_handlers = traceback_handlers
-        self.streaming_on = streaming_on
         self.docs = docs
         self.docs_folder = docs_folder
         self.verbose = verbose
@@ -780,10 +777,7 @@ class Agent(BaseStructure):
                             response = self.llm(*response_args, **kwargs)
 
                             # Print
-                            if self.streaming_on is True:
-                                response = self.stream_response(response)
-                            else:
-                                self.printtier(response)
+                            self.printtier(response)
 
                             # Add the response to the memory
                             self.short_memory.add(
@@ -1334,7 +1328,6 @@ class Agent(BaseStructure):
                 "preset_stopping_token": self.preset_stopping_token,
                 "traceback": self.traceback,
                 "traceback_handlers": self.traceback_handlers,
-                "streaming_on": self.streaming_on,
                 "docs": self.docs,
                 "docs_folder": self.docs_folder,
                 "verbose": self.verbose,
@@ -1746,35 +1739,6 @@ class Agent(BaseStructure):
             print(f"Response after output model: {response}")
 
         return response
-
-    def stream_response(self, response: str, delay: float = 0.001) -> None:
-        """
-        Streams the response token by token.
-
-        Args:
-            response (str): The response text to be streamed.
-            delay (float, optional): Delay in seconds between printing each token. Default is 0.1 seconds.
-
-        Raises:
-            ValueError: If the response is not provided.
-            Exception: For any errors encountered during the streaming process.
-
-        Example:
-            response = "This is a sample response from the API."
-            stream_response(response)
-        """
-        # Check for required inputs
-        if not response:
-            raise ValueError("Response is required.")
-
-        try:
-            # Stream and print the response token by token
-            for token in response.split():
-                print(token, end=" ", flush=True)
-                time.sleep(delay)
-            print()  # Ensure a newline after streaming
-        except Exception as e:
-            print(f"An error occurred during streaming: {e}")
 
     def dynamic_context_window(self):
         """

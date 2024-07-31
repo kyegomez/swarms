@@ -37,7 +37,6 @@ class AgentSchemaBaseModel(BaseModel):
     preset_stopping_token: Optional[bool] = False
     traceback: Optional[Any] = None
     traceback_handlers: Optional[Any] = None
-    streaming_on: Optional[bool] = False
     docs: Optional[List[str]] = None
     docs_folder: Optional[str] = None
     verbose: Optional[bool] = True

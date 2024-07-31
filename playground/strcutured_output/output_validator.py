@@ -57,7 +57,6 @@ agent = Agent(
     ),
     llm=OpenAIChat(),
     max_loops=1,
-    streaming_on=False, # TODO code breaks when this is True
     verbose=True,
     # List of schemas that the agent can handle
     list_base_models=[StockInfo],

@@ -14,7 +14,6 @@ class MySwarm(BaseSwarm):
             max_loops=1,
             autosave=True,
             dashboard=False,
-            streaming_on=True,
             verbose=True,
             stopping_token="<DONE>",
         )
@@ -25,7 +24,6 @@ class MySwarm(BaseSwarm):
             max_loops=1,
             autosave=True,
             dashboard=False,
-            streaming_on=True,
             verbose=True,
             stopping_token="<DONE>",
         )
@@ -36,7 +34,6 @@ class MySwarm(BaseSwarm):
             max_loops=1,
             autosave=True,
             dashboard=False,
-            streaming_on=True,
             verbose=True,
             stopping_token="<DONE>",
         )

@@ -147,7 +147,6 @@ def select_agent_and_send_task(name: str = None, task: str = None):
             max_loops=2,
             autosave=True,
             dashboard=False,
-            streaming_on=True,
             verbose=True,
             output_type=str,
             metadata_output_type="json",
@@ -197,7 +196,6 @@ agent = Agent(
     interactive=True,
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     # interactive=True,
     # tools=[search_weather],  # or list of tools
     verbose=True,

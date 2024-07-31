@@ -11,7 +11,6 @@ agent = Agent(
     ),
     autosave=True,
     dashboard=False,
-    streaming_on=True,
     verbose=True,
     stopping_token="<DONE>",
     interactive=True,
