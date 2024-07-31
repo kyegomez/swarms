@@ -211,8 +211,9 @@ nav:
       - ChromaDB: "swarms_memory/chromadb.md"
       - Pinecone: "swarms_memory/pinecone.md"
       - Faiss: "swarms_memory/faiss.md"
-  - Swarms Platform:
+  - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
+    - Share & Discover Prompts, Agents, Tools, and more: "swarms_platform/share_discover.md"
     - Prompts API: 
       - Overview: "swarms_platform/prompts_api.md"
       - Fetch Prompts: "swarms_platform/fetch_prompts.md"
