@@ -8,6 +8,8 @@ repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
 copyright: TGSC Corp 2024. All rights reserved.
 
+
+
 plugins:
   # - glightbox
   - search
@@ -51,6 +53,11 @@ extra:
       link: https://x.com/swarms_corp
     - icon: fontawesome/brands/discord
       link: https://discord.com/servers/agora-999382051935506503
+
+  analytics:
+    provider: google
+    property: G-MPE9C65596
+
 theme:
     name: material
     custom_dir: overrides
