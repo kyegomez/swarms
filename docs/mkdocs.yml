@@ -212,11 +212,15 @@ nav:
     - Overview: "swarms_platform/index.md"
     - Share & Discover Prompts, Agents, Tools, and more: "swarms_platform/share_discover.md"
     - Prompts API: 
-      - Overview: "swarms_platform/prompts_api.md"
-      - Fetch Prompts: "swarms_platform/fetch_prompts.md"
-    # - Agents API:
-    #   - Overview: "swarms_platform/agents_api.md"
-    #   - Fetch Agents: "swarms_platform/fetch_agents.md"
+      - Add Prompts: "swarms_platform/prompts/add_prompt.md"
+      - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"
+      - Query Prompts: "swarms_platform/prompts/fetch_prompts.md"
+    - Agents API:
+      - Overview: "swarms_platform/agents_api.md"
+      - Add Agents: "swarms_platform/fetch_agents.md"
+    # - Tools API:
+    #   - Overview: "swarms_platform/tools_api.md"
+    #   - Add Tools: "swarms_platform/fetch_tools.md"
   # - Guides:
   #   - Comparing LLM Provider Pricing A Guide for Enterprises: "guides/pricing.md"
   - References:
