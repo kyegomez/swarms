@@ -15,19 +15,25 @@ agent_data = {
     "description": "This is a sample agent description.",
     "requirements": [
         {"package": "numpy", "installation": "pip install numpy"},
-        {"package": "pandas", "installation": "pip install pandas"}
+        {"package": "pandas", "installation": "pip install pandas"},
     ],
     "useCases": [
-        {"title": "Data Analysis", "description": "Analyzes data using advanced algorithms."},
-        {"title": "Prediction", "description": "Predicts outcomes based on data."}
+        {
+            "title": "Data Analysis",
+            "description": "Analyzes data using advanced algorithms.",
+        },
+        {
+            "title": "Prediction",
+            "description": "Predicts outcomes based on data.",
+        },
     ],
-    "tags": "data,analysis,prediction"
+    "tags": "data,analysis,prediction",
 }
 
 # Headers
 headers = {
     "Authorization": f"Bearer {api_key}",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
 }
 
 # Sending POST request
