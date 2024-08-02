@@ -228,7 +228,7 @@ nav:
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
     #   - Add Tools: "swarms_platform/fetch_tools.md"
-  # - Guides:
-  #   - Comparing LLM Provider Pricing A Guide for Enterprises: "guides/pricing.md"
+  - Guides:
+    Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
   - References:
     - Agent Glossary: "swarms/glossary.md"
