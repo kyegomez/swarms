@@ -223,8 +223,8 @@ nav:
       - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"
       - Query Prompts: "swarms_platform/prompts/fetch_prompts.md"
     - Agents API:
-      - Overview: "swarms_platform/agents/agents_api.md"
-      - Add Agents: "swarms_platform/agents/fetch_agents.md"
+      - Add Agents: "swarms_platform/agents/agents_api.md"
+      - Query Agents: "swarms_platform/agents/fetch_agents.md"
       - Edit Agents: "swarms_platform/agents/edit_agent.md"
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
