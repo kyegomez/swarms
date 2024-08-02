@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from swarms.artifacts.artifact_base import Artifact, FileVersion
+from swarms.artifacts.main_artifact import Artifact, FileVersion
 
 
 def test_file_version():
