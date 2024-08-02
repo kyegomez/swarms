@@ -230,5 +230,4 @@ nav:
     #   - Add Tools: "swarms_platform/fetch_tools.md"
   - Guides:
     - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
-  - References:
     - Agent Glossary: "swarms/glossary.md"
