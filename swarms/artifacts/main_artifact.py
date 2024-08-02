@@ -45,6 +45,7 @@ class Artifact(BaseModel):
             if ext.lower() not in [
                 ".py",
                 ".csv",
+                ".tsv",
                 ".txt",
                 ".json",
                 ".xml",

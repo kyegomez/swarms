@@ -42,6 +42,8 @@ from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.tools.prebuilt.code_executor import CodeExecutor
+from swarms.models.popular_llms import OpenAIChat
 
 
 # Utils
@@ -180,7 +182,10 @@ class Agent(BaseStructure):
     def __init__(
         self,
         id: Optional[str] = agent_id,
-        llm: Optional[Any] = None,
+        llm: Optional[Any] = OpenAIChat(
+            model_name="gpt-4o",
+            # max_tokens = 4000,
+        ),
         template: Optional[str] = None,
         max_loops: Optional[int] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -267,6 +272,7 @@ class Agent(BaseStructure):
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
         temperature: float = 0.1,
+        workspace_dir: str = "agent_workspace",
         *args,
         **kwargs,
     ):
@@ -358,6 +364,7 @@ class Agent(BaseStructure):
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
         self.temperature = temperature
+        self.workspace_dir = workspace_dir
 
         # Name
         self.name = agent_name
@@ -476,6 +483,17 @@ class Agent(BaseStructure):
         # If agent_ops is on => activate agentops
         if agent_ops_on is True:
             self.activate_agentops()
+
+        # Code Executor
+        self.code_executor = CodeExecutor(
+            max_output_length=1000,
+            artifacts_directory=self.workspace_dir,
+        )
+
+        # Artifact
+        # self.artifact = Artifact(
+
+        # )
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -795,8 +813,16 @@ class Agent(BaseStructure):
                             # self.parse_function_call_and_execute(response)
                             self.parse_and_execute_tools(response)
 
-                        # if self.code_interpreter is not False:
-                        #     self.code_interpreter_execution(response)
+                        if self.code_interpreter is True:
+                            # Parse the code and execute
+                            code = extract_code_from_markdown(response)
+
+                            output = self.code_executor.execute(code)
+
+                            # Add to memory
+                            self.short_memory.add(
+                                role=self.agent_name, content=output
+                            )
 
                         if self.evaluator:
                             evaluated_response = self.evaluator(response)
@@ -918,6 +944,32 @@ class Agent(BaseStructure):
         except Exception as error:
             logger.error(f"Error calling agent: {error}")
             raise error
+
+    def ingest_docs(self, docs: List[str]):
+        """Ingest the documents"""
+        for doc in docs:
+            if doc.endswith(".pdf"):
+                text = pdf_to_text(doc)
+                self.short_memory.add(role=self.agent_name, content=text)
+            else:
+                with open(doc, "r") as f:
+                    text = f.read()
+                    self.short_memory.add(
+                        role=self.agent_name, content=text
+                    )
+
+    def get_docs_from_doc_folders(self):
+        """Get the documents from the document folders"""
+        for doc in os.listdir(self.docs_folder):
+            if doc.endswith(".pdf"):
+                text = pdf_to_text(doc)
+                self.short_memory.add(role=self.agent_name, content=text)
+            else:
+                with open(doc, "r") as f:
+                    text = f.read()
+                    self.short_memory.add(
+                        role=self.agent_name, content=text
+                    )
 
     def parse_and_execute_tools(self, response: str, *args, **kwargs):
         # Extract json from markdown

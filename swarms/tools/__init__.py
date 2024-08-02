@@ -30,6 +30,7 @@ from swarms.tools.cohere_func_call_schema import (
     CohereFuncSchema,
     ParameterDefinition,
 )
+from swarms.tools.tool_registry import ToolStorage, tool_registry
 
 __all__ = [
     "BaseTool",
@@ -53,4 +54,6 @@ __all__ = [
     "tool_find_by_name",
     "CohereFuncSchema",
     "ParameterDefinition",
+    "ToolStorage",
+    "tool_registry",
 ]

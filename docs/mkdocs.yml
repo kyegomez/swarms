@@ -168,7 +168,8 @@ nav:
         - Overview: "swarms/tools/main.md"
         - What are tools?: "swarms/tools/build_tool.md"
         - ToolAgent: "swarms/agents/tool_agent.md"
-        - Tool Decorator: "swarms/tools/decorator.md"
+        # - Tool Decorator: "swarms/tools/decorator.md"
+        - Tool Storage: "swarms/tools/tool_storage.md"
       - RAG or Long Term Memory:
         - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
     - Artifacts:
