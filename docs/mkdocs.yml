@@ -8,8 +8,6 @@ repo_url: https://github.com/kyegomez/swarms
 edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
 copyright: TGSC Corp 2024. All rights reserved.
 
-
-
 plugins:
   # - glightbox
   - search
@@ -161,6 +159,7 @@ nav:
         - GPT4VisionAPI: "swarms/models/gpt4v.md"
     - Agents:
       - Overview: "swarms/structs/index.md"
+      - Conceptual Overview of Agents: "swarms/framework/agents_explained.md"
       - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
       - Complete Agent API: "swarms/structs/agent.md"
       - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
@@ -169,7 +168,7 @@ nav:
         - What are tools?: "swarms/tools/build_tool.md"
         - ToolAgent: "swarms/agents/tool_agent.md"
         # - Tool Decorator: "swarms/tools/decorator.md"
-        - Tool Storage: "swarms/tools/tool_storage.md"
+        - Tool Storage & tool_registry decorator: "swarms/tools/tool_storage.md"
       - RAG or Long Term Memory:
         - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
     - Artifacts:
