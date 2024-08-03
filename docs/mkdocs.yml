@@ -158,8 +158,8 @@ nav:
         - Multi Modal Models Available: "swarms/models/multimodal_models.md"
         - GPT4VisionAPI: "swarms/models/gpt4v.md"
     - Agents:
-      - Overview: "swarms/structs/index.md"
-      - Conceptual Overview of Agents: "swarms/framework/agents_explained.md"
+      # - Overview: "swarms/structs/index.md"
+      - Analyzing The Agent Architecture: "swarms/framework/agents_explained.md"
       - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
       - Complete Agent API: "swarms/structs/agent.md"
       - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
