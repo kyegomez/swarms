@@ -30,8 +30,8 @@ def parse_and_execute_json(
         function_dict = {func.__name__: func for func in functions}
 
         data = json.loads(json_string)
-        function_list = data.get("functions", [])
-
+        function_list = data.get("functions", []) if data.get("functions") else [data.get("function", [])]
+        
         results = {}
         for function_data in function_list:
             function_name = function_data.get("name")
