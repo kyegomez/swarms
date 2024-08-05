@@ -14,6 +14,8 @@ from loguru import logger
 from pydantic import BaseModel
 from termcolor import colored
 
+import agentops
+
 from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.models.tiktoken_wrapper import TikTokenizer
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
@@ -89,8 +91,8 @@ def step_id():
 agent_output_type = Union[BaseModel, dict, str]
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
-
 # [FEAT][AGENT]
+@agentops.track_agent()
 class Agent(BaseStructure):
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
@@ -720,6 +722,7 @@ class Agent(BaseStructure):
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
+        is_last: bool = True,
         *args,
         **kwargs,
     ):
@@ -910,7 +913,7 @@ class Agent(BaseStructure):
             #     print(f"Response after output model: {response}")
 
             # print(response)
-            if self.agent_ops_on is True:
+            if self.agent_ops_on is True and is_last is True:
                 self.check_end_session_agentops()
 
             # final_response = " ".join(all_responses)
@@ -2021,6 +2024,7 @@ class Agent(BaseStructure):
                     "Agent Ops Initializing, ensure that you have the agentops API key and the pip package installed."
                 )
                 try_import_agentops()
+                self.agent_ops_agent_name = self.agent_name
 
                 logger.info("Agentops successfully activated!")
             except ImportError:

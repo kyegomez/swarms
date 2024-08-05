@@ -194,6 +194,7 @@ class AgentRearrange(BaseSwarm):
             loop_count = 0
             while loop_count < self.max_loops:
                 for task in tasks:
+                    is_last = task == tasks[-1]
                     agent_names = [
                         name.strip() for name in task.split(",")
                     ]
@@ -222,7 +223,7 @@ class AgentRearrange(BaseSwarm):
                             else:
                                 agent = self.agents[agent_name]
                                 result = agent.run(
-                                    current_task, img, *args, **kwargs
+                                    current_task, img, is_last, *args, **kwargs
                                 )
                                 results.append(result)
 
@@ -251,7 +252,7 @@ class AgentRearrange(BaseSwarm):
                         else:
                             agent = self.agents[agent_name]
                             current_task = agent.run(
-                                current_task, img, *args, **kwargs
+                                current_task, img, is_last, *args, **kwargs
                             )
                 loop_count += 1
 
@@ -261,7 +262,7 @@ class AgentRearrange(BaseSwarm):
             return e
 
     def process_agent_or_swarm(
-        self, name: str, task: str, img: str, *args, **kwargs
+        self, name: str, task: str, img: str, is_last, *args, **kwargs
     ):
         """
 
@@ -284,7 +285,7 @@ class AgentRearrange(BaseSwarm):
             return self.run_sub_swarm(task, name, img, *args, **kwargs)
         else:
             agent = self.agents[name]
-            return agent.run(task, *args, **kwargs)
+            return agent.run(task, img, is_last, *args, **kwargs)
 
     def human_intervention(self, task: str) -> str:
         if self.human_in_the_loop and self.custom_human_in_the_loop:
@@ -316,18 +317,19 @@ class AgentRearrange(BaseSwarm):
         current_task = task
 
         for sub_task in sub_tasks:
+            is_last = sub_task == sub_tasks[-1]
             agent_names = [name.strip() for name in sub_task.split(",")]
             if len(agent_names) > 1:
                 results = []
                 for agent_name in agent_names:
                     result = self.process_agent_or_swarm(
-                        agent_name, current_task, img, *args, **kwargs
+                        agent_name, current_task, img, is_last*args, **kwargs
                     )
                     results.append(result)
                 current_task = "; ".join(results)
             else:
                 current_task = self.process_agent_or_swarm(
-                    agent_names[0], current_task, img, *args, **kwargs
+                    agent_names[0], current_task, is_last, img, *args, **kwargs
                 )
         return current_task
 

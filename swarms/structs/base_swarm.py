@@ -694,9 +694,6 @@ class BaseSwarm(ABC):
     def __contains__(self, value):
         return value in self.agents
 
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-
     def agent_error_handling_check(self):
         try:
             if self.agents is None:
