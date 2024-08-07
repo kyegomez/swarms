@@ -1,4 +1,4 @@
-# SwarmNetwork Documentation
+# SwarmNetwork [WIP]
 
 The `SwarmNetwork` class is a powerful tool for managing a pool of agents, orchestrating task distribution, and scaling resources based on workload. It is designed to handle tasks efficiently by dynamically adjusting the number of agents according to the current demand. This class also provides an optional API for interacting with the agent pool, making it accessible for integration with other systems.
 
@@ -134,7 +134,36 @@ Runs a task on a specific agent by ID.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent = Agent()
+# Initialize the agent
+agent = Agent(
+    agent_name="Financial-Analysis-Agent",
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
 swarm = SwarmNetwork(agents=[agent])
 result = swarm.run_single_agent(agent.id, "task")
 ```
@@ -162,8 +191,69 @@ Runs a task on all agents in the pool.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent1 = Agent()
-agent2 = Agent()
+# Initialize the agent
+agent = Agent(
+    agent_name="Financial-Analysis-Agent",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
+# Initialize the agent
+agent2 = Agent(
+    agent_name="ROTH-IRA-AGENT",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
+
 swarm = SwarmNetwork(agents=[agent1, agent2])
 results = swarm.run_many_agents("task")
 ```
@@ -183,7 +273,37 @@ Lists all agents in the pool.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent = Agent()
+# Initialize the agent
+agent2 = Agent(
+    agent_name="ROTH-IRA-AGENT",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
 swarm = SwarmNetwork(agents=[agent])
 swarm.list_agents()
 ```
@@ -209,7 +329,37 @@ Gets an agent by ID.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent = Agent()
+# Initialize the agent
+agent2 = Agent(
+    agent_name="ROTH-IRA-AGENT",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
 swarm = SwarmNetwork(agents=[agent])
 retrieved_agent = swarm.get_agent(agent.id)
 ```
@@ -232,7 +382,37 @@ Adds an agent to the agent pool.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent = Agent()
+# Initialize the agent
+agent2 = Agent(
+    agent_name="ROTH-IRA-AGENT",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
 swarm = SwarmNetwork(agents=[])
 swarm.add_agent(agent)
 ```
@@ -255,7 +435,37 @@ Removes an agent from the agent pool.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent = Agent()
+# Initialize the agent
+agent2 = Agent(
+    agent_name="ROTH-IRA-AGENT",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
 swarm = SwarmNetwork(agents=[agent])
 swarm.remove_agent(agent.id)
 ```
@@ -280,7 +490,37 @@ Removes an agent from the agent pool asynchronously.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent = Agent()
+# Initialize the agent
+agent2 = Agent(
+    agent_name="ROTH-IRA-AGENT",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
 swarm = SwarmNetwork(agents=[agent])
 await swarm.async_remove_agent(agent.id)
 ```
@@ -303,7 +543,37 @@ Scales up the agent pool by adding new agents.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent = Agent()
+# Initialize the agent
+agent2 = Agent(
+    agent_name="ROTH-IRA-AGENT",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
 swarm = SwarmNetwork(agents=[agent])
 swarm.scale_up(2)
 ```
@@ -326,7 +596,38 @@ Scales down the agent pool by removing agents.
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_net import SwarmNetwork
 
-agent = Agent()
+# Initialize the agent
+agent2 = Agent(
+    agent_name="ROTH-IRA-AGENT",
+    system_prompt=ESTATE_PLANNING_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    interactive=True,
+    # interactive=True, # Set to False to disable interactive mode
+    saved_state_path="finance_agent.json",
+    # tools=[Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # agent_ops_on=True,
+    # long_term_memory=ChromaDB(docs_folder="artifacts"),
+)
+
+
 swarm = SwarmNetwork(agents=[agent])
 swarm.scale_down(1)
 ```

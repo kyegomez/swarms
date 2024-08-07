@@ -4,7 +4,7 @@ import tiktoken
 class TikTokenizer:
     def __init__(
         self,
-        model_name: str = "gpt-4o",
+        model_name: str = "o200k_base",
     ):
         """
         Initializes a TikTokenizer object.
@@ -13,28 +13,12 @@ class TikTokenizer:
             model_name (str, optional): The name of the model to use for tokenization. Defaults to "gpt-4o".
         """
         try:
-            self.tokenizer = tiktoken.encoding_for_model(model_name)
+            self.model_name = model_name
+            # self.tokenizer = tiktoken./(model_name)
         except Exception as e:
             raise ValueError(
                 f"Failed to initialize tokenizer with model '{model_name}': {str(e)}"
             )
-
-    def len(self, string: str) -> int:
-        """
-        Returns the number of tokens in a text string.
-
-        Args:
-            string (str): The input text string.
-
-        Returns:
-            int: The number of tokens in the text string.
-        """
-        try:
-            num_tokens = len(self.tokenizer.encode(string))
-            print(f"Number of tokens: {num_tokens}")
-            return num_tokens
-        except Exception as e:
-            raise ValueError(f"Failed to tokenize string: {str(e)}")
 
     def count_tokens(self, string: str) -> int:
         """
@@ -46,9 +30,7 @@ class TikTokenizer:
         Returns:
             int: The number of tokens in the text string.
         """
-        try:
-            num_tokens = len(self.tokenizer.encode(string))
-            print(f"Number of tokens: {num_tokens}")
-            return num_tokens
-        except Exception as e:
-            raise ValueError(f"Failed to count tokens: {str(e)}")
+        """Returns the number of tokens in a text string."""
+        encoding = tiktoken.get_encoding(self.model_name)
+        num_tokens = len(encoding.encode(string))
+        return num_tokens

@@ -6,14 +6,15 @@ from swarms.utils.loguru_logger import logger
 
 
 class ConcurrentWorkflow:
-    def __init__(self, agents: List[Agent], max_loops: int):
-        """
-        Initializes the ConcurrentWorkflow with the given parameters.
+    """
+    Initializes the ConcurrentWorkflow with the given parameters.
 
-        Args:
-            agents (List[Agent]): The list of agents to initialize.
-            max_loops (int): The maximum number of loops each agent can run.
-        """
+    Args:
+        agents (List[Agent]): The list of agents to initialize.
+        max_loops (int): The maximum number of loops each agent can run.
+    """
+
+    def __init__(self, agents: List[Agent], max_loops: int):
         self.max_loops = max_loops
         self.agents = agents
         self.num_agents = len(agents)

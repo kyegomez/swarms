@@ -2,7 +2,7 @@ from swarms.utils.loguru_logger import logger
 import os
 import json
 from typing import List, Union, Dict, Any
-from pydantic.v1 import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator
 from datetime import datetime
 
 
@@ -11,9 +11,13 @@ class FileVersion(BaseModel):
     Represents a version of the file with its content and timestamp.
     """
 
-    version_number: int
-    content: str
-    timestamp: datetime
+    version_number: int = Field(
+        ..., description="The version number of the file"
+    )
+    content: str = Field(
+        ..., description="The content of the file version"
+    )
+    timestamp: str = Field(default_factory=datetime.now)
 
     def __str__(self) -> str:
         return f"Version {self.version_number} (Timestamp: {self.timestamp}):\n{self.content}"
@@ -31,11 +35,19 @@ class Artifact(BaseModel):
         edit_count (int): The number of times the file has been edited.
     """
 
-    file_path: str
-    file_type: str
-    contents: str = Field(default="")
+    file_path: str = Field(..., description="The path to the file")
+    file_type: str = Field(
+        ...,
+        description="The type of the file",
+        # example=".txt",
+    )
+    contents: str = Field(
+        ..., description="The contents of the file in string format"
+    )
     versions: List[FileVersion] = Field(default_factory=list)
-    edit_count: int = Field(default=0)
+    edit_count: int = Field(
+        ..., description="The number of times the file has been edited"
+    )
 
     @validator("file_type", pre=True, always=True)
     def validate_file_type(cls, v, values):

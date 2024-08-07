@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "5.4.5"
+version = "5.4.6"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -35,6 +35,8 @@ keywords = [
     "Agents",
     "Generative Agents",
     "Generative AI",
+    "Agent Marketplace",
+    "Agent Store",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

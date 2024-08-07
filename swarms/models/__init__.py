@@ -40,6 +40,7 @@ from swarms.models.types import (  # noqa: E402
 )
 from swarms.models.vilt import Vilt  # noqa: E402
 from swarms.models.popular_llms import FireWorksAI
+from swarms.models.openai_function_caller import OpenAIFunctionCaller
 
 __all__ = [
     "BaseEmbeddingModel",
@@ -75,4 +76,5 @@ __all__ = [
     "OpenAIEmbeddings",
     "llama3Hosted",
     "FireWorksAI",
+    "OpenAIFunctionCaller",
 ]

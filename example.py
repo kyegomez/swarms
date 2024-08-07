@@ -21,32 +21,28 @@ agent = Agent(
     autosave=True,
     # dynamic_temperature_enabled=True,
     dashboard=False,
-    code_interpreter=True,
-    # verbose=True,
-    # streaming_on=True,
-    # # interactive=True, # Set to False to disable interactive mode
-    # dynamic_temperature_enabled=True,
-    # saved_state_path="finance_agent.json",
-    # # tools=[#Add your functions here# ],
-    # # stopping_token="Stop!",
-    # # interactive=True,
-    # # docs_folder="docs", # Enter your folder name
-    # # pdf_path="docs/finance_agent.pdf",
-    # # sop="Calculate the profit for a company.",
-    # # sop_list=["Calculate the profit for a company."],
-    # user_name="swarms_corp",
-    # # # docs=
-    # # # docs_folder="docs",
-    # retry_attempts=3,
-    # # context_length=1000,
-    # # tool_schema = dict
-    # context_length=200000,
-    # # tool_schema=
-    # tools
-    # agent_ops_on=True,
+    verbose=True,
+    # interactive=True, # Set to False to disable interactive mode
+    dynamic_temperature_enabled=True,
+    saved_state_path="finance_agent.json",
+    # tools=[#Add your functions here# ],
+    # stopping_token="Stop!",
+    # interactive=True,
+    # docs_folder="docs", # Enter your folder name
+    # pdf_path="docs/finance_agent.pdf",
+    # sop="Calculate the profit for a company.",
+    # sop_list=["Calculate the profit for a company."],
+    user_name="swarms_corp",
+    # # docs=
+    # # docs_folder="docs",
+    retry_attempts=3,
+    # context_length=1000,
+    # tool_schema = dict
+    context_length=200000,
+    # tool_schema=
 )
 
 
 agent.run(
-    "Generate the python code to fetch financial news using the OpenAI API. only return the python code"
+    "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
 )

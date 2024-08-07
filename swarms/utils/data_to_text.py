@@ -70,8 +70,13 @@ def data_to_text(file):
         elif ext == ".md":
             return md_to_text(file)
         else:
-            with open(file) as file:
-                data = file.read()
-            return data
+            # Check if the file is a binary file (like an image)
+            if ext in [".png", ".jpg", ".jpeg", ".gif", ".bmp"]:
+                # Skip binary files
+                return None
+            else:
+                with open(file) as file:
+                    data = file.read()
+                return data
     except Exception as e:
         raise OSError(f"Error reading file: {file}") from e

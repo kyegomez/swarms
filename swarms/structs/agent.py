@@ -459,7 +459,9 @@ class Agent(BaseStructure):
             )
 
         # If multiple base models, then conver them.
-        self.handle_multiple_base_models()
+        if self.list_base_models is not None:
+
+            self.handle_multiple_base_models()
 
         # If the algorithm of thoughts is enabled then set the sop to the algorithm of thoughts
         if self.algorithm_of_thoughts is not False:
@@ -763,32 +765,7 @@ class Agent(BaseStructure):
                 while attempt < self.retry_attempts and not success:
                     try:
                         if self.long_term_memory is not None:
-                            memory_retrieval = (
-                                self.long_term_memory_prompt(
-                                    task, *args, **kwargs
-                                )
-                            )
-
-                            if exists(self.tokenizer):
-                                task_prompt = (
-                                    self.count_and_shorten_context_window(
-                                        memory_retrieval
-                                    )
-                                )
-
-                            # Merge the task prompt with the memory retrieval
-                            task_prompt = f"{task_prompt} Documents: Available {memory_retrieval}"
-
-                            response = self.llm(
-                                task_prompt, *args, **kwargs
-                            )
-                            print(response)
-
-                            # Add to memory
-                            self.short_memory.add(
-                                role=self.agent_name, content=response
-                            )
-                            all_responses.append(response)
+                            self.memory_query(task_prompt)
 
                         else:
                             response_args = (
@@ -1005,42 +982,42 @@ class Agent(BaseStructure):
                     )
                 )
 
-    def long_term_memory_prompt(self, query: str, *args, **kwargs):
-        """
-        Generate the agent long term memory prompt
+    # def long_term_memory_prompt(self, query: str, *args, **kwargs):
+    #     """
+    #     Generate the agent long term memory prompt
 
-        Args:
-            system_prompt (str): The system prompt
-            history (List[str]): The history of the conversation
+    #     Args:
+    #         system_prompt (str): The system prompt
+    #         history (List[str]): The history of the conversation
 
-        Returns:
-            str: The agent history prompt
-        """
-        try:
-            logger.info(f"Querying long term memory database for {query}")
-            ltr = self.long_term_memory.query(query, *args, **kwargs)
+    #     Returns:
+    #         str: The agent history prompt
+    #     """
+    #     try:
+    #         logger.info(f"Querying long term memory database for {query}")
+    #         ltr = self.long_term_memory.query(query, *args, **kwargs)
 
-            # Count the tokens
-            logger.info("Couting tokens of retrieved document")
-            ltr_count = self.tokenizer.count_tokens(ltr)
-            logger.info(f"Retrieved document token count {ltr_count}")
+    #         # Count the tokens
+    #         logger.info("Couting tokens of retrieved document")
+    #         ltr_count = self.tokenizer.count_tokens(ltr)
+    #         logger.info(f"Retrieved document token count {ltr_count}")
 
-            if ltr_count > self.memory_chunk_size:
-                logger.info(
-                    f"Truncating memory by {self.memory_chunk_size}"
-                )
-                out = self.truncate_string_by_tokens(
-                    ltr, self.memory_chunk_size
-                )
-                logger.info(
-                    f"Memory truncated by {self.memory_chunk_size}"
-                )
+    #         if ltr_count > self.memory_chunk_size:
+    #             logger.info(
+    #                 f"Truncating memory by {self.memory_chunk_size}"
+    #             )
+    #             out = self.truncate_string_by_tokens(
+    #                 ltr, self.memory_chunk_size
+    #             )
+    #             logger.info(
+    #                 f"Memory truncated by {self.memory_chunk_size}"
+    #             )
 
-            # Retrieve only the chunk size of the memory
-            return out
-        except Exception as error:
-            logger.error(f"Error querying long term memory: {error}")
-            raise error
+    #         # Retrieve only the chunk size of the memory
+    #         return out
+    #     except Exception as error:
+    #         logger.error(f"Error querying long term memory: {error}")
+    #         raise error
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -1720,13 +1697,24 @@ class Agent(BaseStructure):
 
         return None
 
-    def memory_query(self, task: str = None, *args, **kwargs):
+    def memory_query(self, task: str = None, *args, **kwargs) -> str:
         try:
+            # Query the long term memory
             if self.long_term_memory is not None:
-                memory_retrieval = self.long_term_memory_prompt(
+                logger.info(f"Querying long term memory for: {task}")
+                memory_retrieval = self.long_term_memory.query(
                     task, *args, **kwargs
                 )
-                # print(len(memory_retrieval))
+
+                memory_token_count = self.tokenizer.count_tokens(
+                    memory_retrieval
+                )
+
+                if memory_token_count > self.memory_chunk_size:
+                    # Truncate the memory by the memory chunk size
+                    memory_retrieval = self.truncate_string_by_tokens(
+                        memory_retrieval, self.memory_chunk_size
+                    )
 
                 # Merge the task prompt with the memory retrieval
                 task_prompt = (
@@ -1739,6 +1727,7 @@ class Agent(BaseStructure):
                 self.short_memory.add(
                     role=self.agent_name, content=response
                 )
+
                 return response
         except Exception as e:
             print(f"An error occurred: {e}")

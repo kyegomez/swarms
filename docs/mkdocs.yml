@@ -178,7 +178,7 @@ nav:
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
       - Conversation: "swarms/structs/conversation.md"
-      - SwarmNetwork: "swarms/structs/swarmnetwork.md"
+      - SwarmNetwork: "swarms/structs/swarm_network.md"
       - MajorityVoting: "swarms/structs/majorityvoting.md"
       - AgentRearrange: "swarms/structs/agent_rearrange.md"
       - RoundRobin: "swarms/structs/round_robin_swarm.md"
