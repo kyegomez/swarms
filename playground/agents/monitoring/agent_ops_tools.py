@@ -14,7 +14,7 @@ Requirements:
 """
 
 ################ Adding project root to PYTHONPATH ################################
-# If you are running playground examples in the project files directly, use this: 
+# If you are running playground examples in the project files directly, use this:
 
 import sys
 import os
@@ -25,7 +25,8 @@ sys.path.insert(0, os.getcwd())
 
 
 from swarms import Agent, OpenAIChat
-from agentops import record_function 
+from agentops import record_function
+
 
 # Add agentops decorator on your tools
 @record_function("length_checker")
@@ -40,6 +41,7 @@ def length_checker(string: str) -> int:
         int: length of the string
     """
     return len(string)
+
 
 agent1 = Agent(
     agent_name="lengther",

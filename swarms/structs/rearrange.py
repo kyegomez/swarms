@@ -224,7 +224,11 @@ class AgentRearrange(BaseSwarm):
                             else:
                                 agent = self.agents[agent_name]
                                 result = agent.run(
-                                    current_task, img, is_last, *args, **kwargs
+                                    current_task,
+                                    img,
+                                    is_last,
+                                    *args,
+                                    **kwargs,
                                 )
                                 results.append(result)
 
@@ -324,13 +328,22 @@ class AgentRearrange(BaseSwarm):
                 results = []
                 for agent_name in agent_names:
                     result = self.process_agent_or_swarm(
-                        agent_name, current_task, img, is_last*args, **kwargs
+                        agent_name,
+                        current_task,
+                        img,
+                        is_last * args,
+                        **kwargs,
                     )
                     results.append(result)
                 current_task = "; ".join(results)
             else:
                 current_task = self.process_agent_or_swarm(
-                    agent_names[0], current_task, is_last, img, *args, **kwargs
+                    agent_names[0],
+                    current_task,
+                    is_last,
+                    img,
+                    *args,
+                    **kwargs,
                 )
         return current_task
 

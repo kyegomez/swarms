@@ -91,6 +91,7 @@ def step_id():
 agent_output_type = Union[BaseModel, dict, str]
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
+
 # [FEAT][AGENT]
 @agentops.track_agent()
 class Agent(BaseStructure):

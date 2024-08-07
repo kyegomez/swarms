@@ -152,6 +152,7 @@ nav:
         - HuggingFaceLLM: "swarms/models/huggingface.md"
         - Anthropic: "swarms/models/anthropic.md"
         - OpenAIChat: "swarms/models/openai.md"
+        - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
         # - TogetherAI: "swarms/models/togetherai.md"
       - MultiModal Models:
         - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
