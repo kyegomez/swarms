@@ -7,11 +7,7 @@ Structured output example
 Requirements:
 Add the folowing API key(s) in your .env file:
    - OPENAI_API_KEY (this example works best with Openai bc it uses openai function calling structure)
-
-Note:
-If you are running playground examples in the project files directly (without swarms installed via PIP),
-make sure to add the project root to your PYTHONPATH by running the following command in the project's root directory:
-  'export PYTHONPATH=$(pwd):$PYTHONPATH'
+   
 """
 
 ################ Adding project root to PYTHONPATH ################################
@@ -40,7 +36,7 @@ class PersonInfo(BaseModel):
     }   
     """
     name: str = Field(..., title="Name of the person")
-    agent: int = Field(..., title="Age of the person")
+    age: int = Field(..., title="Age of the person")
     is_student: bool = Field(..., title="Whether the person is a student")
     courses: list[str] = Field(
         ..., title="List of courses the person is taking"
@@ -61,7 +57,7 @@ agent = Agent(
 )
 
 # Define the task to generate a person's information
-task = "Generate a person's information"
+task = "Generate a person's information for Paul Graham 56 years old and is a student at Harvard University and is taking 3 courses: Math, Science, and History."
 
 # Run the agent to generate the person's information
 generated_data = agent.run(task)
