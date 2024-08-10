@@ -32,3 +32,11 @@ or `C:\> <venv>\Scripts\activate.bat` where `<venv>` is the same as `c:\path\to\
 ```bash
 $ pip install -r requirements.txt
 ```
+
+- Run it
+
+```bash
+$ fastapi dev main.py
+```
+
+You can then access the documentation by going to [ http://localhost:8000/docs](http://localhost:8000/docs).
