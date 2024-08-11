@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  app:
+    image: python:3.10.14-slim-bullseye
+    working_dir: /app
+    volumes:
+      - ./test-server:/app
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "pip install -r requirements.txt && python main.py"

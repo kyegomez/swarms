@@ -6,9 +6,10 @@ from swarms.prompts.finance_agent_sys_prompt import (
 )
 
 # This tests uses the same code as the example.py file, with 1 different line
+# This is actually an integration test.
 
 
-def test_openai_no_quota():
+def test_openai_happy_path():
     # Get the OpenAI API key from the environment variable
     api_key = os.getenv("OPENAI_API_KEY")
 

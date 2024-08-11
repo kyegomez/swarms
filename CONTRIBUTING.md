@@ -80,3 +80,23 @@ We use pre-commit hooks to maintain code quality. To set up pre-commit:
   ```
 
 For more detailed information on code quality, documentation, and testing, please refer to the full contributing guidelines in the repository.
+
+### Integration Testing
+
+- To run the integration tests, you should first start the test-server.
+
+```bash
+$ docker-compose -f docker-compose-test.yaml up -d
+```
+
+If you do not want to use docker, you can navigate to `test-server` and follow the instruction there. It simply runs a FastAPI simple Rest API.
+
+- Make sure your virtual environment is active. Execute the test (currently, there is only one test using it)
+
+```bash
+python -m pytest tests/agents/test_openai.py -o log_cli=true
+```
+
+#### Extending integration tests
+
+Make sure the testing server is running. If you want to extend tests, first you need to select your agent. Probably, this agent has an API exposed so an SDK or a client can interact with it. Most agents are configurable, including the API URL. Modify that URL to `http://localhost:8000` and run the workflow you want to test. The testing server is configured to log requests that it does not handle. So, take that log (it includes the path and method), get a valid response and extend the server. To get a valid response, you can either go to the SDK docs or by running it locally with debug and finding your own valid response. Try to follow the examples available.
