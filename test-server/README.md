@@ -40,3 +40,13 @@ $ fastapi dev main.py
 ```
 
 You can then access the documentation by going to [ http://localhost:8000/docs](http://localhost:8000/docs).
+
+## Debugging
+
+### VSCode
+
+Make sure that the option `Python: Select interpreter` (from the `F1` shortcut) points to the virtual environment you created.
+
+Open the file `main.py` and press `F5`, select run as python file.
+
+Alternatively, you can add a configuration. Go to `Execute/Add configuration/Python debugger/Python file`. This will create a `.vscode/lauch.json`. Just modify `"program": "${file}",` to `"program": "main.py",`. After this, you can press `F5` without the need to have `main.py` open.

@@ -1,15 +1,19 @@
-from typing import Union
-
 from fastapi import FastAPI
+from routers import openai, generic
+
 
 app = FastAPI()
 
+# This mocks the openai router
+app.include_router(openai.router, prefix="/openai")
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+# This is for showing what you need to mock
+# You can check the log in console or in app.log
+app.include_router(generic.router)
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+# This is here for debugging only
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
