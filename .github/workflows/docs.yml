@@ -1,0 +1,24 @@
+name: Documentation
+on:
+  push:
+    branches:
+      - master
+      - main
+      - develop
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - run: pip install mkdocs-material
+      - run: pip install mkdocs-glightbox
+      - run: pip install "mkdocstrings[python]"
+      - run: pip3 install mkdocs-git-authors-plugin
+      - run: pip install mkdocs-jupyter==0.16.0
+      - run: pip install --upgrade lxml_html_clean
+      - run: pip install mkdocs-git-committers-plugin
+      - run: pip3 install mkdocs-git-revision-date-localized-plugin
+      - run: mkdocs gh-deploy --force -f docs/mkdocs.yml

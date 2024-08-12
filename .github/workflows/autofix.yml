@@ -1,0 +1,25 @@
+name: autofix.ci
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+permissions:
+  contents: read
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+      - run: go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+      - run: yamlfmt .
+
+      - uses: actions/setup-python@v5
+      - run: pip install ruff
+      - run: ruff format .
+      - run: ruff check --fix .
+
+      - uses: autofix-ci/action@dd55f44df8f7cdb7a6bf74c78677eb8acd40cd0a
