@@ -23,6 +23,14 @@ class Message:
     def get_type(self) -> str:
         pass
 
+from enum import Enum
+
+class Role(Enum):
+    HUMAN = "Human"
+    AI = "AI"
+    SYSTEM = "System"
+    FUNCTIOn = "Function"
+
 
 class HumanMessage(Message):
     """
