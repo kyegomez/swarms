@@ -6,9 +6,11 @@ from langchain_openai.chat_models import (
 )
 from langchain_community.llms.octoai_endpoint import OctoAIEndpoint
 from pydantic import model_validator
+from swarms.prompts.chat_prompt import ChatMessage, HumanMessage, SystemMessage
+from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.outputs import CompletionOutput, RequestOutput
 from vllm.sampling_params import SamplingParams
-from vllm.engine.async_llm_engine import AsyncLLMEngine
+
 from vllm.utils import random_uuid
 from langchain_community.llms import Anthropic, Cohere, MosaicML, OpenAI, Replicate
 from langchain_fireworks import Fireworks
@@ -17,7 +19,7 @@ from langchain.schema.messages import AIMessage, AIMessageChunk, BaseMessage
 from langchain.callbacks.manager import AsyncCallbackManagerForLLMRun
 from typing import Any, AsyncIterator, Dict, List, Optional
 
-class Anthropic(Anthropic):
+class AnthropicLLM(Anthropic):
     def __call__(self, *args, **kwargs):
         return self.invoke(*args, **kwargs)
 
