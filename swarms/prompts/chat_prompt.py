@@ -29,7 +29,7 @@ class Role(Enum):
     HUMAN = "Human"
     AI = "AI"
     SYSTEM = "System"
-    FUNCTIOn = "Function"
+    FUNCTION = "Function"
 
 
 class HumanMessage(Message):
