@@ -187,6 +187,8 @@ class Agent(BaseStructure):
         id: Optional[str] = agent_id,
         llm: Optional[Any] = OpenAIChat(
             model_name="gpt-4o",
+            openai_api_key="EMPTY",  # support vLLM when EMPTY
+            openai_api_base="http://localhost:8000",  # vLLM address and port
             # max_tokens = 4000,
         ),
         template: Optional[str] = None,
