@@ -2,12 +2,12 @@ from typing import Callable, List
 
 import numpy as np
 import tenacity
-from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import RegexParser
-from langchain.prompts import PromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
 
 from swarms import Worker
+from langchain_community.chat_models import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.prompts import PromptTemplate
 
 
 class DialogueAgent:

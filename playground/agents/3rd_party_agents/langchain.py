@@ -1,12 +1,13 @@
 from typing import List, Optional
 
-from langchain.agents import AgentExecutor, LLMSingleActionAgent, Tool
+from langchain.agents import AgentExecutor, LLMSingleActionAgent
 from langchain.chains import LLMChain
-from langchain.llms import OpenAI
-from langchain.prompts import StringPromptTemplate
-from langchain.tools import DuckDuckGoSearchRun
 
 from swarms import Agent
+from langchain_community.llms import OpenAI
+from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_core.prompts import StringPromptTemplate
+from langchain_core.tools import Tool
 
 
 class LangchainAgentWrapper(Agent):

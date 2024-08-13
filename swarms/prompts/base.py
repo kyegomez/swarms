@@ -6,9 +6,10 @@ from typing import TYPE_CHECKING, Any, Sequence
 from pydantic import Field
 
 from swarms.utils.serializable import Serializable
+from langchain_core.prompts import ChatPromptTemplate
 
 if TYPE_CHECKING:
-    from langchain.prompts.chat import ChatPromptTemplate
+    pass
 
 
 def get_buffer_string(
@@ -86,7 +87,6 @@ class BaseMessage(Serializable):
         return True
 
     def __add__(self, other: Any) -> ChatPromptTemplate:
-        from langchain.prompts.chat import ChatPromptTemplate
 
         prompt = ChatPromptTemplate(messages=[self])
         return prompt + other

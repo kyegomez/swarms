@@ -1,4 +1,4 @@
-from langchain_community.embeddings.openai import OpenAIEmbeddings
+from langchain_openai.embeddings import OpenAIEmbeddings
 
 __all__ = [
     "OpenAIEmbeddings",
