@@ -14,11 +14,13 @@
 
 Running vLLM in a docker container saves a lot of trouble.  Use dockerRunVllm.sh to set up and start vLLM.  This command will allow you to control vLLM using docker commands:
 
-`docker stop vllm`
+```
+docker stop vllm
 
-`docker start vllm`
+docker start vllm
 
-`docker attach vllm`
+docker attach vllm
+```
 
 Run the dockerRunVllm.sh command again to get a fresh copy of the latest vLLM docker image (you will be prompted to rename or remove the existing one if the name is the same.)
 
@@ -30,11 +32,14 @@ In order to start the server you have to run uvicorn or FastAPI CLI or use the f
 
 Run the following shell cmd:
 
-`uvicorn swarms.server.server:app --port 8888`
+```
+uvicorn swarms.server.server:app --port 8888
+```
 
 To debug using uvicorn use this launch.json configuration:
 
-`"configurations": [
+```
+"configurations": [
         {
             "name": "Python: FastAPI",
             "type": "debugpy",
@@ -53,13 +58,17 @@ To debug using uvicorn use this launch.json configuration:
             }
         }
     ]
-`
+```
 ## Start server using FastAPI CLI
 
 You can run the Chatbot server in production mode using FastAPI CLI:
 
-`fastapi run swarms/server/server.py --port 8888'
+```
+fastapi run swarms/server/server.py --port 8888
+```
 
 To run in dev mode use this command:
 
-`fastapi dev swarms/server/server.py --port 8888'
+```
+fastapi dev swarms/server/server.py --port 8888
+```
