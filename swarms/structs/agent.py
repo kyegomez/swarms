@@ -751,6 +751,7 @@ class Agent(BaseStructure):
 
             # Clear the short memory
             response = None
+            result = None
             all_responses = []
 
             # if self.tokenizer is not None:
