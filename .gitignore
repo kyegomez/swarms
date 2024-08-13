@@ -220,3 +220,5 @@ cython_debug/
 
 swarms/server/.embeddings
 swarms/server/.chroma_db
+.chroma_db
+.embeddings
