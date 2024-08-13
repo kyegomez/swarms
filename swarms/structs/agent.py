@@ -822,9 +822,7 @@ class Agent(BaseStructure):
 
                             all_responses.append(response)
 
-                        # TODO: Implement reliablity check
                         if self.tools is not None:
-                            result = None
                             result = self.parse_function_call_and_execute(response)
 
                         if self.code_interpreter is True:
@@ -852,7 +850,6 @@ class Agent(BaseStructure):
                             # all_responses.append(evaluated_response)
                         
                         if self.output_validation:
-                            result = None
                             result = self.pydantic_validation(response)
 
                         # Sentiment analysis
