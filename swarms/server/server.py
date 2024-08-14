@@ -20,7 +20,7 @@ from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from huggingface_hub import login
 from langchain.callbacks import StreamingStdOutCallbackHandler
-from langchain.memory import VectorStoreRetrieverMemory
+from langchain.memory import ConversationStringBufferMemory
 from langchain.memory.chat_message_histories.in_memory import ChatMessageHistory
 from langchain.prompts.prompt import PromptTemplate
 from langchain_community.chat_models import ChatOpenAI
@@ -184,26 +184,26 @@ async def create_chain(
         elif message.role == Role.SYSTEM:
             chat_memory.add_message(message)
 
-    # memory = ConversationSummaryBufferMemory(
-    #     llm=llm,
-    #     chat_memory=chat_memory,
-    #     memory_key="chat_history",
-    #     input_key="question",
-    #     output_key="answer",
-    #     prompt=SUMMARY_PROMPT_TEMPLATE,
-    #     return_messages=True,
-    # )
-
-    memory = VectorStoreRetrieverMemory(
-        input_key="question",
-        output_key="answer",
+    memory = ConversationStringBufferMemory(
+        llm=llm,
         chat_memory=chat_memory,
         memory_key="chat_history",
-        return_docs=True,  # Change this to False
-        retriever=retriever,
-        return_messages=True,
-        prompt=SUMMARY_PROMPT_TEMPLATE
+        input_key="question",
+        output_key="answer",
+        prompt=SUMMARY_PROMPT_TEMPLATE,
+        return_messages=False,
     )
+
+    # memory = VectorStoreRetrieverMemory(
+    #     input_key="question",
+    #     output_key="answer",
+    #     chat_memory=chat_memory,
+    #     memory_key="chat_history",
+    #     return_docs=False,  # Change this to False
+    #     retriever=retriever,
+    #     return_messages=True,
+    #     prompt=SUMMARY_PROMPT_TEMPLATE
+    # )
 
     question_generator = LLMChain(
         llm=llm,
