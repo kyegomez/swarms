@@ -149,7 +149,16 @@ class LangchainStreamingResponse(StreamingResponse):
             # TODO: migrate to `.ainvoke` when adding support
             # for LCEL
             if self.run_mode == ChainRunMode.ASYNC:
-                outputs = await self.chain.acall(**self.config)
+                async for outputs in self.chain.astream(input=self.config):
+                    if 'answer' in outputs:
+                        chunk = ServerSentEvent(
+                            data=outputs['answer']
+                        )
+                        # Send each chunk with the appropriate body type
+                        await send(
+                            {"type": "http.response.body", "body": ensure_bytes(chunk, None), "more_body": True}
+                        )
+
             else:
                 loop = asyncio.get_event_loop()
                 outputs = await loop.run_in_executor(
