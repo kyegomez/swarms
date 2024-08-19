@@ -1,3 +1,4 @@
+""" Prompts and templates used by the Swarms Chatbot """
 from langchain.prompts.prompt import PromptTemplate
 
 B_INST, E_INST = "[INST]", "[/INST]"
