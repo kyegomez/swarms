@@ -7,7 +7,7 @@ import random
 import sys
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Type
 
 import toml
 import yaml
@@ -51,6 +51,7 @@ from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.parse_code import extract_code_from_markdown
+from swarms.tools.json_utils import extract_json_from_str
 from swarms.utils.pdf_to_text import pdf_to_text
 
 
@@ -238,7 +239,8 @@ class Agent:
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
-        list_base_models: Optional[List[BaseModel]] = None,
+        list_base_models: Optional[List[Type[BaseModel]]] = None,
+        output_validation: Optional[bool] = False,
         metadata_output_type: str = "json",
         state_save_file_type: str = "json",
         chain_of_thoughts: bool = False,
@@ -333,6 +335,7 @@ class Agent:
         self.output_cleaner = output_cleaner
         self.function_calling_format_type = function_calling_format_type
         self.list_base_models = list_base_models
+        self.output_validation = output_validation
         self.metadata_output_type = metadata_output_type
         self.state_save_file_type = state_save_file_type
         self.chain_of_thoughts = chain_of_thoughts
@@ -577,6 +580,14 @@ class Agent:
             print(
                 colored(f"Error dynamically changing temperature: {error}")
             )
+    
+    def pydantic_validation(self, response:str)-> Type[BaseModel]:
+        """Validates the response using Pydantic."""
+        parsed_json = extract_json_from_str(response)
+        function_call = parsed_json["function_call"]
+        parameters = json.dumps(parsed_json["parameters"])
+        selected_base_model = next((model for model in self.list_base_models if model.__name__ == function_call), None)
+        return selected_base_model.__pydantic_validator__.validate_json(parameters, strict=True)
 
     def format_prompt(self, template, **kwargs: Any) -> str:
         """Format the template with the provided kwargs using f-string interpolation."""
@@ -675,6 +686,7 @@ class Agent:
 
             # Clear the short memory
             response = None
+            result = None
             all_responses = []
             steps_pool = []
 
@@ -717,7 +729,7 @@ class Agent:
                             if self.streaming_on is True:
                                 response = self.stream_response(response)
                             else:
-                                print(response)
+                                self.printtier(response)
 
                             # Add the response to the memory
                             self.short_memory.add(
@@ -733,8 +745,8 @@ class Agent:
 
                         # TODO: Implement reliablity check
                         if self.tools is not None:
-                            # self.parse_function_call_and_execute(response)
-                            self.parse_and_execute_tools(response)
+                            # self.parse_and_execute_tools(response)
+                            result = self.parse_function_call_and_execute(response)
 
                         if self.code_interpreter is True:
                             # Parse the code and execute
@@ -772,6 +784,9 @@ class Agent:
                             )
 
                         # all_responses.append(evaluated_response)
+
+                        if self.output_validation:
+                            result = self.pydantic_validation(response)
 
                         # Sentiment analysis
                         if self.sentiment_analyzer:
@@ -858,6 +873,9 @@ class Agent:
             # logger.info(f"Final Response: {final_response}")
             if self.return_history:
                 return self.short_memory.return_history_as_string()
+            
+            elif self.output_validation:
+                return result
 
             elif self.return_step_meta:
                 log = ManySteps(
@@ -1303,6 +1321,14 @@ class Agent:
         except Exception as error:
             print(colored(f"Error retrying function: {error}", "red"))
 
+    def printtier(self, response:str) -> str:
+        """
+        Specifies the name of the agent in capital letters in pink and the response text in blue.
+        Add space above.
+        """
+        print("\n")
+        return print(f"\033[1;34m{self.name.upper()}:\033[0m {response}")
+
     def update_system_prompt(self, system_prompt: str):
         """Upddate the system message"""
         self.system_prompt = system_prompt
@@ -1496,7 +1522,7 @@ class Agent:
                 )
 
                 response = self.llm(task_prompt, *args, **kwargs)
-                print(response)
+                self.printtier(response)
 
                 self.short_memory.add(
                     role=self.agent_name, content=response
@@ -1884,9 +1910,7 @@ class Agent:
         full_memory = self.short_memory.return_history_as_string()
         prompt_tokens = self.tokenizer.count_tokens(full_memory)
         completion_tokens = self.tokenizer.count_tokens(response)
-        total_tokens = self.tokenizer.count_tokens(
-            prompt_tokens + completion_tokens
-        )
+        total_tokens = prompt_tokens + completion_tokens
 
         logger.info("Logging step metadata...")
 

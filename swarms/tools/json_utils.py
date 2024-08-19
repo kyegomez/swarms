@@ -30,9 +30,12 @@ def extract_json_from_str(response: str):
     Raises:
         ValueError: If the string does not contain a valid JSON object.
     """
-    json_start = response.index("{")
-    json_end = response.rfind("}")
-    return json.loads(response[json_start : json_end + 1])
+    try:
+        json_start = response.index("{")
+        json_end = response.rfind("}")
+        return json.loads(response[json_start : json_end + 1])
+    except Exception as e:
+        raise ValueError("No valid JSON structure found in the input string")
 
 
 def str_to_json(response: str, indent: int = 3):
