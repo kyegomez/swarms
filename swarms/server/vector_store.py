@@ -140,7 +140,7 @@ class VectorStorage:
                     )
 
                     # Reload vectorstore based on collection
-                    vectorstore = self.getVectorStore(collection_name=collection.name)
+                    vectorstore = self.getVectorStore(collection_name=self.directory)
 
                     # Create a new parent document retriever
                     retriever = AsyncParentDocumentRetriever(
@@ -148,7 +148,11 @@ class VectorStorage:
                         vectorstore=vectorstore,
                         child_splitter=self.child_splitter,
                         parent_splitter=self.parent_splitter,
-                    )
+                    )   
+
+                    # force reload of collection to make sure we don't have the default langchain collection
+                    collection = self.client.get_collection(name=self.directory)
+                    vectorstore = self.getVectorStore(collection_name=self.directory)
 
                     # Add documents to the collection and docstore
                     print(f"Adding {len(documents)} documents to collection...")
@@ -179,7 +183,7 @@ class VectorStorage:
 
             # Reload vectorstore based on collection to pass to parent doc retriever
             collection = self.client.get_collection(name=self.directory)
-            vectorstore = self.getVectorStore(collection_name=collection.name)
+            vectorstore = self.getVectorStore(collection_name=self.directory)
             retriever = AsyncParentDocumentRetriever(
                 docstore=self.store,
                 vectorstore=vectorstore,
