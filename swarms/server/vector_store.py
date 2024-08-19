@@ -16,7 +16,7 @@ from swarms.server.async_parent_document_retriever import AsyncParentDocumentRet
 store_type = "local"  # "redis" or "local"
 
 class VectorStorage:
-    def __init__(self, directory, useGPU=False):
+    def __init__(self, directoryOrUrl, useGPU=False):
         self.embeddings = HuggingFaceBgeEmbeddings(
             cache_folder="./.embeddings",
             model_name="BAAI/bge-large-en",
@@ -24,7 +24,7 @@ class VectorStorage:
             encode_kwargs={"normalize_embeddings": True},
             query_instruction="Represent this sentence for searching relevant passages: ",
         )
-        self.directory = directory
+        self.directoryOrUrl = directoryOrUrl
         self.child_splitter = RecursiveCharacterTextSplitter(
             chunk_size=200, chunk_overlap=20
         )
@@ -62,16 +62,16 @@ class VectorStorage:
         print(f"Start vectorstore initialization time: {start_time}")
 
         # for each subdirectory in the directory, create a new collection if it doesn't exist
-        dirs = directories or os.listdir(self.directory)
+        dirs = directories or os.listdir(self.directoryOrUrl)
         # make sure the subdir is not a file on MacOS (which has a hidden .DS_Store file)
         dirs = [
             subdir
             for subdir in dirs
-            if not os.path.isfile(f"{self.directory}/{subdir}")
+            if not os.path.isfile(f"{self.directoryOrUrl}/{subdir}")
         ]
         print(f"{len(dirs)} subdirectories to load: {dirs}")
 
-        self.retrievers[self.directory] = await self.initRetriever(self.directory)
+        self.retrievers[self.directoryOrUrl] = await self.initRetriever(self.directoryOrUrl)
         
         end_time = datetime.now()
         print("Vectorstore initialization complete.")
@@ -97,7 +97,7 @@ class VectorStorage:
             max_files = 1000
 
             # Load existing metadata
-            metadata_file = f"{self.directory}/metadata.json"
+            metadata_file = f"{self.directoryOrUrl}/metadata.json"
             metadata = {"processDate": str(datetime.now()), "processed_files": []}
             processed_files = set()  # Track processed files
             if os.path.isfile(metadata_file):
@@ -107,7 +107,7 @@ class VectorStorage:
 
             # Get a list of all files in the directory and exclude processed files
             all_files = [
-                file for file in glob.glob(f"{self.directory}/**/*.md", recursive=True)
+                file for file in glob.glob(f"{self.directoryOrUrl}/**/*.md", recursive=True)
                 if file not in processed_files
             ]
 
@@ -131,16 +131,16 @@ class VectorStorage:
                         "processed_at": str(datetime.now())
                     })
 
-                    print(f"Creating new collection for {self.directory}...")
+                    print(f"Creating new collection for {self.directoryOrUrl}...")
                     # Create or get the collection
                     collection = self.client.create_collection(
-                        name=self.directory,
+                        name=self.directoryOrUrl,
                         get_or_create=True,
                         metadata={"processDate": metadata["processDate"]},
                     )
 
                     # Reload vectorstore based on collection
-                    vectorstore = self.getVectorStore(collection_name=self.directory)
+                    vectorstore = self.getVectorStore(collection_name=self.directoryOrUrl)
 
                     # Create a new parent document retriever
                     retriever = AsyncParentDocumentRetriever(
@@ -151,8 +151,8 @@ class VectorStorage:
                     )   
 
                     # force reload of collection to make sure we don't have the default langchain collection
-                    collection = self.client.get_collection(name=self.directory)
-                    vectorstore = self.getVectorStore(collection_name=self.directory)
+                    collection = self.client.get_collection(name=self.directoryOrUrl)
+                    vectorstore = self.getVectorStore(collection_name=self.directoryOrUrl)
 
                     # Add documents to the collection and docstore
                     print(f"Adding {len(documents)} documents to collection...")
@@ -182,8 +182,8 @@ class VectorStorage:
             print(f"Time taken: {subdir_end_time - subdir_start_time}")
 
             # Reload vectorstore based on collection to pass to parent doc retriever
-            collection = self.client.get_collection(name=self.directory)
-            vectorstore = self.getVectorStore(collection_name=self.directory)
+            # collection = self.client.get_collection(name=self.directoryOrUrl)
+            vectorstore = self.getVectorStore()
             retriever = AsyncParentDocumentRetriever(
                 docstore=self.store,
                 vectorstore=vectorstore,
