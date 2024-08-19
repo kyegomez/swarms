@@ -41,6 +41,8 @@ from swarms.prompts.conversational_RAG import (
     E_INST,
     E_SYS,
     QA_PROMPT_TEMPLATE,
+    QA_PROMPT_TEMPLATE_STR,
+    QA_CONDENSE_TEMPLATE_STR,
     SUMMARY_PROMPT_TEMPLATE,
 )
 
@@ -109,7 +111,7 @@ tiktoken.model.MODEL_TO_ENCODING.update(
 print("Logging in to huggingface.co...")
 login(token=hf_token)  # login to huggingface.co
 
-# langchain.debug = True
+langchain.debug = True
 langchain.verbose = True
 
 from contextlib import asynccontextmanager
@@ -179,34 +181,29 @@ async def create_chain(
 
     retriever = await vector_store.getRetriever(os.path.join(file.username, file.filename))
 
-    # chat_memory = ChatMessageHistory()
+    chat_memory = ChatMessageHistory()
 
-    # for message in messages:
-    #     if message.role == Role.USER:
-    #         human_msg = HumanMessage(message.content)
-    #         chat_memory.add_user_message(human_msg)
-    #     elif message.role == Role.ASSISTANT:
-    #         ai_msg = AIMessage(message.content)
-    #         chat_memory.add_ai_message(ai_msg)
-    #     elif message.role == Role.SYSTEM:
-    #         system_msg = SystemMessage(message.content)
-    #         chat_memory.add_message(system_msg)
+    for message in messages:
+        if message.role == Role.USER:
+            human_msg = HumanMessage(message.content)
+            chat_memory.add_user_message(human_msg)
+        elif message.role == Role.ASSISTANT:
+            ai_msg = AIMessage(message.content)
+            chat_memory.add_ai_message(ai_msg)
+        elif message.role == Role.SYSTEM:
+            system_msg = SystemMessage(message.content)
+            chat_memory.add_message(system_msg)
 
     ### Contextualize question ###
     contextualize_q_system_prompt = """Given a chat history and the latest user question \
     which might reference context in the chat history, formulate a standalone question \
     which can be understood without the chat history. Do NOT answer the question, \
     just reformulate it if needed and otherwise return it as is."""
-    contextualize_q_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", contextualize_q_system_prompt),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
-        ]
-    )
+    contextualize_q_prompt = QA_PROMPT_TEMPLATE
     history_aware_retriever = create_history_aware_retriever(
         llm, retriever, contextualize_q_prompt
     )
+
 
 
     ### Answer question ###
@@ -216,19 +213,13 @@ async def create_chain(
     Use three sentences maximum and keep the answer concise.\
 
     {context}"""
-    qa_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", qa_system_prompt),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
-        ]
-    )
-    question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
+    qa_prompt = QA_PROMPT_TEMPLATE
+    question_answer_chain = create_stuff_documents_chain(llm, qa_prompt, document_prompt=DOCUMENT_PROMPT_TEMPLATE)
 
     from langchain_core.runnables import RunnablePassthrough
 
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
-
+    
     return rag_chain
 
 
@@ -250,7 +241,7 @@ async def chat(request: ChatRequest):
             f"{B_INST}{B_SYS}{request.prompt.strip()}{E_SYS}{E_INST}"
         ),
     )
-
+    
     response = LangchainStreamingResponse(
         chain,
         config={

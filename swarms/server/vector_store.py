@@ -5,7 +5,7 @@ import glob
 from datetime import datetime
 from typing import Dict, Literal
 from chromadb.config import Settings
-from langchain.document_loaders import UnstructuredHTMLLoader
+from langchain.document_loaders.markdown import UnstructuredMarkdownLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.storage import LocalFileStore
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -14,7 +14,6 @@ from langchain.schema import BaseRetriever
 from swarms.server.async_parent_document_retriever import AsyncParentDocumentRetriever
 
 store_type = "local"  # "redis" or "local"
-
 
 class VectorStorage:
     def __init__(self, directory):
@@ -72,9 +71,8 @@ class VectorStorage:
         ]
         print(f"{len(dirs)} subdirectories to load: {dirs}")
 
-        for subdir in dirs:
-            self.retrievers[subdir] = await self.initRetriever(subdir)
-
+        self.retrievers[self.directory] = await self.initRetriever(self.directory)
+        
         end_time = datetime.now()
         print("Vectorstore initialization complete.")
         print(f"Vectorstore initialization end time: {end_time}")
@@ -93,13 +91,25 @@ class VectorStorage:
             collections = self.client.list_collections()
             print(f"Existing collections: {collections}")
 
-            # load all .html documents in the subdirectory and ignore any .processed files
             # Initialize an empty list to hold the documents
             documents = []
             # Define the maximum number of files to load at a time
             max_files = 1000
-            # Get a list of all files in the directory
-            all_files = glob.glob(f"{self.directory}/{subdir}/*.html", recursive=False)
+
+            # Load existing metadata
+            metadata_file = f"{self.directory}/metadata.json"
+            metadata = {"processDate": str(datetime.now()), "processed_files": []}
+            processed_files = set()  # Track processed files
+            if os.path.isfile(metadata_file):
+                with open(metadata_file, "r") as metadataFile:
+                    metadata = dict[str, str](json.load(metadataFile))
+                    processed_files = {entry["file"] for entry in metadata.get("processed_files", [])}
+
+            # Get a list of all files in the directory and exclude processed files
+            all_files = [
+                file for file in glob.glob(f"{self.directory}/**/*.md", recursive=True)
+                if file not in processed_files
+            ]
 
             print(f"Loading {len(all_files)} documents for title version {subdir}.")
             # Load files in chunks of max_files
@@ -107,38 +117,42 @@ class VectorStorage:
                 chunksStartTime = datetime.now()
                 chunk_files = all_files[i : i + max_files]
                 for file in chunk_files:
-                    loader = UnstructuredHTMLLoader(
+                    loader = UnstructuredMarkdownLoader(
                         file,
-                        encoding="utf-8",
+                        mode="elements",
+                        strategy="fast"
                     )
+                    print(f"Loaded {file} in {subdir} ...")
                     documents.extend(loader.load())
+                    
+                    # Record the file as processed in metadata
+                    metadata["processed_files"].append({
+                        "file": file,
+                        "processed_at": str(datetime.now())
+                    })
 
-                print(f"Loaded {len(documents)} documents for title version {subdir}.")
+                    # Save metadata to the metadata.json file
+                    with open(metadata_file, "w") as metadataFile:
+                        json.dump(metadata, metadataFile, indent=4)
+
+                print(f"Loaded {len(documents)} documents for directory '{subdir}'.")
                 chunksEndTime = datetime.now()
                 print(
-                    f"{max_files} html file chunks processing time: {chunksEndTime - chunksStartTime}"
+                    f"{max_files} markdown file chunks processing time: {chunksEndTime - chunksStartTime}"
                 )
 
-                print(f"Creating new collection for {subdir}...")
-                # create a new collection
-                # if metadata file named metadata.json exists, use that as metadata
-                # otherwise, default to using a metadata with just the date processed.
-                metadata = {"processDate": str(datetime.now())}
-                metadata_file = f"{self.directory}/{subdir}/metadata.json"
-                if os.path.isfile(metadata_file):
-                    # load the metadata.json into a dict
-                    with open(metadata_file, "r") as metadataFile:
-                        metadata = dict[str, str](json.load(metadataFile))
+                print(f"Creating new collection for {self.directory}...")
+                # Create or get the collection
                 collection = self.client.create_collection(
-                    name=subdir,
-                    get_or_create=True,  # create if it doesn't exist, otherwise get it
+                    name=self.directory,
+                    get_or_create=True,
                     metadata=metadata,
                 )
 
-                # reload vectorstore based on collection to pass to parent doc retriever
+                # Reload vectorstore based on collection
                 vectorstore = self.getVectorStore(collection_name=collection.name)
 
-                # create a new parent document retriever
+                # Create a new parent document retriever
                 retriever = AsyncParentDocumentRetriever(
                     docstore=self.store,
                     vectorstore=vectorstore,
@@ -146,7 +160,7 @@ class VectorStorage:
                     parent_splitter=self.parent_splitter,
                 )
 
-                # add documents to the collection and docstore
+                # Add documents to the collection and docstore
                 print(f"Adding {len(documents)} documents to collection...")
                 add_docs_start_time = datetime.now()
                 await retriever.aadd_documents(
@@ -157,20 +171,14 @@ class VectorStorage:
                     f"Adding {len(documents)} documents to collection took: {add_docs_end_time - add_docs_start_time}"
                 )
 
-                # rename all files to .processed so they don't get loaded again
-                # but allows us to do a manual reload if needed, or future
-                # processing of the files
-                for file in chunk_files:
-                    os.rename(file, f"{file}.processed")
-
                 documents = []  # clear documents list for next chunk
 
             subdir_end_time = datetime.now()
-            print(f"Subdir {subdir } processing end time: {subdir_end_time}")
+            print(f"Subdir {subdir} processing end time: {subdir_end_time}")
             print(f"Time taken: {subdir_end_time - subdir_start_time}")
 
-            # reload vectorstore based on collection to pass to parent doc retriever (it may have changed or be None)
-            collection = self.client.get_collection(name=subdir)
+            # Reload vectorstore based on collection to pass to parent doc retriever
+            collection = self.client.get_collection(name=self.directory)
             vectorstore = self.getVectorStore(collection_name=collection.name)
             retriever = AsyncParentDocumentRetriever(
                 docstore=self.store,
