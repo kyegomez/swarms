@@ -11,7 +11,8 @@ from langchain.callbacks.manager import (
 from langchain.retrievers import ParentDocumentRetriever
 from langchain.schema.document import Document
 from langchain.schema.storage import BaseStore
-from langchain.storage import LocalFileStore, RedisStore
+from langchain.storage import LocalFileStore
+from langchain_community.storage import RedisStore
 from langchain.vectorstores.base import VectorStore
 
 

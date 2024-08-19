@@ -1,8 +1,5 @@
 """ Chatbot Server API Models """
-try:
-    from enum import StrEnum
-except ImportError:
-    from strenum import StrEnum
+from strenum import StrEnum
 
 from pydantic import BaseModel
 from swarms.prompts import QA_PROMPT_TEMPLATE_STR as DefaultSystemPrompt

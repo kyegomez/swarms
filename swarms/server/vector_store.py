@@ -1,21 +1,22 @@
 """ Vector storage with RAG (Retrieval Augmented Generation) support for Markdown."""
 
 import asyncio
+import glob
 import json
 import os
-import glob
 from datetime import datetime
 from typing import Dict
+
 from chromadb.config import Settings
-from langchain.document_loaders.markdown import UnstructuredMarkdownLoader
-from langchain.embeddings import HuggingFaceBgeEmbeddings
+from langchain_community.document_loaders import UnstructuredMarkdownLoader
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from langchain.schema import BaseRetriever
 from langchain.storage import LocalFileStore
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.chroma import Chroma
-from langchain.schema import BaseRetriever
-from swarms.server.async_parent_document_retriever import (
-    AsyncParentDocumentRetriever,
-)
+from langchain_chroma import Chroma
+
+from swarms.server.async_parent_document_retriever import \
+    AsyncParentDocumentRetriever
 
 STORE_TYPE = "local"  # "redis" or "local"
 
@@ -39,8 +40,8 @@ class VectorStorage:
             chunk_size=2000, chunk_overlap=200
         )
         if STORE_TYPE == "redis":
-            from langchain.storage import RedisStore
-            from langchain.utilities.redis import get_client
+            from langchain_community.storage import RedisStore
+            from langchain_community.storage.redis import get_client
 
             username = r"username"
             password = r"password"
@@ -60,9 +61,7 @@ class VectorStorage:
         self.client = self.vectorstore._client
         self.retrievers: Dict[str, BaseRetriever] = {}
         # default retriever for when no collection title is specified
-        self.retrievers[
-            str(self.vectorstore._LANGCHAIN_DEFAULT_COLLECTION_NAME)
-        ] = self.vectorstore.as_retriever()
+        self.retrievers["swarms"] = self.vectorstore.as_retriever()
 
     async def init_retrievers(self, directories: list[str] | None = None):
         """Initializes the vector storage retrievers."""
@@ -235,7 +234,7 @@ class VectorStorage:
     def get_vector_store(self, collection_name: str | None = None) -> Chroma:
         """ get a specific vector store for a collection """
         if collection_name is None or "" or "None":
-            collection_name = "langchain"
+            collection_name = "swarms"
         print("collection_name: " + collection_name)
         vectorstore = Chroma(
             client_settings=self.settings,

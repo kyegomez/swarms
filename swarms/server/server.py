@@ -113,21 +113,20 @@ langchain.verbose = True
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initializes the vector store in a background task."""
-    print(f"Initializing vector store retrievers for {app.title}.")
     asyncio.create_task(vector_store.init_retrievers())
     yield
 
 
-chatbot = FastAPI(title="Chatbot", lifespan=lifespan)
+app = FastAPI(title="Chatbot", lifespan=lifespan)
 router = APIRouter()
 
 current_dir = os.path.dirname(__file__)
 print("current_dir: " + current_dir)
 static_dir = os.path.join(current_dir, "static")
 print("static_dir:  " + static_dir)
-chatbot.mount(static_dir, StaticFiles(directory=static_dir), name="static")
+app.mount(static_dir, StaticFiles(directory=static_dir), name="static")
 
-chatbot.add_middleware(
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -170,7 +169,7 @@ async def create_chain(
     # if llm is VLLMAsync:
     #     llm.max_tokens = max_tokens_to_gen
 
-    retriever = await vector_store.get_retriever()
+    retriever = await vector_store.get_retriever("swarms")
 
     chat_memory = ChatMessageHistory()
     for message in messages:
@@ -222,11 +221,7 @@ async def create_chain(
         verbose=True,
     )
 
-
-router = APIRouter()
-
-
-@router.post(
+@app.post(
     "/chat",
     summary="Chatbot",
     description="Chatbot AI Service",
@@ -252,25 +247,22 @@ async def chat(request: ChatRequest):
         # ],
     }
     return LangchainStreamingResponse(
-        chain,
+        chain=chain,
         config=json_config,
+        run_mode="async"
     )
 
-
-chatbot.include_router(router, tags=["chat"])
-
-
-@chatbot.get("/")
+@app.get("/")
 def root():
     """Swarms Chatbot API Root"""
     return {"message": "Swarms Chatbot API"}
 
 
-@chatbot.get("/favicon.ico")
+@app.get("/favicon.ico")
 def favicon():
     """ Returns a favicon """
     file_name = "favicon.ico"
-    file_path = os.path.join(chatbot.root_path, "static", file_name)
+    file_path = os.path.join(app.root_path, "static", file_name)
     return FileResponse(
         path=file_path,
         headers={
@@ -282,12 +274,12 @@ def favicon():
 logging.basicConfig(level=logging.ERROR)
 
 
-@chatbot.exception_handler(HTTPException)
-async def http_exception_handler(r: Request, exc: HTTPException):
-    """Log and return exception details in response."""
-    logging.error(
-        "HTTPException: %s executing request: %s", exc.detail, r.base_url
-    )
-    return JSONResponse(
-        status_code=exc.status_code, content={"detail": exc.detail}
-    )
+# @app.exception_handler(HTTPException)
+# async def http_exception_handler(r: Request, exc: HTTPException):
+#     """Log and return exception details in response."""
+#     logging.error(
+#         "HTTPException: %s executing request: %s", exc.detail, r.base_url
+#     )
+#     return JSONResponse(
+#         status_code=exc.status_code, content={"detail": exc.detail}
+#     )

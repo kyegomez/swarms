@@ -1,3 +1,4 @@
+""" Prompt templates for Swarms Chatbot """
 from langchain.prompts.prompt import PromptTemplate
 
 B_INST, E_INST = "[INST]", "[/INST]"
@@ -11,7 +12,7 @@ QA_CONDENSE_TEMPLATE_STR = (
     " with the new Standalone Question. \n"
     "Chat History: \n"
     "{chat_history} \n"
-    "Follow Up Question: {input} \n"
+    "Follow Up Question: {question} \n"
     "Standalone Question:"
 )
 
@@ -28,7 +29,7 @@ QA_PROMPT_TEMPLATE_STR = (
     "don't try to make up an answer. \n\n"
     "{context}\n"
     "{chat_history}\n"
-    "{input}\n\n"
+    "{question}\n\n"
     "AI:  Here is the most relevant sentence in the context:  \n"
 )
 
