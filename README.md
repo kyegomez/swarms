@@ -50,6 +50,7 @@ Swarms is an enterprise grade and production ready multi-agent collaboration fra
 ## Requirements
 - `python3.10` or above!
 - `.env` file with API keys from your providers like `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+- Set an ENV Variable with your desired workspace dir: `WORKSPACE_DIR="agent_workspace"`
 - `$ pip install -U swarms` And, don't forget to install swarms!
 
 ## Install 💻
