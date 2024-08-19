@@ -11,7 +11,7 @@ QA_CONDENSE_TEMPLATE_STR = (
     " with the new Standalone Question. \n"
     "Chat History: \n"
     "{chat_history} \n"
-    "Follow Up Question: {question} \n"
+    "Follow Up Question: {input} \n"
     "Standalone Question:"
 )
 
@@ -26,9 +26,9 @@ QA_PROMPT_TEMPLATE_STR = (
     "Get straight to the point and always think things through step-by-step before answering.  "
     "If you don't know the answer, just say 'I don't know'; "
     "don't try to make up an answer. \n\n"
-    "<context>{context}</context>\n"
-    "<chat_history>{chat_history}</chat_history>\n"
-    "<question>{question}</question>\n\n"
+    "{context}\n"
+    "{chat_history}\n"
+    "{input}\n\n"
     "AI:  Here is the most relevant sentence in the context:  \n"
 )
 
