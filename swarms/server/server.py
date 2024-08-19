@@ -93,11 +93,13 @@ if missing_vars:
     exit(1)
 
 useMetal = os.environ.get("USE_METAL", "False") == "True"
+useGPU = os.environ.get("USE_GPU", "False") == "True"
 
 print(f"Uploads={uploads}")
 print(f"MODEL_DIR={model_dir}")
 print(f"MODEL_NAME={model_name}")
 print(f"USE_METAL={useMetal}")
+print(f"USE_GPU={useGPU}")
 print(f"OPENAI_API_KEY={openai_api_key}")
 print(f"OPENAI_API_BASE={openai_api_base}")
 
@@ -145,7 +147,7 @@ if not os.path.exists(uploads):
     os.makedirs(uploads)
 
 # Initialize the vector store
-vector_store = VectorStorage(directory=uploads)
+vector_store = VectorStorage(directory=uploads, useGPU=useGPU)
 
 
 async def create_chain(
