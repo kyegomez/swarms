@@ -115,9 +115,9 @@ class VectorStorage:
             processed_files = set()  # Track processed files
             if os.path.isfile(metadata_file):
                 with open(
-                    metadata_file, "r", encoding="utf-8"
-                ) as metadata_file:
-                    metadata = dict[str, str](json.load(metadata_file))
+                    metadata_file, "r",
+                ) as metadata_file_handle:
+                    metadata = dict[str, str](json.load(metadata_file_handle))
                     processed_files = {
                         entry["file"]
                         for entry in metadata.get("processed_files", [])
@@ -201,9 +201,9 @@ class VectorStorage:
 
                     # Save metadata to the metadata.json file
                     with open(
-                        metadata_file, "w", encoding="utf-8"
-                    ) as metadata_file:
-                        json.dump(metadata, metadata_file, indent=4)
+                        metadata_file, "w"
+                    ) as metadata_file_handle:  # Changed variable name here
+                        json.dump(metadata, metadata_file_handle, indent=4)
 
                 print(
                     f"Loaded {len(documents)} documents for directory '{subdir}'."
