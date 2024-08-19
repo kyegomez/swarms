@@ -1,140 +1,80 @@
 from __future__ import annotations
 
-from enum import Enum
-from typing import Any
+import time
+import uuid
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
-
-
-class TaskInput(BaseModel):
-    task: Any = Field(
-        ...,
-        description=(
-            "The input parameters for the task. Any value is allowed."
-        ),
-        examples=['{\n"debug": false,\n"mode": "benchmarks"\n}'],
-    )
-
-
-class ArtifactUpload(BaseModel):
-    file: bytes = Field(..., description="File to upload")
-    relative_path: str | None = Field(
-        None,
-        description=(
-            "Relative path of the artifact in the agent's workspace"
-        ),
-        examples=["python/code/"],
-    )
-
-
-class StepInput(BaseModel):
-    step: Any = Field(
-        ...,
-        description=(
-            "Input parameters for the task step. Any value is" " allowed."
-        ),
-        examples=['{\n"file_to_refactor": "models.py"\n}'],
-    )
-
-
-class StepOutput(BaseModel):
-    step: Any = Field(
-        ...,
-        description=(
-            "Output that the task step has produced. Any value is"
-            " allowed."
-        ),
-        examples=['{\n"tokens": 7894,\n"estimated_cost": "0,24$"\n}'],
-    )
-
-
-class TaskRequestBody(BaseModel):
-    input: str | None = Field(
-        None,
-        description="Input prompt for the task.",
-        examples=["Write the words you receive to the file 'output.txt'."],
-    )
-    additional_input: TaskInput | None = None
-
-
-# class Task(TaskRequestBody):
-#     task_id: str = Field(
-#         ...,
-#         description="The ID of the task.",
-#         examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
-#     )
-#     artifacts: list[Artifact] = Field(
-#         [],
-#         description="A list of artifacts that the task has produced.",
-#         examples=[
-#             [
-#                 "7a49f31c-f9c6-4346-a22c-e32bc5af4d8e",
-#                 "ab7b4091-2560-4692-a4fe-d831ea3ca7d6",
-#             ]
-#         ],
-#     )
-
-
-class StepRequestBody(BaseModel):
-    input: str | None = Field(
-        None,
-        description="Input prompt for the step.",
-        examples=["Washington"],
-    )
-    additional_input: StepInput | None = None
-
-
-class Status(Enum):
-    created = "created"
-    running = "running"
-    completed = "completed"
+from swarms_cloud.schema.agent_api_schemas import (
+    AgentChatCompletionResponse,
+)
 
 
 class Step(BaseModel):
-    task_id: str = Field(
-        ...,
-        description="The ID of the task this step belongs to.",
-        examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
-    )
-    step_id: int = Field(
-        ...,
+    step_id: str = Field(
+        uuid.uuid4().hex,
         description="The ID of the task step.",
         examples=["6bb1801a-fd80-45e8-899a-4dd723cc602e"],
     )
-    name: str | None = Field(
-        None,
-        description="The name of the task step.",
+    time: float = Field(
+        time.time(),
+        description="The time taken to complete the task step.",
+    )
+    response: AgentChatCompletionResponse = Field(
+        ...,
+        description="The response from the agent.",
+    )
+
+
+class ManySteps(BaseModel):
+    agent_id: Optional[str] = Field(
+        ...,
+        description="The ID of the agent.",
+        examples=["financial-agent-1"],
+    )
+    agent_name: Optional[str] = Field(
+        ...,
+        description="The ID of the agent.",
+        examples=["financial-agent-1"],
+    )
+    task: Optional[str] = Field(
+        ...,
+        description="The name of the task.",
         examples=["Write to file"],
     )
-    output: str | None = Field(
-        None,
-        description="Output of the task step.",
+    number_of_steps: Optional[int] = Field(
+        ...,
+        description="The number of steps in the task.",
+        examples=[3],
+    )
+    run_id: Optional[str] = Field(
+        uuid.uuid4().hex,
+        description="The ID of the task this step belongs to.",
+        examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
+    )
+    steps: List[Step] = Field(
+        ...,
+        description="A list of task steps.",
+    )
+    full_history: Optional[str] = Field(
+        ...,
+        description="The full history of the task.",
         examples=[
             "I am going to use the write_to_file command and write"
             " Washington to a file called output.txt"
             " <write_to_file('output.txt', 'Washington')"
         ],
     )
-    artifacts: list[Any] = Field(
-        [],
-        description="A list of artifacts that the step has produced.",
-    )
-    max_loops: int = Field(
-        1,
-        description="The maximum number of times to run the workflow.",
-    )
-
-
-class ManySteps(BaseModel):
-    task_id: str = Field(
+    total_tokens: Optional[int] = Field(
         ...,
-        description="The ID of the task this step belongs to.",
-        examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
+        description="The total number of tokens generated.",
+        examples=[7894],
     )
-    steps: list[Step] = Field(
-        [],
-        description="A list of task steps.",
-    )
+    # total_cost_in_dollar: Optional[str] = Field(
+    #     default_factory=lambda: "0,24$",
+    #     description="The total cost of the task.",
+    #     examples=["0,24$"],
+    # )
 
 
 class GenerationOutputMetadata(BaseModel):

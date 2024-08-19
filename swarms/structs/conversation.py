@@ -4,7 +4,6 @@ from typing import Optional
 
 from termcolor import colored
 
-from swarms.memory.base_db import AbstractDatabase
 from swarms.structs.base_structure import BaseStructure
 from typing import Any
 
@@ -64,7 +63,6 @@ class Conversation(BaseStructure):
         self,
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
-        database: AbstractDatabase = None,
         autosave: bool = False,
         save_filepath: str = None,
         tokenizer: Any = None,
@@ -74,14 +72,13 @@ class Conversation(BaseStructure):
         user: str = "User:",
         auto_save: bool = True,
         save_as_yaml: bool = True,
-        save_as_json: bool = False,
+        save_as_json_bool: bool = False,
         *args,
         **kwargs,
     ):
         super().__init__()
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
-        self.database = database
         self.autosave = autosave
         self.save_filepath = save_filepath
         self.conversation_history = []
@@ -92,7 +89,7 @@ class Conversation(BaseStructure):
         self.user = user
         self.auto_save = auto_save
         self.save_as_yaml = save_as_yaml
-        self.save_as_json = save_as_json
+        self.save_as_json_bool = save_as_json_bool
 
         # If system prompt is not None, add it to the conversation history
         if self.system_prompt is not None:
@@ -342,38 +339,6 @@ class Conversation(BaseStructure):
                         role_to_color[message["role"]],
                     )
                 )
-
-    def add_to_database(self, *args, **kwargs):
-        """Add the conversation history to the database"""
-        self.database.add("conversation", self.conversation_history)
-
-    def query_from_database(self, query, *args, **kwargs):
-        """Query the conversation history from the database"""
-        return self.database.query("conversation", query)
-
-    def delete_from_database(self, *args, **kwargs):
-        """Delete the conversation history from the database"""
-        self.database.delete("conversation")
-
-    def update_from_database(self, *args, **kwargs):
-        """Update the conversation history from the database"""
-        self.database.update("conversation", self.conversation_history)
-
-    def get_from_database(self, *args, **kwargs):
-        """Get the conversation history from the database"""
-        return self.database.get("conversation")
-
-    def execute_query_from_database(self, query, *args, **kwargs):
-        """Execute a query on the database"""
-        return self.database.execute_query(query)
-
-    def fetch_all_from_database(self, *args, **kwargs):
-        """Fetch all from the database"""
-        return self.database.fetch_all()
-
-    def fetch_one_from_database(self, *args, **kwargs):
-        """Fetch one from the database"""
-        return self.database.fetch_one()
 
     def truncate_memory_with_tokenizer(self):
         """

@@ -2,25 +2,12 @@ import asyncio
 import logging
 import os
 import time
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import List, Optional
-
-from swarms.utils.llm_metrics_decorator import metrics_decorator
-
-
-def count_tokens(text: str) -> int:
-    """Count tokens
-
-    Args:
-        text (str): _description_
-
-    Returns:
-        int: _description_
-    """
-    return len(text.split())
+from swarms.structs.base_structure import BaseStructure
 
 
-class BaseLLM(ABC):
+class BaseLLM(BaseStructure):
     """Abstract Language Model that defines the interface for all language models
 
     Args:
@@ -55,6 +42,7 @@ class BaseLLM(ABC):
 
     def __init__(
         self,
+        model_id: Optional[str] = None,
         model_name: Optional[str] = None,
         max_tokens: Optional[int] = None,
         max_length: Optional[int] = None,
@@ -78,9 +66,13 @@ class BaseLLM(ABC):
         eos_token_id: Optional[int] = None,
         bos_token_id: Optional[int] = None,
         device: Optional[str] = None,
+        freq_penalty: Optional[float] = None,
+        stop_token_id: Optional[int] = None,
         *args,
         **kwargs,
     ):
+        super().__init__(*args, **kwargs)
+        self.model_id = model_id
         self.model_name = model_name
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -104,23 +96,16 @@ class BaseLLM(ABC):
         self.eos_token_id = eos_token_id
         self.bos_token_id = bos_token_id
         self.device = device
+        self.frequency_penalty = freq_penalty
+        self.stop_token_id = stop_token_id
 
         # Attributes
         self.history = ""
         self.start_time = None
         self.end_time = None
         self.history = []
-        self.memory = {
-            "input": [],
-            "output": [],
-            "task": [],
-            "time": [],
-            "role": [],
-            "model": [],
-        }
 
     @abstractmethod
-    @metrics_decorator
     def run(self, task: Optional[str] = None, *args, **kwargs) -> str:
         """generate text using language model"""
 
@@ -172,9 +157,10 @@ class BaseLLM(ABC):
             return float("inf")
         return self._num_tokens() / elapsed_time
 
-    def _num_tokens(self, text: str) -> int:
-        """Number of tokens"""
-        return count_tokens(text)
+    # def _num_tokens(self, text: str) -> int:
+    # """Number of tokens"""
+    # tokenizer = self.tokenizer
+    # return count_tokens(text)
 
     def _time_for_generation(self, task: str) -> float:
         """Time for Generation"""

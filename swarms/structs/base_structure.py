@@ -1,10 +1,13 @@
+import toml
+import yaml
 import asyncio
 import concurrent.futures
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Callable
+
 
 import psutil
 
@@ -72,6 +75,7 @@ class BaseStructure:
         save_artifact_path: Optional[str] = "./artifacts",
         save_metadata_path: Optional[str] = "./metadata",
         save_error_path: Optional[str] = "./errors",
+        workspace_dir: Optional[str] = "./workspace",
     ):
         super().__init__()
         self.name = name
@@ -80,6 +84,7 @@ class BaseStructure:
         self.save_artifact_path = save_artifact_path
         self.save_metadata_path = save_metadata_path
         self.save_error_path = save_error_path
+        self.workspace_dir = workspace_dir
 
     def run(self, *args, **kwargs):
         """Run the structure."""
@@ -423,7 +428,97 @@ class BaseStructure:
         self.monitor_resources()
         return self.run_batched(batched_data, batch_size, *args, **kwargs)
 
+    def _serialize_callable(self, attr_value: Callable) -> Dict[str, Any]:
+        """
+        Serializes callable attributes by extracting their name and docstring.
 
-# x = BaseStructure()
+        Args:
+            attr_value (Callable): The callable to serialize.
 
-# print(x)
+        Returns:
+            Dict[str, Any]: Dictionary with name and docstring of the callable.
+        """
+        return {
+            "name": getattr(
+                attr_value, "__name__", type(attr_value).__name__
+            ),
+            "doc": getattr(attr_value, "__doc__", None),
+        }
+
+    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
+        """
+        Serializes an individual attribute, handling non-serializable objects.
+
+        Args:
+            attr_name (str): The name of the attribute.
+            attr_value (Any): The value of the attribute.
+
+        Returns:
+            Any: The serialized value of the attribute.
+        """
+        try:
+            if callable(attr_value):
+                return self._serialize_callable(attr_value)
+            elif hasattr(attr_value, "to_dict"):
+                return (
+                    attr_value.to_dict()
+                )  # Recursive serialization for nested objects
+            else:
+                json.dumps(
+                    attr_value
+                )  # Attempt to serialize to catch non-serializable objects
+                return attr_value
+        except (TypeError, ValueError):
+            return f"<Non-serializable: {type(attr_value).__name__}>"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Converts all attributes of the class, including callables, into a dictionary.
+        Handles non-serializable attributes by converting them or skipping them.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the class attributes.
+        """
+        return {
+            attr_name: self._serialize_attr(attr_name, attr_value)
+            for attr_name, attr_value in self.__dict__.items()
+        }
+
+    def to_json(self, indent: int = 4, *args, **kwargs):
+        return json.dumps(self.to_dict(), indent=indent, *args, **kwargs)
+
+    def to_yaml(self, indent: int = 4, *args, **kwargs):
+        return yaml.dump(self.to_dict(), indent=indent, *args, **kwargs)
+
+    def to_toml(self, *args, **kwargs):
+        return toml.dumps(self.to_dict(), *args, **kwargs)
+
+    # def model_dump_json(self):
+    #     logger.info(
+    #         f"Saving {self.agent_name} model to JSON in the {self.workspace_dir} directory"
+    #     )
+
+    #     create_file_in_folder(
+    #         self.workspace_dir,
+    #         f"{self.agent_name}.json",
+    #         str(self.to_json()),
+    #     )
+
+    #     return (
+    #         f"Model saved to {self.workspace_dir}/{self.agent_name}.json"
+    #     )
+
+    # def model_dump_yaml(self):
+    #     logger.info(
+    #         f"Saving {self.agent_name} model to YAML in the {self.workspace_dir} directory"
+    #     )
+
+    #     create_file_in_folder(
+    #         self.workspace_dir,
+    #         f"{self.agent_name}.yaml",
+    #         self.to_yaml(),
+    #     )
+
+    #     return (
+    #         f"Model saved to {self.workspace_dir}/{self.agent_name}.yaml"
+    #     )

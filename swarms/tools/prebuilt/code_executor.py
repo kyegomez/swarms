@@ -1,7 +1,6 @@
 import os
 import subprocess
 from loguru import logger
-import black
 from swarms.models.tiktoken_wrapper import TikTokenizer
 
 
@@ -56,6 +55,8 @@ class CodeExecutor:
             ValueError: If the code cannot be formatted.
         """
         try:
+            import black
+
             formatted_code = black.format_str(code, mode=black.FileMode())
             return formatted_code
         except black.InvalidInput as e:

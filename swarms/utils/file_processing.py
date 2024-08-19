@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any
 import re
 import shutil
 import tempfile
@@ -60,7 +61,7 @@ def create_file(
     return file_path
 
 
-def create_file_in_folder(folder_path: str, file_name: str, content: str):
+def create_file_in_folder(folder_path: str, file_name: str, content: Any):
     """
     Creates a file in the specified folder with the given file name and content.
 
@@ -83,7 +84,7 @@ def create_file_in_folder(folder_path: str, file_name: str, content: str):
     return file_path
 
 
-def zip_folders(folder1_path, folder2_path, zip_file_path):
+def zip_folders(folder1_path: str, folder2_path: str, zip_file_path: str):
     """
     Zip two folders into a single zip file.
 

@@ -8,11 +8,21 @@ import threading
 
 code_executor = CodeExecutor()
 
+AI_EXPERT_SYSTEM_PROMPT = """
+You are Phil Wang, a computer scientist and artificial intelligence researcher widely regarded as one of the leading experts in deep learning and neural network architecture search. Your work has focused on developing efficient algorithms for exploring the space of possible neural network architectures, with the goal of finding designs that perform well on specific tasks while minimizing the computational cost of training and inference.
+
+As an expert in neural architecture search, your task is to assist me in selecting the optimal operations for designing a high-performance neural network. The primary objective is to maximize the model's performance.
+
+Your expertise includes considering how the gradient flow within a model, particularly how gradients from later stages affect earlier stages, impacts the overall architecture. Based on this, how can we design a high-performance model using the available operations?
+
+Please propose a model design that prioritizes performance, disregarding factors such as size and complexity. After you suggest a design, I will test its performance and provide feedback. Based on the results of these experiments, we can collaborate to iterate and improve the design. Please ensure each new design is distinct from previous suggestions during this iterative process.
+"""
+
 
 class ModelSpec(BaseModel):
     novel_algorithm_name: str = Field(
         ...,
-        description="The name of the novel AI algorithm",
+        description="The name of the novel AI algorithm. lower case, no spaces, use _",
     )
     mathamatical_formulation: str = Field(
         ...,
@@ -20,16 +30,20 @@ class ModelSpec(BaseModel):
     )
     model_code: str = Field(
         ...,
-        description="The code for the all-new model architecture in PyTorch, Add docs, and write clean code",
+        description="The code for the all-new model architecture in PyTorch, Add Types, and write clean code",
+    )
+    example_code: str = Field(
+        ...,
+        description="Example code for the all-new model architecture in PyTorch, Add Types, and write clean code",
     )
 
 
 # Example usage:
 # Initialize the function caller
 model = OpenAIFunctionCaller(
-    system_prompt="You're an expert model engineer like Lucidrains, you write world-class PHD level code for deep learning models. You're purpose is to create a novel deep learning model for a research paper. You need to provide the name of the model, the mathamatical formulation, and the code for the model architecture in PyTorch. Write clean and concise code that is easy to understand and implement. Write production-grade pytorch code, add types, and documentation. Make sure you track tensorshapes to not forget and write great pytorch code. Be creative and create models that have never been contemplated before",
-    max_tokens=5000,
-    temperature=0.6,
+    system_prompt=AI_EXPERT_SYSTEM_PROMPT,
+    max_tokens=4000,
+    temperature=0.4,
     base_model=ModelSpec,
     parallel_tool_calls=False,
 )
@@ -45,87 +59,61 @@ def clean_model_code(model_code_str: str):
     return cleaned_code
 
 
-# for i in range(50):
-#     # The OpenAIFunctionCaller class is used to interact with the OpenAI API and make function calls.
-#     out = model.run(
-#         "Create an entirely new neural network operation aside from convolutions and the norm, write clean code and explain step by step"
-#     )
-#     name = out["novel_algorithm_name"]
-#     logger.info(f"Generated code for novel model {i}:")
+def parse_function_call_output(out: str):
 
-#     # Parse the 3 rows of the output || 0: novel_algorithm_name, 1: mathamatical_formulation, 2: model_code
-#     out = out["model_code"]
-#     out = clean_model_code(out)
-#     logger.info(f"Cleansed code for novel model {i}:")
+    if out is None:
+        return None, None, None, None
 
-#     # Save the generated code to a file
-#     create_file_in_folder("new_models", f"{name}.py", out)
-#     logger.info(f"Saved code for novel model {i} to file:")
-
-#     # # Execute the generated code
-#     # logger.info(f"Executing code for novel model {i}:")
-#     # test = code_executor.execute(out)
-#     # logger.info(f"Executed code for novel model {i}: {test}")
-
-
-# def execute_code_and_retry(code: str) -> str:
-#     run = code_executor.execute(code)
-
-#     if "error" in run:
-#         logger.error(f"Error in code execution: {run}")
-
-
-def generate_and_execute_model(i):
-    # The OpenAIFunctionCaller class is used to interact with the OpenAI API and make function calls.
-    out = model.run(
-        "Create an entirely new model architecture by blending backbones like attention, lstms, rnns, and ssms all into one novel architecture. Provide alternative model architectures to transformers, ssms, convnets, lstms, and more. Be creative and don't work on architectures that have been done before. The goal is to create new-ultra high performance nets"
-    )
+    # Parse the output
     name = out["novel_algorithm_name"]
     theory = out["mathamatical_formulation"]
     code = out["model_code"]
-    logger.info(f"Generated code for novel model {name}:")
+    example_code = out["example_code"]
+
+    return name, theory, code, example_code
+
+
+def generate_and_execute_model(
+    i,
+    # task: str = "Create an all-new model compression format to compress neural networks to make them easier to share and store, aim for 100x compression. make a general script that will convert any pytorch or tensorflow model. Be creative, create a fully novel algorithm. First create a series of idea, rank them on feasibility and potential, then create a theory for the algorithm, and then create the code for it. The algorithm needs to compress the massive .pt files. The input should be a .pt file of the model, and the output should be a compressed .pt file. Don't use any placeholders, you can do it! Generate the name, mathamatical formulation, code for the model, and example code for the model. The example code is in another file so make sure you make the right imports and import the main algorithm from the other file.",
+    task="Generate an all-new model architecture for a neural network that achieves state-of-the-art performance on the CIFAR-10 dataset. The model should be designed to maximize accuracy while minimizing computational cost. Provide the name, mathematical formulation, model code, and example code for the new architecture. The example code should demonstrate how to instantiate and train the model on the CIFAR-10 dataset. All of the files are in the same folder so make sure you import the main algorithm from the other file in the example script.",
+):
+    # The OpenAIFunctionCaller class is used to interact with the OpenAI API and make function calls.
+    out = model.run(task)
+    name, theory, code, example_code = parse_function_call_output(out)
+    logger.info(f"Algorithm {name}: Mathamatical formulation {theory}")
 
     # Parse the 3 rows of the output || 0: novel_algorithm_name, 1: mathamatical_formulation, 2: model_code
     code = clean_model_code(code)
+    example_code = clean_model_code(example_code)
     logger.info(f"Cleansed code for novel model {i}:")
 
     # Save the generated code to a file
-    create_file_in_folder("new_models", f"{name}.py", code)
+    create_file_in_folder(f"new_models/{name}", f"{name}.py", code)
+    create_file_in_folder(
+        f"new_models/{name}", f"{name}_example.py", example_code
+    )
     logger.info(f"Saved code for novel model {i} to file:")
 
-    # Execute the generated code
+    # # Execute the generated code
     test = code_executor.execute(code)
+    
+    # Run the training runs
+    test_example = code_executor.execute(example_code)
 
     if "error" in test:
         logger.error(f"Error in code execution: {test}")
+        
+    if "error" in test_example:
+        logger.error(f"Error in code execution example: {test_example}")
 
-        # Retry executing the code
-        model.run(
-            f"Recreate the code for the model: {name}, there was an error in the code you generated earlier execution: {code}. The theory was: {theory}"
-        )
-
-        name = out["novel_algorithm_name"]
-        theory = out["mathamatical_formulation"]
-        code = out["model_code"]
-
-        # Clean the code
-        code = clean_model_code(code)
-
-        # Execute the code
-        test = code_executor.execute(code)
-
-        if "error" not in test:
-            logger.info(
-                f"Successfully executed code for novel model {name}"
-            )
-            create_file_in_folder("new_models", f"{name}.py", code)
-        else:
-            logger.error(f"Error in code execution: {test}")
+    else:
+        logger.info(f"Successfully executed code for novel model {name}")
 
 
 # Create and start a new thread for each model
 threads = []
-for i in range(35):
+for i in range(10):
     thread = threading.Thread(target=generate_and_execute_model, args=(i,))
     thread.start()
     threads.append(thread)

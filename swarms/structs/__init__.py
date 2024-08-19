@@ -13,7 +13,6 @@ from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.groupchat import GroupChat
-from swarms.structs.hiearchical_swarm import HiearchicalSwarm
 from swarms.structs.majority_voting import (
     MajorityVoting,
     majority_voting,
@@ -95,7 +94,6 @@ __all__ = [
     "ConcurrentWorkflow",
     "Conversation",
     "GroupChat",
-    "HiearchicalSwarm",
     "MajorityVoting",
     "majority_voting",
     "most_frequent",

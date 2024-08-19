@@ -11,5 +11,6 @@ def bootup():
     disable_logging()
     logging.disable(logging.CRITICAL)
     os.environ["WANDB_SILENT"] = "true"
+    os.environ["WORKSPACE_DIR"] = "agent_workspace"
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     auto_update()

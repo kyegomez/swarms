@@ -56,6 +56,9 @@ class AbstractAgent:
     def _astep(self, message: str):
         """Asynchronous step"""
 
+    def plan(self, plan: str):
+        """Plan the agent"""
+
     def send(
         self,
         message: Union[Dict, str],
