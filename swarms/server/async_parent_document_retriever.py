@@ -248,6 +248,10 @@ class AsyncParentDocumentRetriever(ParentDocumentRetriever):
 
         docs: List[Document] = []
         full_docs: List[Tuple[str, Document]] = []
+
+        if len(documents) < 1:
+            return
+        
         for i, doc in enumerate(documents):
             _id = doc_ids[i]
             sub_docs = self.child_splitter.split_documents([doc])
