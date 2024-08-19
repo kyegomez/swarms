@@ -2014,8 +2014,8 @@ class Agent:
             f"Model saved to {self.workspace_dir}/{self.agent_name}.yaml"
         )
     
-    def publish_agent_to_marketplace(self):
-        import requests 
+    # def publish_agent_to_marketplace(self):
+    #     import requests 
         
-        # Prepare the data
+    #     # Prepare the data
         

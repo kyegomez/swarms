@@ -27,9 +27,9 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
 | Swarms Platform Github      | [Swarms Platform GitHub](https://github.com/kyegomez/swarms-platform)                      |
-| Swarms Python Framework Github      | [Swarms Platform GitHub](https://github.com/kyegomez/swarms)                      |
-| Swarms Memory Python Framework     | [Swarms Platform GitHub](https://github.com/The-Swarm-Corporation/swarms-memory)                      |
-| Swarms Corp Github Profile     | [Swarms Platform GitHub](https://github.com/The-Swarm-Corporation)                      |
+| Swarms Python Framework Github      | [Swarms GitHub](https://github.com/kyegomez/swarms)                      |
+| Swarms Memory Python Framework     | [Swarms Memory GitHub](https://github.com/The-Swarm-Corporation/swarms-memory)                      |
+| Swarms Corp Github Profile     | [Swarms Corp GitHub](https://github.com/The-Swarm-Corporation)                      |
 
 ## Get Support
 
