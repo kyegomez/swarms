@@ -20,11 +20,11 @@ class AgentRegistry:
     A registry for managing agents, with methods to add, delete, update, and query agents.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.agents: Dict[str, AgentModel] = {}
         self.lock = Lock()
 
-    def add(self, agent_id: str, agent: Agent) -> None:
+    def add(self, agent: Agent) -> None:
         """
         Adds a new agent to the registry.
 
@@ -37,6 +37,7 @@ class AgentRegistry:
             ValidationError: If the input data is invalid.
         """
         with self.lock:
+            agent_id = agent.agent_id
             if agent_id in self.agents:
                 logger.error(f"Agent with id {agent_id} already exists.")
                 raise ValueError(
@@ -50,6 +51,36 @@ class AgentRegistry:
             except ValidationError as e:
                 logger.error(f"Validation error: {e}")
                 raise
+
+    def add_many(self, agents: List[Agent]) -> None:
+        """
+        Adds multiple agents to the registry.
+
+        Args:
+            agents (List[Agent]): The list of agents to add.
+
+        Raises:
+            ValueError: If any of the agent_ids already exist in the registry.
+            ValidationError: If the input data is invalid.
+        """
+        with self.lock:
+            for agent in agents:
+                agent_id = agent.agent_id
+                if agent_id in self.agents:
+                    logger.error(
+                        f"Agent with id {agent_id} already exists."
+                    )
+                    raise ValueError(
+                        f"Agent with id {agent_id} already exists."
+                    )
+                try:
+                    self.agents[agent_id] = AgentModel(
+                        agent_id=agent_id, agent=agent
+                    )
+                    logger.info(f"Agent {agent_id} added successfully.")
+                except ValidationError as e:
+                    logger.error(f"Validation error: {e}")
+                    raise e
 
     def delete(self, agent_id: str) -> None:
         """
@@ -167,6 +198,16 @@ class AgentRegistry:
             raise e
 
     def find_agent_by_name(self, agent_name: str) -> Agent:
+        """
+        Find an agent by its name.
+
+        Args:
+            agent_name (str): The name of the agent to find.
+
+        Returns:
+            Agent: The agent with the given name.
+
+        """
         try:
             for agent_model in self.agents.values():
                 if agent_model.agent.agent_name == agent_name:

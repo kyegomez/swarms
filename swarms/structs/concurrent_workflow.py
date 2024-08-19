@@ -3,18 +3,23 @@ from queue import Queue
 from typing import List
 from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import logger
+from swarms.structs.base_swarm import BaseSwarm
 
 
-class ConcurrentWorkflow:
+class ConcurrentWorkflow(BaseSwarm):
     """
     Initializes the ConcurrentWorkflow with the given parameters.
 
     Args:
         agents (List[Agent]): The list of agents to initialize.
         max_loops (int): The maximum number of loops each agent can run.
+
     """
 
-    def __init__(self, agents: List[Agent], max_loops: int):
+    def __init__(
+        self, agents: List[Agent], max_loops: int, *args, **kwargs
+    ):
+        super().__init__(agents=agents, *args, **kwargs)
         self.max_loops = max_loops
         self.agents = agents
         self.num_agents = len(agents)

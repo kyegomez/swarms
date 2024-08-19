@@ -266,6 +266,8 @@ class Agent:
         # short_memory: Optional[str] = None,
         created_at: float = time.time(),
         return_step_meta: Optional[bool] = False,
+        tags: Optional[List[str]] = None,
+        use_cases: Optional[List[Dict[str, str]]] = None,
         *args,
         **kwargs,
     ):
@@ -360,10 +362,13 @@ class Agent:
         self.timeout = timeout
         self.created_at = created_at
         self.return_step_meta = return_step_meta
+        self.tags = tags
+        self.use_cases = use_cases
 
         # Name
         self.name = agent_name
         self.description = agent_description
+        
         # Agentic stuff
         self.reply = ""
         self.question = None
@@ -2008,3 +2013,9 @@ class Agent:
         return (
             f"Model saved to {self.workspace_dir}/{self.agent_name}.yaml"
         )
+    
+    def publish_agent_to_marketplace(self):
+        import requests 
+        
+        # Prepare the data
+        

@@ -8,14 +8,28 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
-| API Reference        | [API Reference](/api-reference)                                                            |
+| Swarms Python Framework Docs     | [Framework Docs](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
+| Swarms Marketplace API Docs   | [Swarms Marketplace](https://docs.swarms.world/en/latest/swarms_platform/)                                                 |
+| Swarms Cloud Docs       | [Swarms Pricing](https://docs.swarms.world/en/latest/swarms_cloud/main/)                                             |
+
+
+## Community
+| Section              | Links                                                                                      |
+|----------------------|--------------------------------------------------------------------------------------------|
 | Community            | [Discord](https://discord.com/servers/agora-999382051935506503)                            |
 | Blog                 | [Blog](https://medium.com/@kyeg)                                                           |
 | Social Media         | [Twitter](https://x.com/swarms_corp)                                                       |
-| Swarms Framework     | [Swarms Framework](https://github.com/kyegomez/swarms)                                      |
-| Swarms Platform      | [Swarms Platform GitHub](https://github.com/kyegomez/swarms-platform)                      |
-| Swarms Marketplace   | [Swarms Marketplace](https://swarms.world)                                                 |
-| Swarms Pricing       | [Swarms Pricing](https://swarms.world/pricing)                                             |
+| Event Calendar       | [Twitter](https://lu.ma/user/usr-GPa2xaC3pL1Hunp)                                                       |
+
+
+
+## Github Repos
+| Section              | Links                                                                                      |
+|----------------------|--------------------------------------------------------------------------------------------|
+| Swarms Platform Github      | [Swarms Platform GitHub](https://github.com/kyegomez/swarms-platform)                      |
+| Swarms Python Framework Github      | [Swarms Platform GitHub](https://github.com/kyegomez/swarms)                      |
+| Swarms Memory Python Framework     | [Swarms Platform GitHub](https://github.com/The-Swarm-Corporation/swarms-memory)                      |
+| Swarms Corp Github Profile     | [Swarms Platform GitHub](https://github.com/The-Swarm-Corporation)                      |
 
 ## Get Support
 

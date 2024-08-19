@@ -97,13 +97,13 @@ def generate_and_execute_model(
 
     # # Execute the generated code
     test = code_executor.execute(code)
-    
+
     # Run the training runs
     test_example = code_executor.execute(example_code)
 
     if "error" in test:
         logger.error(f"Error in code execution: {test}")
-        
+
     if "error" in test_example:
         logger.error(f"Error in code execution example: {test_example}")
 
