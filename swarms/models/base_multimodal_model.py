@@ -6,13 +6,13 @@ from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import List, Optional, Tuple
-
+from swarms.structs.base_structure import BaseStructure
 import requests
 from PIL import Image
 from termcolor import colored
 
 
-class BaseMultiModalModel:
+class BaseMultiModalModel(BaseStructure):
     """
     Base class for multimodal models
 
@@ -74,6 +74,7 @@ class BaseMultiModalModel:
         *args,
         **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens

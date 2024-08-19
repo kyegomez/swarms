@@ -16,10 +16,12 @@ artifacts_five
 errors
 chroma
 agent_workspace
+.pt
 Accounting Assistant_state.json
 Unit Testing Agent_state.json
 Devin_state.json
 hire_researchers
+agent_workspace
 json_logs
 Medical Image Diagnostic Agent_state.json
 flight agent_state.json

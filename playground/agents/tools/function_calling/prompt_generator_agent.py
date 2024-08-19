@@ -40,7 +40,7 @@ class PromptSpec(BaseModel):
 # Example usage:
 # Initialize the function caller
 model = OpenAIFunctionCaller(
-    system_prompt="You're an agent creator, you're purpose is to create system prompt for new LLM Agents for the user. Follow the best practices for creating a prompt such as making it direct and clear. Providing instructions and many-shot examples will help the agent understand the task better.",
+    system_prompt="You're an prompt creator, you're purpose is to create system prompts for new LLM Agents for the user. Follow the best practices for creating a prompt such as making it direct and clear. Providing instructions and many-shot examples will help the agent understand the task better.",
     max_tokens=1000,
     temperature=0.5,
     base_model=PromptSpec,
@@ -50,6 +50,6 @@ model = OpenAIFunctionCaller(
 
 # The OpenAIFunctionCaller class is used to interact with the OpenAI API and make function calls.
 out = model.run(
-    "Create an prompt for generating quality rust code with instructions and examples."
+    "Create a prompt for an agent that is really good for email greeting, make sure the agent doesn't sound like an robot or an AI. Provide many-shot examples and instructions for the agent to follow."
 )
 print(out)

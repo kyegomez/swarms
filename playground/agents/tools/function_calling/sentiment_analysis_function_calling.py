@@ -35,5 +35,5 @@ model = OpenAIFunctionCaller(
 # - max_tokens: The maximum number of tokens to generate in the API response.
 # - temperature: A parameter that controls the randomness of the generated text.
 # - base_model: The base model to use for the API calls, in this case, the WeatherAPI class.
-out = model.run("The hotel was average, but the food was excellent.")
+out = model.run("This agent created the code incorrectly it sucked.")
 print(out)

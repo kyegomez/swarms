@@ -4,6 +4,7 @@ import warnings
 
 
 def disable_logging():
+
     warnings.filterwarnings("ignore", category=UserWarning)
 
     # disable tensorflow warnings
@@ -37,8 +38,17 @@ def disable_logging():
     # Remove all existing handlers
     logging.getLogger().handlers = []
 
+    # Get the workspace directory from the environment variables
+    workspace_dir = os.environ["WORKSPACE_DIR"]
+
+    # Check if the workspace directory exists, if not, create it
+    if not os.path.exists(workspace_dir):
+        os.makedirs(workspace_dir)
+
     # Create a file handler to log errors to the file
-    file_handler = logging.FileHandler("errors.txt")
+    file_handler = logging.FileHandler(
+        os.path.join(workspace_dir, "error.txt")
+    )
     file_handler.setLevel(logging.ERROR)
     logging.getLogger().addHandler(file_handler)
 

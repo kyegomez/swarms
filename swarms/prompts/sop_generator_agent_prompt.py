@@ -1,9 +1,4 @@
-def sop_generator_agent_prompt(task_name: str):
-    """
-    SOP Generator Agent Prompt
-    --------------------------
-
-    """
+def sop_generator_agent_prompt(task_name: str) -> str:
     SOP_GENERATOR_SOP = f"""
     Your are an autonomous agent that generates Standard Operating Procedures for autonomous
     worker agents, your goal is to generate a SOP for the following task: {task_name}
@@ -90,4 +85,4 @@ def sop_generator_agent_prompt(task_name: str):
 
     This refactored SOP focuses on guidelines specifically for the instructor agent on techniques to teach the process of writing standard operating procedures to execute tasks. Let me know if you need any other updates.
     """
-    return str(SOP_GENERATOR_SOP)
+    return SOP_GENERATOR_SOP

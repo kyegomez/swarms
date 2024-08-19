@@ -1,7 +1,4 @@
 from swarms.tools.tool_utils import (
-    execute_tools,
-    extract_tool_commands,
-    parse_and_execute_tools,
     scrape_tool_func_docs,
     tool_find_by_name,
 )
@@ -32,26 +29,24 @@ from swarms.tools.cohere_func_call_schema import (
 )
 from swarms.tools.tool_registry import ToolStorage, tool_registry
 
+
 __all__ = [
-    "BaseTool",
-    "tool",
-    "Function",
-    "ToolFunction",
+    "scrape_tool_func_docs",
+    "tool_find_by_name",
+    "openai_tool_executor",
+    "_remove_a_key",
+    "base_model_to_openai_function",
+    "multi_base_model_to_openai_function",
+    "OpenAIFunctionCallSchemaBaseModel",
     "get_openai_function_schema_from_func",
     "load_basemodels_if_needed",
     "get_load_param_if_needed_function",
     "get_parameters",
     "get_required_params",
-    "OpenAIFunctionCallSchemaBaseModel",
-    "base_model_to_openai_function",
-    "multi_base_model_to_openai_function",
-    "_remove_a_key",
-    "openai_tool_executor",
-    "execute_tools",
-    "extract_tool_commands",
-    "parse_and_execute_tools",
-    "scrape_tool_func_docs",
-    "tool_find_by_name",
+    "Function",
+    "ToolFunction",
+    "tool",
+    "BaseTool",
     "CohereFuncSchema",
     "ParameterDefinition",
     "ToolStorage",

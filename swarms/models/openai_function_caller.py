@@ -73,7 +73,7 @@ class OpenAIFunctionCaller(BaseLLM):
 
         return self.openai_api_key
 
-    def run(self, task: str, *args, **kwargs):
+    def run(self, task: str, *args, **kwargs) -> dict:
         """
         Runs the chat completion with the given task and returns the generated completion.
 
@@ -104,13 +104,13 @@ class OpenAIFunctionCaller(BaseLLM):
 
             out = (
                 completion.choices[0]
-                # .message.tool_calls[0]
-                # .function.arguments
+                .message.tool_calls[0]
+                .function.arguments
             )
 
             # Conver str to dict
             # print(out)
-            # out = eval(out)
+            out = eval(out)
             return out
         except Exception as error:
             logger.error(

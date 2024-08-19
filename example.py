@@ -14,35 +14,23 @@ model = OpenAIChat(
 
 # Initialize the agent
 agent = Agent(
-    agent_name="Financial-Analysis-Agent",
+    agent_name="Financial-Analysis-Agent_sas_chicken_eej",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     llm=model,
     max_loops=1,
     autosave=True,
-    # dynamic_temperature_enabled=True,
     dashboard=False,
     verbose=True,
-    # interactive=True, # Set to False to disable interactive mode
     dynamic_temperature_enabled=True,
     saved_state_path="finance_agent.json",
-    # tools=[#Add your functions here# ],
-    # stopping_token="Stop!",
-    # interactive=True,
-    # docs_folder="docs", # Enter your folder name
-    # pdf_path="docs/finance_agent.pdf",
-    # sop="Calculate the profit for a company.",
-    # sop_list=["Calculate the profit for a company."],
     user_name="swarms_corp",
-    # # docs=
-    # # docs_folder="docs",
-    retry_attempts=3,
-    # context_length=1000,
-    # tool_schema = dict
+    retry_attempts=1,
     context_length=200000,
-    # tool_schema=
+    return_step_meta=True,
 )
 
 
-agent.run(
+out = agent.run(
     "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
 )
+print(out)
