@@ -75,6 +75,9 @@ class StreamingResponse(EventSourceResponse):
 
         await send({"type": "http.response.body", "body": b"", "more_body": False})
 
+    def enable_compression(self, force: bool=False):
+        raise NotImplementedError
+
 
 class LangchainStreamingResponse(StreamingResponse):
     """StreamingResponse class for LangChain resources."""
@@ -172,3 +175,6 @@ class LangchainStreamingResponse(StreamingResponse):
             )
 
         await send({"type": "http.response.body", "body": b"", "more_body": False})
+
+    def enable_compression(self, force: bool=False):
+        raise NotImplementedError
