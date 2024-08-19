@@ -1,6 +1,8 @@
+""" AsyncParentDocumentRetriever is used by RAG
+to split up documents into smaller *and* larger related chunks. """
 import pickle
 import uuid
-from typing import ClassVar, Collection, List, Optional, Tuple
+from typing import Any, ClassVar, Collection, List, Optional, Tuple
 
 from langchain.callbacks.manager import (
     AsyncCallbackManagerForRetrieverRun,
@@ -161,6 +163,7 @@ class AsyncParentDocumentRetriever(ParentDocumentRetriever):
         documents: List[Document],
         ids: Optional[List[str]] = None,
         add_to_docstore: bool = True,
+        **kwargs: Any
     ) -> None:
         """Adds documents to the docstore and vectorstores.
 
@@ -215,6 +218,7 @@ class AsyncParentDocumentRetriever(ParentDocumentRetriever):
         documents: List[Document],
         ids: Optional[List[str]] = None,
         add_to_docstore: bool = True,
+        **kwargs: Any
     ) -> None:
         """Adds documents to the docstore and vectorstores.
 
@@ -251,7 +255,7 @@ class AsyncParentDocumentRetriever(ParentDocumentRetriever):
 
         if len(documents) < 1:
             return
-        
+
         for i, doc in enumerate(documents):
             _id = doc_ids[i]
             sub_docs = self.child_splitter.split_documents([doc])

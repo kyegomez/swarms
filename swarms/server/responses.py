@@ -1,22 +1,19 @@
-from typing import Any
+""" Customized Langchain StreamingResponse for Server-Side Events (SSE) """
 import asyncio
 from functools import partial
 from typing import Any
 
 from fastapi import status
 from langchain.chains.base import Chain
-from starlette.types import Send
-from fastapi import status
 from sse_starlette import ServerSentEvent
-from sse_starlette.sse import EventSourceResponse
+from sse_starlette.sse import EventSourceResponse, ensure_bytes
 from starlette.types import Send
 
 from swarms.server.utils import StrEnum
 
-from sse_starlette.sse import ensure_bytes
-
 
 class HTTPStatusDetail(StrEnum):
+    """ HTTP error descriptions. """
     INTERNAL_SERVER_ERROR = "Internal Server Error"
 
 
@@ -24,13 +21,14 @@ class StreamingResponse(EventSourceResponse):
     """`Response` class for streaming server-sent events.
 
     Follows the
-    [EventSource protocol](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events#interfaces)
+    [EventSource protocol]
+    (https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events#interfaces)
     """
 
     def __init__(
         self,
-        content: Any = iter(()),
         *args: Any,
+        content: Any = iter(()),
         **kwargs: dict[str, Any],
     ) -> None:
         """Constructor method.
@@ -97,10 +95,10 @@ class LangchainStreamingResponse(StreamingResponse):
 
     def __init__(
         self,
+        *args: Any,
         chain: Chain,
         config: dict[str, Any],
         run_mode: ChainRunMode = ChainRunMode.ASYNC,
-        *args: Any,
         **kwargs: dict[str, Any],
     ) -> None:
         """Constructor method.
@@ -146,8 +144,6 @@ class LangchainStreamingResponse(StreamingResponse):
                     callback.send = send
 
         try:
-            # TODO: migrate to `.ainvoke` when adding support
-            # for LCEL
             if self.run_mode == ChainRunMode.ASYNC:
                 async for outputs in self.chain.astream(input=self.config):
                     if 'answer' in outputs:
@@ -156,7 +152,11 @@ class LangchainStreamingResponse(StreamingResponse):
                         )
                         # Send each chunk with the appropriate body type
                         await send(
-                            {"type": "http.response.body", "body": ensure_bytes(chunk, None), "more_body": True}
+                            {
+                                "type": "http.response.body", 
+                                "body": ensure_bytes(chunk, None), 
+                                "more_body": True
+                            }
                         )
 
             else:
