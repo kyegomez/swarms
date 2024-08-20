@@ -368,7 +368,7 @@ class Agent:
         # Name
         self.name = agent_name
         self.description = agent_description
-        
+
         # Agentic stuff
         self.reply = ""
         self.question = None
@@ -733,8 +733,9 @@ class Agent:
                             all_responses.append(response)
 
                             # Log the step
-                            out_step = self.log_step_metadata(response)
-                            steps_pool.append(out_step)
+                            if self.return_step_meta is True:
+                                out_step = self.log_step_metadata(response)
+                                steps_pool.append(out_step)
 
                         # TODO: Implement reliablity check
                         if self.tools is not None:
@@ -2013,9 +2014,8 @@ class Agent:
         return (
             f"Model saved to {self.workspace_dir}/{self.agent_name}.yaml"
         )
-    
+
     # def publish_agent_to_marketplace(self):
-    #     import requests 
-        
+    #     import requests
+
     #     # Prepare the data
-        

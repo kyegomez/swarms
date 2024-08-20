@@ -99,7 +99,9 @@ class Gemini(BaseMultiModalModel):
         self.system_prompt = system_prompt
 
         # Configure the API key
-        genai.configure(api_key=gemini_api_key, transport=transport)
+        genai.configure(
+            api_key=gemini_api_key, transport=transport, *args, **kwargs
+        )
 
         # Prepare the generation config
         self.generation_config = GenerationConfig(

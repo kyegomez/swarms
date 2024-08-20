@@ -91,13 +91,6 @@ agent = Agent(
     # interactive=True, # Set to False to disable interactive mode
     dynamic_temperature_enabled=True,
     saved_state_path="finance_agent.json",
-    # tools=[#Add your functions here# ],
-    # stopping_token="Stop!",
-    # interactive=True,
-    # docs_folder="docs", # Enter your folder name
-    # pdf_path="docs/finance_agent.pdf",
-    # sop="Calculate the profit for a company.",
-    # sop_list=["Calculate the profit for a company."],
     user_name="swarms_corp",
     # # docs=
     # # docs_folder="docs",
@@ -105,7 +98,7 @@ agent = Agent(
     # context_length=1000,
     # tool_schema = dict
     context_length=200000,
-    return_step_meta=True,
+    return_step_meta=False,
     tools=[fetch_transactions],
 )
 

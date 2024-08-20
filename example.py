@@ -26,7 +26,7 @@ agent = Agent(
     user_name="swarms_corp",
     retry_attempts=1,
     context_length=200000,
-    return_step_meta=True,
+    return_step_meta=False,
 )
 
 
