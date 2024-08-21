@@ -179,11 +179,10 @@ agent.run(
 An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
 
 ```python
-import logging
-from dotenv import load_dotenv
 from swarms import Agent, OpenAIChat
 from swarms_memory import ChromaDB
 import subprocess
+import os
 
 # Making an instance of the ChromaDB class
 memory = ChromaDB(
@@ -192,6 +191,14 @@ memory = ChromaDB(
     output_dir="results",
     docs_folder="docs",
 )
+
+# Model
+model = OpenAIChat(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    model_name="gpt-4o-mini",
+    temperature=0.1,
+)
+
 
 # Tools in swarms are simple python functions and docstrings
 def terminal(
@@ -211,6 +218,7 @@ def terminal(
     ).stdout
     return str(out)
 
+
 def browser(query: str):
     """
     Search the query in the browser with the `browser` tool.
@@ -227,6 +235,7 @@ def browser(query: str):
     webbrowser.open(url)
     return f"Searching for {query} in the browser."
 
+
 def create_file(file_path: str, content: str):
     """
     Create a file using the file editor tool.
@@ -241,6 +250,7 @@ def create_file(file_path: str, content: str):
     with open(file_path, "w") as file:
         file.write(content)
     return f"File {file_path} created successfully."
+
 
 def file_editor(file_path: str, mode: str, content: str):
     """
@@ -267,7 +277,7 @@ agent = Agent(
         " agents. Be Helpful and Kind. Use the tools provided to"
         " assist the user. Return all code in markdown format."
     ),
-    llm=llm,
+    llm=model,
     max_loops="auto",
     autosave=True,
     dashboard=False,
@@ -281,7 +291,9 @@ agent = Agent(
 )
 
 # Run the agent
-out = agent("Create a new file for a plan to take over the world.")
+out = agent(
+    "Create a CSV file with the latest tax rates for C corporations in the following ten states and the District of Columbia: Alabama, California, Florida, Georgia, Illinois, New York, North Carolina, Ohio, Texas, and Washington."
+)
 print(out)
 
 ```
