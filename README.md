@@ -142,13 +142,16 @@ chromadb = ChromaDB(
     # docs_folder="artifacts", # Folder of your documents
 )
 
+# Model
+model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
+
 
 # Initialize the agent
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     agent_description="Agent creates ",
-    llm=Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY")),
+    llm=model,
     max_loops="auto",
     autosave=True,
     dashboard=False,
@@ -159,15 +162,14 @@ agent = Agent(
     user_name="swarms_corp",
     retry_attempts=3,
     context_length=200000,
-    # agent_ops_on=True,
-    long_term_memory=ChromaDB(docs_folder="artifacts"),
+    long_term_memory=chromadb,
 )
-
 
 
 agent.run(
     "What are the components of a startups stock incentive equity plan"
 )
+
 
 ```
 
