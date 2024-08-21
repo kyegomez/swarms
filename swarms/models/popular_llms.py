@@ -1,7 +1,7 @@
 from langchain_openai.chat_models.azure import (
     AzureChatOpenAI,
 )
-from langchain_openai.chat_models import (
+from langchain_openai import (
     ChatOpenAI as OpenAIChat,
 )
 from langchain_community.llms.octoai_endpoint import OctoAIEndpoint

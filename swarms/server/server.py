@@ -6,7 +6,8 @@ import os
 
 # import torch
 from contextlib import asynccontextmanager
-import langchain
+from typing import AsyncIterator
+from swarms.structs.agent import Agent
 import tiktoken
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -15,22 +16,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from huggingface_hub import login
-from langchain.chains.combine_documents.stuff import StuffDocumentsChain
-from langchain.chains.conversational_retrieval.base import (
-    ConversationalRetrievalChain,
-)
-from langchain.chains.llm import LLMChain
-from langchain.memory import ConversationBufferMemory
-from langchain.memory.chat_message_histories.in_memory import (
-    ChatMessageHistory,
-)
-from langchain.prompts.prompt import PromptTemplate
-from langchain_community.chat_models import ChatOpenAI
 
-# from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-# from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-from swarms.prompts.chat_prompt import Message
+from swarms.prompts.chat_prompt import Message, Role
 from swarms.prompts.conversational_RAG import (
     B_INST,
     B_SYS,
@@ -38,11 +25,12 @@ from swarms.prompts.conversational_RAG import (
     DOCUMENT_PROMPT_TEMPLATE,
     E_INST,
     E_SYS,
-    QA_PROMPT_TEMPLATE,
+    QA_PROMPT_TEMPLATE_STR,
 )
-from swarms.server.responses import LangchainStreamingResponse
-from swarms.server.server_models import ChatRequest, Role
+from swarms.server.responses import StreamingResponse
+from swarms.server.server_models import ChatRequest
 from swarms.server.vector_store import VectorStorage
+from swarms.models.popular_llms import OpenAIChatLLM
 
 # Explicitly specify the path to the .env file
 # Two folders above the current file's directory
@@ -106,10 +94,6 @@ tiktoken.model.MODEL_TO_ENCODING.update(
 print("Logging in to huggingface.co...")
 login(token=hf_token)  # login to huggingface.co
 
-langchain.debug = True
-langchain.verbose = True
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initializes the vector store in a background task."""
@@ -144,14 +128,14 @@ if not os.path.exists(uploads):
 vector_store = VectorStorage(directory=uploads, use_gpu=use_gpu)
 
 
-async def create_chain(
+async def create_chat(
     messages: list[Message],
-    prompt: PromptTemplate = QA_PROMPT_TEMPLATE,
+    prompt: str = QA_PROMPT_TEMPLATE_STR,
 ):
-    """Creates the RAG Langchain conversational retrieval chain."""
-    print("Creating chain ...")
+    """Creates the RAG conversational retrieval chain."""
+    print("Creating chat from history and relevant docs if any ...")
 
-    llm = ChatOpenAI(
+    llm = OpenAIChatLLM(
         api_key=openai_api_key,
         base_url=openai_api_base,
         model=model_name,
@@ -159,67 +143,113 @@ async def create_chain(
         streaming=True,
     )
 
-    # if llm is ALlamaCpp:
-    #     llm.max_tokens = max_tokens_to_gen
-    # elif llm is AGPT4All:
-    #     llm.n_predict = max_tokens_to_gen
-    # el
-    # if llm is AChatOllama:
-    #     llm.max_tokens = max_tokens_to_gen
-    # if llm is VLLMAsync:
-    #     llm.max_tokens = max_tokens_to_gen
-
     retriever = await vector_store.get_retriever("swarms")
-
-    chat_memory = ChatMessageHistory()
+    doc_retrieval_string = ""
     for message in messages:
-        if message.role == Role.USER:
-            chat_memory.add_user_message(message.content)
-        elif message.role == Role.ASSISTANT:
-            chat_memory.add_ai_message(message.content)
+        if message.role == Role.HUMAN:
+            doc_retrieval_string += f"{Role.HUMAN}:  {message.content}\r\n"
+        elif message.role == Role.AI:
+            doc_retrieval_string += f"{Role.AI}:  {message.content}\r\n"
 
-    memory = ConversationBufferMemory(
-        chat_memory=chat_memory,
-        memory_key="chat_history",
-        input_key="question",
-        output_key="answer",
-        return_messages=True,
-    )
+    docs = retriever.invoke(doc_retrieval_string)
 
-    question_generator = LLMChain(
+    # find {context} in prompt and replace it with the docs page_content.
+    # Concatenate the content of all documents
+    context = "\n".join(doc.page_content for doc in docs)
+
+    # Replace {context} in the prompt with the concatenated document content
+    prompt = prompt.replace("{context}", context)
+
+    # Replace {chat_history} in the prompt with doc_retrieval_string
+    prompt = prompt.replace("{chat_history}", doc_retrieval_string)
+
+    # Replace {question} in the prompt with the last message.
+    prompt = prompt.replace("{question}", messages[-1].content)
+
+    # Initialize the agent
+    agent = Agent(
+        agent_name="Swarms QA ChatBot",
+        system_prompt=prompt,
         llm=llm,
-        prompt=CONDENSE_PROMPT_TEMPLATE,
-        memory=memory,
+        max_loops=1,
+        autosave=True,
+        # dynamic_temperature_enabled=True,
+        dashboard=False,
         verbose=True,
-        output_key="answer",
+        streaming_on=True,
+        # interactive=True, # Set to False to disable interactive mode
+        dynamic_temperature_enabled=False,
+        saved_state_path="chatbot.json",
+        # tools=[#Add your functions here# ],
+        # stopping_token="Stop!",
+        # interactive=True,
+        # docs_folder="docs", # Enter your folder name
+        # pdf_path="docs/finance_agent.pdf",
+        # sop="Calculate the profit for a company.",
+        # sop_list=["Calculate the profit for a company."],
+        user_name="RAH@EntangleIT.com",
+        docs=[doc.page_content for doc in docs],
+        # # docs_folder="docs",
+        retry_attempts=3,
+        # context_length=1000,
+        # tool_schema = dict
+        context_length=200000,
+        # tool_schema=
+        # tools
+        # agent_ops_on=True,
     )
 
-    stuff_chain = LLMChain(
-        llm=llm,
-        prompt=prompt,
-        verbose=True,
-        output_key="answer",
-    )
+    for message in messages[:-1]:
+        if message.role == Role.HUMAN:
+            agent.add_message_to_memory(message.content)
+        elif message.role == Role.AI:
+            agent.add_message_to_memory(message.content)
 
-    doc_chain = StuffDocumentsChain(
-        llm_chain=stuff_chain,
-        document_variable_name="context",
-        document_prompt=DOCUMENT_PROMPT_TEMPLATE,
-        verbose=True,
-        output_key="answer",
-        memory=memory,
-    )
+    async for response in agent.run_async(messages[-1].content):
+        yield response
 
-    return ConversationalRetrievalChain(
-        combine_docs_chain=doc_chain,
-        memory=memory,
-        retriever=retriever,
-        question_generator=question_generator,
-        return_generated_question=False,
-        return_source_documents=True,
-        output_key="answer",
-        verbose=True,
-    )
+    # memory = ConversationBufferMemory(
+    #     chat_memory=chat_memory,
+    #     memory_key="chat_history",
+    #     input_key="question",
+    #     output_key="answer",
+    #     return_messages=True,
+    # )
+
+    # question_generator = LLMChain(
+    #     llm=llm,
+    #     prompt=CONDENSE_PROMPT_TEMPLATE,
+    #     memory=memory,
+    #     verbose=True,
+    #     output_key="answer",
+    # )
+
+    # stuff_chain = LLMChain(
+    #     llm=llm,
+    #     prompt=prompt,
+    #     verbose=True,
+    #     output_key="answer",
+    # )
+
+    # doc_chain = StuffDocumentsChain(
+    #     llm_chain=stuff_chain,
+    #     document_variable_name="context",
+    #     document_prompt=DOCUMENT_PROMPT_TEMPLATE,
+    #     verbose=True,
+    #     output_key="answer",
+    #     memory=memory,
+    # )
+
+    # return ConversationalRetrievalChain(
+    #     combine_docs_chain=doc_chain,
+    #     memory=memory,
+    #     retriever=retriever,
+    #     question_generator=question_generator,
+    #     return_generated_question=False,
+    #     return_source_documents=True,
+    #     output_key="answer",
+    #     verbose=True,
+    # )
 
 @app.post(
     "/chat",
@@ -228,29 +258,29 @@ async def create_chain(
 )
 async def chat(request: ChatRequest):
     """ Handles chatbot chat POST requests """
-    chain = await create_chain(
-        messages=request.messages[:-1],
-        prompt=PromptTemplate.from_template(
-            f"{B_INST}{B_SYS}{request.prompt.strip()}{E_SYS}{E_INST}"
-        ),
+    response = create_chat(
+        messages=request.messages,
+        prompt=request.prompt.strip()
     )
+    # return response
+    return StreamingResponse(content=response)
 
-    json_config = {
-        "question": request.messages[-1].content,
-        "chat_history": [
-            message.content for message in request.messages[:-1]
-        ],
-        # "callbacks": [
-        #     StreamingStdOutCallbackHandler(),
-        #     TokenStreamingCallbackHandler(output_key="answer"),
-        #     SourceDocumentsStreamingCallbackHandler(),
-        # ],
-    }
-    return LangchainStreamingResponse(
-        chain=chain,
-        config=json_config,
-        run_mode="async"
-    )
+    # json_config = {
+    #     "question": request.messages[-1].content,
+    #     "chat_history": [
+    #         message.content for message in request.messages[:-1]
+    #     ],
+    #     # "callbacks": [
+    #     #     StreamingStdOutCallbackHandler(),
+    #     #     TokenStreamingCallbackHandler(output_key="answer"),
+    #     #     SourceDocumentsStreamingCallbackHandler(),
+    #     # ],
+    # }
+    # return LangchainStreamingResponse(
+    #     chain=chain,
+    #     config=json_config,
+    #     run_mode="async"
+    # )
 
 @app.get("/")
 def root():
@@ -274,12 +304,12 @@ def favicon():
 logging.basicConfig(level=logging.ERROR)
 
 
-# @app.exception_handler(HTTPException)
-# async def http_exception_handler(r: Request, exc: HTTPException):
-#     """Log and return exception details in response."""
-#     logging.error(
-#         "HTTPException: %s executing request: %s", exc.detail, r.base_url
-#     )
-#     return JSONResponse(
-#         status_code=exc.status_code, content={"detail": exc.detail}
-#     )
+@app.exception_handler(HTTPException)
+async def http_exception_handler(r: Request, exc: HTTPException):
+    """Log and return exception details in response."""
+    logging.error(
+        "HTTPException: %s executing request: %s", exc.detail, r.base_url
+    )
+    return JSONResponse(
+        status_code=exc.status_code, content={"detail": exc.detail}
+    )

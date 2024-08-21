@@ -1,7 +1,7 @@
 """ Customized Langchain StreamingResponse for Server-Side Events (SSE) """
 import asyncio
 from functools import partial
-from typing import Any
+from typing import Any, AsyncIterator
 
 from fastapi import status
 from langchain.chains.base import Chain
@@ -21,17 +21,16 @@ class StreamingResponse(EventSourceResponse):
 
     def __init__(
         self,
-        *args: Any,
-        content: Any = iter(()),
-        **kwargs: dict[str, Any],
+        content: AsyncIterator[Any],
     ) -> None:
         """Constructor method.
 
         Args:
             content: The content to stream.
         """
-        super().__init__(content=content, *args, **kwargs)
-
+        super().__init__(content=content)
+        self.content = content
+        
     async def stream_response(self, send: Send) -> None:
         """Streams data chunks to client by iterating over `content`.
 
@@ -50,7 +49,7 @@ class StreamingResponse(EventSourceResponse):
         )
 
         try:
-            async for data in self.body_iterator:
+            async for data in self.content:
                 chunk = ensure_bytes(data, self.sep)
                 print(f"chunk: {chunk.decode()}")
                 await send(
@@ -77,7 +76,6 @@ class StreamingResponse(EventSourceResponse):
 
     def enable_compression(self, force: bool=False):
         raise NotImplementedError
-
 
 class LangchainStreamingResponse(StreamingResponse):
     """StreamingResponse class for LangChain resources."""
@@ -178,3 +176,4 @@ class LangchainStreamingResponse(StreamingResponse):
 
     def enable_compression(self, force: bool=False):
         raise NotImplementedError
+

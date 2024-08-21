@@ -48,7 +48,7 @@ agent = Agent(
 )
 
 async def startup_event():
-    agent.streaming(
+    agent.stream_reponse(
         "What are the components of a startups stock incentive equity plan"
     )
 

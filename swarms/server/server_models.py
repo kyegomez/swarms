@@ -1,4 +1,5 @@
 """ Chatbot Server API Models """
+from swarms.prompts.chat_prompt import Role
 from strenum import StrEnum
 
 from pydantic import BaseModel
@@ -32,13 +33,6 @@ class RAGFiles(BaseModel):
     files: list[RAGFile]
 
 
-class Role(StrEnum):
-    """ The role of a message in a conversation. """
-    SYSTEM = "system"
-    ASSISTANT = "assistant"
-    USER = "user"
-
-
 class Message(BaseModel):
     """ Defines the type of a Message with a role and content. """
     role: Role
@@ -55,8 +49,8 @@ class ChatRequest(BaseModel):
         tokenLimit=2048,
     )
     messages: list[Message] = [
-        Message(role=Role.SYSTEM, content="Hello, how may I help you?"),
-        Message(role=Role.USER, content=""),
+        Message(role=Role.AI, content="Hello, how may I help you?"),
+        Message(role=Role.HUMAN, content="What is Swarms?"),
     ]
     maxTokens: int = 2048
     temperature: float = 0

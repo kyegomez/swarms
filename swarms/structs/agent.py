@@ -7,7 +7,7 @@ import random
 import sys
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Union
 
 import toml
 import yaml
@@ -882,6 +882,237 @@ class Agent:
                 f"Error running agent: {error} optimize your input parameters"
             )
             raise error
+    
+    async def run_async(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        video: Optional[str] = None,
+        is_last: bool = False,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Run the autonomous agent loop
+        """
+        try:
+            # self.agent_initialization()
+
+            # Add task to memory
+            self.short_memory.add(role=self.user_name, content=task)
+
+            # Set the loop count
+            loop_count = 0
+
+            # Clear the short memory
+            response = None
+            all_responses = []
+            steps_pool = []
+
+            # if self.tokenizer is not None:
+            #     self.check_available_tokens()
+
+            while self.max_loops == "auto" or loop_count < self.max_loops:
+                loop_count += 1
+                self.loop_count_print(loop_count, self.max_loops)
+                print("\n")
+
+                # Dynamic temperature
+                if self.dynamic_temperature_enabled is True:
+                    self.dynamic_temperature()
+
+                # Task prompt
+                task_prompt = self.short_memory.return_history_as_string()
+
+                # Parameters
+                attempt = 0
+                success = False
+                while attempt < self.retry_attempts and not success:
+                    try:
+                        if self.long_term_memory is not None:
+                            logger.info("Querying long term memory...")
+                            self.memory_query(task_prompt)
+
+                        else:
+                            response_args = (
+                                (task_prompt, *args)
+                                if img is None
+                                else (task_prompt, img, *args)
+                            )
+                            response = self.llm(*response_args, **kwargs)
+
+                            # Conver to a str if the response is not a str
+                            response = self.llm_output_parser(response)
+
+                            # Print
+                            if self.streaming_on is True:
+                                yield response
+                            else:
+                                print(response)
+
+                            # Add the response to the memory
+                            self.short_memory.add(
+                                role=self.agent_name, content=response
+                            )
+
+                            # Add to all responses
+                            all_responses.append(response)
+
+                            # Log the step
+                            out_step = self.log_step_metadata(response)
+                            steps_pool.append(out_step)
+
+                        # TODO: Implement reliablity check
+                        if self.tools is not None:
+                            # self.parse_function_call_and_execute(response)
+                            self.parse_and_execute_tools(response)
+
+                        if self.code_interpreter is True:
+                            # Parse the code and execute
+                            logger.info("Parsing code and executing...")
+                            code = extract_code_from_markdown(response)
+
+                            output = self.code_executor.execute(code)
+
+                            # Add to memory
+                            self.short_memory.add(
+                                role=self.agent_name, content=output
+                            )
+
+                            # Run the llm on the output
+                            response = self.llm(
+                                self.short_memory.return_history_as_string()
+                            )
+
+                            # Add to all responses
+                            all_responses.append(response)
+                            self.short_memory.add(
+                                role=self.agent_name, content=response
+                            )
+
+                        if self.evaluator:
+                            logger.info("Evaluating response...")
+                            evaluated_response = self.evaluator(response)
+                            print(
+                                "Evaluated Response:"
+                                f" {evaluated_response}"
+                            )
+                            self.short_memory.add(
+                                role=self.agent_name,
+                                content=evaluated_response,
+                            )
+
+                        # all_responses.append(evaluated_response)
+
+                        # Sentiment analysis
+                        if self.sentiment_analyzer:
+                            logger.info("Analyzing sentiment...")
+                            self.sentiment_analysis_handler(response)
+
+                        # print(response)
+
+                        success = True  # Mark as successful to exit the retry loop
+
+                    except Exception as e:
+                        logger.error(
+                            f"Attempt {attempt+1}: Error generating"
+                            f" response: {e}"
+                        )
+                        attempt += 1
+
+                if not success:
+                    logger.error(
+                        "Failed to generate a valid response after"
+                        " retry attempts."
+                    )
+                    break  # Exit the loop if all retry attempts fail
+
+                # # Check stopping conditions
+                # if self.stopping_token in response:
+                #     break
+                if (
+                    self.stopping_condition is not None
+                    and self._check_stopping_condition(response)
+                ):
+                    logger.info("Stopping condition met.")
+                    break
+                elif self.stopping_func is not None and self.stopping_func(
+                    response
+                ):
+                    logger.info("Stopping function met.")
+                    break
+
+                if self.interactive:
+                    logger.info("Interactive mode enabled.")
+                    user_input = colored(input("You: "), "red")
+
+                    # User-defined exit command
+                    if (
+                        user_input.lower()
+                        == self.custom_exit_command.lower()
+                    ):
+                        print("Exiting as per user request.")
+                        break
+
+                    self.short_memory.add(
+                        role=self.user_name, content=user_input
+                    )
+
+                if self.loop_interval:
+                    logger.info(
+                        f"Sleeping for {self.loop_interval} seconds"
+                    )
+                    time.sleep(self.loop_interval)
+
+            if self.autosave is True:
+                logger.info("Autosaving agent state.")
+                self.save_state(self.saved_state_path)
+
+            # Apply the cleaner function to the response
+            if self.output_cleaner is not None:
+                logger.info("Applying output cleaner to response.")
+                response = self.output_cleaner(response)
+                logger.info(f"Response after output cleaner: {response}")
+
+            # print(response)
+            if self.agent_ops_on is True and is_last is True:
+                self.check_end_session_agentops()
+
+            # final_response = " ".join(all_responses)
+            all_responses = [
+                response
+                for response in all_responses
+                if response is not None
+            ]
+            final_response = " ".join(all_responses)
+
+            # logger.info(f"Final Response: {final_response}")
+            if self.return_history:
+                yield self.short_memory.return_history_as_string()
+
+            elif self.return_step_meta:
+                log = ManySteps(
+                    agent_id=self.agent_id,
+                    agent_name=self.agent_name,
+                    task=task,
+                    number_of_steps=self.max_loops,
+                    steps=steps_pool,
+                    full_history=self.short_memory.return_history_as_string(),
+                    total_tokens=self.tokenizer.count_tokens(
+                        self.short_memory.return_history_as_string()
+                    ),
+                )
+
+                yield log.model_dump_json(indent=4)
+
+            else:
+                yield final_response
+
+        except Exception as error:
+            logger.info(
+                f"Error running agent: {error} optimize your input parameters"
+            )
+            raise error
 
     def __call__(self, task: str = None, img: str = None, *args, **kwargs):
         """Call the agent
@@ -1573,7 +1804,7 @@ class Agent:
 
         return response
 
-    def stream_response(self, response: str, delay: float = 0.001) -> None:
+    async def stream_response(self, response: str, delay: float = 0.001) -> AsyncIterator[str]:
         """
         Streams the response token by token.
 
@@ -1597,7 +1828,7 @@ class Agent:
             # Stream and print the response token by token
             for token in response.split():
                 print(token, end=" ", flush=True)
-                time.sleep(delay)
+                yield token
             print()  # Ensure a newline after streaming
         except Exception as e:
             print(f"An error occurred during streaming: {e}")
@@ -1884,9 +2115,7 @@ class Agent:
         full_memory = self.short_memory.return_history_as_string()
         prompt_tokens = self.tokenizer.count_tokens(full_memory)
         completion_tokens = self.tokenizer.count_tokens(response)
-        total_tokens = self.tokenizer.count_tokens(
-            prompt_tokens + completion_tokens
-        )
+        total_tokens = prompt_tokens + completion_tokens
 
         logger.info("Logging step metadata...")
 
