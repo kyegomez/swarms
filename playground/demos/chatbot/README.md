@@ -18,7 +18,18 @@ In theory, any OpenAI compatible LLM endpoint is supported via the OpenAIChatLLM
 
 ### Quickstart
 
-* Start vLLM using Docker container by running the [dockerRunVllm](./server/dockerRunVllm.sh).  Adjust the script to select your desired model and set the HUGGING_FACE_HUB_TOKEN.
+* Start vLLM using GPUs using Docker container by running the [dockerRunVllm](./server/dockerRunVllm.sh).  Adjust the script to select your desired model and set the HUGGING_FACE_HUB_TOKEN.  
+
+** For CPU support (not recommended for vLLM), build and run it in docker using this [Dockerfile](./Dockerfile).
+```bash
+cd <root>/swarms/playground/demos/chatbot
+docker build -t llm-serving:vllm-cpu -f ~/vllm/Dockerfile.cpu .
+docker run --rm --env "HF_TOKEN=<your hugging face token>" \
+  --ipc=host \
+  -p 8000:8000 \
+  llm-serving:vllm-cpu \
+  --model NousResearch/Hermes-3-Llama-3.1-8B
+```
 
 * Start the Chatbot API Server with the following shell command:
 

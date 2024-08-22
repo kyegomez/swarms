@@ -27,9 +27,9 @@ from swarms.prompts.conversational_RAG import (
     E_SYS,
     QA_PROMPT_TEMPLATE_STR,
 )
-from swarms.server.responses import StreamingResponse
-from swarms.server.server_models import ChatRequest
-from swarms.server.vector_store import VectorStorage
+from playground.demos.chatbot.server.responses import StreamingResponse
+from playground.demos.chatbot.server.server_models import ChatRequest
+from playground.demos.chatbot.server.vector_store import VectorStorage
 from swarms.models.popular_llms import OpenAIChatLLM
 
 # Explicitly specify the path to the .env file

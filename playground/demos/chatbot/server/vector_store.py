@@ -15,7 +15,7 @@ from langchain.storage import LocalFileStore
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 
-from swarms.server.async_parent_document_retriever import \
+from playground.demos.chatbot.server.async_parent_document_retriever import \
     AsyncParentDocumentRetriever
 
 STORE_TYPE = "local"  # "redis" or "local"
