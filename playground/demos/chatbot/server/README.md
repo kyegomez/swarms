@@ -8,13 +8,11 @@
 
 * Switching from vLLM to another host like Olama requires commenting/uncommenting some code at this time, but will be dynamic later.  
 
-* Support for all the Swarms models will be added but currently the prompts are designed for Llama 2 and 3.  Some work needs to be done to support other prompt formats and models that are not compatible with Llama, such as ChatGPT.
-
-# Running vLLM
+## Running vLLM
 
 Running vLLM in a docker container saves a lot of trouble.  Use dockerRunVllm.sh to set up and start vLLM.  This command will allow you to control vLLM using docker commands:
 
-```
+```bash
 docker stop vllm
 
 docker start vllm
@@ -24,21 +22,21 @@ docker attach vllm
 
 Run the dockerRunVllm.sh command again to get a fresh copy of the latest vLLM docker image (you will be prompted to rename or remove the existing one if the name is the same.)
 
-#Starting the Chatbot API Server
+## Starting the Chatbot API Server
 
 In order to start the server you have to run uvicorn or FastAPI CLI or use the following launch.json in VSCode/Cursor or whatever to debug it.
 
-## Start server with uvicorn
+### Start server with uvicorn
 
 Run the following shell cmd:
 
-```
-uvicorn swarms.server.server:app --port 8888
+```bash
+uvicorn server:app --port 8888
 ```
 
 To debug using uvicorn use this launch.json configuration:
 
-```
+```json
 "configurations": [
         {
             "name": "Python: FastAPI",
@@ -58,17 +56,19 @@ To debug using uvicorn use this launch.json configuration:
             }
         }
     ]
+
 ```
-## Start server using FastAPI CLI
+
+### Start server using FastAPI CLI
 
 You can run the Chatbot server in production mode using FastAPI CLI:
 
-```
+```bash
 fastapi run swarms/server/server.py --port 8888
 ```
 
 To run in dev mode use this command:
 
-```
+```bash
 fastapi dev swarms/server/server.py --port 8888
 ```
