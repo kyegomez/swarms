@@ -1,0 +1,3 @@
+[submodule "playground/demos/chatbot/chatbot-ui"]
+	path = playground/demos/chatbot/chatbot-ui
+	url = https://github.com/EntangleIT/chatbot-ui
