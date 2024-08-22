@@ -28,13 +28,22 @@ docker run --rm --env "HF_TOKEN=<your hugging face token>" \
   --ipc=host \
   -p 8000:8000 \
   llm-serving:vllm-cpu \
-  --model NousResearch/Hermes-3-Llama-3.1-8B
+  --model <Huggingface Model Path>
 ```
 
 * Start the Chatbot API Server with the following shell command:
 
 ```bash
 uvicorn server:app --port 8888
+```
+
+* Start the Chatbot UI
+
+From the chatbot-ui directory:
+
+```bash
+  yarn install
+  yarn run dev.  
 ```
 
 ## Chatbot API Server (FastAPI)
