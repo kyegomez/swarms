@@ -190,6 +190,7 @@ nav:
       - AutoSwarm: "swarms/structs/auto_swarm.md"
       - GroupChat: "swarms/structs/group_chat.md"
       - AgentRegistry: "swarms/structs/agent_registry.md"
+      - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
       # - Workflows: "swarms/structs/workflows.md"
       # - Workflows:
         #   - BaseWorkflow: "swarms/structs/base_workflow.md"
