@@ -226,3 +226,4 @@ swarms/server/.chroma_db
 .embeddings
 .parent_documents
 docs/metadata.json
+dump.rdb
