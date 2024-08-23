@@ -24,7 +24,7 @@ def check_for_package(package: str) -> bool:
         return False
 
 
-def check_for_update():
+def check_for_update() -> bool:
     """Check for updates
 
     Returns:

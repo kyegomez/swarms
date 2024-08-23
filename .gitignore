@@ -13,6 +13,7 @@ static/generated
 runs
 Financial-Analysis-Agent_state.json
 artifacts_five
+encryption
 errors
 chroma
 agent_workspace

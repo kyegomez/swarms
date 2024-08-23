@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from playground.memory.sqlite import SQLiteDB
+from examples.memory.sqlite import SQLiteDB
 
 
 @pytest.fixture

@@ -32,6 +32,7 @@ from swarms.utils.save_logs import parse_log_file
 from swarms.utils.try_except_wrapper import try_except_wrapper
 from swarms.utils.yaml_output_parser import YamlOutputParser
 from swarms.utils.concurrent_utils import execute_concurrently
+from swarms.utils.calculate_func_metrics import profile_func
 
 
 __all__ = [
@@ -61,4 +62,5 @@ __all__ = [
     "try_except_wrapper",
     "YamlOutputParser",
     "execute_concurrently",
+    "profile_func",
 ]

@@ -2,7 +2,7 @@ import os
 import re
 
 
-def find_image_path(text):
+def find_image_path(text: str):
     """Find the image path from the text
 
     Args:

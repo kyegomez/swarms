@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the directory to search
-dir="playground"
+dir="examples"
 
 # Check if the directory exists
 if [ -d "$dir" ]

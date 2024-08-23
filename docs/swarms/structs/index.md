@@ -7,7 +7,7 @@ Swarms is an enterprise grade and production ready multi-agent collaboration fra
 | Models                       | Pre-trained models that can be utilized for various tasks within the swarm framework.                                                                                  | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
 | Models APIs                  | APIs to interact with and utilize the models effectively, providing interfaces for inference, training, and fine-tuning.                                               | ⭐⭐⭐                    | [Documentation](https://docs.swarms.world/en/latest/swarms/models/)            |
 | Agents with Tools            | Agents equipped with specialized tools to perform specific tasks more efficiently, such as data processing, analysis, or interaction with external systems.            | ⭐⭐⭐⭐                   | [Documentation](https://medium.com/@kyeg/the-swarms-tool-system-functions-pydantic-basemodels-as-tools-and-radical-customization-c2a2e227b8ca)            |
-| Agents with Memory                       | Mechanisms for agents to store and recall past interactions, improving learning and adaptability over time.                                                            | ⭐⭐⭐⭐                   | [Documentation](https://github.com/kyegomez/swarms/blob/master/playground/structs/agent/agent_with_longterm_memory.py)            |
+| Agents with Memory                       | Mechanisms for agents to store and recall past interactions, improving learning and adaptability over time.                                                            | ⭐⭐⭐⭐                   | [Documentation](https://github.com/kyegomez/swarms/blob/master/examples/structs/agent/agent_with_longterm_memory.py)            |
 | Multi-Agent Orchestration    | Coordination of multiple agents to work together seamlessly on complex tasks, leveraging their individual strengths to achieve higher overall performance.              | ⭐⭐⭐⭐⭐                  | [Documentation]()            |
 
 The performance impact is rated on a scale from one to five stars, with multi-agent orchestration being the highest due to its ability to combine the strengths of multiple agents and optimize task execution.
@@ -22,7 +22,7 @@ The performance impact is rated on a scale from one to five stars, with multi-ag
 # Usage Examples 🤖
 
 ### Google Collab Example
-Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/collab/swarms_example.ipynb">
+Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/examples/collab/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 

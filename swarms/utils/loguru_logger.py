@@ -1,7 +1,13 @@
+import os
+from dotenv import load_dotenv
 from loguru import logger
 
+load_dotenv()
+
+WORKSPACE_DIR = os.getenv("WORKSPACE_DIR")
+
 logger.add(
-    "swarms.log",
+    os.path.join(WORKSPACE_DIR, "swarms.log"),
     level="INFO",
     colorize=True,
     format="<green>{time}</green> <level>{message}</level>",
@@ -12,7 +18,7 @@ logger.add(
 
 def loguru_logger(file_path: str = "swarms.log"):
     return logger.add(
-        file_path,
+        os.path.join(WORKSPACE_DIR, file_path),
         level="INFO",
         colorize=True,
         format="<green>{time}</green> <level>{message}</level>",

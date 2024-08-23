@@ -70,4 +70,4 @@ def log_success_message() -> None:
 
 
 # Example usage:
-log_success_message()
+# log_success_message()

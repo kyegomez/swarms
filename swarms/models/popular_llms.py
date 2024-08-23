@@ -4,12 +4,14 @@ from langchain_community.chat_models.azure_openai import (
 from langchain_community.chat_models.openai import (
     ChatOpenAI as OpenAIChat,
 )
-from langchain.llms.anthropic import Anthropic
-from langchain.llms.cohere import Cohere
-from langchain.llms.mosaicml import MosaicML
-from langchain.llms.openai import OpenAI  # , OpenAIChat, AzureOpenAI
+from langchain_community.llms.anthropic import Anthropic
+from langchain_community.llms.cohere import Cohere
+from langchain_community.llms.mosaicml import MosaicML
+from langchain_community.llms.openai import (
+    OpenAI,
+)  # , OpenAIChat, AzureOpenAI
 from langchain_community.llms.octoai_endpoint import OctoAIEndpoint
-from langchain.llms.replicate import Replicate
+from langchain_community.llms.replicate import Replicate
 from langchain_community.llms.fireworks import Fireworks  # noqa: F401
 
 

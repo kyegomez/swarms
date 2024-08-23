@@ -63,7 +63,7 @@ $ pip3 install -U swarms
 
 # Usage Examples 🤖
 
-Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/playground/collab/swarms_example.ipynb">
+Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/examples/collab/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 

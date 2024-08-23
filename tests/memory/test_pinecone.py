@@ -1,7 +1,7 @@
 import os
 from unittest.mock import patch
 
-from playground.memory.pinecone import PineconeDB
+from examples.memory.pinecone import PineconeDB
 
 api_key = os.getenv("PINECONE_API_KEY") or ""
 

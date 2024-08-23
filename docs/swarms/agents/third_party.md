@@ -174,7 +174,7 @@ from typing import List, Optional
 
 from langchain.agents import AgentExecutor, LLMSingleActionAgent, Tool
 from langchain.chains import LLMChain
-from langchain.llms import OpenAI
+from langchain_community.llms import OpenAI
 from langchain.prompts import StringPromptTemplate
 from langchain.tools import DuckDuckGoSearchRun
 
