@@ -127,7 +127,7 @@ class RedisVectorStorage:
         visited.add(url)
 
         # Check if the URL has already been processed
-        if self.redis_client.exists(f"{url}::chunk::1"):
+        if self.index.exists(f"{url}::chunk::1"):
             print(f"URL {url} has already been processed. Skipping.")
             return
 
