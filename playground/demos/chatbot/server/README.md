@@ -8,6 +8,25 @@
 
 * Switching from vLLM to another host like Olama requires commenting/uncommenting some code at this time, but will be dynamic later.  
 
+* Locally hosted or cloud (vector storage)[./vector_storage.py]
+
+## Prerequisites
+
+* Install (Redis Stack)[https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/]
+
+* (Firecrawl)[https://docs.firecrawl.dev/contributing]
+
+## Start Redis Stack and Firecrawl
+
+```bash
+    sudo apt-get install redis-stack-server
+    sudo systemctl enable redis-stack-server
+    sudo systemctl start redis-stack-server
+    cd ~/firecrawl/apps/api
+    pnpm run workers
+    pnpm run start
+```
+
 ## Running vLLM
 
 Running vLLM in a docker container saves a lot of trouble.  Use dockerRunVllm.sh to set up and start vLLM.  This command will allow you to control vLLM using docker commands:
