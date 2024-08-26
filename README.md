@@ -1102,14 +1102,3 @@ Please cite Swarms in your paper or your project if you found it beneficial in a
   note = {Accessed: Date}
 }
 ```
-
-```bibtex
-@misc{wang2024mixtureofagents,
-    title={Mixture-of-Agents Enhances Large Language Model Capabilities}, 
-    author={Junlin Wang and Jue Wang and Ben Athiwaratkun and Ce Zhang and James Zou},
-    year={2024},
-    eprint={2406.04692},
-    archivePrefix={arXiv},
-    primaryClass={cs.CL}
-}
-```
