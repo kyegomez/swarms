@@ -1,13 +1,10 @@
 """ Customized Langchain StreamingResponse for Server-Side Events (SSE) """
-import asyncio
-from functools import partial
-from typing import Any, AsyncIterator
 
+from typing import Any, AsyncIterator
 from fastapi import status
 from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse, ensure_bytes
 from starlette.types import Send
-
 
 
 class StreamingResponse(EventSourceResponse):
@@ -29,7 +26,7 @@ class StreamingResponse(EventSourceResponse):
         """
         super().__init__(content=content)
         self.content = content
-        
+
     async def stream_response(self, send: Send) -> None:
         """Streams data chunks to client by iterating over `content`.
 
@@ -52,7 +49,11 @@ class StreamingResponse(EventSourceResponse):
                 chunk = ensure_bytes(data, self.sep)
                 print(f"chunk: {chunk.decode()}")
                 await send(
-                    {"type": "http.response.body", "body": chunk, "more_body": True}
+                    {
+                        "type": "http.response.body",
+                        "body": chunk,
+                        "more_body": True
+                    }
                 )
         except Exception as e:
             print(f"body iterator error: {e}")
@@ -71,7 +72,13 @@ class StreamingResponse(EventSourceResponse):
                 }
             )
 
-        await send({"type": "http.response.body", "body": b"", "more_body": False})
+        await send(
+            {
+                "type": "http.response.body",
+                "body": b"",
+                "more_body": False
+            }
+        )
 
-    def enable_compression(self, force: bool=False):
+    def enable_compression(self, force: bool = False):
         raise NotImplementedError

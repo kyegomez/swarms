@@ -5,6 +5,7 @@ from strenum import StrEnum
 from pydantic import BaseModel
 from swarms.prompts import QA_PROMPT_TEMPLATE_STR as DefaultSystemPrompt
 
+
 class AIModel(BaseModel):
     """ Defines the model a user selected. """
     id: str
@@ -40,7 +41,7 @@ class Message(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    """ The model for a ChatRequest expected by the Chatbot Chat POST endpoint. """
+    """ The model for a ChatRequest for theChatbot Chat POST endpoint"""
     id: str
     model: AIModel = AIModel(
         id="NousResearch/Meta-Llama-3-8B-Instruct",

@@ -1,35 +1,23 @@
 """ Chatbot with RAG Server """
-import asyncio
 import logging
 import os
-from urllib.parse import urlparse, urljoin
-# import torch
-from contextlib import asynccontextmanager
-from typing import AsyncIterator
+from urllib.parse import urlparse
 from swarms.structs.agent import Agent
-
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from huggingface_hub import login
-
 from swarms.prompts.chat_prompt import Message, Role
-from swarms.prompts.conversational_RAG import (
-    B_INST,
-    B_SYS,
-    CONDENSE_PROMPT_TEMPLATE,
-    DOCUMENT_PROMPT_TEMPLATE,
-    E_INST,
-    E_SYS,
-    QA_PROMPT_TEMPLATE_STR,
-)
+from swarms.prompts.conversational_RAG import QA_PROMPT_TEMPLATE_STR
 from playground.demos.chatbot.server.responses import StreamingResponse
 from playground.demos.chatbot.server.server_models import ChatRequest
 from playground.demos.chatbot.server.vector_storage import RedisVectorStorage
 from swarms.models.popular_llms import OpenAIChatLLM
+
+logging.basicConfig(level=logging.ERROR)
 
 # Explicitly specify the path to the .env file
 # Two folders above the current file's directory
@@ -68,7 +56,8 @@ missing_vars = [var for var in env_vars if not var]
 
 if missing_vars:
     print(
-        f"Error: The following environment variables are not set: {', '.join(missing_vars)}"
+        "Error: The following environment variables are not set: "
+        + ", ".join(missing_vars)
     )
     exit(1)
 
@@ -80,16 +69,9 @@ print(f"USE_METAL={useMetal}")
 print(f"USE_GPU={use_gpu}")
 print(f"OPENAI_API_KEY={openai_api_key}")
 print(f"OPENAI_API_BASE={openai_api_base}")
-
-# # update tiktoken to include the model name (avoids warning message)
-# tiktoken.model.MODEL_TO_ENCODING.update(
-#     {
-#         model_name: "cl100k_base",
-#     }
-# )
-
 print("Logging in to huggingface.co...")
 login(token=hf_token)  # login to huggingface.co
+
 
 app = FastAPI(title="Chatbot")
 router = APIRouter()
@@ -121,6 +103,7 @@ vector_store = RedisVectorStorage(use_gpu=use_gpu)
 vector_store.crawl(URL)
 print("Vector storage initialized.")
 
+
 async def create_chat(
     messages: list[Message],
     model_name: str,
@@ -146,22 +129,10 @@ async def create_chat(
 
     docs = vector_store.embed(messages[-1].content)
 
-    # find {context} in prompt and replace it with the docs page_content.
-    # Concatenate the content of all documents
-    context = "\n".join(doc["content"] for doc in docs)
-
-    sources = [urlparse(URL).scheme + "://" + doc["source_url"] for doc in docs]
-
-    print(f"context: {context}")
-
-    # Replace {context} in the prompt with the concatenated document content
-    prompt = prompt.replace("{context}", context)
-
-    # Replace {chat_history} in the prompt with doc_retrieval_string
-    prompt = prompt.replace("{chat_history}", doc_retrieval_string)
-
-    # Replace {question} in the prompt with the last message.
-    prompt = prompt.replace("{question}", messages[-1].content)
+    sources = [
+        urlparse(URL).scheme + "://" + doc["source_url"]
+        for doc in docs
+    ]
 
     # Initialize the agent
     agent = Agent(
@@ -196,15 +167,16 @@ async def create_chat(
         # agent_ops_on=True,
     )
 
+    # add chat history messages to short term memory
     for message in messages[:-1]:
         if message.role == Role.HUMAN:
             agent.add_message_to_memory(message.content)
         elif message.role == Role.AI:
             agent.add_message_to_memory(message.content)
-    
+
     # add docs to short term memory
-    # for data in [doc["content"] for doc in docs]:
-    #     agent.add_message_to_memory(role=Role.HUMAN, content=data)
+    for data in [doc["content"] for doc in docs]:
+        agent.add_message_to_memory(role=Role.HUMAN, content=data)
 
     async for response in agent.run_async(messages[-1].content):
         res = response
@@ -213,48 +185,6 @@ async def create_chat(
             res += source + "\n"
         yield res
 
-    # memory = ConversationBufferMemory(
-    #     chat_memory=chat_memory,
-    #     memory_key="chat_history",
-    #     input_key="question",
-    #     output_key="answer",
-    #     return_messages=True,
-    # )
-
-    # question_generator = LLMChain(
-    #     llm=llm,
-    #     prompt=CONDENSE_PROMPT_TEMPLATE,
-    #     memory=memory,
-    #     verbose=True,
-    #     output_key="answer",
-    # )
-
-    # stuff_chain = LLMChain(
-    #     llm=llm,
-    #     prompt=prompt,
-    #     verbose=True,
-    #     output_key="answer",
-    # )
-
-    # doc_chain = StuffDocumentsChain(
-    #     llm_chain=stuff_chain,
-    #     document_variable_name="context",
-    #     document_prompt=DOCUMENT_PROMPT_TEMPLATE,
-    #     verbose=True,
-    #     output_key="answer",
-    #     memory=memory,
-    # )
-
-    # return ConversationalRetrievalChain(
-    #     combine_docs_chain=doc_chain,
-    #     memory=memory,
-    #     retriever=retriever,
-    #     question_generator=question_generator,
-    #     return_generated_question=False,
-    #     return_source_documents=True,
-    #     output_key="answer",
-    #     verbose=True,
-    # )
 
 @app.post(
     "/chat",
@@ -268,46 +198,13 @@ async def chat(request: ChatRequest):
         prompt=request.prompt.strip(),
         model_name=request.model.id
     )
-    # return response
     return StreamingResponse(content=response)
 
-    # json_config = {
-    #     "question": request.messages[-1].content,
-    #     "chat_history": [
-    #         message.content for message in request.messages[:-1]
-    #     ],
-    #     # "callbacks": [
-    #     #     StreamingStdOutCallbackHandler(),
-    #     #     TokenStreamingCallbackHandler(output_key="answer"),
-    #     #     SourceDocumentsStreamingCallbackHandler(),
-    #     # ],
-    # }
-    # return LangchainStreamingResponse(
-    #     chain=chain,
-    #     config=json_config,
-    #     run_mode="async"
-    # )
 
 @app.get("/")
 def root():
     """Swarms Chatbot API Root"""
     return {"message": "Swarms Chatbot API"}
-
-
-@app.get("/favicon.ico")
-def favicon():
-    """ Returns a favicon """
-    file_name = "favicon.ico"
-    file_path = os.path.join(app.root_path, "static", file_name)
-    return FileResponse(
-        path=file_path,
-        headers={
-            "Content-Disposition": "attachment; filename=" + file_name
-        },
-    )
-
-
-logging.basicConfig(level=logging.ERROR)
 
 
 @app.exception_handler(HTTPException)
