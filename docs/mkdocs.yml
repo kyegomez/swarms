@@ -177,7 +177,7 @@ nav:
     - Artifacts:
       - Overview: "swarms/artifacts/artifact.md"
     - Multi Agent Collaboration:
-      - Overview: "swarms/structs/multi_agent_orchestration.md"
+      # - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       # - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
       - Conversation: "swarms/structs/conversation.md"
