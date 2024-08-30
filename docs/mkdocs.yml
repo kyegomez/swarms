@@ -174,8 +174,6 @@ nav:
     - Tasks:
       - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
       - Task API Reference: "swarms/structs/task.md"
-    - Artifacts:
-      - Overview: "swarms/artifacts/artifact.md"
     - Multi Agent Collaboration:
       # - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
@@ -201,6 +199,7 @@ nav:
     - Structs:
       - BaseStructure: "swarms/structs/basestructure.md"
       - YamlModel: "swarms/structs/yaml_model.md"
+      - Artifacts: "swarms/artifacts/artifact.md"
     - Contributing: 
       - Tests: "swarms/framework/test.md"
       - Contributing: "contributing.md"
