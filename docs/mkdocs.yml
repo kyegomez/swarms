@@ -139,7 +139,7 @@ nav:
   - Swarms Python Framework:
     - Install: "swarms/install/install.md"
     - Docker Setup: "swarms/install/docker_setup.md"
-    - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
+    # - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
     # - Getting Started with Agents: "swarms/install/getting_started.md"
     # - Getting Started with Multi-Agent Collaboration
     - Models:
@@ -163,7 +163,6 @@ nav:
       - Analyzing The Agent Architecture: "swarms/framework/agents_explained.md"
       - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
       - Complete Agent API: "swarms/structs/agent.md"
-      - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
       - Tools:
         - Overview: "swarms/tools/main.md"
         - What are tools?: "swarms/tools/build_tool.md"
@@ -172,6 +171,9 @@ nav:
         - Tool Storage & tool_registry decorator: "swarms/tools/tool_storage.md"
       - RAG or Long Term Memory:
         - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
+    - Tasks:
+      - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
+      - Task: "swarms/structs/task.md"
     - Artifacts:
       - Overview: "swarms/artifacts/artifact.md"
     - Multi Agent Collaboration:
@@ -198,7 +200,6 @@ nav:
         #   - MultiProcessingWorkflow: "swarms/structs/multi_processing_workflow.md"
     - Structs:
       - BaseStructure: "swarms/structs/basestructure.md"
-      - Task: "swarms/structs/task.md"
       - YamlModel: "swarms/structs/yaml_model.md"
     - Contributing: 
       - Tests: "swarms/framework/test.md"
@@ -231,7 +232,7 @@ nav:
       - PUT: "swarms_platform/telemetry/index.md"
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
-    #   - Add Tools: "swarms_platform/fetch_tools.md"
-  - Guides:
-    - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
-    - Agent Glossary: "swarms/glossary.md"
+  #   #   - Add Tools: "swarms_platform/fetch_tools.md"
+  # - Guides:
+  #   - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
+  #   - Agent Glossary: "swarms/glossary.md"
