@@ -57,6 +57,7 @@ $ pip3 install -U swarms
 ---
 
 # Usage Examples 🤖
+Here are some simple examples but we have more comprehensive documentation at our [docs here](https://docs.swarms.world/en/latest/)
 
 Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/examples/collab/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
