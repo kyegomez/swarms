@@ -160,7 +160,7 @@ nav:
         - GPT4VisionAPI: "swarms/models/gpt4v.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
-      - Analyzing The Agent Architecture: "swarms/framework/agents_explained.md"
+      - Agent Architecture: "swarms/framework/agents_explained.md"
       - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
       - Complete Agent API: "swarms/structs/agent.md"
       - Tools:
@@ -173,7 +173,7 @@ nav:
         - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
     - Tasks:
       - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
-      - Task: "swarms/structs/task.md"
+      - Task API Reference: "swarms/structs/task.md"
     - Artifacts:
       - Overview: "swarms/artifacts/artifact.md"
     - Multi Agent Collaboration:
