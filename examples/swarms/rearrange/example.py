@@ -13,7 +13,7 @@ async def sequential():
 
   agent1 = Agent(
       agent_name="Blog generator",
-      system_prompt="Generate a blog post like stephen king",
+      system_prompt="Generate a blog post like Stephen King",
       llm=llm,
       dashboard=False,
       streaming_on=True
@@ -46,14 +46,14 @@ async def parallel():
 
   writer1 = Agent(
       agent_name="Writer 1",
-      system_prompt="Generate a blog post in the style of J.K. Rowling about Muhammad Ali",
+      system_prompt="Generate a blog post in the style of J.K. Rowling",
       llm=llm,
       dashboard=False,
   )
 
   writer2 = Agent(
       agent_name="Writer 2",
-      system_prompt="Generate a blog post in the style of Stephen King about Muhammad Ali",
+      system_prompt="Generate a blog post in the style of Stephen King",
       llm=llm,
       dashboard=False
   )
@@ -78,6 +78,6 @@ async def parallel():
   #   "Generate a short blog post about Michael Jordan."
   # )
 
-asyncio.run(sequential())
-# asyncio.run(parallel())
+# asyncio.run(sequential())
+asyncio.run(parallel())
 
