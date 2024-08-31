@@ -885,6 +885,10 @@ class Agent:
     async def astream_events(
         self, task: str = None, img: str = None, *args, **kwargs
     ):
+        """
+        Run the Agent with LangChain's astream_events API.
+        Only works with LangChain-based models.
+        """
         try:
             async for evt in self.llm.astream_events(task, version="v1"):
                 yield evt
