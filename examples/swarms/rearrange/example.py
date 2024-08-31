@@ -78,6 +78,6 @@ async def parallel():
   #   "Generate a short blog post about Michael Jordan."
   # )
 
-# asyncio.run(sequential())
-asyncio.run(parallel())
+asyncio.run(sequential())
+# asyncio.run(parallel())
 
