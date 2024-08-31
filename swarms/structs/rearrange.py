@@ -3,8 +3,8 @@ from typing import Callable, Dict, List, Optional
 from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.utils.loguru_logger import logger
 from swarms.structs.omni_agent_types import AgentType
+from swarms.utils.loguru_logger import logger
 
 
 class AgentRearrange(BaseSwarm):
@@ -259,6 +259,151 @@ class AgentRearrange(BaseSwarm):
                             current_task = agent.run(
                                 current_task, img, is_last, *args, **kwargs
                             )
+                loop_count += 1
+
+            return current_task
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+            return e
+
+    async def astream(
+        self,
+        task: str = None,
+        img: str = None,
+        custom_tasks: Dict[str, str] = None,
+        *args,
+        **kwargs,
+    ):
+        """
+        Runs the swarm with LangChain's astream_events v1 API enabled.
+        NOTICE: Be sure to only call this method if you are using LangChain-based models in your swarm.
+        This is useful for enhancing user experience by providing real-time updates of how each agent
+        in the swarm is processing the current task.
+
+        Args:
+            task: The initial prompt (aka task) passed to the first agent(s) in the swarm.
+
+        Returns:
+            str: The final output generated.
+        """
+        try:
+            if not self.validate_flow():
+                return "Invalid flow configuration."
+
+            tasks = self.flow.split("->")
+            current_task = task
+
+            # If custom_tasks have the agents name and tasks then combine them
+            if custom_tasks is not None:
+                c_agent_name, c_task = next(iter(custom_tasks.items()))
+
+                # Find the position of the custom agent in the tasks list
+                position = tasks.index(c_agent_name)
+
+                # If there is a prebois agent merge its task with the custom tasks
+                if position > 0:
+                    tasks[position - 1] += "->" + c_task
+                else:
+                    # If there is no prevous agent just insert the custom tasks
+                    tasks.insert(position, c_task)
+
+            logger.info("TASK:", task)
+
+            # Set the loop counter
+            loop_count = 0
+            while loop_count < self.max_loops:
+                for task in tasks:
+                    agent_names = [
+                        name.strip() for name in task.split(",")
+                    ]
+                    if len(agent_names) > 1:
+                        # Parallel processing
+                        logger.info(
+                            f"Running agents in parallel: {agent_names}"
+                        )
+                        results = []
+                        for agent_name in agent_names:
+                            if agent_name == "H":
+                                # Human in the loop intervention
+                                if (
+                                    self.human_in_the_loop
+                                    and self.custom_human_in_the_loop
+                                ):
+                                    current_task = (
+                                        self.custom_human_in_the_loop(
+                                            current_task
+                                        )
+                                    )
+                                else:
+                                    current_task = input(
+                                        "Enter your response:"
+                                    )
+                            else:
+                                agent = self.agents[agent_name]
+                                result = None
+                                # As the current `swarms` package is using LangChain v0.1 we need to use the v0.1 version of the `astream_events` API
+                                # Below is the link to the `astream_events` spec as outlined in the LangChain v0.1 docs
+                                # https://python.langchain.com/v0.1/docs/expression_language/streaming/#event-reference
+                                # Below is the link to the `astream_events` spec as outlined in the LangChain v0.2 docs
+                                # https://python.langchain.com/v0.2/docs/versions/v0_2/migrating_astream_events/
+                                async for evt in agent.astream_events(
+                                    current_task, version="v1"
+                                ):
+                                    # print(evt) # <- useful when building/debugging
+                                    if evt["event"] == "on_llm_end":
+                                        result = evt["data"]["output"]
+                                        print(agent.name, result)
+                                results.append(result)
+
+                        current_task = ""
+                        for index, res in enumerate(results):
+                            current_task += (
+                                "# OUTPUT of "
+                                + agent_names[index]
+                                + ""
+                                + res
+                                + "\n\n"
+                            )
+                    else:
+                        # Sequential processing
+                        logger.info(
+                            f"Running agents sequentially: {agent_names}"
+                        )
+
+                        agent_name = agent_names[0]
+                        if agent_name == "H":
+                            # Human-in-the-loop intervention
+                            if (
+                                self.human_in_the_loop
+                                and self.custom_human_in_the_loop
+                            ):
+                                current_task = (
+                                    self.custom_human_in_the_loop(
+                                        current_task
+                                    )
+                                )
+                            else:
+                                current_task = input(
+                                    "Enter the next task: "
+                                )
+                        else:
+                            agent = self.agents[agent_name]
+                            result = None
+                            # As the current `swarms` package is using LangChain v0.1 we need to use the v0.1 version of the `astream_events` API
+                            # Below is the link to the `astream_events` spec as outlined in the LangChain v0.1 docs
+                            # https://python.langchain.com/v0.1/docs/expression_language/streaming/#event-reference
+                            # Below is the link to the `astream_events` spec as outlined in the LangChain v0.2 docs
+                            # https://python.langchain.com/v0.2/docs/versions/v0_2/migrating_astream_events/
+                            async for evt in agent.astream_events(
+                                f"SYSTEM: {agent.system_prompt}\nINPUT:{current_task}",
+                                version="v1",
+                            ):
+                                # print(evt) # <- useful when building/debugging
+                                if evt["event"] == "on_llm_end":
+                                    result = evt["data"]["output"]
+                                    print(agent.name, "result", result)
+                            current_task = result
+
                 loop_count += 1
 
             return current_task

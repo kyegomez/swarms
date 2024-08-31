@@ -713,7 +713,7 @@ class Agent:
 
                             # Print
                             if self.streaming_on is True:
-                                response = self.stream_response(response)
+                                self.stream_response(response)
                             else:
                                 print(response)
 
@@ -881,6 +881,19 @@ class Agent:
                 f"Error running agent: {error} optimize your input parameters"
             )
             raise error
+
+    async def astream_events(
+        self, task: str = None, img: str = None, *args, **kwargs
+    ):
+        """
+        Run the Agent with LangChain's astream_events API.
+        Only works with LangChain-based models.
+        """
+        try:
+            async for evt in self.llm.astream_events(task, version="v1"):
+                yield evt
+        except Exception as e:
+            print(f"Error streaming events: {e}")
 
     def __call__(self, task: str = None, img: str = None, *args, **kwargs):
         """Call the agent
