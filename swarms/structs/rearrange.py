@@ -347,7 +347,8 @@ class AgentRearrange(BaseSwarm):
                                 # Below is the link to the `astream_events` spec as outlined in the LangChain v0.2 docs
                                 # https://python.langchain.com/v0.2/docs/versions/v0_2/migrating_astream_events/
                                 async for evt in agent.astream_events(
-                                    f"SYSTEM: {agent.system_prompt}\nINPUT:{current_task}", version="v1"
+                                    f"SYSTEM: {agent.system_prompt}\nINPUT:{current_task}",
+                                    version="v1",
                                 ):
                                     # print(evt) # <- useful when building/debugging
                                     if evt["event"] == "on_llm_end":
