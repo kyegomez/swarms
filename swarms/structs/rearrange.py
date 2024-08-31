@@ -3,8 +3,8 @@ from typing import Callable, Dict, List, Optional
 from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.utils.loguru_logger import logger
 from swarms.structs.omni_agent_types import AgentType
+from swarms.utils.loguru_logger import logger
 
 
 class AgentRearrange(BaseSwarm):
@@ -307,7 +307,7 @@ class AgentRearrange(BaseSwarm):
                     # If there is no prevous agent just insert the custom tasks
                     tasks.insert(position, c_task)
 
-            logger.info('TASK:', task)
+            logger.info("TASK:", task)
 
             # Set the loop counter
             loop_count = 0
@@ -341,21 +341,29 @@ class AgentRearrange(BaseSwarm):
                             else:
                                 agent = self.agents[agent_name]
                                 result = None
-                                # As the current `swarms` package is using LangChain v0.1 we need to use the v0.1 version of the `astream_events` API 
+                                # As the current `swarms` package is using LangChain v0.1 we need to use the v0.1 version of the `astream_events` API
                                 # Below is the link to the `astream_events` spec as outlined in the LangChain v0.1 docs
                                 # https://python.langchain.com/v0.1/docs/expression_language/streaming/#event-reference
                                 # Below is the link to the `astream_events` spec as outlined in the LangChain v0.2 docs
                                 # https://python.langchain.com/v0.2/docs/versions/v0_2/migrating_astream_events/
-                                async for evt in agent.astream_events(current_task, version="v1"):
+                                async for evt in agent.astream_events(
+                                    current_task, version="v1"
+                                ):
                                     # print(evt) # <- useful when building/debugging
-                                    if evt['event'] == "on_llm_end":
-                                        result = evt['data']['output']
+                                    if evt["event"] == "on_llm_end":
+                                        result = evt["data"]["output"]
                                         print(agent.name, result)
                                 results.append(result)
 
                         current_task = ""
-                        for index,res in enumerate(results):
-                            current_task += "# OUTPUT of " + agent_names[index] + "" + res + "\n\n"
+                        for index, res in enumerate(results):
+                            current_task += (
+                                "# OUTPUT of "
+                                + agent_names[index]
+                                + ""
+                                + res
+                                + "\n\n"
+                            )
                     else:
                         # Sequential processing
                         logger.info(
@@ -381,18 +389,21 @@ class AgentRearrange(BaseSwarm):
                         else:
                             agent = self.agents[agent_name]
                             result = None
-                            # As the current `swarms` package is using LangChain v0.1 we need to use the v0.1 version of the `astream_events` API 
+                            # As the current `swarms` package is using LangChain v0.1 we need to use the v0.1 version of the `astream_events` API
                             # Below is the link to the `astream_events` spec as outlined in the LangChain v0.1 docs
                             # https://python.langchain.com/v0.1/docs/expression_language/streaming/#event-reference
                             # Below is the link to the `astream_events` spec as outlined in the LangChain v0.2 docs
                             # https://python.langchain.com/v0.2/docs/versions/v0_2/migrating_astream_events/
-                            async for evt in agent.astream_events(f"SYSTEM: {agent.system_prompt}\nINPUT:{current_task}", version="v1"):
+                            async for evt in agent.astream_events(
+                                f"SYSTEM: {agent.system_prompt}\nINPUT:{current_task}",
+                                version="v1",
+                            ):
                                 # print(evt) # <- useful when building/debugging
-                                if evt['event'] == "on_llm_end":
-                                    result = evt['data']['output']
-                                    print(agent.name, 'result', result)
+                                if evt["event"] == "on_llm_end":
+                                    result = evt["data"]["output"]
+                                    print(agent.name, "result", result)
                             current_task = result
-                            
+
                 loop_count += 1
 
             return current_task
