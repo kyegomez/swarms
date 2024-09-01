@@ -1,21 +1,19 @@
-
 # ==================================
 # Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Set the working directory in the container
 WORKDIR /usr/src/swarms
-
 
 # Install Python dependencies
 # COPY requirements.txt and pyproject.toml if you're using poetry for dependency management
 COPY requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Install the 'swarms' package, assuming it's available on PyPI
 RUN pip install -U swarms
