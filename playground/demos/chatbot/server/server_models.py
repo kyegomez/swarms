@@ -44,8 +44,8 @@ class ChatRequest(BaseModel):
     """ The model for a ChatRequest for theChatbot Chat POST endpoint"""
     id: str
     model: AIModel = AIModel(
-        id="NousResearch/Meta-Llama-3-8B-Instruct",
-        name="NousResearch/Meta-Llama-3-8B-Instruct",
+        id="NousResearch/Meta-Llama-3.1-8B-Instruct",
+        name="NousResearch/Meta-Llama-3.1-8B-Instruct",
         maxLength=2048,
         tokenLimit=2048,
     )

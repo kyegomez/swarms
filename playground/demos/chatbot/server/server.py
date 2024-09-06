@@ -2,20 +2,21 @@
 import logging
 import os
 from urllib.parse import urlparse
-from swarms.structs.agent import Agent
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
-from huggingface_hub import login
-from swarms.prompts.chat_prompt import Message, Role
-from swarms.prompts.conversational_RAG import QA_PROMPT_TEMPLATE_STR
 from playground.demos.chatbot.server.responses import StreamingResponse
 from playground.demos.chatbot.server.server_models import ChatRequest
 from playground.demos.chatbot.server.vector_storage import RedisVectorStorage
 from swarms.models.popular_llms import OpenAIChatLLM
+# from huggingface_hub import login
+from swarms.prompts.chat_prompt import Message, Role
+from swarms.prompts.conversational_RAG import QA_PROMPT_TEMPLATE_STR
+from swarms.structs.agent import Agent
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -26,9 +27,9 @@ dotenv_path = os.path.join(
 )
 load_dotenv(dotenv_path)
 
-hf_token = os.environ.get(
-    "HUGGINFACEHUB_API_KEY"
-)  # Get the Huggingface API Token
+# hf_token = os.environ.get(
+#     "HUGGINFACEHUB_API_KEY"
+# )  # Get the Huggingface API Token
 
 uploads = os.environ.get(
     "UPLOADS"
@@ -47,7 +48,7 @@ openai_api_base = (
 )
 
 env_vars = [
-    hf_token,
+    # hf_token,
     uploads,
     openai_api_key,
     openai_api_base,
@@ -70,7 +71,7 @@ print(f"USE_GPU={use_gpu}")
 print(f"OPENAI_API_KEY={openai_api_key}")
 print(f"OPENAI_API_BASE={openai_api_base}")
 print("Logging in to huggingface.co...")
-login(token=hf_token)  # login to huggingface.co
+# login(token=hf_token)  # login to huggingface.co
 
 
 app = FastAPI(title="Chatbot")
@@ -176,7 +177,7 @@ async def create_chat(
 
     # add docs to short term memory
     for data in [doc["content"] for doc in docs]:
-        agent.add_message_to_memory(role=Role.HUMAN, content=data)
+        agent.add_message_to_memory(data)
 
     async for response in agent.run_async(messages[-1].content):
         res = response
