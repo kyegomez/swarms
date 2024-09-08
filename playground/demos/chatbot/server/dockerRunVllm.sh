@@ -5,4 +5,4 @@ docker run --runtime nvidia --gpus all \
     --network=host \
     --name vllm \
     vllm/vllm-openai:latest \
-    --model NousResearch/Meta-Llama-3.1-8B-Instruct
+    --model NousResearch/Meta-Llama-3-8B-Instruct

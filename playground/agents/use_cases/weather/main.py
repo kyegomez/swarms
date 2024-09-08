@@ -12,7 +12,7 @@ weather_api_key= "af6ef989b5c50a91ca068cc00df125b7",  # Replace with your weathe
 llm = OpenAIChatLLM(
     base_url=api_base, 
     api_key=api_key, 
-    model="NousResearch/Meta-Llama-3.1-8B-Instruct", 
+    model="NousResearch/Meta-Llama-3-8B-Instruct", 
     temperature=0, 
     streaming=False
 )

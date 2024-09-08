@@ -11,7 +11,7 @@ api_base = os.getenv("OPENAI_API_BASE") or "http://localhost:8000/v1" # for vllm
 
 # Create an instance of the OpenAIChat class
 model = OpenAIChat(
-    base_url=api_base, api_key=api_key, model="NousResearch/Meta-Llama-3.1-8B-Instruct", temperature=0.5, streaming=True, verbose=True
+    base_url=api_base, api_key=api_key, model="NousResearch/Meta-Llama-3-8B-Instruct", temperature=0.5, streaming=True, verbose=True
 )
 
 # Initialize the agent
