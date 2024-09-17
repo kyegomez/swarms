@@ -174,17 +174,10 @@ nav:
     - Multi Agent Collaboration:
       # - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
-<<<<<<< HEAD
       # - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
       - Conversation: "swarms/structs/conversation.md"
       # - SwarmNetwork: "swarms/structs/swarm_network.md"
       - MajorityVoting: "swarms/structs/majorityvoting.md"
-=======
-      - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
-      - How to choose the right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
-      # - SwarmNetwork: "swarms/structs/swarm_network.md"
-      # - MajorityVoting: "swarms/structs/majorityvoting.md"
->>>>>>> ce359f5e ([5.6.8])
       - AgentRearrange: "swarms/structs/agent_rearrange.md"
       - RoundRobin: "swarms/structs/round_robin_swarm.md"
       - Mixture of Agents: "swarms/structs/moa.md"
@@ -198,20 +191,14 @@ nav:
       - Workflows:
         #   - BaseWorkflow: "swarms/structs/base_workflow.md"
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
-        #   - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
+          - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         #   - MultiProcessingWorkflow: "swarms/structs/multi_processing_workflow.md"\
         # - AsyncWorkflow: "swarms/structs/async_workflow.md"
     - Structs:
-<<<<<<< HEAD
-      - BaseStructure: "swarms/structs/basestructure.md"
-      - YamlModel: "swarms/structs/yaml_model.md"
-      - Artifacts: "swarms/artifacts/artifact.md"
-=======
       # - BaseStructure: "swarms/structs/basestructure.md"
       - Conversation: "swarms/structs/conversation.md"
       - Task: "swarms/structs/task.md"
       # - YamlModel: "swarms/structs/yaml_model.md"
->>>>>>> ce359f5e ([5.6.8])
     - Contributing: 
       - Tests: "swarms/framework/test.md"
       - Contributing: "contributing.md"
@@ -243,12 +230,6 @@ nav:
       - PUT: "swarms_platform/telemetry/index.md"
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
-<<<<<<< HEAD
-  #   #   - Add Tools: "swarms_platform/fetch_tools.md"
-  # - Guides:
-  #   - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
-  #   - Agent Glossary: "swarms/glossary.md"
-=======
     #   - Add Tools: "swarms_platform/fetch_tools.md"
   - Guides:
     - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
@@ -258,4 +239,3 @@ nav:
     
 
   
->>>>>>> ce359f5e ([5.6.8])
