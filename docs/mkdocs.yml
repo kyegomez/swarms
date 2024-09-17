@@ -139,22 +139,6 @@ nav:
     - Docker Setup: "swarms/install/docker_setup.md"
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
     - Contributing: "swarms/contributing.md"
-    - Models:
-      - Overview: "swarms/models/index.md"
-      - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-      - Models Available: "swarms/models/index.md"
-      - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
-      - Language Models:
-        - BaseLLM: "swarms/models/base_llm.md"
-        - HuggingFaceLLM: "swarms/models/huggingface.md"
-        - Anthropic: "swarms/models/anthropic.md"
-        - OpenAIChat: "swarms/models/openai.md"
-        - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
-        # - TogetherAI: "swarms/models/togetherai.md"
-      - MultiModal Models:
-        - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
-        - Multi Modal Models Available: "swarms/models/multimodal_models.md"
-        - GPT4VisionAPI: "swarms/models/gpt4v.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
       - Agent Architecture: "swarms/framework/agents_explained.md"
@@ -168,26 +152,22 @@ nav:
         - Tool Storage & tool_registry decorator: "swarms/tools/tool_storage.md"
       - RAG or Long Term Memory:
         - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
-    - Tasks:
-      - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
-      - Task API Reference: "swarms/structs/task.md"
-    - Multi Agent Collaboration:
+    # - Tasks:
+    #   - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
+    #   - Task API Reference: "swarms/structs/task.md"
+    - Swarm Architectures:
       # - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       # - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
       - Conversation: "swarms/structs/conversation.md"
-      # - SwarmNetwork: "swarms/structs/swarm_network.md"
       - MajorityVoting: "swarms/structs/majorityvoting.md"
       - AgentRearrange: "swarms/structs/agent_rearrange.md"
       - RoundRobin: "swarms/structs/round_robin_swarm.md"
       - Mixture of Agents: "swarms/structs/moa.md"
       - GraphWorkflow: "swarms/structs/graph_workflow.md"
-      # - AutoSwarmRouter: "swarms/structs/auto_swarm_router.md"
-      # - AutoSwarm: "swarms/structs/auto_swarm.md"
       - GroupChat: "swarms/structs/group_chat.md"
       - AgentRegistry: "swarms/structs/agent_registry.md"
       - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
-      # - Workflows: "swarms/structs/workflows.md"
       - Workflows:
         #   - BaseWorkflow: "swarms/structs/base_workflow.md"
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
@@ -203,6 +183,22 @@ nav:
       - Tests: "swarms/framework/test.md"
       - Contributing: "swarms/contributing.md"
       - Code Cleanliness: "swarms/framework/code_cleanliness.md"
+
+  - Swarm Models:
+    - Overview: "swarms/models/index.md"
+    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+    - Models Available: "swarms/models/index.md"
+    - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
+    - Language Models:
+      - BaseLLM: "swarms/models/base_llm.md"
+      - HuggingFaceLLM: "swarms/models/huggingface.md"
+      - Anthropic: "swarms/models/anthropic.md"
+      - OpenAIChat: "swarms/models/openai.md"
+      - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
+    - MultiModal Models:
+      - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
+      - Multi Modal Models Available: "swarms/models/multimodal_models.md"
+      - GPT4VisionAPI: "swarms/models/gpt4v.md"
   - Swarms Cloud API:
     - Overview: "swarms_cloud/main.md"
     - Available Models: "swarms_cloud/available_models.md"
