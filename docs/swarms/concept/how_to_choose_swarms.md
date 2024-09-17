@@ -129,9 +129,11 @@ When dealing with massive-scale data or agent outputs that need to be stored and
 ## Final Thoughts
 
 The choice of swarm depends on:
+
 1. **Nature of the task**: Whether it's sequential or parallel.
+
 2. **Problem complexity**: Simple problems might benefit from RoundRobin, while complex ones may need GraphWorkflow or Mixture of Agents.
+
 3. **Scale of execution**: For large-scale tasks, Swarms like SpreadsheetSwarm or MajorityVoting provide scalability with structured outputs.
 
 When integrating agents in a business workflow, it's crucial to balance task complexity, agent capabilities, and scalability to ensure the optimal swarm architecture.
-
