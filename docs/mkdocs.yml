@@ -148,7 +148,6 @@ nav:
         - Overview: "swarms/tools/main.md"
         - What are tools?: "swarms/tools/build_tool.md"
         - ToolAgent: "swarms/agents/tool_agent.md"
-        # - Tool Decorator: "swarms/tools/decorator.md"
         - Tool Storage & tool_registry decorator: "swarms/tools/tool_storage.md"
       - RAG or Long Term Memory:
         - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
@@ -156,10 +155,8 @@ nav:
     #   - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
     #   - Task API Reference: "swarms/structs/task.md"
     - Swarm Architectures:
-      # - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarmms.md"
-      # - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
       - Conversation: "swarms/structs/conversation.md"
       - MajorityVoting: "swarms/structs/majorityvoting.md"
       - AgentRearrange: "swarms/structs/agent_rearrange.md"
@@ -170,11 +167,8 @@ nav:
       - AgentRegistry: "swarms/structs/agent_registry.md"
       - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
       - Workflows:
-        #   - BaseWorkflow: "swarms/structs/base_workflow.md"
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
           - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
-        #   - MultiProcessingWorkflow: "swarms/structs/multi_processing_workflow.md"\
-        # - AsyncWorkflow: "swarms/structs/async_workflow.md"
     - Structs:
       # - BaseStructure: "swarms/structs/basestructure.md"
       - Conversation: "swarms/structs/conversation.md"
@@ -184,7 +178,6 @@ nav:
       - Tests: "swarms/framework/test.md"
       - Contributing: "swarms/contributing.md"
       - Code Cleanliness: "swarms/framework/code_cleanliness.md"
-
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
