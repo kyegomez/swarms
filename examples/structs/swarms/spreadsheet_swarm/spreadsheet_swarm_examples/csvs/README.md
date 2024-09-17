@@ -82,7 +82,8 @@ Features:
 
 ```python
 import os
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
@@ -179,7 +180,8 @@ agent.run(
 An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
 
 ```python
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms_memory import ChromaDB
 import subprocess
 import os
@@ -851,7 +853,8 @@ An all-new swarm architecuture, with SpreadSheetSwarm you can manage and oversee
 
 ```python
 import os
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
 # Define custom system prompts for each social media platform

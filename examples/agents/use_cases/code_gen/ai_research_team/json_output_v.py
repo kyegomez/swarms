@@ -1,4 +1,4 @@
-from swarms.models.openai_function_caller import OpenAIFunctionCaller
+from swarm_models.openai_function_caller import OpenAIFunctionCaller
 from pydantic import BaseModel, Field
 from swarms import create_file_in_folder
 from swarms.utils.loguru_logger import logger

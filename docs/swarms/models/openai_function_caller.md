@@ -89,7 +89,7 @@ Here are three examples demonstrating different ways to use the `OpenAIFunctionC
 
 ```python
 import openai
-from swarms.models.openai_function_caller import OpenAIFunctionCaller
+from swarm_models.openai_function_caller import OpenAIFunctionCaller
 from swarms.artifacts.main_artifact import Artifact
 
 
@@ -120,7 +120,7 @@ print(out)
 ### Example 2: Prompt Generator
 
 ```python
-from swarms.models.openai_function_caller import OpenAIFunctionCaller
+from swarm_models.openai_function_caller import OpenAIFunctionCaller
 from pydantic import BaseModel, Field
 from typing import Sequence
 
@@ -181,7 +181,7 @@ print(out)
 ### Example 3: Sentiment Analysis 
 
 ```python
-from swarms.models.openai_function_caller import OpenAIFunctionCaller
+from swarm_models.openai_function_caller import OpenAIFunctionCaller
 from pydantic import BaseModel, Field
 
 

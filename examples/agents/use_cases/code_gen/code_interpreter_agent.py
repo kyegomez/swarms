@@ -1,4 +1,4 @@
-from swarms.models.openai_function_caller import OpenAIFunctionCaller
+from swarm_models.openai_function_caller import OpenAIFunctionCaller
 from pydantic import BaseModel, Field
 from swarms.tools.prebuilt.code_executor import CodeExecutor
 from swarms.structs.concat import concat_strings

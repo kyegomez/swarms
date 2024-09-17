@@ -4,7 +4,8 @@ start_time = time.time()
 
 import os
 import uuid
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )

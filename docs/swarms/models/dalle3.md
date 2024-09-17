@@ -36,7 +36,7 @@ pip install swarms
 Let's get started with a quick example of using the Dalle3 library to generate an image from a text prompt:
 
 ```python
-from swarms.models.dalle3 import Dalle3
+from swarm_models.dalle3 import Dalle3
 
 # Create an instance of the Dalle3 class
 dalle = Dalle3()
@@ -97,7 +97,7 @@ Returns:
 ### Example 1: Basic Image Generation
 
 ```python
-from swarms.models.dalle3 import Dalle3
+from swarm_models.dalle3 import Dalle3
 
 # Create an instance of the Dalle3 class
 dalle3 = Dalle3()
@@ -115,7 +115,7 @@ print(image_url)
 ### Example 2: Creating Image Variations
 
 ```python
-from swarms.models.dalle3 import Dalle3
+from swarm_models.dalle3 import Dalle3
 
 # Create an instance of the Dalle3 class
 dalle3 = Dalle3()
@@ -137,7 +137,7 @@ Certainly! Here are additional examples that cover various edge cases and method
 You can customize the size of the generated image by specifying the `size` parameter when creating an instance of the `Dalle3` class. Here's how to generate a smaller image:
 
 ```python
-from swarms.models.dalle3 import Dalle3
+from swarm_models.dalle3 import Dalle3
 
 # Create an instance of the Dalle3 class with a custom image size
 dalle3 = Dalle3(size="512x512")
@@ -157,7 +157,7 @@ print(image_url)
 You can adjust the maximum number of API request retries using the `max_retries` parameter. Here's how to increase the retry limit:
 
 ```python
-from swarms.models.dalle3 import Dalle3
+from swarm_models.dalle3 import Dalle3
 
 # Create an instance of the Dalle3 class with a higher retry limit
 dalle3 = Dalle3(max_retries=5)
@@ -177,7 +177,7 @@ print(image_url)
 To create variations of an existing image, you can use the `create_variations` method. Here's an example:
 
 ```python
-from swarms.models.dalle3 import Dalle3
+from swarm_models.dalle3 import Dalle3
 
 # Create an instance of the Dalle3 class
 dalle3 = Dalle3()
@@ -197,7 +197,7 @@ print(variations_url)
 The Dalle3 library provides error handling for API-related issues. Here's how to handle and display API errors:
 
 ```python
-from swarms.models.dalle3 import Dalle3
+from swarm_models.dalle3 import Dalle3
 
 # Create an instance of the Dalle3 class
 dalle3 = Dalle3()
@@ -218,7 +218,7 @@ except Exception as e:
 You can customize the quality of the generated image by specifying the `quality` parameter. Here's how to generate a high-quality image:
 
 ```python
-from swarms.models.dalle3 import Dalle3
+from swarm_models.dalle3 import Dalle3
 
 # Create an instance of the Dalle3 class with high quality
 dalle3 = Dalle3(quality="high")

@@ -1,7 +1,7 @@
 import pytest
 
-from swarms.models import OpenAIChat
-from swarms.models.anthropic import Anthropic
+from swarm_models import OpenAIChat
+from swarm_models.anthropic import Anthropic
 from swarms.structs.agent import Agent
 from swarms.structs.groupchat import GroupChat, GroupChatManager
 

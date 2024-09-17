@@ -151,7 +151,7 @@ Here are the key attributes and their descriptions for the `BaseOpenAI` and `Ope
 
 ```python
 # Import the OpenAI class
-from swarms.models import OpenAI
+from swarm_models import OpenAI
 
 # Set your OpenAI API key
 api_key = "YOUR_API_KEY"

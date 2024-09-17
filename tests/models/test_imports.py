@@ -1,4 +1,4 @@
-from swarms.models import __all__
+from swarm_models import __all__
 
 EXPECTED_ALL = [
     "Anthropic",

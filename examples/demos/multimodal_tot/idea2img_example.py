@@ -4,9 +4,9 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
-from swarms.models import OpenAIChat
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
-from swarms.models.stable_diffusion import StableDiffusion
+from swarm_models import OpenAIChat
+from swarm_models.gpt4_vision_api import GPT4VisionAPI
+from swarm_models.stable_diffusion import StableDiffusion
 from swarms.structs import Agent
 
 # Load environment variables

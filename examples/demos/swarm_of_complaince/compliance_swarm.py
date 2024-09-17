@@ -10,7 +10,7 @@ Todo [Improvements]
 """
 
 from swarms import Agent
-from swarms.models.llama3_hosted import llama3Hosted
+from swarm_models.llama3_hosted import llama3Hosted
 from swarms_memory import ChromaDB
 
 

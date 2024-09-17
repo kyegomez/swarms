@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import GPT4VisionAPI
+from swarm_models import GPT4VisionAPI
 from swarms.prompts.personal_stylist import (
     ACCESSORIES_STYLIST_AGENT_PROMPT,
     BEARD_STYLIST_AGENT_PROMPT,

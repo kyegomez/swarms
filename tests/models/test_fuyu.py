@@ -5,7 +5,7 @@ import torch
 from PIL import Image
 from transformers import FuyuImageProcessor, FuyuProcessor
 
-from swarms.models.fuyu import Fuyu
+from swarm_models.fuyu import Fuyu
 
 
 # Basic test to ensure instantiation of class.

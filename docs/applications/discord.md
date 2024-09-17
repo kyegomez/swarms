@@ -63,7 +63,7 @@ Starts the bot using the `DISCORD_TOKEN` from the `.env` file.
 Initialize the `llm` (Language Learning Model) with your OpenAI API key:
 
 ```python
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 
 llm = OpenAIChat(
     openai_api_key="Your_OpenAI_API_Key",

@@ -19,7 +19,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 from swarms.prompts.programming import DOCUMENTATION_SOP, TEST_SOP
 from swarms.structs import Agent
 

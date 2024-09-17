@@ -2,7 +2,8 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.agents.multion_agent import MultiOnAgent
 from swarms_memory import ChromaDB
 from swarms import tool

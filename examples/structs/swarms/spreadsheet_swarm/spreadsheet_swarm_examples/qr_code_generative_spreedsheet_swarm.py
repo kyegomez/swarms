@@ -1,5 +1,6 @@
 import os
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
 # Define custom system prompts for QR code generation

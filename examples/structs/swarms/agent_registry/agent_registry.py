@@ -1,6 +1,6 @@
 from swarms.structs.agent_registry import AgentRegistry
 from swarms import Agent
-from swarms.models import Anthropic
+from swarm_models import Anthropic
 
 
 # Initialize the agents

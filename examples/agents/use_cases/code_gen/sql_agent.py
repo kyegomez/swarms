@@ -1,5 +1,6 @@
 import os
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("OPENAI_API_KEY")

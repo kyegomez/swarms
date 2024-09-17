@@ -4,7 +4,7 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 from swarms.structs import BaseWorkflow
 
 load_dotenv()

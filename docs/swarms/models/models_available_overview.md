@@ -50,7 +50,7 @@ The Anthropic model is one of the many models supported by Swarms. Here's how yo
 
 ```python
 import os
-from swarms.models import Anthropic
+from swarm_models import Anthropic
 
 # Load the environment variables
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -73,7 +73,7 @@ print(response)
 HuggingfaceLLM allows you to use models from Hugging Face's vast repository. Here's an example:
 
 ```python
-from swarms.models import HuggingfaceLLM
+from swarm_models import HuggingfaceLLM
 
 # Define the model ID
 model_id = "NousResearch/Yarn-Mistral-7b-128k"
@@ -97,7 +97,7 @@ The OpenAIChat model is designed for conversational tasks. Here's how to use it:
 
 ```python
 import os
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 
 # Load the environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")

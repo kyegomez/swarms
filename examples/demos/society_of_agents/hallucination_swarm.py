@@ -1,4 +1,5 @@
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 
 #
 # model = HuggingfaceLLM(model_id="openai-community/gpt2", max_length=1000)

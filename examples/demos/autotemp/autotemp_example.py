@@ -1,6 +1,6 @@
 import re
 
-from swarms.models.openai_models import OpenAIChat
+from swarm_models.openai_models import OpenAIChat
 
 
 class AutoTemp:

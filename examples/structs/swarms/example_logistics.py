@@ -1,7 +1,7 @@
 from swarms.structs import Agent
 import os
 from dotenv import load_dotenv
-from swarms.models import GPT4VisionAPI
+from swarm_models import GPT4VisionAPI
 from swarms.prompts.logistics import (
     Health_Security_Agent_Prompt,
     Quality_Control_Agent_Prompt,

@@ -38,7 +38,7 @@ pip install swarms requests wave
 To use the `OpenAITTS` module, you need to initialize an instance of the `OpenAITTS` class. Here's how you can do it:
 
 ```python
-from swarms.models.openai_tts import OpenAITTS
+from swarm_models.openai_tts import OpenAITTS
 
 # Initialize the OpenAITTS instance
 tts = OpenAITTS(
@@ -95,7 +95,7 @@ speech_data = tts.run_and_save("Hello, world!")
 Here's a basic example of how to use the `OpenAITTS` module to generate speech from text:
 
 ```python
-from swarms.models.openai_tts import OpenAITTS
+from swarm_models.openai_tts import OpenAITTS
 
 # Initialize the OpenAITTS instance
 tts = OpenAITTS(

@@ -125,7 +125,7 @@ Here are the key attributes and their descriptions for the `OpenAIChat` class:
 ### Example 1: Initializing `OpenAIChat`
 
 ```python
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 
 # Initialize OpenAIChat with model name and API key
 openai_chat = OpenAIChat(model_name="gpt-3.5-turbo", openai_api_key="YOUR_API_KEY")

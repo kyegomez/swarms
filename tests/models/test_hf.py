@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from swarms.models.huggingface import HuggingfaceLLM
+from swarm_models.huggingface import HuggingfaceLLM
 
 
 # Fixture for the class instance

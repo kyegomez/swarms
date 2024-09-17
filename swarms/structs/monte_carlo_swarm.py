@@ -200,7 +200,8 @@ def average_aggregator(results: List[float]) -> float:
 
 
 # import os
-# from swarms import Agent, OpenAIChat
+# from swarms import Agent
+from swarm_models import OpenAIChat
 # from typing import List, Union, Callable
 # from collections import Counter
 

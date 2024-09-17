@@ -1,4 +1,4 @@
-from swarms.models import vLLM
+from swarm_models import vLLM
 
 # Initialize vLLM with custom model and parameters
 custom_vllm = vLLM(

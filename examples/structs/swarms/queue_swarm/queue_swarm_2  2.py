@@ -8,7 +8,8 @@ from typing import List
 from swarms.utils.calculate_func_metrics import profile_func
 from pydantic import BaseModel
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )

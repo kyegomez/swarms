@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from swarms.models.zeroscope import ZeroscopeTTV
+from swarm_models.zeroscope import ZeroscopeTTV
 
 
 @patch("swarms.models.zeroscope.DiffusionPipeline")

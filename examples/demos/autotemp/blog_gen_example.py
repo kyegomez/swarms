@@ -3,7 +3,7 @@ import os
 from autotemp import AutoTemp
 from termcolor import colored
 
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 from swarms.structs import SequentialWorkflow
 
 

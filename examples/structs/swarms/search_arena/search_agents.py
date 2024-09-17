@@ -5,7 +5,8 @@ import requests
 import tavily
 from dotenv import load_dotenv
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.tools.prebuilt.bing_api import fetch_web_articles_bing_api
 
 load_dotenv()

@@ -25,7 +25,7 @@ To use the Vilt model, follow these steps:
 1. Initialize the Vilt model:
 
 ```python
-from swarms.models import Vilt
+from swarm_models import Vilt
 
 model = Vilt()
 ```

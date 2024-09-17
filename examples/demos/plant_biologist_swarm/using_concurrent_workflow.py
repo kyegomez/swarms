@@ -10,7 +10,7 @@ from examples.demos.plant_biologist_swarm.prompts import (
 )
 
 from swarms import Agent, ConcurrentWorkflow
-from swarms.models.gpt_o import GPT4VisionAPI
+from swarm_models.gpt_o import GPT4VisionAPI
 
 
 # Load the OpenAI API key from the .env file

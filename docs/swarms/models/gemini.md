@@ -78,7 +78,7 @@ class Gemini(BaseMultiModalModel):
    **Examples**:
 
    ```python
-   from swarms.models import Gemini
+   from swarm_models import Gemini
 
    # Initialize the Gemini model
    gemini = Gemini()
@@ -128,7 +128,7 @@ class Gemini(BaseMultiModalModel):
    **Examples**:
 
    ```python
-   from swarms.models.gemini import Gemini
+   from swarm_models.gemini import Gemini
 
    # Initialize the Gemini model
    gemini = Gemini()

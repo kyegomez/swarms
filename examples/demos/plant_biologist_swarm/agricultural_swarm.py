@@ -18,7 +18,7 @@ from examples.demos.plant_biologist_swarm.prompts import (
     treatment_recommender_agent,
 )
 from swarms import Agent
-from swarms.models.gpt_o import GPT4VisionAPI
+from swarm_models.gpt_o import GPT4VisionAPI
 
 # Load the OpenAI API key from the .env file
 load_dotenv()

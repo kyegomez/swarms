@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import Gemini
+from swarm_models import Gemini
 from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
 
 # Load the environment variables

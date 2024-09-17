@@ -1,5 +1,5 @@
 from swarms import Agent
-from swarms.models.base_llm import BaseLLM
+from swarm_models.base_llm import BaseLLM
 
 
 # Define a custom LLM class

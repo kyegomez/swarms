@@ -4,7 +4,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 
 # Initialize the director agent

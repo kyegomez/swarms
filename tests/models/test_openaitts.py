@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from swarms.models.openai_tts import OpenAITTS
+from swarm_models.openai_tts import OpenAITTS
 
 
 def test_openaitts_initialization():

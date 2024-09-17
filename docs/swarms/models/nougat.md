@@ -43,7 +43,7 @@ To use Nougat, follow these steps:
 1. Initialize the Nougat instance:
 
 ```python
-from swarms.models import Nougat
+from swarm_models import Nougat
 
 nougat = Nougat()
 ```

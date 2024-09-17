@@ -31,7 +31,7 @@ pip install swarms
 To get started with Swarms, you'll need to import the library and create an instance of the `BaseMultiModalModel` class. This class serves as the foundation for running multimodal models.
 
 ```python
-from swarms.models import BaseMultiModalModel
+from swarm_models import BaseMultiModalModel
 
 model = BaseMultiModalModel(
     model_name="your_model_name",
@@ -138,7 +138,7 @@ Let's explore some usage examples of the MultiModalAI library:
 
 ```python
 # Import the library
-from swarms.models import BaseMultiModalModel
+from swarm_models import BaseMultiModalModel
 
 # Create an instance of the model
 model = BaseMultiModalModel(
@@ -159,7 +159,7 @@ print(response)
 
 ```python
 # Import the library
-from swarms.models import BaseMultiModalModel
+from swarm_models import BaseMultiModalModel
 
 # Create an instance of the model
 model = BaseMultiModalModel(
@@ -184,7 +184,7 @@ for response in responses:
 
 ```python
 # Import the library
-from swarms.models import BaseMultiModalModel
+from swarm_models import BaseMultiModalModel
 
 # Create an instance of the model
 model = BaseMultiModalModel(
@@ -209,7 +209,7 @@ for response in responses:
 
 ### Example 4: Inheriting `BaseMultiModalModel` for it's prebuilt classes
 ```python
-from swarms.models import BaseMultiModalModel
+from swarm_models import BaseMultiModalModel
 
 
 class CustomMultiModalModel(BaseMultiModalModel):

@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 
 from swarms import Agent
-from swarms.models import OpenAIChat
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarm_models import OpenAIChat
+from swarm_models.gpt4_vision_api import GPT4VisionAPI
 from swarms.structs.rearrange import AgentRearrange
 
 # Load the environment variables

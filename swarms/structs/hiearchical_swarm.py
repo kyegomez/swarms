@@ -6,7 +6,7 @@ from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.agent import Agent
 from swarms.structs.concat import concat_strings
 from swarms.structs.agent_registry import AgentRegistry
-from swarms.models.base_llm import BaseLLM
+from swarm_models.base_llm import BaseLLM
 from swarms.structs.conversation import Conversation
 
 

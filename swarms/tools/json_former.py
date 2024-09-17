@@ -9,7 +9,7 @@ from swarms.tools.logits_processor import (
     OutputNumbersTokens,
     StringStoppingCriteria,
 )
-from swarms.models.base_llm import BaseLLM
+from swarm_models.base_llm import BaseLLM
 
 GENERATION_MARKER = "|GENERATION|"
 

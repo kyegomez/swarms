@@ -10,7 +10,8 @@ Example:
 
 """
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 
 llm = OpenAIChat(max_tokens=4000)
 

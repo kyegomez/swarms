@@ -85,7 +85,7 @@ class MultiAgentCollaboration(BaseSwarm):
 
 
     Usage:
-    >>> from swarms.models import OpenAIChat
+    >>> from swarm_models import OpenAIChat
     >>> from swarms.structs import Agent
     >>> from swarms.swarms.multi_agent_collab import MultiAgentCollaboration
     >>>

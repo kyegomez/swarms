@@ -75,6 +75,7 @@ swarms-memory = "*"
 black = "*"
 swarms-cloud = "*"
 aiofiles = "*"
+swarm-models = "*"
 
 
 

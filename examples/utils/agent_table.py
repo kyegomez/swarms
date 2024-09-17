@@ -5,7 +5,8 @@ from swarms.utils.pandas_utils import (
     dict_to_dataframe,
     pydantic_model_to_dataframe,
 )
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 
 # Create an instance of the OpenAIChat class
 llm = OpenAIChat(

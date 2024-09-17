@@ -4,7 +4,8 @@ import threading
 from typing import Callable, List
 
 from swarms.prompts.documentation import DOCUMENTATION_WRITER_SOP
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.utils.loguru_logger import logger
 import concurrent
 

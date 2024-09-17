@@ -32,3 +32,4 @@ networkx
 swarms-memory
 pre-commit
 aiofiles
+swarm-models

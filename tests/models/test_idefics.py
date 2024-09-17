@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from swarms.models.idefics import (
+from swarm_models.idefics import (
     AutoProcessor,
     Idefics,
     IdeficsForVisionText2Text,

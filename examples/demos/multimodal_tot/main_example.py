@@ -20,8 +20,8 @@ import os
 from dotenv import load_dotenv
 from termcolor import colored
 
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
-from swarms.models.stable_diffusion import StableDiffusion
+from swarm_models.gpt4_vision_api import GPT4VisionAPI
+from swarm_models.stable_diffusion import StableDiffusion
 
 # Load the environment variables
 load_dotenv()

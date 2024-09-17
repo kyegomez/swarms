@@ -69,7 +69,7 @@ class Anthropic:
 
 ```python
 # Import necessary modules and classes
-from swarms.models import Anthropic
+from swarm_models import Anthropic
 
 # Initialize an instance of the Anthropic class
 model = Anthropic(anthropic_api_key="")

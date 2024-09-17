@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models.gemini import Gemini
+from swarm_models.gemini import Gemini
 from swarms.prompts.react import react_prompt
 
 load_dotenv()

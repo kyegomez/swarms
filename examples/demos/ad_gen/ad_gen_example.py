@@ -3,8 +3,8 @@ import random
 
 from dotenv import load_dotenv
 
-from swarms.models import OpenAIChat
-from swarms.models.stable_diffusion import StableDiffusion
+from swarm_models import OpenAIChat
+from swarm_models import StableDiffusion
 from swarms.structs import Agent
 
 load_dotenv()

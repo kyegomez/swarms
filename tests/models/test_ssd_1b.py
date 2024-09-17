@@ -1,7 +1,7 @@
 import pytest
 from PIL import Image
 
-from swarms.models.ssd_1b import SSD1B
+from swarm_models.ssd_1b import SSD1B
 
 
 # Create fixtures if needed

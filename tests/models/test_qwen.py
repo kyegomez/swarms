@@ -1,6 +1,6 @@
 from unittest.mock import Mock, patch
 
-from swarms.models.qwen import QwenVLMultiModal
+from swarm_models.qwen import QwenVLMultiModal
 
 
 def test_post_init():

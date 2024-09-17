@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from swarms.models.open_dalle import OpenDalle
+from swarm_models.open_dalle import OpenDalle
 
 
 def test_init():

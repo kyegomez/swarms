@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from swarms.models.huggingface_pipeline import HuggingfacePipeline
+from swarm_models.huggingface_pipeline import HuggingfacePipeline
 
 
 @pytest.fixture

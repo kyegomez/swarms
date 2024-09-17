@@ -135,7 +135,8 @@ And, then now you can get started with the following:
 
 ```python
 import os
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
@@ -189,7 +190,8 @@ To integrate tools with the Swarm Agent, you can pass a list of callable functio
   - with doc strings
 
 ```python
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms_memory import ChromaDB
 import subprocess
 import os

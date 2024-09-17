@@ -1,6 +1,7 @@
 import os
 import asyncio
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 import uvloop
 from multiprocessing import cpu_count
 from swarms.utils.calculate_func_metrics import profile_func

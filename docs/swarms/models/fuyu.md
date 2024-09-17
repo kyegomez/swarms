@@ -37,7 +37,7 @@ To use Fuyu, follow these steps:
 1. Initialize the Fuyu instance:
 
 ```python
-from swarms.models.fuyu import Fuyu
+from swarm_models.fuyu import Fuyu
 
 fuyu = Fuyu()
 ```
@@ -54,7 +54,7 @@ output_text = fuyu(text, img_path)
 ### Example 2 - Text Generation
 
 ```python
-from swarms.models.fuyu import Fuyu
+from swarm_models.fuyu import Fuyu
 
 fuyu = Fuyu()
 

@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import Anthropic, OpenAIChat
+from swarm_models import Anthropic, OpenAIChat
 from swarms.prompts.accountant_swarm_prompts import (
     DECISION_MAKING_PROMPT,
     DOC_ANALYZER_AGENT_PROMPT,

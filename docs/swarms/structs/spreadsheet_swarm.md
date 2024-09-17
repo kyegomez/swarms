@@ -189,7 +189,8 @@ swarm._save_to_csv()
 ```python
 import os
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
@@ -241,7 +242,8 @@ swarm.run(
 
 ```python
 import os
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
 # Define custom system prompts for QR code generation
@@ -308,7 +310,8 @@ swarm.run(
 ```python
 
 import os
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
 # Define custom system prompts for each social media platform

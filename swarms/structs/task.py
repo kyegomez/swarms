@@ -46,7 +46,7 @@ class Task(BaseModel):
 
     Examples:
     >>> from swarms.structs import Task, Agent
-    >>> from swarms.models import OpenAIChat
+    >>> from swarm_models import OpenAIChat
     >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
     >>> task = Task(description="What's the weather in miami", agent=agent)
     >>> task.run()
@@ -106,7 +106,7 @@ class Task(BaseModel):
 
         Examples:
         >>> from swarms.structs import Task, Agent
-        >>> from swarms.models import OpenAIChat
+        >>> from swarm_models import OpenAIChat
         >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
         >>> task = Task(description="What's the weather in miami", agent=agent)
         >>> task.run()

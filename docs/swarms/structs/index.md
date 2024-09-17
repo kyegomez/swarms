@@ -45,7 +45,8 @@ import os
 from dotenv import load_dotenv
 
 # Import the OpenAIChat model and the Agent struct
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 
 # Load the environment variables
 load_dotenv()
@@ -71,7 +72,8 @@ agent.run("Generate a 10,000 word blog on health and wellness.")
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
 
 ```python
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms_memory import ChromaDB # Copy and paste the code and put it in your own local directory.
 
 # Making an instance of the ChromaDB class
@@ -327,7 +329,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarm_models.gpt4_vision_api import GPT4VisionAPI
 from swarms.structs import Agent
 
 # Load the environment variables

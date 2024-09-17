@@ -11,7 +11,7 @@ from swarms import (
     OpenAIChat,
     SpreadSheetSwarm,
 )
-from swarms.models.openai_function_caller import OpenAIFunctionCaller
+from swarm_models.openai_function_caller import OpenAIFunctionCaller
 
 agent_pool = []
 

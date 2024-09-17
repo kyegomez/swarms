@@ -225,7 +225,8 @@ class GraphWorkflow(BaseModel):
 
 # # Example usage
 # if __name__ == "__main__":
-#     from swarms import Agent, OpenAIChat
+#     from swarms import Agent
+from swarm_models import OpenAIChat
 #     import os
 #     from dotenv import load_dotenv
 

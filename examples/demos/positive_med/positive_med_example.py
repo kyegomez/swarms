@@ -25,7 +25,7 @@ import os
 
 from termcolor import colored
 
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 from swarms.prompts.autobloggen import (
     AUTOBLOG_REVIEW_PROMPT,
     DRAFT_AGENT_SYSTEM_PROMPT,

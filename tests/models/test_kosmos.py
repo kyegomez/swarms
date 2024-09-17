@@ -4,7 +4,7 @@ import pytest
 import requests
 
 # This will be your project directory
-from swarms.models.kosmos_two import Kosmos, is_overlapping
+from swarm_models.kosmos_two import Kosmos, is_overlapping
 
 # A placeholder image URL for testing
 TEST_IMAGE_URL = "https://images.unsplash.com/photo-1673267569891-ca4246caafd7?auto=format&fit=crop&q=60&w=400&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHx0b3BpYy1mZWVkfDM1fEpwZzZLaWRsLUhrfHxlbnwwfHx8fHw%3D"

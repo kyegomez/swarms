@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import Anthropic, OpenAIChat
+from swarm_models import Anthropic, OpenAIChat
 from swarms.prompts.ai_research_team import (
     PAPER_IMPLEMENTOR_AGENT_PROMPT,
     PAPER_SUMMARY_ANALYZER,

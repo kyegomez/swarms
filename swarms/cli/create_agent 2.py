@@ -1,6 +1,6 @@
 import os
 from swarms.structs.agent import Agent
-from swarms.models.popular_llms import OpenAIChat
+from swarm_models.popular_llms import OpenAIChat
 from swarms.structs.agent_registry import AgentRegistry
 
 # Get the OpenAI API key from the environment variable

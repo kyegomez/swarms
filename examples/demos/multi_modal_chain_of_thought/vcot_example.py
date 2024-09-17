@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarm_models.gpt4_vision_api import GPT4VisionAPI
 from swarms.prompts.visual_cot import VISUAL_CHAIN_OF_THOUGHT
 from swarms.structs import Agent
 

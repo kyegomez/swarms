@@ -4,7 +4,7 @@
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
-from swarms.models.base_llm import BaseLLM
+from swarm_models.base_llm import BaseLLM
 
 
 class Llama3(BaseLLM):

@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 import requests
 
-from swarms.models.together import TogetherLLM
+from swarm_models.together import TogetherLLM
 
 
 @pytest.fixture

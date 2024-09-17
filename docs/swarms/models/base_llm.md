@@ -164,7 +164,7 @@ To demonstrate how to use the `BaseLLM` interface, let's create an example using
 
 ```python
 # Import the BaseLLM class
-from swarms.models import BaseLLM
+from swarm_models import BaseLLM
 
 # Create an instance of the language model
 language_model = BaseLLM(

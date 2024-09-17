@@ -5,7 +5,7 @@ from typing import List, Optional
 import json
 from swarms.structs.agent_registry import AgentRegistry
 from swarms.structs.agent import Agent
-from swarms.models.popular_llms import OpenAIChat
+from swarm_models.popular_llms import OpenAIChat
 
 
 class AgentInput(BaseModel):

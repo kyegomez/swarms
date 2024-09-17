@@ -9,7 +9,8 @@ $ pip install swarms
 - 
 """
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms_memory import ChromaDB
 from swarms.tools.prebuilt.bing_api import fetch_web_articles_bing_api
 import os

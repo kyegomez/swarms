@@ -1,5 +1,5 @@
 import json
-from swarms.models.openai_function_caller import OpenAIFunctionCaller
+from swarm_models.openai_function_caller import OpenAIFunctionCaller
 from pydantic import BaseModel, Field
 from typing import List
 from swarms import Agent

@@ -7,7 +7,7 @@ from aiohttp import ClientResponseError
 from dotenv import load_dotenv
 from requests.exceptions import RequestException
 
-from swarms.models.gpt4_vision_api import GPT4VisionAPI
+from swarm_models.gpt4_vision_api import GPT4VisionAPI
 
 load_dotenv()
 

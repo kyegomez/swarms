@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import GPT4VisionAPI, OpenAIChat
+from swarm_models import GPT4VisionAPI, OpenAIChat
 from swarms.prompts.xray_swarm_prompt import (
     TREATMENT_PLAN_PROMPT,
     XRAY_ANALYSIS_PROMPT,

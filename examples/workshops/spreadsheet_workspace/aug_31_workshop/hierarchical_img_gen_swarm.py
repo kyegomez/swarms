@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from transformers import T5EncoderModel
 
 from swarms import Agent
-from swarms.models.openai_function_caller import OpenAIFunctionCaller
+from swarm_models.openai_function_caller import OpenAIFunctionCaller
 
 hf_token = os.getenv("HF_TOKEN")
 

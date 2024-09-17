@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from swarms.structs import Agent
-from swarms.models import Anthropic
+from swarm_models import Anthropic
 from swarms.structs.rearrange import AgentRearrange
 
 llm = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"), streaming=True)

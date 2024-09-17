@@ -26,7 +26,7 @@ from pydantic import BaseModel
 from swarms_memory import BaseVectorDatabase
 from termcolor import colored
 
-from swarms.models.tiktoken_wrapper import TikTokenizer
+from swarm_models.tiktoken_wrapper import TikTokenizer
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
@@ -164,7 +164,7 @@ class Agent:
 
 
     Examples:
-    >>> from swarms.models import OpenAIChat
+    >>> from swarm_models import OpenAIChat
     >>> from swarms.structs import Agent
     >>> llm = OpenAIChat()
     >>> agent = Agent(llm=llm, max_loops=1)
@@ -885,22 +885,6 @@ class Agent:
             )
             raise error
 
-<<<<<<< HEAD
-    async def astream_events(
-        self, task: str = None, img: str = None, *args, **kwargs
-    ):
-        """
-        Run the Agent with LangChain's astream_events API.
-        Only works with LangChain-based models.
-        """
-        try:
-            async for evt in self.llm.astream_events(task, version="v1"):
-                yield evt
-        except Exception as e:
-            print(f"Error streaming events: {e}")
-
-    def __call__(self, task: str = None, img: str = None, *args, **kwargs):
-=======
     # @run_on_cpu
     # def run(
     #     self,
@@ -1104,7 +1088,6 @@ class Agent:
     def __call__(
         self, task: str = None, img: str = None, *args, **kwargs
     ):
->>>>>>> ce359f5e ([5.6.8])
         """Call the agent
 
         Args:

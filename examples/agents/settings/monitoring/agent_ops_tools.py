@@ -24,7 +24,8 @@ sys.path.insert(0, os.getcwd())
 ################ Adding project root to PYTHONPATH ################################
 
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from agentops import record_function
 
 

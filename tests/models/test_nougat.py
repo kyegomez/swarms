@@ -6,7 +6,7 @@ import torch
 from PIL import Image
 from transformers import NougatProcessor, VisionEncoderDecoderModel
 
-from swarms.models.nougat import Nougat
+from swarm_models.nougat import Nougat
 
 
 @pytest.fixture

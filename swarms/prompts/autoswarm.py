@@ -49,7 +49,7 @@ Output Format: A complete Python script that is ready for copy/paste to GitHub a
 Here is an example of a a working swarm script that you can use as a rough template for the logic:
 import os
 from dotenv import load_dotenv
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 from swarms.structs import Agent
 import swarms.prompts.swarm_daddy as sdsp
 

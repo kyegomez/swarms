@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from swarms.models import OpenAIChat
+from swarm_models import OpenAIChat
 from swarms.structs import Agent
 import swarms.prompts.autoswarm as sdsp
 

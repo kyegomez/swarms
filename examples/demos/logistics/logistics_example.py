@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms.models import GPT4VisionAPI
+from swarm_models import GPT4VisionAPI
 from swarms.prompts.logistics import (
     Efficiency_Agent_Prompt,
     Health_Security_Agent_Prompt,

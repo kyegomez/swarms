@@ -19,7 +19,7 @@ import os
 from dotenv import load_dotenv
 from termcolor import colored
 
-from swarms.models import GPT4VisionAPI
+from swarm_models import GPT4VisionAPI
 from swarms.structs import Agent
 
 load_dotenv()

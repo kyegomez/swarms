@@ -1,4 +1,5 @@
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from typing import List
 from swarms_memory import ChromaDB
 

@@ -39,7 +39,7 @@ To use LayoutLMDocumentQA, follow these steps:
 1. Initialize the LayoutLMDocumentQA instance:
 
 ```python
-from swarms.models import LayoutLMDocumentQA
+from swarm_models import LayoutLMDocumentQA
 
 layout_lm_doc_qa = LayoutLMDocumentQA()
 ```

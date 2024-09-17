@@ -28,7 +28,7 @@ To use Idefics, follow these steps:
 1. Initialize the Idefics instance:
 
 ```python
-from swarms.models import Idefics
+from swarm_models import Idefics
 
 model = Idefics()
 ```
@@ -46,7 +46,7 @@ print(response)
 ### Example 1 - Image Questioning
 
 ```python
-from swarms.models import Idefics
+from swarm_models import Idefics
 
 model = Idefics()
 prompts = [
@@ -59,7 +59,7 @@ print(response)
 ### Example 2 - Bidirectional Conversation
 
 ```python
-from swarms.models import Idefics
+from swarm_models import Idefics
 
 model = Idefics()
 user_input = "User: What is in this image? https://upload.wikimedia.org/wikipedia/commons/8/86/Id%C3%A9fix.JPG"

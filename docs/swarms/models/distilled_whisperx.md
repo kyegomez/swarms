@@ -23,7 +23,7 @@ The `DistilWhisperModel` class is initialized with the following parameters:
 Example of initialization:
 
 ```python
-from swarms.models import DistilWhisperModel
+from swarm_models import DistilWhisperModel
 
 # Initialize with default model
 model_wrapper = DistilWhisperModel()

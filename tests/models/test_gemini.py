@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from swarms.models.gemini import Gemini
+from swarm_models.gemini import Gemini
 
 
 # Define test fixtures

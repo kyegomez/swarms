@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 import pytest
 import torch
 
-from swarms.models import TimmModel
+from swarm_models import TimmModel
 
 
 def test_timm_model_init():

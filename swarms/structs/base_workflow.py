@@ -180,7 +180,7 @@ class BaseWorkflow(BaseStructure):
             ValueError: If the task is not found in the workflow.
 
         Examples:
-        >>> from swarms.models import OpenAIChat
+        >>> from swarm_models import OpenAIChat
         >>> from swarms.structs import SequentialWorkflow
         >>> llm = OpenAIChat(openai_api_key="")
         >>> workflow = SequentialWorkflow(max_loops=1)
@@ -218,7 +218,7 @@ class BaseWorkflow(BaseStructure):
             ValueError: If the task is not found in the workflow.
 
         Examples:
-        >>> from swarms.models import OpenAIChat
+        >>> from swarm_models import OpenAIChat
         >>> from swarms.structs import SequentialWorkflow
         >>> llm = OpenAIChat(openai_api_key="")
         >>> workflow = SequentialWorkflow(max_loops=1)
@@ -257,7 +257,7 @@ class BaseWorkflow(BaseStructure):
             filepath (str): The path to save the workflow state to.
 
         Examples:
-        >>> from swarms.models import OpenAIChat
+        >>> from swarm_models import OpenAIChat
         >>> from swarms.structs import SequentialWorkflow
         >>> llm = OpenAIChat(openai_api_key="")
         >>> workflow = SequentialWorkflow(max_loops=1)
@@ -329,7 +329,7 @@ class BaseWorkflow(BaseStructure):
             filepath (str): The path to load the workflow state from.
 
         Examples:
-        >>> from swarms.models import OpenAIChat
+        >>> from swarm_models import OpenAIChat
         >>> from swarms.structs import SequentialWorkflow
         >>> llm = OpenAIChat(openai_api_key="")
         >>> workflow = SequentialWorkflow(max_loops=1)
@@ -372,7 +372,7 @@ class BaseWorkflow(BaseStructure):
             **kwargs: Additional keyword arguments to pass to the dashboard.
 
         Examples:
-        >>> from swarms.models import OpenAIChat
+        >>> from swarm_models import OpenAIChat
         >>> from swarms.structs import SequentialWorkflow
         >>> llm = OpenAIChat(openai_api_key="")
         >>> workflow = SequentialWorkflow(max_loops=1)

@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from swarms.models.anthropic import Anthropic
+from swarm_models.anthropic import Anthropic
 
 
 # Mock the Anthropic API client for testing

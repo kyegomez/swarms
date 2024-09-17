@@ -1,6 +1,7 @@
 import concurrent
 import csv
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms_memory import ChromaDB
 from dotenv import load_dotenv
 from swarms.utils.parse_code import extract_code_from_markdown

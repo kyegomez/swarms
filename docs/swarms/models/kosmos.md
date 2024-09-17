@@ -22,7 +22,7 @@ To use Kosmos, follow these steps:
 1. Initialize the Kosmos instance:
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 ```
@@ -38,7 +38,7 @@ kosmos.multimodal_grounding(
 ### Example 1 - Multimodal Grounding
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
@@ -58,7 +58,7 @@ kosmos.referring_expression_comprehension(
 ### Example 2 - Referring Expression Comprehension
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
@@ -78,7 +78,7 @@ kosmos.referring_expression_generation(
 ### Example 3 - Referring Expression Generation
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
@@ -96,7 +96,7 @@ kosmos.grounded_vqa("What is the color of the car?", "https://example.com/car.jp
 ### Example 4 - Grounded Visual Question Answering
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
@@ -112,7 +112,7 @@ kosmos.grounded_image_captioning("https://example.com/beach.jpg")
 ### Example 5 - Grounded Image Captioning
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
@@ -128,7 +128,7 @@ kosmos.grounded_image_captioning_detailed("https://example.com/beach.jpg")
 ### Example 6 - Detailed Grounded Image Captioning
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
@@ -149,7 +149,7 @@ kosmos.draw_entity_boxes_on_image(image, entities, show=True)
 ### Example 7 - Drawing Entity Boxes on Image
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 
@@ -176,7 +176,7 @@ image = kosmos.generate_boxes(
 ### Example 8 - Generating Boxes for Entities
 
 ```python
-from swarms.models.kosmos_two import Kosmos
+from swarm_models.kosmos_two import Kosmos
 
 kosmos = Kosmos()
 entities = [

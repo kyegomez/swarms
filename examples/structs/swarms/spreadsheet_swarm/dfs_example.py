@@ -1,6 +1,7 @@
 import os
 
-from swarms import Agent, OpenAIChat
+from swarms import Agent
+from swarm_models import OpenAIChat
 from swarms.structs.dfs_search_swarm import DFSSwarm
 
 # Get the OpenAI API key from the environment variable

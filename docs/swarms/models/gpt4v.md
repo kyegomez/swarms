@@ -53,7 +53,7 @@ When initializing the `GPT4VisionAPI` class, you have the option to provide the 
 Here's how you can initialize the `GPT4VisionAPI` class:
 
 ```python
-from swarms.models import GPT4VisionAPI
+from swarm_models import GPT4VisionAPI
 
 # Initialize with default API key and max_tokens
 api = GPT4VisionAPI()
@@ -129,7 +129,7 @@ Let's explore some usage examples of the `GPT4VisionAPI` module to better unders
 In this example, we'll use the module with the default API key and maximum tokens to analyze an image.
 
 ```python
-from swarms.models import GPT4VisionAPI
+from swarm_models import GPT4VisionAPI
 
 # Initialize with default API key and max_tokens
 api = GPT4VisionAPI()
@@ -150,7 +150,7 @@ print(response)
 If you have a custom API key, you can initialize the module with it as shown in this example.
 
 ```python
-from swarms.models import GPT4VisionAPI
+from swarm_models import GPT4VisionAPI
 
 # Initialize with custom API key and max_tokens
 custom_api_key = "your_custom_api_key"
@@ -172,7 +172,7 @@ print(response)
 You can also customize the maximum token limit when initializing the module. In this example, we set it to 1000 tokens.
 
 ```python
-from swarms.models import GPT4VisionAPI
+from swarm_models import GPT4VisionAPI
 
 # Initialize with default API key and custom max_tokens
 api = GPT4VisionAPI(max_tokens=1000)
