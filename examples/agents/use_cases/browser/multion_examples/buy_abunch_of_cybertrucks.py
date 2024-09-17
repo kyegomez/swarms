@@ -1,5 +1,6 @@
-from swarms import Agent, AgentRearrange, OpenAIChat
-from swarms.agents.multion_wrapper import MultiOnAgent
+from swarms import Agent, AgentRearrange
+
+from swarm_models import OpenAIChatfrom swarms.agents.multion_wrapper import MultiOnAgent
 
 model = MultiOnAgent(
     url="https://tesla.com",

@@ -1,5 +1,6 @@
-from swarms import Agent, AgentRearrange, OpenAIChat
+from swarms import Agent, AgentRearrange
 
+from swarm_models import OpenAIChat
 
 # Initialize the director agent
 

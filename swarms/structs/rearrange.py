@@ -11,8 +11,6 @@ from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.loguru_logger import logger
-<<<<<<< HEAD
-=======
 
 
 class AgentRearrangeInput(BaseModel):
@@ -42,7 +40,6 @@ class AgentRearrangeOutput(BaseModel):
         ),
         description="The time the agent was created.",
     )
->>>>>>> ce359f5e ([5.6.8])
 
 
 class AgentRearrange(BaseSwarm):
@@ -362,7 +359,6 @@ class AgentRearrange(BaseSwarm):
             logger.error(f"An error occurred: {e}")
             return e
 
-<<<<<<< HEAD
     async def astream(
         self,
         task: str = None,
@@ -392,7 +388,9 @@ class AgentRearrange(BaseSwarm):
 
             # If custom_tasks have the agents name and tasks then combine them
             if custom_tasks is not None:
-                c_agent_name, c_task = next(iter(custom_tasks.items()))
+                c_agent_name, c_task = next(
+                    iter(custom_tasks.items())
+                )
 
                 # Find the position of the custom agent in the tasks list
                 position = tasks.index(c_agent_name)
@@ -498,7 +496,9 @@ class AgentRearrange(BaseSwarm):
                                 # print(evt) # <- useful when building/debugging
                                 if evt["event"] == "on_llm_end":
                                     result = evt["data"]["output"]
-                                    print(agent.name, "result", result)
+                                    print(
+                                        agent.name, "result", result
+                                    )
                             current_task = result
 
                 loop_count += 1
@@ -529,13 +529,13 @@ class AgentRearrange(BaseSwarm):
         if name.startswith("Human"):
             return self.human_intervention(task)
         elif name in self.sub_swarm:
-            return self.run_sub_swarm(task, name, img, *args, **kwargs)
+            return self.run_sub_swarm(
+                task, name, img, *args, **kwargs
+            )
         else:
             agent = self.agents[name]
             return agent.run(task, img, is_last, *args, **kwargs)
 
-=======
->>>>>>> ce359f5e ([5.6.8])
     def human_intervention(self, task: str) -> str:
         if self.human_in_the_loop and self.custom_human_in_the_loop:
             return self.custom_human_in_the_loop(task)

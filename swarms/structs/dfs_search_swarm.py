@@ -1,6 +1,6 @@
 # import os
 # from swarms import Agent
-from swarm_models import OpenAIChat
+
 # from typing import List
 
 # class DepthFirstSearchSwarm:
@@ -81,7 +81,6 @@ from swarm_models import OpenAIChat
 # ####################
 # import os
 # from swarms import Agent
-from swarm_models import OpenAIChat
 
 # class DFSSwarm:
 #     def __init__(self, agents):

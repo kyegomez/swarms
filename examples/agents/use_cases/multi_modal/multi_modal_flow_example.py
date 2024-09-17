@@ -1,4 +1,6 @@
-from swarms import GPT4VisionAPI, Agent
+from swarms import Agent
+
+from swarm_models import GPT4VisionAPI
 
 llm = GPT4VisionAPI()
 

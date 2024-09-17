@@ -139,7 +139,10 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms import Agent, Edge, GraphWorkflow, Node, NodeType, OpenAIChat
+
+from swarms import Agent, Edge, GraphWorkflow, Node, NodeType
+
+from swarm_models import OpenAIChat
 
 load_dotenv()
 

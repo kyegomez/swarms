@@ -28,7 +28,7 @@ class CodeExecutor:
         self.max_output_length = max_output_length
         self.artifacts_dir = artifacts_directory
         self.language = language
-        
+
         os.makedirs(self.artifacts_dir, exist_ok=True)
         self.setup_logging()
         self.tokenizer = TikTokenizer()

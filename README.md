@@ -434,7 +434,9 @@ Run the agent with multiple modalities useful for various real-world tasks in ma
 ```python
 import os
 from dotenv import load_dotenv
-from swarms import GPT4VisionAPI, Agent
+from swarms import Agent
+
+from swarm_models import GPT4VisionAPI
 
 # Load the environment variables
 load_dotenv()
@@ -529,79 +531,6 @@ print(f"Generated data: {generated_data}")
 ```
 
 
-### `Task`
-For deeper control of your agent stack, `Task` is a simple structure for task execution with the `Agent`. Imagine zapier like LLM-based workflow automation.
-
-✅ Task is a structure for task execution with the Agent. 
-
-✅ Tasks can have descriptions, scheduling, triggers, actions, conditions, dependencies, priority, and a history. 
-
-✅ The Task structure allows for efficient workflow automation with LLM-based agents.
-
-```python
-import os
-
-from dotenv import load_dotenv
-
-from swarms import Agent, OpenAIChat, Task
-
-# Load the environment variables
-load_dotenv()
-
-
-# Define a function to be used as the action
-def my_action():
-    print("Action executed")
-
-
-# Define a function to be used as the condition
-def my_condition():
-    print("Condition checked")
-    return True
-
-
-# Create an agent
-agent = Agent(
-    llm=OpenAIChat(openai_api_key=os.environ["OPENAI_API_KEY"]),
-    max_loops=1,
-    dashboard=False,
-)
-
-# Create a task
-task = Task(
-    description=(
-        "Generate a report on the top 3 biggest expenses for small"
-        " businesses and how businesses can save 20%"
-    ),
-    agent=agent,
-)
-
-# Set the action and condition
-task.set_action(my_action)
-task.set_condition(my_condition)
-
-# Execute the task
-print("Executing task...")
-task.run()
-
-# Check if the task is completed
-if task.is_completed():
-    print("Task completed")
-else:
-    print("Task not completed")
-
-# Output the result of the task
-print(f"Task result: {task.result}")
-```
-
----
-
-
-
-
-
-----
-
 
 # Multi-Agent Orchestration:
 Swarms was designed to facilitate the communication between many different and specialized agents from a vast array of other frameworks such as langchain, autogen, crew, and more.
@@ -623,7 +552,9 @@ In traditional swarm theory, there are many types of swarms usually for very spe
 Sequential Workflow enables you to sequentially execute tasks with `Agent` and then pass the output into the next agent and onwards until you have specified your max loops.
 
 ```python
-from swarms import Agent, SequentialWorkflow, Anthropic
+from swarms import Agent, SequentialWorkflow
+
+from swarm_models import Anthropic
 
 
 # Initialize the language model agent (e.g., GPT-3)
@@ -742,7 +673,10 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms import Agent, Edge, GraphWorkflow, Node, NodeType, OpenAIChat
+
+from swarms import Agent, Edge, GraphWorkflow, Node, NodeType
+
+from swarm_models import OpenAIChat
 
 load_dotenv()
 
@@ -1059,21 +993,8 @@ The easiest way to contribute is to pick any issue with the `good first issue` t
 
 Swarms is an open-source project, and contributions are VERY welcome. If you want to contribute, you can create new features, fix bugs, or improve the infrastructure. Please refer to the [CONTRIBUTING.md](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md) and our [contributing board](https://github.com/users/kyegomez/projects/1) to participate in Roadmap discussions!
 
-<a href="https://github.com/kyegomez/swarms/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=kyegomez/swarms" />
-</a>
-
 ----
 
-
-
-## Swarm Newsletter 🤖 🤖 🤖 📧 
-Sign up to the Swarm newsletter to receive  updates on the latest Autonomous agent research papers, step by step guides on creating multi-agent app, and much more Swarmie goodiness 😊
-
-[CLICK HERE TO SIGNUP](https://docs.google.com/forms/d/e/1FAIpQLSfqxI2ktPR9jkcIwzvHL0VY6tEIuVPd-P2fOWKnd6skT9j1EQ/viewform?usp=sf_link)
-
-## Discovery Call
-Book a discovery call to learn how Swarms can lower your operating costs by 40% with swarms of autonomous agents in lightspeed. [Click here to book a time that works for you!](https://calendly.com/swarm-corp/30min?month=2023-11)
 
 
 ## Accelerate Backlog
@@ -1094,9 +1015,6 @@ Join our growing community around the world, for real-time support, ideas, and d
 - Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks [Sign up here](https://lu.ma/5p2jnc2v)
 
 ---
-
-# License
-Apache License
 
 # Citations
 Please cite Swarms in your paper or your project if you found it beneficial in any way! Appreciate you.

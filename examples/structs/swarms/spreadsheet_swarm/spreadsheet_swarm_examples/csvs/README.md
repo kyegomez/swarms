@@ -434,7 +434,9 @@ Run the agent with multiple modalities useful for various real-world tasks in ma
 ```python
 import os
 from dotenv import load_dotenv
-from swarms import GPT4VisionAPI, Agent
+from swarms import Agent
+
+from swarm_models import GPT4VisionAPI
 
 # Load the environment variables
 load_dotenv()
@@ -623,7 +625,9 @@ In traditional swarm theory, there are many types of swarms usually for very spe
 Sequential Workflow enables you to sequentially execute tasks with `Agent` and then pass the output into the next agent and onwards until you have specified your max loops.
 
 ```python
-from swarms import Agent, SequentialWorkflow, Anthropic
+from swarms import Agent, SequentialWorkflow
+
+from swarm_models import Anthropic
 
 
 # Initialize the language model agent (e.g., GPT-3)
@@ -741,7 +745,10 @@ import os
 
 from dotenv import load_dotenv
 
-from swarms import Agent, Edge, GraphWorkflow, Node, NodeType, OpenAIChat
+
+from swarms import Agent, Edge, GraphWorkflow, Node, NodeType
+
+from swarm_models import OpenAIChat
 
 load_dotenv()
 

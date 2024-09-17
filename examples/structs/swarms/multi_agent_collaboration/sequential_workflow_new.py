@@ -1,4 +1,6 @@
-from swarms import Agent, SequentialWorkflow, Anthropic
+from swarms import Agent, SequentialWorkflow
+
+from swarm_models import Anthropic
 
 
 # Initialize the language model agent (e.g., GPT-3)

@@ -34,7 +34,9 @@ Runs the specified task through the agents in the dynamically constructed flow.
 
 - **Usage Example:**
   ```python
-  from swarms import Agent, SequentialWorkflow, Anthropic
+  from swarms import Agent, SequentialWorkflow
+
+from swarm_models import Anthropic
 
 
     # Initialize the language model agent (e.g., GPT-3)
