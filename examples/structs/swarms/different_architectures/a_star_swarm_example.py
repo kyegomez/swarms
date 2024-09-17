@@ -5,7 +5,7 @@ from swarm_models import OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from swarms.structs.a_star_swarm import AStarSwarm
+from examples.structs.swarms.experimental.a_star_swarm import AStarSwarm
 
 # Set up the model as provided
 api_key = os.getenv("OPENAI_API_KEY")
