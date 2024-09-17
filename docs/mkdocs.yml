@@ -151,10 +151,8 @@ nav:
         - Tool Storage & tool_registry decorator: "swarms/tools/tool_storage.md"
       - RAG or Long Term Memory:
         - Long Term Memory with RAG: "swarms/memory/diy_memory.md"
-    # - Tasks:
-    #   - Tasks, Agents with runtimes, triggers, task prioritiies, scheduled tasks, and more: "swarms/structs/task.md"
-    #   - Task API Reference: "swarms/structs/task.md"
     - Swarm Architectures:
+      - Why MultiAgent Collaboration is Necessary: "swarms/concept/why.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarmms.md"
       - Conversation: "swarms/structs/conversation.md"
