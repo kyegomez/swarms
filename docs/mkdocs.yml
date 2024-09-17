@@ -138,7 +138,6 @@ nav:
     - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
     - Docker Setup: "swarms/install/docker_setup.md"
     - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
-    - Contributing: "swarms/contributing.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
       - Agent Architecture: "swarms/framework/agents_explained.md"
@@ -168,13 +167,11 @@ nav:
           - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
           - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
     - Structs:
-      # - BaseStructure: "swarms/structs/basestructure.md"
       - Conversation: "swarms/structs/conversation.md"
       - Task: "swarms/structs/task.md"
-      # - YamlModel: "swarms/structs/yaml_model.md"
     - Contributing: 
-      - Tests: "swarms/framework/test.md"
       - Contributing: "swarms/contributing.md"
+      - Tests: "swarms/framework/test.md"
       - Code Cleanliness: "swarms/framework/code_cleanliness.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
