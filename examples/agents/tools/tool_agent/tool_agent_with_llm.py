@@ -3,7 +3,9 @@ import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-from swarms import OpenAIChat, ToolAgent
+from swarms import ToolAgent
+
+from swarm_models import OpenAIChat
 from swarms.tools.json_utils import base_model_to_json
 
 # Load the environment variables

@@ -4,7 +4,7 @@ from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
 from swarms.structs.agent import Agent
-from swarms import OpenAIChat
+from swarm_models import OpenAIChat
 
 # Example usage:
 api_key = os.getenv("GROQ_API_KEY")

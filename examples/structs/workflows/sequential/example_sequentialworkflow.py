@@ -1,5 +1,6 @@
 import os
-from swarms import OpenAIChat, Agent, SequentialWorkflow
+from swarms import Agent, SequentialWorkflow
+from swarm_models import OpenAIChat
 from dotenv import load_dotenv
 
 load_dotenv()

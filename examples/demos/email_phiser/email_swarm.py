@@ -1,7 +1,7 @@
 import os
 
-from swarms import OpenAIChat, Agent, AgentRearrange
-
+from swarms import Agent, AgentRearrange
+from swarm_models import OpenAIChat
 
 llm = OpenAIChat(
     openai_api_key=os.getenv("OPENAI_API_KEY"),

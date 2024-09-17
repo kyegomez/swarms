@@ -96,7 +96,7 @@ tool_schema = QueryPlan(
 We specify the query, task specification and an appropriate system prompt.
 
 ```python
-from swarms import OpenAIChat
+from swarm_models import OpenAIChat
 from swarms import Agent
 
 query = "How do we improve Nike's revenue in Q3 2024?"

@@ -1,5 +1,6 @@
 import os
-from swarms import OpenAIChat, ConcurrentWorkflow, Agent
+from swarms import ConcurrentWorkflow, Agent
+from swarm_models import OpenAIChat
 
 TUTORIAL_WRITER_AGENT_SYS_PROMPT = """
 ### **System Prompt: Tutorial Writer AI Agent**

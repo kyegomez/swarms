@@ -554,76 +554,76 @@ def round_robin_speaker(agents: List[Agent], iteration: int) -> Agent:
     return selected
 
 
-# # Example usage
-# if __name__ == "__main__":
-#     from swarms import OpenAIChat
-#     from swarms.prompts.finance_agent_sys_prompt import (
-#         FINANCIAL_AGENT_SYS_PROMPT,
-#     )
+# Example usage
+if __name__ == "__main__":
+    from swarm_models import OpenAIChat
+    from swarms.prompts.finance_agent_sys_prompt import (
+        FINANCIAL_AGENT_SYS_PROMPT,
+    )
 
-#     # Get the OpenAI API key from the environment variable
-#     api_key = os.getenv("OPENAI_API_KEY")
-#     if not api_key:
-#         logger.error("OpenAI API key not found in environment variables.")
-#         exit(1)
+    # Get the OpenAI API key from the environment variable
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logger.error("OpenAI API key not found in environment variables.")
+        exit(1)
 
-#     # Create instances of the OpenAIChat class
-#     model = OpenAIChat(
-#         api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-#     )
+    # Create instances of the OpenAIChat class
+    model = OpenAIChat(
+        api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+    )
 
-#     # Initialize agents
-#     agent1 = Agent(
-#         agent_name="Financial-Analysis-Agent_1",
-#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#         llm=model,
-#         max_loops=1,
-#         dynamic_temperature_enabled=True,
-#         saved_state_path="finance_agent_1.json",
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         return_step_meta=False,
-#     )
+    # Initialize agents
+    agent1 = Agent(
+        agent_name="Financial-Analysis-Agent_1",
+        system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+        llm=model,
+        max_loops=1,
+        dynamic_temperature_enabled=True,
+        saved_state_path="finance_agent_1.json",
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        return_step_meta=False,
+    )
 
-#     agent2 = Agent(
-#         agent_name="Financial-Analysis-Agent_2",
-#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#         llm=model,
-#         max_loops=1,
-#         dynamic_temperature_enabled=True,
-#         saved_state_path="finance_agent_2.json",
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         return_step_meta=False,
-#     )
+    agent2 = Agent(
+        agent_name="Financial-Analysis-Agent_2",
+        system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+        llm=model,
+        max_loops=1,
+        dynamic_temperature_enabled=True,
+        saved_state_path="finance_agent_2.json",
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        return_step_meta=False,
+    )
 
-#     agent2 = Agent(
-#         agent_name="Financial-Analysis-Agent_3",
-#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#         llm=model,
-#         max_loops=1,
-#         dynamic_temperature_enabled=True,
-#         saved_state_path="finance_agent_2.json",
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         return_step_meta=False,
-#     )
+    agent2 = Agent(
+        agent_name="Financial-Analysis-Agent_3",
+        system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+        llm=model,
+        max_loops=1,
+        dynamic_temperature_enabled=True,
+        saved_state_path="finance_agent_2.json",
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        return_step_meta=False,
+    )
 
-#     # Initialize the MultiAgentCollaboration with the round-robin speaker function
-#     multi_agent_framework = MultiAgentCollaboration(
-#         agents=[agent1, agent2],
-#         speaker_fn=round_robin_speaker,
-#         max_loops=3,
-#         use_cache=True,  # Enable caching
-#         autosave_on=True,
-#     )
+    # Initialize the MultiAgentCollaboration with the round-robin speaker function
+    multi_agent_framework = MultiAgentCollaboration(
+        agents=[agent1, agent2],
+        speaker_fn=round_robin_speaker,
+        max_loops=3,
+        use_cache=True,  # Enable caching
+        autosave_on=True,
+    )
 
-#     # Run the framework with an input prompt
-#     task = "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
-#     out = multi_agent_framework.run(task)
-#     print(out)
+    # Run the framework with an input prompt
+    task = "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
+    out = multi_agent_framework.run(task)
+    print(out)
 
-#     print(multi_agent_framework.return_output_schema_json())
+    print(multi_agent_framework.return_output_schema_json())

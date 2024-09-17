@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from swarms import OpenAIChat
+from swarm_models import OpenAIChat
 from swarms import Agent
 import os
 

@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
-from swarms import OpenAIChat, Task, RecursiveWorkflow, Agent
+from swarms import Task, RecursiveWorkflow, Agent
+from swarm_models import OpenAIChat
 
 # Load environment variables from .env file
 load_dotenv()

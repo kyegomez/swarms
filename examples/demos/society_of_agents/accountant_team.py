@@ -1,4 +1,5 @@
-from swarms import OpenAIChat, AgentRearrange, Agent
+from swarms import AgentRearrange, Agent
+from swarm_models import OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
