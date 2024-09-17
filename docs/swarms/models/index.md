@@ -44,7 +44,7 @@ OpenAI(api_key: str, system: str = None, console: bool = True, model: str = None
 ```python
 import asyncio
 
-from swarms import OpenAI
+from swarm_models import OpenAI
 
 chat = OpenAI(api_key="YOUR_OPENAI_API_KEY")
 
@@ -83,7 +83,7 @@ HuggingFaceLLM(model_id: str, device: str = None, max_length: int = 20, quantize
 
 **Usage Example:**
 ```python
-from swarms import HuggingFaceLLM
+from swarm_models import HuggingFaceLLM
 
 model_id = "gpt2"
 hugging_face_model = HuggingFaceLLM(model_id=model_id)
@@ -124,7 +124,7 @@ GooglePalm(model_name: str = "models/chat-bison-001", google_api_key: str = None
 
 **Usage Example:**
 ```python
-from swarms import GooglePalm
+from swarm_models import GooglePalm
 
 google_palm = GooglePalm()
 messages = [
@@ -167,7 +167,7 @@ Anthropic(model: str = "claude-2", max_tokens_to_sample: int = 256, temperature:
 
 **Usage Example:**
 ```python
-from swarms import Anthropic
+from swarm_models import Anthropic
 
 anthropic = Anthropic()
 prompt = "Once upon a time"
