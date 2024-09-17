@@ -114,7 +114,7 @@
 # api_key = os.getenv("OPENAI_API_KEY")
 
 # # Create an instance of the OpenAIChat class for each agent
-# model = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
+# model = OpenAIChat(openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
 
 # # Initialize multiple agents
 # agent1 = Agent(

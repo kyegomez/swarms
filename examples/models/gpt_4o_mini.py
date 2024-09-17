@@ -5,7 +5,7 @@ import os
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Create an instance of the OpenAIChat class
-model = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini")
+model = OpenAIChat(openai_api_key=api_key, model_name="gpt-4o-mini")
 
 # Query the model with a question
 out = model(

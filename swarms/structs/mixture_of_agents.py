@@ -184,9 +184,9 @@ class MixtureOfAgents:
 #     api_key = os.getenv("OPENAI_API_KEY")
 
 #     # Create individual agents with the OpenAIChat model
-#     model1 = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
-#     model2 = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
-#     model3 = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
+#     model1 = OpenAIChat(openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
+#     model2 = OpenAIChat(openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
+#     model3 = OpenAIChat(openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
 
 #     agent1 = Agent(
 #         agent_name="Agent1",
