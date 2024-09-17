@@ -154,7 +154,7 @@ nav:
     - Swarm Architectures:
       - Why MultiAgent Collaboration is Necessary: "swarms/concept/why.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
-      - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarmms.md"
+      - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
       - Conversation: "swarms/structs/conversation.md"
       - MajorityVoting: "swarms/structs/majorityvoting.md"
       - AgentRearrange: "swarms/structs/agent_rearrange.md"
