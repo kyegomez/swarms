@@ -154,7 +154,7 @@ You will also need a Pinecone account and API key. Follow the instructions on th
 3. Import the necessary modules in your Python code:
 
 ```python
-from swarms.memory.vector_stores.pinecone import PineconeVector
+from swarms_memory import PineconeVector
 ```
 
 Now you're ready to use the `PineconeVector` class to work with Pinecone for vector storage.

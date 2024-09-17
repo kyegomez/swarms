@@ -1,9 +1,30 @@
+import concurrent.futures
 import logging
 import os
 import warnings
+from threading import Thread
+
+
+def disable_langchain():
+    """
+    Disables the LangChain deprecation warning.
+    """
+    from langchain_core._api.deprecation import (
+        LangChainDeprecationWarning,
+    )
+
+    # Ignore LangChainDeprecationWarning
+    warnings.filterwarnings(
+        "ignore", category=LangChainDeprecationWarning
+    )
 
 
 def disable_logging():
+    """
+    Disables logging for specific modules and sets up file and stream handlers.
+    Runs in a separate thread to avoid blocking the main thread.
+    """
+    os.environ["WORKSPACE_DIR"] = "agent_workspace"
 
     warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -20,7 +41,7 @@ def disable_logging():
     except Exception as error:
         print(f"Pytorch logging not disabled: {error}")
 
-    for logger_name in [
+    logger_names = [
         "tensorflow",
         "h5py",
         "numexpr",
@@ -31,9 +52,11 @@ def disable_logging():
         "urllib3",
         "elasticsearch",
         "packaging",
-    ]:
-        logger = logging.getLogger(logger_name)
-        logger.setLevel(logging.CRITICAL)
+    ]
+
+    # Use concurrent futures to set the level for each logger concurrently
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor.map(set_logger_level, logger_names)
 
     # Remove all existing handlers
     logging.getLogger().handlers = []
@@ -56,3 +79,25 @@ def disable_logging():
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.ERROR)
     logging.getLogger().addHandler(stream_handler)
+
+    disable_langchain()
+
+
+def set_logger_level(logger_name: str) -> None:
+    """
+    Sets the logging level for a specific logger to CRITICAL.
+
+    Args:
+        logger_name (str): The name of the logger to modify.
+    """
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.CRITICAL)
+
+
+def start_disable_logging_in_thread():
+    """
+    Starts the disable_logging function in a separate thread to avoid blocking the main thread.
+    """
+    thread = Thread(target=disable_logging)
+    thread.start()
+    return thread

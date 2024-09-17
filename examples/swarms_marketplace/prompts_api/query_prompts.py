@@ -8,7 +8,9 @@ def get_prompts(filters):
     )
 
     if response.status_code != 200:
-        raise Exception(f"Error: {response.status_code}, {response.text}")
+        raise Exception(
+            f"Error: {response.status_code}, {response.text}"
+        )
 
     data = response.json()
     print(data)
@@ -19,7 +21,9 @@ def get_prompt_by_id(id):
     response = requests.get(f"https://swarms.world/get-prompts/{id}")
 
     if response.status_code != 200:
-        raise Exception(f"Error: {response.status_code}, {response.text}")
+        raise Exception(
+            f"Error: {response.status_code}, {response.text}"
+        )
 
     data = response.json()
     print(data)

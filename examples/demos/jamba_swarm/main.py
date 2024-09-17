@@ -155,7 +155,9 @@ class JambaSwarm:
         names, system_prompts = parse_agents(agents)
 
         # Call the function with parsed data
-        response = create_and_execute_swarm(names, system_prompts, task)
+        response = create_and_execute_swarm(
+            names, system_prompts, task
+        )
 
         # Create and execute swarm
         log = JambaSwarmResponse(

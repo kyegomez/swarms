@@ -66,7 +66,9 @@ class GraphWorkflow(BaseModel):
     edges: List[Edge] = Field(default_factory=list)
     entry_points: List[str] = Field(default_factory=list)
     end_points: List[str] = Field(default_factory=list)
-    graph: nx.DiGraph = Field(default_factory=nx.DiGraph, exclude=True)
+    graph: nx.DiGraph = Field(
+        default_factory=nx.DiGraph, exclude=True
+    )
     max_loops: int = 1
 
     class Config:
@@ -84,7 +86,9 @@ class GraphWorkflow(BaseModel):
         """
         try:
             if node.id in self.nodes:
-                raise ValueError(f"Node with id {node.id} already exists.")
+                raise ValueError(
+                    f"Node with id {node.id} already exists."
+                )
             self.nodes[node.id] = node
             self.graph.add_node(
                 node.id,
@@ -106,7 +110,10 @@ class GraphWorkflow(BaseModel):
         Raises:
             ValueError: If either the source or target node of the edge does not exist in the graph.
         """
-        if edge.source not in self.nodes or edge.target not in self.nodes:
+        if (
+            edge.source not in self.nodes
+            or edge.target not in self.nodes
+        ):
             raise ValueError(
                 "Both source and target nodes must exist before adding an edge."
             )
@@ -125,7 +132,9 @@ class GraphWorkflow(BaseModel):
         """
         for node_id in entry_points:
             if node_id not in self.nodes:
-                raise ValueError(f"Node with id {node_id} does not exist.")
+                raise ValueError(
+                    f"Node with id {node_id} does not exist."
+                )
         self.entry_points = entry_points
 
     def set_end_points(self, end_points: List[str]):
@@ -140,7 +149,9 @@ class GraphWorkflow(BaseModel):
         """
         for node_id in end_points:
             if node_id not in self.nodes:
-                raise ValueError(f"Node with id {node_id} does not exist.")
+                raise ValueError(
+                    f"Node with id {node_id} does not exist."
+                )
         self.end_points = end_points
 
     def visualize(self) -> str:
@@ -157,7 +168,9 @@ class GraphWorkflow(BaseModel):
             mermaid_str += f"    {edge.source} --> {edge.target}\n"
         return mermaid_str
 
-    def run(self, task: str = None, *args, **kwargs) -> Dict[str, Any]:
+    def run(
+        self, task: str = None, *args, **kwargs
+    ) -> Dict[str, Any]:
         """
         Function to run the workflow graph.
 

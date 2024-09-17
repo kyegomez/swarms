@@ -13,7 +13,9 @@ def run_single_agent(agent, task):
 # Asynchronous wrapper for agent tasks
 async def run_agent_async(agent, task):
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, run_single_agent, agent, task)
+    return await loop.run_in_executor(
+        None, run_single_agent, agent, task
+    )
 
 
 # Asynchronous function to run agents concurrently

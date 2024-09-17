@@ -94,7 +94,9 @@ class ExaAgent(BaseLLM):
     A class to interact with the Exa API.
     """
 
-    def __init__(self, api_key: str = check_exa_api(), *args, **kwargs):
+    def __init__(
+        self, api_key: str = check_exa_api(), *args, **kwargs
+    ):
         """
         Initialize the ExaAgent class with an API key.
 
@@ -242,7 +244,9 @@ class TavilyWrapper:
         try:
             return tavily.TavilyClient(api_key=api_key)
         except Exception as e:
-            raise RuntimeError(f"Error initializing Tavily client: {e}")
+            raise RuntimeError(
+                f"Error initializing Tavily client: {e}"
+            )
 
     def run(self, task: str) -> Dict[str, Any]:
         """

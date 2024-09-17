@@ -29,7 +29,7 @@ The `SpreadSheetSwarm` class contains several attributes that define its behavio
 | `lock`             | `threading.Lock`                  | A lock used for thread synchronization to prevent race conditions.                          |
 | `metadata`         | `SwarmRunMetadata`                | Metadata for the swarm run, including start time, end time, tasks completed, and outputs.   |
 | `run_all_agents`   | `bool`                            | Flag indicating whether to run all agents or just one.                                      |
-| `repeat_count`     | `int`                             | The number of times to repeat the task.                                                     |
+| `max_loops`     | `int`                             | The number of times to repeat the task.                                                     |
 | `workspace_dir`    | `str`                             | The directory where the workspace is located, retrieved from environment variables.         |
 
 ### Parameters
@@ -40,7 +40,7 @@ The `SpreadSheetSwarm` class contains several attributes that define its behavio
 - **`autosave_on`** (`bool`, optional): A flag to indicate if autosave is enabled. Default is `True`.
 - **`save_file_path`** (`str`, optional): The file path where swarm data will be saved. Default is `"spreedsheet_swarm.csv"`.
 - **`run_all_agents`** (`bool`, optional): Flag to determine if all agents should run. Default is `True`.
-- **`repeat_count`** (`int`, optional): The number of times to repeat the task. Default is `1`.
+- **`max_loops`** (`int`, optional): The number of times to repeat the task. Default is `1`.
 - **`workspace_dir`** (`str`, optional): The directory where the workspace is located. Default is retrieved from environment variable `WORKSPACE_DIR`.
 
 ### Constructor (`__init__`)
@@ -227,7 +227,7 @@ swarm = SpreadSheetSwarm(
     autosave_on=True,
     save_file_path="financial_spreed_sheet_swarm_demo.csv",
     run_all_agents=False,
-    repeat_count=1,
+    max_loops=1,
 )
 
 # Run the swarm
@@ -293,7 +293,7 @@ swarm = SpreadSheetSwarm(
     autosave_on=True,
     save_file_path="qr_code_generation_results.csv",
     run_all_agents=False,
-    repeat_count=1,
+    max_loops=1,
 )
 
 # Run the swarm
@@ -388,7 +388,7 @@ swarm = SpreadSheetSwarm(
     autosave_on=True,
     save_file_path="social_media_marketing_spreadsheet.csv",
     run_all_agents=False,
-    repeat_count=2,
+    max_loops=2,
 )
 
 # Run the swarm

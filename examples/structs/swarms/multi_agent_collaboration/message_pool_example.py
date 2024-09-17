@@ -14,7 +14,9 @@ moderator = Agent(agent_name="moderator")
 agents = [agent1, agent2, agent3]
 
 # Create a message pool with 5 turns
-message_pool = MessagePool(agents=agents, moderator=moderator, turns=5)
+message_pool = MessagePool(
+    agents=agents, moderator=moderator, turns=5
+)
 
 # Add messages to the message pool
 message_pool.add(agent=agent1, content="Hello, agent2!", turn=1)

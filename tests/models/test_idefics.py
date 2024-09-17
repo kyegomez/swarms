@@ -85,7 +85,9 @@ def test_call(idefics_instance):
 def test_chat(idefics_instance):
     user_input = "User: Hello"
     response = "Model: Hi there!"
-    with patch.object(idefics_instance, "run", return_value=[response]):
+    with patch.object(
+        idefics_instance, "run", return_value=[response]
+    ):
         result = idefics_instance.chat(user_input)
 
     assert result == response
@@ -161,7 +163,9 @@ def test_run_batched_mode_false(idefics_instance):
 # Test `run` method with an exception
 def test_run_with_exception(idefics_instance):
     task = "User: Test"
-    with patch.object(idefics_instance, "processor") as mock_processor:
+    with patch.object(
+        idefics_instance, "processor"
+    ) as mock_processor:
         mock_processor.side_effect = Exception("Test exception")
         with pytest.raises(Exception):
             idefics_instance.run(task)

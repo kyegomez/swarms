@@ -16,7 +16,9 @@ def function_to_str(function: dict[str, Any]) -> str:
     function_str += f"Description: {function['description']}\n"
     function_str += "Parameters:\n"
 
-    for param, details in function["parameters"]["properties"].items():
+    for param, details in function["parameters"][
+        "properties"
+    ].items():
         function_str += f"  {param} ({details['type']}): {details.get('description', '')}\n"
 
     return function_str

@@ -204,7 +204,9 @@ class ModelRouter(BaseStructure):
                 model.model_name,
             ]:
                 return model
-        raise ValueError(f"Model {model_name} not found in model pool.")
+        raise ValueError(
+            f"Model {model_name} not found in model pool."
+        )
 
     def get_multiple_models_by_name(
         self, model_names: List[str]
@@ -324,7 +326,11 @@ class ModelRouter(BaseStructure):
         return model
 
     def find_model_by_name_and_run(
-        self, model_name: str = None, task: str = None, *args, **kwargs
+        self,
+        model_name: str = None,
+        task: str = None,
+        *args,
+        **kwargs,
     ) -> str:
         """
         Finds a model by its name and runs a task on it.

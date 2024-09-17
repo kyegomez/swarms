@@ -1,6 +1,6 @@
 # `Agent` Documentation
 
-Swarm Agent is a powerful autonomous agent framework designed to connect Language Models (LLMs) with various tools and long-term memory. This framework provides the ability to ingest and process various types of documents such as PDFs, text files, Markdown files, JSON files, and more. The Swarm Agent offers a wide range of features to enhance the capabilities of LLMs and facilitate efficient task execution.
+Swarm Agent is a powerful autonomous agent framework designed to connect Language Models (LLMs) with various tools and long-term memory. This class provides the ability to ingest and process various types of documents such as PDFs, text files, Markdown files, JSON files, and more. The Agent structure offers a wide range of features to enhance the capabilities of LLMs and facilitate efficient task execution.
 
 1. **Conversational Loop**: It establishes a conversational loop with a language model. This means it allows you to interact with the model in a back-and-forth manner, taking turns in the conversation.
 
@@ -128,24 +128,49 @@ Swarm Agent is a powerful autonomous agent framework designed to connect Languag
 First run the following:
 
 ```bash
-pip3 install swarms
+pip3 install -U swarms
 ```
 
 And, then now you can get started with the following:
 
 ```python
-from swarms.models import OpenAIChat
-from swarms.structs import Agent
+import os
+from swarms import Agent, OpenAIChat
+from swarms.prompts.finance_agent_sys_prompt import (
+    FINANCIAL_AGENT_SYS_PROMPT,
+)
 
-# Initialize the language model
-llm = OpenAIChat()
+# Get the OpenAI API key from the environment variable
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Create an instance of the OpenAIChat class
+model = OpenAIChat(
+    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+)
 
 # Initialize the agent
-agent = Agent(llm=llm, max_loops=3)
+agent = Agent(
+    agent_name="Financial-Analysis-Agent_sas_chicken_eej",
+    system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+    llm=model,
+    max_loops=1,
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    dynamic_temperature_enabled=True,
+    saved_state_path="finance_agent.json",
+    user_name="swarms_corp",
+    retry_attempts=1,
+    context_length=200000,
+    return_step_meta=False,
+)
 
-# Run a task
-response = agent.run("Generate a report on the financial performance of a company.")
-print(response)
+
+out = agent.run(
+    "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
+)
+print(out)
+
 ```
 
 This example initializes an instance of the `Agent` class with an OpenAI language model and a maximum of 3 loops. The `run()` method is then called with a task to generate a report on financial performance, and the agent's response is printed.
@@ -156,14 +181,131 @@ The Swarm Agent provides numerous advanced features and customization options. H
 
 ### Tool Integration
 
-To integrate tools with the Swarm Agent, you can pass a list of callable functions to the `tools` parameter when initializing the `Agent` instance. The agent will automatically convert these functions into an OpenAI function calling schema and make them available for use during task execution.
+To integrate tools with the Swarm Agent, you can pass a list of callable functions with types and doc strings to the `tools` parameter when initializing the `Agent` instance. The agent will automatically convert these functions into an OpenAI function calling schema and make them available for use during task execution.
+
+## Requirements for a tool
+- Function
+  - With types
+  - with doc strings
 
 ```python
-from swarms.structs import Agent
-from my_tools import tool_function_1, tool_function_2
+from swarms import Agent, OpenAIChat
+from swarms_memory import ChromaDB
+import subprocess
+import os
 
-# Initialize the agent with tools
-agent = Agent(llm=llm, max_loops=3, tools=[tool_function_1, tool_function_2])
+# Making an instance of the ChromaDB class
+memory = ChromaDB(
+    metric="cosine",
+    n_results=3,
+    output_dir="results",
+    docs_folder="docs",
+)
+
+# Model
+model = OpenAIChat(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    model_name="gpt-4o-mini",
+    temperature=0.1,
+)
+
+
+# Tools in swarms are simple python functions and docstrings
+def terminal(
+    code: str,
+):
+    """
+    Run code in the terminal.
+
+    Args:
+        code (str): The code to run in the terminal.
+
+    Returns:
+        str: The output of the code.
+    """
+    out = subprocess.run(
+        code, shell=True, capture_output=True, text=True
+    ).stdout
+    return str(out)
+
+
+def browser(query: str):
+    """
+    Search the query in the browser with the `browser` tool.
+
+    Args:
+        query (str): The query to search in the browser.
+
+    Returns:
+        str: The search results.
+    """
+    import webbrowser
+
+    url = f"https://www.google.com/search?q={query}"
+    webbrowser.open(url)
+    return f"Searching for {query} in the browser."
+
+
+def create_file(file_path: str, content: str):
+    """
+    Create a file using the file editor tool.
+
+    Args:
+        file_path (str): The path to the file.
+        content (str): The content to write to the file.
+
+    Returns:
+        str: The result of the file creation operation.
+    """
+    with open(file_path, "w") as file:
+        file.write(content)
+    return f"File {file_path} created successfully."
+
+
+def file_editor(file_path: str, mode: str, content: str):
+    """
+    Edit a file using the file editor tool.
+
+    Args:
+        file_path (str): The path to the file.
+        mode (str): The mode to open the file in.
+        content (str): The content to write to the file.
+
+    Returns:
+        str: The result of the file editing operation.
+    """
+    with open(file_path, mode) as file:
+        file.write(content)
+    return f"File {file_path} edited successfully."
+
+
+# Agent
+agent = Agent(
+    agent_name="Devin",
+    system_prompt=(
+        "Autonomous agent that can interact with humans and other"
+        " agents. Be Helpful and Kind. Use the tools provided to"
+        " assist the user. Return all code in markdown format."
+    ),
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    interactive=True,
+    tools=[terminal, browser, file_editor, create_file],
+    streaming=True,
+    long_term_memory=memory,
+)
+
+# Run the agent
+out = agent(
+    "Create a CSV file with the latest tax rates for C corporations in the following ten states and the District of Columbia: Alabama, California, Florida, Georgia, Illinois, New York, North Carolina, Ohio, Texas, and Washington."
+)
+print(out)
+
 ```
 
 ### Long-term Memory Management
@@ -171,14 +313,50 @@ agent = Agent(llm=llm, max_loops=3, tools=[tool_function_1, tool_function_2])
 The Swarm Agent supports integration with various vector databases for long-term memory management. You can pass an instance of a `BaseVectorDatabase` implementation to the `long_term_memory` parameter when initializing the `Agent`.
 
 ```python
-from swarms.structs import Agent
-from swarms.memory.chroma import ChromaVectorDatabase
+import os
 
-# Initialize a vector database
-vector_db = ChromaVectorDatabase(persist_directory="path/to/db")
+from swarms_memory import ChromaDB
 
-# Initialize the agent with long-term memory
-agent = Agent(llm=llm, max_loops=3, long_term_memory=vector_db)
+from swarms import Agent, Anthropic
+from swarms.prompts.finance_agent_sys_prompt import (
+    FINANCIAL_AGENT_SYS_PROMPT,
+)
+
+# Initilaize the chromadb client
+chromadb = ChromaDB(
+    metric="cosine",
+    output_dir="fiance_agent_rag",
+    # docs_folder="artifacts", # Folder of your documents
+)
+
+# Model
+model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+
+# Initialize the agent
+agent = Agent(
+    agent_name="Financial-Analysis-Agent",
+    system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+    agent_description="Agent creates ",
+    llm=model,
+    max_loops="auto",
+    autosave=True,
+    dashboard=False,
+    verbose=True,
+    streaming_on=True,
+    dynamic_temperature_enabled=True,
+    saved_state_path="finance_agent.json",
+    user_name="swarms_corp",
+    retry_attempts=3,
+    context_length=200000,
+    long_term_memory=chromadb,
+)
+
+
+agent.run(
+    "What are the components of a startups stock incentive equity plan"
+)
+
 ```
 
 ### Document Ingestion
@@ -317,8 +495,6 @@ agent.tokens_checks()
 # Print the dashboard of the agent
 agent.print_dashboard()
 
-# Print the history and memory of the agent
-agent.print_history_and_memory()
 
 # Fetch all the documents from the doc folders
 agent.get_docs_from_doc_folders()

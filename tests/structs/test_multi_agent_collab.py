@@ -117,8 +117,12 @@ def test_run(collaboration):
 
 
 def test_format_results(collaboration):
-    collaboration.results = [{"agent": "Agent1", "response": "Response1"}]
-    formatted_results = collaboration.format_results(collaboration.results)
+    collaboration.results = [
+        {"agent": "Agent1", "response": "Response1"}
+    ]
+    formatted_results = collaboration.format_results(
+        collaboration.results
+    )
     assert "Agent1 responded: Response1" in formatted_results
 
 

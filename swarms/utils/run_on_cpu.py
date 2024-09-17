@@ -2,25 +2,29 @@ import os
 import psutil
 from typing import Callable, Any
 from loguru import logger
+import functools
 
 
-def run_on_cpu(func: Callable, *args, **kwargs) -> Any:
+def run_on_cpu(func: Callable) -> Callable:
     """
-    Executes a callable function on the CPU, ensuring it doesn't run on a GPU.
-    This is achieved by setting the CPU affinity of the current process.
+    Decorator that ensures the function runs on all available CPU cores,
+    maximizing CPU and memory usage to execute the function as quickly as possible.
+
+    This decorator sets the CPU affinity of the current process to all available CPU cores
+    before executing the function. After the function completes, the original CPU affinity is restored.
 
     Args:
         func (Callable): The function to be executed.
-        *args: Variable length argument list to pass to the function.
-        **kwargs: Arbitrary keyword arguments to pass to the function.
 
     Returns:
-        Any: The result of the function execution.
+        Callable: The wrapped function with CPU affinity settings applied.
 
     Raises:
         RuntimeError: If the CPU affinity cannot be set or restored.
     """
-    try:
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         # Get the current process
         process = psutil.Process(os.getpid())
 
@@ -36,17 +40,41 @@ def run_on_cpu(func: Callable, *args, **kwargs) -> Any:
         logger.info(f"Original CPU affinity: {original_affinity}")
 
         try:
-            # Set the CPU affinity to all available CPU cores (ensuring it's CPU-bound)
+            # Set the CPU affinity to all available CPU cores
             all_cpus = list(range(os.cpu_count()))
             process.cpu_affinity(all_cpus)
             logger.info(f"Set CPU affinity to: {all_cpus}")
 
-            # Run the function with provided arguments
+            # Set process priority to high
+            try:
+                process.nice(psutil.HIGH_PRIORITY_CLASS)
+                logger.info("Set process priority to high.")
+            except AttributeError:
+                logger.warning(
+                    "Setting process priority is not supported on this platform."
+                )
+
+            # Pre-allocate memory by creating a large array (optional step)
+            memory_size = int(
+                psutil.virtual_memory().available * 0.9
+            )  # 90% of available memory
+            try:
+                logger.info(
+                    f"Pre-allocating memory: {memory_size} bytes"
+                )
+                _ = bytearray(memory_size)
+            except MemoryError:
+                logger.error(
+                    "Failed to pre-allocate memory, continuing without pre-allocation."
+                )
+
+            # Run the function
             result = func(*args, **kwargs)
 
         except psutil.AccessDenied as e:
             logger.error(
-                "Access denied while setting CPU affinity", exc_info=True
+                "Access denied while setting CPU affinity",
+                exc_info=True,
             )
             raise RuntimeError(
                 "Access denied while setting CPU affinity"
@@ -76,26 +104,22 @@ def run_on_cpu(func: Callable, *args, **kwargs) -> Any:
                 logger.error(
                     "Failed to restore CPU affinity", exc_info=True
                 )
-                raise RuntimeError("Failed to restore CPU affinity") from e
+                raise RuntimeError(
+                    "Failed to restore CPU affinity"
+                ) from e
 
         return result
 
-    except psutil.Error as e:
-        logger.error("A psutil error occurred", exc_info=True)
-        raise RuntimeError("A psutil error occurred") from e
-
-    except Exception as e:
-        logger.error("An unexpected error occurred", exc_info=True)
-        raise RuntimeError("An unexpected error occurred") from e
+    return wrapper
 
 
-# # Example usage
-# def example_function(x: int, y: int) -> int:
-#     return x + y
+# # Example usage of the decorator
+# @run_on_cpu
+# def compute_heavy_task() -> None:
+#     # An example task that is CPU and memory intensive
+#     data = [i**2 for i in range(100000000)]
+#     sum(data)
+#     print("Task completed.")
 
-# if __name__ == "__main__":
-#     try:
-#         result = run_on_cpu(example_function, 3, 4)
-#         print(f"Result: {result}")
-#     except RuntimeError as e:
-#         logger.error(f"Error occurred: {e}")
+
+# compute_heavy_task()

@@ -35,7 +35,9 @@ class DialogueAgent:
             [
                 self.system_message,
                 HumanMessage(
-                    content="\n".join(self.message_history + [self.prefix])
+                    content="\n".join(
+                        self.message_history + [self.prefix]
+                    )
                 ),
             ]
         )
@@ -74,7 +76,9 @@ class DialogueSimulator:
 
     def step(self) -> tuple[str, str]:
         # 1. choose the next speaker
-        speaker_idx = self.select_next_speaker(self._step, self.agents)
+        speaker_idx = self.select_next_speaker(
+            self._step, self.agents
+        )
         speaker = self.agents[speaker_idx]
 
         # 2. next speaker sends message
@@ -112,7 +116,9 @@ class BiddingDialogueAgent(DialogueAgent):
             message_history="\n".join(self.message_history),
             recent_message=self.message_history[-1],
         )
-        bid_string = self.model([SystemMessage(content=prompt)]).content
+        bid_string = self.model(
+            [SystemMessage(content=prompt)]
+        ).content
         return bid_string
 
 
@@ -157,7 +163,9 @@ Your goal is to be as creative as possible and make the voters think you are the
 """
 
 
-def generate_character_system_message(character_name, character_header):
+def generate_character_system_message(
+    character_name, character_header
+):
     return SystemMessage(
         content=f"""{character_header}
 You will speak in the style of {character_name}, and exaggerate their personality.
@@ -186,7 +194,9 @@ character_headers = [
     )
 ]
 character_system_messages = [
-    generate_character_system_message(character_name, character_headers)
+    generate_character_system_message(
+        character_name, character_headers
+    )
     for character_name, character_headers in zip(
         character_names, character_headers
     )
@@ -294,7 +304,9 @@ def ask_for_bid(agent) -> str:
     return bid
 
 
-def select_next_speaker(step: int, agents: List[DialogueAgent]) -> int:
+def select_next_speaker(
+    step: int, agents: List[DialogueAgent]
+) -> int:
     bids = []
     for agent in agents:
         bid = ask_for_bid(agent)

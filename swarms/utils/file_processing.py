@@ -1,3 +1,4 @@
+# TODO: Potentially make another package for this
 import json
 import os
 from typing import Any
@@ -16,7 +17,9 @@ def zip_workspace(workspace_path: str, output_filename: str):
     base_output_path = os.path.join(
         temp_dir, output_filename.replace(".zip", "")
     )
-    zip_path = shutil.make_archive(base_output_path, "zip", workspace_path)
+    zip_path = shutil.make_archive(
+        base_output_path, "zip", workspace_path
+    )
     return zip_path  # make_archive already appends .zip
 
 
@@ -61,7 +64,9 @@ def create_file(
     return file_path
 
 
-def create_file_in_folder(folder_path: str, file_name: str, content: Any):
+def create_file_in_folder(
+    folder_path: str, file_name: str, content: Any
+):
     """
     Creates a file in the specified folder with the given file name and content.
 
@@ -84,7 +89,9 @@ def create_file_in_folder(folder_path: str, file_name: str, content: Any):
     return file_path
 
 
-def zip_folders(folder1_path: str, folder2_path: str, zip_file_path: str):
+def zip_folders(
+    folder1_path: str, folder2_path: str, zip_file_path: str
+):
     """
     Zip two folders into a single zip file.
 

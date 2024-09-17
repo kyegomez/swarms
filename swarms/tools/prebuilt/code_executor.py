@@ -20,12 +20,15 @@ class CodeExecutor:
         self,
         max_output_length: int = 1000,
         artifacts_directory: str = "artifacts",
+        language: str = "python3",
     ) -> None:
         """
         Initializes the CodeExecutor class and sets up the logging.
         """
         self.max_output_length = max_output_length
         self.artifacts_dir = artifacts_directory
+        self.language = language
+        
         os.makedirs(self.artifacts_dir, exist_ok=True)
         self.setup_logging()
         self.tokenizer = TikTokenizer()
@@ -39,7 +42,9 @@ class CodeExecutor:
             format="{time} {level} {message}",
             level="DEBUG",
         )
-        logger.info("Logger initialized and artifacts directory set up.")
+        logger.info(
+            "Logger initialized and artifacts directory set up."
+        )
 
     def format_code(self, code: str) -> str:
         """
@@ -57,9 +62,11 @@ class CodeExecutor:
         try:
             import black
 
-            formatted_code = black.format_str(code, mode=black.FileMode())
+            formatted_code = black.format_str(
+                code, mode=black.FileMode()
+            )
             return formatted_code
-        except black.InvalidInput as e:
+        except Exception as e:
             logger.error(f"Error formatting code: {e}")
             raise ValueError(f"Error formatting code: {e}") from e
 
@@ -80,7 +87,7 @@ class CodeExecutor:
             formatted_code = self.format_code(code)
             logger.info(f"Executing code:\n{formatted_code}")
             completed_process = subprocess.run(
-                ["python", "-c", formatted_code],
+                [self.language, "-c", formatted_code],
                 capture_output=True,
                 text=True,
                 check=True,
@@ -102,7 +109,9 @@ class CodeExecutor:
             return output
         except subprocess.CalledProcessError as e:
             logger.error(f"Error executing code: {e.stderr}")
-            raise RuntimeError(f"Error executing code: {e.stderr}") from e
+            raise RuntimeError(
+                f"Error executing code: {e.stderr}"
+            ) from e
 
 
 # # Example usage:

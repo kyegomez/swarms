@@ -28,7 +28,9 @@ def execute_concurrently(callable_functions, max_workers=5):
     ) as executor:
         futures = []
         for i, (fn, args, kwargs) in enumerate(callable_functions):
-            futures.append(executor.submit(worker, fn, args, kwargs, i))
+            futures.append(
+                executor.submit(worker, fn, args, kwargs, i)
+            )
 
         # Wait for all threads to complete
         concurrent.futures.wait(futures)

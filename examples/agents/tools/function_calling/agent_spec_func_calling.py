@@ -72,7 +72,9 @@ model = OpenAIFunctionCaller(
 )
 
 
-def parse_json_for_agents_then_create_agents(function_call: dict) -> str:
+def parse_json_for_agents_then_create_agents(
+    function_call: dict,
+) -> str:
     agents = []
     for agent in json["multiple_agents"]:
         agents.append(

@@ -1,9 +1,7 @@
-from swarms.tools.prebuilt.code_interpreter import (
-    SubprocessCodeInterpreter,
-)
 from swarms.tools.prebuilt.math_eval import math_eval
+from swarms.tools.prebuilt.code_executor import CodeExecutor
 
 __all__ = [
-    "SubprocessCodeInterpreter",
     "math_eval",
+    "CodeExecutor",
 ]

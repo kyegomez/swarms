@@ -41,6 +41,17 @@ def timing_decorator(func):
 
 
 def retry_decorator(max_retries=5):
+    """
+    Decorator that retries a function a specified number of times if an exception occurs.
+
+    Args:
+        max_retries (int): The maximum number of times to retry the function.
+
+    Returns:
+        function: The decorated function.
+
+    """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

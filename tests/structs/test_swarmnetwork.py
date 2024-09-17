@@ -20,7 +20,9 @@ def test_swarm_network_init(swarm_network):
 @patch("swarms.structs.swarm_net.SwarmNetwork.logger")
 def test_run(mock_logger, swarm_network):
     swarm_network.run()
-    assert mock_logger.info.call_count == 10  # 2 log messages per agent
+    assert (
+        mock_logger.info.call_count == 10
+    )  # 2 log messages per agent
 
 
 def test_run_with_mocked_agents(mocker, swarm_network):

@@ -42,7 +42,9 @@ def get_review_prompt(article):
     return prompt
 
 
-def social_media_prompt(article: str, goal: str = "Clicks and engagement"):
+def social_media_prompt(
+    article: str, goal: str = "Clicks and engagement"
+):
     prompt = SOCIAL_MEDIA_SYSTEM_PROMPT_AGENT.replace(
         "{{ARTICLE}}", article
     ).replace("{{GOAL}}", goal)

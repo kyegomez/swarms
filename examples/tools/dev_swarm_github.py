@@ -167,7 +167,8 @@ def submit_pull_request(
             ".", "_"
         )
         repo.create_git_ref(
-            ref=f"refs/heads/{new_branch}", sha=current_branch.commit.sha
+            ref=f"refs/heads/{new_branch}",
+            sha=current_branch.commit.sha,
         )
 
         # Update the file

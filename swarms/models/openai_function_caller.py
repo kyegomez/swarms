@@ -49,7 +49,7 @@ class OpenAIFunctionCaller(BaseLLM):
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.system_prompt = system_prompt
         self.model_name = model_name
         self.max_tokens = max_tokens
@@ -97,7 +97,9 @@ class OpenAIFunctionCaller(BaseLLM):
                 temperature=self.temperature,
                 response_format=self.base_model,
                 parallel_tool_calls=self.parallel_tool_calls,
-                tools=([openai.pydantic_function_tool(self.base_model)]),
+                tools=(
+                    [openai.pydantic_function_tool(self.base_model)]
+                ),
                 *args,
                 **kwargs,
             )
@@ -123,7 +125,9 @@ class OpenAIFunctionCaller(BaseLLM):
     ) -> dict:
         return openai.pydantic_function_tool(base_model)
 
-    def convert_list_of_base_models(self, base_models: List[BaseModel]):
+    def convert_list_of_base_models(
+        self, base_models: List[BaseModel]
+    ):
         """
         Converts a list of BaseModels to a list of dictionaries.
 

@@ -59,7 +59,10 @@ class CrewAIAgentWrapper(Agent):
         """
         try:
             crew_task = Task(
-                description=task, agent=self.crewai_agent, *args, **kwargs
+                description=task,
+                agent=self.crewai_agent,
+                *args,
+                **kwargs,
             )
             crew = Crew(
                 agents=[self.crewai_agent],

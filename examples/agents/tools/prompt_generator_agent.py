@@ -192,7 +192,9 @@ system_prompt = """
 """
 
 
-agent = PromptGeneratorAgent(system_prompt=system_prompt, max_tokens=4000)
+agent = PromptGeneratorAgent(
+    system_prompt=system_prompt, max_tokens=4000
+)
 
 response = agent.run(
     "Create a prompt for an agent to analyze complicated cashflow statements and generate a summary report."

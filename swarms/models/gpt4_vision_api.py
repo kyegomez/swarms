@@ -339,7 +339,9 @@ class GPT4VisionAPI(BaseMultiModalModel):
     def health_check(self):
         """Health check for the GPT4Vision model"""
         try:
-            response = requests.get("https://api.openai.com/v1/engines")
+            response = requests.get(
+                "https://api.openai.com/v1/engines"
+            )
             return response.status_code == 200
         except requests.RequestException as error:
             print(f"Health check failed: {error}")

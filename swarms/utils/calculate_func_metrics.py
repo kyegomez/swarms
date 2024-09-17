@@ -13,6 +13,17 @@ class FunctionMetrics(BaseModel):
 
 
 def profile_func(func):
+    """
+    Decorator function that profiles the execution of a given function.
+
+    Args:
+        func: The function to be profiled.
+
+    Returns:
+        A wrapper function that profiles the execution of the given function and returns the result along with the metrics.
+
+    """
+
     def wrapper(*args, **kwargs):
         # Record the initial time, memory usage, CPU usage, and I/O operations
         start_time = time.time()

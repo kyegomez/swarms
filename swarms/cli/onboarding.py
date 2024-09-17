@@ -69,7 +69,9 @@ def get_user_info():
     first_name = input(colored("What is your first name? ", "blue"))
     last_name = input(colored("What is your last name? ", "blue"))
     email = input(colored("What is your email? ", "blue"))
-    company = input(colored("Which company do you work for? ", "blue"))
+    company = input(
+        colored("Which company do you work for? ", "blue")
+    )
     project = input(
         colored("What are you trying to build with Swarms? ", "blue")
     )
@@ -112,10 +114,8 @@ def onboard():
     save_user_info(user_info)
     print(
         colored(
-            "You're all set! Enjoy using Swarms.", "cyan", attrs=["bold"]
+            "You're all set! Enjoy using Swarms.",
+            "cyan",
+            attrs=["bold"],
         )
     )
-
-
-if __name__ == "__main__":
-    onboard()

@@ -200,7 +200,9 @@ class HierarchicalAgentSwarm(BaseSwarm):
         # Swarm History
         self.conversation = Conversation(time_enabled=True)
 
-        self.swarm_history = self.conversation.return_history_as_string()
+        self.swarm_history = (
+            self.conversation.return_history_as_string()
+        )
 
     def agents_check(self):
         if self.director is None:
@@ -212,7 +214,9 @@ class HierarchicalAgentSwarm(BaseSwarm):
         if len(self.agents) > 0:
             self.director.base_model = CallTeam
 
-            self.director.system_prompt = HIEARCHICAL_AGENT_SYSTEM_PROMPT
+            self.director.system_prompt = (
+                HIEARCHICAL_AGENT_SYSTEM_PROMPT
+            )
 
         if self.max_loops == 0:
             raise ValueError("The max_loops is not set.")
@@ -323,13 +327,17 @@ class HierarchicalAgentSwarm(BaseSwarm):
         function_call = self.model.run(task)
 
         # Add the function call to the conversation
-        self.conversation.add(role="Director", content=str(function_call))
+        self.conversation.add(
+            role="Director", content=str(function_call)
+        )
 
         # Logging the function call with metrics and details
         self.log_director_function_call(function_call)
 
         # # Parse the JSON function call and create agents -> run Agents
-        return self.parse_json_for_agents_then_create_agents(function_call)
+        return self.parse_json_for_agents_then_create_agents(
+            function_call
+        )
 
     def run_new(self, task: str):
         """
@@ -345,7 +353,9 @@ class HierarchicalAgentSwarm(BaseSwarm):
 
         # Run the function caller to output JSON function call
         function_call = self.model.run(task)
-        self.conversation.add(role="Director", content=str(function_call))
+        self.conversation.add(
+            role="Director", content=str(function_call)
+        )
 
         # Logging the function call with metrics and details
         self.log_director_function_call(function_call)
@@ -387,10 +397,14 @@ class HierarchicalAgentSwarm(BaseSwarm):
             task = order["task"]
 
             # Find and run the agent
-            response = self.run_worker_agent(name=agent_name, task=task)
+            response = self.run_worker_agent(
+                name=agent_name, task=task
+            )
 
             log = f"Agent: {agent_name} completed task: {task} with response: {response}"
-            self.conversation.add(role=agent_name, content=task + response)
+            self.conversation.add(
+                role=agent_name, content=task + response
+            )
             responses.append(log)
             logger.info(log)
 
@@ -519,7 +533,9 @@ class HierarchicalAgentSwarm(BaseSwarm):
 
         for agent in self.agents:
             name = agent.agent_name
-            description = agent.description or "No description available."
+            description = (
+                agent.description or "No description available."
+            )
             logger.info(f"Agent: {name}, Description: {description}")
 
     def list_agents_available(self):
@@ -541,7 +557,9 @@ class HierarchicalAgentSwarm(BaseSwarm):
 
         return prompt
 
-    def find_agent_by_name(self, agent_name: str = None, *args, **kwargs):
+    def find_agent_by_name(
+        self, agent_name: str = None, *args, **kwargs
+    ):
         """
         Finds an agent in the swarm by name.
 

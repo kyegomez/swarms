@@ -203,7 +203,9 @@ class HuggingfaceLLM(BaseLLM):
             results = list(executor.map(self.run, tasks))
         return results
 
-    def run_batch(self, tasks_images: List[Tuple[str, str]]) -> List[str]:
+    def run_batch(
+        self, tasks_images: List[Tuple[str, str]]
+    ) -> List[str]:
         """Process a batch of tasks and images"""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [

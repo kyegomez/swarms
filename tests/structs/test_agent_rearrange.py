@@ -73,7 +73,9 @@ def test_run(agent_rearrange):
 
 def test_run_with_custom_tasks(agent_rearrange):
     custom_tasks = {"Agent2": "Custom Task"}
-    result = agent_rearrange.run("Test Task", custom_tasks=custom_tasks)
+    result = agent_rearrange.run(
+        "Test Task", custom_tasks=custom_tasks
+    )
     assert (
         result
         == "Agent1 processed Test Task; Agent2 processed Custom Task; Agent3 processed Agent2 processed Custom Task"
@@ -96,7 +98,9 @@ def test_run_with_human_intervention(agent_rearrange):
 def test_run_sub_swarm(agent_rearrange):
     sub_swarm_flow = "Agent1 -> Agent3"
     agent_rearrange.add_sub_swarm("SubSwarm1", sub_swarm_flow)
-    result = agent_rearrange.run_sub_swarm("SubSwarm1", "Sub Task", None)
+    result = agent_rearrange.run_sub_swarm(
+        "SubSwarm1", "Sub Task", None
+    )
     assert (
         result
         == "Agent1 processed Sub Task; Agent3 processed Agent1 processed Sub Task"

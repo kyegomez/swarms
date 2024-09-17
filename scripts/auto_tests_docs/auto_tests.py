@@ -3,16 +3,11 @@ import os
 import re
 import threading
 
-########
 from dotenv import load_dotenv
+from swarms_memory import DictInternalMemory, DictSharedMemory
 
 from scripts.auto_tests_docs.docs import TEST_WRITER_SOP_PROMPT
 from swarms import OpenAIChat
-
-#########
-from swarms.memory.dict_internal_memory import DictInternalMemory
-from swarms.memory.dict_shared_memory import DictSharedMemory
-from swarms.memory.lanchain_chroma import LangchainChromaVectorMemory
 
 load_dotenv()
 
@@ -68,7 +63,9 @@ def create_test(cls):
 
     # Process with OpenAI model (assuming the model's __call__ method takes this input and returns processed content)
     processed_content = model(
-        TEST_WRITER_SOP_PROMPT(input_content, "swarms", "swarms.memory")
+        TEST_WRITER_SOP_PROMPT(
+            input_content, "swarms", "swarms.memory"
+        )
     )
     processed_content = extract_code_from_markdown(processed_content)
 
@@ -88,7 +85,6 @@ def main():
     classes = [
         DictInternalMemory,
         DictSharedMemory,
-        LangchainChromaVectorMemory,
     ]
     threads = []
     for cls in classes:

@@ -46,7 +46,7 @@ To use the Weaviate API Client, you need to initialize an instance of the `Weavi
 Here's an example of how to initialize a WeaviateDB:
 
 ```python
-from swarms.memory import WeaviateDB
+from swarms_memory import WeaviateDB
 
 weaviate_client = WeaviateDB(
     http_host="YOUR_HTTP_HOST",

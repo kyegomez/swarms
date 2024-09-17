@@ -42,7 +42,8 @@ class PsychedelicShape:
 
     def update(self):
         self.radius = (
-            abs(math.sin(pygame.time.get_ticks() * self.pulse_speed)) * 40
+            abs(math.sin(pygame.time.get_ticks() * self.pulse_speed))
+            * 40
             + 20
         )
         self.x += self.move_speed * self.direction
@@ -88,7 +89,8 @@ while running:
     # Check for collisions
     for obstacle in obstacles:
         distance = math.sqrt(
-            (player_x - obstacle.x) ** 2 + (player_y - obstacle.y) ** 2
+            (player_x - obstacle.x) ** 2
+            + (player_y - obstacle.y) ** 2
         )
         if distance < player_radius + obstacle.radius:
             player_x = WIDTH // 2

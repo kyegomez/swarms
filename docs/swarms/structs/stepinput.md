@@ -24,7 +24,7 @@ The `StepInput` class is designed to accept any input value, providing flexibili
 
 ### Usage Example 1:
 ```python
-from swarms.structs import StepInput
+from swarms import StepInput
 
 input_params = {"file_to_refactor": "models.py", "refactor_method": "code"}
 step_input = StepInput(__root__=input_params)
@@ -34,7 +34,7 @@ In this example, we import the `StepInput` class from the `swarms.structs` libra
 
 ### Usage Example 2:
 ```python
-from swarms.structs import StepInput
+from swarms import StepInput
 
 input_params = {"input_path": "data.csv", "output_path": "result.csv"}
 step_input = StepInput(__root__=input_params)
@@ -44,7 +44,7 @@ In this example, we again create an instance of `StepInput` by passing a diction
 
 ### Usage Example 3:
 ```python
-from swarms.structs import StepInput
+from swarms import StepInput
 
 file_path = "config.json"
 with open(file_path) as f:

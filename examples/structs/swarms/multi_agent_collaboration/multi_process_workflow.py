@@ -58,4 +58,6 @@ workflow = MultiProcessWorkflow(
 
 
 # Run the workflow
-results = workflow.run("What is the best way to market a new product?")
+results = workflow.run(
+    "What is the best way to market a new product?"
+)

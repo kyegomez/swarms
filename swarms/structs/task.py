@@ -1,17 +1,19 @@
+import json
 import sched
 import time
-from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, ClassVar, Dict, List, Union
+
+from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.utils.loguru_logger import logger
 from swarms.structs.omni_agent_types import AgentType
+from swarms.utils.loguru_logger import logger
+from typing import Optional
 
 
-@dataclass
-class Task:
+class Task(BaseModel):
     """
     Task class for running a task in a sequential workflow.
 
@@ -47,26 +49,55 @@ class Task:
     >>> from swarms.models import OpenAIChat
     >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
     >>> task = Task(description="What's the weather in miami", agent=agent)
-    >>> task.execute()
+    >>> task.run()
+
     >>> task.result
 
     """
 
-    agent: Union[Callable, Agent, AgentType] = None
-    description: str = None
-    result: Any = None
-    history: List[Any] = field(default_factory=list)
-    schedule_time: datetime = None
-    scheduler = sched.scheduler(time.time, time.sleep)
-    trigger: Callable = None
-    action: Callable = None
-    condition: Callable = None
-    priority: int = 0
-    dependencies: List["Task"] = field(default_factory=list)
-    args: List[Any] = field(default_factory=list)
-    kwargs: Dict[str, Any] = field(default_factory=dict)
+    name: Optional[str] = "Task"
+    description: Optional[str] = (
+        "A task is a unit of work that needs to be completed for a workflow to progress."
+    )
+    agent: Optional[Union[Callable, Agent, AgentType]] = Field(
+        None,
+        description="Agent or callable object to run the task",
+    )
+    result: Optional[Any] = None
+    history: List[Any] = Field(default_factory=list)
+    schedule_time: Optional[datetime] = Field(
+        None,
+        description="Time to schedule the task",
+    )
+    scheduler: ClassVar[sched.scheduler] = sched.scheduler(
+        time.time, time.sleep
+    )
+    trigger: Optional[Callable] = Field(
+        None,
+        description="Trigger to run the task",
+    )
+    action: Optional[Callable] = Field(
+        None,
+        description="Action to run the task",
+    )
+    condition: Optional[Callable] = Field(
+        None,
+        description="Condition to run the task",
+    )
+    priority: Optional[int] = Field(
+        0.4,
+        description="Priority of the task",
+    )
+    dependencies: List["Task"] = Field(default_factory=list)
+    args: List[Any] = Field(default_factory=list)
+    kwargs: Dict[str, Any] = Field(default_factory=dict)
 
-    def execute(self, *args, **kwargs):
+    class Config:
+        arbitrary_types_allowed = True
+
+        # We need to check that the agent exists
+
+    def step(self, task: str = None, *args, **kwargs):
         """
         Execute the task by calling the agent or model with the arguments and
         keyword arguments. You can add images to the agent by passing the
@@ -78,36 +109,87 @@ class Task:
         >>> from swarms.models import OpenAIChat
         >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
         >>> task = Task(description="What's the weather in miami", agent=agent)
-        >>> task.execute()
+        >>> task.run()
         >>> task.result
 
         """
-        logger.info(f"[INFO][Task] Executing task: {self.description}")
-        task = self.description
-        try:
-            if isinstance(self.agent, Agent):
-                if self.condition is None or self.condition():
-                    self.result = self.agent.run(
-                        task=task,
-                        *args,
-                        **kwargs,
+
+        logger.info(f"Running task: {task}")
+
+        # Check dependencies
+        if not self.check_dependency_completion():
+            logger.info(
+                f"Task {self.description} is waiting for dependencies to complete"
+            )
+            return None
+
+        # Check the condition before executing the task
+        if self.condition is not None:
+            try:
+                condition_result = self.condition()
+                if not condition_result:
+                    logger.info(
+                        f"Completion not met for the task: {task} Skipping execution"
                     )
-                    self.history.append(self.result)
+                    return None
+            except Exception as error:
+                logger.error(f"[ERROR][Task] {error}")
+                return None
 
-                    if self.action is not None:
+        # Execute the task
+        if self.trigger is None or self.trigger():
+            try:
+                logger.info(f"Executing task: {task}")
+                self.result = self.agent.run(task, *args, **kwargs)
+
+                # Ensure the result is either a string or a dict
+                if isinstance(self.result, str):
+                    logger.info(f"Task result: {self.result}")
+                elif isinstance(self.result, dict):
+                    logger.info(f"Task result: {self.result}")
+                else:
+                    logger.error(
+                        "Task result must be either a string or a dict"
+                    )
+
+                # Add the result to the history
+                self.history.append(self.result)
+
+                # If an action is specified, execute it
+                if self.action is not None:
+                    try:
+                        logger.info(
+                            f"Executing action for task: {task}"
+                        )
                         self.action()
-            else:
-                self.result = self.agent.run(*self.args, **self.kwargs)
+                    except Exception as error:
+                        logger.error(f"[ERROR][Task] {error}")
+            except Exception as error:
+                logger.error(f"[ERROR][Task] {error}")
+        else:
+            logger.info(f"Task {task} is not triggered")
 
-            self.history.append(self.result)
-        except Exception as error:
-            logger.error(f"[ERROR][Task] {error}")
+    def run(self, task: str = None, *args, **kwargs):
+        now = datetime.now()
 
-    def run(self, *args, **kwargs):
-        self.execute(*args, **kwargs)
+        # If the task is scheduled for the future, schedule it
+        if self.schedule_time and self.schedule_time > now:
+            delay = (self.schedule_time - now).total_seconds()
+            logger.info(
+                f"Scheduling task: {self.description} for {self.schedule_time}"
+            )
+            self.scheduler.enter(
+                delay,
+                1,
+                self.step,
+                argument=(task, args, kwargs),
+            )
+            self.scheduler.run()
 
-    def __call__(self, *args, **kwargs):
-        self.execute(*args, **kwargs)
+            # We need to return the result
+        else:
+            # If no scheduling or the time has already passed run the task
+            return self.step(task, *args, **kwargs)
 
     def handle_scheduled_task(self):
         """
@@ -116,7 +198,9 @@ class Task:
         If the schedule time is not set or has already passed, the task is executed immediately.
         Otherwise, the task is scheduled to be executed at the specified schedule time.
         """
-        logger.info("[INFO][Task] Handling scheduled task")
+        logger.info(
+            f"[INFO][Task] Handling scheduled task: {self.description}"
+        )
         try:
             if (
                 self.schedule_time is None
@@ -225,7 +309,9 @@ class Task:
                     else ""
                 )
 
-                result = task.result if task.result is not None else ""
+                result = (
+                    task.result if task.result is not None else ""
+                )
 
                 # Add the context of the task to the conversation
                 new_context.add(
@@ -234,7 +320,9 @@ class Task:
 
         elif task:
             description = (
-                task.description if task.description is not None else ""
+                task.description
+                if task.description is not None
+                else ""
             )
             result = task.result if task.result is not None else ""
             new_context.add(
@@ -245,3 +333,62 @@ class Task:
 
         # Add to history
         return self.history.append(prompt)
+
+    def to_dict(self):
+        """
+        Convert the task to a dictionary.
+
+        Returns:
+            dict: The task as a dictionary.
+        """
+        return self.model_dump_json(indent=4)
+
+    def save_to_file(self, file_path: str):
+        """
+        Save the task to a file.
+
+        Args:
+            file_path (str): The path to the file to save the task to.
+        """
+        with open(file_path, "w") as file:
+            file.write(self.to_json(indent=4))
+
+    @classmethod
+    def load_from_file(cls, file_path: str):
+        """
+        Load a task from a file.
+
+        Args:
+            file_path (str): The path to the file to load the task from.
+
+        Returns:
+            Task: The task loaded from the file.
+        """
+        with open(file_path, "r") as file:
+            task_dict = json.load(file)
+            return Task(**task_dict)
+
+    def schedule_task_with_sched(
+        function: Callable, run_date: datetime
+    ) -> None:
+        now = datetime.now()
+
+        if run_date <= now:
+            raise ValueError("run_date must be in the future")
+
+        # Calculate the delay in seconds
+        delay = (run_date - now).total_seconds()
+
+        scheduler = sched.scheduler(time.time, time.sleep)
+
+        # Schedule the function
+        scheduler.enter(delay, 1, function)
+
+        # Start the scheduler
+        scheduler.run(delay, 1, function)
+
+        # Start the scheduler
+        logger.info(f"Task scheduled for {run_date}")
+        scheduler.run()
+
+        return None

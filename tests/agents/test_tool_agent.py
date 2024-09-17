@@ -20,7 +20,9 @@ def test_tool_agent_init():
     name = "Test Agent"
     description = "This is a test agent"
 
-    agent = ToolAgent(name, description, model, tokenizer, json_schema)
+    agent = ToolAgent(
+        name, description, model, tokenizer, json_schema
+    )
 
     assert agent.name == name
     assert agent.description == description
@@ -45,10 +47,13 @@ def test_tool_agent_run(mock_run):
     name = "Test Agent"
     description = "This is a test agent"
     task = (
-        "Generate a person's information based on the following" " schema:"
+        "Generate a person's information based on the following"
+        " schema:"
     )
 
-    agent = ToolAgent(name, description, model, tokenizer, json_schema)
+    agent = ToolAgent(
+        name, description, model, tokenizer, json_schema
+    )
     agent.run(task)
 
     mock_run.assert_called_once_with(task)
@@ -91,5 +96,6 @@ def test_tool_agent_init_with_kwargs():
     assert agent.max_number_tokens == kwargs["max_number_tokens"]
     assert agent.temperature == kwargs["temperature"]
     assert (
-        agent.max_string_token_length == kwargs["max_string_token_length"]
+        agent.max_string_token_length
+        == kwargs["max_string_token_length"]
     )

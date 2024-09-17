@@ -1,7 +1,7 @@
 from typing import List, Callable
 
 from swarms.structs.agent import Agent
-from swarms.utils.logger import logger
+from swarms.utils.loguru_logger import logger
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
 
@@ -21,7 +21,9 @@ from swarms.structs.conversation import Conversation
 #     return idx
 
 
-def select_next_speaker_roundtable(step: int, agents: List[Agent]) -> int:
+def select_next_speaker_roundtable(
+    step: int, agents: List[Agent]
+) -> int:
     """Selects the next speaker."""
     return step % len(agents)
 
@@ -128,7 +130,13 @@ class MultiAgentCollaboration(BaseSwarm):
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            name=name,
+            description=description,
+            agents=agents,
+            *args,
+            **kwargs,
+        )
         self.name = name
         self.description = description
         self.director = director
@@ -163,7 +171,9 @@ class MultiAgentCollaboration(BaseSwarm):
 
     def step(self) -> str:
         """Steps through the multi-agent collaboration."""
-        speaker_idx = self.select_next_speaker(self._step, self.agents)
+        speaker_idx = self.select_next_speaker(
+            self._step, self.agents
+        )
         speaker = self.agents[speaker_idx]
         message = speaker.send()
 

@@ -69,7 +69,9 @@ class AgentSchema(BaseModel):
     output_type: Optional[Any] = Field(default=None)
     function_calling_type: Optional[str] = Field(default="json")
     output_cleaner: Optional[Callable] = Field(default=None)
-    function_calling_format_type: Optional[str] = Field(default="OpenAI")
+    function_calling_format_type: Optional[str] = Field(
+        default="OpenAI"
+    )
     list_base_models: Optional[List[Any]] = Field(default=None)
     metadata_output_type: Optional[str] = Field(default="json")
     state_save_file_type: Optional[str] = Field(default="json")
@@ -87,10 +89,14 @@ class AgentSchema(BaseModel):
     agent_ops_on: Optional[bool] = Field(default=False)
     log_directory: Optional[str] = Field(default=None)
     project_path: Optional[str] = Field(default=None)
-    tool_system_prompt: Optional[str] = Field(default="tool_sop_prompt()")
+    tool_system_prompt: Optional[str] = Field(
+        default="tool_sop_prompt()"
+    )
     top_p: Optional[float] = Field(default=0.9, ge=0, le=1)
     top_k: Optional[int] = Field(default=None)
-    frequency_penalty: Optional[float] = Field(default=0.0, ge=0, le=1)
+    frequency_penalty: Optional[float] = Field(
+        default=0.0, ge=0, le=1
+    )
     presence_penalty: Optional[float] = Field(default=0.0, ge=0, le=1)
     temperature: Optional[float] = Field(default=0.1, ge=0, le=1)
 

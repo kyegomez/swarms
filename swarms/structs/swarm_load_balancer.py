@@ -48,7 +48,9 @@ class AgentLoadBalancer(BaseSwarm):
         cooldown_time: float = 0,
     ):
         self.agents = agents
-        self.agent_status = {agent.agent_name: True for agent in agents}
+        self.agent_status = {
+            agent.agent_name: True for agent in agents
+        }
         self.max_retries = max_retries
         self.max_loops = max_loops
         self.agent_performance = {
@@ -268,7 +270,9 @@ class AgentLoadBalancer(BaseSwarm):
         thread.join(timeout)
 
         if thread.is_alive():
-            raise TimeoutError(f"Task timed out after {timeout} seconds.")
+            raise TimeoutError(
+                f"Task timed out after {timeout} seconds."
+            )
 
         if exception[0]:
             raise exception[0]

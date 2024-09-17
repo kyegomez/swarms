@@ -144,9 +144,14 @@ def openai_tool_executor(
                     results.append(error_message)
                     continue
 
-                if "name" in params and params["name"] in function_map:
+                if (
+                    "name" in params
+                    and params["name"] in function_map
+                ):
                     try:
-                        result = function_map[params["name"]](**params)
+                        result = function_map[params["name"]](
+                            **params
+                        )
                         results.append(f"{params['name']}: {result}")
                     except Exception as e:
                         error_message = f"Failed to execute the function '{params['name']}': {e}"

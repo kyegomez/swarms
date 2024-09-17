@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "5.6.5"
+version = "5.6.8"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -57,13 +57,12 @@ langchain-experimental = "0.0.55"
 backoff = "2.2.1"
 toml = "*"
 pypdf = "4.3.1"
-ratelimit = "2.2.1"
 loguru = "0.7.2"
 pydantic = "2.8.2"
 tenacity = "8.5.0"
 Pillow = "10.4.0"
 psutil = "*"
-sentry-sdk = "*"
+sentry-sdk = {version = "*", extras = ["http"]}  # Updated here
 python-dotenv = "*"
 PyYAML = "*"
 docstring_parser = "0.16"
@@ -75,6 +74,8 @@ networkx = "*"
 swarms-memory = "*"
 black = "*"
 swarms-cloud = "*"
+aiofiles = "*"
+
 
 
 # [tool.poetry.scripts]
@@ -96,11 +97,11 @@ pandas = "^2.2.2"
 fastapi = "^0.110.1"
 
 [tool.ruff]
-line-length = 75
+line-length = 70
 
 [tool.black]
 target-version = ["py38"]
-line-length = 75
+line-length = 70
 include = '\.pyi?$'
 exclude = '''
 /(

@@ -191,7 +191,9 @@ class GroupChat(BaseSwarm):
             )
 
             # Message History
-            self.message_history.add(self.selector_agent.agent_name, task)
+            self.message_history.add(
+                self.selector_agent.agent_name, task
+            )
 
             # Message
             for i in range(self.max_rounds):
@@ -212,7 +214,9 @@ class GroupChat(BaseSwarm):
                 )
 
                 # Message History
-                self.message_history.add(speaker_agent.agent_name, reply)
+                self.message_history.add(
+                    speaker_agent.agent_name, reply
+                )
                 print(reply)
 
                 if i == self.max_rounds - 1:

@@ -18,7 +18,9 @@ def test_run():
     workflow.add(task1)
     workflow.add(task2)
 
-    with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+    with patch(
+        "concurrent.futures.ThreadPoolExecutor"
+    ) as mock_executor:
         future1 = Future()
         future1.set_result(None)
         future2 = Future()

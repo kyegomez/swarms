@@ -24,7 +24,9 @@ def test_gemini_init_defaults(mock_gemini_api_key, mock_genai_model):
     assert model.model is mock_genai_model
 
 
-def test_gemini_init_custom_params(mock_gemini_api_key, mock_genai_model):
+def test_gemini_init_custom_params(
+    mock_gemini_api_key, mock_genai_model
+):
     model = Gemini(
         model_name="custom-model", gemini_api_key="custom-api-key"
     )
@@ -99,7 +101,9 @@ def test_gemini_process_img(mock_gemini_api_key, mock_genai_model):
 
         processed_img = model.process_img(img)
 
-    assert processed_img == [{"mime_type": "image/png", "data": img_data}]
+    assert processed_img == [
+        {"mime_type": "image/png", "data": img_data}
+    ]
     open_mock.assert_called_with(img, "rb")
 
 
@@ -113,7 +117,9 @@ def test_gemini_init_missing_api_key():
 
 # Test Gemini initialization with missing model name
 def test_gemini_init_missing_model_name():
-    with pytest.raises(ValueError, match="Please provide a model name"):
+    with pytest.raises(
+        ValueError, match="Please provide a model name"
+    ):
         Gemini(model_name=None)
 
 
@@ -152,7 +158,9 @@ def test_gemini_process_img_missing_image_type(
 ):
     model = Gemini()
     img = "cat.png"
-    with pytest.raises(ValueError, match="Please provide the image type"):
+    with pytest.raises(
+        ValueError, match="Please provide the image type"
+    ):
         model.process_img(img=img, type=None)
 
 

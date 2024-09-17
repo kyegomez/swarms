@@ -1,6 +1,6 @@
 from typing import List
 from pydantic import BaseModel
-from swarms.schemas.step import Step
+from swarms.schemas.agent_step_schemas import Step
 
 
 class Plan(BaseModel):

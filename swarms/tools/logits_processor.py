@@ -7,7 +7,9 @@ from transformers import (
 
 
 class StringStoppingCriteria(StoppingCriteria):
-    def __init__(self, tokenizer: PreTrainedTokenizer, prompt_length: int):
+    def __init__(
+        self, tokenizer: PreTrainedTokenizer, prompt_length: int
+    ):
         self.tokenizer = tokenizer
         self.prompt_length = prompt_length
 

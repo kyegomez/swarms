@@ -2,8 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from swarms.structs.agent import Agent
-from swarms.structs.conversation import Conversation
-from swarms.utils.logger import logger
+from swarms.utils.loguru_logger import logger
 from swarms.structs.base_swarm import BaseSwarm
 
 
@@ -17,8 +16,9 @@ class Company(BaseSwarm):
     shared_instructions: str = None
     ceo: Optional[Agent] = None
     agents: List[Agent] = field(default_factory=list)
-    agent_interactions: Dict[str, List[str]] = field(default_factory=dict)
-    history: Conversation = field(default_factory=Conversation)
+    agent_interactions: Dict[str, List[str]] = field(
+        default_factory=dict
+    )
 
     def __post_init__(self):
         self._parse_org_chart(self.org_chart)
@@ -45,7 +45,9 @@ class Company(BaseSwarm):
             self.agents.append(agent)
 
         except Exception as error:
-            logger.error(f"[ERROR][CLASS: Company][METHOD: add] {error}")
+            logger.error(
+                f"[ERROR][CLASS: Company][METHOD: add] {error}"
+            )
             raise error
 
     def get(self, agent_name: str) -> Agent:
@@ -70,7 +72,9 @@ class Company(BaseSwarm):
                 " company."
             )
         except Exception as error:
-            logger.error(f"[ERROR][CLASS: Company][METHOD: get] {error}")
+            logger.error(
+                f"[ERROR][CLASS: Company][METHOD: get] {error}"
+            )
             raise error
 
     def remove(self, agent: Agent) -> None:
@@ -113,7 +117,9 @@ class Company(BaseSwarm):
                 elif isinstance(node, list):
                     for agent in node:
                         if not isinstance(agent, Agent):
-                            raise ValueError("Invalid agent in org chart")
+                            raise ValueError(
+                                "Invalid agent in org chart"
+                            )
                         self.add(agent)
 
                     for i, agent in enumerate(node):
@@ -146,7 +152,9 @@ class Company(BaseSwarm):
         """
         if agent1.ai_name not in self.agents_interactions:
             self.agents_interactions[agent1.ai_name] = []
-        self.agents_interactions[agent1.ai_name].append(agent2.ai_name)
+        self.agents_interactions[agent1.ai_name].append(
+            agent2.ai_name
+        )
 
     def run(self):
         """

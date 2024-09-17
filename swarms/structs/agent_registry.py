@@ -1,53 +1,99 @@
-from typing import List, Dict, Optional, Callable
-from pydantic import BaseModel, ValidationError
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
+from typing import Any, Callable, Dict, List, Optional
+
+from pydantic import BaseModel, Field, ValidationError
+
 from swarms import Agent
 from swarms.utils.loguru_logger import logger
 from swarms.utils.report_error_loguru import report_error
 
 
-class AgentModel(BaseModel):
-    """
-    Pydantic model for an Agent.
-    """
+class AgentConfigSchema(BaseModel):
+    uuid: str = Field(
+        ...,
+        description="The unique identifier for the agent.",
+    )
+    name: str = None
+    description: str = None
+    time_added: str = Field(
+        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
+        description="Time when the agent was added to the registry.",
+    )
+    config: Dict[Any, Any] = None
 
-    agent_id: str
-    agent: Agent
+
+class AgentRegistrySchema(BaseModel):
+    name: str
+    description: str
+    agents: List[AgentConfigSchema]
+    time_registry_creatd: str = Field(
+        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
+        description="Time when the registry was created.",
+    )
+    number_of_agents: int = Field(
+        0,
+        description="The number of agents in the registry.",
+    )
 
 
 class AgentRegistry:
-    """
-    A registry for managing agents, with methods to add, delete, update, and query agents.
-    """
 
-    def __init__(self, *args, **kwargs):
-        self.agents: Dict[str, AgentModel] = {}
+    def __init__(
+        self,
+        name: str = "Agent Registry",
+        description: str = "A registry for managing agents.",
+        agents: Optional[List[Agent]] = None,
+        return_json: bool = True,
+        auto_save: bool = False,
+        *args,
+        **kwargs,
+    ):
+        self.name = name
+        self.description = description
+        self.return_json = return_json
+        self.auto_save = auto_save
+        self.agents: Dict[str, Agent] = {}
         self.lock = Lock()
+
+        # Initialize the agent registry
+        self.agent_registry = AgentRegistrySchema(
+            name=self.name,
+            description=self.description,
+            agents=[],
+            number_of_agents=len(agents) if agents else 0,
+        )
+
+        if agents:
+            self.add_many(agents)
 
     def add(self, agent: Agent) -> None:
         """
         Adds a new agent to the registry.
 
         Args:
-            agent_id (str): The unique identifier for the agent.
             agent (Agent): The agent to add.
 
         Raises:
-            ValueError: If the agent_id already exists in the registry.
+            ValueError: If the agent_name already exists in the registry.
             ValidationError: If the input data is invalid.
         """
+        name = agent.agent_name
+
+        self.agent_to_py_model(agent)
+
         with self.lock:
-            agent_id = agent.agent_id
-            if agent_id in self.agents:
-                logger.error(f"Agent with id {agent_id} already exists.")
+            if name in self.agents:
+                logger.error(
+                    f"Agent with name {name} already exists."
+                )
                 raise ValueError(
-                    f"Agent with id {agent_id} already exists."
+                    f"Agent with name {name} already exists."
                 )
             try:
-                self.agents[agent_id] = AgentModel(
-                    agent_id=agent_id, agent=agent
-                )
-                logger.info(f"Agent {agent_id} added successfully.")
+                self.agents[name] = agent
+                logger.info(f"Agent {name} added successfully.")
             except ValidationError as e:
                 logger.error(f"Validation error: {e}")
                 raise
@@ -60,88 +106,89 @@ class AgentRegistry:
             agents (List[Agent]): The list of agents to add.
 
         Raises:
-            ValueError: If any of the agent_ids already exist in the registry.
+            ValueError: If any of the agent_names already exist in the registry.
             ValidationError: If the input data is invalid.
         """
-        with self.lock:
-            for agent in agents:
-                agent_id = agent.agent_id
-                if agent_id in self.agents:
-                    logger.error(
-                        f"Agent with id {agent_id} already exists."
-                    )
-                    raise ValueError(
-                        f"Agent with id {agent_id} already exists."
-                    )
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(self.add, agent): agent
+                for agent in agents
+            }
+            for future in as_completed(futures):
                 try:
-                    self.agents[agent_id] = AgentModel(
-                        agent_id=agent_id, agent=agent
-                    )
-                    logger.info(f"Agent {agent_id} added successfully.")
-                except ValidationError as e:
-                    logger.error(f"Validation error: {e}")
-                    raise e
+                    future.result()
+                except Exception as e:
+                    logger.error(f"Error adding agent: {e}")
+                    raise
 
-    def delete(self, agent_id: str) -> None:
+    def delete(self, agent_name: str) -> None:
         """
         Deletes an agent from the registry.
 
         Args:
-            agent_id (str): The unique identifier for the agent to delete.
+            agent_name (str): The name of the agent to delete.
 
         Raises:
-            KeyError: If the agent_id does not exist in the registry.
+            KeyError: If the agent_name does not exist in the registry.
         """
         with self.lock:
             try:
-                del self.agents[agent_id]
-                logger.info(f"Agent {agent_id} deleted successfully.")
+                del self.agents[agent_name]
+                logger.info(
+                    f"Agent {agent_name} deleted successfully."
+                )
             except KeyError as e:
                 logger.error(f"Error: {e}")
                 raise
 
-    def update_agent(self, agent_id: str, new_agent: Agent) -> None:
+    def update_agent(self, agent_name: str, new_agent: Agent) -> None:
         """
         Updates an existing agent in the registry.
 
         Args:
-            agent_id (str): The unique identifier for the agent to update.
+            agent_name (str): The name of the agent to update.
             new_agent (Agent): The new agent to replace the existing one.
 
         Raises:
-            KeyError: If the agent_id does not exist in the registry.
+            KeyError: If the agent_name does not exist in the registry.
             ValidationError: If the input data is invalid.
         """
         with self.lock:
-            if agent_id not in self.agents:
-                logger.error(f"Agent with id {agent_id} does not exist.")
-                raise KeyError(f"Agent with id {agent_id} does not exist.")
-            try:
-                self.agents[agent_id] = AgentModel(
-                    agent_id=agent_id, agent=new_agent
+            if agent_name not in self.agents:
+                logger.error(
+                    f"Agent with name {agent_name} does not exist."
                 )
-                logger.info(f"Agent {agent_id} updated successfully.")
+                raise KeyError(
+                    f"Agent with name {agent_name} does not exist."
+                )
+            try:
+                self.agents[agent_name] = new_agent
+                logger.info(
+                    f"Agent {agent_name} updated successfully."
+                )
             except ValidationError as e:
                 logger.error(f"Validation error: {e}")
                 raise
 
-    def get(self, agent_id: str) -> Agent:
+    def get(self, agent_name: str) -> Agent:
         """
         Retrieves an agent from the registry.
 
         Args:
-            agent_id (str): The unique identifier for the agent to retrieve.
+            agent_name (str): The name of the agent to retrieve.
 
         Returns:
-            Agent: The agent associated with the given agent_id.
+            Agent: The agent associated with the given agent_name.
 
         Raises:
-            KeyError: If the agent_id does not exist in the registry.
+            KeyError: If the agent_name does not exist in the registry.
         """
         with self.lock:
             try:
-                agent = self.agents[agent_id].agent
-                logger.info(f"Agent {agent_id} retrieved successfully.")
+                agent = self.agents[agent_name]
+                logger.info(
+                    f"Agent {agent_name} retrieved successfully."
+                )
                 return agent
             except KeyError as e:
                 logger.error(f"Error: {e}")
@@ -149,16 +196,32 @@ class AgentRegistry:
 
     def list_agents(self) -> List[str]:
         """
-        Lists all agent identifiers in the registry.
+        Lists all agent names in the registry.
 
         Returns:
-            List[str]: A list of all agent identifiers.
+            List[str]: A list of all agent names.
         """
         try:
             with self.lock:
-                agent_ids = list(self.agents.keys())
+                agent_names = list(self.agents.keys())
                 logger.info("Listing all agents.")
-                return agent_ids
+                return agent_names
+        except Exception as e:
+            report_error(e)
+            raise e
+
+    def return_all_agents(self) -> List[Agent]:
+        """
+        Returns all agents from the registry.
+
+        Returns:
+            List[Agent]: A list of all agents.
+        """
+        try:
+            with self.lock:
+                agents = list(self.agents.values())
+                logger.info("Returning all agents.")
+                return agents
         except Exception as e:
             report_error(e)
             raise e
@@ -179,17 +242,14 @@ class AgentRegistry:
         try:
             with self.lock:
                 if condition is None:
-                    agents = [
-                        agent_model.agent
-                        for agent_model in self.agents.values()
-                    ]
+                    agents = list(self.agents.values())
                     logger.info("Querying all agents.")
                     return agents
 
                 agents = [
-                    agent_model.agent
-                    for agent_model in self.agents.values()
-                    if condition(agent_model.agent)
+                    agent
+                    for agent in self.agents.values()
+                    if condition(agent)
                 ]
                 logger.info("Querying agents with condition.")
                 return agents
@@ -197,7 +257,7 @@ class AgentRegistry:
             report_error(e)
             raise e
 
-    def find_agent_by_name(self, agent_name: str) -> Agent:
+    def find_agent_by_name(self, agent_name: str) -> Optional[Agent]:
         """
         Find an agent by its name.
 
@@ -206,12 +266,38 @@ class AgentRegistry:
 
         Returns:
             Agent: The agent with the given name.
-
         """
         try:
-            for agent_model in self.agents.values():
-                if agent_model.agent.agent_name == agent_name:
-                    return agent_model.agent
+            with ThreadPoolExecutor() as executor:
+                futures = {
+                    executor.submit(self.get, agent_name): agent_name
+                    for agent_name in self.agents.keys()
+                }
+                for future in as_completed(futures):
+                    agent = future.result()
+                    if agent.agent_name == agent_name:
+                        return agent
         except Exception as e:
             report_error(e)
             raise e
+
+    def agent_to_py_model(self, agent: Agent):
+        agent_name = agent.agent_name
+        agent_description = (
+            agent.description
+            if agent.description
+            else "No description provided"
+        )
+
+        schema = AgentConfigSchema(
+            uuid=agent.id,
+            name=agent_name,
+            description=agent_description,
+            config=agent.to_dict(),
+        )
+
+        logger.info(
+            f"Agent {agent_name} converted to Pydantic model."
+        )
+
+        self.agent_registry.agents.append(schema)

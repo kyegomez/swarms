@@ -38,7 +38,9 @@ def fuyu_instance():
 # Test using the fixture.
 def test_fuyu_processor_initialization(fuyu_instance):
     assert isinstance(fuyu_instance.processor, FuyuProcessor)
-    assert isinstance(fuyu_instance.image_processor, FuyuImageProcessor)
+    assert isinstance(
+        fuyu_instance.image_processor, FuyuImageProcessor
+    )
 
 
 # Test exception when providing an invalid image path.
@@ -81,7 +83,9 @@ def test_processor_has_image_processor_and_tokenizer(fuyu_instance):
         fuyu_instance.processor.image_processor
         == fuyu_instance.image_processor
     )
-    assert fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer
+    assert (
+        fuyu_instance.processor.tokenizer == fuyu_instance.tokenizer
+    )
 
 
 def test_model_device_map(fuyu_instance):
@@ -182,7 +186,9 @@ def test_run_invalid_image_path(fuyu_instance):
     with patch.object(fuyu_instance, "get_img") as mock_get_img:
         mock_get_img.side_effect = FileNotFoundError
         with pytest.raises(FileNotFoundError):
-            fuyu_instance.run("Hello, world!", "invalid/path/to/image.png")
+            fuyu_instance.run(
+                "Hello, world!", "invalid/path/to/image.png"
+            )
 
 
 # Test `__init__` method with default parameters

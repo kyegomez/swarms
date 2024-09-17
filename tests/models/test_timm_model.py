@@ -20,7 +20,9 @@ def test_timm_model_init():
 
 
 def test_timm_model_call():
-    with patch("swarms.models.timm.create_model") as mock_create_model:
+    with patch(
+        "swarms.models.timm.create_model"
+    ) as mock_create_model:
         model_name = "resnet18"
         pretrained = True
         in_chans = 3
@@ -60,7 +62,9 @@ def test_create_model(sample_model_info):
 def test_call(sample_model_info):
     model_handler = TimmModel()
     input_tensor = torch.randn(1, 3, 224, 224)
-    output_shape = model_handler.__call__(sample_model_info, input_tensor)
+    output_shape = model_handler.__call__(
+        sample_model_info, input_tensor
+    )
     assert isinstance(output_shape, torch.Size)
 
 

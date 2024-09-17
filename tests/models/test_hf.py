@@ -18,7 +18,8 @@ def llm_instance():
 # Test for instantiation and attributes
 def test_llm_initialization(llm_instance):
     assert (
-        llm_instance.model_id == "NousResearch/Nous-Hermes-2-Vision-Alpha"
+        llm_instance.model_id
+        == "NousResearch/Nous-Hermes-2-Vision-Alpha"
     )
     assert llm_instance.max_length == 500
     # ... add more assertions for all default attributes
@@ -86,7 +87,9 @@ def test_llm_memory_consumption(llm_instance):
 )
 def test_llm_initialization_params(model_id, max_length):
     if max_length:
-        instance = HuggingfaceLLM(model_id=model_id, max_length=max_length)
+        instance = HuggingfaceLLM(
+            model_id=model_id, max_length=max_length
+        )
         assert instance.max_length == max_length
     else:
         instance = HuggingfaceLLM(model_id=model_id)
@@ -193,7 +196,9 @@ def test_llm_run_model_exception(mock_generate, llm_instance):
 
 # Test the behavior when GPU is forced but not available
 @patch("torch.cuda.is_available", return_value=False)
-def test_llm_force_gpu_when_unavailable(mock_is_available, llm_instance):
+def test_llm_force_gpu_when_unavailable(
+    mock_is_available, llm_instance
+):
     with pytest.raises(EnvironmentError):
         llm_instance.set_device(
             "cuda"
@@ -362,7 +367,9 @@ def test_llm_set_repitition_penalty(llm_instance):
 def test_llm_set_no_repeat_ngram_size(llm_instance):
     new_no_repeat_ngram_size = 6
     llm_instance.set_no_repeat_ngram_size(new_no_repeat_ngram_size)
-    assert llm_instance.no_repeat_ngram_size == new_no_repeat_ngram_size
+    assert (
+        llm_instance.no_repeat_ngram_size == new_no_repeat_ngram_size
+    )
 
 
 # Test for setting temperature
@@ -412,7 +419,9 @@ def test_llm_set_model_id(llm_instance):
 
 
 # Test for setting model
-@patch("swarms.models.huggingface.AutoModelForCausalLM.from_pretrained")
+@patch(
+    "swarms.models.huggingface.AutoModelForCausalLM.from_pretrained"
+)
 def test_llm_set_model(mock_model, llm_instance):
     mock_model.return_value = "mocked model"
     llm_instance.set_model(mock_model)

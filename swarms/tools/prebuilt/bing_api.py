@@ -26,7 +26,9 @@ def parse_and_merge_logs(logs: List[Dict[str, str]]) -> str:
 
     merged_logs = ""
     for log in logs:
-        log_entries = [f"{key}: {value}" for key, value in log.items()]
+        log_entries = [
+            f"{key}: {value}" for key, value in log.items()
+        ]
         log_string = "\n".join(log_entries)
         merged_logs += log_string + "\n\n"
 

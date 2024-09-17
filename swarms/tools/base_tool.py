@@ -1,63 +1,40 @@
 import json
-from pydantic import BaseModel
-from swarms.utils.loguru_logger import logger
+from typing import Any, Callable, Dict, List, Optional, Union
+
+from pydantic import BaseModel, Field
+
+from swarms.tools.func_calling_executor import openai_tool_executor
+from swarms.tools.func_to_str import function_to_str, functions_to_str
+from swarms.tools.function_util import process_tool_docs
 from swarms.tools.py_func_to_openai_func_str import (
     get_openai_function_schema_from_func,
     load_basemodels_if_needed,
 )
-from swarms.tools.func_calling_executor import openai_tool_executor
-from typing import Callable, Optional, Any, Dict, List
 from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
     multi_base_model_to_openai_function,
 )
-from swarms.tools.func_to_str import function_to_str, functions_to_str
-from swarms.tools.function_util import process_tool_docs
-from typing import Union
+from swarms.utils.loguru_logger import logger
 
 ToolType = Union[BaseModel, Dict[str, Any], Callable[..., Any]]
 
 
 class BaseTool(BaseModel):
-    """
-    Base class for tools in the swarms package.
-
-    Attributes:
-        verbose (bool): Flag indicating whether to enable verbose mode.
-        functions (List[Callable[..., Any]]): List of functions associated with the tool.
-        base_models (List[type[BaseModel]]): List of base models associated with the tool.
-
-    Methods:
-        func_to_dict(function: Callable[..., Any], name: Optional[str] = None, description: str) -> Dict[str, Any]:
-            Converts a function to a dictionary representation.
-
-        load_params_from_func_for_pybasemodel(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Callable[..., Any]:
-            Loads parameters from a function for a Pydantic BaseModel.
-
-        base_model_to_dict(pydantic_type: type[BaseModel], output_str: bool = False, *args: Any, **kwargs: Any) -> dict[str, Any]:
-            Converts a Pydantic BaseModel to a dictionary representation.
-
-        multi_base_models_to_dict(pydantic_types: List[type[BaseModel]], *args: Any, **kwargs: Any) -> dict[str, Any]:
-            Converts multiple Pydantic BaseModels to a dictionary representation.
-
-        dict_to_str(dict: dict[str, Any]) -> str:
-            Converts a dictionary to a string representation.
-
-        multi_dict_to_str(dicts: list[dict[str, Any]]) -> str:
-            Converts multiple dictionaries to a string representation.
-
-        get_docs_from_callable(item) -> Any:
-            Retrieves documentation from a callable item.
-    """
-
     verbose: bool = False
-    functions: List[Callable[..., Any]] = []
     base_models: List[type[BaseModel]] = []
     verbose: bool = False
     autocheck: bool = False
     auto_execute_tool: Optional[bool] = False
+    tools: List[Callable[..., Any]] = []
+    tool_system_prompt: str = Field(
+        ...,
+        description="The system prompt for the tool system.",
+    )
+    function_map: Dict[str, Callable] = {}
+    list_of_dicts: List[Dict[str, Any]] = []
 
     def func_to_dict(
+        self,
         function: Callable[..., Any] = None,
         name: Optional[str] = None,
         description: str = None,
@@ -83,6 +60,7 @@ class BaseTool(BaseModel):
             raise
 
     def load_params_from_func_for_pybasemodel(
+        self,
         func: Callable[..., Any],
         *args: Any,
         **kwargs: Any,
@@ -102,6 +80,7 @@ class BaseTool(BaseModel):
             raise
 
     def base_model_to_dict(
+        self,
         pydantic_type: type[BaseModel],
         output_str: bool = False,
         *args: Any,
@@ -112,7 +91,9 @@ class BaseTool(BaseModel):
                 pydantic_type, output_str, *args, **kwargs
             )
         except Exception as e:
-            logger.error(f"An error occurred in base_model_to_dict: {e}")
+            logger.error(
+                f"An error occurred in base_model_to_dict: {e}"
+            )
             logger.error(
                 "Please check the Pydantic type and ensure it is valid."
             )
@@ -122,14 +103,17 @@ class BaseTool(BaseModel):
             raise
 
     def multi_base_models_to_dict(
-        pydantic_types: List[type[BaseModel]],
-        *args: Any,
-        **kwargs: Any,
+        self, return_str: bool = False, *args, **kwargs
     ) -> dict[str, Any]:
         try:
-            return multi_base_model_to_openai_function(
-                pydantic_types, *args, **kwargs
-            )
+            if return_str:
+                return multi_base_model_to_openai_function(
+                    self.base_models, *args, **kwargs
+                )
+            else:
+                return multi_base_model_to_openai_function(
+                    self.base_models, *args, **kwargs
+                )
         except Exception as e:
             logger.error(
                 f"An error occurred in multi_base_models_to_dict: {e}"
@@ -142,13 +126,16 @@ class BaseTool(BaseModel):
             )
             raise
 
-    def dict_to_str(
+    def dict_to_openai_schema_str(
+        self,
         dict: dict[str, Any],
     ) -> str:
         try:
             return function_to_str(dict)
         except Exception as e:
-            logger.error(f"An error occurred in dict_to_str: {e}")
+            logger.error(
+                f"An error occurred in dict_to_openai_schema_str: {e}"
+            )
             logger.error(
                 "Please check the dictionary and ensure it is valid."
             )
@@ -157,13 +144,16 @@ class BaseTool(BaseModel):
             )
             raise
 
-    def multi_dict_to_str(
+    def multi_dict_to_openai_schema_str(
+        self,
         dicts: list[dict[str, Any]],
     ) -> str:
         try:
             return functions_to_str(dicts)
         except Exception as e:
-            logger.error(f"An error occurred in multi_dict_to_str: {e}")
+            logger.error(
+                f"An error occurred in multi_dict_to_openai_schema_str: {e}"
+            )
             logger.error(
                 "Please check the dictionaries and ensure they are valid."
             )
@@ -172,12 +162,14 @@ class BaseTool(BaseModel):
             )
             raise
 
-    def get_docs_from_callable(item):
+    def get_docs_from_callable(self, item):
         try:
             return process_tool_docs(item)
         except Exception as e:
             logger.error(f"An error occurred in get_docs: {e}")
-            logger.error("Please check the item and ensure it is valid.")
+            logger.error(
+                "Please check the item and ensure it is valid."
+            )
             logger.error(
                 "If the issue persists, please seek further assistance."
             )
@@ -185,14 +177,16 @@ class BaseTool(BaseModel):
 
     def execute_tool(
         self,
-        tools: List[Dict[str, Any]],
-        function_map: Dict[str, Callable],
         *args: Any,
         **kwargs: Any,
     ) -> Callable:
         try:
             return openai_tool_executor(
-                tools, function_map, self.verbose, *args, **kwargs
+                self.list_of_dicts,
+                self.function_map,
+                self.verbose,
+                *args,
+                **kwargs,
             )
         except Exception as e:
             logger.error(f"An error occurred in execute_tool: {e}")
@@ -204,7 +198,7 @@ class BaseTool(BaseModel):
             )
             raise
 
-    def detect_tool_input_type(input):
+    def detect_tool_input_type(self, input: ToolType) -> str:
         if isinstance(input, BaseModel):
             return "Pydantic"
         elif isinstance(input, dict):
@@ -214,7 +208,7 @@ class BaseTool(BaseModel):
         else:
             return "Unknown"
 
-    def dynamic_run(self, input) -> str:
+    def dynamic_run(self, input: Any) -> str:
         """
         Executes the dynamic run based on the input type.
 
@@ -241,10 +235,12 @@ class BaseTool(BaseModel):
         if self.auto_execute_tool:
             if tool_input_type == "Function":
                 # Add the function to the functions list
-                self.functions.append(input)
+                self.tools.append(input)
 
             # Create a function map from the functions list
-            function_map = {func.__name__: func for func in self.functions}
+            function_map = {
+                func.__name__: func for func in self.tools
+            }
 
             # Execute the tool
             return self.execute_tool(
@@ -254,17 +250,15 @@ class BaseTool(BaseModel):
             return function_str
 
     def execute_tool_by_name(
-        tools: List[Dict[str, Any]],
+        self,
         tool_name: str,
-        function_map: Dict[str, Callable],
     ) -> Any:
         """
         Search for a tool by name and execute it.
 
         Args:
-            tools (List[Dict[str, Any]]): A list of tools. Each tool is a dictionary that includes a 'name' key.
             tool_name (str): The name of the tool to execute.
-            function_map (Dict[str, Callable]): A dictionary that maps tool names to functions.
+
 
         Returns:
             The result of executing the tool.
@@ -275,7 +269,12 @@ class BaseTool(BaseModel):
         """
         # Search for the tool by name
         tool = next(
-            (tool for tool in tools if tool.get("name") == tool_name), None
+            (
+                tool
+                for tool in self.tools
+                if tool.get("name") == tool_name
+            ),
+            None,
         )
 
         # If the tool is not found, raise an error
@@ -283,7 +282,7 @@ class BaseTool(BaseModel):
             raise ValueError(f"Tool '{tool_name}' not found")
 
         # Get the function associated with the tool
-        func = function_map.get(tool_name)
+        func = self.function_map.get(tool_name)
 
         # If the function is not found, raise an error
         if func is None:
@@ -294,9 +293,7 @@ class BaseTool(BaseModel):
         # Execute the tool
         return func(**tool.get("parameters", {}))
 
-    def execute_tool_from_text(
-        text: str = None, function_map: Dict[str, Callable] = None
-    ) -> Any:
+    def execute_tool_from_text(self, text: str) -> Any:
         """
         Convert a JSON-formatted string into a tool dictionary and execute the tool.
 
@@ -319,7 +316,7 @@ class BaseTool(BaseModel):
         tool_params = tool.get("parameters", {})
 
         # Get the function associated with the tool
-        func = function_map.get(tool_name)
+        func = self.function_map.get(tool_name)
 
         # If the function is not found, raise an error
         if func is None:
@@ -330,9 +327,7 @@ class BaseTool(BaseModel):
         # Execute the tool
         return func(**tool_params)
 
-    def check_str_for_functions_valid(
-        self, output: str, function_map: Dict[str, Callable]
-    ):
+    def check_str_for_functions_valid(self, output: str):
         """
         Check if the output is a valid JSON string, and if the function name in the JSON matches any name in the function map.
 
@@ -356,13 +351,96 @@ class BaseTool(BaseModel):
 
                 # Check if the function name matches any name in the function map
                 function_name = data["function"]["name"]
-                if function_name in function_map:
+                if function_name in self.function_map:
                     return True
 
         except json.JSONDecodeError:
+            logger.error("Error decoding JSON with output")
             pass
 
         return False
+
+    def convert_funcs_into_tools(self):
+        if self.tools is not None:
+            logger.info(
+                "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
+            )
+
+            # Log the tools
+            logger.info(
+                f"Tools provided: Accessing {len(self.tools)} tools"
+            )
+
+            # Transform the tools into an openai schema
+            self.convert_tool_into_openai_schema()
+
+            # Now update the function calling map for every tools
+            self.function_map = {
+                tool.__name__: tool for tool in self.tools
+            }
+
+        return None
+
+    def convert_tool_into_openai_schema(self):
+        logger.info(
+            "Converting tools into OpenAI function calling schema"
+        )
+
+        for tool in self.tools:
+            # Transform the tool into a openai function calling schema
+            if self.check_func_if_have_docs(
+                tool
+            ) and self.check_func_if_have_type_hints(tool):
+                name = tool.__name__
+                description = tool.__doc__
+
+                logger.info(
+                    f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
+                )
+                tool_schema_list = (
+                    get_openai_function_schema_from_func(
+                        tool, name=name, description=description
+                    )
+                )
+
+                logger.info(
+                    f"Tool {name} converted successfully into OpenAI schema"
+                )
+
+                # Transform the dictionary to a string
+                tool_schema_list = json.dumps(
+                    tool_schema_list, indent=4
+                )
+
+                return tool_schema_list
+            else:
+                logger.error(
+                    f"Tool {tool.__name__} does not have documentation or type hints, please add them to make the tool execution reliable."
+                )
+
+        return None
+
+    def check_func_if_have_docs(self, func: callable):
+        if func.__doc__ is not None:
+            return True
+        else:
+            logger.error(
+                f"Function {func.__name__} does not have documentation"
+            )
+            raise ValueError(
+                f"Function {func.__name__} does not have documentation"
+            )
+
+    def check_func_if_have_type_hints(self, func: callable):
+        if func.__annotations__ is not None:
+            return True
+        else:
+            logger.info(
+                f"Function {func.__name__} does not have type hints"
+            )
+            raise ValueError(
+                f"Function {func.__name__} does not have type hints"
+            )
 
 
 # # Example function definitions and mappings

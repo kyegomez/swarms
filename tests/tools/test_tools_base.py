@@ -182,7 +182,9 @@ def test_tool_ainvoke_exception():
 
 
 def test_tool_ainvoke_with_coroutine_exception():
-    tool = Tool(name="test_tool", coroutine=None, description="Test tool")
+    tool = Tool(
+        name="test_tool", coroutine=None, description="Test tool"
+    )
     with pytest.raises(NotImplementedError):
         tool.ainvoke("input_data")
 
@@ -367,7 +369,9 @@ def test_structured_tool_ainvoke_with_new_argument():
         func=sample_function,
         args_schema=SampleArgsSchema,
     )
-    result = tool.ainvoke({"tool_input": "input_data"}, callbacks=None)
+    result = tool.ainvoke(
+        {"tool_input": "input_data"}, callbacks=None
+    )
     assert result == "input_data"
 
 
@@ -457,7 +461,9 @@ def test_tool_with_runnable(mock_runnable):
 def test_tool_with_invalid_argument():
     # Test passing an invalid argument type
     with pytest.raises(ValueError):
-        tool(123)  # Using an integer instead of a string/callable/Runnable
+        tool(
+            123
+        )  # Using an integer instead of a string/callable/Runnable
 
 
 def test_tool_with_multiple_arguments(mock_func):
@@ -519,7 +525,9 @@ class MockSchema(BaseModel):
 # Test suite starts here
 class TestTool:
     # Basic Functionality Tests
-    def test_tool_with_valid_callable_creates_base_tool(self, mock_func):
+    def test_tool_with_valid_callable_creates_base_tool(
+        self, mock_func
+    ):
         result = tool(mock_func)
         assert isinstance(result, BaseTool)
 

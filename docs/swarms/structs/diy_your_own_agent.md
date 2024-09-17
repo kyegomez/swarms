@@ -152,7 +152,7 @@ The Agent class provides built-in support for long-term memory, allowing agents 
 
 ```python
 
-from swarms.memory import BaseVectorDatabase
+from swarms_memory import BaseVectorDatabase
 from swarms import Agent
 
 

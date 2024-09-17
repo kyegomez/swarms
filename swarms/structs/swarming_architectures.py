@@ -277,7 +277,9 @@ def sinusoidal_swarm(agents: AgentListType, task: str):
         agents[index].run(task)
 
 
-async def one_to_three(sender: Agent, agents: AgentListType, task: str):
+async def one_to_three(
+    sender: Agent, agents: AgentListType, task: str
+):
     """
     Sends a message from the sender agent to three other agents.
 
@@ -353,7 +355,9 @@ async def broadcast(
 
         await asyncio.gather(*receive_tasks)
     except Exception as error:
-        logger.error(f"[ERROR][CLASS: Agent][METHOD: broadcast] {error}")
+        logger.error(
+            f"[ERROR][CLASS: Agent][METHOD: broadcast] {error}"
+        )
         raise error
 
 
@@ -393,5 +397,7 @@ def one_to_one(
 
         return concat_strings(responses)
     except Exception as error:
-        logger.error(f"[ERROR][CLASS: Agent][METHOD: one_to_one] {error}")
+        logger.error(
+            f"[ERROR][CLASS: Agent][METHOD: one_to_one] {error}"
+        )
         raise error

@@ -78,7 +78,9 @@ class YamlOutputParser:
         """
         schema = self.pydantic_object.schema()
         reduced_schema = {
-            k: v for k, v in schema.items() if k not in ["title", "type"]
+            k: v
+            for k, v in schema.items()
+            if k not in ["title", "type"]
         }
         schema_str = json.dumps(reduced_schema, indent=4)
 

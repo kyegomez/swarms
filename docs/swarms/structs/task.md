@@ -49,7 +49,7 @@ Executes the task by calling the agent or model with the specified arguments and
 >>> from swarms.models import OpenAIChat
 >>> agent = Agent(llm=OpenAIChat(openai_api_key=""), max_loops=1, dashboard=False)
 >>> task = Task(description="What's the weather in Miami?", agent=agent)
->>> task.execute()
+>>> task.run()
 >>> task.result
 ```
 

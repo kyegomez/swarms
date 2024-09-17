@@ -1,7 +1,7 @@
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.omni_agent_types import OmniAgentTypes
 from typing import Optional, Sequence, List
-from swarms.memory.base_vectordb import BaseVectorDatabase
+from swarms_memory import BaseVectorDatabase
 
 
 class FederatedSwarm(BaseSwarm):
@@ -56,7 +56,9 @@ class FederatedSwarm(BaseSwarm):
                     return agent
         return None
 
-    async def run_single_swarm(self, swarm: BaseSwarm, *args, **kwargs):
+    async def run_single_swarm(
+        self, swarm: BaseSwarm, *args, **kwargs
+    ):
 
         await swarm.run(*args, **kwargs)
 

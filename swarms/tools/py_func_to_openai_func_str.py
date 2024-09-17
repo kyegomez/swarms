@@ -100,7 +100,9 @@ else:  # pragma: no cover
             if t is None:
                 return {"type": "null"}
             elif get_origin(t) is Union:
-                return {"anyOf": [type2schema(tt) for tt in get_args(t)]}
+                return {
+                    "anyOf": [type2schema(tt) for tt in get_args(t)]
+                }
             elif get_origin(t) in [Tuple, tuple]:
                 prefixItems = [type2schema(tt) for tt in get_args(t)]
                 return {
@@ -142,7 +144,9 @@ else:  # pragma: no cover
         return model.json()
 
 
-def get_typed_annotation(annotation: Any, globalns: Dict[str, Any]) -> Any:
+def get_typed_annotation(
+    annotation: Any, globalns: Dict[str, Any]
+) -> Any:
     """Get the type annotation of a parameter.
 
     Args:
@@ -154,11 +158,15 @@ def get_typed_annotation(annotation: Any, globalns: Dict[str, Any]) -> Any:
     """
     if isinstance(annotation, str):
         annotation = ForwardRef(annotation)
-        annotation = evaluate_forwardref(annotation, globalns, globalns)
+        annotation = evaluate_forwardref(
+            annotation, globalns, globalns
+        )
     return annotation
 
 
-def get_typed_signature(call: Callable[..., Any]) -> inspect.Signature:
+def get_typed_signature(
+    call: Callable[..., Any]
+) -> inspect.Signature:
     """Get the signature of a function with type annotations.
 
     Args:
@@ -174,7 +182,9 @@ def get_typed_signature(call: Callable[..., Any]) -> inspect.Signature:
             name=param.name,
             kind=param.kind,
             default=param.default,
-            annotation=get_typed_annotation(param.annotation, globalns),
+            annotation=get_typed_annotation(
+                param.annotation, globalns
+            ),
         )
         for param in signature.parameters.values()
     ]
@@ -243,7 +253,9 @@ class ToolFunction(BaseModel):
     """A function under tool as defined by the OpenAI API."""
 
     type: Literal["function"] = "function"
-    function: Annotated[Function, Field(description="Function under tool")]
+    function: Annotated[
+        Function, Field(description="Function under tool")
+    ]
 
 
 def get_parameter_json_schema(
@@ -285,7 +297,9 @@ def get_parameter_json_schema(
     return schema
 
 
-def get_required_params(typed_signature: inspect.Signature) -> List[str]:
+def get_required_params(
+    typed_signature: inspect.Signature,
+) -> List[str]:
     """Get the required parameters of a function
 
     Args:
@@ -506,7 +520,9 @@ def load_basemodels_if_needed(
 
     # remove the None values
     kwargs_mapping = {
-        k: f for k, f in kwargs_mapping_with_nones.items() if f is not None
+        k: f
+        for k, f in kwargs_mapping_with_nones.items()
+        if f is not None
     }
 
     # a function that loads the parameters before calling the original function

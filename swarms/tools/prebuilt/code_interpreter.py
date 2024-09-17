@@ -91,7 +91,9 @@ class SubprocessCodeInterpreter:
         if self.process:
             self.terminate()
 
-        logger.info(f"Starting subprocess with command: {self.start_cmd}")
+        logger.info(
+            f"Starting subprocess with command: {self.start_cmd}"
+        )
         self.process = subprocess.Popen(
             self.start_cmd.split(),
             stdin=subprocess.PIPE,

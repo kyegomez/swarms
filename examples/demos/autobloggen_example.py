@@ -55,7 +55,9 @@ class AutoBlogGenSwarm:
     ):
         self.llm = llm()
         self.topic_selection_task = topic_selection_task
-        self.topic_selection_agent_prompt = topic_selection_agent_prompt
+        self.topic_selection_agent_prompt = (
+            topic_selection_agent_prompt
+        )
         self.objective = objective
         self.iterations = iterations
         self.max_retries = max_retries
@@ -91,7 +93,9 @@ class AutoBlogGenSwarm:
 
     def step(self):
         """Steps through the task"""
-        topic_selection_agent = self.llm(self.topic_selection_agent_prompt)
+        topic_selection_agent = self.llm(
+            self.topic_selection_agent_prompt
+        )
         topic_selection_agent = self.print_beautifully(
             "Topic Selection Agent", topic_selection_agent
         )
@@ -101,7 +105,9 @@ class AutoBlogGenSwarm:
 
         # Agent that reviews the draft
         review_agent = self.llm(self.get_review_prompt(draft_blog))
-        review_agent = self.print_beautifully("Review Agent", review_agent)
+        review_agent = self.print_beautifully(
+            "Review Agent", review_agent
+        )
 
         # Agent that publishes on social media
         distribution_agent = self.llm(

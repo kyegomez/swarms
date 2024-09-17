@@ -46,7 +46,9 @@ class SwarmRegistry(BaseModel):
 
             return swarm
 
-        raise ValueError(f"Swarm '{swarm_name}' not found in registry.")
+        raise ValueError(
+            f"Swarm '{swarm_name}' not found in registry."
+        )
 
     def remove(self, swarm_name: str):
         """
@@ -59,7 +61,9 @@ class SwarmRegistry(BaseModel):
             if swarm.__name__ == swarm_name:
                 self.swarm_pool.remove(swarm)
                 return
-        raise ValueError(f"Swarm '{swarm_name}' not found in registry.")
+        raise ValueError(
+            f"Swarm '{swarm_name}' not found in registry."
+        )
 
     def list_swarms(self) -> List[str]:
         """
@@ -74,7 +78,8 @@ class SwarmRegistry(BaseModel):
         for swarm in self.swarm_pool:
             name = swarm.__name__
             description = (
-                swarm.__doc__.strip().split("\n")[0] or swarm.description
+                swarm.__doc__.strip().split("\n")[0]
+                or swarm.description
             )
             agent_count = len(swarm.agents)
             task_count = len(swarm.tasks)
@@ -173,7 +178,9 @@ def swarm_registry():
         try:
             swarm_registry = SwarmRegistry()
             swarm_registry.add(func, *args, **kwargs)
-            logger.info(f"Added swarm '{func.__name__}' to the registry.")
+            logger.info(
+                f"Added swarm '{func.__name__}' to the registry."
+            )
             return func
         except Exception as e:
             logger.error(str(e))

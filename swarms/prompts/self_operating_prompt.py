@@ -91,7 +91,8 @@ def format_vision_prompt(objective, previous_action):
     """
     if previous_action:
         previous_action = (
-            "Here was the previous action you took:" f" {previous_action}"
+            "Here was the previous action you took:"
+            f" {previous_action}"
         )
     else:
         previous_action = ""

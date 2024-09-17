@@ -44,7 +44,9 @@ def clean_model_code(model_code_str: str) -> str:
     Returns:
         str: The cleaned-up model code.
     """
-    cleaned_code = model_code_str.replace("\\n", "\n").replace("\\'", "'")
+    cleaned_code = model_code_str.replace("\\n", "\n").replace(
+        "\\'", "'"
+    )
     return cleaned_code.strip()
 
 
@@ -65,7 +67,9 @@ def generate_novel_model() -> Dict[str, str]:
     }
 
 
-def generate_and_save_model(i: int, dataset: List[Dict[str, str]]) -> None:
+def generate_and_save_model(
+    i: int, dataset: List[Dict[str, str]]
+) -> None:
     """
     Generate, clean, save, and add the model data to a dataset.
 
@@ -85,7 +89,9 @@ def generate_and_save_model(i: int, dataset: List[Dict[str, str]]) -> None:
     dataset.append(model_data)
 
 
-def save_to_jsonl(dataset: List[Dict[str, str]], file_path: str) -> None:
+def save_to_jsonl(
+    dataset: List[Dict[str, str]], file_path: str
+) -> None:
     """
     Appends the dataset to an existing JSONL file, or creates a new file if it doesn't exist.
 
@@ -110,7 +116,9 @@ def upload_to_huggingface(
         dataset_name (str): The name of the dataset on Hugging Face.
         huggingface_token (str): Your Hugging Face token for authentication.
     """
-    dataset = load_dataset("json", data_files=file_path, split="train")
+    dataset = load_dataset(
+        "json", data_files=file_path, split="train"
+    )
     dataset.push_to_hub(dataset_name, token=huggingface_token)
     logger.info(f"Dataset uploaded to Hugging Face: {dataset_name}")
 
@@ -144,7 +152,9 @@ def main(
         thread.join()
 
     save_to_jsonl(dataset, jsonl_file_path)
-    upload_to_huggingface(jsonl_file_path, dataset_name, huggingface_token)
+    upload_to_huggingface(
+        jsonl_file_path, dataset_name, huggingface_token
+    )
 
 
 # Example usage

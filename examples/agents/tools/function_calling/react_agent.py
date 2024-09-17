@@ -71,5 +71,7 @@ model = OpenAIFunctionCaller(
 
 
 # The OpenAIFunctionCaller class is used to interact with the OpenAI API and make function calls.
-out = model.run("We need to craft a diamond pickaxe to mine the obsidian.")
+out = model.run(
+    "We need to craft a diamond pickaxe to mine the obsidian."
+)
 print(out)

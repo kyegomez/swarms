@@ -51,7 +51,9 @@ model = OpenAIFunctionCaller(
 
 def clean_model_code(model_code_str: str):
     # Remove extra escape characters and newlines
-    cleaned_code = model_code_str.replace("\\n", "\n").replace("\\'", "'")
+    cleaned_code = model_code_str.replace("\\n", "\n").replace(
+        "\\'", "'"
+    )
 
     # Remove unnecessary leading and trailing whitespaces
     cleaned_code = cleaned_code.strip()
@@ -81,7 +83,9 @@ def generate_and_execute_model(
     # The OpenAIFunctionCaller class is used to interact with the OpenAI API and make function calls.
     out = model.run(task)
     name, theory, code, example_code = parse_function_call_output(out)
-    logger.info(f"Algorithm {name}: Mathamatical formulation {theory}")
+    logger.info(
+        f"Algorithm {name}: Mathamatical formulation {theory}"
+    )
 
     # Parse the 3 rows of the output || 0: novel_algorithm_name, 1: mathamatical_formulation, 2: model_code
     code = clean_model_code(code)
@@ -105,16 +109,22 @@ def generate_and_execute_model(
         logger.error(f"Error in code execution: {test}")
 
     if "error" in test_example:
-        logger.error(f"Error in code execution example: {test_example}")
+        logger.error(
+            f"Error in code execution example: {test_example}"
+        )
 
     else:
-        logger.info(f"Successfully executed code for novel model {name}")
+        logger.info(
+            f"Successfully executed code for novel model {name}"
+        )
 
 
 # Create and start a new thread for each model
 threads = []
 for i in range(10):
-    thread = threading.Thread(target=generate_and_execute_model, args=(i,))
+    thread = threading.Thread(
+        target=generate_and_execute_model, args=(i,)
+    )
     thread.start()
     threads.append(thread)
 

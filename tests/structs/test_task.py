@@ -164,14 +164,14 @@ def test_execute():
     agent = Agent()
     task = Task(id="5", task="Task5", result=None, agents=[agent])
     # Assuming execute method returns True on successful execution
-    assert task.execute() is True
+    assert task.run() is True
 
 
 def test_task_execute_with_agent(mocker):
     mock_agent = mocker.Mock(spec=Agent)
     mock_agent.run.return_value = "result"
     task = Task(description="Test task", agent=mock_agent)
-    task.execute()
+    task.run()
     assert task.result == "result"
     assert task.history == ["result"]
 
@@ -180,7 +180,7 @@ def test_task_execute_with_callable(mocker):
     mock_callable = mocker.Mock()
     mock_callable.run.return_value = "result"
     task = Task(description="Test task", agent=mock_callable)
-    task.execute()
+    task.run()
     assert task.result == "result"
     assert task.history == ["result"]
 
@@ -192,7 +192,7 @@ def test_task_execute_with_condition(mocker):
     task = Task(
         description="Test task", agent=mock_agent, condition=condition
     )
-    task.execute()
+    task.run()
     assert task.result == "result"
     assert task.history == ["result"]
 
@@ -204,7 +204,7 @@ def test_task_execute_with_condition_false(mocker):
     task = Task(
         description="Test task", agent=mock_agent, condition=condition
     )
-    task.execute()
+    task.run()
     assert task.result is None
     assert task.history == []
 
@@ -213,8 +213,10 @@ def test_task_execute_with_action(mocker):
     mock_agent = mocker.Mock(spec=Agent)
     mock_agent.run.return_value = "result"
     action = mocker.Mock()
-    task = Task(description="Test task", agent=mock_agent, action=action)
-    task.execute()
+    task = Task(
+        description="Test task", agent=mock_agent, action=action
+    )
+    task.run()
     assert task.result == "result"
     assert task.history == ["result"]
     action.assert_called_once()

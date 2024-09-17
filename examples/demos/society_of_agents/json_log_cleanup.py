@@ -27,7 +27,9 @@ def cleanup_json_logs(name: str = None):
 
                 # Move the file to the target directory
                 shutil.move(file_path, target_path)
-                logger.info(f"Moved file {file_path} to {target_path}")
+                logger.info(
+                    f"Moved file {file_path} to {target_path}"
+                )
 
     # Delete Chroma and Ruff cache
     chroma_cache = os.path.join(root_dir, ".chroma_cache")

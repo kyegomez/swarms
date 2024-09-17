@@ -1,219 +1,265 @@
+import asyncio
+import time
+from typing import Any, Dict, List, Optional
+
+from loguru import logger
+from pydantic import BaseModel, Field
+
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import BaseSwarm
-from typing import List, Any
 
-from swarms.structs.conversation import Conversation
-from pydantic import BaseModel
-from swarms.utils.loguru_logger import logger
-from swarms.memory.base_vectordb import BaseVectorDatabase
+time_stamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
 
-class AgentRun(BaseModel):
-    agent_name: str
-    output: Any
+class MixtureOfAgentsInput(BaseModel):
+    name: str = "MixtureOfAgents"
+    description: str = (
+        "A class to run a mixture of agents and aggregate their responses."
+    )
+    reference_agents: List[Dict[str, Any]] = []
+    aggregator_agent: Dict[str, Any] = Field(
+        ...,
+        description="An aggregator agent to be used in the mixture.",
+    )
+    aggregator_system_prompt: str = ""
+    layers: int = 3
+    task: str = Field(
+        ...,
+        description="The task to be processed by the mixture of agents.",
+    )
+    time_created: str = Field(
+        time_stamp,
+        description="The time the mixture of agents was created.",
+    )
 
 
-class Metadata(BaseModel):
-    layers: int
-    agent_runs: List[AgentRun]
-    final_output: Any
+class MixtureOfAgentsOutput(BaseModel):
+    id: str = Field(
+        ..., description="The ID of the mixture of agents."
+    )
+    InputConfig: MixtureOfAgentsInput
+    output: List[Dict[str, Any]] = []
+    time_completed: str = Field(
+        time_stamp,
+        description="The time the mixture of agents was completed.",
+    )
 
 
-class MixtureOfAgents(BaseSwarm):
-    """
-    Represents a mixture of agents in a swarm.
-    The process is parallel -> sequential -> parallel -> final output agent.
-    From the paper: https://arxiv.org/pdf/2406.04692
-
-    Attributes:
-        agents (List[Agent]): The list of agents in the swarm.
-        flow (str): The flow of the swarm.
-        max_loops (int): The maximum number of loops to run.
-        verbose (bool): Flag indicating whether to print verbose output.
-        layers (int, optional): The number of layers in the swarm. Defaults to None.
-        rules (str, optional): The rules for the swarm. Defaults to None.
-    """
-
+class MixtureOfAgents:
     def __init__(
         self,
         name: str = "MixtureOfAgents",
-        description: str = "A swarm of agents that run in parallel and sequentially.",
-        agents: List[Agent] = None,
-        max_loops: int = 1,
-        verbose: bool = True,
+        description: str = "A class to run a mixture of agents and aggregate their responses.",
+        reference_agents: List[Agent] = [],
+        aggregator_agent: Agent = None,
+        aggregator_system_prompt: str = "",
         layers: int = 3,
-        rules: str = None,
-        final_agent: Agent = None,
-        auto_save: bool = False,
-        saved_file_name: str = "moe_swarm.json",
-        scp: BaseVectorDatabase = None,
-    ):
+    ) -> None:
+        """Initialize the Mixture of Agents class with agents and configuration."""
         self.name = name
         self.description = description
-        self.agents = agents
-        self.max_loops = max_loops
-        self.verbose = verbose
-        self.layers = layers
-        self.rules = rules
-        self.final_agent = final_agent
-        self.auto_save = auto_save
-        self.saved_file_name = saved_file_name
-        self.scp = scp
+        self.reference_agents: List[Agent] = reference_agents
+        self.aggregator_agent: Agent = aggregator_agent
+        self.aggregator_system_prompt: str = aggregator_system_prompt
+        self.layers: int = layers
 
-        # Check the agents
-        self.reliability_check()
-        self.agent_check()
-        self.final_agent_check()
-
-        # Conversation
-        self.conversation = Conversation(
-            time_enabled=True,
-            rules=rules,
+        self.input_schema = MixtureOfAgentsInput(
+            name=name,
+            description=description,
+            reference_agents=[
+                agent.agent_output.model_dump()
+                for agent in self.reference_agents
+            ],
+            aggregator_agent=self.aggregator_agent.agent_output.model_dump(),
+            aggregator_system_prompt=self.aggregator_system_prompt,
+            layers=self.layers,
+            task="",
+            time_created=time_stamp,
         )
 
-        # Initialize the swarm
-        self.swarm_initialization()
+        self.output_schema = MixtureOfAgentsOutput(
+            id="MixtureOfAgents",
+            InputConfig=self.input_schema.model_dump(),
+            output=[],
+        )
 
-        # Communication Protocol
-        self.communication_protocol()
+    def reliability_check(self) -> None:
+        logger.info(
+            "Checking the reliability of the Mixture of Agents class."
+        )
 
-    def reliability_check(self):
-        if self.final_agent is None:
-            raise ValueError("Final agent is not defined.")
+        if not self.reference_agents:
+            raise ValueError("No reference agents provided.")
 
-        if self.agents is None:
-            raise ValueError("Agents are not defined.")
+        if not self.aggregator_agent:
+            raise ValueError("No aggregator agent provided.")
 
-        if self.layers is None:
-            raise ValueError("Layers are not defined.")
+        if not self.aggregator_system_prompt:
+            raise ValueError("No aggregator system prompt provided.")
 
-    def communication_protocol(self):
-        try:
-            # Memory system
-            logger.info(
-                "Initializing SCP --- Swarm Communication Protocol"
+        if not self.layers:
+            raise ValueError("No layers provided.")
+
+        if self.layers < 1:
+            raise ValueError("Layers must be greater than 0.")
+
+        logger.info("Reliability check passed.")
+        logger.info("Mixture of Agents class is ready for use.")
+
+    def _get_final_system_prompt(
+        self, system_prompt: str, results: List[str]
+    ) -> str:
+        """Construct a system prompt for layers 2+ that includes the previous responses to synthesize."""
+        return (
+            system_prompt
+            + "\n"
+            + "\n".join(
+                [
+                    f"{i+1}. {str(element)}"
+                    for i, element in enumerate(results)
+                ]
             )
+        )
 
-            if self.scp is not None:
-                for agent in self.agents.values():
-                    agent.long_term_memory = self.scp
-                    logger.info("Agents have been integrated with SCP:")
-        except Exception as e:
-            logger.error(f"Error initializing SCP: {e}")
-
-    def agent_check(self):
-        try:
-            if not isinstance(self.agents, list):
-                raise TypeError("Input must be a list of agents.")
-            for agent in self.agents:
-                if not isinstance(agent, Agent):
-                    raise TypeError(
-                        "Input must be a list of agents."
-                        "Each agent must be an instance of Agent."
-                    )
-        except TypeError as e:
-            logger.error(f"Error checking agents: {e}")
-
-    def final_agent_check(self):
-        try:
-            if not isinstance(self.final_agent, Agent):
-                raise TypeError(
-                    "Final agent must be an instance of Agent."
+    async def _run_agent_async(
+        self,
+        agent: Agent,
+        task: str,
+        prev_responses: Optional[List[str]] = None,
+    ) -> str:
+        """Asynchronous method to run a single agent."""
+        if prev_responses:
+            system_prompt_with_responses = (
+                self._get_final_system_prompt(
+                    self.aggregator_system_prompt, prev_responses
                 )
-        except TypeError as e:
-            logger.error(f"Error checking final agent: {e}")
+            )
+            agent.system_prompt = system_prompt_with_responses
 
-    def swarm_initialization(self):
-        """
-        Initializes the swarm by logging the swarm name, description, and the number of agents.
-        """
-        # Name, description, and logger
-        logger.info(f"Initializing Mixture of Agents Swarm: {self.name}.")
-        logger.info(f"Description: {self.description}")
-        logger.info(f"Initializing swarm with {len(self.agents)} agents.")
+        response = await asyncio.to_thread(agent.run, task)
+        self.output_schema.output.append(
+            agent.agent_output.model_dump()
+        )
 
-    def run(self, task: str = None, *args, **kwargs):
-        """
-        Runs the swarm with the given task and returns the conversation history.
+        # Print the agent response
+        print(f"Agent {agent.agent_name} response: {response}")
+        return response
 
-        Args:
-            task (str): The task to be performed by the swarm.
+    async def _run_async(self, task: str) -> None:
+        """Asynchronous method to run the Mixture of Agents process."""
+        self.input_schema.task = task
+        # Initial responses from reference agents
+        results: List[str] = await asyncio.gather(
+            *[
+                self._run_agent_async(agent, task)
+                for agent in self.reference_agents
+            ]
+        )
 
-        Returns:
-            str: The conversation history as a string.
-        """
-        try:
-            # Running the swarm
-            logger.info(f"Running swarm {self.name}.")
-
-            self.conversation.add("user", task)
-            # self.scp.add(f"User: {task}")
-
-            # Conversation history
-            history = self.conversation.return_history_as_string()
-            # self.scp.add(f"Conversation History: {history}")
-
-            agent_runs = []
-            layer = 0
-            while layer < self.layers:
-                logger.info(f"Running layer {layer} of the swarm.")
-                # Different Layers
-                # Run the agents for all agents on the input
-                responses = []
-                for agent in self.agents:
-                    out = agent.run(history, *args, **kwargs)
-                    # self.scp.add(
-                    #     f"Agent: {agent.agent_name} Output: {out}"
-                    # )
-                    responses.append((agent.agent_name, out))
-                    agent_runs.append(
-                        AgentRun(agent_name=agent.agent_name, output=out)
+        # Additional layers of processing
+        for _ in range(1, self.layers - 1):
+            results = await asyncio.gather(
+                *[
+                    self._run_agent_async(
+                        agent, task, prev_responses=results
                     )
-
-                    # Log the agent run
-                    # logger.info(f"Agent {agent.agent_name} output: {out}")
-
-                # Add all the responses to the conversation
-                logger.info("Adding responses to the conversation.")
-                for agent_name, response in responses:
-                    self.conversation.add(agent_name, response)
-
-                # Update the history
-                history = self.conversation.return_history_as_string()
-                # self.scp.add(f"Conversation History: {history}")
-
-                layer += 1
-
-                logger.info(f"Completed layer {layer} of the swarm.")
-
-            # Run the final output agent on the entire conversation history
-            logger.info(
-                "Running the final output agent on the conversation history."
-            )
-            final_output = self.final_agent.run(history, *args, **kwargs)
-            # self.scp.add(
-            #     f"Final Agent: {self.final_agent.agent_name} Output: {final_output}"
-            # )
-            self.conversation.add(
-                self.final_agent.agent_name, final_output
+                    for agent in self.reference_agents
+                ]
             )
 
-            # Create metadata
-            logger.info("Creating metadata for the swarm.")
-            metadata = Metadata(
-                layers=self.layers,
-                agent_runs=agent_runs,
-                final_output=final_output,
-            )
+        # Final aggregation using the aggregator agent
+        final_result = await self._run_agent_async(
+            self.aggregator_agent, task, prev_responses=results
+        )
+        print(f"Final Aggregated Response: {final_result}")
 
-            # Save metadata to JSON file
-            logger.info("Saving metadata to JSON file.")
-            with open(self.saved_file_name, "w") as f:
-                f.write(metadata.json())
+    def run(self, task: str) -> None:
+        """Synchronous wrapper to run the async process."""
+        asyncio.run(self._run_async(task))
 
-            return self.conversation.return_history_as_string()
-        except Exception as e:
-            logger.error(
-                f"Error running swarm: {e} try optimizing the swarm inputs or re-iterate on the task."
-            )
-        return None
+        return self.output_schema.model_dump_json(indent=4)
+
+
+# # Example usage:
+# if __name__ == "__main__":
+#     api_key = os.getenv("OPENAI_API_KEY")
+
+#     # Create individual agents with the OpenAIChat model
+#     model1 = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
+#     model2 = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
+#     model3 = OpenAIChat(api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
+
+#     agent1 = Agent(
+#         agent_name="Agent1",
+#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+#         llm=model1,
+#         max_loops=1,
+#         autosave=True,
+#         dashboard=False,
+#         verbose=True,
+#         dynamic_temperature_enabled=True,
+#         saved_state_path="agent1_state.json",
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         return_step_meta=False
+#     )
+
+#     agent2 = Agent(
+#         agent_name="Agent2",
+#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+#         llm=model2,
+#         max_loops=1,
+#         autosave=True,
+#         dashboard=False,
+#         verbose=True,
+#         dynamic_temperature_enabled=True,
+#         saved_state_path="agent2_state.json",
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         return_step_meta=False
+#     )
+
+#     agent3 = Agent(
+#         agent_name="Agent3",
+#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+#         llm=model3,
+#         max_loops=1,
+#         autosave=True,
+#         dashboard=False,
+#         verbose=True,
+#         dynamic_temperature_enabled=True,
+#         saved_state_path="agent3_state.json",
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         return_step_meta=False
+#     )
+
+#     aggregator_agent = Agent(
+#         agent_name="AggregatorAgent",
+#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+#         llm=model1,
+#         max_loops=1,
+#         autosave=True,
+#         dashboard=False,
+#         verbose=True,
+#         dynamic_temperature_enabled=True,
+#         saved_state_path="aggregator_agent_state.json",
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         return_step_meta=False
+#     )
+
+#     # Create the Mixture of Agents class
+#     moa = MixtureOfAgents(
+#         reference_agents=[agent1, agent2, agent3],
+#         aggregator_agent=aggregator_agent,
+#         aggregator_system_prompt="""You have been provided with a set of responses from various agents.
+#         Your task is to synthesize these responses into a single, high-quality response.""",
+#         layers=3
+#     )
+
+#     out = moa.run("How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria?")
+#     print(out)

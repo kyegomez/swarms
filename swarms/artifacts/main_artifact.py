@@ -1,3 +1,4 @@
+import time
 from swarms.utils.loguru_logger import logger
 import os
 import json
@@ -17,7 +18,10 @@ class FileVersion(BaseModel):
     content: str = Field(
         ..., description="The content of the file version"
     )
-    timestamp: str = Field(default_factory=datetime.now)
+    timestamp: str = Field(
+        time.strftime("%Y-%m-%d %H:%M:%S"),
+        description="The timestamp of the file version",
+    )
 
     def __str__(self) -> str:
         return f"Version {self.version_number} (Timestamp: {self.timestamp}):\n{self.content}"
@@ -46,7 +50,8 @@ class Artifact(BaseModel):
     )
     versions: List[FileVersion] = Field(default_factory=list)
     edit_count: int = Field(
-        ..., description="The number of times the file has been edited"
+        ...,
+        description="The number of times the file has been edited",
     )
 
     @validator("file_type", pre=True, always=True)
@@ -104,7 +109,7 @@ class Artifact(BaseModel):
                 FileVersion(
                     version_number=1,
                     content=initial_content,
-                    timestamp=datetime.now(),
+                    timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
                 )
             )
             self.edit_count = 0
@@ -122,7 +127,7 @@ class Artifact(BaseModel):
             new_version = FileVersion(
                 version_number=len(self.versions) + 1,
                 content=new_content,
-                timestamp=datetime.now(),
+                timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
             )
             self.versions.append(new_version)
         except Exception as e:
@@ -144,7 +149,9 @@ class Artifact(BaseModel):
             self.contents = f.read()
         self.create(self.contents)
 
-    def get_version(self, version_number: int) -> Union[FileVersion, None]:
+    def get_version(
+        self, version_number: int
+    ) -> Union[FileVersion, None]:
         """
         Retrieves a specific version of the artifact by its version number.
         """
@@ -163,7 +170,9 @@ class Artifact(BaseModel):
         """
         Returns the version history of the artifact as a formatted string.
         """
-        return "\n\n".join([str(version) for version in self.versions])
+        return "\n\n".join(
+            [str(version) for version in self.versions]
+        )
 
     def export_to_json(self, file_path: str) -> None:
         """

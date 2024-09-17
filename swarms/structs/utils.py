@@ -19,7 +19,9 @@ def parse_tasks(
     """
     tasks = {}
     for line in task.split("\n"):
-        if line.startswith("<agent_id>") and line.endwith("</agent_id>"):
+        if line.startswith("<agent_id>") and line.endwith(
+            "</agent_id>"
+        ):
             agent_id, task = line[10:-11].split("><")
             tasks[agent_id] = task
     return tasks
@@ -95,7 +97,9 @@ def find_token_in_text(text: str, token: str = "<DONE>") -> bool:
         return False
 
 
-def extract_key_from_json(json_response: str, key: str) -> Optional[str]:
+def extract_key_from_json(
+    json_response: str, key: str
+) -> Optional[str]:
     """
     Extract a specific key from a JSON response.
 
@@ -110,7 +114,9 @@ def extract_key_from_json(json_response: str, key: str) -> Optional[str]:
     return response_dict.get(key)
 
 
-def extract_tokens_from_text(text: str, tokens: List[str]) -> List[str]:
+def extract_tokens_from_text(
+    text: str, tokens: List[str]
+) -> List[str]:
     """
     Extract a list of tokens from a text response.
 

@@ -2,9 +2,10 @@ from typing import List
 from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import logger
 from swarms.structs.rearrange import AgentRearrange
+from swarms.structs.base_swarm import BaseSwarm
 
 
-class SequentialWorkflow:
+class SequentialWorkflow(BaseSwarm):
     """
     Initializes a SequentialWorkflow object.
 
@@ -17,11 +18,22 @@ class SequentialWorkflow:
 
     def __init__(
         self,
+        name: str = "SequentialWorkflow",
+        description: str = "Sequential Workflow, where agents are executed in a sequence.",
         agents: List[Agent] = None,
         max_loops: int = 1,
         *args,
         **kwargs,
     ):
+        super().__init__(
+            name=name,
+            description=description,
+            agents=agents,
+            *args,
+            **kwargs,
+        )
+        self.name = name
+        self.description = description
         self.agents = agents
         self.flow = " -> ".join(agent.agent_name for agent in agents)
         self.agent_rearrange = AgentRearrange(
@@ -39,8 +51,12 @@ class SequentialWorkflow:
             str: The final result after processing through all agents.
         """
         try:
-            logger.info(f"Running task with dynamic flow: {self.flow}")
+            logger.info(
+                f"Running task with dynamic flow: {self.flow}"
+            )
             return self.agent_rearrange.run(task)
         except Exception as e:
-            logger.error(f"An error occurred while running the task: {e}")
+            logger.error(
+                f"An error occurred while running the task: {e}"
+            )
             raise

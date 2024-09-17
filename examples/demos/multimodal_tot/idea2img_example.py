@@ -44,7 +44,9 @@ class Idea2Image(Agent):
             print(f"Generated image at: {img}")
 
             analysis = (
-                self.vision_api.run(img, current_prompt) if img else None
+                self.vision_api.run(img, current_prompt)
+                if img
+                else None
             )
             if analysis:
                 current_prompt += (
@@ -145,7 +147,9 @@ gpt_api = OpenAIChat(openai_api_key=openai_api_key)
 # Define the modified Idea2Image class here
 
 # Streamlit UI layout
-st.title("Explore the infinite Multi-Modal Idea Space with Idea2Image")
+st.title(
+    "Explore the infinite Multi-Modal Idea Space with Idea2Image"
+)
 user_prompt = st.text_input("Prompt for image generation:")
 num_iterations = st.number_input(
     "Enter the number of iterations for image improvement:",
@@ -164,7 +168,9 @@ if st.button("Generate Image"):
         user_prompt, num_iterations, run_folder
     )
 
-    for i, (enriched_prompt, img_path, analysis) in enumerate(results):
+    for i, (enriched_prompt, img_path, analysis) in enumerate(
+        results
+    ):
         st.write(f"Iteration {i+1}:")
         st.write("Enriched Prompt:", enriched_prompt)
         if img_path:

@@ -31,7 +31,9 @@ def clean_model_code(model_code_str: str) -> str:
     Returns:
         str: The cleaned-up model code.
     """
-    cleaned_code = model_code_str.replace("\\n", "\n").replace("\\'", "'")
+    cleaned_code = model_code_str.replace("\\n", "\n").replace(
+        "\\'", "'"
+    )
     return cleaned_code.strip()
 
 

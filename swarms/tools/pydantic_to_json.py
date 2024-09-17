@@ -29,7 +29,9 @@ def check_pydantic_name(pydantic_type: type[BaseModel]) -> str:
     try:
         return type(pydantic_type).__name__
     except AttributeError as error:
-        logger.error(f"The Pydantic model does not have a name. {error}")
+        logger.error(
+            f"The Pydantic model does not have a name. {error}"
+        )
         raise error
 
 
@@ -64,7 +66,9 @@ def base_model_to_openai_function(
             description := param.description
         ):
             if "description" not in parameters["properties"][name]:
-                parameters["properties"][name]["description"] = description
+                parameters["properties"][name][
+                    "description"
+                ] = description
 
     parameters["type"] = "object"
 
@@ -112,6 +116,7 @@ def base_model_to_openai_function(
 
 def multi_base_model_to_openai_function(
     pydantic_types: List[BaseModel] = None,
+    output_str: bool = False,
 ) -> dict[str, Any]:
     """
     Converts multiple Pydantic types to a dictionary of functions.
@@ -124,7 +129,9 @@ def multi_base_model_to_openai_function(
 
     """
     functions: list[dict[str, Any]] = [
-        base_model_to_openai_function(pydantic_type)["functions"][0]
+        base_model_to_openai_function(pydantic_type, output_str)[
+            "functions"
+        ][0]
         for pydantic_type in pydantic_types
     ]
 

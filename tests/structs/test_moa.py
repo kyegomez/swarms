@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import Mock, patch
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
-from swarms.memory.base_vectordb import BaseVectorDatabase
+from swarms_memory import BaseVectorDatabase
 
 
 def test_init():
@@ -18,7 +18,9 @@ def test_init():
         agents = [Mock(spec=Agent)]
         final_agent = Mock(spec=Agent)
         scp = Mock(spec=BaseVectorDatabase)
-        MixtureOfAgents(agents=agents, final_agent=final_agent, scp=scp)
+        MixtureOfAgents(
+            agents=agents, final_agent=final_agent, scp=scp
+        )
         mock_agent_check.assert_called_once()
         mock_final_agent_check.assert_called_once()
         mock_swarm_initialization.assert_called_once()
@@ -42,7 +44,9 @@ def test_agent_check():
     with pytest.raises(TypeError):
         MixtureOfAgents(agents="not a list", final_agent=final_agent)
     with pytest.raises(TypeError):
-        MixtureOfAgents(agents=["not an agent"], final_agent=final_agent)
+        MixtureOfAgents(
+            agents=["not an agent"], final_agent=final_agent
+        )
 
 
 def test_final_agent_check():
@@ -52,10 +56,14 @@ def test_final_agent_check():
 
 
 def test_swarm_initialization():
-    with patch("swarms.structs.mixture_of_agents.logger") as mock_logger:
+    with patch(
+        "swarms.structs.mixture_of_agents.logger"
+    ) as mock_logger:
         agents = [Mock(spec=Agent)]
         final_agent = Mock(spec=Agent)
-        swarm = MixtureOfAgents(agents=agents, final_agent=final_agent)
+        swarm = MixtureOfAgents(
+            agents=agents, final_agent=final_agent
+        )
         swarm.swarm_initialization()
         assert mock_logger.info.call_count == 3
 
@@ -66,7 +74,9 @@ def test_run():
     ) as mock_open:
         agents = [Mock(spec=Agent)]
         final_agent = Mock(spec=Agent)
-        swarm = MixtureOfAgents(agents=agents, final_agent=final_agent)
+        swarm = MixtureOfAgents(
+            agents=agents, final_agent=final_agent
+        )
         swarm.run("task")
         for agent in agents:
             agent.run.assert_called_once()

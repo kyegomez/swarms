@@ -5,7 +5,9 @@ import os
 url = "https://swarms.world/api/add-agent"  # replace with your actual API endpoint
 
 # API key
-api_key = os.getenv("SWARMS_API_KEY")  # replace with your actual API key
+api_key = os.getenv(
+    "SWARMS_API_KEY"
+)  # replace with your actual API key
 
 # Agent data
 agent_data = {

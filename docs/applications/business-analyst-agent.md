@@ -375,7 +375,7 @@ from dotenv import load_dotenv
 
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.markdown_message import display_markdown_message
-from swarms.memory.base_vectordb import AbstractVectorDatabase
+from swarms_memory import  AbstractVectorDatabase
 
 
 # Results storage using local ChromaDB

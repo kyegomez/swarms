@@ -139,4 +139,6 @@ class QwenVLMultiModal(BaseMultiModalModel):
             )
             return response, history
         except Exception as e:
-            raise Exception("An error occurred during the chat.") from e
+            raise Exception(
+                "An error occurred during the chat."
+            ) from e

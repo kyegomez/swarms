@@ -24,5 +24,7 @@ agent = Agent(
 
 
 # Run
-response = agent("What's the best state to incorporate a non profit in?")
+response = agent(
+    "What's the best state to incorporate a non profit in?"
+)
 print(response)

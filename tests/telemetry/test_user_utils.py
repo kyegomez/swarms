@@ -46,7 +46,9 @@ def test_generate_unique_identifier():
     # Generate unique identifiers and ensure they are valid UUID strings
     unique_id = generate_unique_identifier()
     assert isinstance(unique_id, str)
-    assert uuid.UUID(unique_id, version=5, namespace=uuid.NAMESPACE_DNS)
+    assert uuid.UUID(
+        unique_id, version=5, namespace=uuid.NAMESPACE_DNS
+    )
 
 
 def test_generate_user_id_edge_case():

@@ -1,13 +1,14 @@
 import os
 from dotenv import load_dotenv
 import sentry_sdk
+import threading
 
 load_dotenv()
 
 os.environ["USE_TELEMETRY"] = "True"
 
 
-def activate_sentry():
+def activate_sentry_async():
     use_telementry = os.getenv("USE_TELEMETRY")
 
     if use_telementry == "True":
@@ -18,3 +19,12 @@ def activate_sentry():
             enable_tracing=True,
             debug=False,  # Set debug to False
         )
+
+
+def activate_sentry():
+    t = threading.Thread(target=activate_sentry_async)
+    t.start()
+
+
+# if __name__ == "__main__":
+#     run_in_new_thread(activate_sentry)

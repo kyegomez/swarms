@@ -34,11 +34,11 @@ class TestTeam(unittest.TestCase):
             )
 
     def test_run(self):
-        self.assertEqual(self.team.run(), self.task.execute())
+        self.assertEqual(self.team.run(), self.task.run())
 
     def test_sequential_loop(self):
         self.assertEqual(
-            self.team._Team__sequential_loop(), self.task.execute()
+            self.team._Team__sequential_loop(), self.task.run()
         )
 
     def test_log(self):

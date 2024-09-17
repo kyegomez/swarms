@@ -45,7 +45,9 @@ def fetch_financial_news(
         data = response.json()
 
         if "articles" not in data or len(data["articles"]) == 0:
-            raise ValueError("No articles found or invalid API response.")
+            raise ValueError(
+                "No articles found or invalid API response."
+            )
 
         articles = data["articles"]
         formatted_articles = []

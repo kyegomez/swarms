@@ -147,7 +147,9 @@ class MajorityVoting:
 
     def __init__(
         self,
-        agents: List[Agent],
+        name: str = "MajorityVoting",
+        description: str = "A majority voting system for agents",
+        agents: List[Agent] = [],
         output_parser: Optional[Callable] = majority_voting,
         autosave: bool = False,
         verbose: bool = False,
@@ -165,7 +167,9 @@ class MajorityVoting:
 
         # If autosave is enabled, save the conversation to a file
         if self.autosave:
-            create_file(str(self.conversation), "majority_voting.json")
+            create_file(
+                str(self.conversation), "majority_voting.json"
+            )
 
         # Log the agents
         logger.info("Initializing majority voting system")
@@ -222,7 +226,9 @@ class MajorityVoting:
 
         # If an output parser is provided, parse the responses
         if self.output_parser is not None:
-            majority_vote = self.output_parser(responses, *args, **kwargs)
+            majority_vote = self.output_parser(
+                responses, *args, **kwargs
+            )
         else:
             majority_vote = majority_voting(responses)
 

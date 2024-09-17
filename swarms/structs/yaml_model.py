@@ -53,7 +53,8 @@ def create_yaml_schema_from_dict(
                 "type": get_type_name(model_field.outer_type_),
                 "default": field_info.default,
                 "description": (
-                    field_info.description or "No description provided."
+                    field_info.description
+                    or "No description provided."
                 ),
             }
     else:
@@ -155,7 +156,9 @@ class YamlModel(BaseModel):
         """
         Convert a JSON string to a YAML string.
         """
-        data = json.loads(json_str)  # Convert JSON string to dictionary
+        data = json.loads(
+            json_str
+        )  # Convert JSON string to dictionary
         return yaml.dump(data)
 
     def save_to_yaml(self, filename: str):

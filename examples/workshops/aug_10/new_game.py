@@ -77,7 +77,9 @@ while running:
             sounds[i].stop()
 
     # Draw player
-    pygame.draw.circle(screen, (255, 255, 255), player_pos, player_radius)
+    pygame.draw.circle(
+        screen, (255, 255, 255), player_pos, player_radius
+    )
 
     pygame.display.flip()
     clock.tick(60)

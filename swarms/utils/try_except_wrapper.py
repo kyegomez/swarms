@@ -19,7 +19,9 @@ def retry(
         Callable[[Callable[..., Any]], Callable[..., Any]]: The decorator function.
     """
 
-    def decorator_retry(func: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator_retry(
+        func: Callable[..., Any]
+    ) -> Callable[..., Any]:
         @wraps(func)
         def wrapper_retry(*args, **kwargs) -> Any:
             """
@@ -44,7 +46,9 @@ def retry(
     return decorator_retry
 
 
-def log_execution_time(func: Callable[..., Any]) -> Callable[..., Any]:
+def log_execution_time(
+    func: Callable[..., Any]
+) -> Callable[..., Any]:
     """
     A decorator that logs the execution time of a function.
 

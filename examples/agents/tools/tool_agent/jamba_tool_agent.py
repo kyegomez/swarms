@@ -28,7 +28,9 @@ class APIExampleRequestSchema(BaseModel):
     headers: dict = Field(
         ..., description="The headers for the example request"
     )
-    body: dict = Field(..., description="The body of the example request")
+    body: dict = Field(
+        ..., description="The body of the example request"
+    )
     response: dict = Field(
         ...,
         description="The expected response of the example request",

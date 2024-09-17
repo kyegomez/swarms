@@ -82,7 +82,9 @@ class AStarSwarm(BaseSwarm):
 
         # Add edges between the root agent and child agents
         for child in self.child_agents:
-            graph.add_edge(self.root_agent.agent_name, child.agent_name)
+            graph.add_edge(
+                self.root_agent.agent_name, child.agent_name
+            )
             self._add_edges(graph, child)
 
         # Draw the graph

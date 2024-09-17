@@ -77,7 +77,9 @@ class Idefics(BaseMultiModalModel):
 
     def __init__(
         self,
-        model_name: Optional[str] = "HuggingFaceM4/idefics-9b-instruct",
+        model_name: Optional[
+            str
+        ] = "HuggingFaceM4/idefics-9b-instruct",
         device: Callable = autodetect_device,
         torch_dtype=torch.bfloat16,
         max_length: int = 100,

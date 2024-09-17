@@ -117,7 +117,9 @@ class APIRequestAgent:
             Dict[str, Any]: The parsed response content.
         """
         try:
-            logger.info(f"Response status code: {response.status_code}")
+            logger.info(
+                f"Response status code: {response.status_code}"
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as e:
@@ -184,7 +186,9 @@ class APIRequestAgent:
             logging.error(f"RequestException: {e}")
             raise
 
-    def execute_api_request(self, task: APITaskSchema) -> Dict[str, Any]:
+    def execute_api_request(
+        self, task: APITaskSchema
+    ) -> Dict[str, Any]:
         """
         Executes a single step: sends the request and processes the response.
 

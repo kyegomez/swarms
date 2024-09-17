@@ -3,7 +3,9 @@ from typing import Dict
 
 
 class ParameterDefinition(BaseModel):
-    description: str = Field(..., title="Description of the parameter")
+    description: str = Field(
+        ..., title="Description of the parameter"
+    )
     type: str = Field(..., title="Type of the parameter")
     required: bool = Field(..., title="Is the parameter required?")
 

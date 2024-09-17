@@ -41,7 +41,9 @@ class AutoSwarmRouter(BaseSwarm):
         *args,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(
+            name=name, description=description, *args, **kwargs
+        )
         self.name = name
         self.description = description
         self.verbose = verbose
@@ -82,7 +84,9 @@ class AutoSwarmRouter(BaseSwarm):
 
             if self.name in self.swarm_dict:
                 # If a match is found then send the task to the swarm
-                out = self.swarm_dict[self.name].run(task, *args, **kwargs)
+                out = self.swarm_dict[self.name].run(
+                    task, *args, **kwargs
+                )
 
                 if self.custom_postprocess:
                     # If custom postprocess function is provided then run it
@@ -91,7 +95,9 @@ class AutoSwarmRouter(BaseSwarm):
                 return out
 
             # If no match is found then return None
-            raise ValueError(f"Swarm with name {self.name} not found.")
+            raise ValueError(
+                f"Swarm with name {self.name} not found."
+            )
         except Exception as e:
             logger.error(f"Error: {e}")
             raise e
@@ -189,7 +195,9 @@ class AutoSwarm(BaseSwarm):
                 if self.custom_router:
                     # If custom router function is provided then use it to route the task
                     logger.info("Running custom router function.")
-                    out = self.custom_router(self, task, *args, **kwargs)
+                    out = self.custom_router(
+                        self, task, *args, **kwargs
+                    )
 
                 else:
                     out = self.router.run(task, *args, **kwargs)

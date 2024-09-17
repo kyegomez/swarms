@@ -1,44 +1,9 @@
-from functools import wraps
 from multiprocessing import Manager, Pool, cpu_count
-from time import sleep
 from typing import Sequence
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_workflow import BaseWorkflow
 from swarms.utils.loguru_logger import logger
-
-
-# Retry on failure
-def retry_on_failure(max_retries: int = 3, delay: int = 5):
-    """
-    Decorator that retries a function a specified number of times on failure.
-
-    Args:
-        max_retries (int): The maximum number of retries (default: 3).
-        delay (int): The delay in seconds between retries (default: 5).
-
-    Returns:
-        The result of the function if it succeeds within the maximum number of retries,
-        otherwise None.
-    """
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            for _ in range(max_retries):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as error:
-                    logger.error(
-                        f"Error: {str(error)}, retrying in"
-                        f" {delay} seconds..."
-                    )
-                    sleep(delay)
-            return None
-
-        return wrapper
-
-    return decorator
 
 
 class MultiProcessWorkflow(BaseWorkflow):

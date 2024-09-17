@@ -17,7 +17,9 @@ try:
 except PermissionError:
     logger.error(f"Permission denied: '{log_folder}'")
 except Exception as e:
-    logger.error(f"An error occurred while creating the log folder: {e}")
+    logger.error(
+        f"An error occurred while creating the log folder: {e}"
+    )
 else:
     # If the folder was created successfully, add a new logger
     logger.add(

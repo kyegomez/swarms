@@ -14,7 +14,7 @@ from transformers import (
 )
 
 from swarms.models.base_multimodal_model import BaseMultiModalModel
-from swarms.utils.logger import logger
+from swarms.utils.loguru_logger import logger
 
 MODEL_PATH = "THUDM/cogvlm-chat-hf"
 TOKENIZER_PATH = "lmsys/vicuna-7b-v1.5"
@@ -299,7 +299,9 @@ class CogVLMMultiModal(BaseMultiModalModel):
         """
         messages = params["messages"]
         temperature = float(params.get("temperature", 1.0))
-        repetition_penalty = float(params.get("repetition_penalty", 1.0))
+        repetition_penalty = float(
+            params.get("repetition_penalty", 1.0)
+        )
         top_p = float(params.get("top_p", 1.0))
         max_new_tokens = int(params.get("max_tokens", 256))
         query, history, image_list = self.process_history_and_images(
@@ -316,7 +318,9 @@ class CogVLMMultiModal(BaseMultiModalModel):
         )
         inputs = {
             "input_ids": (
-                input_by_model["input_ids"].unsqueeze(0).to(self.device)
+                input_by_model["input_ids"]
+                .unsqueeze(0)
+                .to(self.device)
             ),
             "token_type_ids": (
                 input_by_model["token_type_ids"]
@@ -375,7 +379,9 @@ class CogVLMMultiModal(BaseMultiModalModel):
                     "text": generated_text,
                     "usage": {
                         "prompt_tokens": input_echo_len,
-                        "completion_tokens": (total_len - input_echo_len),
+                        "completion_tokens": (
+                            total_len - input_echo_len
+                        ),
                         "total_tokens": total_len,
                     },
                 }
@@ -431,7 +437,9 @@ class CogVLMMultiModal(BaseMultiModalModel):
                 for item in content:
                     if isinstance(item, ImageUrlContent):
                         image_url = item.image_url.url
-                        if image_url.startswith("data:image/jpeg;base64,"):
+                        if image_url.startswith(
+                            "data:image/jpeg;base64,"
+                        ):
                             base64_encoded_image = image_url.split(
                                 "data:image/jpeg;base64,"
                             )[1]
@@ -463,7 +471,9 @@ class CogVLMMultiModal(BaseMultiModalModel):
                         text_content,
                     )
                 else:
-                    raise AssertionError("assistant reply before user")
+                    raise AssertionError(
+                        "assistant reply before user"
+                    )
             else:
                 raise AssertionError(f"unrecognized role: {role}")
 

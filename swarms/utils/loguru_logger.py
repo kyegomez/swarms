@@ -10,7 +10,6 @@ logger.add(
     os.path.join(WORKSPACE_DIR, "swarms.log"),
     level="INFO",
     colorize=True,
-    format="<green>{time}</green> <level>{message}</level>",
     backtrace=True,
     diagnose=True,
 )
@@ -21,7 +20,6 @@ def loguru_logger(file_path: str = "swarms.log"):
         os.path.join(WORKSPACE_DIR, file_path),
         level="INFO",
         colorize=True,
-        format="<green>{time}</green> <level>{message}</level>",
         backtrace=True,
         diagnose=True,
     )

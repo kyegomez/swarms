@@ -120,7 +120,9 @@ class TogetherLLM(BaseLLM):
 
             out = response.json()
             content = (
-                out["choices"][0].get("message", {}).get("content", None)
+                out["choices"][0]
+                .get("message", {})
+                .get("content", None)
             )
             if self.streaming_enabled:
                 content = self.stream_response(content)

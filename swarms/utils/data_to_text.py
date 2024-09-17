@@ -82,7 +82,9 @@ def md_to_text(file: str) -> str:
 
     """
     if not os.path.exists(file):
-        raise FileNotFoundError(f"No such file or directory: '{file}'")
+        raise FileNotFoundError(
+            f"No such file or directory: '{file}'"
+        )
     with open(file) as file:
         data = file.read()
     return data

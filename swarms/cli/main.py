@@ -5,27 +5,26 @@ from swarms.cli.parse_yaml import (
     list_agents,
 )
 
-SWARMS_LOGO = """
-  _________                                     
- /   _____/_  _  _______ _______  _____   ______
- \_____  \\ \/ \/ /\__  \\_  __ \/     \ /  ___/
- /        \\     /  / __ \|  | \/  Y Y  \\___ \ 
-/_______  / \/\_/  (____  /__|  |__|_|  /____  >
-        \/              \/            \/     \/ 
-"""
+# SWARMS_LOGO = """
+#   _________
+#  /   _____/_  _  _______ _______  _____   ______
+#  \_____  \\ \/ \/ /\__  \\_  __ \/     \ /  ___/
+#  /        \\     /  / __ \|  | \/  Y Y  \\___ \
+# /_______  / \/\_/  (____  /__|  |__|_|  /____  >
+#         \/              \/            \/     \/
+# """
 
-RED_COLOR_CODE = "\033[91m"
-RESET_COLOR_CODE = "\033[0m"
+# RED_COLOR_CODE = "\033[91m"
+# RESET_COLOR_CODE = "\033[0m"
 
-print(RED_COLOR_CODE + SWARMS_LOGO + RESET_COLOR_CODE)
+# # print(RED_COLOR_CODE + SWARMS_LOGO + RESET_COLOR_CODE)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description=f"""
-        
-        {SWARMS_LOGO}
-        CLI for managing and running swarms agents.
+        description="""
+    
+        Swarms CLI for managing and running swarms agents.
         
         """
     )

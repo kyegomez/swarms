@@ -2,7 +2,7 @@ import concurrent
 import csv
 import os
 from swarms import Gemini, Agent
-from swarms.memory import ChromaDB
+from swarms_memory import ChromaDB
 from dotenv import load_dotenv
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.file_processing import create_file
@@ -48,7 +48,9 @@ def execute_concurrently(callable_functions: callable, max_workers=5):
     ) as executor:
         futures = []
         for i, (fn, args, kwargs) in enumerate(callable_functions):
-            futures.append(executor.submit(worker, fn, args, kwargs, i))
+            futures.append(
+                executor.submit(worker, fn, args, kwargs, i)
+            )
 
         # Wait for all threads to complete
         concurrent.futures.wait(futures)
@@ -57,7 +59,9 @@ def execute_concurrently(callable_functions: callable, max_workers=5):
 
 
 # Adjusting the function to extract specific column values
-def extract_and_create_agents(csv_file_path: str, target_columns: list):
+def extract_and_create_agents(
+    csv_file_path: str, target_columns: list
+):
     """
     Reads a CSV file, extracts "Project Name" and "Lightning Proposal" for each row,
     creates an Agent for each, and adds it to the swarm network.

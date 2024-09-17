@@ -4,7 +4,9 @@ from swarms import tool
 # Create the wrapper to wrap the function
 @tool(
     name="Geo Coordinates Locator",
-    description=("Locates geo coordinates with a city and or zip code"),
+    description=(
+        "Locates geo coordinates with a city and or zip code"
+    ),
     return_string=False,
     return_dict=False,
 )

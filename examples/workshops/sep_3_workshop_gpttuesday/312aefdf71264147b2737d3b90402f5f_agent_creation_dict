@@ -1,0 +1,20 @@
+{
+    "swarm_name": "QRCodeGenerationSwarm",
+    "rules": "1. Each agent is responsible for generating a Python script for one specific QR code. 2. Agents must ensure that the generated QR code is functional and corresponds to the correct link. 3. Agents should report back with the generated code and any issues encountered during the process.",
+    "plan": "The goal is to generate Python scripts that can create QR codes for the given links. Each agent will handle one link to ensure focused and efficient code generation.",
+    "task": "Generate Python scripts to create QR codes for the specified links: Telegram, Discord, and a Lu.ma event.",
+    "agents": [
+        {
+            "agent_name": "TelegramQRCodeAgent",
+            "system_prompt": "Your task is to generate a Python script that creates a QR code for the Telegram link: https://t.me/+Sm4J-sSkw8c0ODA5. Use libraries such as qrcode to accomplish this. Ensure the QR code is correctly generated and test it to confirm functionality."
+        },
+        {
+            "agent_name": "DiscordQRCodeAgent",
+            "system_prompt": "Your task is to generate a Python script that creates a QR code for the Discord link: https://discord.gg/F8sSH4Gh. Use libraries such as qrcode to accomplish this. Ensure the QR code is correctly generated and test it to confirm functionality."
+        },
+        {
+            "agent_name": "LuMaQRCodeAgent",
+            "system_prompt": "Your task is to generate a Python script that creates a QR code for the Lu.ma event link: https://lu.ma/GPTuesdays?k=c. Use libraries such as qrcode to accomplish this. Ensure the QR code is correctly generated and test it to confirm functionality."
+        }
+    ]
+}

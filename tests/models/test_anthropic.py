@@ -11,7 +11,9 @@ class MockAnthropicClient:
     def __init__(self, *args, **kwargs):
         pass
 
-    def completions_create(self, prompt, stop_sequences, stream, **kwargs):
+    def completions_create(
+        self, prompt, stop_sequences, stream, **kwargs
+    ):
         return MockAnthropicResponse()
 
 
@@ -197,7 +199,9 @@ def test_anthropic_wrap_prompt(anthropic_instance):
 def test_anthropic_convert_prompt(anthropic_instance):
     prompt = "What is the meaning of life?"
     converted_prompt = anthropic_instance.convert_prompt(prompt)
-    assert converted_prompt.startswith(anthropic_instance.HUMAN_PROMPT)
+    assert converted_prompt.startswith(
+        anthropic_instance.HUMAN_PROMPT
+    )
     assert converted_prompt.endswith(anthropic_instance.AI_PROMPT)
 
 

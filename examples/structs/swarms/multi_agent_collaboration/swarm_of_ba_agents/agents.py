@@ -625,7 +625,9 @@ def call_with_summary(summary: str = None):
         "Authorization": authorization,
     }
 
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    response = requests.post(
+        url, headers=headers, data=json.dumps(data)
+    )
 
     print(response.text)
 

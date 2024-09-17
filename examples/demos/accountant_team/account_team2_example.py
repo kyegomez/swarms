@@ -79,7 +79,9 @@ summary_agent_output = summary_generator_agent.run(
 )
 
 # Provide decision making support to the accountant
-decision_making_support_agent_output = decision_making_support_agent.run(
-    f"{decision_making_support_agent_instructions}:"
-    f" {summary_agent_output}"
+decision_making_support_agent_output = (
+    decision_making_support_agent.run(
+        f"{decision_making_support_agent_instructions}:"
+        f" {summary_agent_output}"
+    )
 )

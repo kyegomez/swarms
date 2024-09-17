@@ -38,7 +38,9 @@ class AutogenAgentWrapper(Agent):
             human_input_mode="NEVER",
         )
 
-    def run(self, task: str, *args: Any, **kwargs: Any) -> Optional[str]:
+    def run(
+        self, task: str, *args: Any, **kwargs: Any
+    ) -> Optional[str]:
         """
         Run the AutogenAgentWrapper.
 
@@ -62,7 +64,10 @@ class AutogenAgentWrapper(Agent):
 
 llm_config = {
     "config_list": [
-        {"model": "gpt-4", "api_key": os.environ.get("OPENAI_API_KEY")}
+        {
+            "model": "gpt-4",
+            "api_key": os.environ.get("OPENAI_API_KEY"),
+        }
     ]
 }
 

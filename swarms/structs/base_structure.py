@@ -202,7 +202,9 @@ class BaseStructure:
     async def run_async(self, *args, **kwargs):
         """Run the structure asynchronously."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.run, *args, **kwargs)
+        return await loop.run_in_executor(
+            None, self.run, *args, **kwargs
+        )
 
     async def save_metadata_async(self, metadata: Dict[str, Any]):
         """Save metadata to file asynchronously.
@@ -235,7 +237,9 @@ class BaseStructure:
             None, self.log_error, error_message
         )
 
-    async def save_artifact_async(self, artifact: Any, artifact_name: str):
+    async def save_artifact_async(
+        self, artifact: Any, artifact_name: str
+    ):
         """Save artifact to file asynchronously.
 
         Args:
@@ -277,7 +281,9 @@ class BaseStructure:
             None, self.log_event, event, event_type
         )
 
-    async def asave_to_file(self, data: Any, file: str, *args, **kwargs):
+    async def asave_to_file(
+        self, data: Any, file: str, *args, **kwargs
+    ):
         """Save data to file asynchronously.
 
         Args:
@@ -366,7 +372,8 @@ class BaseStructure:
         """
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
             futures = [
-                executor.submit(self.run, data) for data in batched_data
+                executor.submit(self.run, data)
+                for data in batched_data
             ]
             return [future.result() for future in futures]
 
@@ -426,9 +433,13 @@ class BaseStructure:
             _type_: _description_
         """
         self.monitor_resources()
-        return self.run_batched(batched_data, batch_size, *args, **kwargs)
+        return self.run_batched(
+            batched_data, batch_size, *args, **kwargs
+        )
 
-    def _serialize_callable(self, attr_value: Callable) -> Dict[str, Any]:
+    def _serialize_callable(
+        self, attr_value: Callable
+    ) -> Dict[str, Any]:
         """
         Serializes callable attributes by extracting their name and docstring.
 
@@ -485,10 +496,14 @@ class BaseStructure:
         }
 
     def to_json(self, indent: int = 4, *args, **kwargs):
-        return json.dumps(self.to_dict(), indent=indent, *args, **kwargs)
+        return json.dumps(
+            self.to_dict(), indent=indent, *args, **kwargs
+        )
 
     def to_yaml(self, indent: int = 4, *args, **kwargs):
-        return yaml.dump(self.to_dict(), indent=indent, *args, **kwargs)
+        return yaml.dump(
+            self.to_dict(), indent=indent, *args, **kwargs
+        )
 
     def to_toml(self, *args, **kwargs):
         return toml.dumps(self.to_dict(), *args, **kwargs)

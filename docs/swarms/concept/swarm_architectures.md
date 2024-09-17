@@ -43,7 +43,8 @@ graph TD
 ### Parallel Swarm
 
 **Overview:**
-In a Parallel Swarm architecture, multiple agents operate independently and simultaneously on different tasks. Each agent works on its own task without dependencies on the others.
+In a Parallel Swarm architecture, multiple agents operate independently and simultaneously on different tasks. Each agent works on its own task without dependencies on the others. [Learn more here in the docs:](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
+
 
 **Use-Cases:**
 - Tasks that can be processed independently, such as parallel data analysis.
@@ -51,7 +52,7 @@ In a Parallel Swarm architecture, multiple agents operate independently and simu
 
 ```mermaid
 graph LR
-    A[Coordinator Agent] --> B1[Sub-Agent 1]
+    A[Task] --> B1[Sub-Agent 1]
     A --> B2[Sub-Agent 2]
     A --> B3[Sub-Agent 3]
     A --> B4[Sub-Agent 4]
@@ -62,7 +63,7 @@ graph LR
 ### Sequential Swarm
 
 **Overview:**
-A Sequential Swarm architecture processes tasks in a linear sequence. Each agent completes its task before passing the result to the next agent in the chain. This architecture ensures orderly processing and is useful when tasks have dependencies.
+A Sequential Swarm architecture processes tasks in a linear sequence. Each agent completes its task before passing the result to the next agent in the chain. This architecture ensures orderly processing and is useful when tasks have dependencies. [Learn more here in the docs:](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
 
 **Use-Cases:**
 - Workflows where each step depends on the previous one, such as assembly lines or sequential data processing.
@@ -84,6 +85,7 @@ graph TD
 In a Round Robin Swarm architecture, tasks are distributed cyclically among a set of agents. Each agent takes turns handling tasks in a rotating order, ensuring even distribution of workload.
 
 **Use-Cases:**
+
 - Load balancing in distributed systems.
 
 - Scenarios requiring fair distribution of tasks to avoid overloading any single agent.
@@ -99,3 +101,58 @@ graph TD
     B3 --> A
     B4 --> A
 ```
+
+
+
+### SpreadSheet Swarm
+
+**Overview:**
+The SpreadSheet Swarm makes it easy to manage thousands of agents all in one place: a csv file. You can initialize any number of agents and then there is a loop parameter to run the loop of agents on the task. Learn more in the [docs here](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
+
+**Use-Cases:**
+
+- Multi-threaded execution: Execution agents on multiple threads 
+
+- Save agent outputs into CSV file
+
+- One place to analyze agent outputs
+
+
+```mermaid
+
+graph TD
+    A[Initialize SpreadSheetSwarm] --> B[Initialize Agents]
+    B --> C[Load Task Queue]
+    C --> D[Run Task]
+
+    subgraph Agents
+        D --> E1[Agent 1]
+        D --> E2[Agent 2]
+        D --> E3[Agent 3]
+    end
+
+    E1 --> F1[Process Task]
+    E2 --> F2[Process Task]
+    E3 --> F3[Process Task]
+
+    F1 --> G1[Track Output]
+    F2 --> G2[Track Output]
+    F3 --> G3[Track Output]
+
+    subgraph Save Outputs
+        G1 --> H[Save to CSV]
+        G2 --> H[Save to CSV]
+        G3 --> H[Save to CSV]
+    end
+
+    H --> I{Autosave Enabled?}
+    I --> |Yes| J[Export Metadata to JSON]
+    I --> |No| K[End Swarm Run]
+    
+    %% Style adjustments
+    classDef blackBox fill:#000,stroke:#f00,color:#fff;
+    class A,B,C,D,E1,E2,E3,F1,F2,F3,G1,G2,G3,H,I,J,K blackBox;
+```
+
+
+

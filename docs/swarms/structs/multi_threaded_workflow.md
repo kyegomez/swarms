@@ -65,7 +65,7 @@ This method is intended for internal use and is typically called by the `run` me
 ```python
 # Create a task and result
 task = Task()
-result = task.execute()
+result = task.run()
 
 # Autosave the result
 workflow = MultiThreadedWorkflow()

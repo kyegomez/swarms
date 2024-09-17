@@ -5,8 +5,12 @@ from typing import Any, Dict, List
 from plaid import Client
 from plaid.api import plaid_api
 from plaid.model.error import PlaidError
-from plaid.model.transactions_get_request import TransactionsGetRequest
-from plaid.model.transactions_get_response import TransactionsGetResponse
+from plaid.model.transactions_get_request import (
+    TransactionsGetRequest,
+)
+from plaid.model.transactions_get_response import (
+    TransactionsGetResponse,
+)
 
 from swarms import Agent, OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
@@ -55,8 +59,8 @@ def fetch_transactions(
         )
 
         # Fetch transactions from the Plaid API
-        response: TransactionsGetResponse = plaid_client.transactions_get(
-            request
+        response: TransactionsGetResponse = (
+            plaid_client.transactions_get(request)
         )
 
         # Return the transactions list

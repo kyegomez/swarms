@@ -25,7 +25,9 @@ class HASSchema(BaseModel):
     )
 
 
-swarm_schema = base_model_to_openai_function(HASSchema, output_str=True)
+swarm_schema = base_model_to_openai_function(
+    HASSchema, output_str=True
+)
 
 ACCOUNT_MANAGEMENT_SYSTEM_PROMPT = """
 

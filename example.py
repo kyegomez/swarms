@@ -3,18 +3,24 @@ from swarms import Agent, OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Create an instance of the OpenAIChat class
 model = OpenAIChat(
-    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+    openai_api_key=api_key,
+    model_name="gpt-4o-mini",
+    temperature=0.1,
+    max_tokens=2000,
 )
 
 # Initialize the agent
 agent = Agent(
-    agent_name="Financial-Analysis-Agent_sas_chicken_eej",
+    agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     llm=model,
     max_loops=1,
@@ -27,6 +33,7 @@ agent = Agent(
     retry_attempts=1,
     context_length=200000,
     return_step_meta=False,
+    # output_type="json",
 )
 
 

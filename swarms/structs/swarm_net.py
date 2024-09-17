@@ -195,11 +195,15 @@ class SwarmNetwork(BaseSwarm):
         >>> swarm.add_task("task")
 
         """
-        self.logger.info(f"Adding task {task} to queue asynchronously")
+        self.logger.info(
+            f"Adding task {task} to queue asynchronously"
+        )
         try:
             # Add task to queue asynchronously with asyncio
             loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, self.task_queue.put, task)
+            await loop.run_in_executor(
+                None, self.task_queue.put, task
+            )
             self.logger.info(f"Task {task} added to queue")
         except Exception as error:
             print(
@@ -339,7 +343,8 @@ class SwarmNetwork(BaseSwarm):
         self.logger.info(f"Running task {task} on all agents")
         try:
             return [
-                agent.run(task, *args, **kwargs) for agent in self.agents
+                agent.run(task, *args, **kwargs)
+                for agent in self.agents
             ]
         except Exception as error:
             logger.error(f"Error running task on agents: {error}")
@@ -421,7 +426,9 @@ class SwarmNetwork(BaseSwarm):
         try:
             # Remove agent from pool asynchronously with asyncio
             loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, self.remove_agent, agent_id)
+            await loop.run_in_executor(
+                None, self.remove_agent, agent_id
+            )
         except Exception as error:
             print(f"Error removing agent from pool: {error}")
             raise error

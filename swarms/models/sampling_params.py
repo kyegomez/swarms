@@ -143,7 +143,9 @@ class SamplingParams:
         self.logprobs = logprobs
         self.prompt_logprobs = prompt_logprobs
         self.skip_special_tokens = skip_special_tokens
-        self.spaces_between_special_tokens = spaces_between_special_tokens
+        self.spaces_between_special_tokens = (
+            spaces_between_special_tokens
+        )
         self.logits_processors = logits_processors
         self.include_stop_str_in_output = include_stop_str_in_output
         self._verify_args()
@@ -187,23 +189,31 @@ class SamplingParams:
                 f" {self.temperature}."
             )
         if not 0.0 < self.top_p <= 1.0:
-            raise ValueError(f"top_p must be in (0, 1], got {self.top_p}.")
+            raise ValueError(
+                f"top_p must be in (0, 1], got {self.top_p}."
+            )
         if self.top_k < -1 or self.top_k == 0:
             raise ValueError(
                 "top_k must be -1 (disable), or at least 1, "
                 f"got {self.top_k}."
             )
         if not 0.0 <= self.min_p <= 1.0:
-            raise ValueError(f"min_p must be in [0, 1], got {self.min_p}.")
+            raise ValueError(
+                f"min_p must be in [0, 1], got {self.min_p}."
+            )
         if self.max_tokens is not None and self.max_tokens < 1:
             raise ValueError(
-                "max_tokens must be at least 1, got" f" {self.max_tokens}."
+                "max_tokens must be at least 1, got"
+                f" {self.max_tokens}."
             )
         if self.logprobs is not None and self.logprobs < 0:
             raise ValueError(
                 f"logprobs must be non-negative, got {self.logprobs}."
             )
-        if self.prompt_logprobs is not None and self.prompt_logprobs < 0:
+        if (
+            self.prompt_logprobs is not None
+            and self.prompt_logprobs < 0
+        ):
             raise ValueError(
                 "prompt_logprobs must be non-negative, got "
                 f"{self.prompt_logprobs}."
@@ -220,9 +230,13 @@ class SamplingParams:
                 "temperature must be 0 when using beam search."
             )
         if self.top_p < 1.0 - _SAMPLING_EPS:
-            raise ValueError("top_p must be 1 when using beam search.")
+            raise ValueError(
+                "top_p must be 1 when using beam search."
+            )
         if self.top_k != -1:
-            raise ValueError("top_k must be -1 when using beam search.")
+            raise ValueError(
+                "top_k must be -1 when using beam search."
+            )
         if self.early_stopping not in [True, False, "never"]:
             raise ValueError(
                 "early_stopping must be True, False, or 'never', "

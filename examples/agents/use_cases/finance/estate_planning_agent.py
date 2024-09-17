@@ -119,4 +119,6 @@ agent = Agent(
 )
 
 
-agent.run("optimize for the Minimal tax holdings at death, end of life")
+agent.run(
+    "optimize for the Minimal tax holdings at death, end of life"
+)

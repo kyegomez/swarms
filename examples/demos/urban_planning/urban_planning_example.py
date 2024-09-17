@@ -12,7 +12,9 @@ api_key = os.getenv("OPENAI_API_KEY")
 stability_api_key = os.getenv("STABILITY_API_KEY")
 
 # Initialize language model
-llm = OpenAIChat(openai_api_key=api_key, temperature=0.5, max_tokens=3000)
+llm = OpenAIChat(
+    openai_api_key=api_key, temperature=0.5, max_tokens=3000
+)
 
 # Initialize Vision model
 vision_api = GPT4VisionAPI(api_key=api_key)
@@ -49,13 +51,17 @@ workflow = SequentialWorkflow(max_loops=1)
 
 # Add tasks to workflow with personalized prompts
 workflow.add(architecture_analysis_agent, "Architecture Analysis")
-workflow.add(infrastructure_evaluation_agent, "Infrastructure Evaluation")
+workflow.add(
+    infrastructure_evaluation_agent, "Infrastructure Evaluation"
+)
 workflow.add(traffic_flow_analysis_agent, "Traffic Flow Analysis")
 workflow.add(
     environmental_impact_assessment_agent,
     "Environmental Impact Assessment",
 )
-workflow.add(public_space_utilization_agent, "Public Space Utilization")
+workflow.add(
+    public_space_utilization_agent, "Public Space Utilization"
+)
 workflow.add(
     socioeconomic_impact_analysis_agent,
     "Socioeconomic Impact Analysis",

@@ -38,15 +38,7 @@
 
 
 
-
-1. **Scalability and Efficiency:** Orchestrate thousands of agents to automate complex business processes, saving time and boosting operational efficiency.
-
-2. **Framework-Agnostic Integration:** Seamlessly integrate with any agent framework, including LangChain, AutoGen, and more, allowing for flexible deployment without infrastructure changes.
-
-3. **Production-Grade Function Calling:** Execute complex functions with high accuracy and low latency, ensuring reliability in mission-critical production environments.
-
-4. **Centralized Swarm Management:** Manage massive swarms of agents with centralized dashboards, real-time analytics, and detailed logging to maintain control and optimize performance.
-
+Swarms is an enterprise grade and production ready multi-agent collaboration framework that enables you to orchestrate many agents to work collaboratively at scale to automate real-world activities.
 
 ----
 
@@ -67,7 +59,7 @@ $ pip3 install -U swarms
 # Usage Examples 🤖
 Here are some simple examples but we have more comprehensive documentation at our [docs here](https://docs.swarms.world/en/latest/)
 
-Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/examples/collab/swarms_example.ipynb">
+Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/examples/collabs/swarms_example.ipynb">
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
@@ -90,13 +82,16 @@ from swarms import Agent, OpenAIChat
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Create an instance of the OpenAIChat class
 model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
 )
 
 # Initialize the agent
@@ -113,7 +108,8 @@ agent = Agent(
     user_name="swarms_corp",
     retry_attempts=1,
     context_length=200000,
-    return_step_meta=False
+    return_step_meta=False,
+    # output_type="json",
 )
 
 
@@ -350,9 +346,6 @@ agent.tokens_checks()
 
 # Print the dashboard of the agent
 agent.print_dashboard()
-
-# Print the history and memory of the agent
-agent.print_history_and_memory()
 
 # Fetch all the documents from the doc folders
 agent.get_docs_from_doc_folders()
@@ -668,6 +661,7 @@ workflow.run(
 Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships. [Docs Available:](https://swarms.apac.ai/en/latest/swarms/structs/agent_rearrange/)
 
 ```python
+
 from swarms import Agent, AgentRearrange, Anthropic
 
 
@@ -948,7 +942,7 @@ swarm = SpreadSheetSwarm(
     autosave_on=True,
     save_file_path="real_estate_marketing_spreadsheet.csv",
     run_all_agents=False,
-    repeat_count=2,
+    max_loops=2,
 )
 
 # Run the swarm

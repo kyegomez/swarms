@@ -74,7 +74,9 @@ def test_get_image_invalid_path(setup_nougat):
         (10, 50),
     ],
 )
-def test_model_call_with_diff_params(setup_nougat, min_len, max_tokens):
+def test_model_call_with_diff_params(
+    setup_nougat, min_len, max_tokens
+):
     setup_nougat.min_length = min_len
     setup_nougat.max_new_tokens = max_tokens
 

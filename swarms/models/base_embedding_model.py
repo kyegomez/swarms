@@ -25,7 +25,9 @@ class BaseEmbeddingModel(
     tokenizer: Callable = None
     chunker: Callable = None
 
-    def embed_text_artifact(self, artifact: TextArtifact) -> list[float]:
+    def embed_text_artifact(
+        self, artifact: TextArtifact
+    ) -> list[float]:
         return self.embed_string(artifact.to_text())
 
     def embed_string(self, string: str) -> list[float]:

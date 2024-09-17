@@ -61,12 +61,16 @@ class ProductAdConceptGenerator:
             "in an ice cave setting",
             "in a serene and calm landscape",
         ]
-        self.contexts = ["high realism product ad (extremely creative)"]
+        self.contexts = [
+            "high realism product ad (extremely creative)"
+        ]
 
     def generate_concept(self):
         theme = random.choice(self.themes)
         context = random.choice(self.contexts)
-        return f"{theme} inside a {style} {self.product_name}, {context}"
+        return (
+            f"{theme} inside a {style} {self.product_name}, {context}"
+        )
 
 
 # User input

@@ -22,7 +22,9 @@ llm = llama3Hosted(max_tokens=3000)
 
 
 # Initialize Memory
-memory = ChromaDB(output_dir="swarm_mechanic", n_results=2, verbose=True)
+memory = ChromaDB(
+    output_dir="swarm_mechanic", n_results=2, verbose=True
+)
 
 
 # Output

@@ -1,9 +1,6 @@
 import os
 import asyncio
 from swarms import Agent, OpenAIChat
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
 import uvloop
 from multiprocessing import cpu_count
 from swarms.utils.calculate_func_metrics import profile_func
@@ -32,7 +29,9 @@ def run_single_agent(agent, task):
 # Asynchronous wrapper for agent tasks
 async def run_agent_async(agent, task):
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, run_single_agent, agent, task)
+    return await loop.run_in_executor(
+        None, run_single_agent, agent, task
+    )
 
 
 # Asynchronous function to run agents concurrently
@@ -81,43 +80,43 @@ def run_agents_concurrently_multiprocess(
     return results
 
 
-# # Example usage:
-# Initialize your agents with the same model to avoid re-creating it
-agents = [
-    Agent(
-        agent_name=f"Financial-Analysis-Agent_new_parallel_swarm_test{i}",
-        system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-        llm=model,
-        max_loops=1,
-        autosave=True,
-        dashboard=False,
-        verbose=False,
-        dynamic_temperature_enabled=False,
-        saved_state_path=f"finance_agent_{i}.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
-        context_length=200000,
-        return_step_meta=False,
-    )
-    for i in range(5)  # Assuming you want 10 agents
-]
+# # # Example usage:
+# # Initialize your agents with the same model to avoid re-creating it
+# agents = [
+#     Agent(
+#         agent_name=f"Financial-Analysis-Agent_new_parallel_swarm_test{i}",
+#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+#         llm=model,
+#         max_loops=1,
+#         autosave=True,
+#         dashboard=False,
+#         verbose=False,
+#         dynamic_temperature_enabled=False,
+#         saved_state_path=f"finance_agent_{i}.json",
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         return_step_meta=False,
+#     )
+#     for i in range(5)  # Assuming you want 10 agents
+# ]
 
-task = "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
-outputs = run_agents_concurrently_multiprocess(
-    agents,
-    task,
-)
+# task = "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
+# outputs = run_agents_concurrently_multiprocess(
+#     agents,
+#     task,
+# )
 
-for i, output in enumerate(outputs):
-    print(f"Output from agent {i+1}:\n{output}")
+# for i, output in enumerate(outputs):
+#     print(f"Output from agent {i+1}:\n{output}")
 
 
-# execution_time=15.958749055862427 memory_usage=-328.046875 cpu_usage=-2.5999999999999943 io_operations=81297 function_calls=1
-# Analysis-Agent_new_parallel_swarm_test1_state.json
-# 2024-08-22T15:42:12.463246-0400 Function metrics: {
-#     "execution_time": 15.958749055862427,
-#     "memory_usage": -328.046875,
-#     "cpu_usage": -2.5999999999999943,
-#     "io_operations": 81297,
+# # execution_time=15.958749055862427 memory_usage=-328.046875 cpu_usage=-2.5999999999999943 io_operations=81297 function_calls=1
+# # Analysis-Agent_new_parallel_swarm_test1_state.json
+# # 2024-08-22T15:42:12.463246-0400 Function metrics: {
+# #     "execution_time": 15.958749055862427,
+# #     "memory_usage": -328.046875,
+# #     "cpu_usage": -2.5999999999999943,
+# #     "io_operations": 81297,
 #     "function_calls": 1
 # }

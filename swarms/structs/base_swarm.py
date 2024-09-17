@@ -1,6 +1,8 @@
+import os
 import asyncio
 import json
 import uuid
+from swarms.utils.file_processing import create_file_in_folder
 from abc import ABC
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import (
@@ -14,11 +16,17 @@ from typing import (
 
 import yaml
 
-from swarms.memory.base_vectordb import BaseVectorDatabase
+from swarms_memory import BaseVectorDatabase
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.loguru_logger import logger
+from pydantic import BaseModel
+from swarms.utils.pandas_utils import (
+    dict_to_dataframe,
+    display_agents_info,
+    pydantic_model_to_dataframe,
+)
 
 
 class BaseSwarm(ABC):
@@ -88,8 +96,11 @@ class BaseSwarm(ABC):
         agentops_on: Optional[bool] = False,
         speaker_selection_func: Optional[Callable] = None,
         rules: Optional[str] = None,
-        collective_memory_system: Optional[BaseVectorDatabase] = False,
+        collective_memory_system: Optional[
+            BaseVectorDatabase
+        ] = False,
         agent_ops_on: bool = False,
+        output_schema: Optional[BaseModel] = None,
         *args,
         **kwargs,
     ):
@@ -112,6 +123,7 @@ class BaseSwarm(ABC):
         self.rules = rules
         self.collective_memory_system = collective_memory_system
         self.agent_ops_on = agent_ops_on
+        self.output_schema = output_schema
 
         logger.info("Reliability checks activated.")
         # Ensure that agents is exists
@@ -243,7 +255,9 @@ class BaseSwarm(ABC):
         for agent in self.agents:
             agent.reset()
 
-    def broadcast(self, message: str, sender: Optional[AgentType] = None):
+    def broadcast(
+        self, message: str, sender: Optional[AgentType] = None
+    ):
         """Broadcast a message to all agents"""
 
     def reset(self):
@@ -429,7 +443,9 @@ class BaseSwarm(ABC):
             task (Optional[str], optional): _description_. Defaults to None.
         """
         loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(self.arun(task, *args, **kwargs))
+        result = loop.run_until_complete(
+            self.arun(task, *args, **kwargs)
+        )
         return result
 
     def run_batch_async(self, tasks: List[str], *args, **kwargs):
@@ -580,7 +596,9 @@ class BaseSwarm(ABC):
             Agent: Instance of Agent representing the retrieved Agent, or None if not found.
         """
 
-    def join_swarm(self, from_entity: Agent | Agent, to_entity: Agent):
+    def join_swarm(
+        self, from_entity: Agent | Agent, to_entity: Agent
+    ):
         """
         Add a relationship between a Swarm and an Agent or other Swarm to the registry.
 
@@ -716,7 +734,9 @@ class BaseSwarm(ABC):
             None
 
         """
-        logger.info(f"Initializing the hierarchical swarm: {self.name}")
+        logger.info(
+            f"Initializing the hierarchical swarm: {self.name}"
+        )
         logger.info(f"Purpose of this swarm: {self.description}")
 
         # Now log number of agnets and their names
@@ -727,7 +747,9 @@ class BaseSwarm(ABC):
 
         # Now see if agents is not empty
         if len(self.agents) == 0:
-            logger.info("No agents found. Please add agents to the swarm.")
+            logger.info(
+                "No agents found. Please add agents to the swarm."
+            )
             return None
 
         # Now see if director is not empty
@@ -740,3 +762,51 @@ class BaseSwarm(ABC):
         logger.info(
             f"Initialization complete for the hierarchical swarm: {self.name}"
         )
+
+    def export_output_schema(self):
+        """
+        Export the output schema of the swarm.
+
+        Returns:
+            dict: The output schema of the swarm.
+
+        """
+        return self.output_schema.model_dump_json(indent=4)
+
+    def export_output_schema_dict(self):
+        return self.output_schema.model_dump()
+
+    def export_and_autosave(self):
+        content = self.export_output_schema()
+
+        create_file_in_folder(
+            os.getenv("WORKSPACE_DIR"),
+            self.metadata_filename,
+            content=content,
+        )
+
+        return logger.info(
+            f"Metadata saved to {self.metadata_filename}"
+        )
+
+    def list_agents(self):
+        """
+        List all agents in the swarm.
+
+        Returns:
+            None
+        """
+        display_agents_info(self.agents)
+
+    def agents_to_dataframe(self):
+        """
+        Convert agents to a pandas DataFrame.
+        """
+        data = [agent.agent_output.dict() for agent in self.agents]
+        return dict_to_dataframe(data)
+
+    def model_to_dataframe(self):
+        """
+        Convert the Pydantic model to a pandas DataFrame.
+        """
+        return pydantic_model_to_dataframe(self.output_schema)
