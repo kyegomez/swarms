@@ -11,7 +11,7 @@ swarms/
 ├── artifacts/
 ├── cli/
 ├── memory/
-├── models/
+├── models/ ---> Moved to swarm_models
 ├── prompts/
 ├── schemas/
 ├── structs/
@@ -66,7 +66,7 @@ The **Swarms framework** is composed of several key folders, each serving a spec
 
 ---
 
-### **5. Models Folder (`models/`)**
+### **5. Models Folder (`models/`) Moved to `swarm_models`**
    - **Role:** 
      - The **models** folder houses pre-trained machine learning models that agents utilize to complete their tasks. These models could include LLMs (Large Language Models), custom-trained models, or fine-tuned models specific to the tasks being handled by the agents.
      - **Plug-and-Play Architecture:** The framework allows users to easily add or switch models depending on the specific needs of their agents.
