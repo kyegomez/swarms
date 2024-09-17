@@ -169,7 +169,9 @@ For further reading and background information on the concepts used in the `Mixt
 #### Example 1: Basic Initialization and Run
 
 ```python
-from swarms import MixtureOfAgents, Agent, OpenAIOpenAIChat
+from swarms import MixtureOfAgents, Agent
+
+from swarm_models import OpenAIChat
 
 # Define agents
 director = Agent(
@@ -225,7 +227,9 @@ print(history)
 #### Example 2: Verbose Output and Auto-Save
 
 ```python
-from swarms import MixtureOfAgents, Agent, OpenAIChat
+from swarms import MixtureOfAgents, Agent
+
+from swarm_models import OpenAIChat
 
 # Define Agents
 # Define agents
@@ -286,7 +290,9 @@ print(history)
 #### Example 3: Custom Rules and Multiple Layers
 
 ```python
-from swarms import MixtureOfAgents, Agent, OpenAIOpenAIChat
+from swarms import MixtureOfAgents, Agent
+
+from swarm_models import OpenAIChat
 
 # Define agents
 # Initialize the director agent

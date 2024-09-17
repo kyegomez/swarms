@@ -50,7 +50,8 @@ Executes a specified task across all agents in a round-robin manner, cycling thr
 In this example, `RoundRobinSwarm` is used to distribute network requests evenly among a group of servers. This is common in scenarios where load balancing is crucial for maintaining system responsiveness and scalability.
 
 ```python
-from swarms import Agent, OpenAIChat,  RoundRobinSwarm
+from swarms import Agent, RoundRobinSwarm
+from swarm_models import OpenAIChat
 
 
 # Initialize the LLM
