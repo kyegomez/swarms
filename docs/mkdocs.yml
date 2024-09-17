@@ -158,6 +158,7 @@ nav:
     - Swarm Architectures:
       # - Overview: "swarms/structs/multi_agent_orchestration.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
+      - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarmms.md"
       # - Multi-Agent Workflows: "swarms/structs/multi_agent_collaboration_examples.md"
       - Conversation: "swarms/structs/conversation.md"
       - MajorityVoting: "swarms/structs/majorityvoting.md"
