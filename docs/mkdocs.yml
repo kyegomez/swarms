@@ -201,7 +201,7 @@ nav:
       # - YamlModel: "swarms/structs/yaml_model.md"
     - Contributing: 
       - Tests: "swarms/framework/test.md"
-      - Contributing: "contributing.md"
+      - Contributing: "swarms/contributing.md"
       - Code Cleanliness: "swarms/framework/code_cleanliness.md"
   - Swarms Cloud API:
     - Overview: "swarms_cloud/main.md"
