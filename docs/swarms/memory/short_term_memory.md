@@ -244,7 +244,7 @@ memory.load_from_file("memory_data.json")
 
 ### References and Resources
 
-- For more information on multi-agent systems and memory management, refer to the SWARMS framework documentation: [SWARMS Documentation](https://swarms.apac.ai/).
+- For more information on multi-agent systems and memory management, refer to the SWARMS framework documentation: [SWARMS Documentation](https://docs.swarms.world/).
 
 - For advanced memory management and customization, explore the SWARMS framework source code.
 

@@ -593,7 +593,7 @@ workflow.run(
 ------
 
 ## `AgentRearrange`
-Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships. [Docs Available:](https://swarms.apac.ai/en/latest/swarms/structs/agent_rearrange/)
+Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships. [Docs Available:](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
 
 ```python
 
@@ -962,7 +962,7 @@ Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 
 
 ## Docker Instructions
-- [Learn More Here About Deployments In Docker](https://swarms.apac.ai/en/latest/docker_setup/)
+- [Learn More Here About Deployments In Docker](https://docs.swarms.world/en/latest/docker_setup/)
 
 
 -----
@@ -1006,7 +1006,7 @@ Accelerate Bugs, Features, and Demos to implement by supporting us here:
 
 Join our growing community around the world, for real-time support, ideas, and discussions on Swarms 😊 
 
-- View our official [Blog](https://swarms.apac.ai)
+- View our official [Blog](https://docs.swarms.world)
 - Chat live with us on [Discord](https://discord.gg/kS3rwKs3ZC)
 - Follow us on [Twitter](https://twitter.com/kyegomez)
 - Connect with us on [LinkedIn](https://www.linkedin.com/company/the-swarm-corporation)

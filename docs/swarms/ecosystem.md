@@ -52,7 +52,7 @@ Swarms is an open-source project, and contributions are VERY welcome. If you wan
 
 Join our growing community around the world, for real-time support, ideas, and discussions on Swarms 😊 
 
-- View our official [Blog](https://swarms.apac.ai)
+- View our official [Blog](https://docs.swarms.world)
 - Chat live with us on [Discord](https://discord.gg/kS3rwKs3ZC)
 - Follow us on [Twitter](https://twitter.com/kyegomez)
 - Connect with us on [LinkedIn](https://www.linkedin.com/company/the-swarm-corporation)
