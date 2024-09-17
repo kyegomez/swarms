@@ -669,8 +669,10 @@ workflow.run(
 Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships. [Docs Available:](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
 
 ```python
-from swarms import Agent, AgentRearrange, Anthropic
+from swarms import Agent, AgentRearrange
 
+
+from swarm_models import Anthropic
 
 # Initialize the director agent
 

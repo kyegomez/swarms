@@ -597,8 +597,10 @@ Inspired by Einops and einsum, this orchestration techniques enables you to map 
 
 ```python
 
-from swarms import Agent, AgentRearrange, Anthropic
+from swarms import Agent, AgentRearrange
 
+
+from swarm_models import Anthropic
 
 # Initialize the director agent
 
