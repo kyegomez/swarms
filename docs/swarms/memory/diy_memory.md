@@ -455,7 +455,8 @@ Now, how do you integrate a vector datbase with an agent? This is how:
 ```python
 from typing import List, Dict, Any
 from swarms_memory import PineconeMemory
-from swarms import Agent, Anthropic
+from swarms import Agent
+from swarm_models import Anthropic
 from transformers import AutoTokenizer, AutoModel
 import torch
 import os
@@ -508,7 +509,8 @@ ChromaDB is a simple, high-performance vector store for use with embeddings. Her
 
 ```python
 from swarms_memory import ChromaDB
-from swarms import Agent, Anthropic
+from swarms import Agent
+from swarm_models import Anthropic
 import os
 
 # Initialize the ChromaDB client
@@ -540,7 +542,8 @@ Faiss is a library for efficient similarity search and clustering of dense vecto
 ```python
 from typing import List, Dict, Any
 from swarms_memory.faiss_wrapper import FAISSDB
-from swarms import Agent, Anthropic
+from swarms import Agent
+from swarm_models import Anthropic
 from transformers import AutoTokenizer, AutoModel
 import torch
 import os

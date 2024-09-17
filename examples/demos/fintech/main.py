@@ -1,4 +1,5 @@
-from swarms import Agent, Anthropic, AgentRearrange
+from swarms import Agent
+from swarm_models import Anthropic, AgentRearrange
 
 # Define the agents with specific tasks for financial activities
 agent_risk_analysis = Agent(

@@ -1,4 +1,5 @@
-from swarms import Agent, Anthropic, tool
+from swarms import Agent
+from swarm_models import Anthropic, tool
 
 
 # Tool

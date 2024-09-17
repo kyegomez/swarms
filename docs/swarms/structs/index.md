@@ -157,7 +157,8 @@ Implementation of Devin in less than 90 lines of code with several tools:
 terminal, browser, and edit files.
 
 ```python
-from swarms import Agent, Anthropic
+from swarms import Agent
+from swarm_models import Anthropic
 import subprocess
 
 # Model
@@ -263,7 +264,8 @@ The following is an example of an agent that intakes a pydantic basemodel and ou
 
 ```python
 from pydantic import BaseModel, Field
-from swarms import Anthropic, Agent
+from swarms import Agent
+from swarm_models import Anthropic
 
 
 # Initialize the schema for the person's information

@@ -1,4 +1,5 @@
-from swarms import Agent, Anthropic
+from swarms import Agent
+from swarm_models import Anthropic
 from swarms.structs.society_of_agents import SocietyOfAgents
 
 # Initialize the director agent

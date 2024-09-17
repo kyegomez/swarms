@@ -1,5 +1,6 @@
 import os
-from swarms import Agent, Anthropic
+from swarms import Agent
+from swarm_models import Anthropic
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )

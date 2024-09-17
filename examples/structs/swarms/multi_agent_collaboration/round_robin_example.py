@@ -1,4 +1,5 @@
-from swarms import Agent, Anthropic
+from swarms import Agent
+from swarm_models import Anthropic
 from swarms.structs.round_robin import RoundRobinSwarm
 
 # Initialize the director agent

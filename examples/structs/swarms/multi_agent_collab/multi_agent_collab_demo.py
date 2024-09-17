@@ -1,6 +1,7 @@
 import os
 
-from swarms import Agent, Anthropic, MultiAgentCollaboration
+from swarms import Agent
+from swarm_models import Anthropic, MultiAgentCollaboration
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )

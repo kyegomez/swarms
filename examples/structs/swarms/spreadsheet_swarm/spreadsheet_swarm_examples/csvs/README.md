@@ -131,7 +131,8 @@ import os
 
 from swarms_memory import ChromaDB
 
-from swarms import Agent, Anthropic
+from swarms import Agent
+from swarm_models import Anthropic
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
@@ -369,7 +370,8 @@ The following is an example of an agent that intakes a pydantic basemodel and ou
 
 ```python
 from pydantic import BaseModel, Field
-from swarms import Anthropic, Agent
+from swarms import Agent
+from swarm_models import Anthropic
 
 
 # Initialize the schema for the person's information
