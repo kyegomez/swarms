@@ -35,6 +35,7 @@ agent = Agent(
     context_length=200000,
     return_step_meta=False,
     # output_type="json",
+    output_type=str,
 )
 
 

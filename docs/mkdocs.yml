@@ -166,9 +166,10 @@ nav:
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
-    - Structs:
-      - Conversation: "swarms/structs/conversation.md"
-      - Task: "swarms/structs/task.md"
+    # - Structs:
+    #   - Conversation: "swarms/structs/conversation.md"
+    #   - Task: "swarms/structs/task.md"
+    - Full API Reference: "swarms/framework/reference.md"
     - Contributing: 
       - Contributing: "swarms/contributing.md"
       - Tests: "swarms/framework/test.md"
