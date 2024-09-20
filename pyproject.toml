@@ -77,11 +77,6 @@ swarms-cloud = "*"
 aiofiles = "*"
 swarm-models = "*"
 
-
-
-# [tool.poetry.scripts]
-# swarms = "swarms.cli:main"
-
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<25.0"
 ruff = ">=0.5.1,<0.6.4"

@@ -1,4 +1,12 @@
-## LLMs in Swarms Documentation
+# Swarm Models
+
+
+
+## Install
+
+```bash
+$ pip3 install -U swarm-models
+```
 
 Welcome to the documentation for the llm section of the swarms package, designed to facilitate seamless integration with various AI language models and APIs. This package empowers developers, end-users, and system administrators to interact with AI models from different providers, such as OpenAI, Hugging Face, Google PaLM, and Anthropic.
 
