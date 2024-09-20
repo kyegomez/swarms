@@ -156,3 +156,24 @@ graph TD
 
 
 
+# Mixture of Agents Architecture
+
+
+```mermaid
+
+graph TD
+    A[Task Input] --> B[Layer 1: Reference Agents]
+    B --> C[Agent 1]
+    B --> D[Agent 2]
+    B --> E[Agent N]
+
+    C --> F[Agent 1 Response]
+    D --> G[Agent 2 Response]
+    E --> H[Agent N Response]
+
+    F & G & H --> I[Layer 2: Aggregator Agent]
+    I --> J[Aggregate All Responses]
+    J --> K[Final Output]
+
+
+```

@@ -6,6 +6,8 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
+from swarms.telemetry.log_swarm_data import log_agent_data
+from swarms.schemas.agent_step_schemas import ManySteps
 
 time_stamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -15,17 +17,13 @@ class MixtureOfAgentsInput(BaseModel):
     description: str = (
         "A class to run a mixture of agents and aggregate their responses."
     )
-    reference_agents: List[Dict[str, Any]] = []
-    aggregator_agent: Dict[str, Any] = Field(
+    reference_agents: List[Dict[str, Any]]
+    aggregator_agent: Any = Field(
         ...,
         description="An aggregator agent to be used in the mixture.",
     )
     aggregator_system_prompt: str = ""
     layers: int = 3
-    task: str = Field(
-        ...,
-        description="The task to be processed by the mixture of agents.",
-    )
     time_created: str = Field(
         time_stamp,
         description="The time the mixture of agents was created.",
@@ -36,8 +34,11 @@ class MixtureOfAgentsOutput(BaseModel):
     id: str = Field(
         ..., description="The ID of the mixture of agents."
     )
+    task: str = Field(..., description="None")
     InputConfig: MixtureOfAgentsInput
-    output: List[Dict[str, Any]] = []
+    # output: List[ManySteps]
+    normal_agent_outputs: List[ManySteps]
+    aggregator_agent_summary: str
     time_completed: str = Field(
         time_stamp,
         description="The time the mixture of agents was completed.",
@@ -45,6 +46,10 @@ class MixtureOfAgentsOutput(BaseModel):
 
 
 class MixtureOfAgents:
+    """
+    A class to manage and run a mixture of agents, aggregating their responses.
+    """
+
     def __init__(
         self,
         name: str = "MixtureOfAgents",
@@ -54,7 +59,17 @@ class MixtureOfAgents:
         aggregator_system_prompt: str = "",
         layers: int = 3,
     ) -> None:
-        """Initialize the Mixture of Agents class with agents and configuration."""
+        """
+        Initialize the Mixture of Agents class with agents and configuration.
+
+        Args:
+            name (str, optional): The name of the mixture of agents. Defaults to "MixtureOfAgents".
+            description (str, optional): A description of the mixture of agents. Defaults to "A class to run a mixture of agents and aggregate their responses.".
+            reference_agents (List[Agent], optional): A list of reference agents to be used in the mixture. Defaults to [].
+            aggregator_agent (Agent, optional): The aggregator agent to be used in the mixture. Defaults to None.
+            aggregator_system_prompt (str, optional): The system prompt for the aggregator agent. Defaults to "".
+            layers (int, optional): The number of layers to process in the mixture. Defaults to 3.
+        """
         self.name = name
         self.description = description
         self.reference_agents: List[Agent] = reference_agents
@@ -66,23 +81,28 @@ class MixtureOfAgents:
             name=name,
             description=description,
             reference_agents=[
-                agent.agent_output.model_dump()
-                for agent in self.reference_agents
+                agent.to_dict() for agent in self.reference_agents
             ],
-            aggregator_agent=self.aggregator_agent.agent_output.model_dump(),
+            aggregator_agent=aggregator_agent.to_dict(),
             aggregator_system_prompt=self.aggregator_system_prompt,
             layers=self.layers,
-            task="",
             time_created=time_stamp,
         )
 
         self.output_schema = MixtureOfAgentsOutput(
             id="MixtureOfAgents",
             InputConfig=self.input_schema.model_dump(),
-            output=[],
+            normal_agent_outputs=[],
+            aggregator_agent_summary="",
+            task="",
         )
 
+        self.reliability_check()
+
     def reliability_check(self) -> None:
+        """
+        Performs a reliability check on the Mixture of Agents class.
+        """
         logger.info(
             "Checking the reliability of the Mixture of Agents class."
         )
@@ -108,7 +128,16 @@ class MixtureOfAgents:
     def _get_final_system_prompt(
         self, system_prompt: str, results: List[str]
     ) -> str:
-        """Construct a system prompt for layers 2+ that includes the previous responses to synthesize."""
+        """
+        Constructs a system prompt for subsequent layers that includes previous responses.
+
+        Args:
+            system_prompt (str): The initial system prompt.
+            results (List[str]): A list of previous responses.
+
+        Returns:
+            str: The final system prompt including previous responses.
+        """
         return (
             system_prompt
             + "\n"
@@ -126,7 +155,21 @@ class MixtureOfAgents:
         task: str,
         prev_responses: Optional[List[str]] = None,
     ) -> str:
-        """Asynchronous method to run a single agent."""
+        """
+        Asynchronous method to run a single agent.
+
+        Args:
+            agent (Agent): The agent to be run.
+            task (str): The task for the agent.
+            prev_responses (Optional[List[str]], optional): A list of previous responses. Defaults to None.
+
+        Returns:
+            str: The response from the agent.
+        """
+        # Update the task in the output schema
+        self.output_schema.task = task
+
+        # If there are previous responses, update the agent's system prompt
         if prev_responses:
             system_prompt_with_responses = (
                 self._get_final_system_prompt(
@@ -135,19 +178,24 @@ class MixtureOfAgents:
             )
             agent.system_prompt = system_prompt_with_responses
 
+        # Run the agent asynchronously
         response = await asyncio.to_thread(agent.run, task)
-        self.output_schema.output.append(
-            agent.agent_output.model_dump()
+        self.output_schema.normal_agent_outputs.append(
+            agent.agent_output
         )
 
-        # Print the agent response
+        # Log the agent's response
         print(f"Agent {agent.agent_name} response: {response}")
         return response
 
     async def _run_async(self, task: str) -> None:
-        """Asynchronous method to run the Mixture of Agents process."""
-        self.input_schema.task = task
-        # Initial responses from reference agents
+        """
+        Asynchronous method to run the Mixture of Agents process.
+
+        Args:
+            task (str): The task for the mixture of agents.
+        """
+        # Gather initial responses from reference agents
         results: List[str] = await asyncio.gather(
             *[
                 self._run_agent_async(agent, task)
@@ -155,7 +203,7 @@ class MixtureOfAgents:
             ]
         )
 
-        # Additional layers of processing
+        # Process additional layers, if applicable
         for _ in range(1, self.layers - 1):
             results = await asyncio.gather(
                 *[
@@ -166,100 +214,25 @@ class MixtureOfAgents:
                 ]
             )
 
-        # Final aggregation using the aggregator agent
+        # Perform final aggregation using the aggregator agent
         final_result = await self._run_agent_async(
             self.aggregator_agent, task, prev_responses=results
         )
+        self.output_schema.aggregator_agent_summary = final_result
+
         print(f"Final Aggregated Response: {final_result}")
 
     def run(self, task: str) -> None:
-        """Synchronous wrapper to run the async process."""
+        """
+        Synchronous wrapper to run the async process.
+
+        Args:
+            task (str): The task for the mixture of agents.
+        """
         asyncio.run(self._run_async(task))
 
+        self.output_schema.task = task
+
+        log_agent_data(self.output_schema.model_dump())
+
         return self.output_schema.model_dump_json(indent=4)
-
-
-# # Example usage:
-# if __name__ == "__main__":
-#     api_key = os.getenv("OPENAI_API_KEY")
-
-#     # Create individual agents with the OpenAIChat model
-#     model1 = OpenAIChat(openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
-#     model2 = OpenAIChat(openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
-#     model3 = OpenAIChat(openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1)
-
-#     agent1 = Agent(
-#         agent_name="Agent1",
-#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#         llm=model1,
-#         max_loops=1,
-#         autosave=True,
-#         dashboard=False,
-#         verbose=True,
-#         dynamic_temperature_enabled=True,
-#         saved_state_path="agent1_state.json",
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         return_step_meta=False
-#     )
-
-#     agent2 = Agent(
-#         agent_name="Agent2",
-#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#         llm=model2,
-#         max_loops=1,
-#         autosave=True,
-#         dashboard=False,
-#         verbose=True,
-#         dynamic_temperature_enabled=True,
-#         saved_state_path="agent2_state.json",
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         return_step_meta=False
-#     )
-
-#     agent3 = Agent(
-#         agent_name="Agent3",
-#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#         llm=model3,
-#         max_loops=1,
-#         autosave=True,
-#         dashboard=False,
-#         verbose=True,
-#         dynamic_temperature_enabled=True,
-#         saved_state_path="agent3_state.json",
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         return_step_meta=False
-#     )
-
-#     aggregator_agent = Agent(
-#         agent_name="AggregatorAgent",
-#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#         llm=model1,
-#         max_loops=1,
-#         autosave=True,
-#         dashboard=False,
-#         verbose=True,
-#         dynamic_temperature_enabled=True,
-#         saved_state_path="aggregator_agent_state.json",
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         return_step_meta=False
-#     )
-
-#     # Create the Mixture of Agents class
-#     moa = MixtureOfAgents(
-#         reference_agents=[agent1, agent2, agent3],
-#         aggregator_agent=aggregator_agent,
-#         aggregator_system_prompt="""You have been provided with a set of responses from various agents.
-#         Your task is to synthesize these responses into a single, high-quality response.""",
-#         layers=3
-#     )
-
-#     out = moa.run("How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria?")
-#     print(out)

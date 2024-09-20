@@ -236,7 +236,7 @@ class Agent:
         # [Tools]
         custom_tools_prompt: Optional[Callable] = None,
         tool_schema: ToolUsageType = None,
-        output_type: agent_output_type = "json",
+        output_type: agent_output_type = "str",
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
@@ -270,7 +270,7 @@ class Agent:
         return_step_meta: Optional[bool] = False,
         tags: Optional[List[str]] = None,
         use_cases: Optional[List[Dict[str, str]]] = None,
-        step_pool: List[Step] = [None],
+        step_pool: List[Step] = [],
         print_every_step: Optional[bool] = False,
         time_created: Optional[float] = time.strftime(
             "%Y-%m-%d %H:%M:%S", time.localtime()
@@ -501,9 +501,6 @@ class Agent:
         if agent_ops_on is True:
             threading.Thread(target=self.activate_agentops()).start()
 
-        # Telemetry Processor to log agent data
-        threading.Thread(target=self.log_agent_data).start()
-
         # Many steps
         self.agent_output = ManySteps(
             agent_id=agent_id,
@@ -520,6 +517,9 @@ class Agent:
             interactive=self.interactive,
             dynamic_temperature_enabled=self.dynamic_temperature_enabled,
         )
+
+        # Telemetry Processor to log agent data
+        threading.Thread(target=self.log_agent_data).start()
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -877,213 +877,15 @@ class Agent:
                 if response is not None
             ]
 
-            return self.agent_output_type(all_responses)
+            # return self.agent_output_type(all_responses)
+
+            return concat_strings(all_responses)
 
         except Exception as error:
             logger.info(
                 f"Error running agent: {error} optimize your input parameters"
             )
             raise error
-
-    # @run_on_cpu
-    # def run(
-    #     self,
-    #     task: Optional[str] = None,
-    #     img: Optional[str] = None,
-    #     video: Optional[str] = None,
-    #     is_last: bool = False,
-    #     *args,
-    #     **kwargs,
-    # ) -> Any:
-    #     """
-    #     Run the autonomous agent loop
-    #     """
-    #     try:
-    #         residual = task
-    #         # Add task to memory
-    #         self.short_memory.add(role=self.user_name, content=task)
-
-    #         loop_count = 0
-    #         all_responses = []
-
-    #         while self.max_loops == "auto" or loop_count < self.max_loops:
-    #             loop_count += 1
-    #             self.loop_count_print(loop_count, self.max_loops)
-    #             print("\n")
-
-    #             if self.dynamic_temperature_enabled:
-    #                 self.dynamic_temperature()
-
-    #             task_prompt = self.short_memory.return_history_as_string()
-
-    #             attempt = 0
-    #             success = False
-
-    #             while attempt < self.retry_attempts and not success:
-    #                 try:
-    #                     future_tasks = []
-
-    #                     if self.long_term_memory:
-    #                         logger.info("Querying long term memory...")
-    #                         future_tasks.append(
-    #                             self.executor.submit(
-    #                                 self.memory_query, task_prompt
-    #                             )
-    #                         )
-    #                     else:
-    #                         future_tasks.append(
-    #                             self.executor.submit(
-    #                                 self.llm,
-    #                                 *(
-    #                                     (task_prompt, *args)
-    #                                     if img is None
-    #                                     else (task_prompt, img, *args)
-    #                                 ),
-    #                                 **kwargs,
-    #                             )
-    #                         )
-
-    #                     for future in as_completed(future_tasks):
-    #                         result = future.result()
-
-    #                         if self.long_term_memory is None:
-    #                             response = self.llm_output_parser(result)
-
-    #                             if self.streaming_on:
-    #                                 response = self.stream_response(
-    #                                     response
-    #                                 )
-    #                             else:
-    #                                 print(response)
-
-    #                             self.short_memory.add(
-    #                                 role=self.agent_name, content=response
-    #                             )
-    #                             all_responses.append(response)
-
-    #                             # if self.return_step_meta:
-    #                             self.step_pool.append(
-    #                                 self.log_step_metadata(residual, response)
-    #                             )
-
-    #                         if self.tools:
-    #                             self.parse_and_execute_tools(response)
-
-    #                         # if self.code_interpreter:
-    #                         #     logger.info(
-    #                         #         "Parsing code and executing..."
-    #                         #     )
-    #                         #     code = extract_code_from_markdown(response)
-    #                         #     output = self.executor.submit(
-    #                         #         self.code_executor.execute, code
-    #                         #     ).result()
-
-    #                         #     self.short_memory.add(
-    #                         #         role=self.agent_name, content=output
-    #                         #     )
-
-    #                         #     response = self.llm(
-    #                         #         self.short_memory.return_history_as_string()
-    #                         #     )
-    #                         #     all_responses.append(response)
-    #                         #     self.short_memory.add(
-    #                         #         role=self.agent_name, content=response
-    #                         #     )
-
-    #                         if self.evaluator:
-    #                             logger.info("Evaluating response...")
-    #                             evaluated_response = self.executor.submit(
-    #                                 self.evaluator, response
-    #                             ).result()
-    #                             print(
-    #                                 f"Evaluated Response: {evaluated_response}"
-    #                             )
-    #                             self.short_memory.add(
-    #                                 role=self.agent_name,
-    #                                 content=evaluated_response,
-    #                             )
-
-    #                         if self.sentiment_analyzer:
-    #                             logger.info("Analyzing sentiment...")
-    #                             self.executor.submit(
-    #                                 self.sentiment_analysis_handler,
-    #                                 response,
-    #                             ).result()
-
-    #                     success = True  # Mark as successful to exit the retry loop
-
-    #                 except Exception as e:
-    #                     logger.error(
-    #                         f"Attempt {attempt + 1}: Error generating response: {e}"
-    #                     )
-    #                     attempt += 1
-
-    #             if not success:
-    #                 logger.error(
-    #                     "Failed to generate a valid response after retry attempts."
-    #                 )
-    #                 break
-
-    #             if (
-    #                 self.stopping_condition
-    #                 and self._check_stopping_condition(response)
-    #             ) or (self.stopping_func and self.stopping_func(response)):
-    #                 logger.info("Stopping condition met.")
-    #                 break
-
-    #             if self.interactive:
-    #                 logger.info("Interactive mode enabled.")
-    #                 user_input = colored(input("You: "), "red")
-
-    #                 if (
-    #                     user_input.lower()
-    #                     == self.custom_exit_command.lower()
-    #                 ):
-    #                     print("Exiting as per user request.")
-    #                     break
-
-    #                 self.short_memory.add(
-    #                     role=self.user_name, content=user_input
-    #                 )
-
-    #             if self.loop_interval:
-    #                 logger.info(
-    #                     f"Sleeping for {self.loop_interval} seconds"
-    #                 )
-    #                 time.sleep(self.loop_interval)
-
-    #         if self.autosave:
-    #             logger.info("Autosaving agent state.")
-    #             self.save_state(self.saved_state_path)
-
-    #         if self.output_cleaner:
-    #             logger.info("Applying output cleaner to response.")
-    #             response = self.output_cleaner(response)
-    #             logger.info(f"Response after output cleaner: {response}")
-
-    #         if self.agent_ops_on and is_last:
-    #             self.check_end_session_agentops()
-
-    #         all_responses = [
-    #             response for response in all_responses if response
-    #         ]
-    #         final_response = " ".join(all_responses)
-
-    #         if self.return_history:
-    #             return self.short_memory.return_history_as_string()
-    #         elif self.return_step_meta:
-    #             return self.return_agent_output_metadata(residual)
-    #         else:
-    #             return final_response
-
-    #     except Exception as error:
-    #         logger.info(
-    #             f"Error running agent: {error} optimize your input parameters"
-    #         )
-    #         raise error
-
-    #     finally:
-    #         self.executor.shutdown()
 
     def __call__(
         self, task: str = None, img: str = None, *args, **kwargs
@@ -1297,45 +1099,6 @@ class Agent:
             setattr(self, key, value)
 
         return "Loaded agent history"
-
-    def step(self, task: str, *args, **kwargs):
-        """
-
-        Executes a single step in the agent interaction, generating a response
-        from the language model based on the given input text.
-
-        Args:
-            input_text (str): The input text to prompt the language model with.
-
-        Returns:
-            str: The language model's generated response.
-
-        Raises:
-            Exception: If an error occurs during response generation.
-
-        """
-        try:
-            logger.info(f"Running a step: {task}")
-            # Generate the response using lm
-            response = self.llm(task, *args, **kwargs)
-
-            # Update the agent's history with the new interaction
-            if self.interactive:
-                self.short_memory.add(
-                    role=self.agent_name, content=response
-                )
-                self.short_memory.add(
-                    role=self.user_name, content=task
-                )
-            else:
-                self.short_memory.add(
-                    role=self.agent_name, content=response
-                )
-
-            return response
-        except Exception as error:
-            logging.error(f"Error generating response: {error}")
-            raise
 
     def graceful_shutdown(self):
         """Gracefully shutdown the system saving the state"""
@@ -2140,22 +1903,17 @@ class Agent:
     def log_agent_data(self):
         import requests
 
-        data = self.to_dict()
-
-        data_dict = {
-            "data": data,
-        }
+        data_dict = {"data": self.to_dict()}
 
         url = "https://swarms.world/api/get-agents/log-agents"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer sk-9ac18e55884ae17a4a739a4867b9eb23f3746c21d00bd16e1a97a30b211a81e4",
+            "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
         }
 
-        requests.post(url, json=data_dict, headers=headers)
+        response = requests.post(url, json=data_dict, headers=headers)
 
-        # return response.json()
-        return None
+        return response.json()
 
     def handle_tool_schema_ops(self):
         if exists(self.tool_schema):
@@ -2187,7 +1945,7 @@ class Agent:
 
         return None
 
-    def call_llm(self, task: str, *args, **kwargs):
+    def call_llm(self, task: str, *args, **kwargs) -> str:
         """
         Calls the appropriate method on the `llm` object based on the given task.
 
@@ -2231,7 +1989,7 @@ class Agent:
         if self.output_type == "list":
             return responses
 
-        elif self.output_type == "str":
+        elif self.output_type == "str" or "string":
             return concat_strings(responses)
 
         elif self.return_step_meta is True:

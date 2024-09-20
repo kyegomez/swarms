@@ -37,7 +37,7 @@ async def sequential():
         [agent1, agent2], flow, verbose=False, logging=False
     )
 
-    result = await agent_rearrange.astream(
+    await agent_rearrange.astream(
         "Generate a short blog post about Muhammad Ali."
     )
 
@@ -79,7 +79,7 @@ async def parallel():
         logging=False,
     )
 
-    result = await agent_rearrange.astream(
+    await agent_rearrange.astream(
         "Generate a 1 sentence story about Michael Jordan."
     )
 

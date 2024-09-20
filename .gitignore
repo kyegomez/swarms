@@ -20,6 +20,7 @@ agent_workspace
 .pt
 Accounting Assistant_state.json
 Unit Testing Agent_state.json
+sec_agent
 Devin_state.json
 hire_researchers
 agent_workspace

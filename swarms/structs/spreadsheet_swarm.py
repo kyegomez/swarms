@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.file_processing import create_file_in_folder
+from swarms.telemetry.log_swarm_data import log_agent_data
 
 time = datetime.datetime.now().isoformat()
 uuid_hex = uuid.uuid4().hex
@@ -151,6 +152,8 @@ class SpreadSheetSwarm(BaseSwarm):
 
         if self.autosave_on:
             self.data_to_json_file()
+
+        print(log_agent_data(self.metadata.model_dump()))
 
         return self.metadata.model_dump_json(indent=4)
 

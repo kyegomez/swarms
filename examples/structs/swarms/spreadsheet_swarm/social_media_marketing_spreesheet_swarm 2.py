@@ -43,6 +43,8 @@ agents = [
         saved_state_path="twitter_agent.json",
         user_name="swarms_corp",
         retry_attempts=1,
+        output_type=str,
+        return_step_meta=False,
     ),
     Agent(
         agent_name="Instagram-Marketing-Agent",
@@ -53,6 +55,8 @@ agents = [
         saved_state_path="instagram_agent.json",
         user_name="swarms_corp",
         retry_attempts=1,
+        output_type=str,
+        return_step_meta=False,
     ),
     Agent(
         agent_name="Facebook-Marketing-Agent",
@@ -63,6 +67,8 @@ agents = [
         saved_state_path="facebook_agent.json",
         user_name="swarms_corp",
         retry_attempts=1,
+        output_type=str,
+        return_step_meta=False,
     ),
     Agent(
         agent_name="Email-Marketing-Agent",
@@ -73,6 +79,8 @@ agents = [
         saved_state_path="email_agent.json",
         user_name="swarms_corp",
         retry_attempts=1,
+        output_type=str,
+        return_step_meta=False,
     ),
 ]
 

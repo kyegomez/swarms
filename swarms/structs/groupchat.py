@@ -1,11 +1,29 @@
-from typing import List
+from typing import List, Dict
+from pydantic import BaseModel, Field
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import logger
 from swarms.structs.agent import Agent
-from swarms.structs.base_swarm import BaseSwarm
+from uuid import uuid4
+from swarms.schemas.agent_step_schemas import ManySteps
 
 
-class GroupChat(BaseSwarm):
+class GroupChatInput(BaseModel):
+    admin_name: str
+    group_objective: str
+    agents: List[Dict[str, str]]
+    max_rounds: int
+    selector_agent: Dict[str, str]
+    rules: str
+
+
+class GroupChatOutput(BaseModel):
+    id: str = Field(uuid4().hex)
+    task: str = Field(..., description=None)
+    input_config: GroupChatInput
+    agent_outputs: List[ManySteps] = Field(..., description=None)
+
+
+class GroupChat:
     """Manager class for a group chat.
 
     This class handles the management of a group chat, including initializing the conversation,
@@ -33,6 +51,8 @@ class GroupChat(BaseSwarm):
 
     def __init__(
         self,
+        name: str = None,
+        description: str = None,
         agents: List[Agent] = None,
         max_rounds: int = 10,
         admin_name: str = "Admin",
@@ -42,7 +62,13 @@ class GroupChat(BaseSwarm):
         *args,
         **kwargs,
     ):
-        super().__init__()
+        # super().__init__(agents = agents, *args, **kwargs)
+        if not agents:
+            raise ValueError(
+                "Agents cannot be empty. Add more agents."
+            )
+        self.name = name
+        self.description = description
         self.agents = agents
         self.max_rounds = max_rounds
         self.admin_name = admin_name
@@ -59,11 +85,11 @@ class GroupChat(BaseSwarm):
             **kwargs,
         )
 
-        # Check to see if the agents is not None:
-        if agents is None:
-            raise ValueError(
-                "Agents may not be empty please try again, add more agents!"
-            )
+        # Initialize log for interactions
+        self.group_log = GroupChatLog(
+            admin_name=self.admin_name,
+            group_objective=self.group_objective,
+        )
 
     @property
     def agent_names(self) -> List[str]:
@@ -72,7 +98,7 @@ class GroupChat(BaseSwarm):
 
     def reset(self):
         """Reset the group chat."""
-        logger.info("Resetting Groupchat")
+        logger.info("Resetting GroupChat")
         self.message_history.clear()
 
     def agent_by_name(self, name: str) -> Agent:
@@ -121,10 +147,9 @@ class GroupChat(BaseSwarm):
         """
         return prompt
 
-    # @try_except_wrapper
     def select_speaker(
         self, last_speaker_agent: Agent, selector_agent: Agent
-    ):
+    ) -> Agent:
         """Select the next speaker.
 
         Args:
@@ -135,15 +160,13 @@ class GroupChat(BaseSwarm):
             Agent: Next speaker.
 
         """
-        logger.info("Selecting a New Speaker")
+        logger.info("Selecting a new speaker")
         selector_agent.system_prompt = self.select_speaker_msg()
 
-        # Warn if GroupChat is underpopulated, without established changing behavior
         n_agents = len(self.agent_names)
         if n_agents < 3:
             logger.warning(
-                f"GroupChat is underpopulated with {n_agents} agents."
-                " Direct communication would be more efficient."
+                f"GroupChat is underpopulated with {n_agents} agents. Direct communication might be more efficient."
             )
 
         self.message_history.add(
@@ -155,9 +178,8 @@ class GroupChat(BaseSwarm):
             self.message_history.return_history_as_string()
         )
         try:
-            name = self.agent_by_name(name)
-            print(name)
-            return name
+            selected_agent = self.agent_by_name(name)
+            return selected_agent
         except ValueError:
             return self.next_agent(last_speaker_agent)
 
@@ -175,7 +197,7 @@ class GroupChat(BaseSwarm):
             ]
         )
 
-    def __call__(self, task: str, *args, **kwargs):
+    def run(self, task: str, *args, **kwargs):
         """Call 'GroupChatManager' instance as a function.
 
         Args:
@@ -187,44 +209,49 @@ class GroupChat(BaseSwarm):
         """
         try:
             logger.info(
-                f"Activating Groupchat with {len(self.agents)} Agents"
+                f"Activating GroupChat with {len(self.agents)} Agents"
             )
-
-            # Message History
             self.message_history.add(
                 self.selector_agent.agent_name, task
             )
 
-            # Message
             for i in range(self.max_rounds):
                 speaker_agent = self.select_speaker(
                     last_speaker_agent=self.selector_agent,
                     selector_agent=self.selector_agent,
                 )
-
                 logger.info(
                     f"Next speaker selected: {speaker_agent.agent_name}"
                 )
 
-                # Reply back to the input prompt
                 reply = speaker_agent.run(
                     self.message_history.return_history_as_string(),
                     *args,
                     **kwargs,
                 )
-
-                # Message History
                 self.message_history.add(
                     speaker_agent.agent_name, reply
                 )
-                print(reply)
+
+                # Log the interaction
+                self.group_log.log_interaction(
+                    agent_name=speaker_agent.agent_name,
+                    position=i,
+                    input_text=self.message_history.return_history_as_string(),
+                    output_text=reply,
+                )
 
                 if i == self.max_rounds - 1:
                     break
 
             return reply
+
         except Exception as error:
             logger.error(
-                f"Error detected: {error} Try optimizing the inputs and then submit an issue into the swarms github, so we can help and assist you."
+                f"Error detected: {error}. Please optimize the inputs and submit an issue on the swarms GitHub."
             )
             raise error
+
+    def get_group_log_as_json(self) -> str:
+        """Return the interaction log as a JSON string."""
+        return self.group_log.return_json()

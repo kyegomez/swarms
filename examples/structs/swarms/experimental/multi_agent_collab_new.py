@@ -564,7 +564,9 @@ if __name__ == "__main__":
     # Get the OpenAI API key from the environment variable
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        logger.error("OpenAI API key not found in environment variables.")
+        logger.error(
+            "OpenAI API key not found in environment variables."
+        )
         exit(1)
 
     # Create instances of the OpenAIChat class

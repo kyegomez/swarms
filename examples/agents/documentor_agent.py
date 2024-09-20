@@ -6,7 +6,6 @@ from loguru import logger
 from swarm_models import OpenAIChat
 
 from swarms import Agent
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Set
 
 load_dotenv()
