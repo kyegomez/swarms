@@ -1085,17 +1085,6 @@ Join our growing community around the world, for real-time support, ideas, and d
 - [Join the Swarms community on Discord!](https://discord.gg/AJazBmhKnr)
 - Join our Swarms Community Gathering every Thursday at 1pm NYC Time to unlock the potential of autonomous agents in automating your daily tasks [Sign up here](https://lu.ma/5p2jnc2v)
 
----
+# License
 
-# Citations
-Please cite Swarms in your paper or your project if you found it beneficial in any way! Appreciate you.
-
-```bibtex
-@misc{swarms,
-  author = {Gomez, Kye},
-  title = {{Swarms: The Multi-Agent Collaboration Framework}},
-  howpublished = {\url{https://github.com/kyegomez/swarms}},
-  year = {2023},
-  note = {Accessed: Date}
-}
-```
+Creative Commons Attribution 4.0 International Public License
