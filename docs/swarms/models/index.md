@@ -10,8 +10,7 @@ Welcome to the documentation for the llm section of the swarms package, designed
 ### Table of Contents
 1. [OpenAI](#openai)
 2. [HuggingFace](#huggingface)
-3. [Google PaLM](#google-palm)
-4. [Anthropic](#anthropic)
+3. [Anthropic](#anthropic)
 
 ### 1. OpenAI (swarm_models.OpenAI)
 

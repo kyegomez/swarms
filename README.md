@@ -531,6 +531,82 @@ print(f"Generated data: {generated_data}")
 ```
 
 
+## Integrating External Agents
+Integrating external agents from other agent frameworks is easy with swarms.
+
+Steps:
+
+1. Create a new class that inherits `Agent`
+2. Create a `.run(task: str) -> str` method that runs the agent and returns the response. 
+3. The new Agent must return a string of the response. But you may add additional methods to save the output to JSON.
+
+
+### Griptape Example
+
+For example, here's an example on how to create an agent from griptape.
+
+Here’s how you can create a custom **Griptape** agent that integrates with the **Swarms** framework by inheriting from the `Agent` class in **Swarms** and overriding the `run(task: str) -> str` method.
+
+
+```python
+from swarms import (
+    Agent as SwarmsAgent,
+)  # Import the base Agent class from Swarms
+from griptape.structures import Agent as GriptapeAgent
+from griptape.tools import (
+    WebScraperTool,
+    FileManagerTool,
+    PromptSummaryTool,
+)
+
+
+# Create a custom agent class that inherits from SwarmsAgent
+class GriptapeSwarmsAgent(SwarmsAgent):
+    def __init__(self, *args, **kwargs):
+        # Initialize the Griptape agent with its tools
+        self.agent = GriptapeAgent(
+            input="Load {{ args[0] }}, summarize it, and store it in a file called {{ args[1] }}.",
+            tools=[
+                WebScraperTool(off_prompt=True),
+                PromptSummaryTool(off_prompt=True),
+                FileManagerTool(),
+            ],
+            *args,
+            **kwargs,
+            # Add additional settings
+        )
+
+    # Override the run method to take a task and execute it using the Griptape agent
+    def run(self, task: str) -> str:
+        # Extract URL and filename from task (you can modify this parsing based on task structure)
+        url, filename = task.split(
+            ","
+        )  # Example of splitting task string
+        # Execute the Griptape agent with the task inputs
+        result = self.agent.run(url.strip(), filename.strip())
+        # Return the final result as a string
+        return str(result)
+
+
+# Example usage:
+griptape_swarms_agent = GriptapeSwarmsAgent()
+output = griptape_swarms_agent.run(
+    "https://griptape.ai, griptape.txt"
+)
+print(output)
+```
+
+### Key Components:
+1. **GriptapeSwarmsAgent**: A custom class that inherits from the `SwarmsAgent` class and integrates the Griptape agent.
+2. **run(task: str) -> str**: A method that takes a task string, processes it (e.g., splitting into a URL and filename), and runs the Griptape agent with the provided inputs.
+3. **Griptape Tools**: The tools integrated into the Griptape agent (e.g., `WebScraperTool`, `PromptSummaryTool`, `FileManagerTool`) allow for web scraping, summarization, and file management.
+
+You can now easily plug this custom Griptape agent into the **Swarms Framework** and use it to run tasks!
+
+
+
+
+
 
 # Multi-Agent Orchestration:
 Swarms was designed to facilitate the communication between many different and specialized agents from a vast array of other frameworks such as langchain, autogen, crew, and more.
@@ -960,13 +1036,6 @@ Get onboarded now with the creator and lead maintainer of Swarms, Kye Gomez, who
 ## Documentation
 Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 
-----
-
-
-## Docker Instructions
-- [Learn More Here About Deployments In Docker](https://docs.swarms.world/en/latest/docker_setup/)
-
-
 -----
 
 ## Folder Structure
@@ -978,7 +1047,7 @@ The swarms package has been meticlously crafted for extreme use-ability and unde
 ├── artifacts
 ├── memory
 ├── schemas
-├── models
+├── models -> swarm_models
 ├── prompts
 ├── structs
 ├── telemetry

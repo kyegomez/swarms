@@ -39,6 +39,18 @@ class AgentRegistrySchema(BaseModel):
 
 
 class AgentRegistry:
+    """
+    A class for managing a registry of agents.
+
+    Attributes:
+        name (str): The name of the registry.
+        description (str): A description of the registry.
+        return_json (bool): Indicates whether to return data in JSON format.
+        auto_save (bool): Indicates whether to automatically save changes to the registry.
+        agents (Dict[str, Agent]): A dictionary of agents in the registry, keyed by agent name.
+        lock (Lock): A lock for thread-safe operations on the registry.
+        agent_registry (AgentRegistrySchema): The schema for the agent registry.
+    """
 
     def __init__(
         self,
@@ -50,6 +62,16 @@ class AgentRegistry:
         *args,
         **kwargs,
     ):
+        """
+        Initializes the AgentRegistry.
+
+        Args:
+            name (str, optional): The name of the registry. Defaults to "Agent Registry".
+            description (str, optional): A description of the registry. Defaults to "A registry for managing agents.".
+            agents (Optional[List[Agent]], optional): A list of agents to initially add to the registry. Defaults to None.
+            return_json (bool, optional): Indicates whether to return data in JSON format. Defaults to True.
+            auto_save (bool, optional): Indicates whether to automatically save changes to the registry. Defaults to False.
+        """
         self.name = name
         self.description = description
         self.return_json = return_json
@@ -282,6 +304,12 @@ class AgentRegistry:
             raise e
 
     def agent_to_py_model(self, agent: Agent):
+        """
+        Converts an agent to a Pydantic model.
+
+        Args:
+            agent (Agent): The agent to convert.
+        """
         agent_name = agent.agent_name
         agent_description = (
             agent.description

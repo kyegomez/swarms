@@ -1,7 +1,13 @@
-import concurrent
+import concurrent.futures
+from typing import List, Tuple, Any, Dict, Union, Callable
 
 
-def execute_concurrently(callable_functions, max_workers=5):
+def execute_concurrently(
+    callable_functions: List[
+        Tuple[Callable, Tuple[Any, ...], Dict[str, Any]]
+    ],
+    max_workers: int = 5,
+) -> List[Union[Any, Exception]]:
     """
     Executes callable functions concurrently using multithreading.
 
@@ -16,7 +22,12 @@ def execute_concurrently(callable_functions, max_workers=5):
     """
     results = [None] * len(callable_functions)
 
-    def worker(fn, args, kwargs, index):
+    def worker(
+        fn: Callable,
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        index: int,
+    ) -> None:
         try:
             result = fn(*args, **kwargs)
             results[index] = result

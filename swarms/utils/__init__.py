@@ -5,7 +5,6 @@ from swarms.utils.data_to_text import (
     json_to_text,
     txt_to_text,
 )
-from swarms.utils.exponential_backoff import ExponentialBackoffMixin
 from swarms.utils.file_processing import (
     load_json,
     sanitize_file_path,
@@ -28,7 +27,6 @@ __all__ = [
     "data_to_text",
     "json_to_text",
     "txt_to_text",
-    "ExponentialBackoffMixin",
     "load_json",
     "sanitize_file_path",
     "zip_workspace",

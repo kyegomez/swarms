@@ -1,8 +1,4 @@
 from swarms.structs.agent import Agent
-from swarms.structs.agent_process import (
-    AgentProcess,
-    AgentProcessQueue,
-)
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -72,8 +68,6 @@ from swarms.structs.yaml_model import (
 
 __all__ = [
     "Agent",
-    "AgentProcess",
-    "AgentProcessQueue",
     "AutoSwarm",
     "AutoSwarmRouter",
     "BaseStructure",
