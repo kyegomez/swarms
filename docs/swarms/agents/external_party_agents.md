@@ -42,7 +42,7 @@ In this example, we will create a **Griptape** agent by inheriting from the Swar
 2. **Create Griptape Agent**: Initialize the **Griptape** agent inside your class and provide it with the necessary tools.
 3. **Override the `run()` method**: Implement logic to process a task string and execute the Griptape agent.
 
-#### **Griptape Example Code**:
+## **Griptape Example Code**:
 
 ```python
 from swarms import (
@@ -110,7 +110,7 @@ Next, we demonstrate how to integrate a **Langchain** agent with **Swarms** by f
 2. **Create Langchain Agent**: Initialize a Langchain agent with the necessary components (like language models or memory modules).
 3. **Override the `run()` method**: Pass tasks to the Langchain agent and return the response.
 
-#### **Langchain Example Code**:
+## **Langchain Example Code**:
 
 ```python
 from swarms import Agent as SwarmsAgent
@@ -151,7 +151,7 @@ print(output)
 ### 1. **OpenAI Function Calling Agents**
 - **Description**: OpenAI models like GPT-4 can now call functions programmatically. This makes it possible to create agents that execute external functions, APIs, or code snippets.
   
-  #### Example Integration:
+  ## Example Integration:
   ```python
   from swarms import Agent as SwarmsAgent
   import openai
@@ -183,7 +183,7 @@ print(output)
 ### 2. **Rasa Agents**
 - **Description**: **Rasa** is a popular open-source framework for building conversational AI agents. You can integrate **Rasa** to build dialogue-based agents with **Swarms**.
 
-  #### Example Integration:
+  ## Example Integration:
   ```python
   from swarms import Agent as SwarmsAgent
   from rasa.core.agent import Agent as RasaAgent
@@ -211,7 +211,7 @@ print(output)
 ### 3. **Hugging Face Transformers**
 - **Description**: **Hugging Face** offers a variety of pre-trained models, including transformers for NLP tasks. These can be easily integrated into **Swarms** for various tasks like text generation, question answering, and more.
 
-  #### Example Integration:
+  ## Example Integration:
   ```python
   from swarms import Agent as SwarmsAgent
   from transformers import pipeline
@@ -237,7 +237,7 @@ print(output)
 ### 4. **AutoGPT or BabyAGI**
 - **Description**: **AutoGPT** and **BabyAGI** are agent frameworks designed to be autonomous, where agents can recursively execute tasks and create new tasks based on previous outputs.
   
-  #### Example Integration:
+  ## Example Integration:
   ```python
   from swarms import Agent as SwarmsAgent
   from autogpt import AutoGPT
@@ -263,7 +263,7 @@ print(output)
 ### 5. **DialogFlow Agents**
 - **Description**: **DialogFlow** by Google is used to build conversational agents. These agents can process user intents and deliver responses based on predefined conversation flows.
   
-  #### Example Integration:
+  ## Example Integration:
   ```python
   from swarms import Agent as SwarmsAgent
   from google.cloud import dialogflow
@@ -295,7 +295,7 @@ print(output)
 ### 6. **ChatterBot Agents**
 - **Description**: **ChatterBot** is a Python-based machine-learning conversational agent. It learns from previous conversations to generate intelligent responses.
   
-  #### Example Integration:
+  ## Example Integration:
   ```python
   from swarms import Agent as SwarmsAgent
   from chatterbot import ChatBot
@@ -321,7 +321,7 @@ print(output)
 ### 7. **Custom APIs as Agents**
 - **Description**: You can create agents that integrate with any REST or GraphQL API by defining them as a task runner within Swarms. This allows for interaction with third-party services.
   
-  #### Example Integration:
+  ## Example Integration:
   ```python
   from swarms import Agent as SwarmsAgent
   import requests
