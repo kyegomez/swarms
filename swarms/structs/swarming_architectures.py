@@ -1,154 +1,75 @@
 import asyncio
 import math
-from typing import List
+from typing import List, Union
+
+from loguru import logger
+from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import logger
-from swarms.structs.conversation import Conversation
-from swarms.structs.concat import concat_strings
 from swarms.structs.omni_agent_types import AgentListType
 
-# from swarms.structs.swarm_registry import swarm_registry, SwarmRegistry
+
+# Define Pydantic schema for logging agent responses
+class AgentLog(BaseModel):
+    agent_name: str
+    task: str
+    response: str
 
 
-# @swarm_registry
-def circular_swarm(
-    name: str = "Circular Swarm",
-    description: str = "A circular swarm is a type of swarm where agents pass tasks in a circular manner.",
-    goal: str = None,
-    agents: AgentListType = None,
-    tasks: List[str] = None,
-    return_full_history: bool = True,
-):
-    if not agents:
-        raise ValueError("Agents list cannot be empty.")
+class Conversation(BaseModel):
+    logs: List[AgentLog] = []
 
-    if not tasks:
-        raise ValueError("Tasks list cannot be empty.")
-
-    conversation = Conversation(
-        time_enabled=True,
-    )
-
-    responses = []
-
-    for task in tasks:
-        for agent in agents:
-            # Log the task
-            out = agent.run(task)
-            # print(f"Task: {task}, Response {out}")
-            # prompt = f"Task: {task}, Response {out}"
-            logger.info(f"Agent: {agent.agent_name} Response {out}")
-
-            conversation.add(
-                role=agent.agent_name,
-                content=out,
-            )
-
-            # Response list
-            responses.append(out)
-
-    if return_full_history:
-        return conversation.return_history_as_string()
-    else:
-        return responses
-
-
-# @swarm_registry()
-def linear_swarm(
-    name: str = "Linear Swarm",
-    description: str = "A linear swarm is a type of swarm where agents pass tasks in a linear manner.",
-    agents: AgentListType = None,
-    tasks: List[str] = None,
-    conversation: Conversation = None,
-    return_full_history: bool = True,
-):
-    if not agents:
-        raise ValueError("Agents list cannot be empty.")
-
-    if not tasks:
-        raise ValueError("Tasks list cannot be empty.")
-
-    if not conversation:
-        conversation = Conversation(
-            time_enabled=True,
+    def add_log(
+        self, agent_name: str, task: str, response: str
+    ) -> None:
+        log_entry = AgentLog(
+            agent_name=agent_name, task=task, response=response
+        )
+        self.logs.append(log_entry)
+        logger.info(
+            f"Agent: {agent_name} | Task: {task} | Response: {response}"
         )
 
-    responses = []
-
-    for i in range(len(agents)):
-        if tasks:
-            task = tasks.pop(0)
-            out = agents[i].run(task)
-
-            conversation.add(
-                role=agents[i].agent_name,
-                content=f"Task: {task}, Response {out}",
-            )
-
-            responses.append(out)
-
-    if return_full_history:
-        return conversation.return_history_as_string()
-    else:
-        return responses
+    def return_history(self) -> dict:
+        return {
+            "history": [
+                {
+                    "agent_name": log.agent_name,
+                    "task": log.task,
+                    "response": log.response,
+                }
+                for log in self.logs
+            ]
+        }
 
 
-# print(SwarmRegistry().list_swarms())
+# Circular Swarm: Agents pass tasks in a circular manner
+def circular_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    return_full_history: bool = True,
+) -> Union[str, List[str]]:
+    if not agents or not tasks:
+        raise ValueError("Agents and tasks lists cannot be empty.")
 
-# def linear_swarm(agents: AgentListType, tasks: List[str]):
-#     logger.info(f"Running linear swarm with {len(agents)} agents")
-#     for i in range(len(agents)):
-#         if tasks:
-#             task = tasks.pop(0)
-#             agents[i].run(task)
-
-
-def star_swarm(agents: AgentListType, tasks: List[str]) -> str:
-    logger.info(
-        f"Running star swarm with {len(agents)} agents and {len(tasks)} tasks"
-    )
-
-    if not agents:
-        raise ValueError("Agents list cannot be empty.")
-
-    if not tasks:
-        raise ValueError("Tasks list cannot be empty.")
-
-    conversation = Conversation(time_enabled=True)
-    center_agent = agents[0]
-
+    conversation = Conversation()
     responses = []
 
     for task in tasks:
-
-        out = center_agent.run(task)
-        log = f"Agent: {center_agent.agent_name} Response {out}"
-        logger.info(log)
-        conversation.add(center_agent.agent_name, out)
-        responses.append(out)
-
-        for agent in agents[1:]:
-
-            output = agent.run(task)
-            log_two = f"Agent: {agent.agent_name} Response {output}"
-            logger.info(log_two)
-            conversation.add(agent.agent_name, output)
-            responses.append(out)
-
-    out = concat_strings(responses)
-    print(out)
-
-    return out
-
-
-def mesh_swarm(agents: AgentListType, tasks: List[str]):
-    task_queue = tasks.copy()
-    while task_queue:
         for agent in agents:
-            if task_queue:
-                task = task_queue.pop(0)
-                agent.run(task)
+            response = agent.run(task)
+            conversation.add_log(
+                agent_name=agent.agent_name,
+                task=task,
+                response=response,
+            )
+            responses.append(response)
+
+    return (
+        conversation.return_history()
+        if return_full_history
+        else responses
+    )
 
 
 def grid_swarm(agents: AgentListType, tasks: List[str]):
@@ -160,17 +81,144 @@ def grid_swarm(agents: AgentListType, tasks: List[str]):
             if tasks:
                 task = tasks.pop(0)
                 agents[i * grid_size + j].run(task)
+                
+                
+# Linear Swarm: Agents process tasks in a sequential linear manner
+def linear_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    return_full_history: bool = True,
+) -> Union[str, List[str]]:
+    if not agents or not tasks:
+        raise ValueError("Agents and tasks lists cannot be empty.")
+
+    conversation = Conversation()
+    responses = []
+
+    for agent in agents:
+        if tasks:
+            task = tasks.pop(0)
+            response = agent.run(task)
+            conversation.add_log(
+                agent_name=agent.agent_name,
+                task=task,
+                response=response,
+            )
+            responses.append(response)
+
+    return (
+        conversation.return_history()
+        if return_full_history
+        else responses
+    )
 
 
-def pyramid_swarm(agents: AgentListType, tasks: List[str]):
+# Star Swarm: A central agent first processes all tasks, followed by others
+def star_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    return_full_history: bool = True,
+) -> Union[str, List[str]]:
+    if not agents or not tasks:
+        raise ValueError("Agents and tasks lists cannot be empty.")
+
+    conversation = Conversation()
+    center_agent = agents[0]  # The central agent
+    responses = []
+
+    for task in tasks:
+        # Central agent processes the task
+        center_response = center_agent.run(task)
+        conversation.add_log(
+            agent_name=center_agent.agent_name,
+            task=task,
+            response=center_response,
+        )
+        responses.append(center_response)
+
+        # Other agents process the same task
+        for agent in agents[1:]:
+            response = agent.run(task)
+            conversation.add_log(
+                agent_name=agent.agent_name,
+                task=task,
+                response=response,
+            )
+            responses.append(response)
+
+    return (
+        conversation.return_history()
+        if return_full_history
+        else responses
+    )
+
+
+# Mesh Swarm: Agents work on tasks randomly from a task queue until all tasks are processed
+def mesh_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    return_full_history: bool = True,
+) -> Union[str, List[str]]:
+    if not agents or not tasks:
+        raise ValueError("Agents and tasks lists cannot be empty.")
+
+    conversation = Conversation()
+    task_queue = tasks.copy()
+    responses = []
+
+    while task_queue:
+        for agent in agents:
+            if task_queue:
+                task = task_queue.pop(0)
+                response = agent.run(task)
+                conversation.add_log(
+                    agent_name=agent.agent_name,
+                    task=task,
+                    response=response,
+                )
+                responses.append(response)
+
+    return (
+        conversation.return_history()
+        if return_full_history
+        else responses
+    )
+
+
+# Pyramid Swarm: Agents are arranged in a pyramid structure
+def pyramid_swarm(
+    agents: AgentListType,
+    tasks: List[str],
+    return_full_history: bool = True,
+) -> Union[str, List[str]]:
+    if not agents or not tasks:
+        raise ValueError("Agents and tasks lists cannot be empty.")
+
+    conversation = Conversation()
+    responses = []
+
     levels = int(
         (-1 + (1 + 8 * len(agents)) ** 0.5) / 2
-    )  # Assuming agents can form a perfect pyramid
+    )  # Number of levels in the pyramid
+
     for i in range(levels):
         for j in range(i + 1):
             if tasks:
                 task = tasks.pop(0)
-                agents[int(i * (i + 1) / 2 + j)].run(task)
+                agent_index = int(i * (i + 1) / 2 + j)
+                response = agents[agent_index].run(task)
+                conversation.add_log(
+                    agent_name=agents[agent_index].agent_name,
+                    task=task,
+                    response=response,
+                )
+                responses.append(response)
+
+    return (
+        conversation.return_history()
+        if return_full_history
+        else responses
+    )
 
 
 def fibonacci_swarm(agents: AgentListType, tasks: List[str]):
@@ -318,86 +366,92 @@ async def one_to_three(
         raise error
 
 
-async def broadcast(
-    sender: Agent,
-    agents: AgentListType,
-    task: str,
-):
+"""
+This module contains functions for facilitating communication between agents in a swarm. It includes methods for one-to-one communication, broadcasting, and other swarm architectures.
+"""
+
+
+# One-to-One Communication between two agents
+def one_to_one(
+    sender: Agent, receiver: Agent, task: str, max_loops: int = 1
+) -> str:
     """
-    Broadcasts a message from the sender agent to a list of agents.
+    Facilitates one-to-one communication between two agents. The sender and receiver agents exchange messages for a specified number of loops.
+
+    Args:
+        sender (Agent): The agent sending the message.
+        receiver (Agent): The agent receiving the message.
+        task (str): The message to be sent.
+        max_loops (int, optional): The number of times the sender and receiver exchange messages. Defaults to 1.
+
+    Returns:
+        str: The conversation history between the sender and receiver.
+
+    Raises:
+        Exception: If there is an error during the communication process.
+    """
+    conversation = Conversation()
+    responses = []
+
+    try:
+        for _ in range(max_loops):
+            # Sender processes the task
+            sender_response = sender.run(task)
+            conversation.add_log(
+                agent_name=sender.agent_name,
+                task=task,
+                response=sender_response,
+            )
+            responses.append(sender_response)
+
+            # Receiver processes the result of the sender
+            receiver_response = receiver.run(sender_response)
+            conversation.add_log(
+                agent_name=receiver.agent_name,
+                task=task,
+                response=receiver_response,
+            )
+            responses.append(receiver_response)
+
+    except Exception as error:
+        logger.error(
+            f"Error during one_to_one communication: {error}"
+        )
+        raise error
+
+    return conversation.return_history()
+
+
+# Broadcasting: A message from one agent to many
+async def broadcast(
+    sender: Agent, agents: AgentListType, task: str
+) -> None:
+    """
+    Facilitates broadcasting of a message from one agent to multiple agents.
 
     Args:
         sender (Agent): The agent sending the message.
         agents (AgentListType): The list of agents to receive the message.
-        task (str): The message to be broadcasted.
+        task (str): The message to be sent.
 
     Raises:
-        Exception: If an error occurs during the broadcast.
-
-    Returns:
-        None
+        ValueError: If the sender, agents, or task is empty.
+        Exception: If there is an error during the broadcasting process.
     """
-    if not sender:
-        raise ValueError("The sender cannot be empty.")
+    conversation = Conversation()
 
-    if not agents:
-        raise ValueError("The agents list cannot be empty.")
-
-    if not task:
-        raise ValueError("The task cannot be empty.")
+    if not sender or not agents or not task:
+        raise ValueError("Sender, agents, and task cannot be empty.")
 
     try:
         receive_tasks = []
         for agent in agents:
-            receive_tasks.append(
-                agent.receive_message(sender.agent_name, task)
+            receive_tasks.append(agent.run(task))
+            conversation.add_log(
+                agent_name=agent.agent_name, task=task, response=task
             )
 
         await asyncio.gather(*receive_tasks)
     except Exception as error:
-        logger.error(
-            f"[ERROR][CLASS: Agent][METHOD: broadcast] {error}"
-        )
-        raise error
-
-
-def one_to_one(
-    sender: Agent,
-    receiver: Agent,
-    task: str,
-    max_loops: int = 1,
-):
-    """
-    Sends a message from the sender agent to the receiver agent.
-
-    Args:
-        sender (Agent): The agent sending the message.
-        receiver (Agent): The agent to receive the message.
-        task (str): The message to be sent.
-
-    Raises:
-        Exception: If an error occurs during the message sending.
-
-    Returns:
-        None
-    """
-    try:
-        responses = []
-        responses.append(task)
-        for i in range(max_loops):
-
-            # Run the agent on the task then pass the response to the receiver
-            response = sender.run(task)
-            log = f"Agent {sender.agent_name} Response: {response}"
-            responses.append(log)
-
-            # Send the response to the receiver
-            out = receiver.run(concat_strings(responses))
-            responses.append(out)
-
-        return concat_strings(responses)
-    except Exception as error:
-        logger.error(
-            f"[ERROR][CLASS: Agent][METHOD: one_to_one] {error}"
-        )
+        logger.error(f"Error during broadcast: {error}")
         raise error
