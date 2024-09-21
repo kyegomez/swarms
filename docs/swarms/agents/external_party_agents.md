@@ -94,8 +94,11 @@ print(output)
 
 ## **Additional Features**:
 You can enhance your external agents with additional features such as:
+
 - **Saving outputs** to JSON, databases, or logs.
+
 - **Handling errors** and retry mechanisms for robustness.
+
 - **Custom logging** with tools like **Loguru** for extensive debugging.
 
 ---
@@ -343,14 +346,23 @@ print(output)
 ---
 
 ### **Summary of Integrations**:
+
 - **Griptape**: Integrate with tools for web scraping, summarization, etc.
+
 - **Langchain**: Use powerful language model orchestration.
+
 - **OpenAI Function Calling**: Directly run OpenAI API-based agents.
+
 - **Rasa**: Build and integrate conversational agents.
+
 - **Hugging Face**: Leverage transformer models.
+
 - **AutoGPT/BabyAGI**: Recursive, autonomous task execution.
+
 - **DialogFlow**: Integrate conversational flows for voice/chat-based systems.
+
 - **ChatterBot**: Machine-learning conversational agents.
+
 - **Custom APIs**: Leverage external APIs as agents for custom workflows.
 
 
