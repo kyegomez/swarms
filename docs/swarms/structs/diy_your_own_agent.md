@@ -1,6 +1,6 @@
 # Create your own agent with `Agent` class
 
-In the rapidly evolving world of artificial intelligence (AI), the demand for specialized and highly customized agents is on the rise. Whether it's for task automation, decision support systems, or intelligent virtual assistants, the ability to create tailored agents can unlock new possibilities and efficiencies across various domains. Enter the Agent class, a powerful and flexible tool designed by Anthropic that empowers AI agents to build their own custom agents, tailored to their specific needs.
+The Agent class is a powerful and flexible tool that empowers AI agents to build their own custom agents, tailored to their specific needs.
 
 This comprehensive guide will explore the process of inheriting from the Agent class, enabling agents to create their own custom agent classes. By leveraging the rich features and extensibility of the Agent class, agents can imbue their offspring agents with unique capabilities, specialized toolsets, and tailored decision-making processes.
 
@@ -36,7 +36,7 @@ Now that we have a solid understanding of the Agent class and its features, let'
 
 #### Step 1: Inherit from the Agent Class
 
-The first step in creating a custom agent class is to inherit from the Agent class. This will provide your custom agent class with the foundational features and capabilities of the Agent class, which can then be extended and customized as needed.
+The first step in creating a custom agent class is to inherit from the Agent class. This will provide your custom agent class with the foundational features and capabilities of the Agent class, which can then be extended and customized as needed. The new agent class must have a `run(task: str)` method to run the entire agent. It is encouraged to have `step(task: str)` method that completes one step of the agent and then build the `run(task: str)` method.
 
 ```python
 
@@ -49,6 +49,9 @@ class MyCustomAgent(Agent):
         super().__init__(*args, **kwargs)
 
         # Add custom initialization logic here
+
+    def run(self, task: str) -> 
+        ...
 
 ```
 
@@ -90,63 +93,7 @@ class MyCustomAgent(Agent):
 
 In the example above, we introduce a new `custom_method` that can encapsulate any specialized logic or functionality specific to your custom agent class. Additionally, we override the `run` method, which is responsible for executing the agent's main task loop. Within the overridden `run` method, you can call the parent class's `run` method using `super().run(task, *args, **kwargs)` and then introduce any additional custom logic before or after the parent method's execution.
 
-#### Step 3: Integrate Custom Tools
-
-One of the powerful features of the Agent class is the ability to integrate with various tools. Custom agent classes can inherit this capability and incorporate specialized tools tailored to their unique use cases.
-
-```python
-
-from swarms.tools import BaseTool
-from swarms import Agent
-
-
-class CustomTool(BaseTool):
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-
-        # Custom tool initialization logic
-
-    def run(self, *args, **kwargs):
-
-        # Custom tool logic
-
-        return result
-
-class MyCustomAgent(Agent):
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-
-        # Custom initialization logic
-
-        self.tools = [CustomTool()]
-
-    def run(self, task, *args, **kwargs):
-
-        # Customize the run method
-
-        response = super().run(task, *args, **kwargs)
-
-        # Utilize custom tools
-
-        for tool in self.tools:
-
-            result = tool.run(*args, **kwargs)
-
-            # Process tool result
-
-        return response
-
-```
-
-In the example above, we define a new `CustomTool` class that inherits from the `BaseTool` class provided by the Agent class framework. Within the `CustomTool` class, you can implement the specialized logic and functionality required by your custom tool.
-
-Next, within the `MyCustomAgent` class, we initialize an instance of the `CustomTool` and store it in the `self.tools` list. This list can then be utilized within the overridden `run` method, where you can execute each tool and process its results as needed.
-
-#### Step 4: Extend Memory Management
+#### Step 3: Extend Memory Management
 
 The Agent class provides built-in support for long-term memory, allowing agents to retain and access information from previous interactions. Custom agent classes can inherit and extend this capability by introducing specialized memory management techniques.
 
@@ -200,7 +147,7 @@ In the example above, we define a new `CustomMemory` class that inherits from th
 
 Next, within the `MyCustomAgent` class, we initialize an instance of the `CustomMemory` class and assign it to the `self.long_term_memory` attribute. This custom memory instance can then be utilized within the overridden `run` method, where you can query the memory and process the results as needed.
 
-Step 5: Introduce Custom Prompts and Standard Operating Procedures (SOPs)
+## Step 5: Introduce Custom Prompts and Standard Operating Procedures (SOPs)
 
 The Agent class allows you to define custom prompts and Standard Operating Procedures (SOPs) that guide an agent's behavior and decision-making process. Custom agent classes can inherit and extend these prompts and SOPs to align with their unique objectives and requirements.
 
@@ -254,7 +201,7 @@ In the example above, we define two new attributes within the `MyCustomAgent` cl
 
 Within the overridden `run` method, you can utilize these custom prompts and SOPs by calling the `construct_dynamic_prompt` and `construct_dynamic_sop` methods, which can be defined within the `MyCustomAgent` class to implement specialized prompt and SOP construction logic.
 
-#### Step 6: Introduce Custom Response Handling
+#### Step 5: Introduce Custom Response Handling
 
 The Agent class provides built-in response filtering capabilities, allowing agents to filter out or replace specific words or phrases in their responses. Custom agent classes can inherit and extend this feature to ensure compliance with content moderation policies or specific guidelines.
 
@@ -346,4 +293,4 @@ In this comprehensive guide, we have explored the process of creating custom age
 
 Building custom agent classes empowers AI agents to create tailored and specialized agents capable of tackling unique challenges and addressing specific domain requirements. By leveraging the rich features and extensibility of the Agent class, agents can imbue their offspring agents with unique capabilities, specialized toolsets, and tailored decision-making processes.
 
-Remember, the journey of building custom agent classes is an iterative and collaborative process that requires continuous learning, adaptation, and refinement. Embrace the
+Remember, the journey of building custom agent classes is an iterative and collaborative process that requires continuous learning, adaptation, and refinement.
