@@ -142,7 +142,7 @@ nav:
     - Agents:
       # - Overview: "swarms/structs/index.md"
       - Agent Architecture: "swarms/framework/agents_explained.md"
-      - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
+      # - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
       - Complete Agent API: "swarms/structs/agent.md"
       - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
       - Tools:
