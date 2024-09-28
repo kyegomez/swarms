@@ -10,7 +10,9 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 |----------------------|--------------------------------------------------------------------------------------------|
 | Swarms Python Framework Docs     | [Framework Docs](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
 | Swarms Marketplace API Docs   | [Swarms Marketplace](https://docs.swarms.world/en/latest/swarms_platform/)                                                 |
-| Swarms Cloud Docs       | [Swarms Pricing](https://docs.swarms.world/en/latest/swarms_cloud/main/)                                             |
+| Swarms Cloud Docs       | [Swarms Cloud](https://docs.swarms.world/en/latest/swarms_cloud/main/)                                             |
+| Swarms Models      | [Swarms Models](https://docs.swarms.world/en/latest/swarms/models/)  |
+| Swarms Memory      | [Swarms Memory](https://docs.swarms.world/en/latest/swarms_memory/)  |
 
 
 ## Community
