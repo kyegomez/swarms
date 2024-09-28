@@ -81,8 +81,8 @@ def grid_swarm(agents: AgentListType, tasks: List[str]):
             if tasks:
                 task = tasks.pop(0)
                 agents[i * grid_size + j].run(task)
-                
-                
+
+
 # Linear Swarm: Agents process tasks in a sequential linear manner
 def linear_swarm(
     agents: AgentListType,

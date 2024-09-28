@@ -1,4 +1,3 @@
-
 import asyncio
 import os
 
@@ -57,14 +56,12 @@ news_summarization_agent = TickrAgent(
     agent_name="News-Summarization-Agent",
     system_prompt=NEWS_SUMMARIZATION_PROMPT,
     stocks=stocks,
-
 )
 
 ratio_calculation_agent = TickrAgent(
     agent_name="Ratio-Calculation-Agent",
     system_prompt=RATIO_CALCULATION_PROMPT,
     stocks=stocks,
-
 )
 # Create a list of agents for swarming
 agents = [

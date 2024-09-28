@@ -11,6 +11,8 @@ from swarms.agents.stopping_conditions import (
     check_success,
 )
 from swarms.agents.tool_agent import ToolAgent
+from swarms.agents.create_agents_from_yaml import create_agents_from_yaml
+
 
 __all__ = [
     "ToolAgent",
@@ -24,4 +26,5 @@ __all__ = [
     "check_cancelled",
     "check_exit",
     "check_end",
+    "create_agents_from_yaml",
 ]

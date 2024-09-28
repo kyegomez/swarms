@@ -65,7 +65,161 @@ print(out)
   - `run(task: str)`: Executes the agent’s task.
   - `ingest_docs(doc_path: str)`: Ingests documents into the agent’s knowledge base.
   - `filtered_run(task: str)`: Runs agent with a filtered system prompt.
-  
+
+-----
+
+## Creating Agents from YAML
+
+
+### Step 1: Define Your Agents in a YAML File
+
+The `create_agents_from_yaml` function works by reading agent configurations from a YAML file. Below is an example of what your YAML file (`agents_config.yaml`) should look like this. Example YAML Configuration (`agents_config.yaml`):
+
+```yaml
+agents:
+  - agent_name: "Financial-Analysis-Agent"
+    model:
+      openai_api_key: "your_openai_api_key"
+      model_name: "gpt-4o-mini"
+      temperature: 0.1
+      max_tokens: 2000
+    system_prompt: "financial_agent_sys_prompt"
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: true
+    saved_state_path: "finance_agent.json"
+    user_name: "swarms_corp"
+    retry_attempts: 1
+    context_length: 200000
+    return_step_meta: false
+    output_type: "str"
+    task: "How can I establish a ROTH IRA to buy stocks and get a tax break?"
+
+  - agent_name: "Stock-Analysis-Agent"
+    model:
+      openai_api_key: "your_openai_api_key"
+      model_name: "gpt-4o-mini"
+      temperature: 0.2
+      max_tokens: 1500
+    system_prompt: "stock_agent_sys_prompt"
+    max_loops: 2
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: false
+    saved_state_path: "stock_agent.json"
+    user_name: "stock_user"
+    retry_attempts: 3
+    context_length: 150000
+    return_step_meta: true
+    output_type: "json"
+    task: "What is the best strategy for long-term stock investment?"
+```
+
+### Key Configuration Fields:
+- **agent_name**: Name of the agent.
+- **model**: Defines the language model settings (e.g., API key, model name, temperature, and max tokens).
+- **system_prompt**: The system prompt used to guide the agent’s behavior.
+- **task**: (Optional) Task for the agent to execute once created.
+
+---
+
+### Step 2: Create the Main Script
+
+Now, create the main Python script that will use the `create_agents_from_yaml` function.
+
+### `main.py`:
+```python
+import os
+from loguru import logger
+from dotenv import load_dotenv
+from swarms import create_agents_from_yaml
+
+# Load environment variables
+load_dotenv()
+
+# Path to your YAML file
+yaml_file = 'agents_config.yaml'
+
+try:
+    # Create agents and run tasks (using 'both' to return agents and task results)
+    agents, task_results = create_agents_from_yaml(yaml_file, return_type="both")
+
+    # Print the results of the tasks
+    for result in task_results:
+        print(f"Agent: {result['agent_name']} | Task: {result['task']} | Output: {result.get('output', 'Error encountered')}")
+
+except Exception as e:
+    logger.error(f"An error occurred: {e}")
+```
+
+### Example Run:
+
+```bash
+python main.py
+```
+
+This will:
+1. Load agent configurations from `agents_config.yaml`.
+2. Create the agents specified in the YAML file.
+3. Run the tasks provided for each agent.
+4. Output the task results to the console.
+
+---
+
+### Step 3: Customize the Return Type
+
+The `create_agents_from_yaml` function supports multiple return types. You can control what is returned by setting the `return_type` parameter to `"agents"`, `"tasks"`, or `"both"`.
+
+1. **Return Only Agents**
+To create agents but not run tasks, set `return_type="agents"`:
+
+```python
+agents = create_agents_from_yaml(yaml_file, return_type="agents")
+for agent in agents:
+    print(f"Agent {agent.agent_name} created.")
+```
+
+2. **Return Only Task Results**
+If you only care about the task results and not the agent objects, set `return_type="tasks"`:
+
+```python
+task_results = create_agents_from_yaml(yaml_file, return_type="tasks")
+for result in task_results:
+    print(f"Agent {result['agent_name']} executed task '{result['task']}' with output: {result['output']}")
+```
+
+3. **Return Both Agents and Task Results**
+To return both the list of created agents and task results, use `return_type="both"`:
+
+```python
+agents, task_results = create_agents_from_yaml(yaml_file, return_type="both")
+# Process agents and tasks separately
+```
+
+
+## Step 4: YAML Structure for Multiple Agents
+
+The YAML file can define any number of agents, each with its own unique configuration. You can scale this setup by adding more agents and tasks to the `agents` list within the YAML file.
+
+```yaml
+agents:
+  - agent_name: "Agent1"
+    # Agent1 config...
+
+  - agent_name: "Agent2"
+    # Agent2 config...
+
+  - agent_name: "Agent3"
+    # Agent3 config...
+```
+
+Each agent will be initialized according to its configuration, and tasks (if provided) will be executed automatically.
+
+---
+
 ## Integrating External Agents
 Integrating external agents from other agent frameworks is easy with swarms.
 

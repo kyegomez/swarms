@@ -278,6 +278,7 @@ class Agent:
         agent_output: ManySteps = None,
         executor_workers: int = os.cpu_count(),
         data_memory: Optional[Callable] = None,
+        load_yaml_path: str = None,
         *args,
         **kwargs,
     ):
@@ -382,6 +383,7 @@ class Agent:
         self.print_every_step = print_every_step
         self.time_created = time_created
         self.data_memory = data_memory
+        self.load_yaml_path = load_yaml_path
         self.tokenizer = TikTokenizer()
 
         # Initialize the feedback
@@ -520,6 +522,12 @@ class Agent:
 
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
+        
+        
+        if load_yaml_path is not None:
+            from swarms.agents.create_agents_from_yaml import create_agents_from_yaml
+            
+            create_agents_from_yaml(load_yaml_path, return_type="tasks")
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
