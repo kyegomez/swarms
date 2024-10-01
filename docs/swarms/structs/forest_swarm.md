@@ -4,6 +4,9 @@ This documentation describes the **ForestSwarm** that organizes agents into tree
 
 The architecture allows for efficient task assignment by selecting the most relevant agent from a set of trees. Tasks are processed asynchronously, with agents selected based on task relevance, calculated by the similarity of system prompts and task keywords.
 
+
+## Module Path: `swarms.structs.tree_swarm`
+
 ---
 
 ### Class: `TreeAgent`

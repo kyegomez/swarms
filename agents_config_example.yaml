@@ -18,21 +18,21 @@ agents:
     return_step_meta: false
     output_type: "str"  # Can be "json" or any other format
 
-  # - agent_name: "Stock-Analysis-Agent"
-  #   model:
-  #     openai_api_key: "your_openai_api_key"
-  #     model_name: "gpt-4o-mini"
-  #     temperature: 0.2
-  #     max_tokens: 1500
-  #   system_prompt: "stock_agent_sys_prompt"  # Reference to system prompt file
-  #   max_loops: 2
-  #   autosave: true
-  #   dashboard: false
-  #   verbose: true
-  #   dynamic_temperature_enabled: false
-  #   saved_state_path: "stock_agent.json"
-  #   user_name: "stock_user"
-  #   retry_attempts: 3
-  #   context_length: 150000
-  #   return_step_meta: true
-  #   output_type: "str"
+  - agent_name: "Stock-Analysis-Agent"
+    model:
+      openai_api_key: "your_openai_api_key"
+      model_name: "gpt-4o-mini"
+      temperature: 0.2
+      max_tokens: 1500
+    system_prompt: "stock_agent_sys_prompt"  # Reference to system prompt file
+    max_loops: 2
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: false
+    saved_state_path: "stock_agent.json"
+    user_name: "stock_user"
+    retry_attempts: 3
+    context_length: 150000
+    return_step_meta: true
+    output_type: "str"
