@@ -166,6 +166,7 @@ nav:
         - GroupChat: "swarms/structs/group_chat.md"
         - AgentRegistry: "swarms/structs/agent_registry.md"
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
+        - ForestSwarm: "swarms/structs/forest_swarm.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
