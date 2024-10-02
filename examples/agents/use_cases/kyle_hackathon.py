@@ -1,12 +1,11 @@
 import os
 
 from dotenv import load_dotenv
+from swarm_models import OpenAIChat
+from swarms_memory import ChromaDB
 
 from swarms import Agent
-from swarm_models import OpenAIChat
 from swarms.agents.multion_agent import MultiOnAgent
-from swarms_memory import ChromaDB
-from swarms import tool
 from swarms.tools.prebuilt.code_interpreter import (
     SubprocessCodeInterpreter,
 )
@@ -20,7 +19,6 @@ chroma_db = ChromaDB()
 
 
 # MultiOntool
-@tool
 def multion_tool(
     task: str,
     api_key: str = os.environ.get("MULTION_API_KEY"),
@@ -40,7 +38,6 @@ def multion_tool(
 
 
 # Execute the interpreter tool
-@tool
 def execute_interpreter_tool(
     code: str,
 ):

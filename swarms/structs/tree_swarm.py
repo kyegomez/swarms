@@ -269,7 +269,6 @@ class ForestSwarm:
         self.trees = trees
         # Add auto grouping based on trees.
         # Add auto group agents
-        
 
     def find_relevant_tree(self, task: str) -> Optional[Tree]:
         """

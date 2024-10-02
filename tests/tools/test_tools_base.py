@@ -506,7 +506,7 @@ def test_tool_function_without_docstring():
 @pytest.mark.asyncio
 async def test_async_tool_function():
     # Test an async function with the tool decorator
-    @tool
+@tool    
     async def async_func(arg: str) -> str:
         return arg
 

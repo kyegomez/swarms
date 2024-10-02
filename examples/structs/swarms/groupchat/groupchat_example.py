@@ -3,10 +3,10 @@ import subprocess
 
 from swarms import (
     Agent,
-    Anthropic,
     GroupChat,
-    tool,
 )
+
+from swarm_models import Anthropic
 
 # Model
 llm = Anthropic(
@@ -15,7 +15,6 @@ llm = Anthropic(
 
 
 # Tools
-@tool
 def terminal(
     code: str,
 ):
@@ -34,7 +33,6 @@ def terminal(
     return str(out)
 
 
-@tool
 def browser(query: str):
     """
     Search the query in the browser with the `browser` tool.
@@ -52,7 +50,6 @@ def browser(query: str):
     return f"Searching for {query} in the browser."
 
 
-@tool
 def create_file(file_path: str, content: str):
     """
     Create a file using the file editor tool.
@@ -69,7 +66,6 @@ def create_file(file_path: str, content: str):
     return f"File {file_path} created successfully."
 
 
-@tool
 def file_editor(file_path: str, mode: str, content: str):
     """
     Edit a file using the file editor tool.

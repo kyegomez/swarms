@@ -1,4 +1,5 @@
 from swarms.structs.tree_swarm import TreeAgent, Tree, ForestSwarm
+
 # Example Usage:
 
 # Create agents with varying system prompts and dynamically generated distances/keywords

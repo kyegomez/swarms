@@ -327,7 +327,6 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 
 from kay.rag.retrievers import KayRetriever
 
-@tool
 def browser(query: str) -> str:
     """
     Search the query in the browser with the Tavily API tool.
@@ -343,7 +342,6 @@ def browser(query: str) -> str:
         response += (result['content'] + '\n')
     return response
 
-@tool
 def kay_retriever(query: str) -> str:
     """
     Search the financial data query with the KayAI API tool.
