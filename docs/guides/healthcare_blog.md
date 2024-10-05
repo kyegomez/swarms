@@ -28,7 +28,7 @@ Swarms of LLM agents can automate the entire billing and claims process, from co
     - Total annual savings: 10,000 claims/month × 12 months × $22.5 = **$2.7 million**
 
 
-#### Mermaid Diagram: Billing and Claims Processing Swarm
+#### Billing and Claims Processing Swarm
 ```mermaid
 graph TD;
     A[Medical Records] --> B[ICD-10 Coding Agent];
@@ -60,7 +60,7 @@ A swarm of LLM agents can scan through thousands of medical records, journals, a
 - Total annual savings: 10,000 × $150 = **$1.5 million**
 
 
-#### Mermaid Diagram: Diagnostic Swarm
+#### Diagnostic Swarm
 ```mermaid
 graph TD;
     A[Patient Data] --> B[Lab Results];
@@ -92,7 +92,7 @@ LLM agents can handle patient follow-ups by sending reminders for appointments, 
 - Total annual savings: 20,000 × $4.5 = **$90,000**
 
 
-#### Mermaid Diagram: Patient Follow-up Swarm
+#### Patient Follow-up Swarm
 ```mermaid
 graph TD;
     A[Patient Data from EHR] --> B[Appointment Reminder Agent];
@@ -120,7 +120,7 @@ A swarm of LLM agents can predict pharmaceutical needs by analyzing patient data
 - Total annual savings: $500,000 × 0.8 = **$400,000**
 
 
-#### Mermaid Diagram: Inventory Management Swarm
+#### Inventory Management Swarm
 ```mermaid
 graph TD;
     A[Patient Admission Data] --> B[Inventory Prediction Agent];
@@ -153,7 +153,7 @@ These agents can be trained to perform literature reviews, extract relevant data
 - Total annual savings: 4,000 × $100 = **$400,000**
 
 
-#### Mermaid Diagram: Clinical Research Swarm
+#### Clinical Research Swarm
 ```mermaid
 graph TD;
     A[Research Papers] --> B[Data Extraction Agent];
@@ -186,7 +186,7 @@ Swarms of LLM agents can automate the documentation process by transcribing doct
 - Total annual savings: 8,000 × $150 = **$1.2 million**
 
 
-#### Mermaid Diagram: EHR Management Swarm
+#### EHR Management Swarm
 ```mermaid
 graph TD;
     A[Doctor-Patient Interaction] --> B[Voice-to-Text Agent];
@@ -219,7 +219,7 @@ Swarms of LLM agents trained in computer vision can analyze medical images more 
 
 200 = **$1 million**
 
-#### Mermaid Diagram: Medical Imaging Swarm
+#### Medical Imaging Swarm
 ```mermaid
 graph TD;
     A[Medical Image] --> B[Anomaly Detection Agent];
