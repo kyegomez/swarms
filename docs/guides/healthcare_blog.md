@@ -14,6 +14,7 @@ Administrative work is a major time drain in the healthcare sector, especially w
 Swarms of LLM agents can automate the entire billing and claims process, from coding procedures to filing claims with insurance companies. These agents can read medical records, understand the diagnosis codes (ICD-10), and automatically generate billing forms. With intelligent claims management, LLM agents can also follow up with insurance companies to ensure timely payment.
 
 **Estimated Savings:**
+
 - Average cost per manual claim: $25
 
 - Average claims per hospital: 10,000 per month
@@ -23,9 +24,9 @@ Swarms of LLM agents can automate the entire billing and claims process, from co
 - Estimated annual savings per hospital: 
 
     - Savings per claim: $22.5 (90% reduction)
-    
+
     - Total annual savings: 10,000 claims/month × 12 months × $22.5 = **$2.7 million**
-    
+
 
 #### Mermaid Diagram: Billing and Claims Processing Swarm
 ```mermaid
@@ -47,6 +48,7 @@ Doctors are increasingly turning to AI to assist in diagnosing complex medical c
 A swarm of LLM agents can scan through thousands of medical records, journals, and patient histories to identify patterns or suggest rare diagnoses. These agents work collaboratively to analyze test results, compare symptoms with a vast medical knowledge base, and provide doctors with a list of probable diagnoses and recommended tests.
 
 **Estimated Savings:**
+
 - Time saved per diagnosis: 2 hours per patient
 
 - Average patient cases per hospital: 5,000 per year
@@ -80,6 +82,7 @@ Timely communication with patients is critical for maintaining healthcare qualit
 LLM agents can handle patient follow-ups by sending reminders for appointments, check-ups, and medication refills. Additionally, these agents can answer common patient queries, thereby reducing the workload for human staff. These agents can be connected to Electronic Health Record (EHR) systems to monitor patient data and trigger reminders based on predefined criteria.
 
 **Estimated Savings:**
+
 - Average cost per patient follow-up: $5
 
 - Number of follow-ups: 20,000 annually per hospital
@@ -109,6 +112,7 @@ Hospitals often struggle with managing pharmaceutical inventory efficiently. Ove
 A swarm of LLM agents can predict pharmaceutical needs by analyzing patient data, historical inventory usage, and supplier delivery times. These agents can dynamically adjust stock levels, automatically place orders, and ensure that hospitals have the right medications at the right time.
 
 **Estimated Savings:**
+
 - Annual waste due to overstocking: $500,000 per hospital
 
 - Swarm efficiency: 80% reduction in overstocking
@@ -135,6 +139,7 @@ Medical researchers spend a significant amount of time reviewing literature and 
 These agents can be trained to perform literature reviews, extract relevant data, and cross-reference findings with ongoing clinical trials. LLM agents can also simulate clinical trial results by analyzing historical data, offering valuable insights before actual trials commence.
 
 **Estimated Savings:**
+
 - Average time spent on literature review per paper: 5 hours
 
 - Number of papers reviewed annually: 1,000
@@ -167,6 +172,7 @@ Healthcare providers spend a significant amount of time inputting and managing E
 Swarms of LLM agents can automate the documentation process by transcribing doctor-patient interactions, updating EHRs in real-time, and even detecting errors in the documentation. These agents can integrate with voice recognition systems to create seamless workflows, freeing up more time for healthcare providers to focus on patient care.
 
 **Estimated Savings:**
+
 - Average time spent on EHR per patient: 20 minutes
 
 - Number of patients annually: 30,000
@@ -199,6 +205,7 @@ Medical imaging, such as MRI and CT scans, requires expert interpretation, which
 Swarms of LLM agents trained in computer vision can analyze medical images more accurately and faster than human radiologists. These agents can compare current scans with historical data, detect anomalies, and provide a diagnosis within minutes. Additionally, the swarm can escalate complex cases to human experts when necessary.
 
 **Estimated Savings:**
+
 - Time saved per scan: 30 minutes
 
 - Number of scans annually: 10,000
