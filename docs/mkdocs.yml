@@ -223,6 +223,7 @@ nav:
     #   - Overview: "swarms_platform/tools_api.md"
     #   - Add Tools: "swarms_platform/fetch_tools.md"
   - Guides:
+    - Unlocking Efficiency and Cost Savings in Healthcare; How Swarms of LLM Agents Can Revolutionize Medical Operations and Save Millions: "guides/healthcare_blog.md"
     - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
     - Agent Glossary: "swarms/glossary.md"
   - Corporate:
