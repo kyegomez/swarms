@@ -157,6 +157,7 @@ nav:
       - Why MultiAgent Collaboration is Necessary: "swarms/concept/why.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
+      - Building Custom Swarms: "swarms/structs/custom_swarm.md"
       - Architectures Available:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
@@ -170,8 +171,8 @@ nav:
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
-    # - Structs:
-    #   - Conversation: "swarms/structs/conversation.md"
+        - Structs:
+          - Conversation: "swarms/structs/conversation.md"
     #   - Task: "swarms/structs/task.md"
     - Full API Reference: "swarms/framework/reference.md"
     - Contributing: 
@@ -193,12 +194,12 @@ nav:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Multi Modal Models Available: "swarms/models/multimodal_models.md"
       - GPT4VisionAPI: "swarms/models/gpt4v.md"
-  - Swarms Cloud API:
-    - Overview: "swarms_cloud/main.md"
-    - Available Models: "swarms_cloud/available_models.md"
-    - Agent API: "swarms_cloud/agent_api.md"
-    - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
-    - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
+  # - Swarms Cloud API:
+  #   - Overview: "swarms_cloud/main.md"
+  #   - Available Models: "swarms_cloud/available_models.md"
+  #   - Agent API: "swarms_cloud/agent_api.md"
+  #   - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
+  #   - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
   - Swarms Memory:
     - Overview: "swarms_memory/index.md"
     - Memory Systems:
