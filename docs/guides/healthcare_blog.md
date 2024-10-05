@@ -15,11 +15,17 @@ Swarms of LLM agents can automate the entire billing and claims process, from co
 
 **Estimated Savings:**
 - Average cost per manual claim: $25
+
 - Average claims per hospital: 10,000 per month
+
 - Swarms of LLM agents can reduce processing time by 90% and errors by 95%
+
 - Estimated annual savings per hospital: 
+
     - Savings per claim: $22.5 (90% reduction)
+    
     - Total annual savings: 10,000 claims/month × 12 months × $22.5 = **$2.7 million**
+    
 
 #### Mermaid Diagram: Billing and Claims Processing Swarm
 ```mermaid
@@ -42,10 +48,15 @@ A swarm of LLM agents can scan through thousands of medical records, journals, a
 
 **Estimated Savings:**
 - Time saved per diagnosis: 2 hours per patient
+
 - Average patient cases per hospital: 5,000 per year
+
 - Time saved annually: 2 × 5,000 = 10,000 hours
+
 - Doctor's hourly rate: $150
+
 - Total annual savings: 10,000 × $150 = **$1.5 million**
+
 
 #### Mermaid Diagram: Diagnostic Swarm
 ```mermaid
@@ -70,9 +81,13 @@ LLM agents can handle patient follow-ups by sending reminders for appointments, 
 
 **Estimated Savings:**
 - Average cost per patient follow-up: $5
+
 - Number of follow-ups: 20,000 annually per hospital
+
 - Swarm efficiency: 90% reduction in manual effort
+
 - Total annual savings: 20,000 × $4.5 = **$90,000**
+
 
 #### Mermaid Diagram: Patient Follow-up Swarm
 ```mermaid
@@ -95,8 +110,11 @@ A swarm of LLM agents can predict pharmaceutical needs by analyzing patient data
 
 **Estimated Savings:**
 - Annual waste due to overstocking: $500,000 per hospital
+
 - Swarm efficiency: 80% reduction in overstocking
+
 - Total annual savings: $500,000 × 0.8 = **$400,000**
+
 
 #### Mermaid Diagram: Inventory Management Swarm
 ```mermaid
@@ -118,11 +136,17 @@ These agents can be trained to perform literature reviews, extract relevant data
 
 **Estimated Savings:**
 - Average time spent on literature review per paper: 5 hours
+
 - Number of papers reviewed annually: 1,000
+
 - Time saved: 80% reduction in review time
+
 - Total time saved: 1,000 × 5 × 0.8 = 4,000 hours
+
 - Researcher's hourly rate: $100
+
 - Total annual savings: 4,000 × $100 = **$400,000**
+
 
 #### Mermaid Diagram: Clinical Research Swarm
 ```mermaid
@@ -144,11 +168,17 @@ Swarms of LLM agents can automate the documentation process by transcribing doct
 
 **Estimated Savings:**
 - Average time spent on EHR per patient: 20 minutes
+
 - Number of patients annually: 30,000
+
 - Time saved: 80% reduction in manual effort
+
 - Total time saved: 30,000 × 20 minutes × 0.8 = 480,000 minutes or 8,000 hours
+
 - Provider's hourly rate: $150
+
 - Total annual savings: 8,000 × $150 = **$1.2 million**
+
 
 #### Mermaid Diagram: EHR Management Swarm
 ```mermaid
@@ -170,10 +200,15 @@ Swarms of LLM agents trained in computer vision can analyze medical images more 
 
 **Estimated Savings:**
 - Time saved per scan: 30 minutes
+
 - Number of scans annually: 10,000
+
 - Time saved: 10,000 × 30 minutes = 5,000 hours
+
 - Radiologist's hourly rate: $200
+
 - Total annual savings: 5,000 × $
+
 
 200 = **$1 million**
 
@@ -214,11 +249,17 @@ The table below summarizes the estimated savings for each use case:
 
 ### References
 - [Swarms GitHub](https://github.com/kyegomez/swarms)
+
 - [Swarms Website](https://swarms.xyz)
+
 - [book a call](https://cal.com/swarms) 
+
 - Swarms Discord: https://discord.com/servers/agora-999382051935506503
+
 - Swarms Twitter: https://x.com/swarms_corp
+
 - Swarms Spotify: https://open.spotify.com/show/2HLiswhmUaMdjHC8AUHcCF?si=c831ef10c5ef4994
+
 Swarms Blog: https://medium.com/@kyeg
 Swarms Website: https://swarms.xyz 
 
