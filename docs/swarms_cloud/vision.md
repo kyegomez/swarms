@@ -1,4 +1,4 @@
-## Visionary Document: The Swarms Cloud and Agent Marketplace
+# The Swarms Cloud and Agent Marketplace
 
 ### Introduction
 
