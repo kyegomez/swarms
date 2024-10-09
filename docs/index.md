@@ -2,7 +2,19 @@
 
 **Get Started Building Production-Grade Multi-Agent Applications**
 
-## Getting Started
+## Onboarding
+
+| Section              | Links                                                                                      |
+|----------------------|--------------------------------------------------------------------------------------------|
+| Instllation    | [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
+| Quickstart | [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)                                                 |
+| How Agents Work | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)                                                 |
+| Agent API | [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)                                                 |
+| Integrating External Agents Griptape, Autogen, etc | [Integrating External APIs](https://docs.swarms.world/en/latest/swarms/agents/external_party_agents/)                                                 |
+| Creating Agents from YAML | [Creating Agents from YAML](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/)                                                 |
+
+
+## Ecosystem
 
 Here you'll find references about the Swarms framework, marketplace, community, and more to enable you to build your multi-agent applications.
 

@@ -133,10 +133,10 @@ nav:
   - Home:
     - Overview: "index.md"
     # - The Vision: "swarms/framework/vision.md"
+    # - Docker Setup: "swarms/install/docker_setup.md"
     - Our Goal; The Ultimate Multi-Agent LLM Framework for Developers: "swarms/concept/vision.md"
     - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
     - Philosophy: "swarms/concept/philosophy.md"
-    # - Docker Setup: "swarms/install/docker_setup.md"
     - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
