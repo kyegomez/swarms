@@ -8,10 +8,11 @@
 |----------------------|--------------------------------------------------------------------------------------------|
 | Instllation    | [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
 | Quickstart | [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)                                                 |
-| How Agents Work | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)                                                 |
+| Agent Internal Mechanisms | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)                                                 |
 | Agent API | [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)                                                 |
 | Integrating External Agents Griptape, Autogen, etc | [Integrating External APIs](https://docs.swarms.world/en/latest/swarms/agents/external_party_agents/)                                                 |
 | Creating Agents from YAML | [Creating Agents from YAML](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/)                                                 |
+
 
 
 ## Ecosystem
@@ -25,6 +26,8 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | Swarms Cloud Docs       | [Swarms Cloud](https://docs.swarms.world/en/latest/swarms_cloud/main/)                                             |
 | Swarms Models      | [Swarms Models](https://docs.swarms.world/en/latest/swarms/models/)  |
 | Swarms Memory      | [Swarms Memory](https://docs.swarms.world/en/latest/swarms_memory/)  |
+| Swarms Corp Github Profile     | [Swarms Corp GitHub](https://github.com/The-Swarm-Corporation)                      |
+| Swarms Platform/Marketplace Frontend Github      | [Swarms Platform GitHub](https://github.com/kyegomez/swarms-platform)                      |
 
 
 ## Community
@@ -35,15 +38,6 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | Social Media         | [Twitter](https://x.com/swarms_corp)                                                       |
 | Event Calendar       | [Twitter](https://lu.ma/swarms_calendar/usr-GPa2xaC3pL1Hunp)                                                       |
 
-
-
-## Github Repos
-| Section              | Links                                                                                      |
-|----------------------|--------------------------------------------------------------------------------------------|
-| Swarms Platform Github      | [Swarms Platform GitHub](https://github.com/kyegomez/swarms-platform)                      |
-| Swarms Python Framework Github      | [Swarms GitHub](https://github.com/kyegomez/swarms)                      |
-| Swarms Memory Python Framework     | [Swarms Memory GitHub](https://github.com/The-Swarm-Corporation/swarms-memory)                      |
-| Swarms Corp Github Profile     | [Swarms Corp GitHub](https://github.com/The-Swarm-Corporation)                      |
 
 ## Get Support
 
