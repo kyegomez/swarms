@@ -1,6 +1,6 @@
 # Choosing the Right Swarm for Your Business Problem
 
-`AgentRearrange` provides various swarm structures designed to fit specific business needs. Depending on the complexity and nature of your problem, different swarm configurations can be more effective in achieving optimal performance. This guide provides a detailed explanation of when to use each swarm type, including their strengths and potential drawbacks.
+Depending on the complexity and nature of your problem, different swarm configurations can be more effective in achieving optimal performance. This guide provides a detailed explanation of when to use each swarm type, including their strengths and potential drawbacks.
 
 ## Swarm Types Overview
 
