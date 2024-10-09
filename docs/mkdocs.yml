@@ -202,7 +202,7 @@ nav:
     # - Overview: "swarms_cloud/main.md"
     - Overview: "swarms_cloud/vision.md"
     - Swarms Cloud CLI: "swarms_cloud/cli.md"
-    # - Add Agents to Marketplace: "swarms_cloud/add_agent.api"
+    - Add Agents to Marketplace: "swarms_cloud/add_agent.api"
     # - Available Models: "swarms_cloud/available_models.md"
     # - Agent API: "swarms_cloud/agent_api.md"
     # - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
