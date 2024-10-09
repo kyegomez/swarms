@@ -19,8 +19,11 @@ We envision the marketplace to function like an API store, where users can searc
 The Swarms Marketplace is designed to let developers and businesses generate income by sharing their agent APIs. Once your agent is published to the marketplace, other users can browse, test, and integrate it into their operations. You will be able to set custom pricing, usage tiers, and licensing terms for your API, ensuring you can profit from your innovations.
 
 Our vision for monetization includes:
+
 - **API subscriptions**: Allow users to subscribe to your agent API with recurring payments.
+
 - **Per-use pricing**: Offer users a pay-as-you-go model where they only pay for the API calls they use.
+
 - **Licensing**: Enable others to purchase full access to your agent for a set period or on a project basis.
 
 ### Publishing Agents: Simplicity Through CLI

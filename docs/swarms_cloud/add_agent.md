@@ -1,9 +1,13 @@
 # Publishing an Agent to Agent Marketplace
 
 ## Requirements
+
 - `swarms-cloud` package with `pip3 install -U swarms-cloud`
+
 - Onboarding Process with `swarms-cloud onboarding`
+
 - A Dockerfile `Dockerfile` containing the API of your agent code with FastAPI
+
 - A YAML file for configuration `agent.yaml`
 
 ## Deployment YAML
