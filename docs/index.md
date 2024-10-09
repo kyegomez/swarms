@@ -36,7 +36,9 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | Community            | [Discord](https://discord.com/servers/agora-999382051935506503)                            |
 | Blog                 | [Blog](https://medium.com/@kyeg)                                                           |
 | Social Media         | [Twitter](https://x.com/swarms_corp)                                                       |
-| Event Calendar       | [Twitter](https://lu.ma/swarms_calendar/usr-GPa2xaC3pL1Hunp)                                                       |
+| Event Calendar       | [Twitter](https://lu.ma/swarms_calendar)                                                       |
+| Twitter     | [Twitter](https://x.com/swarms_corp)                                                       |
+| Agent Marketplace     | [Twitter](https://swarms.xyz)                                                       |
 
 
 ## Get Support
