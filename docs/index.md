@@ -6,7 +6,7 @@
 
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
-| Instllation    | [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
+| Installation    | [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
 | Quickstart | [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)                                                 |
 | Agent Internal Mechanisms | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)                                                 |
 | Agent API | [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)                                                 |

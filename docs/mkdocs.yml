@@ -198,12 +198,14 @@ nav:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Multi Modal Models Available: "swarms/models/multimodal_models.md"
       - GPT4VisionAPI: "swarms/models/gpt4v.md"
-  # - Swarms Cloud API:
-  #   - Overview: "swarms_cloud/main.md"
-  #   - Available Models: "swarms_cloud/available_models.md"
-  #   - Agent API: "swarms_cloud/agent_api.md"
-  #   - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
-  #   - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
+  - Swarms Cloud API:
+    # - Overview: "swarms_cloud/main.md"
+    - Overview: "swarms_cloud/vision.md"
+    - Swarms Cloud CLI: "swarms_cloud/cli.md"
+    # - Available Models: "swarms_cloud/available_models.md"
+    # - Agent API: "swarms_cloud/agent_api.md"
+    # - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
+    # - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
   - Swarms Memory:
     - Overview: "swarms_memory/index.md"
     - Memory Systems:
