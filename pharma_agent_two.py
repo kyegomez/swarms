@@ -334,7 +334,7 @@ class PharmaAgent:
             "Running multiple chemical queries asynchronously..."
         )
         tasks = []
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession():
             for chemical in chemical_names:
                 task = self.run_async(chemical)
                 tasks.append(task)

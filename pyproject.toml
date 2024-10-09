@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "5.6.9"
+version = "5.7.1"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -76,6 +76,10 @@ black = "*"
 swarms-cloud = "*"
 aiofiles = "*"
 swarm-models = "*"
+
+[tool.poetry.scripts]
+swarms = "swarms.cli.main:main"
+
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<25.0"

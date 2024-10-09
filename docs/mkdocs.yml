@@ -141,6 +141,7 @@ nav:
     - Onboarding: 
       - Installation: "swarms/install/install.md"
       - Quickstart: "swarms/install/quickstart.md"
+      - Swarms CLI: "swarms/cli/main.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
       # - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
