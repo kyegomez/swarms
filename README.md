@@ -65,6 +65,8 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 
 
 ## Onboarding
+Refer to our documentation for production grade implementation details.
+
 
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
