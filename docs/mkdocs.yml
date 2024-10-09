@@ -133,16 +133,17 @@ nav:
   - Home:
     - Overview: "index.md"
     # - The Vision: "swarms/framework/vision.md"
-    - Install: "swarms/install/install.md"
-    - Quickstart: "swarms/install/quickstart.md"
+    - Our Goal; The Ultimate Multi-Agent LLM Framework for Developers: "swarms/concept/vision.md"
     - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
     - Philosophy: "swarms/concept/philosophy.md"
     # - Docker Setup: "swarms/install/docker_setup.md"
-    # - Multi-Agent Repository Template: "swarms/install/multi_agent_template.md"
+    - Onboarding: 
+      - Installation: "swarms/install/install.md"
+      - Quickstart: "swarms/install/quickstart.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
-      - Agent Architecture: "swarms/framework/agents_explained.md"
       # - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
+      - Agent Architecture: "swarms/framework/agents_explained.md"
       - Complete Agent API: "swarms/structs/agent.md"
       - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
       - Create and or Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
@@ -179,6 +180,8 @@ nav:
       - Contributing: "swarms/contributing.md"
       - Tests: "swarms/framework/test.md"
       - Code Cleanliness: "swarms/framework/code_cleanliness.md"
+    - Changelog:
+      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
@@ -229,5 +232,3 @@ nav:
   - Corporate:
     - Hiring: "corporate/hiring.md"
     
-
-  
