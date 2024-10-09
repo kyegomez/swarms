@@ -1,7 +1,5 @@
 # The Swarms Cloud and Agent Marketplace
 
-### Introduction
-
 We stand at the dawn of a new era—the **Agentic Economy**, where the power of intelligent automation is in the hands of everyone. The Swarms Cloud and Agent Marketplace will serve as the epicenter of this economy, enabling developers, businesses, and creators to easily publish, discover, and leverage intelligent agents. Our vision is to make publishing agents as simple as possible through an intuitive CLI, while empowering users to generate income by posting their APIs on the marketplace.
 
 The Swarms Marketplace is more than just a platform—it’s a **revolutionary ecosystem** that will change how we think about automation and intelligence. By building this platform, we aim to democratize access to agent-driven solutions, enabling a seamless bridge between creators and consumers of automation. With every agent posted to the marketplace, a ripple effect is created, driving innovation across industries and providing an unparalleled opportunity for monetization.
@@ -52,7 +50,6 @@ Within minutes, your agent will be live and accessible to the global marketplace
 
 For businesses, the marketplace offers **an unprecedented opportunity to automate tasks**, integrate pre-built agents, and drastically cut operational costs. Companies no longer need to build every system from scratch. With the marketplace, they can simply discover and plug in the agentic solutions that best suit their needs.
 
-Mermaid Diagram for Publishing Agents:
 
 ```mermaid
 graph TD
@@ -71,7 +68,6 @@ graph TD
 
 In this future we’re creating, **agents will be as ubiquitous as APIs**. The Swarms Marketplace will be an expansive repository of intelligent agents, each contributing to the automation and streamlining of everyday tasks. Imagine a world where every business can access highly specific, pre-built intelligence for any task, from customer support to supply chain management, and integrate these agents into their processes in minutes.
 
-Mermaid Diagram for API Discovery and Integration:
 
 ```mermaid
 graph LR
