@@ -2,6 +2,8 @@
 
 Welcome to the Swarms Cloud CLI documentation. This guide will help you understand how to use the CLI to interact with the Swarms Cloud platform.
 
+
+
 ## Table of Contents
 
 1. [Introduction](#introduction)
@@ -26,7 +28,7 @@ The Swarms Cloud CLI is a command-line interface tool that allows you to interac
 To install the Swarms Cloud CLI, you need to have Python installed on your system. You can then install the CLI using pip:
 
 ```bash
-pip install swarms-cloud-cli
+pip3 install -U swarms-cloud
 ```
 
 ## Usage
