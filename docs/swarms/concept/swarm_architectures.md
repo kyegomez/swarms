@@ -47,7 +47,9 @@ In a Parallel Swarm architecture, multiple agents operate independently and simu
 
 
 **Use-Cases:**
+
 - Tasks that can be processed independently, such as parallel data analysis.
+
 - Large-scale simulations where multiple scenarios are run in parallel.
 
 ```mermaid
@@ -66,6 +68,7 @@ graph LR
 A Sequential Swarm architecture processes tasks in a linear sequence. Each agent completes its task before passing the result to the next agent in the chain. This architecture ensures orderly processing and is useful when tasks have dependencies. [Learn more here in the docs:](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
 
 **Use-Cases:**
+
 - Workflows where each step depends on the previous one, such as assembly lines or sequential data processing.
 
 - Scenarios requiring strict order of operations.

@@ -89,6 +89,10 @@ Swarm Agent is a powerful autonomous agent framework designed to connect Languag
 | `custom_planning_prompt` | A string representing a custom prompt for planning. |
 | `memory_chunk_size` | An integer representing the maximum size of memory chunks for long-term memory retrieval. |
 | `agent_ops_on` | A boolean indicating whether agent operations should be enabled. |
+| `return_step_meta` | A boolean indicating whether or not to return JSON of all the steps and additional metadata |
+| `output_type` | A Literal type indicating whether to output "string", "str", "list", "json", "dict", "yaml" |
+
+
 
 ### `Agent` Methods
 
@@ -164,10 +168,11 @@ agent = Agent(
     retry_attempts=1,
     context_length=200000,
     return_step_meta=False,
+    output_type="str",
 )
 
 
-out = agent.run(
+agent.run(
     "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
 )
 print(out)
@@ -396,7 +401,9 @@ from swarms.structs import Agent
 from my_sentiment_analyzer import sentiment_analyzer_function
 
 # Initialize the agent with a sentiment analyzer
-agent = Agent(llm=llm, max_loops=3, sentiment_analyzer=sentiment_analyzer_function)
+agent = Agent(
+    agent_name = "sentiment-analyzer-agent-01", system_prompt="..."
+    llm=llm, max_loops=3, sentiment_analyzer=sentiment_analyzer_function)
 ```
 
 ## Documentation Examples

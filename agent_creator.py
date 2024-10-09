@@ -8,9 +8,9 @@ from pydantic import BaseModel, Field
 
 from swarms import (
     Agent,
-    OpenAIChat,
     SpreadSheetSwarm,
 )
+from swarm_models import OpenAIChat
 from swarm_models.openai_function_caller import OpenAIFunctionCaller
 
 agent_pool = []
@@ -240,17 +240,17 @@ def design_and_run_swarm(task: str = None):
     return build_and_run_swarm(agent_pool, task_for_agent)
 
 
-# out = design_and_run_swarm(
-#     """
-#     Create a swarm of agents to that are specialized in every social media platform to market the swarms github framework which makes it easy for you to orchestrate and manage multiple agents in a swarm.
-#     Create a minimum of 10 agents that are hyper-specialized in different areas of social media marketing.
+out = design_and_run_swarm(
+    """
+    Create a swarm of agents to that are specialized in every social media platform to market the swarms github framework which makes it easy for you to orchestrate and manage multiple agents in a swarm.
+    Create a minimum of 10 agents that are hyper-specialized in different areas of social media marketing.
 
-#     We need to promote the new SpreadSheet Swarm feature that allows you to run multiple agents in parallel and manage them from a single dashboard.
-#     Here is the link: https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/
+    We need to promote the new SpreadSheet Swarm feature that allows you to run multiple agents in parallel and manage them from a single dashboard.
+    Here is the link: https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/
 
-#     """
-# )
-# print(out)
+    """
+)
+print(out)
 
 
 # out = design_and_run_swarm(
@@ -330,12 +330,12 @@ def design_and_run_swarm(task: str = None):
 # print(out)
 
 
-out = design_and_run_swarm(
-    """
-    Create a swarm of agents that will generate the python code to generate the qr codes for the following links:
-    Telegram: https://t.me/+Sm4J-sSkw8c0ODA5
-    • Discord: https://discord.gg/F8sSH4Gh
-    https://lu.ma/GPTuesdays?k=c
-    """
-)
-print(out)
+# out = design_and_run_swarm(
+#     """
+#     Create a swarm of agents that will generate the python code to generate the qr codes for the following links:
+#     Telegram: https://t.me/+Sm4J-sSkw8c0ODA5
+#     • Discord: https://discord.gg/F8sSH4Gh
+#     https://lu.ma/GPTuesdays?k=c
+#     """
+# )
+# print(out)

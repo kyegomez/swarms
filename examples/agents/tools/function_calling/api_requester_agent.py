@@ -3,7 +3,8 @@ from typing import Any, Dict, Optional
 
 import requests
 from pydantic import BaseModel, Field
-from swarms import OpenAIFunctionCaller, Conversation
+from swarms import Conversation
+from swarm_models import OpenAIFunctionCaller
 from loguru import logger
 import os
 
