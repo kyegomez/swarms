@@ -63,6 +63,22 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
+
+## Onboarding
+
+| Section              | Links                                                                                      |
+|----------------------|--------------------------------------------------------------------------------------------|
+| Installation    | [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
+| Quickstart | [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)                                                 |
+| Agent Internal Mechanisms | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)                                                 |
+| Agent API | [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)                                                 |
+| Integrating External Agents Griptape, Autogen, etc | [Integrating External APIs](https://docs.swarms.world/en/latest/swarms/agents/external_party_agents/)                                                 |
+| Creating Agents from YAML | [Creating Agents from YAML](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/)                                                 |
+| Why You Need Swarms | [Why MultiAgent Collaboration is Necessary](https://docs.swarms.world/en/latest/swarms/concept/why/)                                                 |
+| Swarm Architectures Analysis | [Swarm Architectures](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
+| Choosing the Right Swarm for Your Business Problem¶ | [CLICK HERE](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
+| AgentRearrange Docs| [CLICK HERE](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)                                                 |
+
 ---
 
 ## `Agents`
