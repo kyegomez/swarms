@@ -14,7 +14,6 @@
 | Creating Agents from YAML | [Creating Agents from YAML](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/)                                                 |
 
 
-
 ## Ecosystem
 
 Here you'll find references about the Swarms framework, marketplace, community, and more to enable you to build your multi-agent applications.
@@ -35,10 +34,10 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 |----------------------|--------------------------------------------------------------------------------------------|
 | Community            | [Discord](https://discord.com/servers/agora-999382051935506503)                            |
 | Blog                 | [Blog](https://medium.com/@kyeg)                                                           |
-| Social Media         | [Twitter](https://x.com/swarms_corp)                                                       |
-| Event Calendar       | [Twitter](https://lu.ma/swarms_calendar)                                                       |
+| Event Calendar       | [LUMA](https://lu.ma/swarms_calendar)                                                       |
 | Twitter     | [Twitter](https://x.com/swarms_corp)                                                       |
-| Agent Marketplace     | [Twitter](https://swarms.xyz)                                                       |
+| Agent Marketplace     | [Website](https://swarms.xyz)                                                       |
+| Docs     | [Website](https://docs.swarms.world)                                                       |
 
 
 ## Get Support
