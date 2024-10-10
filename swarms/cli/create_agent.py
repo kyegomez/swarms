@@ -79,6 +79,6 @@ def run_agent_by_name(name: str, task: str, *args, **kwargs):
     return output
 
 
-# Test
-out = create_agent("Accountant1", "Prepares financial statements")
-print(out)
+# # Test
+# out = create_agent("Accountant1", "Prepares financial statements")
+# print(out)

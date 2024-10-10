@@ -107,7 +107,13 @@ def main():
     # Adding arguments for different commands
     parser.add_argument(
         "command",
-        choices=["onboarding", "help", "get-api-key", "check-login", "run-agents"],
+        choices=[
+            "onboarding",
+            "help",
+            "get-api-key",
+            "check-login",
+            "run-agents",
+        ],
         help="Command to run",
     )
     parser.add_argument(
@@ -138,6 +144,7 @@ def main():
         console.print(
             "[bold red]Unknown command! Type 'help' for usage.[/bold red]"
         )
+
 
 if __name__ == "__main__":
     main()

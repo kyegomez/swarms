@@ -58,7 +58,10 @@ def create_agents_from_yaml(
         logger.info(f"Creating agent: {agent_config['agent_name']}")
 
         # Get the OpenAI API key from environment or YAML config
-        api_key = os.getenv("OPENAI_API_KEY") or agent_config["model"]["openai_api_key"]
+        api_key = (
+            os.getenv("OPENAI_API_KEY")
+            or agent_config["model"]["openai_api_key"]
+        )
 
         # Create an instance of OpenAIChat model
         model = OpenAIChat(
@@ -78,7 +81,7 @@ def create_agents_from_yaml(
             raise ValueError(
                 f"System prompt is missing for agent: {agent_config['agent_name']}"
             )
-        
+
         # Initialize the agent using the configuration
         agent = Agent(
             agent_name=agent_config["agent_name"],
@@ -148,4 +151,3 @@ def create_agents_from_yaml(
     else:
         logger.error(f"Invalid return_type: {return_type}")
         raise ValueError(f"Invalid return_type: {return_type}")
-

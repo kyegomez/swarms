@@ -89,10 +89,10 @@ class OnboardingProcess:
                 #     # )
                 # with open(self.cache_save_path, "w") as f:
                 #     json.dump(combined_data, f, indent=4)
-                    # logger.info(
-                    #     "User and system data successfully cached in {}",
-                    #     self.cache_save_path,
-                    # )
+                # logger.info(
+                #     "User and system data successfully cached in {}",
+                #     self.cache_save_path,
+                # )
                 return  # Exit the function if saving was successful
             except Exception as e:
                 logger.error(
@@ -138,7 +138,7 @@ class OnboardingProcess:
                 )
             self.user_data[key] = response.strip()
             self.save_data()
-            
+
             return response
         except ValueError as e:
             logger.warning(e)
@@ -175,8 +175,12 @@ class OnboardingProcess:
             "workspace_dir",
         )
         os.environ["WORKSPACE_DIR"] = workspace
-        logger.info("Important: Please ensure you have set your WORKSPACE_DIR environment variable as per the instructions provided.")
-        logger.info("Additionally, remember to add your API keys for your respective models in your .env file.")
+        logger.info(
+            "Important: Please ensure you have set your WORKSPACE_DIR environment variable as per the instructions provided."
+        )
+        logger.info(
+            "Additionally, remember to add your API keys for your respective models in your .env file."
+        )
         logger.success("Onboarding process completed successfully!")
 
     def run(self) -> None:

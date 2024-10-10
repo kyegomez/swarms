@@ -1,6 +1,8 @@
 from loguru import logger
 from dotenv import load_dotenv
-from swarms.agents.create_agents_from_yaml import create_agents_from_yaml
+from swarms.agents.create_agents_from_yaml import (
+    create_agents_from_yaml,
+)
 
 # Load environment variables
 load_dotenv()
@@ -13,7 +15,7 @@ try:
     task_results = create_agents_from_yaml(
         yaml_file, return_type="tasks"
     )
-    
+
     logger.info(f"Results from agents: {task_results}")
 except Exception as e:
     logger.error(f"An error occurred: {e}")
