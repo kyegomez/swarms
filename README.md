@@ -48,22 +48,6 @@ Swarms is an enterprise grade and production ready multi-agent collaboration fra
 - `.env` file with API keys from your providers like `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
 -  Set an `.env` Variable with your desired workspace dir: `WORKSPACE_DIR="agent_workspace"` or do it in your terminal with `export WORKSPACE_DIR="agent_workspace"`
 
-## Install 💻
-
-```bash
-$ pip3 install -U swarms
-```
-
----
-
-# Usage Examples 🤖
-Here are some simple examples but we have more comprehensive documentation at our [docs here](https://docs.swarms.world/en/latest/)
-
-Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/examples/collabs/swarms_example.ipynb">
-<img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a>
-
-
 ## Onboarding
 Refer to our documentation for production grade implementation details.
 
@@ -80,6 +64,24 @@ Refer to our documentation for production grade implementation details.
 | Swarm Architectures Analysis | [Swarm Architectures](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
 | Choosing the Right Swarm for Your Business Problem¶ | [CLICK HERE](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
 | AgentRearrange Docs| [CLICK HERE](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)                                                 |
+
+
+## Install 💻
+
+```bash
+$ pip3 install -U swarms
+```
+
+---
+
+# Usage Examples 🤖
+Here are some simple examples but we have more comprehensive documentation at our [docs here](https://docs.swarms.world/en/latest/)
+<!-- 
+Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/examples/collabs/swarms_example.ipynb">
+<img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a> -->
+
+
 
 ---
 
