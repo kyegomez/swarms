@@ -234,6 +234,7 @@ nav:
     - Unlocking Efficiency and Cost Savings in Healthcare; How Swarms of LLM Agents Can Revolutionize Medical Operations and Save Millions: "guides/healthcare_blog.md"
     - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
     - Agent Glossary: "swarms/glossary.md"
+    - The Ultimate Technical Guide to the Swarms CLI; A Step-by-Step Developers Guide: "swarms/cli/cli_guide.md"
   - Corporate:
     - Hiring: "corporate/hiring.md"
     

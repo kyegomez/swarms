@@ -119,9 +119,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Debug print to verify the command
-    print(f"Command received: {args.command}")
-
     show_ascii_art()
 
     # Determine which command to run
