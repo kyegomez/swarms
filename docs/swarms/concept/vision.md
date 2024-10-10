@@ -152,8 +152,11 @@ flowchart TD
 ```
 
 In this setup:
+
 - The **Director** agent assigns tasks to **Worker 1**, which generates a transcript for a YouTube video.
+
 - **Worker 1** completes its task before **Worker 2** starts summarizing the transcript.
+
 - **Worker 2** completes its task before **Worker 3** finalizes the process.
 
 ### Why Developers Should Choose Swarms:

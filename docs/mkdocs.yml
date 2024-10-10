@@ -135,13 +135,13 @@ nav:
     # - The Vision: "swarms/framework/vision.md"
     # - Docker Setup: "swarms/install/docker_setup.md"
     - Our Goal; The Ultimate Multi-Agent LLM Framework for Developers: "swarms/concept/vision.md"
-    - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
-    - Philosophy: "swarms/concept/philosophy.md"
     - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
       - Quickstart: "swarms/install/quickstart.md"
       - Swarms CLI: "swarms/cli/main.md"
+      # - Swarms + Docker: 
+      - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
       # - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
@@ -182,6 +182,7 @@ nav:
       - Contributing: "swarms/contributing.md"
       - Tests: "swarms/framework/test.md"
       - Code Cleanliness: "swarms/framework/code_cleanliness.md"
+      - Philosophy: "swarms/concept/philosophy.md"
     - Changelog:
       - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
   - Swarm Models:
