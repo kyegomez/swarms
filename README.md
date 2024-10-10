@@ -87,6 +87,33 @@ You can also run this command for help:
 swarms help
 ```
 
+### Output
+
+```bash
+
+  _________                                     
+ /   _____/_  _  _______ _______  _____   ______
+ \_____  \ \/ \/ /\__  \_  __ \/     \ /  ___/
+ /        \     /  / __ \|  | \/  Y Y  \___ \ 
+/_______  / \/\_/  (____  /__|  |__|_|  /____  >
+        \/              \/            \/     \/ 
+
+
+
+    Swarms CLI - Help
+
+    Commands:
+    onboarding    : Starts the onboarding process
+    help          : Shows this help message
+    get-api-key   : Retrieves your API key from the platform
+    check-login   : Checks if you're logged in and starts the cache
+    read-docs     : Redirects you to swarms cloud documentation!
+    run-agents    : Run your Agents from your agents.yaml
+
+    For more details, visit: https://docs.swarms.world
+
+```
+
 For more documentation on the CLI [CLICK HERE](https://docs.swarms.world/en/latest/swarms/cli/main/)
 
 ---
