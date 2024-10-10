@@ -41,7 +41,7 @@ def show_help():
     [bold white]get-api-key[/bold white]   : Retrieves your API key from the platform
     [bold white]check-login[/bold white]   : Checks if you're logged in and starts the cache
     [bold white]read-docs[/bold white]     : Redirects you to swarms cloud documentation!
-    [bold white]run-agents[/bold white]    : Run your Agents from your agents.yaml
+    [bold white]run-agents[/bold white]    : Run your Agents from your specified yaml file. Specify the yaml file with path the `--yaml-file` arg. Example: `--yaml-file agents.yaml`
 
     For more details, visit: https://docs.swarms.world
     """
@@ -107,11 +107,20 @@ def main():
     # Adding arguments for different commands
     parser.add_argument(
         "command",
-        choices=["onboarding", "help", "get-api-key", "check-login"],
+        choices=["onboarding", "help", "get-api-key", "check-login", "run-agents"],
         help="Command to run",
+    )
+    parser.add_argument(
+        "--yaml-file",
+        type=str,
+        default="agents.yaml",
+        help="Specify the YAML file for running agents",
     )
 
     args = parser.parse_args()
+
+    # Debug print to verify the command
+    print(f"Command received: {args.command}")
 
     show_ascii_art()
 
@@ -124,17 +133,14 @@ def main():
         get_api_key()
     elif args.command == "check-login":
         check_login()
-    elif args.command == "read-docs":
-        redirect_to_docs()
     elif args.command == "run-agents":
         create_agents_from_yaml(
-            yaml_file="agents.yaml", return_type="tasks"
+            yaml_file=args.yaml_file, return_type="tasks"
         )
     else:
         console.print(
             "[bold red]Unknown command! Type 'help' for usage.[/bold red]"
         )
-
 
 if __name__ == "__main__":
     main()

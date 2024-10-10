@@ -1,7 +1,6 @@
 agents:
   - agent_name: "Financial-Analysis-Agent"
     model:
-      openai_api_key: "your_openai_api_key"
       model_name: "gpt-4o-mini"
       temperature: 0.1
       max_tokens: 2000
@@ -17,10 +16,11 @@ agents:
     context_length: 200000
     return_step_meta: false
     output_type: "str"  # Can be "json" or any other format
+    task: "What are the benefits of working with BlackRock"
+
 
   - agent_name: "Stock-Analysis-Agent"
     model:
-      openai_api_key: "your_openai_api_key"
       model_name: "gpt-4o-mini"
       temperature: 0.2
       max_tokens: 1500
@@ -36,3 +36,4 @@ agents:
     context_length: 150000
     return_step_meta: true
     output_type: "str"
+    task: "What is a roth IRA"

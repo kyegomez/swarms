@@ -72,6 +72,23 @@ Refer to our documentation for production grade implementation details.
 $ pip3 install -U swarms
 ```
 
+
+## Onboarding
+
+Now that you have downloaded swarms with `pip3 install -U swarms`, we get access to the `CLI`. Get Onboarded with CLI Now with:
+
+```bash
+swarms onboarding
+```
+
+You can also run this command for help:
+
+```bash
+swarms help
+```
+
+For more documentation on the CLI [CLICK HERE](https://docs.swarms.world/en/latest/swarms/cli/main/)
+
 ---
 
 # Usage Examples 🤖

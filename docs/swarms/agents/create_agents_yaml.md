@@ -1,4 +1,4 @@
-# `create_agents_from_yaml`
+# Building Agents from a YAML File
 
 The `create_agents_from_yaml` function enables the dynamic creation and execution of agents based on configurations defined in a YAML file. This function is designed to support enterprise use-cases, offering flexibility, reliability, and scalability for various agent-based workflows.
 
@@ -63,7 +63,7 @@ agents:
       model_name: "gpt-4o-mini"
       temperature: 0.1
       max_tokens: 2000
-    system_prompt: "financial_agent_sys_prompt"
+    system_prompt: "Your full system prompt here"
     max_loops: 1
     autosave: true
     dashboard: false
@@ -82,7 +82,7 @@ agents:
       model_name: "gpt-4o-mini"
       temperature: 0.2
       max_tokens: 1500
-    system_prompt: "stock_agent_sys_prompt"
+    system_prompt: "Your full system prompt here"
     max_loops: 2
     autosave: true
     dashboard: false

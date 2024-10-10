@@ -81,14 +81,14 @@ class OnboardingProcess:
                 combined_data = {**self.user_data, **self.system_data}
                 log_agent_data(combined_data)
                 # threading.Thread(target=log_agent_data(combined_data)).start()
-                with open(self.auto_save_path, "w") as f:
-                    json.dump(combined_data, f, indent=4)
-                    # logger.info(
-                    #     "User and system data successfully saved to {}",
-                    #     self.auto_save_path,
-                    # )
-                with open(self.cache_save_path, "w") as f:
-                    json.dump(combined_data, f, indent=4)
+                # with open(self.auto_save_path, "w") as f:
+                #     json.dump(combined_data, f, indent=4)
+                #     # logger.info(
+                #     #     "User and system data successfully saved to {}",
+                #     #     self.auto_save_path,
+                #     # )
+                # with open(self.cache_save_path, "w") as f:
+                #     json.dump(combined_data, f, indent=4)
                     # logger.info(
                     #     "User and system data successfully cached in {}",
                     #     self.cache_save_path,
@@ -138,6 +138,8 @@ class OnboardingProcess:
                 )
             self.user_data[key] = response.strip()
             self.save_data()
+            
+            return response
         except ValueError as e:
             logger.warning(e)
             self.ask_input(prompt, key)
@@ -150,7 +152,7 @@ class OnboardingProcess:
     def collect_user_info(self) -> None:
         """
         Initiates the onboarding process by collecting the user's full name, first name, email,
-        Swarms API key, and system data.
+        Swarms API key, and system data. Additionally, it reminds the user to set their WORKSPACE_DIR environment variable.
         """
         logger.info("Initiating swarms cloud onboarding process...")
         self.ask_input(
@@ -168,6 +170,13 @@ class OnboardingProcess:
             "Enter your Swarms API key (or type 'quit' to exit): Get this in your swarms dashboard: https://swarms.world/platform/api-keys ",
             "swarms_api_key",
         )
+        workspace = self.ask_input(
+            "Enter your WORKSPACE_DIR: This is where logs, errors, and agent configurations will be stored (or type 'quit' to exit). Remember to set this as an environment variable: https://docs.swarms.world/en/latest/swarms/install/quickstart/ || ",
+            "workspace_dir",
+        )
+        os.environ["WORKSPACE_DIR"] = workspace
+        logger.info("Important: Please ensure you have set your WORKSPACE_DIR environment variable as per the instructions provided.")
+        logger.info("Additionally, remember to add your API keys for your respective models in your .env file.")
         logger.success("Onboarding process completed successfully!")
 
     def run(self) -> None:
