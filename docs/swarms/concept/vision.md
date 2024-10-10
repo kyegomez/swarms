@@ -127,8 +127,6 @@ output = agent_system.run(
 print(output)
 ```
 
-### Mermaid Diagram Examples
-
 #### 1. Basic Agent Flow:
 Here’s a visual representation of the basic workflow using Mermaid to display the sequential flow between agents.
 
@@ -143,28 +141,27 @@ In this diagram:
 - **Worker 1** generates a transcript for a YouTube video.
 - **Worker 2** summarizes the transcript.
 
-#### 2. Concurrent Agent Communication:
-This diagram showcases a concurrent agent setup where one agent sends tasks to multiple agents at the same time.
+#### 2. Sequential Agent Flow:
+This diagram showcases a sequential agent setup where one agent completes its task before the next agent starts its task.
 
 ```mermaid
 flowchart TD
-    A[Director] --> B1[Worker 1]
-    A --> B2[Worker 2]
-    A --> B3[Worker 3]
+    A[Director] --> B[Worker 1: Generate Transcript]
+    B --> C[Worker 2: Summarize Transcript]
+    C --> D[Worker 3: Finalize]
 ```
 
 In this setup:
-- The **Director** agent sends tasks concurrently to **Worker 1**, **Worker 2**, and **Worker 3**.
+- The **Director** agent assigns tasks to **Worker 1**, which generates a transcript for a YouTube video.
+- **Worker 1** completes its task before **Worker 2** starts summarizing the transcript.
+- **Worker 2** completes its task before **Worker 3** finalizes the process.
 
 ### Why Developers Should Choose Swarms:
 
-#### **Highly Customizable and Scalable:**
 Swarms is designed with flexibility at its core. Developers can create custom architectures and workflows, enabling extreme control over how agents interact with each other. Whether it’s a linear process or a complex mesh of agent communications, Swarms handles it efficiently.
 
-#### **Seamless Integration:**
 With support for extreme third-party integration, Swarms makes it easy for developers to plug into external systems, such as APIs or internal databases. This allows agents to act on live data, process external inputs, and execute actions in real time, making it a powerful tool for real-world applications.
 
-#### **Effortless Orchestration:**
 Swarms abstracts the complexity of managing multiple agents with orchestration tools like `AgentRearrange`. Developers can define workflows that execute tasks concurrently or sequentially, depending on the problem at hand. This makes it easy to build and maintain large-scale automation systems.
 
 ### Conclusion:
