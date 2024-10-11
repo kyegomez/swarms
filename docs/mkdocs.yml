@@ -142,6 +142,9 @@ nav:
       - Swarms CLI: "swarms/cli/main.md"
       # - Swarms + Docker: 
       - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
+    - Prelimary:
+      - 80/20 Rule For Agents: "swarms/prompting/8020.md"
+      - Managing Prompts in Production: "swarms/prompting/main.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
       # - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
