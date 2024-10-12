@@ -188,6 +188,7 @@ nav:
       - Philosophy: "swarms/concept/philosophy.md"
     - Changelog:
       - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
+      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"

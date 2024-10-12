@@ -9,7 +9,7 @@ from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
 from swarms.agents.cli_prompt_generator_func import generate_prompt
-
+import subprocess
 console = Console()
 
 
@@ -44,6 +44,7 @@ def show_help():
     [bold white]read-docs[/bold white]     : Redirects you to swarms cloud documentation!
     [bold white]run-agents[/bold white]    : Run your Agents from your specified yaml file. Specify the yaml file with path the `--yaml-file` arg. Example: `--yaml-file agents.yaml`
     [bold white]generate-prompt[/bold white]    : Generate a prompt through automated prompt engineering. Requires an OPENAI Key in your `.env` Example: --prompt "Generate a prompt for an agent to analyze legal docs"
+    [bold white]auto-upgrade[/bold white]   : Automatically upgrades Swarms to the latest version
 
     For more details, visit: https://docs.swarms.world
     """
@@ -100,6 +101,29 @@ def check_login():
         with open(cache_file, "w") as f:
             f.write("logged_in")
         console.print("[bold green]Login successful![/bold green]")
+        
+def check_and_upgrade_version():
+    console.print("[bold yellow]Checking for Swarms updates...[/bold yellow]")
+    try:
+        # Check for updates using pip
+        result = subprocess.run(
+            ["pip", "list", "--outdated", "--format=freeze"],
+            capture_output=True,
+            text=True
+        )
+        outdated_packages = result.stdout.splitlines()
+
+        # Check if Swarms is outdated
+        for package in outdated_packages:
+            if package.startswith("swarms=="):
+                console.print("[bold magenta]New version available! Upgrading...[/bold magenta]")
+                subprocess.run(["pip", "install", "--upgrade", "swarms"], check=True)
+                console.print("[bold green]Swarms upgraded successfully![/bold green]")
+                return
+
+        console.print("[bold green]Swarms is up-to-date.[/bold green]")
+    except Exception as e:
+        console.print(f"[bold red]Error checking for updates: {e}[/bold red]")
 
 
 # Main CLI handler
@@ -116,6 +140,7 @@ def main():
             "check-login",
             "run-agents",
             "generate-prompt",  # Added new command for generating prompts
+            "auto-upgrade",  # Added new command for auto-upgrade
         ],
         help="Command to run",
     )
@@ -165,17 +190,19 @@ def main():
             yaml_file=args.yaml_file, return_type="tasks"
         )
     elif args.command == "generate-prompt":
-        if args.prompt_task:
+        if args.prompt:  # Corrected from args.prompt_task to args.prompt
             generate_prompt(
                 num_loops=args.num_loops,
                 autosave=args.autosave,
                 save_to_yaml=args.save_to_yaml,
-                prompt=args.prompt_task,
+                prompt=args.prompt,  # Corrected from args.prompt_task to args.prompt
             )
         else:
             console.print(
-                "[bold red]Please specify a task for generating a prompt using '--prompt-task'.[/bold red]"
+                "[bold red]Please specify a task for generating a prompt using '--prompt'.[/bold red]"
             )
+    elif args.command == "auto-upgrade":
+        check_and_upgrade_version()
     else:
         console.print(
             "[bold red]Unknown command! Type 'help' for usage.[/bold red]"
