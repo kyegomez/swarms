@@ -17,5 +17,5 @@ __all__ = [
     "OPERATIONS_AGENT_PROMPT",
     "PRODUCT_AGENT_PROMPT",
     "DOCUMENTATION_WRITER_SOP",
-    "Prompt"
+    "Prompt",
 ]

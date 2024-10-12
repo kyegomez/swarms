@@ -8,6 +8,7 @@ from swarms.cli.onboarding_process import OnboardingProcess
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
+from swarms.agents.cli_prompt_generator_func import generate_prompt
 
 console = Console()
 
@@ -42,6 +43,7 @@ def show_help():
     [bold white]check-login[/bold white]   : Checks if you're logged in and starts the cache
     [bold white]read-docs[/bold white]     : Redirects you to swarms cloud documentation!
     [bold white]run-agents[/bold white]    : Run your Agents from your specified yaml file. Specify the yaml file with path the `--yaml-file` arg. Example: `--yaml-file agents.yaml`
+    [bold white]generate-prompt[/bold white]    : Generate a prompt through automated prompt engineering. Requires an OPENAI Key in your `.env` Example: --prompt "Generate a prompt for an agent to analyze legal docs"
 
     For more details, visit: https://docs.swarms.world
     """
@@ -113,6 +115,7 @@ def main():
             "get-api-key",
             "check-login",
             "run-agents",
+            "generate-prompt",  # Added new command for generating prompts
         ],
         help="Command to run",
     )
@@ -121,6 +124,27 @@ def main():
         type=str,
         default="agents.yaml",
         help="Specify the YAML file for running agents",
+    )
+    parser.add_argument(
+        "--prompt",
+        type=str,
+        help="Specify the task for generating a prompt",
+    )
+    parser.add_argument(
+        "--num-loops",
+        type=int,
+        default=1,
+        help="Specify the number of loops for generating a prompt",
+    )
+    parser.add_argument(
+        "--autosave",
+        action="store_true",
+        help="Enable autosave for the prompt generator",
+    )
+    parser.add_argument(
+        "--save-to-yaml",
+        action="store_true",
+        help="Save the generated prompt to a YAML file",
     )
 
     args = parser.parse_args()
@@ -140,6 +164,18 @@ def main():
         create_agents_from_yaml(
             yaml_file=args.yaml_file, return_type="tasks"
         )
+    elif args.command == "generate-prompt":
+        if args.prompt_task:
+            generate_prompt(
+                num_loops=args.num_loops,
+                autosave=args.autosave,
+                save_to_yaml=args.save_to_yaml,
+                prompt=args.prompt_task,
+            )
+        else:
+            console.print(
+                "[bold red]Please specify a task for generating a prompt using '--prompt-task'.[/bold red]"
+            )
     else:
         console.print(
             "[bold red]Unknown command! Type 'help' for usage.[/bold red]"

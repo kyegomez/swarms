@@ -14,6 +14,7 @@ from swarms.agents.tool_agent import ToolAgent
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
+from swarms.agents.prompt_generator_agent import PromptGeneratorAgent
 
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "check_exit",
     "check_end",
     "create_agents_from_yaml",
+    "PromptGeneratorAgent",
 ]

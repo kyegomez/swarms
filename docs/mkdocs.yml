@@ -239,6 +239,10 @@ nav:
     - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
     - Agent Glossary: "swarms/glossary.md"
     - The Ultimate Technical Guide to the Swarms CLI; A Step-by-Step Developers Guide: "swarms/cli/cli_guide.md"
+  - Prompting Guide:
+    - The Essence of Enterprise-Grade Prompting: "swarms/prompts/essence.md"
+    - An Analysis on Prompting Strategies: "swarms/prompts/overview.md"
+    - Managing Prompts in Production: "swarms/prompts/main.md"
   - Corporate:
     - Hiring: "corporate/hiring.md"
     - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
