@@ -691,6 +691,23 @@ In traditional swarm theory, there are many types of swarms usually for very spe
 ### `SequentialWorkflow`
 Sequential Workflow enables you to sequentially execute tasks with `Agent` and then pass the output into the next agent and onwards until you have specified your max loops.
 
+```mermaid
+graph LR
+    A[Agent 1] --> B[Agent 2]
+    B --> C[Agent 3]
+    C --> D[Agent 4]
+    D --> E[Max Loops]
+    E --> F[End]
+    style A fill:#f9f,stroke:#333,stroke-width:4px
+    style B fill:#f9f,stroke:#333,stroke-width:4px
+    style C fill:#f9f,stroke:#333,stroke-width:4px
+    style D fill:#f9f,stroke:#333,stroke-width:4px
+    style E fill:#f9f,stroke:#333,stroke-width:4px
+    style F fill:#f9f,stroke:#333,stroke-width:4px
+```
+
+In this example, each `Agent` represents a task that is executed sequentially. The output of each agent is passed to the next agent in the sequence until the maximum number of loops is reached. This workflow is particularly useful for tasks that require a series of steps to be executed in a specific order, such as data processing pipelines or complex calculations that rely on the output of previous steps.
+
 ```python
 from swarms import Agent, SequentialWorkflow
 
@@ -733,7 +750,8 @@ workflow.run(
 ------
 
 ## `AgentRearrange`
-Inspired by Einops and einsum, this orchestration techniques enables you to map out the relationships between various agents. For example you specify linear and sequential relationships like `a -> a1 -> a2 -> a3` or concurrent relationships where the first agent will send a message to 3 agents all at once: `a -> a1, a2, a3`. You can customize your workflow to mix sequential and concurrent relationships. [Docs Available:](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)
+
+The `AgentRearrange` orchestration technique, inspired by Einops and einsum, allows you to define and map out the relationships between various agents. It provides a powerful tool for orchestrating complex workflows, enabling you to specify linear and sequential relationships such as `a -> a1 -> a2 -> a3`, or concurrent relationships where the first agent sends a message to 3 agents simultaneously: `a -> a1, a2, a3`. This level of customization allows for the creation of highly efficient and dynamic workflows, where agents can work in parallel or in sequence as needed. The `AgentRearrange` technique is a valuable addition to the swarms library, providing a new level of flexibility and control over the orchestration of agents. For more detailed information and examples, please refer to the [official documentation](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/).
 
 ```python
 
@@ -810,6 +828,28 @@ Coming soon...
 
 ## `GraphSwarm`
 
+
+The `GraphSwarm` is a workflow management system designed to orchestrate complex tasks by leveraging the power of graph theory. It enables the creation of a directed acyclic graph (DAG) to model dependencies between tasks and agents. This allows for efficient task assignment, execution, and monitoring.
+
+Here's a breakdown of how the `GraphSwarm` works:
+
+1. **Node Creation**: The `GraphSwarm` workflow is composed of nodes, which can be either agents or tasks. Agents are responsible for executing tasks, and tasks represent specific operations that need to be performed. In the example, two agents (`agent1` and `agent2`) and one task (`task1`) are created.
+2. **Edge Definition**: Edges are used to define the relationships between nodes. In this case, edges are created to connect `agent1` and `agent2` to `task1`, indicating that both agents are capable of executing `task1`.
+3. **Entry and End Points**: The `GraphSwarm` workflow requires the definition of entry points (where the workflow starts) and end points (where the workflow concludes). In this example, `agent1` and `agent2` are set as entry points, and `task1` is set as the end point.
+4. **Visualization**: The `GraphSwarm` provides a visualization feature to graphically represent the workflow. This allows for easy understanding and debugging of the workflow structure.
+5. **Execution**: The `GraphSwarm` workflow is executed by traversing the graph from the entry points to the end points. In this case, both `agent1` and `agent2` execute `task1` concurrently, and the results are collected.
+6. **Results**: The final results of the workflow execution are aggregated and returned. In this example, the result of executing `task1` is "Task completed".
+
+The `GraphSwarm` offers several benefits, including:
+
+* **Concurrency**: Enables the execution of tasks concurrently, improving overall workflow efficiency.
+* **Flexibility**: Allows for dynamic task assignment based on agent availability and task requirements.
+* **Scalability**: Supports the addition of new agents and tasks as needed, making it suitable for large-scale workflows.
+* **Visualization**: Provides a graphical representation of the workflow, facilitating understanding and debugging.
+
+By leveraging the `GraphSwarm`, complex workflows can be efficiently managed, and tasks can be executed in a coordinated and scalable manner.
+
+
 ```python
 import os
 
@@ -855,7 +895,7 @@ print("Execution results:", results)
 ```
 
 ## `MixtureOfAgents`
-This is an implementation from the paper: "Mixture-of-Agents Enhances Large Language Model Capabilities" by together.ai, it achieves SOTA on AlpacaEval 2.0, MT-Bench and FLASK, surpassing GPT-4 Omni. Great for tasks that need to be parallelized and then sequentially fed into another loop
+This is an implementation based on the paper: "Mixture-of-Agents Enhances Large Language Model Capabilities" by together.ai, available at [https://arxiv.org/abs/2406.04692](https://arxiv.org/abs/2406.04692). It achieves state-of-the-art (SOTA) results on AlpacaEval 2.0, MT-Bench, and FLASK, surpassing GPT-4 Omni. This architecture is particularly suitable for tasks that require parallelization followed by sequential processing in another loop.
 
 ```python
 from swarms import Agent, OpenAIChat, MixtureOfAgents
@@ -922,8 +962,25 @@ print(out)
 
 
 ## SpreadSheetSwarm
-An all-new swarm architecture that makes it easy to manage and oversee the outputs of thousands of agents all at once! 
+A revolutionary swarm architecture designed for concurrent management and oversight of thousands of agents, facilitating a one-to-many approach for efficient task processing and output analysis.
 
+### Key Features
+
+* **Concurrency**: Enables the simultaneous execution of multiple agents, significantly reducing processing time and increasing overall system efficiency.
+* **One-to-Many**: Allows a single task to be dynamically distributed among multiple agents, ensuring that each agent is utilized to its full potential.
+* **Scalability**: Supports the integration of thousands of agents, making it an ideal solution for large-scale task processing and data analysis.
+
+### Architecture Overview
+```mermaid
+graph LR
+    A[Task] -->|Distributed|> B[Agent 1]
+    A -->|Distributed|> C[Agent 2]
+    A -->|Distributed|> D[Agent 3]
+    B -->|Output|> E[SpreadSheetSwarm]
+    C -->|Output|> E
+    D -->|Output|> E
+    E -->|Aggregated Output|> F[User]
+```
 [Learn more at the docs here:](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
 
 ```python
@@ -1091,8 +1148,7 @@ swarm.run(
 
 
 ## `ForestSwarm`
-The architecture allows for efficient task assignment by selecting the most relevant agent from a set of trees. Tasks are processed asynchronously, with agents selected based on task relevance, calculated by the similarity of system prompts and task keywords. [Learn More with the documentation](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/)
-
+The `ForestSwarm` architecture is designed for efficient task assignment by dynamically selecting the most suitable agent from a collection of trees. This is achieved through asynchronous task processing, where agents are chosen based on their relevance to the task at hand. The relevance is determined by calculating the similarity between the system prompts associated with each agent and the keywords present in the task itself. For a more in-depth understanding of how `ForestSwarm` works, please refer to the [official documentation](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/).
 
 ```python
 from swarms.structs.tree_swarm import TreeAgent, Tree, ForestSwarm
