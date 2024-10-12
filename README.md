@@ -698,12 +698,6 @@ graph LR
     C --> D[Agent 4]
     D --> E[Max Loops]
     E --> F[End]
-    style A fill:#f9f,stroke:#333,stroke-width:4px
-    style B fill:#f9f,stroke:#333,stroke-width:4px
-    style C fill:#f9f,stroke:#333,stroke-width:4px
-    style D fill:#f9f,stroke:#333,stroke-width:4px
-    style E fill:#f9f,stroke:#333,stroke-width:4px
-    style F fill:#f9f,stroke:#333,stroke-width:4px
 ```
 
 In this example, each `Agent` represents a task that is executed sequentially. The output of each agent is passed to the next agent in the sequence until the maximum number of loops is reached. This workflow is particularly useful for tasks that require a series of steps to be executed in a specific order, such as data processing pipelines or complex calculations that rely on the output of previous steps.
