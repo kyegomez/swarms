@@ -300,26 +300,6 @@ We provide vast array of features to save agent states using json, yaml, toml, u
 | `activate_agentops()` | Activates agent operations. |
 | `check_end_session_agentops()` | Checks the end of the session for agent operations. |
 
-**Mermaid Diagram**
-```mermaid
-graph LR
-    A[Agent] -->|to_dict()|> B[Dictionary]
-    A -->|to_toml()|> C[TOML String]
-    A -->|model_dump_json()|> D[JSON File]
-    A -->|model_dump_yaml()|> E[YAML File]
-    A -->|ingest_docs()|> F[Knowledge Base]
-    A -->|receive_message()|> G[Processed Message]
-    A -->|send_agent_message()|> H[Sent Message]
-    A -->|filtered_run()|> I[Filtered Run]
-    A -->|bulk_run()|> J[Bulk Run]
-    A -->|add_memory()|> K[Memory]
-    A -->|check_available_tokens()|> L[Token Check]
-    A -->|tokens_checks()|> M[Token Checks]
-    A -->|print_dashboard()|> N[Dashboard]
-    A -->|get_docs_from_doc_folders()|> O[Documents]
-    A -->|activate_agentops()|> P[Agent Ops]
-    A -->|check_end_session_agentops()|> Q[Session Check]
-```
 
 
 ```python
