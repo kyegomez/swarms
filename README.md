@@ -129,16 +129,33 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 
 ---
 
-## `Agents`
-A fully plug-and-play autonomous agent powered by an LLM extended by a long-term memory database, and equipped with function calling for tool usage! By passing in an LLM, you can create a fully autonomous agent with extreme customization and reliability, ready for real-world task automation!
+## `Agent` Class
+The `Agent` class is a fundamental component of the Swarms framework, designed to execute tasks autonomously. It fuses llms, tools and long-term memory capabilities to perform complex operations. The `Agent` class is highly customizable, allowing for fine-grained control over its behavior and interactions.
 
-Features:
+### `run` Method
+The `run` method is the primary entry point for executing tasks with an `Agent` instance. It accepts a task string as the main input task and processes it according to the agent's configuration. And, it can also accept an `img` parameter such as `img="image_filepath.png` to process images if you have a VLM
 
-✅ Any LLM / Any framework
 
-✅ Extremely customize-able with max loops, autosaving, import docs (PDFS, TXT, CSVs, etc), tool usage, etc etc
+### Settings and Customization
+The `Agent` class offers a range of settings to tailor its behavior to specific needs. Some key settings include:
 
-✅ Long term memory database with RAG (ChromaDB, Pinecone, Qdrant)
+| Setting | Description | Default Value |
+| --- | --- | --- |
+| `agent_name` | The name of the agent. | "DefaultAgent" |
+| `system_prompt` | The system prompt to use for the agent. | "Default system prompt." |
+| `llm` | The language model to use for processing tasks. | `OpenAIChat` instance |
+| `max_loops` | The maximum number of loops to execute for a task. | 1 |
+| `autosave` | Enables or disables autosaving of the agent's state. | False |
+| `dashboard` | Enables or disables the dashboard for the agent. | False |
+| `verbose` | Controls the verbosity of the agent's output. | False |
+| `dynamic_temperature_enabled` | Enables or disables dynamic temperature adjustment for the language model. | False |
+| `saved_state_path` | The path to save the agent's state. | "agent_state.json" |
+| `user_name` | The username associated with the agent. | "default_user" |
+| `retry_attempts` | The number of retry attempts for failed tasks. | 1 |
+| `context_length` | The maximum length of the context to consider for tasks. | 200000 |
+| `return_step_meta` | Controls whether to return step metadata in the output. | False |
+| `output_type` | The type of output to return (e.g., "json", "string"). | "string" |
+
 
 ```python
 import os
@@ -186,7 +203,6 @@ print(out)
 ```
 
 -----
-
 ### Agent with RAG
 `Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
 
