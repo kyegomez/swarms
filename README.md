@@ -130,7 +130,7 @@ Run example in Collab: <a target="_blank" href="https://colab.research.google.co
 ---
 
 ## `Agent` Class
-The `Agent` class is a fundamental component of the Swarms framework, designed to execute tasks autonomously. It fuses llms, tools and long-term memory capabilities to perform complex operations. The `Agent` class is highly customizable, allowing for fine-grained control over its behavior and interactions.
+The `Agent` class is a fundamental component of the Swarms framework, designed to execute tasks autonomously. It fuses llms, tools and long-term memory capabilities to create a full stack agent. The `Agent` class is highly customizable, allowing for fine-grained control over its behavior and interactions.
 
 ### `run` Method
 The `run` method is the primary entry point for executing tasks with an `Agent` instance. It accepts a task string as the main input task and processes it according to the agent's configuration. And, it can also accept an `img` parameter such as `img="image_filepath.png` to process images if you have a VLM
@@ -201,190 +201,126 @@ out = agent.run(
 print(out)
 
 ```
-
 -----
-### Agent with RAG
-`Agent` equipped with quasi-infinite long term memory. Great for long document understanding, analysis, and retrieval.
+### Integrating RAG with Swarms for Enhanced Long-Term Memory
+`Agent` equipped with quasi-infinite long term memory using RAG (Relational Agent Graph) for advanced document understanding, analysis, and retrieval capabilities.
 
+
+
+**Mermaid Diagram for RAG Integration**
+```mermaid
+graph TD
+    A[Initialize Agent with RAG] --> B[Receive Task]
+    B --> C[Query Long-Term Memory]
+    C --> D[Process Task with Context]
+    D --> E[Generate Response]
+    E --> F[Update Long-Term Memory]
+    F --> G[Return Output]
+```
+
+**Step 1: Initialize the ChromaDB Client**
 ```python
 import os
 
 from swarms_memory import ChromaDB
 
-from swarms import Agent
+# Initialize the ChromaDB client for long-term memory management
+chromadb = ChromaDB(
+    metric="cosine",  # Metric for similarity measurement
+    output_dir="finance_agent_rag",  # Directory for storing RAG data
+    # docs_folder="artifacts",  # Uncomment and specify the folder containing your documents
+)
+```
+
+**Step 2: Define the Model**
+```python
 from swarm_models import Anthropic
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
 
-# Initilaize the chromadb client
-chromadb = ChromaDB(
-    metric="cosine",
-    output_dir="fiance_agent_rag",
-    # docs_folder="artifacts", # Folder of your documents
-)
-
-# Model
+# Define the Anthropic model for language processing
 model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
+```
 
+**Step 3: Initialize the Agent with RAG**
+```python
+from swarms import Agent
 
-# Initialize the agent
+# Initialize the agent with RAG capabilities
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    agent_description="Agent creates ",
+    agent_description="Agent creates a comprehensive financial analysis",
     llm=model,
-    max_loops="auto",
-    autosave=True,
-    dashboard=False,
-    verbose=True,
-    streaming_on=True,
-    dynamic_temperature_enabled=True,
-    saved_state_path="finance_agent.json",
-    user_name="swarms_corp",
-    retry_attempts=3,
-    context_length=200000,
-    long_term_memory=chromadb,
+    max_loops="auto",  # Auto-adjusts loops based on task complexity
+    autosave=True,  # Automatically saves agent state
+    dashboard=False,  # Disables dashboard for this example
+    verbose=True,  # Enables verbose mode for detailed output
+    streaming_on=True,  # Enables streaming for real-time processing
+    dynamic_temperature_enabled=True,  # Dynamically adjusts temperature for optimal performance
+    saved_state_path="finance_agent.json",  # Path to save agent state
+    user_name="swarms_corp",  # User name for the agent
+    retry_attempts=3,  # Number of retry attempts for failed tasks
+    context_length=200000,  # Maximum length of the context to consider
+    long_term_memory=chromadb,  # Integrates ChromaDB for long-term memory management
 )
 
-
+# Run the agent with a sample task
 agent.run(
     "What are the components of a startups stock incentive equity plan"
 )
-
-
 ```
 
--------
-
-### `Agent` ++ Long Term Memory ++ Tools!
-An LLM equipped with long term memory and tools, a full stack agent capable of automating all and any digital tasks given a good prompt.
-
-```python
-from swarms import Agent
-from swarm_models import OpenAIChat
-from swarms_memory import ChromaDB
-import subprocess
-import os
-
-# Making an instance of the ChromaDB class
-memory = ChromaDB(
-    metric="cosine",
-    n_results=3,
-    output_dir="results",
-    docs_folder="docs",
-)
-
-# Model
-model = OpenAIChat(
-    openai_api_key=os.getenv("OPENAI_API_KEY"),
-    model_name="gpt-4o-mini",
-    temperature=0.1,
-)
-
-
-# Tools in swarms are simple python functions and docstrings
-def terminal(
-    code: str,
-):
-    """
-    Run code in the terminal.
-
-    Args:
-        code (str): The code to run in the terminal.
-
-    Returns:
-        str: The output of the code.
-    """
-    out = subprocess.run(
-        code, shell=True, capture_output=True, text=True
-    ).stdout
-    return str(out)
-
-
-def browser(query: str):
-    """
-    Search the query in the browser with the `browser` tool.
-
-    Args:
-        query (str): The query to search in the browser.
-
-    Returns:
-        str: The search results.
-    """
-    import webbrowser
-
-    url = f"https://www.google.com/search?q={query}"
-    webbrowser.open(url)
-    return f"Searching for {query} in the browser."
-
-
-def create_file(file_path: str, content: str):
-    """
-    Create a file using the file editor tool.
-
-    Args:
-        file_path (str): The path to the file.
-        content (str): The content to write to the file.
-
-    Returns:
-        str: The result of the file creation operation.
-    """
-    with open(file_path, "w") as file:
-        file.write(content)
-    return f"File {file_path} created successfully."
-
-
-def file_editor(file_path: str, mode: str, content: str):
-    """
-    Edit a file using the file editor tool.
-
-    Args:
-        file_path (str): The path to the file.
-        mode (str): The mode to open the file in.
-        content (str): The content to write to the file.
-
-    Returns:
-        str: The result of the file editing operation.
-    """
-    with open(file_path, mode) as file:
-        file.write(content)
-    return f"File {file_path} edited successfully."
-
-
-# Agent
-agent = Agent(
-    agent_name="Devin",
-    system_prompt=(
-        "Autonomous agent that can interact with humans and other"
-        " agents. Be Helpful and Kind. Use the tools provided to"
-        " assist the user. Return all code in markdown format."
-    ),
-    llm=model,
-    max_loops="auto",
-    autosave=True,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    interactive=True,
-    tools=[terminal, browser, file_editor, create_file],
-    streaming=True,
-    long_term_memory=memory,
-)
-
-# Run the agent
-out = agent(
-    "Create a CSV file with the latest tax rates for C corporations in the following ten states and the District of Columbia: Alabama, California, Florida, Georgia, Illinois, New York, North Carolina, Ohio, Texas, and Washington."
-)
-print(out)
-
-```
 
 -------
 
 ### Misc Agent Settings
 We provide vast array of features to save agent states using json, yaml, toml, upload pdfs, batched jobs, and much more!
+
+
+**Method Table**
+
+| Method | Description |
+| --- | --- |
+| `to_dict()` | Converts the agent object to a dictionary. |
+| `to_toml()` | Converts the agent object to a TOML string. |
+| `model_dump_json()` | Dumps the model to a JSON file. |
+| `model_dump_yaml()` | Dumps the model to a YAML file. |
+| `ingest_docs()` | Ingests documents into the agent's knowledge base. |
+| `receive_message()` | Receives a message from a user and processes it. |
+| `send_agent_message()` | Sends a message from the agent to a user. |
+| `filtered_run()` | Runs the agent with a filtered system prompt. |
+| `bulk_run()` | Runs the agent with multiple system prompts. |
+| `add_memory()` | Adds a memory to the agent. |
+| `check_available_tokens()` | Checks the number of available tokens for the agent. |
+| `tokens_checks()` | Performs token checks for the agent. |
+| `print_dashboard()` | Prints the dashboard of the agent. |
+| `get_docs_from_doc_folders()` | Fetches all the documents from the doc folders. |
+| `activate_agentops()` | Activates agent operations. |
+| `check_end_session_agentops()` | Checks the end of the session for agent operations. |
+
+**Mermaid Diagram**
+```mermaid
+graph LR
+    A[Agent] -->|to_dict()|> B[Dictionary]
+    A -->|to_toml()|> C[TOML String]
+    A -->|model_dump_json()|> D[JSON File]
+    A -->|model_dump_yaml()|> E[YAML File]
+    A -->|ingest_docs()|> F[Knowledge Base]
+    A -->|receive_message()|> G[Processed Message]
+    A -->|send_agent_message()|> H[Sent Message]
+    A -->|filtered_run()|> I[Filtered Run]
+    A -->|bulk_run()|> J[Bulk Run]
+    A -->|add_memory()|> K[Memory]
+    A -->|check_available_tokens()|> L[Token Check]
+    A -->|tokens_checks()|> M[Token Checks]
+    A -->|print_dashboard()|> N[Dashboard]
+    A -->|get_docs_from_doc_folders()|> O[Documents]
+    A -->|activate_agentops()|> P[Agent Ops]
+    A -->|check_end_session_agentops()|> Q[Session Check]
+```
+
 
 ```python
 # # Convert the agent object to a dictionary
