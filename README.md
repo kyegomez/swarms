@@ -919,17 +919,7 @@ A revolutionary swarm architecture designed for concurrent management and oversi
 * **One-to-Many**: Allows a single task to be dynamically distributed among multiple agents, ensuring that each agent is utilized to its full potential.
 * **Scalability**: Supports the integration of thousands of agents, making it an ideal solution for large-scale task processing and data analysis.
 
-### Architecture Overview
-```mermaid
-graph LR
-    A[Task] -->|Distributed|> B[Agent 1]
-    A -->|Distributed|> C[Agent 2]
-    A -->|Distributed|> D[Agent 3]
-    B -->|Output|> E[SpreadSheetSwarm]
-    C -->|Output|> E
-    D -->|Output|> E
-    E -->|Aggregated Output|> F[User]
-```
+
 [Learn more at the docs here:](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
 
 ```python
