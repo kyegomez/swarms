@@ -10,6 +10,7 @@ from swarms.agents.create_agents_from_yaml import (
 )
 from swarms.agents.cli_prompt_generator_func import generate_prompt
 import subprocess
+
 console = Console()
 
 
@@ -101,29 +102,43 @@ def check_login():
         with open(cache_file, "w") as f:
             f.write("logged_in")
         console.print("[bold green]Login successful![/bold green]")
-        
+
+
 def check_and_upgrade_version():
-    console.print("[bold yellow]Checking for Swarms updates...[/bold yellow]")
+    console.print(
+        "[bold yellow]Checking for Swarms updates...[/bold yellow]"
+    )
     try:
         # Check for updates using pip
         result = subprocess.run(
             ["pip", "list", "--outdated", "--format=freeze"],
             capture_output=True,
-            text=True
+            text=True,
         )
         outdated_packages = result.stdout.splitlines()
 
         # Check if Swarms is outdated
         for package in outdated_packages:
             if package.startswith("swarms=="):
-                console.print("[bold magenta]New version available! Upgrading...[/bold magenta]")
-                subprocess.run(["pip", "install", "--upgrade", "swarms"], check=True)
-                console.print("[bold green]Swarms upgraded successfully![/bold green]")
+                console.print(
+                    "[bold magenta]New version available! Upgrading...[/bold magenta]"
+                )
+                subprocess.run(
+                    ["pip", "install", "--upgrade", "swarms"],
+                    check=True,
+                )
+                console.print(
+                    "[bold green]Swarms upgraded successfully![/bold green]"
+                )
                 return
 
-        console.print("[bold green]Swarms is up-to-date.[/bold green]")
+        console.print(
+            "[bold green]Swarms is up-to-date.[/bold green]"
+        )
     except Exception as e:
-        console.print(f"[bold red]Error checking for updates: {e}[/bold red]")
+        console.print(
+            f"[bold red]Error checking for updates: {e}[/bold red]"
+        )
 
 
 # Main CLI handler
@@ -190,7 +205,9 @@ def main():
             yaml_file=args.yaml_file, return_type="tasks"
         )
     elif args.command == "generate-prompt":
-        if args.prompt:  # Corrected from args.prompt_task to args.prompt
+        if (
+            args.prompt
+        ):  # Corrected from args.prompt_task to args.prompt
             generate_prompt(
                 num_loops=args.num_loops,
                 autosave=args.autosave,
