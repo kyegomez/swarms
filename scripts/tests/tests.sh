@@ -1,1 +1,0 @@
-find ./tests -name '*.py' -exec pytest {} \;
