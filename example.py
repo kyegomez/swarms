@@ -10,14 +10,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
 
-# Model
+# Create an instance of the OpenAIChat class
 model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
+    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
 )
 
 # Initialize the agent
