@@ -51,7 +51,7 @@ pip install swarms swarm_models
 ```python
 import os
 from dotenv import load_dotenv
-from swarms import Agent, SwarmRouter
+from swarms import Agent, SwarmRouter, SwarmType
 from swarm_models import OpenAIChat
 
 load_dotenv()
