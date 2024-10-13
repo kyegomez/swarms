@@ -79,8 +79,15 @@ class SwarmRouter:
             **kwargs: Arbitrary keyword arguments.
 
         Raises:
-            ValueError: If an invalid swarm type is provided.
+            ValueError: If an invalid swarm type is provided, or if there are no agents, or if swarm type is "none", or if max_loops is 0.
         """
+        if not agents:
+            raise ValueError("No agents provided for the swarm.")
+        if swarm_type is None:
+            raise ValueError("Swarm type cannot be 'none'.")
+        if max_loops == 0:
+            raise ValueError("max_loops cannot be 0.")
+
         self.name = name
         self.description = description
         self.max_loops = max_loops
