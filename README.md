@@ -655,7 +655,29 @@ graph LR
     E --> F[End]
 ```
 
+
+
+### Methods
+
+| Method | Description | Parameters | Return Value |
+|--------|-------------|------------|--------------|
+| `__init__` | Initialize the SequentialWorkflow | `agents`: List of Agent objects<br>`max_loops`: Maximum number of iterations<br>`verbose`: Boolean for verbose output | None |
+| `run` | Execute the workflow | `input_data`: Initial input for the first agent | Final output after all agents have processed |
+
+### Inputs
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `agents` | List[Agent] | List of Agent objects to be executed sequentially |
+| `max_loops` | int | Maximum number of times the entire sequence will be repeated |
+| `verbose` | bool | If True, print detailed information during execution |
+
+### Output
+
+The `run` method returns the final output after all agents have processed the input sequentially.
+
 In this example, each `Agent` represents a task that is executed sequentially. The output of each agent is passed to the next agent in the sequence until the maximum number of loops is reached. This workflow is particularly useful for tasks that require a series of steps to be executed in a specific order, such as data processing pipelines or complex calculations that rely on the output of previous steps.
+
 
 ```python
 from swarms import Agent, SequentialWorkflow
@@ -701,6 +723,29 @@ workflow.run(
 ## `AgentRearrange`
 
 The `AgentRearrange` orchestration technique, inspired by Einops and einsum, allows you to define and map out the relationships between various agents. It provides a powerful tool for orchestrating complex workflows, enabling you to specify linear and sequential relationships such as `a -> a1 -> a2 -> a3`, or concurrent relationships where the first agent sends a message to 3 agents simultaneously: `a -> a1, a2, a3`. This level of customization allows for the creation of highly efficient and dynamic workflows, where agents can work in parallel or in sequence as needed. The `AgentRearrange` technique is a valuable addition to the swarms library, providing a new level of flexibility and control over the orchestration of agents. For more detailed information and examples, please refer to the [official documentation](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/).
+
+
+
+### Methods
+
+| Method | Description | Parameters | Return Value |
+|--------|-------------|------------|--------------|
+| `__init__` | Initialize the AgentRearrange | `agents`: List of Agent objects<br>`flow`: String describing the agent flow | None |
+| `run` | Execute the workflow | `input_data`: Initial input for the first agent | Final output after all agents have processed |
+
+### Inputs
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `agents` | List[Agent] | List of Agent objects to be orchestrated |
+| `flow` | str | String describing the flow of agents (e.g., "A -> B, C") |
+
+### Output
+
+The `run` method returns the final output after all agents have processed the input according to the specified flow.
+
+
+
 
 ```python
 
@@ -799,6 +844,33 @@ The `GraphSwarm` offers several benefits, including:
 By leveraging the `GraphSwarm`, complex workflows can be efficiently managed, and tasks can be executed in a coordinated and scalable manner.
 
 
+
+### Methods
+
+| Method | Description | Parameters | Return Value |
+|--------|-------------|------------|--------------|
+| `add_node` | Add a node to the graph | `node`: Node object | None |
+| `add_edge` | Add an edge to the graph | `edge`: Edge object | None |
+| `set_entry_points` | Set the entry points of the graph | `entry_points`: List of node IDs | None |
+| `set_end_points` | Set the end points of the graph | `end_points`: List of node IDs | None |
+| `visualize` | Generate a visual representation of the graph | None | String representation of the graph |
+| `run` | Execute the workflow | None | Dictionary of execution results |
+
+### Inputs
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `Node` | Object | Represents a node in the graph (agent or task) |
+| `Edge` | Object | Represents an edge connecting two nodes |
+| `entry_points` | List[str] | List of node IDs where the workflow starts |
+| `end_points` | List[str] | List of node IDs where the workflow ends |
+
+### Output
+
+The `run` method returns a dictionary containing the execution results of all nodes in the graph.
+
+
+
 ```python
 import os
 
@@ -845,6 +917,29 @@ print("Execution results:", results)
 
 ## `MixtureOfAgents`
 This is an implementation based on the paper: "Mixture-of-Agents Enhances Large Language Model Capabilities" by together.ai, available at [https://arxiv.org/abs/2406.04692](https://arxiv.org/abs/2406.04692). It achieves state-of-the-art (SOTA) results on AlpacaEval 2.0, MT-Bench, and FLASK, surpassing GPT-4 Omni. This architecture is particularly suitable for tasks that require parallelization followed by sequential processing in another loop.
+
+
+
+### Methods
+
+| Method | Description | Parameters | Return Value |
+|--------|-------------|------------|--------------|
+| `__init__` | Initialize the MixtureOfAgents | `name`: Name of the swarm<br>`agents`: List of Agent objects<br>`layers`: Number of processing layers<br>`final_agent`: Agent for final processing | None |
+| `run` | Execute the swarm | `task`: Input task for the swarm | Final output after all agents have processed |
+
+### Inputs
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `name` | str | Name of the swarm |
+| `agents` | List[Agent] | List of Agent objects to be used in the swarm |
+| `layers` | int | Number of processing layers in the swarm |
+| `final_agent` | Agent | Agent responsible for final processing |
+
+### Output
+
+The `run` method returns the final output after all agents have processed the input according to the specified layers and final agent.
+
 
 ```python
 from swarms import Agent, OpenAIChat, MixtureOfAgents
@@ -911,13 +1006,37 @@ print(out)
 
 
 ## SpreadSheetSwarm
-A revolutionary swarm architecture designed for concurrent management and oversight of thousands of agents, facilitating a one-to-many approach for efficient task processing and output analysis.
+The `SpreadSheetSwarm` is designed for concurrent management and oversight of thousands of agents, facilitating a one-to-many approach for efficient task processing and output analysis.
 
 ### Key Features
 
 * **Concurrency**: Enables the simultaneous execution of multiple agents, significantly reducing processing time and increasing overall system efficiency.
 * **One-to-Many**: Allows a single task to be dynamically distributed among multiple agents, ensuring that each agent is utilized to its full potential.
 * **Scalability**: Supports the integration of thousands of agents, making it an ideal solution for large-scale task processing and data analysis.
+
+
+### Methods
+
+| Method | Description | Parameters | Return Value |
+|--------|-------------|------------|--------------|
+| `__init__` | Initialize the SpreadSheetSwarm | `name`: Name of the swarm<br>`description`: Description of the swarm<br>`agents`: List of Agent objects<br>`autosave_on`: Boolean to enable autosave<br>`save_file_path`: Path to save the spreadsheet<br>`run_all_agents`: Boolean to run all agents or not<br>`max_loops`: Maximum number of loops | None |
+| `run` | Execute the swarm | `task`: Input task for the swarm | Dictionary of agent outputs |
+
+### Inputs
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `name` | str | Name of the swarm |
+| `description` | str | Description of the swarm's purpose |
+| `agents` | List[Agent] | List of Agent objects to be used in the swarm |
+| `autosave_on` | bool | Enable autosaving of results |
+| `save_file_path` | str | Path to save the spreadsheet results |
+| `run_all_agents` | bool | Whether to run all agents or select based on relevance |
+| `max_loops` | int | Maximum number of processing loops |
+
+### Output
+
+The `run` method returns a dictionary containing the outputs of each agent that processed the task.
 
 
 [Learn more at the docs here:](https://docs.swarms.world/en/latest/swarms/structs/spreadsheet_swarm/)
@@ -1089,37 +1208,123 @@ swarm.run(
 ## `ForestSwarm`
 The `ForestSwarm` architecture is designed for efficient task assignment by dynamically selecting the most suitable agent from a collection of trees. This is achieved through asynchronous task processing, where agents are chosen based on their relevance to the task at hand. The relevance is determined by calculating the similarity between the system prompts associated with each agent and the keywords present in the task itself. For a more in-depth understanding of how `ForestSwarm` works, please refer to the [official documentation](https://docs.swarms.world/en/latest/swarms/structs/forest_swarm/).
 
+
+
+### Methods
+
+| Method | Description | Parameters | Return Value |
+|--------|-------------|------------|--------------|
+| `__init__` | Initialize the ForestSwarm | `trees`: List of Tree objects | None |
+| `run` | Execute the ForestSwarm | `task`: Input task for the swarm | Output from the most relevant agent |
+
+### Inputs
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `trees` | List[Tree] | List of Tree objects, each containing TreeAgent objects |
+| `task` | str | The task to be processed by the ForestSwarm |
+
+### Output
+
+The `run` method returns the output from the most relevant agent selected based on the input task.
+
+
 ```python
 from swarms.structs.tree_swarm import TreeAgent, Tree, ForestSwarm
-# Example Usage:
 
 # Create agents with varying system prompts and dynamically generated distances/keywords
 agents_tree1 = [
     TreeAgent(
-        system_prompt="Stock Analysis Agent",
+        system_prompt="""You are an expert Stock Analysis Agent with deep knowledge of financial markets, technical analysis, and fundamental analysis. Your primary function is to analyze stock performance, market trends, and provide actionable insights. When analyzing stocks:
+
+1. Always start with a brief overview of the current market conditions.
+2. Use a combination of technical indicators (e.g., moving averages, RSI, MACD) and fundamental metrics (e.g., P/E ratio, EPS growth, debt-to-equity).
+3. Consider both short-term and long-term perspectives in your analysis.
+4. Provide clear buy, hold, or sell recommendations with supporting rationale.
+5. Highlight potential risks and opportunities specific to each stock or sector.
+6. Use bullet points for clarity when listing key points or metrics.
+7. If relevant, compare the stock to its peers or sector benchmarks.
+
+Remember to maintain objectivity and base your analysis on factual data. If asked about future performance, always include a disclaimer about market unpredictability. Your goal is to provide comprehensive, accurate, and actionable stock analysis to inform investment decisions.""",
         agent_name="Stock Analysis Agent",
     ),
     TreeAgent(
-        system_prompt="Financial Planning Agent",
+        system_prompt="""You are a highly skilled Financial Planning Agent, specializing in personal and corporate financial strategies. Your role is to provide comprehensive financial advice tailored to each client's unique situation. When creating financial plans:
+
+1. Begin by asking key questions about the client's financial goals, current situation, and risk tolerance.
+2. Develop a holistic view of the client's finances, including income, expenses, assets, and liabilities.
+3. Create detailed, step-by-step action plans to achieve financial goals.
+4. Provide specific recommendations for budgeting, saving, and investing.
+5. Consider tax implications and suggest tax-efficient strategies.
+6. Incorporate risk management and insurance planning into your recommendations.
+7. Use charts or tables to illustrate financial projections and scenarios.
+8. Regularly suggest reviewing and adjusting the plan as circumstances change.
+
+Always prioritize the client's best interests and adhere to fiduciary standards. Explain complex financial concepts in simple terms, and be prepared to justify your recommendations with data and reasoning.""",
         agent_name="Financial Planning Agent",
     ),
     TreeAgent(
         agent_name="Retirement Strategy Agent",
-        system_prompt="Retirement Strategy Agent",
+        system_prompt="""You are a specialized Retirement Strategy Agent, focused on helping individuals and couples plan for a secure and comfortable retirement. Your expertise covers various aspects of retirement planning, including savings strategies, investment allocation, and income generation during retirement. When developing retirement strategies:
+
+1. Start by assessing the client's current age, desired retirement age, and expected lifespan.
+2. Calculate retirement savings goals based on desired lifestyle and projected expenses.
+3. Analyze current retirement accounts (e.g., 401(k), IRA) and suggest optimization strategies.
+4. Provide guidance on asset allocation and rebalancing as retirement approaches.
+5. Explain various retirement income sources (e.g., Social Security, pensions, annuities).
+6. Discuss healthcare costs and long-term care planning.
+7. Offer strategies for tax-efficient withdrawals during retirement.
+8. Consider estate planning and legacy goals in your recommendations.
+
+Use Monte Carlo simulations or other statistical tools to illustrate the probability of retirement success. Always emphasize the importance of starting early and the power of compound interest. Be prepared to adjust strategies based on changing market conditions or personal circumstances.""",
     ),
 ]
 
 agents_tree2 = [
     TreeAgent(
-        system_prompt="Tax Filing Agent",
+        system_prompt="""You are a knowledgeable Tax Filing Agent, specializing in personal and business tax preparation and strategy. Your role is to ensure accurate tax filings while maximizing legitimate deductions and credits. When assisting with tax matters:
+
+1. Start by gathering all necessary financial information and documents.
+2. Stay up-to-date with the latest tax laws and regulations, including state-specific rules.
+3. Identify all applicable deductions and credits based on the client's situation.
+4. Provide step-by-step guidance for completing tax forms accurately.
+5. Explain tax implications of various financial decisions.
+6. Offer strategies for tax-efficient investing and income management.
+7. Assist with estimated tax payments for self-employed individuals or businesses.
+8. Advise on record-keeping practices for tax purposes.
+
+Always prioritize compliance with tax laws while ethically minimizing tax liability. Be prepared to explain complex tax concepts in simple terms and provide rationale for your recommendations. If a situation is beyond your expertise, advise consulting a certified tax professional or IRS resources.""",
         agent_name="Tax Filing Agent",
     ),
     TreeAgent(
-        system_prompt="Investment Strategy Agent",
+        system_prompt="""You are a sophisticated Investment Strategy Agent, adept at creating and managing investment portfolios to meet diverse financial goals. Your expertise covers various asset classes, market analysis, and risk management techniques. When developing investment strategies:
+
+1. Begin by assessing the client's investment goals, time horizon, and risk tolerance.
+2. Provide a comprehensive overview of different asset classes and their risk-return profiles.
+3. Create diversified portfolio recommendations based on modern portfolio theory.
+4. Explain the benefits and risks of various investment vehicles (e.g., stocks, bonds, ETFs, mutual funds).
+5. Incorporate both passive and active investment strategies as appropriate.
+6. Discuss the importance of regular portfolio rebalancing and provide a rebalancing strategy.
+7. Consider tax implications of investment decisions and suggest tax-efficient strategies.
+8. Provide ongoing market analysis and suggest portfolio adjustments as needed.
+
+Use historical data and forward-looking projections to illustrate potential outcomes. Always emphasize the importance of long-term investing and the risks of market timing. Be prepared to explain complex investment concepts in clear, accessible language.""",
         agent_name="Investment Strategy Agent",
     ),
     TreeAgent(
-        system_prompt="ROTH IRA Agent", agent_name="ROTH IRA Agent"
+        system_prompt="""You are a specialized ROTH IRA Agent, focusing on the intricacies of Roth Individual Retirement Accounts. Your role is to provide expert guidance on Roth IRA rules, benefits, and strategies to maximize their value for retirement planning. When advising on Roth IRAs:
+
+1. Explain the fundamental differences between traditional and Roth IRAs.
+2. Clarify Roth IRA contribution limits and income eligibility requirements.
+3. Discuss the tax advantages of Roth IRAs, including tax-free growth and withdrawals.
+4. Provide guidance on Roth IRA conversion strategies and their tax implications.
+5. Explain the five-year rule and how it affects Roth IRA withdrawals.
+6. Offer strategies for maximizing Roth IRA contributions, such as the backdoor Roth IRA method.
+7. Discuss how Roth IRAs fit into overall retirement and estate planning strategies.
+8. Provide insights on investment choices within a Roth IRA to maximize tax-free growth.
+
+Always stay current with IRS regulations regarding Roth IRAs. Be prepared to provide numerical examples to illustrate the long-term benefits of Roth IRAs. Emphasize the importance of considering individual financial situations when making Roth IRA decisions.""",
+        agent_name="ROTH IRA Agent",
     ),
 ]
 
@@ -1131,9 +1336,10 @@ tree2 = Tree(tree_name="Investment Tree", agents=agents_tree2)
 multi_agent_structure = ForestSwarm(trees=[tree1, tree2])
 
 # Run a task
-task = "Our company is incorporated in delaware, how do we do our taxes for free?"
+task = "What are the best platforms to do our taxes on"
 output = multi_agent_structure.run(task)
 print(output)
+
 ```
 
 ----------
