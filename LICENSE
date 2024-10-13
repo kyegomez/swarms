@@ -1,340 +1,104 @@
+# The Swarms License
+
+## Version 2.0, October 13, 2024
+
+Copyright (c) 2024 The Galactic Swarm Corporation [TGSC]
+
+### 1. Definitions
+   a. "Software" means the original work of authorship made available under this License, as well as all modifications, derivative works, and collective works thereof.  
+   b. "Licensor" means the individual or entity that offers the Software under the terms of this License.  
+   c. "Contributor" means any individual or entity that creates, contributes to the creation of, or modifies the Software.  
+   d. "Modified Version" means any work containing the Software or portions thereof, including portions that, when applied to an original work, create a work different from the original.  
+   e. "Derivative Work" means any work that is based on (or derived from) the Software and for which the editorial revisions, annotations, elaborations, or other modifications represent, as a whole, an original work of authorship.  
+   f. "Collective Work" means a work, such as a periodical issue, anthology, or encyclopedia, in which the Software in its entirety in unmodified form, along with a number of other contributions, constituting separate and independent works in themselves, are assembled into a collective whole.  
+   g. "Commercial Use" means any use of the Software for monetary compensation or gain, including but not limited to as part of a commercial product or service, or in activities intended to generate a profit.  
+   h. "Non-Commercial Use" means any use of the Software that is not considered Commercial Use.  
+   i. "Source Code" means the preferred form of the Software for making modifications to it, including but not limited to software source code, documentation source, and configuration files.  
+   j. "Object Code" means any non-Source Code version of the Software, generated, for example, by a compiler, interpreter, or obfuscator.  
+   k. "User" means any individual or entity that uses, copies, modifies, merges, publishes, distributes, sublicenses, or sells copies of the Software.
+
+### 2. License Grant
+   a. Subject to the terms and conditions of this License, the Licensor hereby grants you a worldwide, royalty-free, non-exclusive, perpetual license to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software.  
+   b. You may use the Software for any purpose, including Commercial Use, as long as you comply with the conditions set forth in this License.  
+   c. You may incorporate the Software into a Collective Work, and distribute the Collective Work, as long as you comply with the attribution requirements in Section 3.  
+   d. You may create Modified Versions or Derivative Works of the Software, and distribute such Modified Versions or Derivative Works, as long as you comply with the attribution requirements in Section 3 and the restrictions in Section 4.  
+   e. You may distribute the Software in Source Code or Object Code form, as long as you comply with the attribution requirements in Section 3 and the restrictions in Section 4.
+
+### 3. Attribution Requirements
+   a. When distributing the Software, whether in its original form, as a Modified Version, or as part of a Collective Work, you must include a clear and prominent attribution notice that identifies the Licensor and provides a link or reference to the original Software.  
+   b. The attribution notice must be placed in a reasonable location, such as the beginning of a README file, the source code, or any other prominent location, and must be easily visible to anyone using or accessing the Software.  
+   c. The attribution notice must include the following information:  
+      i. The name of the Licensor ([TGSC], Inc.)  
+      ii. A link or reference to the original Software  
+      iii. A statement indicating that the Software is licensed under the Swarms License  
+   d. If you create a Modified Version or incorporate the Software into a Collective Work, you must also include a statement indicating the changes you have made to the original Software.  
+   e. If you distribute the Software in Source Code form, you must also include the complete Source Code of the Software, including any modifications or additions you have made.  
+   f. If you distribute the Software in Object Code form, you must also provide access to the corresponding Source Code, either by including it with the distribution or by indicating how the Source Code can be obtained, such as a download link or instructions for requesting the Source Code.
+
+### 4. Prohibited Actions
+   a. You may not remove, alter, or obscure the attribution notice required in Section 3.  
+   b. You may not use the name, trademarks, or other intellectual property of the Licensor or any Contributor in a way that suggests the Licensor or Contributor endorses or supports your use of the Software.  
+   c. You may not create a Modified Version or Derivative Work that has a substantially similar name, function, or purpose as the original Software, unless you have obtained explicit written permission from the Licensor.  
+   d. You may not sell, distribute, or otherwise make available the Software or any Modified Version or Derivative Work under a different name or brand, unless you have obtained explicit written permission from the Licensor.  
+   e. You may not circumvent or attempt to circumvent any technical measures implemented by the Licensor to protect the Software, such as copy protection or access control mechanisms.  
+   f. You may not engage in any activity that could reasonably be expected to interfere with or disrupt the normal operation of the Software or the Licensor's servers or networks.  
+   g. You may not use the Software in any way that violates applicable laws or regulations, including but not limited to laws related to data privacy, export control, and intellectual property rights.
+
+### 5. Contributions
+   a. If you wish to contribute to the Software, you must do so under the terms of this License. By submitting a contribution, you agree that your contribution is subject to the terms of this License and that you have the right to make the contribution under those terms.  
+   b. The Licensor reserves the right to accept or reject any contribution at its sole discretion.  
+   c. If your contribution is accepted, you grant the Licensor a worldwide, royalty-free, non-exclusive, perpetual license to use, copy, modify, merge, publish, distribute, sublicense, and/or sell your contribution as part of the Software.  
+   d. You retain ownership of the copyright in your contribution, but you agree that your contribution is subject to the terms of this License and that the Licensor has the right to use, copy, modify, merge, publish, distribute, sublicense, and/or sell your contribution as part of the Software.  
+   e. If you contribute code to the Software, you must ensure that the code is compatible with the license terms of this License and does not introduce any incompatible dependencies or licenses.  
+   f. If you contribute documentation, translations, or other non-code assets to the Software, you must ensure that the content is original and does not infringe on any third-party intellectual property rights.
+
+### 6. Commercial Use
+   a. You may use the Software for Commercial Use, as long as you comply with the other terms of this License.  
+   b. If you use the Software for Commercial Use, you must pay a royalty fee to the Licensor. The royalty fee shall be determined by the Licensor and communicated to you prior to your use of the Software for Commercial Use.  
+   c. The royalty fee may be a one-time payment or an ongoing percentage of revenue generated from the Commercial Use of the Software, as determined by the Licensor.  
+   d. The Licensor reserves the right to change the royalty fee at any time, with reasonable notice to you.  
+   e. If you use the Software for Non-Commercial Use, you are not required to pay a royalty fee to the Licensor.  
+   f. The Licensor may offer certain features, functionality, or services related to the Software on a subscription or pay-per-use basis. If you choose to access or use these features, functionality, or services, you may be required to pay additional fees to the Licensor.  
+   g. The Licensor may also offer commercial support, training, or consulting services related to the Software, for which you may be required to pay additional fees.
+
+### 7. Warranty Disclaimer
+   a. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  
+   b. The Licensor does not warrant that the Software will meet your requirements, that the operation of the Software will be uninterrupted or error-free, or that errors in the Software will be corrected.  
+   c. The Licensor is not responsible for any issues or damages that may arise from your use of the Software, including but not limited to data loss, system failures, or legal liabilities.  
+   d. You acknowledge that you are solely responsible for the results obtained from the use of the Software, and that the Licensor has no control over how the Software is used or the consequences of such use.
+
+### 8. Termination
+   a. This License and the rights granted hereunder will terminate automatically if you fail to comply with any of the terms of this License.  
+   b. If your right to use the Software is terminated, you must immediately cease all use of the Software and destroy all copies of the Software in your possession or control.  
+   c. The Licensor reserves the right to bring legal action against you for any breach of this License, and to seek injunctive relief or other appropriate remedies to prevent further violations.  
+   d. Sections 7, 8, and 9 of this License shall survive the termination of this License.
+
+### 9. Indemnification
+   a. You agree to indemnify, defend, and hold harmless the Licensor and its officers, directors, employees, and agents from and against any and all claims, liabilities, damages, losses, or expenses (including reasonable attorneys' fees and costs) arising out of or in connection with your use of the Software, your violation of the terms of this License, or your violation of any applicable laws or regulations.  
+   b. The Licensor reserves the right, at its own expense, to assume the exclusive defense and control of any matter subject to indemnification by you, in which event you will fully cooperate with the Licensor in asserting any available defenses.
+
+### 10. Limitation of Liability
+   a. IN NO EVENT SHALL THE LICENSOR BE LIABLE TO YOU OR ANY THIRD PARTY FOR ANY INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, INCLUDING BUT NOT LIMITED TO LOST PROFITS, BUSINESS INTERRUPTION, OR LOSS OF DATA, EVEN IF THE LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.  
+   b. THE LICENSOR'S TOTAL LIABILITY TO YOU FOR DIRECT DAMAGES FOR ANY CAUSE WHATSOEVER, AND REGARDLESS OF THE FORM OF THE ACTION, WILL AT ALL TIMES BE LIMITED TO THE AMOUNT PAID BY YOU, IF ANY, FOR THE SOFTWARE.  
+   c. Some jurisdictions do not allow the exclusion or limitation of incidental or consequential damages, so the above limitation or exclusion may not apply to you.
+
+### 11. Compliance with Laws
+   a. You agree to comply with all applicable laws, regulations, and industry standards when using the Software, including but not limited to laws related to data privacy, export control, and intellectual property rights.  
+   b. You agree not to use the Software for any unlawful or unauthorized purpose, and to notify the Licensor promptly of any suspected unlawful or unauthorized use of the Software.
+
+### 12. Open Source Compliance
+   a. If the Software or any part thereof is subject to an open source license, you agree to comply with the terms and conditions of such license in addition to the terms of this License.  
+   b. You agree not to take any action that could be reasonably construed as attempting to circumvent or undermine the open source license terms applicable to the Software or any part thereof.
+
+### 13. Miscellaneous
+   a. This License shall be governed by and construed in accordance with the laws of the State of California, United States of America, without giving effect to any principles of conflicts of law.  
+   b. If any provision of this License is held to be unenforceable, such provision shall be reformed only to the extent necessary to make it enforceable.  
+   c. The failure of the Licensor to enforce any of the provisions of this License at any time shall in no way be construed to be a present or future waiver of such provisions, nor in any way affect the right of the Licensor to enforce each and every such provision thereafter.  
+   d. The Licensor reserves the right to modify or update this License at any time, with reasonable notice to you. Any such modifications or updates will not apply retroactively to your prior use of the Software.  
+   e. This License constitutes the entire agreement between you and the Licensor with respect to the use of the Software, and supersedes all prior or contemporaneous communications and proposals, whether oral or written, between you and the Licensor.  
+   f. You may not assign or transfer this License or any of the rights or obligations under this License without the prior written consent of the Licensor.  
+   g. The headings and section titles in this License are for convenience only and shall not affect the interpretation of the License.  
+   h. If any provision of this License is found to be invalid or unenforceable, the remaining provisions shall be enforced to the maximum extent possible.  
+   i. This License is binding upon your successors, assigns, and legal representatives.
 
-Creative Commons Attribution 4.0 International Public License
-
-By exercising the Licensed Rights (defined below), You accept and agree
-to be bound by the terms and conditions of this Creative Commons
-Attribution 4.0 International Public License ("Public License"). To the
-extent this Public License may be interpreted as a contract, You are
-granted the Licensed Rights in consideration of Your acceptance of
-these terms and conditions, and the Licensor grants You such rights in
-consideration of benefits the Licensor receives from making the
-Licensed Material available under these terms and conditions.
-
-
-Section 1 -- Definitions.
-
-  a. Adapted Material means material subject to Copyright and Similar
-     Rights that is derived from or based upon the Licensed Material
-     and in which the Licensed Material is translated, altered,
-     arranged, transformed, or otherwise modified in a manner requiring
-     permission under the Copyright and Similar Rights held by the
-     Licensor. For purposes of this Public License, where the Licensed
-     Material is a musical work, performance, or sound recording,
-     Adapted Material is always produced where the Licensed Material is
-     synched in timed relation with a moving image.
-
-  b. Adapter's License means the license You apply to Your Copyright
-     and Similar Rights in Your contributions to Adapted Material in
-     accordance with the terms and conditions of this Public License.
-
-  c. Copyright and Similar Rights means copyright and/or similar rights
-     closely related to copyright including, without limitation,
-     performance, broadcast, sound recording, and Sui Generis Database
-     Rights, without regard to how the rights are labeled or
-     categorized. For purposes of this Public License, the rights
-     specified in Section 2(b)(1)-(2) are not Copyright and Similar
-     Rights.
-
-  d. Effective Technological Measures means those measures that, in the
-     absence of proper authority, may not be circumvented under laws
-     fulfilling obligations under Article 11 of the WIPO Copyright
-     Treaty adopted on December 20, 1996, and/or similar international
-     agreements.
-
-  e. Exceptions and Limitations means fair use, fair dealing, and/or
-     any other exception or limitation to Copyright and Similar Rights
-     that applies to Your use of the Licensed Material.
-
-  f. Licensed Material means the artistic or literary work, database,
-     or other material to which the Licensor applied this Public
-     License.
-
-  g. Licensed Rights means the rights granted to You subject to the
-     terms and conditions of this Public License, which are limited to
-     all Copyright and Similar Rights that apply to Your use of the
-     Licensed Material and that the Licensor has authority to license.
-
-  h. Licensor means the individual(s) or entity(ies) granting rights
-     under this Public License.
-
-  i. Share means to provide material to the public by any means or
-     process that requires permission under the Licensed Rights, such
-     as reproduction, public display, public performance, distribution,
-     dissemination, communication, or importation, and to make material
-     available to the public including in ways that members of the
-     public may access the material from a place and at a time
-     individually chosen by them.
-
-  j. Sui Generis Database Rights means rights other than copyright
-     resulting from Directive 96/9/EC of the European Parliament and of
-     the Council of 11 March 1996 on the legal protection of databases,
-     as amended and/or succeeded, as well as other essentially
-     equivalent rights anywhere in the world.
-
-  k. You means the individual or entity exercising the Licensed Rights
-     under this Public License. Your has a corresponding meaning.
-
-
-Section 2 -- Scope.
-
-  a. License grant.
-
-       1. Subject to the terms and conditions of this Public License,
-          the Licensor hereby grants You a worldwide, royalty-free,
-          non-sublicensable, non-exclusive, irrevocable license to
-          exercise the Licensed Rights in the Licensed Material to:
-
-            a. reproduce and Share the Licensed Material, in whole or
-               in part; and
-
-            b. produce, reproduce, and Share Adapted Material.
-
-       2. Exceptions and Limitations. For the avoidance of doubt, where
-          Exceptions and Limitations apply to Your use, this Public
-          License does not apply, and You do not need to comply with
-          its terms and conditions.
-
-       3. Term. The term of this Public License is specified in Section
-          6(a).
-
-       4. Media and formats; technical modifications allowed. The
-          Licensor authorizes You to exercise the Licensed Rights in
-          all media and formats whether now known or hereafter created,
-          and to make technical modifications necessary to do so. The
-          Licensor waives and/or agrees not to assert any right or
-          authority to forbid You from making technical modifications
-          necessary to exercise the Licensed Rights, including
-          technical modifications necessary to circumvent Effective
-          Technological Measures. For purposes of this Public License,
-          simply making modifications authorized by this Section 2(a)
-          (4) never produces Adapted Material.
-
-       5. Downstream recipients.
-
-            a. Offer from the Licensor -- Licensed Material. Every
-               recipient of the Licensed Material automatically
-               receives an offer from the Licensor to exercise the
-               Licensed Rights under the terms and conditions of this
-               Public License.
-
-            b. No downstream restrictions. You may not offer or impose
-               any additional or different terms or conditions on, or
-               apply any Effective Technological Measures to, the
-               Licensed Material if doing so restricts exercise of the
-               Licensed Rights by any recipient of the Licensed
-               Material.
-
-       6. No endorsement. Nothing in this Public License constitutes or
-          may be construed as permission to assert or imply that You
-          are, or that Your use of the Licensed Material is, connected
-          with, or sponsored, endorsed, or granted official status by,
-          the Licensor or others designated to receive attribution as
-          provided in Section 3(a)(1)(A)(i).
-
-  b. Other rights.
-
-       1. Moral rights, such as the right of integrity, are not
-          licensed under this Public License, nor are publicity,
-          privacy, and/or other similar personality rights; however, to
-          the extent possible, the Licensor waives and/or agrees not to
-          assert any such rights held by the Licensor to the limited
-          extent necessary to allow You to exercise the Licensed
-          Rights, but not otherwise.
-
-       2. Patent and trademark rights are not licensed under this
-          Public License.
-
-       3. To the extent possible, the Licensor waives any right to
-          collect royalties from You for the exercise of the Licensed
-          Rights, whether directly or through a collecting society
-          under any voluntary or waivable statutory or compulsory
-          licensing scheme. In all other cases the Licensor expressly
-          reserves any right to collect such royalties.
-
-
-Section 3 -- License Conditions.
-
-Your exercise of the Licensed Rights is expressly made subject to the
-following conditions.
-
-  a. Attribution.
-
-       1. If You Share the Licensed Material (including in modified
-          form), You must:
-
-            a. retain the following if it is supplied by the Licensor
-               with the Licensed Material:
-
-                 i. identification of the creator(s) of the Licensed
-                    Material and any others designated to receive
-                    attribution, in any reasonable manner requested by
-                    the Licensor (including by pseudonym if
-                    designated);
-
-                ii. a copyright notice;
-
-               iii. a notice that refers to this Public License;
-
-                iv. a notice that refers to the disclaimer of
-                    warranties;
-
-                 v. a URI or hyperlink to the Licensed Material to the
-                    extent reasonably practicable;
-
-            b. indicate if You modified the Licensed Material and
-               retain an indication of any previous modifications; and
-
-            c. indicate the Licensed Material is licensed under this
-               Public License, and include the text of, or the URI or
-               hyperlink to, this Public License.
-
-       2. You may satisfy the conditions in Section 3(a)(1) in any
-          reasonable manner based on the medium, means, and context in
-          which You Share the Licensed Material. For example, it may be
-          reasonable to satisfy the conditions by providing a URI or
-          hyperlink to a resource that includes the required
-          information.
-
-       3. If requested by the Licensor, You must remove any of the
-          information required by Section 3(a)(1)(A) to the extent
-          reasonably practicable.
-
-       4. If You Share Adapted Material You produce, the Adapter's
-          License You apply must not prevent recipients of the Adapted
-          Material from complying with this Public License.
-
-
-Section 4 -- Sui Generis Database Rights.
-
-Where the Licensed Rights include Sui Generis Database Rights that
-apply to Your use of the Licensed Material:
-
-  a. for the avoidance of doubt, Section 2(a)(1) grants You the right
-     to extract, reuse, reproduce, and Share all or a substantial
-     portion of the contents of the database;
-
-  b. if You include all or a substantial portion of the database
-     contents in a database in which You have Sui Generis Database
-     Rights, then the database in which You have Sui Generis Database
-     Rights (but not its individual contents) is Adapted Material; and
-
-  c. You must comply with the conditions in Section 3(a) if You Share
-     all or a substantial portion of the contents of the database.
-
-For the avoidance of doubt, this Section 4 supplements and does not
-replace Your obligations under this Public License where the Licensed
-Rights include other Copyright and Similar Rights.
-
-
-Section 5 -- Disclaimer of Warranties and Limitation of Liability.
-
-  a. UNLESS OTHERWISE SEPARATELY UNDERTAKEN BY THE LICENSOR, TO THE
-     EXTENT POSSIBLE, THE LICENSOR OFFERS THE LICENSED MATERIAL AS-IS
-     AND AS-AVAILABLE, AND MAKES NO REPRESENTATIONS OR WARRANTIES OF
-     ANY KIND CONCERNING THE LICENSED MATERIAL, WHETHER EXPRESS,
-     IMPLIED, STATUTORY, OR OTHER. THIS INCLUDES, WITHOUT LIMITATION,
-     WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR
-     PURPOSE, NON-INFRINGEMENT, ABSENCE OF LATENT OR OTHER DEFECTS,
-     ACCURACY, OR THE PRESENCE OR ABSENCE OF ERRORS, WHETHER OR NOT
-     KNOWN OR DISCOVERABLE. WHERE DISCLAIMERS OF WARRANTIES ARE NOT
-     ALLOWED IN FULL OR IN PART, THIS DISCLAIMER MAY NOT APPLY TO YOU.
-
-  b. TO THE EXTENT POSSIBLE, IN NO EVENT WILL THE LICENSOR BE LIABLE
-     TO YOU ON ANY LEGAL THEORY (INCLUDING, WITHOUT LIMITATION,
-     NEGLIGENCE) OR OTHERWISE FOR ANY DIRECT, SPECIAL, INDIRECT,
-     INCIDENTAL, CONSEQUENTIAL, PUNITIVE, EXEMPLARY, OR OTHER LOSSES,
-     COSTS, EXPENSES, OR DAMAGES ARISING OUT OF THIS PUBLIC LICENSE OR
-     USE OF THE LICENSED MATERIAL, EVEN IF THE LICENSOR HAS BEEN
-     ADVISED OF THE POSSIBILITY OF SUCH LOSSES, COSTS, EXPENSES, OR
-     DAMAGES. WHERE A LIMITATION OF LIABILITY IS NOT ALLOWED IN FULL OR
-     IN PART, THIS LIMITATION MAY NOT APPLY TO YOU.
-
-  c. The disclaimer of warranties and limitation of liability provided
-     above shall be interpreted in a manner that, to the extent
-     possible, most closely approximates an absolute disclaimer and
-     waiver of all liability.
-
-
-Section 6 -- Term and Termination.
-
-  a. This Public License applies for the term of the Copyright and
-     Similar Rights licensed here. However, if You fail to comply with
-     this Public License, then Your rights under this Public License
-     terminate automatically.
-
-  b. Where Your right to use the Licensed Material has terminated under
-     Section 6(a), it reinstates:
-
-       1. automatically as of the date the violation is cured, provided
-          it is cured within 30 days of Your discovery of the
-          violation; or
-
-       2. upon express reinstatement by the Licensor.
-
-     For the avoidance of doubt, this Section 6(b) does not affect any
-     right the Licensor may have to seek remedies for Your violations
-     of this Public License.
-
-  c. For the avoidance of doubt, the Licensor may also offer the
-     Licensed Material under separate terms or conditions or stop
-     distributing the Licensed Material at any time; however, doing so
-     will not terminate this Public License.
-
-  d. Sections 1, 5, 6, 7, and 8 survive termination of this Public
-     License.
-
-
-Section 7 -- Other Terms and Conditions.
-
-  a. The Licensor shall not be bound by any additional or different
-     terms or conditions communicated by You unless expressly agreed.
-
-  b. Any arrangements, understandings, or agreements regarding the
-     Licensed Material not stated herein are separate from and
-     independent of the terms and conditions of this Public License.
-
-
-Section 8 -- Interpretation.
-
-  a. For the avoidance of doubt, this Public License does not, and
-     shall not be interpreted to, reduce, limit, restrict, or impose
-     conditions on any use of the Licensed Material that could lawfully
-     be made without permission under this Public License.
-
-  b. To the extent possible, if any provision of this Public License is
-     deemed unenforceable, it shall be automatically reformed to the
-     minimum extent necessary to make it enforceable. If the provision
-     cannot be reformed, it shall be severed from this Public License
-     without affecting the enforceability of the remaining terms and
-     conditions.
-
-  c. No term or condition of this Public License will be waived and no
-     failure to comply consented to unless expressly agreed to by the
-     Licensor.
-
-  d. Nothing in this Public License constitutes or may be interpreted
-     as a limitation upon, or waiver of, any privileges and immunities
-     that apply to the Licensor or You, including from the legal
-     processes of any jurisdiction or authority.
-
-
-=======================================================================
-
-Creative Commons is not a party to its public
-licenses. Notwithstanding, Creative Commons may elect to apply one of
-its public licenses to material it publishes and in those instances
-will be considered the “Licensor.” The text of the Creative Commons
-public licenses is dedicated to the public domain under the CC0 Public
-Domain Dedication. Except for the limited purpose of indicating that
-material is shared under a Creative Commons public license or as
-otherwise permitted by the Creative Commons policies published at
-creativecommons.org/policies, Creative Commons does not authorize the
-use of the trademark "Creative Commons" or any other trademark or logo
-of Creative Commons without its prior written consent including,
-without limitation, in connection with any unauthorized modifications
-to any of its public licenses or any other arrangements,
-understandings, or agreements concerning use of licensed material. For
-the avoidance of doubt, this paragraph does not form part of the
-public licenses.
-
-Creative Commons may be contacted at creativecommons.org.
+By using, copying, modifying, merging, publishing, distributing, sublicensing, or selling copies of the Software, you indicate your acceptance of the terms and conditions of this License.
