@@ -30,12 +30,15 @@ embedding_model = SentenceTransformer(
     "all-MiniLM-L6-v2"
 )  # A small, fast model for embedding
 
-# Create an instance of the OpenAIChat class
+# Get the OpenAI API key from the environment variable
+api_key = os.getenv("GROQ_API_KEY")
+
+# Model
 model = OpenAIChat(
+    openai_api_base="https://api.groq.com/openai/v1",
     openai_api_key=api_key,
-    model_name="gpt-4o-mini",
+    model_name="llama-3.1-70b-versatile",
     temperature=0.1,
-    max_tokens=2000,
 )
 
 

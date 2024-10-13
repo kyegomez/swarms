@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from swarms.structs.agent import Agent
 from swarms.telemetry.log_swarm_data import log_agent_data
 from swarms.schemas.agent_step_schemas import ManySteps
+from swarms.prompts.ag_prompt import aggregator_system_prompt
 
 time_stamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -22,7 +23,10 @@ class MixtureOfAgentsInput(BaseModel):
         ...,
         description="An aggregator agent to be used in the mixture.",
     )
-    aggregator_system_prompt: str = ""
+    aggregator_system_prompt: str = Field(
+        default=aggregator_system_prompt.get_prompt(),
+        description=aggregator_system_prompt.description,
+    )
     layers: int = 3
     time_created: str = Field(
         time_stamp,

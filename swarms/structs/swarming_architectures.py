@@ -43,20 +43,37 @@ class Conversation(BaseModel):
         }
 
 
-# Circular Swarm: Agents pass tasks in a circular manner
 def circular_swarm(
     agents: AgentListType,
     tasks: List[str],
     return_full_history: bool = True,
-) -> Union[str, List[str]]:
-    if not agents or not tasks:
+) -> Union[dict, List[str]]:
+    """
+    Implements a circular swarm where agents pass tasks in a circular manner.
+
+    Args:
+    - agents (AgentListType): A list of Agent objects to participate in the swarm.
+    - tasks (List[str]): A list of tasks to be processed by the agents.
+    - return_full_history (bool, optional): If True, returns the full conversation history. Defaults to True.
+
+    Returns:
+    - Union[dict, List[str]]: If return_full_history is True, returns a dictionary containing the conversation history. Otherwise, returns a list of responses.
+    """
+    # Ensure agents is a flat list of Agent objects
+    flat_agents = (
+        [agent for sublist in agents for agent in sublist]
+        if isinstance(agents[0], list)
+        else agents
+    )
+
+    if not flat_agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
     conversation = Conversation()
     responses = []
 
     for task in tasks:
-        for agent in agents:
+        for agent in flat_agents:
             response = agent.run(task)
             conversation.add_log(
                 agent_name=agent.agent_name,
@@ -65,11 +82,10 @@ def circular_swarm(
             )
             responses.append(response)
 
-    return (
-        conversation.return_history()
-        if return_full_history
-        else responses
-    )
+    if return_full_history:
+        return conversation.return_history()
+    else:
+        return responses
 
 
 def grid_swarm(agents: AgentListType, tasks: List[str]):

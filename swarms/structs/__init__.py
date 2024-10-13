@@ -65,6 +65,7 @@ from swarms.structs.yaml_model import (
     get_type_name,
     pydantic_type_to_yaml_schema,
 )
+from swarms.structs.swarm_router import SwarmRouter
 
 __all__ = [
     "Agent",
@@ -125,4 +126,5 @@ __all__ = [
     "star_swarm",
     "TaskQueueSwarm",
     "SpreadSheetSwarm",
+    "SwarmRouter",
 ]

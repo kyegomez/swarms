@@ -57,20 +57,28 @@ def create_agents_from_yaml(
     for agent_config in config["agents"]:
         logger.info(f"Creating agent: {agent_config['agent_name']}")
 
-        # Get the OpenAI API key from environment or YAML config
-        api_key = (
-            os.getenv("OPENAI_API_KEY")
-            or agent_config["model"]["openai_api_key"]
-        )
+        # # Get the OpenAI API key from environment or YAML config
+        # api_key = (
+        #     os.getenv("OPENAI_API_KEY")
+        # )
 
         # Create an instance of OpenAIChat model
+        # model = OpenAIChat(
+        #     openai_api_key=api_key,
+        #     model_name=agent_config["model"]["model_name"],
+        #     temperature=agent_config["model"]["temperature"],
+        #     max_tokens=agent_config["model"]["max_tokens"],
+        #     *args,
+        #     **kwargs,  # Pass any additional arguments to the model
+        # )
+        # Model
+        api_key = os.getenv("GROQ_API_KEY")
+
         model = OpenAIChat(
+            openai_api_base="https://api.groq.com/openai/v1",
             openai_api_key=api_key,
-            model_name=agent_config["model"]["model_name"],
-            temperature=agent_config["model"]["temperature"],
-            max_tokens=agent_config["model"]["max_tokens"],
-            *args,
-            **kwargs,  # Pass any additional arguments to the model
+            model_name="llama-3.1-70b-versatile",
+            temperature=0.1,
         )
 
         # Ensure the system prompt is provided
