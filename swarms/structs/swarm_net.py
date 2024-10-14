@@ -133,6 +133,7 @@ class SwarmNetwork(BaseSwarm):
         self.host = host
         self.port = port
         self.swarm_callable = swarm_callable
+        self.logger = logger
 
         # Ensure that the agents list is not empty
         if not agents:

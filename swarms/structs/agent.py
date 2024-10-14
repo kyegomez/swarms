@@ -194,7 +194,7 @@ class Agent:
         agent_description: Optional[str] = None,
         system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
         # TODO: Change to callable, then parse the callable to a string
-        tools: List[Callable] = None,
+        tools: Optional[List[Callable]] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
@@ -240,7 +240,7 @@ class Agent:
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
-        list_base_models: Optional[List[BaseModel]] = [],
+        list_base_models: Optional[List[BaseModel]] = None,
         metadata_output_type: str = "json",
         state_save_file_type: str = "json",
         chain_of_thoughts: bool = False,
