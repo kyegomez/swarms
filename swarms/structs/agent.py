@@ -240,7 +240,7 @@ class Agent:
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
-        list_base_models: Optional[List[BaseModel]] = None,
+        list_base_models: Optional[List[BaseModel]] = [],
         metadata_output_type: str = "json",
         state_save_file_type: str = "json",
         chain_of_thoughts: bool = False,
