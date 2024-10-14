@@ -523,15 +523,6 @@ class Agent:
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
 
-        if load_yaml_path is not None:
-            from swarms.agents.create_agents_from_yaml import (
-                create_agents_from_yaml,
-            )
-
-            create_agents_from_yaml(
-                load_yaml_path, return_type="tasks"
-            )
-
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
         self.system_prompt = system_prompt

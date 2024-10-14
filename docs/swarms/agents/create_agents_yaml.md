@@ -59,10 +59,10 @@ The function relies on a YAML file for defining agents and tasks. Below is an ex
 ```yaml
 agents:
   - agent_name: "Financial-Analysis-Agent"
-    model:
-      model_name: "gpt-4o-mini"
-      temperature: 0.1
-      max_tokens: 2000
+    # model:
+    #   model_name: "gpt-4o-mini"
+    #   temperature: 0.1
+    #   max_tokens: 2000
     system_prompt: "Your full system prompt here"
     max_loops: 1
     autosave: true
@@ -78,10 +78,10 @@ agents:
     task: "How can I establish a ROTH IRA to buy stocks and get a tax break?"
 
   - agent_name: "Stock-Analysis-Agent"
-    model:
-      model_name: "gpt-4o-mini"
-      temperature: 0.2
-      max_tokens: 1500
+    # model:
+    #   model_name: "gpt-4o-mini"
+    #   temperature: 0.2
+    #   max_tokens: 1500
     system_prompt: "Your full system prompt here"
     max_loops: 2
     autosave: true
@@ -112,44 +112,45 @@ agents:
 
 ---
 
-# Example: Creating Agents and Running Tasks
+### Full Code Example
 
-### Example 1: Creating and Returning Agents
 ```python
-from swarms import create_agents_from_yaml
+import os
 
-yaml_file = 'agents_config.yaml'
-agents = create_agents_from_yaml(yaml_file, return_type="agents")
+from dotenv import load_dotenv
+from loguru import logger
+from swarm_models import OpenAIChat # any model from swarm_models
 
-for agent in agents:
-    print(f"Agent {agent.agent_name} created.")
-```
+from swarms.agents.create_agents_from_yaml import (
+    create_agents_from_yaml,
+)
 
-### Example 2: Creating Agents and Returning Task Results
-```python
-from swarms import create_agents_from_yaml
+# Load environment variables
+load_dotenv()
 
-yaml_file = 'agents_config.yaml'
-task_results = create_agents_from_yaml(yaml_file, return_type="tasks")
+# Path to your YAML file
+yaml_file = "agents.yaml"
 
-for result in task_results:
-    print(f"Agent {result['agent_name']} executed task '{result['task']}': {result['output']}")
-```
+# Get the OpenAI API key from the environment variable
+api_key = os.getenv("OPENAI_API_KEY")
 
-### Example 3: Returning Both Agents and Task Results
-```python
-from swarms import create_agents_from_yaml
+# Create an instance of the OpenAIChat class
+model = OpenAIChat(
+    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+)
 
-yaml_file = 'agents_config.yaml'
-agents, task_results = create_agents_from_yaml(yaml_file, return_type="both")
 
-# Handling agents
-for agent in agents:
-    print(f"Agent {agent.agent_name} created.")
+try:
+    # Create agents and run tasks (using 'both' to return agents and task results)
+    task_results = create_agents_from_yaml(
+        model=model, yaml_file=yaml_file, return_type="tasks"
+    )
 
-# Handling task results
-for result in task_results:
-    print(f"Agent {result['agent_name']} executed task '{result['task']}': {result['output']}")
+    logger.info(f"Results from agents: {task_results}")
+except Exception as e:
+    logger.error(f"An error occurred: {e}")
+
+
 ```
 
 ---

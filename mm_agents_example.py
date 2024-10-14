@@ -12,21 +12,24 @@ from swarms.agents.create_agents_from_yaml import (
 load_dotenv()
 
 # Path to your YAML file
-yaml_file = "agents.yaml"
+yaml_file = "agents_multi_agent.yaml"
+
 
 # Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("GROQ_API_KEY")
 
-# Create an instance of the OpenAIChat class
+# Model
 model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
+    openai_api_base="https://api.groq.com/openai/v1",
+    openai_api_key=api_key,
+    model_name="llama-3.1-70b-versatile",
+    temperature=0.1,
 )
-
 
 try:
     # Create agents and run tasks (using 'both' to return agents and task results)
     task_results = create_agents_from_yaml(
-        model=model, yaml_file=yaml_file, return_type="tasks"
+        model=model, yaml_file=yaml_file, return_type="run_swarm"
     )
 
     logger.info(f"Results from agents: {task_results}")

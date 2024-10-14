@@ -1,46 +1,65 @@
 import os
-
 import yaml
 from dotenv import load_dotenv
 from loguru import logger
-from swarm_models import OpenAIChat
-
+from typing import Callable, List, Union, Tuple, Dict, Any
 from swarms.structs.agent import Agent
+from swarms.structs.swarm_router import SwarmRouter
 
 load_dotenv()
 
 
-# Function to create and optionally run agents from a YAML file
 def create_agents_from_yaml(
-    yaml_file: str, return_type: str = "agents", *args, **kwargs
-):
+    model: Callable = None,
+    yaml_file: str = "agents.yaml",
+    return_type: str = "auto",
+    *args,
+    **kwargs,
+) -> Union[
+    SwarmRouter,
+    Agent,
+    List[Agent],
+    Tuple[Union[SwarmRouter, Agent], List[Agent]],
+    List[Dict[str, Any]],
+]:
     """
-    Create agents based on configurations defined in a YAML file.
-    If a 'task' is provided in the YAML, the agent will execute the task after creation.
+    Create agents and/or SwarmRouter based on configurations defined in a YAML file.
+
+    This function dynamically creates agents and a SwarmRouter (if specified) based on the
+    configuration in the YAML file. It adapts its behavior based on the presence of a
+    swarm architecture and the number of agents defined.
 
     Args:
-        yaml_file (str): Path to the YAML file containing agent configurations.
-        return_type (str): Determines the return value. "agents" to return agent list,
-                           "tasks" to return task results, "both" to return both agents and tasks.
-        *args: Additional positional arguments for agent customization.
-        **kwargs: Additional keyword arguments for agent customization.
+        model (Callable): The language model to be used by the agents.
+        yaml_file (str): Path to the YAML file containing agent and swarm configurations.
+        return_type (str): Determines the return value. Options are:
+                           "auto" (default): Automatically determine the most appropriate return type.
+                           "swarm": Return SwarmRouter if present, otherwise a single agent or list of agents.
+                           "agents": Return a list of agents (or a single agent if only one is defined).
+                           "both": Return both SwarmRouter (or single agent) and list of agents.
+                           "tasks": Return task results if any tasks were executed.
+                           "run_swarm": Run the swarm and return its output.
+        *args: Additional positional arguments for agent or SwarmRouter customization.
+        **kwargs: Additional keyword arguments for agent or SwarmRouter customization.
 
     Returns:
-        List[Agent] or List[Task Results] or Tuple(List[Agent], List[Task Results])
+        Union[SwarmRouter, Agent, List[Agent], Tuple[Union[SwarmRouter, Agent], List[Agent]], List[Dict[str, Any]]]:
+        The return type depends on the 'return_type' argument and the configuration in the YAML file.
+
+    Raises:
+        FileNotFoundError: If the specified YAML file is not found.
+        ValueError: If the YAML configuration is invalid or if an invalid return_type is specified.
     """
     logger.info(f"Checking if the YAML file {yaml_file} exists...")
 
-    # Check if the YAML file exists
     if not os.path.exists(yaml_file):
         logger.error(f"YAML file {yaml_file} not found.")
         raise FileNotFoundError(f"YAML file {yaml_file} not found.")
 
-    # Load the YAML configuration
     logger.info(f"Loading YAML file {yaml_file}")
     with open(yaml_file, "r") as file:
         config = yaml.safe_load(file)
 
-    # Ensure agents key exists
     if "agents" not in config:
         logger.error(
             "The YAML configuration does not contain 'agents'."
@@ -49,39 +68,13 @@ def create_agents_from_yaml(
             "The YAML configuration does not contain 'agents'."
         )
 
-    # List to store created agents and task results
     agents = []
     task_results = []
 
-    # Iterate over each agent configuration and create agents
+    # Create agents
     for agent_config in config["agents"]:
         logger.info(f"Creating agent: {agent_config['agent_name']}")
 
-        # # Get the OpenAI API key from environment or YAML config
-        # api_key = (
-        #     os.getenv("OPENAI_API_KEY")
-        # )
-
-        # Create an instance of OpenAIChat model
-        # model = OpenAIChat(
-        #     openai_api_key=api_key,
-        #     model_name=agent_config["model"]["model_name"],
-        #     temperature=agent_config["model"]["temperature"],
-        #     max_tokens=agent_config["model"]["max_tokens"],
-        #     *args,
-        #     **kwargs,  # Pass any additional arguments to the model
-        # )
-        # Model
-        api_key = os.getenv("GROQ_API_KEY")
-
-        model = OpenAIChat(
-            openai_api_base="https://api.groq.com/openai/v1",
-            openai_api_key=api_key,
-            model_name="llama-3.1-70b-versatile",
-            temperature=0.1,
-        )
-
-        # Ensure the system prompt is provided
         if "system_prompt" not in agent_config:
             logger.error(
                 f"System prompt is missing for agent: {agent_config['agent_name']}"
@@ -90,7 +83,6 @@ def create_agents_from_yaml(
                 f"System prompt is missing for agent: {agent_config['agent_name']}"
             )
 
-        # Initialize the agent using the configuration
         agent = Agent(
             agent_name=agent_config["agent_name"],
             system_prompt=agent_config["system_prompt"],
@@ -111,7 +103,7 @@ def create_agents_from_yaml(
             ),
             output_type=agent_config.get("output_type", "str"),
             *args,
-            **kwargs,  # Pass any additional arguments to the agent
+            **kwargs,
         )
 
         logger.info(
@@ -119,43 +111,85 @@ def create_agents_from_yaml(
         )
         agents.append(agent)
 
-        # Check if a task is provided, and if so, run the agent
-        task = agent_config.get("task")
-        if task:
-            logger.info(
-                f"Running task '{task}' with agent {agent_config['agent_name']}"
-            )
+    # Create SwarmRouter if swarm_architecture is present
+    swarm_router = None
+    if "swarm_architecture" in config:
+        swarm_config = config["swarm_architecture"]
+        swarm_router = SwarmRouter(
+            name=swarm_config["name"],
+            description=swarm_config["description"],
+            max_loops=swarm_config["max_loops"],
+            agents=agents,
+            swarm_type=swarm_config["swarm_type"],
+            task=swarm_config.get("task"),
+            *args,
+            **kwargs,
+        )
+        logger.info(
+            f"SwarmRouter '{swarm_config['name']}' created successfully."
+        )
+
+    # Define function to run SwarmRouter
+    def run_swarm_router(
+        task: str = (
+            swarm_config.get("task")
+            if "swarm_architecture" in config
+            else None
+        ),
+    ):
+        if swarm_router:
             try:
-                output = agent.run(task)
+                output = swarm_router.run(task)
+                print(output)
                 logger.info(
-                    f"Output for agent {agent_config['agent_name']}: {output}"
+                    f"Output for SwarmRouter '{swarm_config['name']}': {output}"
                 )
-                task_results.append(
-                    {
-                        "agent_name": agent_config["agent_name"],
-                        "task": task,
-                        "output": output,
-                    }
-                )
+                return output
             except Exception as e:
                 logger.error(
-                    f"Error running task for agent {agent_config['agent_name']}: {e}"
+                    f"Error running task for SwarmRouter '{swarm_config['name']}': {e}"
                 )
-                task_results.append(
-                    {
-                        "agent_name": agent_config["agent_name"],
-                        "task": task,
-                        "error": str(e),
-                    }
-                )
+                raise e
+        else:
+            logger.error("SwarmRouter not created.")
+            raise ValueError("SwarmRouter not created.")
 
-    # Return results based on the `return_type`
-    if return_type == "agents":
-        return agents
-    elif return_type == "tasks":
-        return task_results
+    # Handle return types
+    if return_type == "auto":
+        if swarm_router:
+            return swarm_router
+        elif len(agents) == 1:
+            return agents[0]
+        else:
+            return agents
+    elif return_type == "swarm":
+        return (
+            swarm_router
+            if swarm_router
+            else (agents[0] if len(agents) == 1 else agents)
+        )
+    elif return_type == "agents":
+        return agents[0] if len(agents) == 1 else agents
     elif return_type == "both":
-        return agents, task_results
+        return (
+            swarm_router
+            if swarm_router
+            else agents[0] if len(agents) == 1 else agents
+        ), agents
+    elif return_type == "tasks":
+        if not task_results:
+            logger.warning(
+                "No tasks were executed. Returning empty list."
+            )
+        return task_results
+    elif return_type == "run_swarm":
+        if swarm_router:
+            return run_swarm_router()
+        else:
+            logger.error("Cannot run swarm: SwarmRouter not created.")
+            raise ValueError(
+                "Cannot run swarm: SwarmRouter not created."
+            )
     else:
         logger.error(f"Invalid return_type: {return_type}")
         raise ValueError(f"Invalid return_type: {return_type}")

@@ -164,7 +164,7 @@ class Prompt(BaseModel):
         Returns:
             str: The current prompt content.
         """
-        logger.debug(f"Returning prompt {self.id} as a string.")
+        # logger.debug(f"Returning prompt {self.id} as a string.")
         self.log_telemetry()
 
         return self.content
