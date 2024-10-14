@@ -120,13 +120,12 @@ For more documentation on the CLI [CLICK HERE](https://docs.swarms.world/en/late
 ---
 
 # Usage Examples 🤖
-Here are some simple examples but we have more comprehensive documentation at our [docs here](https://docs.swarms.world/en/latest/)
-<!-- 
-Run example in Collab: <a target="_blank" href="https://colab.research.google.com/github/kyegomez/swarms/blob/master/examples/collabs/swarms_example.ipynb">
-<img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a> -->
+Here are some example scripts to get you started. For more comprehensive documentation, visit our [docs](https://docs.swarms.world/en/latest/).
 
-
+| Example Name | Description | Type of Examples | Link |
+| --- | --- | --- | --- |
+| Swarms Examples | A collection of simple examples to demonstrate Swarms capabilities. | Basic Usage | [https://github.com/The-Swarm-Corporation/swarms-examples?tab=readme-ov-file](https://github.com/The-Swarm-Corporation/swarms-examples?tab=readme-ov-file) |
+| Cookbook | A comprehensive guide with recipes for various use cases and scenarios. | Advanced Usage | [https://github.com/The-Swarm-Corporation/Cookbook](https://github.com/The-Swarm-Corporation/Cookbook) |
 
 ---
 
