@@ -1755,4 +1755,4 @@ Join our growing community around the world, for real-time support, ideas, and d
 
 # License
 
-Creative Commons Attribution 4.0 International Public License
+GNU AFFERO GENERAL PUBLIC LICENSE
