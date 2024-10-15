@@ -201,6 +201,7 @@ nav:
       - Anthropic: "swarms/models/anthropic.md"
       - OpenAIChat: "swarms/models/openai.md"
       - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
+      - Groq: "swarms/models/groq.md"
     - MultiModal Models:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Multi Modal Models Available: "swarms/models/multimodal_models.md"
