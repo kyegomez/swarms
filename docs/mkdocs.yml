@@ -192,10 +192,11 @@ nav:
       - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
-    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     # - Models Available: "swarms/models/index.md"
-    - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
+    # - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
     # - Model Router
+    - Quickstart: "swarms/models/models_available_overview.md"
+    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
     - Language Models:
       - BaseLLM: "swarms/models/base_llm.md"
       - HuggingFaceLLM: "swarms/models/huggingface.md"
