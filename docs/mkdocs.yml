@@ -193,8 +193,9 @@ nav:
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     - How to Create A Custom Language Model: "swarms/models/custom_model.md"
-    - Models Available: "swarms/models/index.md"
+    # - Models Available: "swarms/models/index.md"
     - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
+    # - Model Router
     - Language Models:
       - BaseLLM: "swarms/models/base_llm.md"
       - HuggingFaceLLM: "swarms/models/huggingface.md"
@@ -202,6 +203,10 @@ nav:
       - OpenAIChat: "swarms/models/openai.md"
       - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
       - Groq: "swarms/models/groq.md"
+      # - Ollama: 
+      # - Fireworks
+      # - Octo
+      # - Liquid AI
     - MultiModal Models:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Multi Modal Models Available: "swarms/models/multimodal_models.md"
