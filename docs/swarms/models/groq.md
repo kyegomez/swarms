@@ -34,11 +34,11 @@ This documentation provides instructions on how to obtain your Groq API key and 
 ## Full Example
 ```python
 import os
-from swarms import Agent, SequentialWorkflow
 from swarm_models import OpenAIChat
+from dotenv import load_dotenv
 
-# model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
-company = "TGSC"
+load_dotenv()
+
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("GROQ_API_KEY")
 
