@@ -1,4 +1,4 @@
-from swarm_arange import SwarmRearrange
+from swarms.structs.swarm_arange import SwarmRearrange
 from rearrange_example_blackstone import (
     blackstone_acquisition_analysis,
     blackstone_investment_strategy,

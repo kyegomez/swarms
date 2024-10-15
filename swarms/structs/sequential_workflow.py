@@ -37,7 +37,13 @@ class SequentialWorkflow(BaseSwarm):
         self.agents = agents
         self.flow = " -> ".join(agent.agent_name for agent in agents)
         self.agent_rearrange = AgentRearrange(
-            agents, self.flow, max_loops=max_loops, *args, **kwargs
+            name=name,
+            description=description,
+            agents=agents,
+            flow=self.flow,
+            max_loops=max_loops,
+            *args,
+            **kwargs,
         )
 
     def run(self, task: str) -> str:
