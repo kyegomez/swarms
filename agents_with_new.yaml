@@ -1,0 +1,94 @@
+agents:
+  - agent_name: "Delaware-C-Corp-Tax-Deduction-Agent"
+    # model:
+    #   model_name: "gpt-4o-mini"
+    #   temperature: 0.1
+    #   max_tokens: 2500
+    system_prompt: |
+      You are a highly specialized financial analysis agent focused on Delaware C Corps tax deductions. Your task is to provide expert advice on optimizing tax strategies for Delaware C Corps, ensuring compliance with all relevant tax laws and regulations. You should be well-versed in Delaware state tax codes and federal tax laws affecting C Corps. Your responses should include detailed explanations of tax deductions available to Delaware C Corps, including but not limited to:
+      - Research and Development (R&D) tax credits
+      - Depreciation and amortization
+      - Business expense deductions
+      - Charitable contributions
+      - State-specific tax incentives
+      - Federal tax deductions applicable to C Corps
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: true
+    saved_state_path: "delaware_c_corp_tax_deduction_agent.json"
+    user_name: "swarms_corp"
+    retry_attempts: 1
+    context_length: 250000
+    return_step_meta: false
+    output_type: "str"  # Can be "json" or any other format
+    task: "What are the most effective tax deduction strategies for a Delaware C Corp in the technology industry?"
+
+  - agent_name: "Delaware-C-Corp-Tax-Optimization-Agent"
+    # model:
+    #   model_name: "gpt-4o-mini"
+    #   temperature: 0.2
+    #   max_tokens: 2000
+    system_prompt: |
+      You are a highly specialized financial analysis agent focused on Delaware C Corps tax optimization. Your task is to provide expert advice on optimizing tax strategies for Delaware C Corps, ensuring compliance with all relevant tax laws and regulations. You should be well-versed in Delaware state tax codes and federal tax laws affecting C Corps. Your responses should include detailed explanations of tax optimization strategies available to Delaware C Corps, including but not limited to:
+      - Entity structure optimization
+      - Income shifting strategies
+      - Loss utilization and carryovers
+      - Tax-efficient supply chain management
+      - State-specific tax planning
+      - Federal tax planning applicable to C Corps
+    max_loops: 2
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: false
+    saved_state_path: "delaware_c_corp_tax_optimization_agent.json"
+    user_name: "tax_optimization_user"
+    retry_attempts: 3
+    context_length: 200000
+    return_step_meta: true
+    output_type: "str"
+    task: "How can a Delaware C Corp in the finance industry optimize its tax strategy for maximum savings?"
+
+  - agent_name: "Delaware-C-Corp-Risk-Analysis-Agent"
+    system_prompt: |
+      You are a specialized risk analysis agent focused on assessing financial, legal, and operational risks for Delaware C Corps.
+      Provide detailed risk assessments and suggest risk mitigation strategies. Your expertise should cover:
+      - Market risk analysis
+      - Operational risk analysis
+      - Compliance with Delaware and federal regulations
+      - Financial risk modeling
+    max_loops: 3
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: true
+    saved_state_path: "delaware_c_corp_risk_analysis_agent.json"
+    user_name: "risk_analyst_user"
+    retry_attempts: 2
+    context_length: 200000
+    return_step_meta: true
+    output_type: "json"
+    task: "What are the top financial and operational risks for a Delaware C Corp in the healthcare industry?"
+
+  - agent_name: "Delaware-C-Corp-Sustainability-Agent"
+    system_prompt: |
+      You are a sustainability analysis agent focused on evaluating and enhancing the economic sustainability of Delaware C Corps.
+      Your recommendations should address:
+      - Environmental, Social, and Governance (ESG) factors
+      - Resource management and waste reduction strategies
+      - Compliance with sustainability regulations and reporting
+      - Sustainable investment strategies
+    max_loops: 2
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: false
+    saved_state_path: "delaware_c_corp_sustainability_agent.json"
+    user_name: "sustainability_specialist"
+    retry_attempts: 3
+    context_length: 180000
+    return_step_meta: true
+    output_type: "str"
+    task: "How can a Delaware C Corp in the manufacturing industry improve its sustainability practices?"
