@@ -711,45 +711,41 @@ class Agent:
                 while attempt < self.retry_attempts and not success:
                     try:
                         if self.long_term_memory is not None:
-                            logger.info(
-                                "Querying long term memory..."
-                            )
+                            logger.info("Querying long term memory...")
                             self.memory_query(task_prompt)
 
+                        # Generate response using LLM
+                        response = self.llm(task_prompt, *args, **kwargs)
+
+                        # Check and execute tools
+                        if self.tools is not None:
+                            print(f"self.tools is not None: {response}")
+                            self.parse_and_execute_tools(response)
+
+                        # Log the step metadata
+                        logged = self.log_step_metadata(
+                            loop_count, task_prompt, response
+                        )
+                        logger.info(logged)
+
+                        # Conver to a str if the response is not a str
+                        response = self.llm_output_parser(
+                            response
+                        )
+
+                        # Print
+                        if self.streaming_on is True:
+                            self.stream_response(response)
                         else:
-                            response_args = (
-                                (task_prompt, *args)
-                                if img is None
-                                else (task_prompt, img, *args)
-                            )
-                            response = self.call_llm(
-                                *response_args, **kwargs
-                            )
+                            print(response)
 
-                            # Log the step metadata
-                            logged = self.log_step_metadata(
-                                loop_count, task_prompt, response
-                            )
-                            logger.info(logged)
+                        # Add the response to the memory
+                        self.short_memory.add(
+                            role=self.agent_name, content=response
+                        )
 
-                            # Conver to a str if the response is not a str
-                            response = self.llm_output_parser(
-                                response
-                            )
-
-                            # Print
-                            if self.streaming_on is True:
-                                self.stream_response(response)
-                            else:
-                                print(response)
-
-                            # Add the response to the memory
-                            self.short_memory.add(
-                                role=self.agent_name, content=response
-                            )
-
-                            # Add to all responses
-                            all_responses.append(response)
+                        # Add to all responses
+                        all_responses.append(response)
 
                         # TODO: Implement reliablity check
                         if self.tools is not None:
