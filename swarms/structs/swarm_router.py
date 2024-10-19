@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Callable, Dict, List, Literal, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field
+
 from swarms.structs.agent import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.mixture_of_agents import MixtureOfAgents
@@ -61,8 +62,11 @@ class SwarmRouter:
         name: str = "swarm-router",
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
-        agents: List[Agent] = None,
-        swarm_type: SwarmType = None,
+        agents: List[Union[Agent, Callable]] = [],
+        swarm_type: SwarmType = "SequentialWorkflow",
+        autosave: bool = False,
+        flow: str = None,
+        return_json: bool = True,
         *args,
         **kwargs,
     ):
@@ -93,6 +97,9 @@ class SwarmRouter:
         self.max_loops = max_loops
         self.agents = agents
         self.swarm_type = swarm_type
+        self.autosave = autosave
+        self.flow = flow
+        self.return_json = return_json
         self.swarm = self._create_swarm(*args, **kwargs)
         self.logs = []
 
@@ -105,6 +112,8 @@ class SwarmRouter:
         AgentRearrange,
         MixtureOfAgents,
         SpreadSheetSwarm,
+        SequentialWorkflow,
+        ConcurrentWorkflow,
     ]:
         """
         Create and return the specified swarm type.
@@ -126,6 +135,8 @@ class SwarmRouter:
                 description=self.description,
                 agents=self.agents,
                 max_loops=self.max_loops,
+                flow=self.flow,
+                return_json=self.return_json,
                 *args,
                 **kwargs,
             )
@@ -144,7 +155,8 @@ class SwarmRouter:
                 name=self.name,
                 description=self.description,
                 agents=self.agents,
-                max_loops=1,
+                max_loops=self.max_loops,
+                autosave_on=self.autosave,
                 *args,
                 **kwargs,
             )
@@ -163,6 +175,8 @@ class SwarmRouter:
                 description=self.description,
                 agents=self.agents,
                 max_loops=self.max_loops,
+                auto_save=self.autosave,
+                return_str_on=self.return_json,
                 *args,
                 **kwargs,
             )

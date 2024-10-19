@@ -52,6 +52,10 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.run_on_cpu import run_on_cpu
+from clusterops import (
+    execute_on_gpu,
+    execute_with_cpu_cores,
+)
 
 
 # Utils
@@ -664,7 +668,7 @@ class Agent:
 
     ########################## FUNCTION CALLING ##########################
     @run_on_cpu
-    def run(
+    def _run(
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
@@ -2006,3 +2010,70 @@ class Agent:
 
         elif self.return_history:
             return self.short_memory.return_history_as_string()
+
+    def run(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        is_last: bool = False,
+        device: str = "cpu",  # gpu
+        device_id: int = 0,
+        all_cores: bool = True,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Executes the agent's run method on a specified device.
+
+        This method attempts to execute the agent's run method on a specified device, either CPU or GPU. It logs the device selection and the number of cores or GPU ID used. If the device is set to CPU, it can use all available cores or a specific core specified by `device_id`. If the device is set to GPU, it uses the GPU specified by `device_id`.
+
+        Args:
+            task (Optional[str], optional): The task to be executed. Defaults to None.
+            img (Optional[str], optional): The image to be processed. Defaults to None.
+            is_last (bool, optional): Indicates if this is the last task. Defaults to False.
+            device (str, optional): The device to use for execution. Defaults to "cpu".
+            device_id (int, optional): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
+            all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
+            *args: Additional positional arguments to be passed to the execution method.
+            **kwargs: Additional keyword arguments to be passed to the execution method.
+
+        Returns:
+            Any: The result of the execution.
+
+        Raises:
+            ValueError: If an invalid device is specified.
+            Exception: If any other error occurs during execution.
+        """
+        try:
+            logger.info(f"Attempting to run on device: {device}")
+            if device == "cpu":
+                logger.info("Device set to CPU")
+                if all_cores is True:
+                    count = os.cpu_count()
+                    logger.info(
+                        f"Using all available CPU cores: {count}"
+                    )
+                else:
+                    count = device_id
+                    logger.info(f"Using specific CPU core: {count}")
+
+                return execute_with_cpu_cores(
+                    count, self._run, task, img, *args, **kwargs
+                )
+
+            # If device gpu
+            elif device == "gpu":
+                logger.info("Device set to GPU")
+                return execute_on_gpu(
+                    device_id, self._run, task, img, *args, **kwargs
+                )
+            else:
+                raise ValueError(
+                    f"Invalid device specified: {device}. Supported devices are 'cpu' and 'gpu'."
+                )
+        except ValueError as e:
+            logger.error(f"Invalid device specified: {e}")
+            raise e
+        except Exception as e:
+            logger.error(f"An error occurred during execution: {e}")
+            raise e
