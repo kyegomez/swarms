@@ -10,34 +10,39 @@ The `SwarmRouter` class is a flexible routing system designed to manage differen
 
 A Pydantic model for capturing log entries.
 
-#### Attributes:
-- `id` (str): Unique identifier for the log entry.
-- `timestamp` (datetime): Time of log creation.
-- `level` (str): Log level (e.g., "info", "error").
-- `message` (str): Log message content.
-- `swarm_type` (SwarmType): Type of swarm associated with the log.
-- `task` (str): Task being performed (optional).
-- `metadata` (Dict[str, Any]): Additional metadata (optional).
+| Attribute | Type | Description |
+| --- | --- | --- |
+| `id` | str | Unique identifier for the log entry. |
+| `timestamp` | datetime | Time of log creation. |
+| `level` | str | Log level (e.g., "info", "error"). |
+| `message` | str | Log message content. |
+| `swarm_type` | SwarmType | Type of swarm associated with the log. |
+| `task` | str | Task being performed (optional). |
+| `metadata` | Dict[str, Any] | Additional metadata (optional). |
 
 ### SwarmRouter
 
 Main class for routing tasks to different swarm types.
 
-#### Attributes:
-- `name` (str): Name of the SwarmRouter instance.
-- `description` (str): Description of the SwarmRouter instance.
-- `max_loops` (int): Maximum number of loops to perform.
-- `agents` (List[Agent]): List of Agent objects to be used in the swarm.
-- `swarm_type` (SwarmType): Type of swarm to be used.
-- `swarm` (Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]): Instantiated swarm object.
-- `logs` (List[SwarmLog]): List of log entries captured during operations.
+| Attribute | Type | Description |
+| --- | --- | --- |
+| `name` | str | Name of the SwarmRouter instance. |
+| `description` | str | Description of the SwarmRouter instance. |
+| `max_loops` | int | Maximum number of loops to perform. |
+| `agents` | List[Agent] | List of Agent objects to be used in the swarm. |
+| `swarm_type` | SwarmType | Type of swarm to be used. |
+| `swarm` | Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow] | Instantiated swarm object. |
+| `logs` | List[SwarmLog] | List of log entries captured during operations. |
 
 #### Methods:
-- `__init__(self, name: str, description: str, max_loops: int, agents: List[Agent], swarm_type: SwarmType, *args, **kwargs)`: Initialize the SwarmRouter.
-- `_create_swarm(self, *args, **kwargs)`: Create and return the specified swarm type.
-- `_log(self, level: str, message: str, task: str, metadata: Dict[str, Any])`: Create a log entry and add it to the logs list.
-- `run(self, task: str, *args, **kwargs)`: Run the specified task on the selected swarm.
-- `get_logs(self)`: Retrieve all logged entries.
+
+| Method | Parameters | Description |
+| --- | --- | --- |
+| `__init__` | `self, name: str, description: str, max_loops: int, agents: List[Agent], swarm_type: SwarmType, *args, **kwargs` | Initialize the SwarmRouter. |
+| `_create_swarm` | `self, *args, **kwargs` | Create and return the specified swarm type. |
+| `_log` | `self, level: str, message: str, task: str, metadata: Dict[str, Any]` | Create a log entry and add it to the logs list. |
+| `run` | `self, task: str, *args, **kwargs` | Run the specified task on the selected swarm. |
+| `get_logs` | `self` | Retrieve all logged entries. |
 
 ## Installation
 
