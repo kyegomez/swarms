@@ -31,6 +31,13 @@ class SwarmRearrange:
     Attributes:
         swarms (dict): A dictionary of swarms, where the key is the swarm's name and the value is the swarm object.
         flow (str): The flow pattern of the tasks.
+        max_loops (int): The maximum number of loops to run the swarm.
+        verbose (bool): A flag indicating whether to log verbose messages.
+        human_in_the_loop (bool): A flag indicating whether human intervention is required.
+        custom_human_in_the_loop (Callable[[str], str], optional): A custom function for human-in-the-loop intervention.
+        return_json (bool): A flag indicating whether to return the result in JSON format.
+        swarm_history (dict): A dictionary to keep track of the history of each swarm.
+        lock (threading.Lock): A lock for thread-safe operations.
 
     Methods:
         __init__(swarms: List[swarm] = None, flow: str = None): Initializes the SwarmRearrange object.
@@ -70,8 +77,8 @@ class SwarmRearrange:
         self.description = description
         self.swarms = {swarm.name: swarm for swarm in swarms}
         self.flow = flow if flow is not None else ""
-        self.verbose = verbose
         self.max_loops = max_loops if max_loops > 0 else 1
+        self.verbose = verbose
         self.human_in_the_loop = human_in_the_loop
         self.custom_human_in_the_loop = custom_human_in_the_loop
         self.return_json = return_json
@@ -79,44 +86,29 @@ class SwarmRearrange:
         self.lock = threading.Lock()
         self.id = uuid.uuid4().hex if id is None else id
 
-        # Run the relianility checks
+        # Run the reliability checks
         self.reliability_checks()
 
-        # # Output schema
-        # self.input_config = SwarmRearrangeInput(
-        #     swarm_id=self.id,
-        #     name=self.name,
-        #     description=self.description,
-        #     flow=self.flow,
-        #     max_loops=self.max_loops,
-        # )
-
-        # # Output schema
-        # self.output_schema = SwarmRearrangeOutput(
-        #     Input=self.input_config,
-        #     outputs=[],
-        # )
+        # Logging configuration
+        if self.verbose:
+            logger.add("swarm_rearrange.log", rotation="10 MB")
 
     def reliability_checks(self):
         logger.info("Running reliability checks.")
-        if self.swarms is None:
+        if not self.swarms:
             raise ValueError("No swarms found in the swarm.")
 
-        if self.flow is None:
+        if not self.flow:
             raise ValueError("No flow found in the swarm.")
 
-        if self.max_loops is None:
-            raise ValueError("No max_loops found in the swarm.")
+        if self.max_loops <= 0:
+            raise ValueError("Max loops must be a positive integer.")
 
         logger.info(
             "SwarmRearrange initialized with swarms: {}".format(
                 list(self.swarms.keys())
             )
         )
-
-        # Verbose is True
-        if self.verbose is True:
-            logger.add("swarm_rearrange.log")
 
     def set_custom_flow(self, flow: str):
         self.flow = flow
@@ -199,7 +191,7 @@ class SwarmRearrange:
                 "Duplicate swarm names in the flow are not allowed."
             )
 
-        print("Flow is valid.")
+        logger.info("Flow is valid.")
         return True
 
     def run(
@@ -354,10 +346,37 @@ def swarm_arrange(
     *args,
     **kwargs,
 ):
-    return SwarmRearrange(
-        name,
-        description,
-        swarms,
-        output_type,
-        flow,
-    ).run(task, *args, **kwargs)
+    """
+    Orchestrates the execution of multiple swarms in a sequential manner.
+
+    Args:
+        name (str, optional): The name of the swarm arrangement. Defaults to "SwarmArrange-01".
+        description (str, optional): A description of the swarm arrangement. Defaults to "Combine multiple swarms and execute them sequentially".
+        swarms (List[Callable], optional): A list of swarm objects to be executed. Defaults to None.
+        output_type (str, optional): The format of the output. Defaults to "json".
+        flow (str, optional): The flow pattern of the tasks. Defaults to None.
+        task (str, optional): The task to be executed by the swarms. Defaults to None.
+        *args: Additional positional arguments to be passed to the SwarmRearrange object.
+        **kwargs: Additional keyword arguments to be passed to the SwarmRearrange object.
+
+    Returns:
+        Any: The result of the swarm arrangement execution.
+    """
+    try:
+        swarm_arrangement = SwarmRearrange(
+            name,
+            description,
+            swarms,
+            output_type,
+            flow,
+        )
+        result = swarm_arrangement.run(task, *args, **kwargs)
+        logger.info(
+            f"Swarm arrangement {name} executed successfully with output type {output_type}."
+        )
+        return result
+    except Exception as e:
+        logger.error(
+            f"An error occurred during swarm arrangement execution: {e}"
+        )
+        return str(e)

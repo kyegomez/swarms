@@ -9,7 +9,9 @@ The `ConcurrentWorkflow` class is designed to facilitate the concurrent executio
 - **Concurrent Execution**: Runs multiple agents simultaneously using Python's `asyncio` and `ThreadPoolExecutor`.
 - **Metadata Collection**: Gathers detailed metadata about each agent's execution, including start and end times, duration, and output.
 - **Customizable Output**: Allows the user to save metadata to a file or return it as a string or dictionary.
-- **Error Handling**: Catches and logs errors during agent execution, ensuring the workflow can continue.
+- **Error Handling**: Implements retry logic for improved reliability.
+- **Batch Processing**: Supports running tasks in batches and parallel execution.
+- **Asynchronous Execution**: Provides asynchronous run options for improved performance.
 
 ## Class Definitions
 
@@ -56,6 +58,7 @@ The `ConcurrentWorkflow` class is the core class that manages the concurrent exe
 | `max_loops`            | `int`                   | Maximum number of loops for the workflow, defaults to `1`. |
 | `return_str_on`        | `bool`                  | Flag to return output as string. Defaults to `False`.     |
 | `agent_responses`      | `List[str]`             | List of agent responses as strings.                       |
+| `auto_generate_prompts`| `bool`                  | Flag indicating whether to auto-generate prompts for agents. |
 
 ## Methods
 
@@ -76,10 +79,23 @@ Initializes the `ConcurrentWorkflow` class with the provided parameters.
 | `max_loops`           | `int`          | `1`                                    | Maximum number of loops for the workflow.                 |
 | `return_str_on`       | `bool`         | `False`                                | Flag to return output as string.                          |
 | `agent_responses`     | `List[str]`    | `[]`                                   | List of agent responses as strings.                       |
+| `auto_generate_prompts`| `bool`        | `False`                                | Flag indicating whether to auto-generate prompts for agents. |
 
 #### Raises
 
 - `ValueError`: If the list of agents is empty or if the description is empty.
+
+### ConcurrentWorkflow.activate_auto_prompt_engineering
+
+Activates the auto-generate prompts feature for all agents in the workflow.
+
+#### Example
+
+```python
+workflow = ConcurrentWorkflow(agents=[Agent()])
+workflow.activate_auto_prompt_engineering()
+# All agents in the workflow will now auto-generate prompts.
+```
 
 ### ConcurrentWorkflow._run_agent
 
@@ -99,7 +115,7 @@ Runs a single agent with the provided task and tracks its output and metadata.
 
 #### Detailed Explanation
 
-This method handles the execution of a single agent by offloading the task to a thread using `ThreadPoolExecutor`. It also tracks the time taken by the agent to complete the task and logs relevant information. If an exception occurs during execution, it captures the error and includes it in the output.
+This method handles the execution of a single agent by offloading the task to a thread using `ThreadPoolExecutor`. It also tracks the time taken by the agent to complete the task and logs relevant information. If an exception occurs during execution, it captures the error and includes it in the output. The method implements retry logic for improved reliability.
 
 ### ConcurrentWorkflow.transform_metadata_schema_to_str
 
@@ -135,7 +151,18 @@ Executes multiple agents concurrently with the same task.
 
 #### Detailed Explanation
 
-This method is responsible for managing the concurrent execution of all agents. It uses `asyncio.gather` to run multiple agents simultaneously and collects their outputs into a `MetadataSchema` object. This aggregated metadata can then be saved or returned depending on the workflow configuration.
+This method is responsible for managing the concurrent execution of all agents. It uses `asyncio.gather` to run multiple agents simultaneously and collects their outputs into a `MetadataSchema` object. This aggregated metadata can then be saved or returned depending on the workflow configuration. The method includes retry logic for improved reliability.
+
+### ConcurrentWorkflow.save_metadata
+
+Saves the metadata to a JSON file based on the `auto_save` flag.
+
+#### Example
+
+```python
+workflow.save_metadata()
+# Metadata will be saved to the specified path if auto_save is True.
+```
 
 ### ConcurrentWorkflow.run
 
@@ -149,11 +176,124 @@ Runs the workflow for the provided task, executes agents concurrently, and saves
 
 #### Returns
 
-- `Dict[str, Any]`: The final metadata as a dictionary.
+- `Union[Dict[str, Any], str]`: The final metadata as a dictionary or a string, depending on the `return_str_on` flag.
 
 #### Detailed Explanation
 
 This is the main method that a user will call to execute the workflow. It manages the entire process from starting the agents to collecting and optionally saving the metadata. The method also provides flexibility in how the results are returned—either as a JSON dictionary or as a formatted string.
+
+### ConcurrentWorkflow.run_batched
+
+Runs the workflow for a batch of tasks, executing agents concurrently for each task.
+
+#### Parameters
+
+| Parameter   | Type         | Description                                               |
+|-------------|--------------|-----------------------------------------------------------|
+| `tasks`     | `List[str]`  | A list of tasks or queries to give to all agents.         |
+
+#### Returns
+
+- `List[Union[Dict[str, Any], str]]`: A list of final metadata for each task, either as a dictionary or a string.
+
+#### Example
+
+```python
+tasks = ["Task 1", "Task 2"]
+results = workflow.run_batched(tasks)
+print(results)
+```
+
+### ConcurrentWorkflow.run_async
+
+Runs the workflow asynchronously for the given task.
+
+#### Parameters
+
+| Parameter   | Type         | Description                                               |
+|-------------|--------------|-----------------------------------------------------------|
+| `task`      | `str`        | The task or query to give to all agents.                  |
+
+#### Returns
+
+- `asyncio.Future`: A future object representing the asynchronous operation.
+
+#### Example
+
+```python
+async def run_async_example():
+    future = workflow.run_async(task="Example task")
+    result = await future
+    print(result)
+```
+
+### ConcurrentWorkflow.run_batched_async
+
+Runs the workflow asynchronously for a batch of tasks.
+
+#### Parameters
+
+| Parameter   | Type         | Description                                               |
+|-------------|--------------|-----------------------------------------------------------|
+| `tasks`     | `List[str]`  | A list of tasks or queries to give to all agents.         |
+
+#### Returns
+
+- `List[asyncio.Future]`: A list of future objects representing the asynchronous operations for each task.
+
+#### Example
+
+```python
+tasks = ["Task 1", "Task 2"]
+futures = workflow.run_batched_async(tasks)
+results = await asyncio.gather(*futures)
+print(results)
+```
+
+### ConcurrentWorkflow.run_parallel
+
+Runs the workflow in parallel for a batch of tasks.
+
+#### Parameters
+
+| Parameter   | Type         | Description                                               |
+|-------------|--------------|-----------------------------------------------------------|
+| `tasks`     | `List[str]`  | A list of tasks or queries to give to all agents.         |
+
+#### Returns
+
+- `List[Union[Dict[str, Any], str]]`: A list of final metadata for each task, either as a dictionary or a string.
+
+#### Example
+
+```python
+tasks = ["Task 1", "Task 2"]
+results = workflow.run_parallel(tasks)
+print(results)
+```
+
+### ConcurrentWorkflow.run_parallel_async
+
+Runs the workflow in parallel asynchronously for a batch of tasks.
+
+#### Parameters
+
+| Parameter   | Type         | Description                                               |
+|-------------|--------------|-----------------------------------------------------------|
+| `tasks`     | `List[str]`  | A list of tasks or queries to give to all agents.         |
+
+#### Returns
+
+- `List[asyncio.Future]`: A list of future objects representing the asynchronous operations for each task.
+
+#### Example
+
+```python
+tasks = ["Task 1", "Task 2"]
+futures = workflow.run_parallel_async(tasks)
+results = await asyncio.gather(*futures)
+print(results)
+```
 
 ## Usage Examples
 
@@ -249,7 +389,7 @@ agents = [
 
 # Initialize workflow
 workflow = ConcurrentWorkflow(
-    name = "Real Estate Marketing Swarm",
+    name="Real Estate Marketing Swarm",
     agents=agents,
     metadata_output_path="metadata.json",
     description="Concurrent swarm of content generators for real estate!",
@@ -257,17 +397,26 @@ workflow = ConcurrentWorkflow(
 )
 
 # Run workflow
-task = "Analyze the financial impact of a new product launch."
+task = "Create a marketing campaign for a luxury beachfront property in Miami, focusing on its stunning ocean views, private beach access, and state-of-the-art amenities."
 metadata = workflow.run(task)
 print(metadata)
-
 ```
 
 ### Example 2: Custom Output Handling
 
 ```python
-# Run workflow with string output
-workflow = ConcurrentWorkflow(agents=agents, return_str_on=True)
+# Initialize workflow with string output
+workflow = ConcurrentWorkflow(
+    name="Real Estate Marketing Swarm",
+    agents=agents,
+    metadata_output_path="metadata.json",
+    description="Concurrent swarm of content generators for real estate!",
+    auto_save=True,
+    return_str_on=True
+)
+
+# Run workflow
+task = "Develop a marketing strategy for a newly renovated historic townhouse in Boston, emphasizing its blend of classic architecture and modern amenities."
 metadata_str = workflow.run(task)
 print(metadata_str)
 ```
@@ -275,10 +424,79 @@ print(metadata_str)
 ### Example 3: Error Handling and Debugging
 
 ```python
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+
+# Initialize workflow
+workflow = ConcurrentWorkflow(
+    name="Real Estate Marketing Swarm",
+    agents=agents,
+    metadata_output_path="metadata.json",
+    description="Concurrent swarm of content generators for real estate!",
+    auto_save=True
+)
+
+# Run workflow with error handling
 try:
+    task = "Create a marketing campaign for a eco-friendly tiny house community in Portland, Oregon."
     metadata = workflow.run(task)
-except ValueError as e:
-    print(f"An error occurred: {e}")
+    print(metadata)
+except Exception as e:
+    logging.error(f"An error occurred during workflow execution: {str(e)}")
+    # Additional error handling or debugging steps can be added here
+```
+
+### Example 4: Batch Processing
+
+```python
+# Initialize workflow
+workflow = ConcurrentWorkflow(
+    name="Real Estate Marketing Swarm",
+    agents=agents,
+    metadata_output_path="metadata_batch.json",
+    description="Concurrent swarm of content generators for real estate!",
+    auto_save=True
+)
+
+# Define a list of tasks
+tasks = [
+    "Market a family-friendly suburban home with a large backyard and excellent schools nearby.",
+    "Promote a high-rise luxury apartment in New York City with panoramic skyline views.",
+    "Advertise a ski-in/ski-out chalet in Aspen, Colorado, perfect for winter sports enthusiasts."
+]
+
+# Run workflow in batch mode
+results = workflow.run_batched(tasks)
+
+# Process and print results
+for task, result in zip(tasks, results):
+    print(f"Task: {task}")
+    print(f"Result: {result}\n")
+```
+
+### Example 5: Asynchronous Execution
+
+```python
+import asyncio
+
+# Initialize workflow
+workflow = ConcurrentWorkflow(
+    name="Real Estate Marketing Swarm",
+    agents=agents,
+    metadata_output_path="metadata_async.json",
+    description="Concurrent swarm of content generators for real estate!",
+    auto_save=True
+)
+
+async def run_async_workflow():
+    task = "Develop a marketing strategy for a sustainable, off-grid mountain retreat in Colorado."
+    result = await workflow.run_async(task)
+    print(result)
+
+# Run the async workflow
+asyncio.run(run_async_workflow())
 ```
 
 ## Tips and Best Practices
@@ -287,6 +505,11 @@ except ValueError as e:
 - **Metadata Management**: Use the `auto_save` flag to automatically save metadata if you plan to run multiple workflows in succession.
 - **Concurrency Limits**: Adjust the number of agents based on your system's capabilities to avoid overloading resources.
 - **Error Handling**: Implement try-except blocks when running workflows to catch and handle exceptions gracefully.
+- **Batch Processing**: For large numbers of tasks, consider using `run_batched` or `run_parallel` methods to improve overall throughput.
+- **Asynchronous Operations**: Utilize asynchronous methods (`run_async`, `run_batched_async`, `run_parallel_async`) when dealing with I/O-bound tasks or when you need to maintain responsiveness in your application.
+- **Logging**: Implement detailed logging to track the progress of your workflows and troubleshoot any issues that may arise.
+- **Resource Management**: Be mindful of API rate limits and resource consumption, especially when running large batches or parallel executions.
+- **Testing**: Thoroughly test your workflows with various inputs and edge cases to ensure robust performance in production environments.
 
 ## References and Resources
 
@@ -294,3 +517,4 @@ except ValueError as e:
 - [Pydantic Documentation](https://pydantic-docs.helpmanual.io/)
 - [ThreadPoolExecutor in Python](https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor)
 - [Loguru for Logging in Python](https://loguru.readthedocs.io/en/stable/)
+- [Tenacity: Retry library for Python](https://tenacity.readthedocs.io/en/latest/)

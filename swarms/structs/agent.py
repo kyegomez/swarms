@@ -56,6 +56,7 @@ from clusterops import (
     execute_on_gpu,
     execute_with_cpu_cores,
 )
+from swarms.agents.ape_agent import auto_generate_prompt
 
 
 # Utils
@@ -125,11 +126,58 @@ class Agent:
         pdf_path (str): The path to the pdf
         list_of_pdf (str): The list of pdf
         tokenizer (Any): The tokenizer
-        memory (BaseVectorDatabase): The memory
+        long_term_memory (BaseVectorDatabase): The long term memory
         preset_stopping_token (bool): Enable preset stopping token
         traceback (Any): The traceback
         traceback_handlers (Any): The traceback handlers
         streaming_on (bool): Enable streaming
+        docs (List[str]): The list of documents
+        docs_folder (str): The folder containing the documents
+        verbose (bool): Enable verbose mode
+        parser (Callable): The parser to use
+        best_of_n (int): The number of best responses to return
+        callback (Callable): The callback function
+        metadata (Dict[str, Any]): The metadata
+        callbacks (List[Callable]): The list of callback functions
+        logger_handler (Any): The logger handler
+        search_algorithm (Callable): The search algorithm
+        logs_to_filename (str): The filename for the logs
+        evaluator (Callable): The evaluator function
+        stopping_func (Callable): The stopping function
+        custom_loop_condition (Callable): The custom loop condition
+        sentiment_threshold (float): The sentiment threshold
+        custom_exit_command (str): The custom exit command
+        sentiment_analyzer (Callable): The sentiment analyzer
+        limit_tokens_from_string (Callable): The function to limit tokens from a string
+        custom_tools_prompt (Callable): The custom tools prompt
+        tool_schema (ToolUsageType): The tool schema
+        output_type (agent_output_type): The output type
+        function_calling_type (str): The function calling type
+        output_cleaner (Callable): The output cleaner function
+        function_calling_format_type (str): The function calling format type
+        list_base_models (List[BaseModel]): The list of base models
+        metadata_output_type (str): The metadata output type
+        state_save_file_type (str): The state save file type
+        chain_of_thoughts (bool): Enable chain of thoughts
+        algorithm_of_thoughts (bool): Enable algorithm of thoughts
+        tree_of_thoughts (bool): Enable tree of thoughts
+        tool_choice (str): The tool choice
+        execute_tool (bool): Enable tool execution
+        rules (str): The rules
+        planning (str): The planning
+        planning_prompt (str): The planning prompt
+        device (str): The device
+        custom_planning_prompt (str): The custom planning prompt
+        memory_chunk_size (int): The memory chunk size
+        agent_ops_on (bool): Enable agent operations
+        log_directory (str): The log directory
+        tool_system_prompt (str): The tool system prompt
+        max_tokens (int): The maximum number of tokens
+        frequency_penalty (float): The frequency penalty
+        presence_penalty (float): The presence penalty
+        temperature (float): The temperature
+        workspace_dir (str): The workspace directory
+        timeout (int): The timeout
 
     Methods:
         run: Run the agent
@@ -262,8 +310,6 @@ class Agent:
         log_directory: str = None,
         tool_system_prompt: str = tool_sop_prompt(),
         max_tokens: int = 4096,
-        top_p: float = 0.9,
-        top_k: int = None,
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
         temperature: float = 0.1,
@@ -283,6 +329,7 @@ class Agent:
         executor_workers: int = os.cpu_count(),
         data_memory: Optional[Callable] = None,
         load_yaml_path: str = None,
+        auto_generate_prompt: bool = False,
         *args,
         **kwargs,
     ):
@@ -369,8 +416,7 @@ class Agent:
         self.log_directory = log_directory
         self.tool_system_prompt = tool_system_prompt
         self.max_tokens = max_tokens
-        self.top_p = top_p
-        self.top_k = top_k
+
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
         self.temperature = temperature
@@ -389,6 +435,7 @@ class Agent:
         self.data_memory = data_memory
         self.load_yaml_path = load_yaml_path
         self.tokenizer = TikTokenizer()
+        self.auto_generate_prompt = auto_generate_prompt
 
         # Initialize the feedback
         self.feedback = []
@@ -526,6 +573,41 @@ class Agent:
 
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
+
+    def check_if_no_prompt_then_autogenerate(self, task: str = None):
+        """
+        Checks if a system prompt is not set and auto_generate_prompt is enabled. If so, it auto-generates a prompt based on the agent's name, description, or the task if both are missing.
+
+        Args:
+            task (str, optional): The task to use as a fallback if both name and description are missing. Defaults to None.
+        """
+        if (
+            self.system_prompt is None
+            and self.auto_generate_prompt is True
+        ):
+            if self.description:
+                prompt = auto_generate_prompt(
+                    self.description, self.llm
+                )
+            elif self.agent_name:
+                logger.info(
+                    "Description is missing. Using agent name as a fallback."
+                )
+                prompt = auto_generate_prompt(
+                    self.agent_name, self.llm
+                )
+            else:
+                logger.warning(
+                    "Both description and agent name are missing. Using task as a fallback."
+                )
+                prompt = auto_generate_prompt(task, self.llm)
+            self.system_prompt = prompt
+            logger.info("Auto-generated prompt successfully.")
+        else:
+            if self.system_prompt is not None:
+                self.system_prompt = auto_generate_prompt(
+                    self.system_prompt, self.llm
+                )
 
     def set_system_prompt(self, system_prompt: str):
         """Set the system prompt"""
@@ -680,6 +762,8 @@ class Agent:
         Run the autonomous agent loop
         """
         try:
+            self.check_if_no_prompt_then_autogenerate(task)
+
             self.agent_output.task = task
 
             # Add task to memory

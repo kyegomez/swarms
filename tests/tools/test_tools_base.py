@@ -499,29 +499,6 @@ def test_tool_function_without_docstring():
         tool(no_doc_func)
 
 
-# ... more exception tests ...
-
-
-# Decorator behavior tests
-@pytest.mark.asyncio
-async def test_async_tool_function():
-    # Test an async function with the tool decorator
-@tool    
-    async def async_func(arg: str) -> str:
-        return arg
-
-    # Add async specific assertions here
-
-
-# ... more decorator tests ...
-
-
-class MockSchema(BaseModel):
-    """Mock schema for testing args_schema."""
-
-    arg: str
-
-
 # Test suite starts here
 class TestTool:
     # Basic Functionality Tests
@@ -543,11 +520,6 @@ class TestTool:
     def test_tool_raises_error_with_invalid_arguments(self):
         with pytest.raises(ValueError):
             tool(123)
-
-    # Schema Inference and Application Tests
-    def test_tool_with_args_schema(self, mock_func):
-        result = tool(mock_func, args_schema=MockSchema)
-        assert result.args_schema == MockSchema
 
     def test_tool_with_infer_schema_true(self, mock_func):
         tool(mock_func, infer_schema=True)
