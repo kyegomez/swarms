@@ -51,3 +51,7 @@ swarm_architecture:
   max_loops: 5
   swarm_type: "ConcurrentWorkflow"
   task: "How can we trademark concepts as a delaware C CORP for free"
+  autosave: true
+  return_json: false
+  # flow: "agent_name -> agent_name 2 -> agent_name 3" # not neccessary if not using agent rearrange
+  

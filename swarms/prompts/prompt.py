@@ -1,7 +1,7 @@
 import time
 import json
 import os
-from typing import List
+from typing import Callable, List
 import uuid
 from loguru import logger
 from pydantic import (
@@ -12,6 +12,7 @@ from pydantic import (
 from pydantic.v1 import validator
 from swarms_cloud.utils.log_to_swarms_database import log_agent_data
 from swarms_cloud.utils.capture_system_data import capture_system_data
+from swarms.tools.base_tool import BaseTool
 
 
 class Prompt(BaseModel):
@@ -73,6 +74,7 @@ class Prompt(BaseModel):
         default=os.getenv("WORKSPACE_DIR"),
         description="The folder where the autosave folder is in",
     )
+    # tools: List[callable] = None
 
     @validator("edit_history", pre=True, always=True)
     def initialize_history(cls, v, values):
@@ -157,6 +159,9 @@ class Prompt(BaseModel):
         if self.autosave:
             self._autosave()
 
+    def return_json(self):
+        return self.model_dump_json(indent=4)
+
     def get_prompt(self) -> str:
         """
         Returns the current prompt content as a string.
@@ -201,6 +206,14 @@ class Prompt(BaseModel):
         raise NotImplementedError(
             "Persistent storage integration is required."
         )
+
+    def add_tools(self, tools: List[Callable]) -> str:
+        tools_prompt = BaseTool(
+            tools=tools, tool_system_prompt=None
+        ).convert_tool_into_openai_schema()
+        self.content += "\n"
+        self.content += "\n"
+        self.content += tools_prompt
 
     def _autosave(self) -> None:
         """

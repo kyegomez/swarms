@@ -1,8 +1,6 @@
 # SwarmRouter Documentation
 
-## Overview
-
-The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, and `ConcurrentWorkflow`. We will be continously adding more and more swarm architectures here as we progress with new architectures.
+The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, `ConcurrentWorkflow`, and finally `auto` which will dynamically select the most appropriate swarm for you by analyzing your name, description, and input task. We will be continuously adding more swarm architectures as we progress with new developments.
 
 ## Classes
 
@@ -10,34 +8,49 @@ The `SwarmRouter` class is a flexible routing system designed to manage differen
 
 A Pydantic model for capturing log entries.
 
-#### Attributes:
-- `id` (str): Unique identifier for the log entry.
-- `timestamp` (datetime): Time of log creation.
-- `level` (str): Log level (e.g., "info", "error").
-- `message` (str): Log message content.
-- `swarm_type` (SwarmType): Type of swarm associated with the log.
-- `task` (str): Task being performed (optional).
-- `metadata` (Dict[str, Any]): Additional metadata (optional).
+| Attribute | Type | Description |
+| --- | --- | --- |
+| `id` | str | Unique identifier for the log entry. |
+| `timestamp` | datetime | Time of log creation. |
+| `level` | str | Log level (e.g., "info", "error"). |
+| `message` | str | Log message content. |
+| `swarm_type` | SwarmType | Type of swarm associated with the log. |
+| `task` | str | Task being performed (optional). |
+| `metadata` | Dict[str, Any] | Additional metadata (optional). |
 
 ### SwarmRouter
 
 Main class for routing tasks to different swarm types.
 
-#### Attributes:
-- `name` (str): Name of the SwarmRouter instance.
-- `description` (str): Description of the SwarmRouter instance.
-- `max_loops` (int): Maximum number of loops to perform.
-- `agents` (List[Agent]): List of Agent objects to be used in the swarm.
-- `swarm_type` (SwarmType): Type of swarm to be used.
-- `swarm` (Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]): Instantiated swarm object.
-- `logs` (List[SwarmLog]): List of log entries captured during operations.
+| Attribute | Type | Description |
+| --- | --- | --- |
+| `name` | str | Name of the SwarmRouter instance. |
+| `description` | str | Description of the SwarmRouter instance. |
+| `max_loops` | int | Maximum number of loops to perform. |
+| `agents` | List[Union[Agent, Callable]] | List of Agent objects or callable functions to be used in the swarm. |
+| `swarm_type` | SwarmType | Type of swarm to be used. |
+| `autosave` | bool | Flag to enable/disable autosave. |
+| `flow` | str | The flow of the swarm. |
+| `return_json` | bool | Flag to enable/disable returning the result in JSON format. |
+| `auto_generate_prompts` | bool | Flag to enable/disable auto generation of prompts. |
+| `swarm` | Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow] | Instantiated swarm object. |
+| `logs` | List[SwarmLog] | List of log entries captured during operations. |
 
 #### Methods:
-- `__init__(self, name: str, description: str, max_loops: int, agents: List[Agent], swarm_type: SwarmType, *args, **kwargs)`: Initialize the SwarmRouter.
-- `_create_swarm(self, *args, **kwargs)`: Create and return the specified swarm type.
-- `_log(self, level: str, message: str, task: str, metadata: Dict[str, Any])`: Create a log entry and add it to the logs list.
-- `run(self, task: str, *args, **kwargs)`: Run the specified task on the selected swarm.
-- `get_logs(self)`: Retrieve all logged entries.
+
+| Method | Parameters | Description |
+| --- | --- | --- |
+| `__init__` | `self, name: str, description: str, max_loops: int, agents: List[Union[Agent, Callable]], swarm_type: SwarmType, autosave: bool, flow: str, return_json: bool, auto_generate_prompts: bool, *args, **kwargs` | Initialize the SwarmRouter. |
+| `reliability_check` | `self` | Perform reliability checks on the SwarmRouter configuration. |
+| `_create_swarm` | `self, task: str = None, *args, **kwargs` | Create and return the specified swarm type or automatically match the best swarm type for a given task. |
+| `_log` | `self, level: str, message: str, task: str = "", metadata: Dict[str, Any] = None` | Create a log entry and add it to the logs list. |
+| `run` | `self, task: str, *args, **kwargs` | Run the specified task on the selected or matched swarm. |
+| `batch_run` | `self, tasks: List[str], *args, **kwargs` | Execute a batch of tasks on the selected or matched swarm type. |
+| `threaded_run` | `self, task: str, *args, **kwargs` | Execute a task on the selected or matched swarm type using threading. |
+| `async_run` | `self, task: str, *args, **kwargs` | Execute a task on the selected or matched swarm type asynchronously. |
+| `get_logs` | `self` | Retrieve all logged entries. |
+| `concurrent_run` | `self, task: str, *args, **kwargs` | Execute a task on the selected or matched swarm type concurrently. |
+| `concurrent_batch_run` | `self, tasks: List[str], *args, **kwargs` | Execute a batch of tasks on the selected or matched swarm type concurrently. |
 
 ## Installation
 
@@ -48,6 +61,7 @@ pip install swarms swarm_models
 ```
 
 ## Basic Usage
+
 ```python
 import os
 from dotenv import load_dotenv
@@ -66,6 +80,7 @@ model = OpenAIChat(
     model_name="llama-3.1-70b-versatile",
     temperature=0.1,
 )
+
 # Define specialized system prompts for each agent
 DATA_EXTRACTOR_PROMPT = """You are a highly specialized private equity agent focused on data extraction from various documents. Your expertise includes:
 1. Extracting key financial metrics (revenue, EBITDA, growth rates, etc.) from financial statements and reports
@@ -82,30 +97,6 @@ SUMMARIZER_PROMPT = """You are an expert private equity agent specializing in su
 4. Summarizing management presentations to highlight key strategic initiatives and projections
 5. Creating brief overviews of technical documents, emphasizing critical points for non-technical stakeholders
 Deliver clear, concise summaries that capture the essence of various documents while highlighting information crucial for investment decisions."""
-
-FINANCIAL_ANALYST_PROMPT = """You are a specialized private equity agent focused on financial analysis. Your key responsibilities include:
-1. Analyzing historical financial statements to identify trends and potential issues
-2. Evaluating the quality of earnings and potential adjustments to EBITDA
-3. Assessing working capital requirements and cash flow dynamics
-4. Analyzing capital structure and debt capacity
-5. Evaluating financial projections and underlying assumptions
-Provide thorough, insightful financial analysis to inform investment decisions and valuation."""
-
-MARKET_ANALYST_PROMPT = """You are a highly skilled private equity agent specializing in market analysis. Your expertise covers:
-1. Analyzing industry trends, growth drivers, and potential disruptors
-2. Evaluating competitive landscape and market positioning
-3. Assessing market size, segmentation, and growth potential
-4. Analyzing customer dynamics, including concentration and loyalty
-5. Identifying potential regulatory or macroeconomic impacts on the market
-Deliver comprehensive market analysis to assess the attractiveness and risks of potential investments."""
-
-OPERATIONAL_ANALYST_PROMPT = """You are an expert private equity agent focused on operational analysis. Your core competencies include:
-1. Evaluating operational efficiency and identifying improvement opportunities
-2. Analyzing supply chain and procurement processes
-3. Assessing sales and marketing effectiveness
-4. Evaluating IT systems and digital capabilities
-5. Identifying potential synergies in merger or add-on acquisition scenarios
-Provide detailed operational analysis to uncover value creation opportunities and potential risks."""
 
 # Initialize specialized agents
 data_extractor_agent = Agent(
@@ -138,80 +129,28 @@ summarizer_agent = Agent(
     output_type="string",
 )
 
-financial_analyst_agent = Agent(
-    agent_name="Financial-Analyst",
-    system_prompt=FINANCIAL_ANALYST_PROMPT,
-    llm=model,
-    max_loops=1,
-    autosave=True,
-    verbose=True,
-    dynamic_temperature_enabled=True,
-    saved_state_path="financial_analyst_agent.json",
-    user_name="pe_firm",
-    retry_attempts=1,
-    context_length=200000,
-    output_type="string",
-)
-
-market_analyst_agent = Agent(
-    agent_name="Market-Analyst",
-    system_prompt=MARKET_ANALYST_PROMPT,
-    llm=model,
-    max_loops=1,
-    autosave=True,
-    verbose=True,
-    dynamic_temperature_enabled=True,
-    saved_state_path="market_analyst_agent.json",
-    user_name="pe_firm",
-    retry_attempts=1,
-    context_length=200000,
-    output_type="string",
-)
-
-operational_analyst_agent = Agent(
-    agent_name="Operational-Analyst",
-    system_prompt=OPERATIONAL_ANALYST_PROMPT,
-    llm=model,
-    max_loops=1,
-    autosave=True,
-    verbose=True,
-    dynamic_temperature_enabled=True,
-    saved_state_path="operational_analyst_agent.json",
-    user_name="pe_firm",
-    retry_attempts=1,
-    context_length=200000,
-    output_type="string",
-)
-
 # Initialize the SwarmRouter
 router = SwarmRouter(
     name="pe-document-analysis-swarm",
     description="Analyze documents for private equity due diligence and investment decision-making",
     max_loops=1,
-    agents=[
-        data_extractor_agent,
-        summarizer_agent,
-        financial_analyst_agent,
-        market_analyst_agent,
-        operational_analyst_agent,
-    ],
-    swarm_type="ConcurrentWorkflow",  # or "SequentialWorkflow" or "ConcurrentWorkflow" or
+    agents=[data_extractor_agent, summarizer_agent],
+    swarm_type="ConcurrentWorkflow",
+    autosave=True,
+    return_json=True,
 )
 
 # Example usage
 if __name__ == "__main__":
     # Run a comprehensive private equity document analysis task
     result = router.run(
-        "Where is the best place to find template term sheets for series A startups. Provide links and references"
+        "Where is the best place to find template term sheets for series A startups? Provide links and references"
     )
     print(result)
 
     # Retrieve and print logs
     for log in router.get_logs():
         print(f"{log.timestamp} - {log.level}: {log.message}")
-
-
-
 ```
 
 ## Advanced Usage
@@ -224,14 +163,28 @@ You can create multiple SwarmRouter instances with different swarm types:
 sequential_router = SwarmRouter(
     name="SequentialRouter",
     agents=[agent1, agent2],
-    swarm_type=SwarmType.SequentialWorkflow
+    swarm_type="SequentialWorkflow"
 )
 
 concurrent_router = SwarmRouter(
     name="ConcurrentRouter",
     agents=[agent1, agent2],
-    swarm_type=SwarmType.ConcurrentWorkflow
+    swarm_type="ConcurrentWorkflow"
 )
+```
+
+### Automatic Swarm Type Selection
+
+You can let the SwarmRouter automatically select the best swarm type for a given task:
+
+```python
+auto_router = SwarmRouter(
+    name="AutoRouter",
+    agents=[agent1, agent2],
+    swarm_type="auto"
+)
+
+result = auto_router.run("Analyze and summarize the quarterly financial report")
 ```
 
 ## Use Cases
@@ -246,8 +199,8 @@ rearrange_router = SwarmRouter(
     description="Optimize agent order for multi-step tasks",
     max_loops=3,
     agents=[data_extractor, analyzer, summarizer],
-    swarm_type=SwarmType.AgentRearrange,
-    flow = f"{data_extractor.name} -> {analyzer.name} -> {summarizer.name}"
+    swarm_type="AgentRearrange",
+    flow=f"{data_extractor.name} -> {analyzer.name} -> {summarizer.name}"
 )
 
 result = rearrange_router.run("Analyze and summarize the quarterly financial report")
@@ -263,7 +216,7 @@ mixture_router = SwarmRouter(
     description="Combine insights from various expert agents",
     max_loops=1,
     agents=[financial_expert, market_analyst, tech_specialist],
-    swarm_type=SwarmType.MixtureOfAgents
+    swarm_type="MixtureOfAgents"
 )
 
 result = mixture_router.run("Evaluate the potential acquisition of TechStartup Inc.")
@@ -279,7 +232,7 @@ spreadsheet_router = SwarmRouter(
     description="Collaborative data processing and analysis",
     max_loops=1,
     agents=[data_cleaner, statistical_analyzer, visualizer],
-    swarm_type=SwarmType.SpreadSheetSwarm
+    swarm_type="SpreadSheetSwarm"
 )
 
 result = spreadsheet_router.run("Process and visualize customer churn data")
@@ -295,7 +248,7 @@ sequential_router = SwarmRouter(
     description="Generate comprehensive reports sequentially",
     max_loops=1,
     agents=[data_extractor, analyzer, writer, reviewer],
-    swarm_type=SwarmType.SequentialWorkflow
+    swarm_type="SequentialWorkflow"
 )
 
 result = sequential_router.run("Create a due diligence report for Project Alpha")
@@ -311,22 +264,70 @@ concurrent_router = SwarmRouter(
     description="Analyze multiple data sources concurrently",
     max_loops=1,
     agents=[financial_analyst, market_researcher, competitor_analyst],
-    swarm_type=SwarmType.ConcurrentWorkflow
+    swarm_type="ConcurrentWorkflow"
 )
 
 result = concurrent_router.run("Conduct a comprehensive market analysis for Product X")
 ```
 
-## Error Handling
 
-The `SwarmRouter` includes error handling in the `run` method. If an exception occurs during task execution, it will be logged and re-raised for the caller to handle. Always wrap the `run` method in a try-except block:
+### Auto Select (Experimental)
+Autonomously selects the right swarm by conducting vector search on your input task or name or description or all 3.
 
 ```python
-try:
-    result = router.run("Complex analysis task")
-except Exception as e:
-    print(f"An error occurred: {str(e)}")
-    # Handle the error appropriately
+concurrent_router = SwarmRouter(
+    name="MultiSourceAnalyzer",
+    description="Analyze multiple data sources concurrently",
+    max_loops=1,
+    agents=[financial_analyst, market_researcher, competitor_analyst],
+    swarm_type="auto" # Set this to 'auto' for it to auto select your swarm. It's match words like concurrently multiple -> "ConcurrentWorkflow"
+)
+
+result = concurrent_router.run("Conduct a comprehensive market analysis for Product X")
+```
+
+## Advanced Features
+
+### Batch Processing
+
+To process multiple tasks in a batch:
+
+```python
+tasks = ["Analyze Q1 report", "Summarize competitor landscape", "Evaluate market trends"]
+results = router.batch_run(tasks)
+```
+
+### Threaded Execution
+
+For non-blocking execution of a task:
+
+```python
+result = router.threaded_run("Perform complex analysis")
+```
+
+### Asynchronous Execution
+
+For asynchronous task execution:
+
+```python
+result = await router.async_run("Generate financial projections")
+```
+
+### Concurrent Execution
+
+To run a single task concurrently:
+
+```python
+result = router.concurrent_run("Analyze multiple data streams")
+```
+
+### Concurrent Batch Processing
+
+To process multiple tasks concurrently:
+
+```python
+tasks = ["Task 1", "Task 2", "Task 3"]
+results = router.concurrent_batch_run(tasks)
 ```
 
 ## Best Practices
@@ -338,3 +339,6 @@ except Exception as e:
 5. Implement proper error handling in your application code.
 6. Consider the nature of your tasks when choosing a swarm type (e.g., use ConcurrentWorkflow for tasks that can be parallelized).
 7. Optimize your agents' prompts and configurations for best performance within the swarm.
+8. Utilize the automatic swarm type selection feature for tasks where the optimal swarm type is not immediately clear.
+9. Take advantage of batch processing and concurrent execution for handling multiple tasks efficiently.
+10. Use the reliability check feature to ensure your SwarmRouter is properly configured before running tasks.

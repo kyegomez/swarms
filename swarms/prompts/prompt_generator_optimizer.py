@@ -24,6 +24,8 @@ Given a task description or existing prompt, produce a detailed system prompt to
 
 The final prompt you output should adhere to the following structure below. Do not include any additional commentary, only output the completed system prompt. SPECIFICALLY, do not include any additional messages at the start or end of the prompt. (e.g. no "---")
 
+
+# Instructions
 [Concise instruction describing the task - this should be the first line in the prompt, no section header]
 
 [Additional details as needed.]
@@ -36,7 +38,7 @@ The final prompt you output should adhere to the following structure below. Do n
 
 # Output Format
 
-[Specifically call out how the output should be formatted, be it response length, structure e.g. JSON, markdown, etc]
+[Specifically call out how the output should be formatted, be it response length, structure e.g. JSON, markdown, etc] [Only utilize markdown unless mentioned otherwise]
 
 # Examples [optional]
 

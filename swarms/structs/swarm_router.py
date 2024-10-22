@@ -1,15 +1,18 @@
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Callable, Dict, List, Literal, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field
+
 from swarms.structs.agent import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
+from tenacity import retry, stop_after_attempt, wait_fixed
+from swarms.structs.swarm_matcher import swarm_matcher
 
 SwarmType = Literal[
     "AgentRearrange",
@@ -17,6 +20,7 @@ SwarmType = Literal[
     "SpreadSheetSwarm",
     "SequentialWorkflow",
     "ConcurrentWorkflow",
+    "auto",
 ]
 
 
@@ -36,15 +40,21 @@ class SwarmLog(BaseModel):
 
 class SwarmRouter:
     """
-    A class to route tasks to different swarm types based on user selection.
+    A class to dynamically route tasks to different swarm types based on user selection or automatic matching.
 
-    This class allows users to specify a swarm type and a list of agents, then run tasks
-    on the selected swarm type. It includes type validation, logging, and metadata capture.
+    This class enables users to specify a swarm type or let the system automatically determine the best swarm type for a given task. It then runs the task on the selected or matched swarm type, ensuring type validation, logging, and metadata capture.
 
     Attributes:
-        agents (List[Agent]): A list of Agent objects to be used in the swarm.
-        swarm_type (SwarmType): The type of swarm to be used.
-        swarm (Union[AgentRearrange, GraphWorkflow, MixtureOfAgents, SpreadSheetSwarm]):
+        name (str): The name of the SwarmRouter instance.
+        description (str): A description of the SwarmRouter instance.
+        max_loops (int): The maximum number of loops to perform.
+        agents (List[Union[Agent, Callable]]): A list of Agent objects to be used in the swarm.
+        swarm_type (SwarmType): The type of swarm to be used, which can be specified or automatically determined.
+        autosave (bool): A flag to enable/disable autosave.
+        flow (str): The flow of the swarm.
+        return_json (bool): A flag to enable/disable returning the result in JSON format.
+        auto_generate_prompts (bool): A flag to enable/disable auto generation of prompts.
+        swarm (Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]):
             The instantiated swarm object.
         logs (List[SwarmLog]): A list of log entries captured during operations.
 
@@ -54,6 +64,7 @@ class SwarmRouter:
         - SpreadSheetSwarm: Utilizes spreadsheet-like operations for task management.
         - SequentialWorkflow: Executes tasks in a sequential manner.
         - ConcurrentWorkflow: Executes tasks concurrently for parallel processing.
+        - "auto" will automatically conduct embedding search to find the best swarm for your task
     """
 
     def __init__(
@@ -61,71 +72,81 @@ class SwarmRouter:
         name: str = "swarm-router",
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
-        agents: List[Agent] = None,
-        swarm_type: SwarmType = None,
+        agents: List[Union[Agent, Callable]] = [],
+        swarm_type: SwarmType = "SequentialWorkflow",  # "SpreadSheetSwarm" # "auto"
+        autosave: bool = False,
+        flow: str = None,
+        return_json: bool = True,
+        auto_generate_prompts: bool = False,
         *args,
         **kwargs,
     ):
-        """
-        Initialize the SwarmRouter with a list of agents and a swarm type.
-
-        Args:
-            name (str, optional): The name of the SwarmRouter instance. Defaults to None.
-            description (str, optional): A description of the SwarmRouter instance. Defaults to None.
-            max_loops (int, optional): The maximum number of loops to perform. Defaults to 1.
-            agents (List[Agent], optional): A list of Agent objects to be used in the swarm. Defaults to None.
-            swarm_type (SwarmType, optional): The type of swarm to be used. Defaults to None.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Raises:
-            ValueError: If an invalid swarm type is provided, or if there are no agents, or if swarm type is "none", or if max_loops is 0.
-        """
-        if not agents:
-            raise ValueError("No agents provided for the swarm.")
-        if swarm_type is None:
-            raise ValueError("Swarm type cannot be 'none'.")
-        if max_loops == 0:
-            raise ValueError("max_loops cannot be 0.")
-
         self.name = name
         self.description = description
         self.max_loops = max_loops
         self.agents = agents
         self.swarm_type = swarm_type
-        self.swarm = self._create_swarm(*args, **kwargs)
+        self.autosave = autosave
+        self.flow = flow
+        self.return_json = return_json
+        self.auto_generate_prompts = auto_generate_prompts
         self.logs = []
+
+        self.reliability_check()
 
         self._log(
             "info",
             f"SwarmRouter initialized with swarm type: {swarm_type}",
         )
 
-    def _create_swarm(self, *args, **kwargs) -> Union[
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
+    def reliability_check(self):
+        logger.info("Logger initializing checks")
+
+        if not self.agents:
+            raise ValueError("No agents provided for the swarm.")
+        if self.swarm_type is None:
+            raise ValueError("Swarm type cannot be 'none'.")
+        if self.max_loops == 0:
+            raise ValueError("max_loops cannot be 0.")
+
+        logger.info("Checks completed your swarm is ready.")
+
+    def _create_swarm(
+        self, task: str = None, *args, **kwargs
+    ) -> Union[
         AgentRearrange,
         MixtureOfAgents,
         SpreadSheetSwarm,
+        SequentialWorkflow,
+        ConcurrentWorkflow,
     ]:
         """
-        Create and return the specified swarm type.
+        Dynamically create and return the specified swarm type or automatically match the best swarm type for a given task.
 
         Args:
+            task (str, optional): The task to be executed by the swarm. Defaults to None.
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
 
         Returns:
-            Union[AgentRearrange, GraphWorkflow, MixtureOfAgents, SpreadSheetSwarm]:
+            Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]:
                 The instantiated swarm object.
 
         Raises:
             ValueError: If an invalid swarm type is provided.
         """
-        if self.swarm_type == "AgentRearrange":
+        if self.swarm_type == "auto":
+            self.swarm_type = swarm_matcher(task)
+
+        elif self.swarm_type == "AgentRearrange":
             return AgentRearrange(
                 name=self.name,
                 description=self.description,
                 agents=self.agents,
                 max_loops=self.max_loops,
+                flow=self.flow,
+                return_json=self.return_json,
                 *args,
                 **kwargs,
             )
@@ -144,7 +165,8 @@ class SwarmRouter:
                 name=self.name,
                 description=self.description,
                 agents=self.agents,
-                max_loops=1,
+                max_loops=self.max_loops,
+                autosave_on=self.autosave,
                 *args,
                 **kwargs,
             )
@@ -163,6 +185,8 @@ class SwarmRouter:
                 description=self.description,
                 agents=self.agents,
                 max_loops=self.max_loops,
+                auto_save=self.autosave,
+                return_str_on=self.return_json,
                 *args,
                 **kwargs,
             )
@@ -195,9 +219,10 @@ class SwarmRouter:
         self.logs.append(log_entry)
         logger.log(level.upper(), message)
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def run(self, task: str, *args, **kwargs) -> Any:
         """
-        Run the specified task on the selected swarm.
+        Dynamically run the specified task on the selected or matched swarm type.
 
         Args:
             task (str): The task to be executed by the swarm.
@@ -210,6 +235,8 @@ class SwarmRouter:
         Raises:
             Exception: If an error occurs during task execution.
         """
+        self.swarm = self._create_swarm(task, *args, **kwargs)
+
         try:
             self._log(
                 "info",
@@ -234,6 +261,107 @@ class SwarmRouter:
             )
             raise
 
+    def batch_run(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Any]:
+        """
+        Execute a batch of tasks on the selected or matched swarm type.
+
+        Args:
+            tasks (List[str]): A list of tasks to be executed by the swarm.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[Any]: A list of results from the swarm's execution.
+
+        Raises:
+            Exception: If an error occurs during task execution.
+        """
+        results = []
+        for task in tasks:
+            try:
+                result = self.run(task, *args, **kwargs)
+                results.append(result)
+            except Exception as e:
+                self._log(
+                    "error",
+                    f"Error occurred while running batch task on {self.swarm_type} swarm: {str(e)}",
+                    task=task,
+                    metadata={"error": str(e)},
+                )
+                raise
+        return results
+
+    def threaded_run(self, task: str, *args, **kwargs) -> Any:
+        """
+        Execute a task on the selected or matched swarm type using threading.
+
+        Args:
+            task (str): The task to be executed by the swarm.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Any: The result of the swarm's execution.
+
+        Raises:
+            Exception: If an error occurs during task execution.
+        """
+        from threading import Thread
+
+        def run_in_thread():
+            try:
+                result = self.run(task, *args, **kwargs)
+                return result
+            except Exception as e:
+                self._log(
+                    "error",
+                    f"Error occurred while running task in thread on {self.swarm_type} swarm: {str(e)}",
+                    task=task,
+                    metadata={"error": str(e)},
+                )
+                raise
+
+        thread = Thread(target=run_in_thread)
+        thread.start()
+        thread.join()
+        return thread.result
+
+    def async_run(self, task: str, *args, **kwargs) -> Any:
+        """
+        Execute a task on the selected or matched swarm type asynchronously.
+
+        Args:
+            task (str): The task to be executed by the swarm.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Any: The result of the swarm's execution.
+
+        Raises:
+            Exception: If an error occurs during task execution.
+        """
+        import asyncio
+
+        async def run_async():
+            try:
+                result = await asyncio.to_thread(
+                    self.run, task, *args, **kwargs
+                )
+                return result
+            except Exception as e:
+                self._log(
+                    "error",
+                    f"Error occurred while running task asynchronously on {self.swarm_type} swarm: {str(e)}",
+                    task=task,
+                    metadata={"error": str(e)},
+                )
+                raise
+
+        return asyncio.run(run_async())
+
     def get_logs(self) -> List[SwarmLog]:
         """
         Retrieve all logged entries.
@@ -242,3 +370,52 @@ class SwarmRouter:
             List[SwarmLog]: A list of all log entries.
         """
         return self.logs
+
+    def concurrent_run(self, task: str, *args, **kwargs) -> Any:
+        """
+        Execute a task on the selected or matched swarm type concurrently.
+
+        Args:
+            task (str): The task to be executed by the swarm.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Any: The result of the swarm's execution.
+
+        Raises:
+            Exception: If an error occurs during task execution.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(self.run, task, *args, **kwargs)
+            result = future.result()
+            return result
+
+    def concurrent_batch_run(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Any]:
+        """
+        Execute a batch of tasks on the selected or matched swarm type concurrently.
+
+        Args:
+            tasks (List[str]): A list of tasks to be executed by the swarm.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[Any]: A list of results from the swarm's execution.
+
+        Raises:
+            Exception: If an error occurs during task execution.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(self.run, task, *args, **kwargs)
+                for task in tasks
+            ]
+            results = [future.result() for future in futures]
+            return results
