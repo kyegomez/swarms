@@ -102,6 +102,9 @@ def create_agents_from_yaml(
                 "return_step_meta", False
             ),
             output_type=agent_config.get("output_type", "str"),
+            auto_generate_prompt=agent_config.get(
+                "auto_generate_prompt", "False"
+            ),
             *args,
             **kwargs,
         )
@@ -122,6 +125,9 @@ def create_agents_from_yaml(
             agents=agents,
             swarm_type=swarm_config["swarm_type"],
             task=swarm_config.get("task"),
+            flow=swarm_config.get("flow"),
+            autosave=swarm_config.get("autosave"),
+            return_json=swarm_config.get("return_json"),
             *args,
             **kwargs,
         )

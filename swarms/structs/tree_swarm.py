@@ -17,13 +17,6 @@ load_dotenv()
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("OPENAI_API_KEY")
 
-# # Set up loguru to log into a file and console
-# logger.add(
-#     "multi_agent_log_{time}.log",
-#     format="{time} {level} {message}",
-#     level="DEBUG",
-#     rotation="10 MB",
-# )
 
 # Pretrained model for embeddings
 embedding_model = SentenceTransformer(

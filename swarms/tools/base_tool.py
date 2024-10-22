@@ -20,18 +20,17 @@ ToolType = Union[BaseModel, Dict[str, Any], Callable[..., Any]]
 
 
 class BaseTool(BaseModel):
-    verbose: bool = False
-    base_models: List[type[BaseModel]] = []
-    verbose: bool = False
-    autocheck: bool = False
-    auto_execute_tool: Optional[bool] = False
-    tools: List[Callable[..., Any]] = []
-    tool_system_prompt: str = Field(
-        ...,
+    verbose: Optional[bool] = None
+    base_models: Optional[List[type[BaseModel]]] = None
+    autocheck: Optional[bool] = None
+    auto_execute_tool: Optional[bool] = None
+    tools: Optional[List[Callable[..., Any]]] = None
+    tool_system_prompt: Optional[str] = Field(
+        None,
         description="The system prompt for the tool system.",
     )
-    function_map: Dict[str, Callable] = {}
-    list_of_dicts: List[Dict[str, Any]] = []
+    function_map: Optional[Dict[str, Callable]] = None
+    list_of_dicts: Optional[List[Dict[str, Any]]] = None
 
     def func_to_dict(
         self,
@@ -418,7 +417,7 @@ class BaseTool(BaseModel):
                     f"Tool {tool.__name__} does not have documentation or type hints, please add them to make the tool execution reliable."
                 )
 
-        return None
+        return tool_schema_list
 
     def check_func_if_have_docs(self, func: callable):
         if func.__doc__ is not None:
