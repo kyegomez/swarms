@@ -112,6 +112,7 @@ class ConcurrentWorkflow(BaseSwarm):
         return_str_on: bool = False,
         agent_responses: list = [],
         auto_generate_prompts: bool = False,
+        max_workers: int = None,
         *args,
         **kwargs,
     ):
@@ -132,8 +133,11 @@ class ConcurrentWorkflow(BaseSwarm):
         self.return_str_on = return_str_on
         self.agent_responses = agent_responses
         self.auto_generate_prompts = auto_generate_prompts
+        self.max_workers = max_workers or os.cpu_count()
+        self.tasks = []  # Initialize tasks list
 
         self.reliability_check()
+
 
     def reliability_check(self):
         try:
