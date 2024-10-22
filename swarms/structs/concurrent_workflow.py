@@ -393,6 +393,9 @@ class ConcurrentWorkflow(BaseSwarm):
             ValueError: If an invalid device is specified.
             Exception: If any other error occurs during execution.
         """
+        if task is not None:
+            self.tasks.append(task)
+            
         try:
             logger.info(f"Attempting to run on device: {device}")
             if device == "cpu":
@@ -410,7 +413,6 @@ class ConcurrentWorkflow(BaseSwarm):
                     count, self._run, task, img, *args, **kwargs
                 )
 
-            # If device gpu
             elif device == "gpu":
                 logger.info("Device set to GPU")
                 return execute_on_gpu(
