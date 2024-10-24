@@ -803,14 +803,8 @@ class Agent:
                             self.memory_query(task_prompt)
 
                         # Generate response using LLM
-                        response_args = (
-                            (task_prompt, *args)
-                            if img is None
-                            else (task_prompt, img, *args)
-                        )
-                        response = self.call_llm(
-                            *response_args, **kwargs
-                        )
+                        response = self.llm(task_prompt, *args, **kwargs)
+
 
                         # Check if response is a dictionary and has 'choices' key
                         if isinstance(response, dict) and 'choices' in response:
