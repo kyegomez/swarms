@@ -1858,20 +1858,21 @@ class Agent:
 
         return response
 
-    def llm_output_parser(self, response: Any) -> str:
-        """
-        Parses the response from the LLM (Low-Level Monitor) and returns it as a string.
-
-        Args:
-            response (Any): The response from the LLM.
-
-        Returns:
-            str: The parsed response as a string.
-        """
-        if response is not str:
-            response = str(response)
-
-        return response
+    def llm_output_parser(self, response):
+        """Parse the output from the LLM"""
+        try:
+            if isinstance(response, dict):
+                if 'choices' in response:
+                    return response['choices'][0]['message']['content']
+                else:
+                    return json.dumps(response)  # Convert dict to string
+            elif isinstance(response, str):
+                return response
+            else:
+                return str(response)  # Convert any other type to string
+        except Exception as e:
+            logger.error(f"Error parsing LLM output: {e}")
+            return str(response)  # Return string representation as fallback
 
     def log_step_metadata(
         self, loop: int, task: str, response: str
