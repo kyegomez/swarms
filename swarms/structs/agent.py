@@ -812,6 +812,15 @@ class Agent:
                             *response_args, **kwargs
                         )
 
+                        # Check if response is a dictionary and has 'choices' key
+                        if isinstance(response, dict) and 'choices' in response:
+                            response = response['choices'][0]['message']['content']
+                        elif isinstance(response, str):
+                            # If response is already a string, use it as is
+                            pass
+                        else:
+                            raise ValueError(f"Unexpected response format: {type(response)}")
+
                         # Check and execute tools
                         if self.tools is not None:
                             print(f"self.tools is not None: {response}")
