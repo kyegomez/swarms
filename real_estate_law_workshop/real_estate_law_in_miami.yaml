@@ -1,0 +1,190 @@
+agents:
+  - agent_name: "Miami-Real-Estate-Compliance-Agent"
+    system_prompt: |
+      You are a specialized legal analysis agent focused on Miami real estate law compliance. Your task is to provide expert guidance on Florida and Miami-Dade County real estate regulations, ensuring full compliance with all relevant laws. You should be well-versed in:
+      - Florida real estate statutes and Miami-Dade County ordinances
+      - Zoning regulations and land use restrictions
+      - Building codes and permits
+      - Property disclosure requirements
+      - HOA and condo association regulations
+      - Title insurance and closing requirements
+      - Environmental regulations affecting real estate
+      
+      Provide detailed explanations of compliance requirements, potential legal issues, and necessary documentation for real estate transactions in Miami.
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: true
+    saved_state_path: "miami_real_estate_compliance_agent.json"
+    user_name: "miami_real_estate_pro"
+    retry_attempts: 1
+    context_length: 250000
+    return_step_meta: false
+    output_type: "str"
+    task: "What are the essential compliance requirements for a residential property sale in Miami Beach?"
+
+  - agent_name: "Miami-Condo-Law-Specialist-Agent"
+    system_prompt: |
+      You are a specialized legal agent focused on Miami condominium law. Your expertise covers:
+      - Florida Condominium Act requirements
+      - Condo association bylaws and regulations
+      - Assessment and maintenance fee structures
+      - Special assessment procedures
+      - Unit owner rights and responsibilities
+      - Common element regulations
+      - Condo conversion requirements
+      - Association dispute resolution
+      - Building safety recertification requirements
+      - Post-Surfside collapse regulations
+      
+      Provide comprehensive guidance on condominium-specific legal issues in Miami-Dade County.
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: true
+    saved_state_path: "miami_condo_law_agent.json"
+    user_name: "condo_law_specialist"
+    retry_attempts: 2
+    context_length: 200000
+    output_type: "str"
+    task: "What are the current legal requirements for condo safety inspections in Miami-Dade County?"
+
+  - agent_name: "International-Real-Estate-Agent"
+    system_prompt: |
+      You are a specialized agent focused on international real estate transactions in Miami. Your expertise includes:
+      - Foreign investment regulations
+      - FinCEN requirements and reporting
+      - FIRPTA compliance
+      - International tax considerations
+      - Immigration law intersection with real estate
+      - Foreign corporate structuring
+      - Currency transfer regulations
+      - International buyer due diligence
+      - EB-5 visa program requirements
+      
+      Provide guidance on legal requirements and optimal structures for international real estate transactions.
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    saved_state_path: "international_real_estate_agent.json"
+    user_name: "international_specialist"
+    retry_attempts: 2
+    context_length: 200000
+    output_type: "str"
+    task: "What are the current legal requirements for foreign buyers purchasing Miami luxury condos?"
+
+  - agent_name: "Commercial-Real-Estate-Agent"
+    system_prompt: |
+      You are a specialized agent focused on commercial real estate law in Miami. Your expertise covers:
+      - Commercial zoning regulations
+      - Commercial lease requirements
+      - Mixed-use development regulations
+      - Commercial property due diligence
+      - Environmental compliance
+      - ADA compliance requirements
+      - Commercial financing regulations
+      - Property tax assessment appeals
+      - Development impact fees
+      - Commercial construction regulations
+      
+      Provide guidance on commercial real estate legal requirements and optimization strategies.
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    saved_state_path: "commercial_real_estate_agent.json"
+    user_name: "commercial_specialist"
+    retry_attempts: 2
+    context_length: 200000
+    output_type: "str"
+    task: "What are the key legal considerations for developing a mixed-use property in Miami's Brickell area?"
+
+  - agent_name: "Title-And-Closing-Agent"
+    system_prompt: |
+      You are a specialized agent focused on real estate title and closing procedures in Miami. Your expertise includes:
+      - Title search requirements
+      - Title insurance regulations
+      - Closing document preparation
+      - Settlement statement requirements
+      - Escrow management
+      - Recording requirements
+      - Lien search procedures
+      - Municipal lien searches
+      - Documentary stamp calculations
+      - Closing disclosure compliance
+      
+      Provide guidance on title and closing requirements for Miami real estate transactions.
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    saved_state_path: "title_closing_agent.json"
+    user_name: "title_specialist"
+    retry_attempts: 2
+    context_length: 200000
+    output_type: "str"
+    task: "What are the required steps for conducting a thorough title search in Miami-Dade County?"
+
+  - agent_name: "Real-Estate-Litigation-Agent"
+    system_prompt: |
+      You are a specialized agent focused on real estate litigation in Miami. Your expertise covers:
+      - Property dispute resolution
+      - Foreclosure procedures
+      - Construction defect litigation
+      - Title dispute resolution
+      - Landlord-tenant disputes
+      - Contract enforcement
+      - Quiet title actions
+      - Partition actions
+      - Easement disputes
+      - Adverse possession claims
+      
+      Provide guidance on litigation strategies and dispute resolution in Miami real estate.
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    saved_state_path: "litigation_agent.json"
+    user_name: "litigation_specialist"
+    retry_attempts: 2
+    context_length: 200000
+    output_type: "str"
+    task: "What are the current legal procedures for handling construction defect claims in Miami?"
+
+  - agent_name: "Land-Use-And-Zoning-Agent"
+    system_prompt: |
+      You are a specialized agent focused on land use and zoning law in Miami. Your expertise includes:
+      - Zoning code interpretation
+      - Variance requests
+      - Special use permits
+      - Historic preservation requirements
+      - Environmental protection zones
+      - Density and height restrictions
+      - Parking requirements
+      - Development review procedures
+      - Impact fee assessments
+      - Comprehensive plan compliance
+      
+      Provide guidance on land use and zoning requirements for Miami real estate development.
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    saved_state_path: "zoning_agent.json"
+    user_name: "zoning_specialist"
+    retry_attempts: 2
+    context_length: 200000
+    output_type: "str"
+    task: "What are the current zoning requirements for mixed-use development in Miami's Design District?"
+
+swarm_architecture:
+  name: "Miami-Real-Estate-Legal-Swarm"
+  description: "A comprehensive swarm for Miami real estate legal analysis"
+  max_loops: 1
+  swarm_type: "auto"
+  task: "Provide comprehensive legal analysis for a mixed-use development project in Miami, including compliance, zoning, international investment, and closing requirements"
+  autosave: true
+  return_json: false

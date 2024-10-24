@@ -30,7 +30,7 @@ agents:
       - Tax-efficient supply chain management
       - State-specific tax planning
       - Federal tax planning applicable to C Corps
-    max_loops: 2
+    max_loops: 1
     autosave: true
     dashboard: false
     verbose: true
@@ -46,10 +46,10 @@ agents:
 
 
 swarm_architecture:
-  name: "MySwarm"
-  description: "A swarm for collaborative task solving"
-  max_loops: 5
-  swarm_type: "ConcurrentWorkflow"
+  name: "Financial-Agent-Swarm"
+  description: "A swarm for financial analysis"
+  max_loops: 1
+  swarm_type: "auto"
   task: "How can we trademark concepts as a delaware C CORP for free"
   autosave: true
   return_json: false
