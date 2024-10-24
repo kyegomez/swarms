@@ -804,10 +804,10 @@ class Agent:
 
                         # Generate response using LLM
                         response_args = (
-                                (task_prompt, *args)
-                                if img is None
-                                else (task_prompt, img, *args)
-                            )
+                            (task_prompt, *args)
+                            if img is None
+                            else (task_prompt, img, *args)
+                        )
                         response = self.call_llm(
                             *response_args, **kwargs
                         )
