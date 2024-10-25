@@ -51,7 +51,7 @@ Runs the swarm by having agents pick up tasks from the queue.
 - **Usage Example:**
   ```python
   from swarms import Agent, TaskQueueSwarm
-  from swarms.models import OpenAIChat
+  from swarms_models import OpenAIChat
 
   # Initialize the language model
   llm = OpenAIChat()

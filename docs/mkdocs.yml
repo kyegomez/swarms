@@ -175,6 +175,7 @@ nav:
         - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
         - ForestSwarm: "swarms/structs/forest_swarm.md"
         - SwarmRouter: "swarms/structs/swarm_router.md"
+        - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
