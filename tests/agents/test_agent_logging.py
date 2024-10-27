@@ -84,3 +84,6 @@ class TestAgentLoggingIntegration(unittest.TestCase):
             self.assertEqual(step['response'], f"Response for loop 1")
         
         self.assertTrue(len(self.agent.agent_output.steps) > 0)
+
+if __name__ == '__main__':
+    unittest.main()
