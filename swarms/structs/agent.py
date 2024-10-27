@@ -57,6 +57,8 @@ from clusterops import (
     execute_with_cpu_cores,
 )
 from swarms.agents.ape_agent import auto_generate_prompt
+from dataclasses import asdict
+
 
 
 # Utils
