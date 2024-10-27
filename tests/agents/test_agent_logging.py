@@ -22,3 +22,15 @@ class TestAgentLogging(unittest.TestCase):
             short_memory=self.mock_short_memory,
             long_term_memory=self.mock_long_memory
         )
+
+    def test_log_step_metadata_basic(self):
+        log_result = self.agent.log_step_metadata(1, "Test prompt", "Test response")
+        
+        self.assertIn('step_id', log_result)
+        self.assertIn('timestamp', log_result)
+        self.assertIn('tokens', log_result)
+        self.assertIn('memory_usage', log_result)
+        
+        self.assertEqual(log_result['tokens']['total'], 200)
+
+    
