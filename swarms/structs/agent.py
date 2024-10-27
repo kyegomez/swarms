@@ -1948,6 +1948,17 @@ class Agent:
         # Add step to agent output tracking
         return self.step_pool.append(step_log)
 
+    def update_tool_usage(self, step_id: str, tool_name: str, tool_args: dict, tool_response: Any):
+        """Update tool usage information for a specific step."""
+        for step in self.agent_output.steps:
+            if step.step_id == step_id:
+                step.response.tool_calls.append({
+                    "tool": tool_name,
+                    "arguments": tool_args,
+                    "response": str(tool_response)
+                })
+                break
+                
     def _serialize_callable(
         self, attr_value: Callable
     ) -> Dict[str, Any]:
