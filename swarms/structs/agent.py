@@ -1947,7 +1947,7 @@ class Agent:
 
 
         # Add step to agent output tracking
-        return self.step_pool.append(step_log)
+        self.step_pool.append(step_log)
 
 
     def update_tool_usage(self, step_id: str, tool_name: str, tool_args: dict, tool_response: Any):
