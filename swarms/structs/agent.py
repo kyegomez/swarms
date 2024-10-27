@@ -826,7 +826,19 @@ class Agent:
                         # Check and execute tools
                         if self.tools is not None:
                             print(f"self.tools is not None: {response}")
+                            tool_result = self.parse_and_execute_tools(response)
                             self.parse_and_execute_tools(response)
+                            if tool_result:
+                                self.update_tool_usage(
+                                    step_meta["step_id"],
+                                    tool_result["tool"],
+                                    tool_result["args"],
+                                    tool_result["response"]
+                                )
+
+
+                        # Update agent output history
+                        self.agent_output.full_history = self.short_memory.return_history_as_string()
                         
                         # Log the step metadata
                         logged = self.log_step_metadata(
