@@ -58,3 +58,29 @@ class TestAgentLogging(unittest.TestCase):
                 200
             )
             self.assertEqual(len(self.agent.agent_output.steps), 1)
+
+class TestAgentLoggingIntegration(unittest.TestCase):
+    def setUp(self):
+        self.agent = Agent(agent_name="test-agent")
+
+    def test_full_logging_cycle(self):
+        task = "Test task"
+        max_loops = 1
+        
+        result = self.agent._run(task, max_loops=max_loops)
+        
+        self.assertIsInstance(result, dict)
+        self.assertIn('steps', result)
+        self.assertIsInstance(result['steps'], list)
+        self.assertEqual(len(result['steps']), max_loops)
+        
+        if result['steps']:
+            step = result['steps'][0]
+            self.assertIn('step_id', step)
+            self.assertIn('timestamp', step)
+            self.assertIn('task', step)
+            self.assertIn('response', step)
+            self.assertEqual(step['task'], task)
+            self.assertEqual(step['response'], f"Response for loop 1")
+        
+        self.assertTrue(len(self.agent.agent_output.steps) > 0)
