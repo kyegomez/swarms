@@ -1897,13 +1897,27 @@ class Agent:
     def log_step_metadata(
         self, loop: int, task: str, response: str
     ) -> Step:
-        # # # Step Metadata
+        """Log metadata for each step of agent execution."""
+        # Generate unique step ID
+        step_id = f"step_{loop}_{uuid.uuid4().hex}"
+        
+        # Calculate token usage
         # full_memory = self.short_memory.return_history_as_string()
         # prompt_tokens = self.tokenizer.count_tokens(full_memory)
         # completion_tokens = self.tokenizer.count_tokens(response)
-        # self.tokenizer.count_tokens(prompt_tokens + completion_tokens)
+        # total_tokens = prompt_tokens + completion_tokens
+        total_tokens=self.tokenizer.count_tokens(task) + self.tokenizer.count_tokens(response),
+
+        # Create memory usage tracking
+        memory_usage = {
+            "short_term": len(self.short_memory.messages),
+            "long_term": self.long_term_memory.count if hasattr(self, 'long_term_memory') else 0
+        }
 
         step_log = Step(
+            step_id=step_id,
+            time=time.time(),
+            tokens = total_tokens,
             response=AgentChatCompletionResponse(
                 id=self.agent_id,
                 agent_name=self.agent_name,
@@ -1918,13 +1932,21 @@ class Agent:
                 ),
                 # usage=UsageInfo(
                 #     prompt_tokens=prompt_tokens,
-                #     total_tokens=total_tokens,
                 #     completion_tokens=completion_tokens,
+                #     total_tokens=total_tokens,
                 # ),
+                tool_calls=[],
+                memory_usage=memory_usage
             ),
         )
 
-        self.step_pool.append(step_log)
+        # Update total tokens if agent_output exists
+        if hasattr(self, 'agent_output'):
+            self.agent_output.total_tokens += step.response.total_tokens
+
+
+        # Add step to agent output tracking
+        return self.step_pool.append(step_log)
 
     def _serialize_callable(
         self, attr_value: Callable
