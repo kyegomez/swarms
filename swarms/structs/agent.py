@@ -783,6 +783,8 @@ class Agent:
                 or loop_count < self.max_loops
             ):
                 loop_count += 1
+                # Log step start
+                current_step_id = f"step_{loop_count}_{uuid.uuid4().hex}"
                 self.loop_count_print(loop_count, self.max_loops)
                 print("\n")
 
@@ -836,6 +838,9 @@ class Agent:
                         
                         # Convert to a str if the response is not a str
                         response = self.llm_output_parser(response)
+
+                        # Log step metadata
+                        step_meta = self.log_step_metadata(loop_count, task_prompt, response)
                         
                         # Print
                         if self.streaming_on is True:
