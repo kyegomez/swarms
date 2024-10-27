@@ -61,6 +61,8 @@ from dataclasses import asdict
 
 
 
+
+
 # Utils
 # Custom stopping condition
 def stop_when_repeats(response: str) -> bool:
@@ -812,6 +814,9 @@ class Agent:
                         )
                         response = self.call_llm(*response_args, **kwargs)
                         
+                        # Log step metadata
+                        step_meta = self.log_step_metadata(loop_count, task_prompt, response)
+
                         # Check if response is a dictionary and has 'choices' key
                         if isinstance(response, dict) and 'choices' in response:
                             response = response['choices'][0]['message']['content']
@@ -825,9 +830,7 @@ class Agent:
                         
                         # Check and execute tools
                         if self.tools is not None:
-                            print(f"self.tools is not None: {response}")
                             tool_result = self.parse_and_execute_tools(response)
-                            self.parse_and_execute_tools(response)
                             if tool_result:
                                 self.update_tool_usage(
                                     step_meta["step_id"],
@@ -836,7 +839,7 @@ class Agent:
                                     tool_result["response"]
                                 )
 
-
+                           
                         # Update agent output history
                         self.agent_output.full_history = self.short_memory.return_history_as_string()
                         
@@ -850,9 +853,6 @@ class Agent:
                         
                         # Convert to a str if the response is not a str
                         response = self.llm_output_parser(response)
-
-                        # Log step metadata
-                        step_meta = self.log_step_metadata(loop_count, task_prompt, response)
                         
                         # Print
                         if self.streaming_on is True:
@@ -1002,6 +1002,7 @@ class Agent:
                 return asdict(self.agent_output)
             else:
                 return concat_strings(all_responses)
+
 
         except Exception as error:
             logger.info(
@@ -1947,6 +1948,7 @@ class Agent:
 
         # Add step to agent output tracking
         return self.step_pool.append(step_log)
+
 
     def update_tool_usage(self, step_id: str, tool_name: str, tool_args: dict, tool_response: Any):
         """Update tool usage information for a specific step."""
