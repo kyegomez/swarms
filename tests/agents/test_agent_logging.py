@@ -47,3 +47,14 @@ class TestAgentLogging(unittest.TestCase):
         log_result = self.agent.log_step_metadata(1, "prompt", "response")
         
         self.assertEqual(log_result['tokens']['total'], 400)
+
+    def test_agent_output_updating(self):
+            initial_total_tokens = sum(step['tokens']['total'] for step in self.agent.agent_output.steps)
+            self.agent.log_step_metadata(1, "prompt", "response")
+            
+            final_total_tokens = sum(step['tokens']['total'] for step in self.agent.agent_output.steps)
+            self.assertEqual(
+                final_total_tokens - initial_total_tokens,
+                200
+            )
+            self.assertEqual(len(self.agent.agent_output.steps), 1)
