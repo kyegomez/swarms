@@ -41,3 +41,9 @@ class TestAgentLogging(unittest.TestCase):
     def test_log_step_metadata_timestamp(self):
         log_result = self.agent.log_step_metadata(1, "prompt", "response")
         self.assertIn('timestamp', log_result)
+
+    def test_token_counting_integration(self):
+        self.mock_tokenizer.count_tokens.side_effect = [150, 250]
+        log_result = self.agent.log_step_metadata(1, "prompt", "response")
+        
+        self.assertEqual(log_result['tokens']['total'], 400)
