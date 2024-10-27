@@ -33,4 +33,8 @@ class TestAgentLogging(unittest.TestCase):
         
         self.assertEqual(log_result['tokens']['total'], 200)
 
+    def test_log_step_metadata_no_long_term_memory(self):
+        self.agent.long_term_memory = None
+        log_result = self.agent.log_step_metadata(1, "prompt", "response")
+        self.assertEqual(log_result['memory_usage']['long_term'], {})
     
