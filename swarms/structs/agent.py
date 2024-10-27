@@ -998,7 +998,10 @@ class Agent:
 
             # return self.agent_output_type(all_responses)
 
-            return concat_strings(all_responses)
+            if self.output_type == "json":
+                return asdict(self.agent_output)
+            else:
+                return concat_strings(all_responses)
 
         except Exception as error:
             logger.info(
