@@ -38,3 +38,6 @@ class TestAgentLogging(unittest.TestCase):
         log_result = self.agent.log_step_metadata(1, "prompt", "response")
         self.assertEqual(log_result['memory_usage']['long_term'], {})
     
+    def test_log_step_metadata_timestamp(self):
+        log_result = self.agent.log_step_metadata(1, "prompt", "response")
+        self.assertIn('timestamp', log_result)
