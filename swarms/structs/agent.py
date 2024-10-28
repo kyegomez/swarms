@@ -1991,11 +1991,32 @@ class Agent:
         # completion_tokens = self.tokenizer.count_tokens(response)
         # total_tokens = prompt_tokens + completion_tokens
         total_tokens=self.tokenizer.count_tokens(task) + self.tokenizer.count_tokens(response),
- 
+
+        # Get memory responses
+        memory_responses = {
+            "short_term": self.short_memory.return_history_as_string() if self.short_memory else None,
+            "long_term": self.long_term_memory.query(task) if self.long_term_memory else None
+        }
+
+        # Get tool responses if tool was used
+        tool_response = None
+        if self.tools:
+            try:
+                tool_call_output = parse_and_execute_json(self.tools, response, parse_md=True)
+                if tool_call_output:
+                    tool_response = {
+                        "tool_name": tool_call_output.get("tool_name", "unknown"),
+                        "tool_args": tool_call_output.get("args", {}),
+                        "tool_output": str(tool_call_output.get("output", ""))
+                    }
+            except Exception as e:
+                logger.debug(f"No tool call detected in response: {e}")
+                
         # Create memory usage tracking
         memory_usage = {
-            "short_term": len(self.short_memory.messages),
-            "long_term": self.long_term_memory.count if hasattr(self, 'long_term_memory') else 0
+            "short_term": len(self.short_memory.messages) if self.short_memory else 0,
+            "long_term": self.long_term_memory.count if self.long_term_memory else 0,
+            "responses": memory_responses
         }
  
         step_log = Step(
@@ -2019,14 +2040,14 @@ class Agent:
                 #     completion_tokens=completion_tokens,
                 #     total_tokens=total_tokens,
                 # ),
-                tool_calls=[],
+                tool_calls=[] if tool_response is None else [tool_response],
                 memory_usage=memory_usage
             ),
         )
  
         # Update total tokens if agent_output exists
         if hasattr(self, 'agent_output'):
-            self.agent_output.total_tokens += step.response.total_tokens
+            self.agent_output.total_tokens += self.response.total_tokens
  
  
         # Add step to agent output tracking
