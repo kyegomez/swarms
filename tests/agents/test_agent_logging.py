@@ -5,6 +5,15 @@ from datetime import datetime
 import unittest
 from swarms.schemas.agent_step_schemas import ManySteps, Step
 from swarms.structs.agent import Agent
+from swarms.tools.tool_parse_exec import parse_and_execute_json
+
+# Mock parse_and_execute_json for testing
+parse_and_execute_json = MagicMock()
+parse_and_execute_json.return_value = {
+    "tool_name": "calculator",
+    "args": {"numbers": [2, 2]},
+    "output": "4"
+}
 
 class TestAgentLogging(unittest.TestCase):
     def setUp(self):
