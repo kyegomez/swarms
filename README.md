@@ -1555,7 +1555,7 @@ print(output)
 
 
 ## `SwarmRouter`
-The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, and `ConcurrentWorkflow`. We will be continously adding more and more swarm architectures here as we progress with new architectures.
+The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, and `ConcurrentWorkflow`. We will be continuously adding more and more swarm architectures here as we progress with new architectures.
 
 #### Attributes:
 - `name` (str): Name of the SwarmRouter instance.
