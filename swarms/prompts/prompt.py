@@ -13,7 +13,8 @@ from pydantic.v1 import validator
 from swarms_cloud.utils.log_to_swarms_database import log_agent_data
 from swarms_cloud.utils.capture_system_data import capture_system_data
 from swarms.tools.base_tool import BaseTool
-
+# from swarms.agents.ape_agent import auto_generate_prompt
+from typing import Any
 
 class Prompt(BaseModel):
     """
@@ -70,11 +71,15 @@ class Prompt(BaseModel):
         default="prompts",
         description="The folder path within WORKSPACE_DIR where the prompt will be autosaved",
     )
+    auto_generate_prompt: bool = Field(
+        default=False,
+        description="Flag to enable or disable auto-generating the prompt",
+    )
     parent_folder: str = Field(
         default=os.getenv("WORKSPACE_DIR"),
         description="The folder where the autosave folder is in",
     )
-    # tools: List[callable] = None
+    llm: Any = None
 
     @validator("edit_history", pre=True, always=True)
     def initialize_history(cls, v, values):
@@ -86,6 +91,15 @@ class Prompt(BaseModel):
                 values["content"]
             ]  # Store initial version in history
         return v
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        
+        if self.autosave:
+            self._autosave()
+            
+        if self.auto_generate_prompt and self.llm:
+            self.auto_generate_prompt()
 
     def edit_prompt(self, new_content: str) -> None:
         """
@@ -238,6 +252,16 @@ class Prompt(BaseModel):
         with open(file_path, "w") as file:
             json.dump(self.model_dump(), file)
         logger.info(f"Autosaved prompt {self.id} to {file_path}.")
+        
+    # def auto_generate_prompt(self):
+    #     logger.info(f"Auto-generating prompt for {self.name}")
+    #     task = self.name + " " + self.description + " " + self.content
+    #     prompt = auto_generate_prompt(task, llm=self.llm, max_tokens=4000, use_second_sys_prompt=True)
+    #     logger.info("Generated prompt successfully, updating content")
+    #     self.edit_prompt(prompt)
+    #     logger.info("Prompt content updated")
+        
+    #     return "Prompt auto-generated successfully."
 
     class Config:
         """Pydantic configuration for better JSON serialization."""
