@@ -138,7 +138,6 @@ class ConcurrentWorkflow(BaseSwarm):
 
         self.reliability_check()
 
-
     def reliability_check(self):
         try:
             logger.info("Starting reliability checks")
@@ -395,7 +394,7 @@ class ConcurrentWorkflow(BaseSwarm):
         """
         if task is not None:
             self.tasks.append(task)
-            
+
         try:
             logger.info(f"Attempting to run on device: {device}")
             if device == "cpu":

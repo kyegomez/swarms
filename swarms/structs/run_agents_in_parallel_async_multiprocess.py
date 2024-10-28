@@ -1,74 +1,81 @@
-import os
 import asyncio
+from typing import List, Any
 from swarms import Agent
-from swarm_models import OpenAIChat
-import uvloop
 from multiprocessing import cpu_count
 from swarms.utils.calculate_func_metrics import profile_func
-from typing import List
 
 # Use uvloop for faster asyncio event loop
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
+def run_single_agent(agent: Agent, task: str) -> Any:
+    """
+    Run a single agent on the given task.
 
-# Create an instance of the OpenAIChat class (can be reused)
-model = OpenAIChat(
-    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
+    Args:
+        agent (Agent): The agent to run.
+        task (str): The task for the agent to perform.
 
-
-# Function to run a single agent on the task (synchronous)
-def run_single_agent(agent, task):
+    Returns:
+        Any: The result of the agent's execution.
+    """
     return agent.run(task)
 
 
-# Asynchronous wrapper for agent tasks
-async def run_agent_async(agent, task):
+async def run_agent_async(agent: Agent, task: str) -> Any:
+    """
+    Asynchronous wrapper for agent tasks.
+
+    Args:
+        agent (Agent): The agent to run asynchronously.
+        task (str): The task for the agent to perform.
+
+    Returns:
+        Any: The result of the agent's execution.
+    """
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
         None, run_single_agent, agent, task
     )
 
 
-# Asynchronous function to run agents concurrently
-async def run_agents_concurrently_async(agents, task: str):
+async def run_agents_concurrently_async(
+    agents: List[Agent], task: str
+) -> List[Any]:
     """
     Run multiple agents concurrently on the same task with optimized performance.
 
-    :param agents: List of Agent instances to run concurrently.
-    :param task: The task string to execute by all agents.
-    :return: A list of outputs from each agent.
-    """
+    Args:
+        agents (List[Agent]): List of Agent instances to run concurrently.
+        task (str): The task string to execute by all agents.
 
-    # Run all agents asynchronously using asyncio.gather
+    Returns:
+        List[Any]: A list of outputs from each agent.
+    """
     results = await asyncio.gather(
         *(run_agent_async(agent, task) for agent in agents)
     )
     return results
 
 
-# Function to manage the overall process and batching
 @profile_func
 def run_agents_concurrently_multiprocess(
     agents: List[Agent], task: str, batch_size: int = cpu_count()
-):
+) -> List[Any]:
     """
     Manage and run multiple agents concurrently in batches, with optimized performance.
 
-    :param agents: List of Agent instances to run concurrently.
-    :param task: The task string to execute by all agents.
-    :param batch_size: Number of agents to run in parallel in each batch.
-    :return: A list of outputs from each agent.
-    """
+    Args:
+        agents (List[Agent]): List of Agent instances to run concurrently.
+        task (str): The task string to execute by all agents.
+        batch_size (int, optional): Number of agents to run in parallel in each batch.
+                                    Defaults to the number of CPU cores.
 
+    Returns:
+        List[Any]: A list of outputs from each agent.
+    """
     results = []
     loop = asyncio.get_event_loop()
-    # batch_size = cpu_count()
 
     # Process agents in batches to avoid overwhelming system resources
     for i in range(0, len(agents), batch_size):
