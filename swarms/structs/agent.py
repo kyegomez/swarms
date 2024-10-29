@@ -781,6 +781,8 @@ class Agent:
                 or loop_count < self.max_loops
             ):
                 loop_count += 1
+                # Log step start
+                current_step_id = f"step_{loop_count}_{uuid.uuid4().hex}"
                 self.loop_count_print(loop_count, self.max_loops)
                 print("\n")
 
@@ -814,6 +816,8 @@ class Agent:
                             *response_args, **kwargs
                         )
 
+                        # Log step metadata
+                        step_meta = self.log_step_metadata(loop_count, task_prompt, response)
                         # Check if response is a dictionary and has 'choices' key
                         if (
                             isinstance(response, dict)
@@ -832,10 +836,18 @@ class Agent:
 
                         # Check and execute tools
                         if self.tools is not None:
-                            print(
-                                f"self.tools is not None: {response}"
-                            )
-                            self.parse_and_execute_tools(response)
+                            tool_result = self.parse_and_execute_tools(response)
+                            if tool_result:
+                                self.update_tool_usage(
+                                    step_meta["step_id"],
+                                    tool_result["tool"],
+                                    tool_result["args"],
+                                    tool_result["response"]
+                                )
+ 
+ 
+                        # Update agent output history
+                        self.agent_output.full_history = self.short_memory.return_history_as_string()
 
                         # Log the step metadata
                         logged = self.log_step_metadata(
@@ -1969,13 +1981,48 @@ class Agent:
     def log_step_metadata(
         self, loop: int, task: str, response: str
     ) -> Step:
-        # # # Step Metadata
+        """Log metadata for each step of agent execution."""
+        # Generate unique step ID
+        step_id = f"step_{loop}_{uuid.uuid4().hex}"
+ 
+        # Calculate token usage
         # full_memory = self.short_memory.return_history_as_string()
         # prompt_tokens = self.tokenizer.count_tokens(full_memory)
         # completion_tokens = self.tokenizer.count_tokens(response)
-        # self.tokenizer.count_tokens(prompt_tokens + completion_tokens)
+        # total_tokens = prompt_tokens + completion_tokens
+        total_tokens=self.tokenizer.count_tokens(task) + self.tokenizer.count_tokens(response),
 
+        # Get memory responses
+        memory_responses = {
+            "short_term": self.short_memory.return_history_as_string() if self.short_memory else None,
+            "long_term": self.long_term_memory.query(task) if self.long_term_memory else None
+        }
+
+        # Get tool responses if tool was used
+        tool_response = None
+        if self.tools:
+            try:
+                tool_call_output = parse_and_execute_json(self.tools, response, parse_md=True)
+                if tool_call_output:
+                    tool_response = {
+                        "tool_name": tool_call_output.get("tool_name", "unknown"),
+                        "tool_args": tool_call_output.get("args", {}),
+                        "tool_output": str(tool_call_output.get("output", ""))
+                    }
+            except Exception as e:
+                logger.debug(f"No tool call detected in response: {e}")
+                
+        # Create memory usage tracking
+        memory_usage = {
+            "short_term": len(self.short_memory.messages) if self.short_memory else 0,
+            "long_term": self.long_term_memory.count if self.long_term_memory else 0,
+            "responses": memory_responses
+        }
+ 
         step_log = Step(
+            step_id=step_id,
+            time=time.time(),
+            tokens = total_tokens,
             response=AgentChatCompletionResponse(
                 id=self.agent_id,
                 agent_name=self.agent_name,
@@ -1990,13 +2037,32 @@ class Agent:
                 ),
                 # usage=UsageInfo(
                 #     prompt_tokens=prompt_tokens,
-                #     total_tokens=total_tokens,
                 #     completion_tokens=completion_tokens,
+                #     total_tokens=total_tokens,
                 # ),
+                tool_calls=[] if tool_response is None else [tool_response],
+                memory_usage=memory_usage
             ),
         )
-
+ 
+        # Update total tokens if agent_output exists
+        if hasattr(self, 'agent_output'):
+            self.agent_output.total_tokens += self.response.total_tokens
+ 
+ 
+        # Add step to agent output tracking
         self.step_pool.append(step_log)
+
+    def update_tool_usage(self, step_id: str, tool_name: str, tool_args: dict, tool_response: Any):
+        """Update tool usage information for a specific step."""
+        for step in self.agent_output.steps:
+            if step.step_id == step_id:
+                step.response.tool_calls.append({
+                    "tool": tool_name,
+                    "arguments": tool_args,
+                    "response": str(tool_response)
+                })
+                break
 
     def _serialize_callable(
         self, attr_value: Callable

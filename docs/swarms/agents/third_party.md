@@ -509,6 +509,13 @@ logging.basicConfig(level=logging.INFO)
 monitored_agent = MonitoredAgent("MonitoredGriptapeAgent")
 result = monitored_agent.run("Summarize the latest AI research papers")
 ```
+Additionally the Agent class now includes built-in logging functionality and the ability to switch between JSON and string output. 
+
+To switch between JSON and string output:
+- Use `output_type="str"` for string output (default)
+- Use `output_type="json"` for JSON output
+
+The `output_type` parameter determines the format of the final result returned by the `run` method. When set to "str", it returns a string representation of the agent's response. When set to "json", it returns a JSON object containing detailed information about the agent's run, including all steps and metadata.
 
 ## 6. Best Practices for Custom Agent Development
 
