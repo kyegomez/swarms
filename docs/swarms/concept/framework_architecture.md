@@ -57,7 +57,7 @@ The **Swarms framework** is composed of several key folders, each serving a spec
 
 ---
 
-### **4. Memory Folder (`memory/`) deprecated!!**
+### **4. Memory Folder (`memory/`) Deprecated!!**
    - **Role:** 
      - The **memory** folder handles the framework's memory management for agents. This allows agents to retain and recall past interactions or task contexts, enabling continuity in long-running processes or multi-step workflows.
      - **Context Retention:** Agents that depend on historical context to make decisions or carry out tasks can store and access memory using this folder.
