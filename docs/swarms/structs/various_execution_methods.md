@@ -91,8 +91,7 @@ Runs multiple agents concurrently with timeout limits.
 ## Usage Examples
 
 ```python
-from swarms.structs.agent import Agent
-from your_module import run_agents_concurrently
+from swarms import Agent, run_agents_concurrently, run_agents_with_timeout, run_agents_with_different_tasks
 
 # Initialize agents
 agents = [
