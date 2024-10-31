@@ -14,6 +14,9 @@ class SequentialWorkflow(BaseSwarm):
         max_loops (int, optional): The maximum number of loops to execute the workflow. Defaults to 1.
         *args: Variable length argument list.
         **kwargs: Arbitrary keyword arguments.
+
+    Raises:
+        ValueError: If agents list is None or empty, or if max_loops is 0
     """
 
     def __init__(
@@ -25,26 +28,40 @@ class SequentialWorkflow(BaseSwarm):
         *args,
         **kwargs,
     ):
-        super().__init__(
-            name=name,
-            description=description,
-            agents=agents,
-            *args,
-            **kwargs,
-        )
-        self.name = name
-        self.description = description
-        self.agents = agents
-        self.flow = " -> ".join(agent.agent_name for agent in agents)
-        self.agent_rearrange = AgentRearrange(
-            name=name,
-            description=description,
-            agents=agents,
-            flow=self.flow,
-            max_loops=max_loops,
-            *args,
-            **kwargs,
-        )
+        if agents is None or len(agents) == 0:
+            raise ValueError("Agents list cannot be None or empty")
+
+        if max_loops == 0:
+            raise ValueError("max_loops cannot be 0")
+
+        try:
+            super().__init__(
+                name=name,
+                description=description,
+                agents=agents,
+                *args,
+                **kwargs,
+            )
+            self.name = name
+            self.description = description
+            self.agents = agents
+            self.flow = " -> ".join(
+                agent.agent_name for agent in agents
+            )
+            self.agent_rearrange = AgentRearrange(
+                name=name,
+                description=description,
+                agents=agents,
+                flow=self.flow,
+                max_loops=max_loops,
+                *args,
+                **kwargs,
+            )
+        except Exception as e:
+            logger.error(
+                f"Error initializing SequentialWorkflow: {str(e)}"
+            )
+            raise
 
     def run(self, task: str) -> str:
         """
@@ -55,7 +72,14 @@ class SequentialWorkflow(BaseSwarm):
 
         Returns:
             str: The final result after processing through all agents.
+
+        Raises:
+            ValueError: If task is None or empty
+            Exception: If any error occurs during task execution
         """
+        if not task or not isinstance(task, str):
+            raise ValueError("Task must be a non-empty string")
+
         try:
             logger.info(
                 f"Running task with dynamic flow: {self.flow}"

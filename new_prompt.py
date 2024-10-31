@@ -3,7 +3,9 @@ from swarm_models import OpenAIChat
 import os
 
 model = OpenAIChat(
-    api_key=os.getenv("OPENAI_API_KEY"), model_name="gpt-4o-mini", temperature=0.1
+    api_key=os.getenv("OPENAI_API_KEY"),
+    model_name="gpt-4o-mini",
+    temperature=0.1,
 )
 
 # Aggregator system prompt
@@ -25,4 +27,4 @@ prompt_generator_sys_prompt = Prompt(
     llm=model,
 )
 
-print(prompt_generator_sys_prompt.get_prompt())
+# print(prompt_generator_sys_prompt.get_prompt())

@@ -1,5 +1,5 @@
 from multiprocessing import Manager, Pool, cpu_count
-from typing import Sequence
+from typing import Sequence, Union, Callable
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_workflow import BaseWorkflow
@@ -49,7 +49,7 @@ class MultiProcessWorkflow(BaseWorkflow):
         self,
         max_workers: int = 5,
         autosave: bool = True,
-        agents: Sequence[Agent] = None,
+        agents: Sequence[Union[Agent, Callable]] = None,
         *args,
         **kwargs,
     ):

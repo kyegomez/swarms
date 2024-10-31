@@ -1,38 +1,18 @@
-import os
 import uuid
 from collections import Counter
 from datetime import datetime
 from typing import Any, List, Optional
 
-from dotenv import load_dotenv
 from loguru import logger
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer, util
-from swarm_models import OpenAIChat
 
 from swarms import Agent
-
-load_dotenv()
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
 
 # Pretrained model for embeddings
 embedding_model = SentenceTransformer(
     "all-MiniLM-L6-v2"
 )  # A small, fast model for embedding
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
 
 
 # Pydantic Models for Logging
@@ -83,14 +63,18 @@ class TreeAgent(Agent):
 
     def __init__(
         self,
+        name: str = None,
+        description: str = None,
         system_prompt: str = None,
-        llm: callable = model,
+        llm: callable = None,
         agent_name: Optional[str] = None,
         *args,
         **kwargs,
     ):
         agent_name = agent_name
         super().__init__(
+            name=name,
+            description=description,
             system_prompt=system_prompt,
             llm=llm,
             agent_name=agent_name,

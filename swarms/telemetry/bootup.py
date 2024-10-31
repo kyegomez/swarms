@@ -11,10 +11,13 @@ def bootup():
     """Bootup swarms"""
     logging.disable(logging.CRITICAL)
     os.environ["WANDB_SILENT"] = "true"
-    # Dynamically set WORKSPACE_DIR based on the current directory
-    os.environ["WORKSPACE_DIR"] = os.path.join(
-        os.getcwd(), "agent_workspace"
-    )
+
+    # Auto set workspace directory
+    workspace_dir = os.path.join(os.getcwd(), "agent_workspace")
+    if not os.path.exists(workspace_dir):
+        os.makedirs(workspace_dir)
+    os.environ["WORKSPACE_DIR"] = workspace_dir
+
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     # Use ThreadPoolExecutor to run disable_logging and auto_update concurrently

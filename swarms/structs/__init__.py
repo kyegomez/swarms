@@ -67,6 +67,17 @@ from swarms.structs.yaml_model import (
 )
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
 from swarms.structs.swarm_arange import SwarmRearrange
+from swarms.structs.multi_agent_exec import (
+    run_agents_concurrently,
+    run_agents_concurrently_async,
+    run_single_agent,
+    run_agents_concurrently_multiprocess,
+    run_agents_sequentially,
+    run_agents_with_different_tasks,
+    run_agent_with_timeout,
+    run_agents_with_resource_monitoring,
+    
+)
 
 __all__ = [
     "Agent",
@@ -130,4 +141,12 @@ __all__ = [
     "SwarmRouter",
     "SwarmType",
     "SwarmRearrange",
+    "run_agents_concurrently",
+    "run_agents_concurrently_async",
+    "run_single_agent",
+    "run_agents_concurrently_multiprocess",
+    "run_agents_sequentially",
+    "run_agents_with_different_tasks",
+    "run_agent_with_timeout",
+    "run_agents_with_resource_monitoring",
 ]

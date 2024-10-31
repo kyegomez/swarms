@@ -8,7 +8,6 @@ from swarms.cli.onboarding_process import OnboardingProcess
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
-from swarms.agents.cli_prompt_generator_func import generate_prompt
 import subprocess
 
 console = Console()
@@ -46,6 +45,7 @@ def show_help():
     [bold white]run-agents[/bold white]    : Run your Agents from your specified yaml file. Specify the yaml file with path the `--yaml-file` arg. Example: `--yaml-file agents.yaml`
     [bold white]generate-prompt[/bold white]    : Generate a prompt through automated prompt engineering. Requires an OPENAI Key in your `.env` Example: --prompt "Generate a prompt for an agent to analyze legal docs"
     [bold white]auto-upgrade[/bold white]   : Automatically upgrades Swarms to the latest version
+    [bold white]book-call[/bold white]     : Book a strategy session with our team to discuss your use case and get personalized guidance
 
     For more details, visit: https://docs.swarms.world
     """
@@ -78,6 +78,18 @@ def redirect_to_docs():
     import webbrowser
 
     webbrowser.open("https://docs.swarms.world")
+    time.sleep(2)
+
+
+# Redirect to docs
+def redirect_to_call():
+    console.print(
+        "[bold yellow]Opening the Call page...[/bold yellow]"
+    )
+    # Simulating API key retrieval process by opening the website
+    import webbrowser
+
+    webbrowser.open("https://cal.com/swarms/swarms-strategy-session")
     time.sleep(2)
 
 
@@ -155,7 +167,8 @@ def main():
             "check-login",
             "run-agents",
             "generate-prompt",  # Added new command for generating prompts
-            "auto-upgrade",  # Added new command for auto-upgrade
+            "auto-upgrade",  # Added new command for auto-upgrade,
+            "book-call",
         ],
         help="Command to run",
     )
@@ -204,22 +217,24 @@ def main():
         create_agents_from_yaml(
             yaml_file=args.yaml_file, return_type="tasks"
         )
-    elif args.command == "generate-prompt":
-        if (
-            args.prompt
-        ):  # Corrected from args.prompt_task to args.prompt
-            generate_prompt(
-                num_loops=args.num_loops,
-                autosave=args.autosave,
-                save_to_yaml=args.save_to_yaml,
-                prompt=args.prompt,  # Corrected from args.prompt_task to args.prompt
-            )
-        else:
-            console.print(
-                "[bold red]Please specify a task for generating a prompt using '--prompt'.[/bold red]"
-            )
+    # elif args.command == "generate-prompt":
+    #     if (
+    #         args.prompt
+    #     ):  # Corrected from args.prompt_task to args.prompt
+    #         generate_prompt(
+    #             num_loops=args.num_loops,
+    #             autosave=args.autosave,
+    #             save_to_yaml=args.save_to_yaml,
+    #             prompt=args.prompt,  # Corrected from args.prompt_task to args.prompt
+    #         )
+    #     else:
+    #         console.print(
+    #             "[bold red]Please specify a task for generating a prompt using '--prompt'.[/bold red]"
+    #         )
     elif args.command == "auto-upgrade":
         check_and_upgrade_version()
+    elif args.command == "book-call":
+        redirect_to_call()
     else:
         console.print(
             "[bold red]Unknown command! Type 'help' for usage.[/bold red]"

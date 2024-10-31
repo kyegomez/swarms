@@ -13,6 +13,7 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from tenacity import retry, stop_after_attempt, wait_fixed
 from swarms.structs.swarm_matcher import swarm_matcher
+from swarms.prompts.ag_prompt import aggregator_system_prompt
 
 SwarmType = Literal[
     "AgentRearrange",
@@ -57,6 +58,7 @@ class SwarmRouter:
         swarm (Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]):
             The instantiated swarm object.
         logs (List[SwarmLog]): A list of log entries captured during operations.
+        auto_generate_prompt (bool): A flag to enable/disable auto generation of prompts.
 
     Available Swarm Types:
         - AgentRearrange: Rearranges agents for optimal task execution.
@@ -99,6 +101,37 @@ class SwarmRouter:
             f"SwarmRouter initialized with swarm type: {swarm_type}",
         )
 
+        self.activate_ape()
+
+    def activate_ape(self):
+        """Activate automatic prompt engineering for agents that support it"""
+        try:
+            logger.info("Activating automatic prompt engineering...")
+            activated_count = 0
+            for agent in self.agents:
+                if hasattr(agent, "auto_generate_prompt"):
+                    agent.auto_generate_prompt = (
+                        self.auto_generate_prompts
+                    )
+                    activated_count += 1
+                    logger.debug(
+                        f"Activated APE for agent: {agent.name if hasattr(agent, 'name') else 'unnamed'}"
+                    )
+
+            logger.info(
+                f"Successfully activated APE for {activated_count} agents"
+            )
+            self._log(
+                "info",
+                f"Activated automatic prompt engineering for {activated_count} agents",
+            )
+
+        except Exception as e:
+            error_msg = f"Error activating automatic prompt engineering: {str(e)}"
+            logger.error(error_msg)
+            self._log("error", error_msg)
+            raise RuntimeError(error_msg) from e
+
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def reliability_check(self):
         logger.info("Logger initializing checks")
@@ -137,7 +170,9 @@ class SwarmRouter:
             ValueError: If an invalid swarm type is provided.
         """
         if self.swarm_type == "auto":
-            self.swarm_type = swarm_matcher(task)
+            self.swarm_type = str(swarm_matcher(task))
+
+            self._create_swarm(self.swarm_type)
 
         elif self.swarm_type == "AgentRearrange":
             return AgentRearrange(
@@ -154,8 +189,9 @@ class SwarmRouter:
             return MixtureOfAgents(
                 name=self.name,
                 description=self.description,
-                agents=self.agents,
-                aggregator_agent=[self.agents[-1]],
+                reference_agents=self.agents,
+                aggregator_system_prompt=aggregator_system_prompt.get_prompt(),
+                aggregator_agent=self.agents[-1],
                 layers=self.max_loops,
                 *args,
                 **kwargs,

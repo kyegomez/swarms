@@ -66,5 +66,5 @@ prompt_generator_sys_prompt.edit_prompt(
     """
 )
 
-print(prompt_generator_sys_prompt.get_prompt())
-print(prompt_generator_sys_prompt.model_dump_json(indent=4))
+# print(prompt_generator_sys_prompt.get_prompt())
+# print(prompt_generator_sys_prompt.model_dump_json(indent=4))

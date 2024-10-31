@@ -57,7 +57,7 @@ from clusterops import (
     execute_with_cpu_cores,
 )
 from swarms.agents.ape_agent import auto_generate_prompt
-import yaml
+
 
 # Utils
 # Custom stopping condition
@@ -1014,7 +1014,9 @@ class Agent:
             elif self.output_type == "dict":
                 return self.agent_output.model_dump()
             elif self.output_type == "yaml":
-                return yaml.safe_dump(self.agent_output.model_dump(), sort_keys=False)
+                return yaml.safe_dump(
+                    self.agent_output.model_dump(), sort_keys=False
+                )
             else:
                 raise ValueError(
                     f"Invalid output type: {self.output_type}"
