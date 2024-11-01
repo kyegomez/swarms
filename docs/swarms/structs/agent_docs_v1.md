@@ -455,7 +455,7 @@ agent.save_state('saved_flow.json')
 
 # Load the agent state
 agent = Agent(llm=llm_instance, max_loops=5)
-agent.load_state('saved_flow.json')
+agent.load('saved_flow.json')
 agent.run("Continue with the task")
 ```
 

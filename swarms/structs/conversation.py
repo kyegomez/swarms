@@ -1,11 +1,11 @@
 import datetime
 import json
-from typing import Optional
+from typing import Any, Optional
 
+import yaml
 from termcolor import colored
 
 from swarms.structs.base_structure import BaseStructure
-from typing import Any
 
 
 class Conversation(BaseStructure):
@@ -96,10 +96,10 @@ class Conversation(BaseStructure):
             self.add("System: ", self.system_prompt)
 
         if self.rules is not None:
-            self.add(user, rules)
+            self.add("User", rules)
 
         if custom_rules_prompt is not None:
-            self.add(user, custom_rules_prompt)
+            self.add(user or "User", custom_rules_prompt)
 
         # If tokenizer then truncate
         if tokenizer is not None:
@@ -245,6 +245,9 @@ class Conversation(BaseStructure):
             ]
         )
 
+    def get_str(self):
+        return self.return_history_as_string()
+
     def save_as_json(self, filename: str = None):
         """Save the conversation history as a JSON file
 
@@ -379,3 +382,21 @@ class Conversation(BaseStructure):
 
     def clear(self):
         self.conversation_history = []
+
+    def to_json(self):
+        return json.dumps(self.conversation_history)
+
+    def to_dict(self):
+        return self.conversation_history
+
+    def to_yaml(self):
+        return yaml.dump(self.conversation_history)
+
+
+# # Example usage
+# conversation = Conversation()
+# conversation.add("user", "Hello, how are you?")
+# conversation.add("assistant", "I am doing well, thanks.")
+# # print(conversation.to_json())
+# print(type(conversation.to_dict()))
+# # print(conversation.to_yaml())

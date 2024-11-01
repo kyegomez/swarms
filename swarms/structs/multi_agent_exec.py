@@ -137,15 +137,18 @@ def run_agents_concurrently_multiprocess(
 
     return results
 
+
 @profile_func
-def run_agents_sequentially(agents: List[AgentType], task: str) -> List[Any]:
+def run_agents_sequentially(
+    agents: List[AgentType], task: str
+) -> List[Any]:
     """
     Run multiple agents sequentially for baseline comparison.
-    
+
     Args:
         agents: List of Agent instances to run
         task: Task string to execute
-        
+
     Returns:
         List of outputs from each agent
     """
@@ -154,44 +157,52 @@ def run_agents_sequentially(agents: List[AgentType], task: str) -> List[Any]:
 
 @profile_func
 def run_agents_with_different_tasks(
-    agent_task_pairs: List[tuple[AgentType, str]], 
+    agent_task_pairs: List[tuple[AgentType, str]],
     batch_size: int = None,
-    max_workers: int = None
+    max_workers: int = None,
 ) -> List[Any]:
     """
     Run multiple agents with different tasks concurrently.
-    
+
     Args:
         agent_task_pairs: List of (agent, task) tuples
         batch_size: Number of agents to run in parallel
         max_workers: Maximum number of threads
-        
+
     Returns:
         List of outputs from each agent
     """
-    async def run_pair_async(pair: tuple[AgentType, str], executor: ThreadPoolExecutor) -> Any:
+
+    async def run_pair_async(
+        pair: tuple[AgentType, str], executor: ThreadPoolExecutor
+    ) -> Any:
         agent, task = pair
         return await run_agent_async(agent, task, executor)
-        
+
     cpu_cores = cpu_count()
     batch_size = batch_size or cpu_cores
     max_workers = max_workers or cpu_cores * 2
     results = []
-    
+
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(0, len(agent_task_pairs), batch_size):
             batch = agent_task_pairs[i : i + batch_size]
             batch_results = loop.run_until_complete(
-                asyncio.gather(*(run_pair_async(pair, executor) for pair in batch))
+                asyncio.gather(
+                    *(
+                        run_pair_async(pair, executor)
+                        for pair in batch
+                    )
+                )
             )
             results.extend(batch_results)
-            
+
     return results
 
 
@@ -199,27 +210,27 @@ async def run_agent_with_timeout(
     agent: AgentType,
     task: str,
     timeout: float,
-    executor: ThreadPoolExecutor
+    executor: ThreadPoolExecutor,
 ) -> Any:
     """
     Run an agent with a timeout limit.
-    
+
     Args:
         agent: Agent instance to run
         task: Task string to execute
         timeout: Timeout in seconds
         executor: ThreadPoolExecutor instance
-        
+
     Returns:
         Agent execution result or None if timeout occurs
     """
     try:
         return await asyncio.wait_for(
-            run_agent_async(agent, task, executor),
-            timeout=timeout
+            run_agent_async(agent, task, executor), timeout=timeout
         )
     except asyncio.TimeoutError:
         return None
+
 
 @profile_func
 def run_agents_with_timeout(
@@ -227,18 +238,18 @@ def run_agents_with_timeout(
     task: str,
     timeout: float,
     batch_size: int = None,
-    max_workers: int = None
+    max_workers: int = None,
 ) -> List[Any]:
     """
     Run multiple agents concurrently with a timeout for each agent.
-    
+
     Args:
         agents: List of Agent instances
         task: Task string to execute
         timeout: Timeout in seconds for each agent
         batch_size: Number of agents to run in parallel
         max_workers: Maximum number of threads
-        
+
     Returns:
         List of outputs (None for timed out agents)
     """
@@ -246,28 +257,29 @@ def run_agents_with_timeout(
     batch_size = batch_size or cpu_cores
     max_workers = max_workers or cpu_cores * 2
     results = []
-    
+
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(0, len(agents), batch_size):
             batch = agents[i : i + batch_size]
             batch_results = loop.run_until_complete(
                 asyncio.gather(
-                    *(run_agent_with_timeout(agent, task, timeout, executor) 
-                      for agent in batch)
+                    *(
+                        run_agent_with_timeout(
+                            agent, task, timeout, executor
+                        )
+                        for agent in batch
+                    )
                 )
             )
             results.extend(batch_results)
-            
+
     return results
-
-
-
 
 
 @dataclass
@@ -276,13 +288,15 @@ class ResourceMetrics:
     memory_percent: float
     active_threads: int
 
+
 def get_system_metrics() -> ResourceMetrics:
     """Get current system resource usage"""
     return ResourceMetrics(
         cpu_percent=psutil.cpu_percent(),
         memory_percent=psutil.virtual_memory().percent,
-        active_threads=threading.active_count()
+        active_threads=threading.active_count(),
     )
+
 
 @profile_func
 def run_agents_with_resource_monitoring(
@@ -290,31 +304,36 @@ def run_agents_with_resource_monitoring(
     task: str,
     cpu_threshold: float = 90.0,
     memory_threshold: float = 90.0,
-    check_interval: float = 1.0
+    check_interval: float = 1.0,
 ) -> List[Any]:
     """
     Run agents with system resource monitoring and adaptive batch sizing.
-    
+
     Args:
         agents: List of Agent instances
         task: Task string to execute
         cpu_threshold: Max CPU usage percentage
         memory_threshold: Max memory usage percentage
         check_interval: Resource check interval in seconds
-        
+
     Returns:
         List of outputs from each agent
     """
+
     async def monitor_resources():
         while True:
             metrics = get_system_metrics()
-            if metrics.cpu_percent > cpu_threshold or metrics.memory_percent > memory_threshold:
+            if (
+                metrics.cpu_percent > cpu_threshold
+                or metrics.memory_percent > memory_threshold
+            ):
                 # Reduce batch size or pause execution
                 pass
             await asyncio.sleep(check_interval)
-    
+
     # Implementation details...
-    
+
+
 # # Example usage:
 # # Initialize your agents with the same model to avoid re-creating it
 # agents = [
@@ -341,4 +360,3 @@ def run_agents_with_resource_monitoring(
 
 # for i, output in enumerate(outputs):
 #     print(f"Output from agent {i+1}:\n{output}")
-

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from swarms.schemas.base_schemas import (
     AgentChatCompletionResponse,
 )
+from typing import Union
 
 
 def get_current_time():
@@ -56,7 +57,7 @@ class ManySteps(BaseModel):
         description="The ID of the task this step belongs to.",
         examples=["50da533e-3904-4401-8a07-c49adf88b5eb"],
     )
-    steps: Optional[List[Step]] = Field(
+    steps: Optional[List[Union[Step, Any]]] = Field(
         [],
         description="The steps of the task.",
     )

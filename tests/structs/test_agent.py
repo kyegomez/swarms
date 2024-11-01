@@ -541,7 +541,7 @@ def test_flow_load_state(flow_instance):
         "max_loops": 10,
         "autosave_path": "/path/to/load",
     }
-    flow_instance.load_state(state)
+    flow_instance.load(state)
     assert flow_instance.get_current_prompt() == "Loaded prompt"
     assert "Step 1" in flow_instance.get_instructions()
     assert "User message 1" in flow_instance.get_user_messages()

@@ -156,7 +156,6 @@ graph TD
 | `save_to_yaml(file_path)` | Saves the agent to a YAML file. | `file_path` (str): Path to save the YAML file. | `agent.save_to_yaml("agent_config.yaml")` |
 | `get_llm_parameters()` | Returns the parameters of the language model. | None | `llm_params = agent.get_llm_parameters()` |
 | `save_state(file_path, *args, **kwargs)` | Saves the current state of the agent to a JSON file. | `file_path` (str): Path to save the JSON file.<br>`*args`, `**kwargs`: Additional arguments. | `agent.save_state("agent_state.json")` |
-| `load_state(file_path)` | Loads the state of the agent from a JSON file. | `file_path` (str): Path to the JSON file. | `agent.load_state("agent_state.json")` |
 | `update_system_prompt(system_prompt)` | Updates the system prompt. | `system_prompt` (str): New system prompt. | `agent.update_system_prompt("New system instructions")` |
 | `update_max_loops(max_loops)` | Updates the maximum number of loops. | `max_loops` (int): New maximum number of loops. | `agent.update_max_loops(5)` |
 | `update_loop_interval(loop_interval)` | Updates the loop interval. | `loop_interval` (int): New loop interval. | `agent.update_loop_interval(2)` |
@@ -184,11 +183,9 @@ graph TD
 | `check_available_tokens()` | Checks and returns the number of available tokens. | None | `available_tokens = agent.check_available_tokens()` |
 | `tokens_checks()` | Performs token checks and returns available tokens. | None | `token_info = agent.tokens_checks()` |
 | `truncate_string_by_tokens(input_string, limit)` | Truncates a string to fit within a token limit. | `input_string` (str): String to truncate.<br>`limit` (int): Token limit. | `truncated_string = agent.truncate_string_by_tokens("Long string", 100)` |
-| `if_tokens_exceeds_context_length()` | Checks if the number of tokens exceeds the context length. | None | `exceeds = agent.if_tokens_exceeds_context_length()` |
 | `tokens_operations(input_string)` | Performs various token-related operations on the input string. | `input_string` (str): String to process. | `processed_string = agent.tokens_operations("Input string")` |
 | `parse_function_call_and_execute(response)` | Parses a function call from the response and executes it. | `response` (str): Response containing the function call. | `result = agent.parse_function_call_and_execute(response)` |
 | `activate_agentops()` | Activates AgentOps functionality. | None | `agent.activate_agentops()` |
-| `count_tokens_and_subtract_from_context_window(response, *args, **kwargs)` | Counts tokens in the response and adjusts the context window. | `response` (str): Response to process.<br>`*args`, `**kwargs`: Additional arguments. | `await agent.count_tokens_and_subtract_from_context_window(response)` |
 | `llm_output_parser(response)` | Parses the output from the language model. | `response` (Any): Response from the LLM. | `parsed_response = agent.llm_output_parser(llm_output)` |
 | `log_step_metadata(loop, task, response)` | Logs metadata for each step of the agent's execution. | `loop` (int): Current loop number.<br>`task` (str): Current task.<br>`response` (str): Agent's response. | `agent.log_step_metadata(1, "Analyze data", "Analysis complete")` |
 | `to_dict()` | Converts the agent's attributes to a dictionary. | None | `agent_dict = agent.to_dict()` |
@@ -391,7 +388,7 @@ agent.save_state('saved_flow.json')
 
 # Load the agent state
 agent = Agent(llm=llm_instance, max_loops=5)
-agent.load_state('saved_flow.json')
+agent.load('saved_flow.json')
 agent.run("Continue with the task")
 ```
 
@@ -537,7 +534,7 @@ print(agent.system_prompt)
 4. Leverage `long_term_memory` for tasks that require persistent information.
 5. Use `interactive` mode for real-time conversations and `dashboard` for monitoring.
 6. Implement `sentiment_analysis` for applications requiring tone management.
-7. Utilize `autosave` and `save_state`/`load_state` methods for continuity across sessions.
+7. Utilize `autosave` and `save`/`load` methods for continuity across sessions.
 8. Optimize token usage with `dynamic_context_window` and `tokens_checks` methods.
 9. Use `concurrent` and `async` methods for performance-critical applications.
 10. Regularly review and analyze feedback using the `analyze_feedback` method.
