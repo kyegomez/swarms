@@ -3,9 +3,8 @@ import sys
 from loguru import logger
 from typing import Tuple, Union, List
 from e2b_code_interpreter import CodeInterpreter
-from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
 
 # Helper function to lazily install the package if not found

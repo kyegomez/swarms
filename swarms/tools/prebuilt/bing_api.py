@@ -1,12 +1,10 @@
 import os
 import requests
 from typing import List, Dict
-from dotenv import load_dotenv
 
 
 def check_bing_api_key():
     try:
-        load_dotenv()
         return os.getenv("BING_API_KEY")
     except Exception as error:
         print(f"Error {error}")

@@ -1,8 +1,6 @@
 import os
-from dotenv import load_dotenv
 from loguru import logger
 
-load_dotenv()
 
 WORKSPACE_DIR = os.getenv("WORKSPACE_DIR")
 

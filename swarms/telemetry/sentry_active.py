@@ -1,9 +1,7 @@
 import os
-from dotenv import load_dotenv
 import sentry_sdk
 import threading
 
-load_dotenv()
 
 os.environ["USE_TELEMETRY"] = "True"
 

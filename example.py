@@ -32,7 +32,7 @@ agent = Agent(
     # output_type="json",
     output_type="json",  # "json", "dict", "csv" OR "string" soon "yaml" and
     streaming_on=False,
-    auto_generate_prompt=True,
+    auto_generate_prompt=False,  # Auto generate prompt for the agent based on name, description, and system prompt, task
 )
 
 

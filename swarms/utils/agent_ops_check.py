@@ -1,11 +1,9 @@
 from swarms.utils.loguru_logger import logger
 import os
-from dotenv import load_dotenv
 
 
 def try_import_agentops(*args, **kwargs):
     try:
-        load_dotenv()
         logger.info("Trying to import agentops")
         import agentops
 

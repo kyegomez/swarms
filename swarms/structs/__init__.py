@@ -59,13 +59,11 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
-from swarms.structs.yaml_model import (
-    YamlModel,
-    create_yaml_schema_from_dict,
-    get_type_name,
-    pydantic_type_to_yaml_schema,
+from swarms.structs.swarm_router import (
+    SwarmRouter,
+    SwarmType,
+    swarm_router,
 )
-from swarms.structs.swarm_router import SwarmRouter, SwarmType
 from swarms.structs.swarm_arange import SwarmRearrange
 from swarms.structs.multi_agent_exec import (
     run_agents_concurrently,
@@ -108,10 +106,6 @@ __all__ = [
     "find_agent_by_id",
     "find_token_in_text",
     "parse_tasks",
-    "YamlModel",
-    "create_yaml_schema_from_dict",
-    "get_type_name",
-    "pydantic_type_to_yaml_schema",
     "MixtureOfAgents",
     "GraphWorkflow",
     "Node",
@@ -148,4 +142,5 @@ __all__ = [
     "run_agents_with_different_tasks",
     "run_agent_with_timeout",
     "run_agents_with_resource_monitoring",
+    "swarm_router",
 ]

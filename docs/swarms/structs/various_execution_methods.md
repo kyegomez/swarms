@@ -92,6 +92,12 @@ Runs multiple agents concurrently with timeout limits.
 
 ```python
 from swarms import Agent, run_agents_concurrently, run_agents_with_timeout, run_agents_with_different_tasks
+from swarm_models import OpenAIChat
+
+model = OpenAIChat(
+    model_name="gpt-4o-mini",
+    temperature=0.0
+)
 
 # Initialize agents
 agents = [

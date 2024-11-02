@@ -146,7 +146,7 @@ router = SwarmRouter(
         # operational_analyst_agent,
     ],
     swarm_type="auto",  # or "SequentialWorkflow" or "ConcurrentWorkflow" or
-    auto_generate_prompts=True,
+    # auto_generate_prompts=True,
 )
 
 # Example usage
