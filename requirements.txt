@@ -34,3 +34,4 @@ pre-commit
 aiofiles
 swarm-models
 clusterops
+reportlab

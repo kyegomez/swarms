@@ -243,6 +243,60 @@ class Artifact(BaseModel):
             logger.error(f"Error creating artifact from dict: {e}")
             raise e
 
+    def save_as(self, output_format: str) -> None:
+        """
+        Saves the artifact's contents in the specified format.
+        
+        Args:
+            output_format (str): The desired output format ('md', 'txt', 'pdf', 'py')
+        
+        Raises:
+            ValueError: If the output format is not supported
+        """
+        supported_formats = {'.md', '.txt', '.pdf', '.py'}
+        if output_format not in supported_formats:
+            raise ValueError(f"Unsupported output format. Supported formats are: {supported_formats}")
+            
+        output_path = os.path.splitext(self.file_path)[0] + output_format
+        
+        if output_format == '.pdf':
+            self._save_as_pdf(output_path)
+        else:
+            with open(output_path, 'w', encoding='utf-8') as f:
+                if output_format == '.md':
+                    # Add markdown formatting if needed
+                    f.write(f"# {os.path.basename(self.file_path)}\n\n")
+                    f.write(self.contents)
+                elif output_format == '.py':
+                    # Add Python file header
+                    f.write('"""\n')
+                    f.write(f'Generated Python file from {self.file_path}\n')
+                    f.write('"""\n\n')
+                    f.write(self.contents)
+                else:  # .txt
+                    f.write(self.contents)
+
+    def _save_as_pdf(self, output_path: str) -> None:
+        """
+        Helper method to save content as PDF using reportlab
+        """
+        try:
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter
+            
+            c = canvas.Canvas(output_path, pagesize=letter)
+            # Split content into lines
+            y = 750  # Starting y position
+            for line in self.contents.split('\n'):
+                c.drawString(50, y, line)
+                y -= 15  # Move down for next line
+                if y < 50:  # New page if bottom reached
+                    c.showPage()
+                    y = 750
+            c.save()
+        except ImportError:
+            raise ImportError("reportlab package is required for PDF output. Install with: pip install reportlab")
+
 
 # # Example usage
 # artifact = Artifact(file_path="example.txt", file_type=".txt")
@@ -259,3 +313,15 @@ class Artifact(BaseModel):
 
 # # # Get metrics
 # print(artifact.get_metrics())
+
+
+# Testing saving in different artifact types 
+# Create an artifact
+#artifact = Artifact(file_path="/path/to/file", file_type=".txt",contents="",  edit_count=0  )
+#artifact.create("This is some content\nWith multiple lines")
+
+# Save in different formats
+#artifact.save_as(".md")    # Creates example.md
+#artifact.save_as(".txt")   # Creates example.txt
+#artifact.save_as(".pdf")   # Creates example.pdf
+#artifact.save_as(".py")    # Creates example.py

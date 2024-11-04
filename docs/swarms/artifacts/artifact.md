@@ -41,7 +41,7 @@ The `Artifact` class includes various methods for creating, editing, saving, loa
 artifact = Artifact(file_path="example.txt", file_type="txt")
 artifact.create(initial_content="Initial file content")
 ```
-
+The file type parameter supports the following file types: `.txt`, `.md`, `.py`, `.pdf`.
 #### `edit`
 
 
