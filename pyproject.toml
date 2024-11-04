@@ -78,6 +78,7 @@ aiofiles = "*"
 swarm-models = "*"
 clusterops = "*"
 chromadb = "*"
+reportlab = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
