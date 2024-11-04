@@ -317,7 +317,7 @@ class Artifact(BaseModel):
 
 # Testing saving in different artifact types 
 # Create an artifact
-#artifact = Artifact(file_path="/Users/sambhavdixit/Downloads/swarms/example.txt", file_type=".txt",contents="",  edit_count=0  )
+#artifact = Artifact(file_path="/path/to/file", file_type=".txt",contents="",  edit_count=0  )
 #artifact.create("This is some content\nWith multiple lines")
 
 # Save in different formats
