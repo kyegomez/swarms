@@ -52,7 +52,7 @@ from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.pdf_to_text import pdf_to_text
-
+from swarms.artifacts.main_artifact import Artifact
 
 # Utils
 # Custom stopping condition
@@ -566,6 +566,8 @@ class Agent:
 
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
+        
+        
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
@@ -2279,3 +2281,12 @@ class Agent:
         except Exception as e:
             logger.error(f"An error occurred during execution: {e}")
             raise e
+    
+    
+    def handle_artifacts(self, text: str, file_output_path: str, file_extension: str):
+        artifact = Artifact(
+            file_path=file_output_path,
+            file_type=file_extension,
+            contents=text,
+            
+        )
