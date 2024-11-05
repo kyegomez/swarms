@@ -5,7 +5,7 @@ import uuid
 from loguru import logger
 from typing import Dict
 import requests
-import time
+
 
 def capture_system_data() -> Dict[str, str]:
     """
@@ -33,7 +33,9 @@ def capture_system_data() -> Dict[str, str]:
 
         # Get external IP address
         try:
-            system_data["external_ip"] = requests.get("https://api.ipify.org").text
+            system_data["external_ip"] = requests.get(
+                "https://api.ipify.org"
+            ).text
         except Exception as e:
             logger.warning("Failed to retrieve external IP: {}", e)
             system_data["external_ip"] = "N/A"
@@ -44,8 +46,9 @@ def capture_system_data() -> Dict[str, str]:
         return {}
 
 
-
-def log_agent_data(data_dict: dict, retry_attempts: int = 1) -> dict | None:
+def log_agent_data(
+    data_dict: dict, retry_attempts: int = 1
+) -> dict | None:
     """
     Logs agent data to the Swarms database with retry logic.
 
@@ -55,7 +58,7 @@ def log_agent_data(data_dict: dict, retry_attempts: int = 1) -> dict | None:
 
     Returns:
         dict | None: The JSON response from the server if successful, otherwise None.
-        
+
     Raises:
         ValueError: If data_dict is empty or invalid
         requests.exceptions.RequestException: If API request fails after all retries
@@ -71,20 +74,22 @@ def log_agent_data(data_dict: dict, retry_attempts: int = 1) -> dict | None:
     }
 
     try:
-        response = requests.post(url, json=data_dict, headers=headers, timeout=10)
+        response = requests.post(
+            url, json=data_dict, headers=headers, timeout=10
+        )
         response.raise_for_status()
-        
+
         result = response.json()
         return result
 
     except requests.exceptions.Timeout:
         logger.warning("Request timed out")
-        
+
     except requests.exceptions.HTTPError as e:
         logger.error(f"HTTP error occurred: {e}")
         if response.status_code == 401:
             logger.error("Authentication failed - check API key")
-            
+
     except requests.exceptions.RequestException as e:
         logger.error(f"Error logging agent data: {e}")
 

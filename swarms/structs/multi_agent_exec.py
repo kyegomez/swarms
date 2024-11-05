@@ -9,8 +9,7 @@ from multiprocessing import cpu_count
 
 from swarms.structs.agent import Agent
 from swarms.utils.calculate_func_metrics import profile_func
-import sys
-    
+
 
 # Type definitions
 AgentType = Union[Agent, Callable]

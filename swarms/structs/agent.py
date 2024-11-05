@@ -54,6 +54,7 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.artifacts.main_artifact import Artifact
 
+
 # Utils
 # Custom stopping condition
 def stop_when_repeats(response: str) -> bool:
@@ -175,7 +176,7 @@ class Agent:
         timeout (int): The timeout
         artifacts_on (bool): Enable artifacts
         artifacts_output_path (str): The artifacts output path
-        artifacts_file_extension (str): The artifacts file extension
+        artifacts_file_extension (str): The artifacts file extension (.pdf, .md, .txt, )
 
     Methods:
         run: Run the agent
@@ -208,7 +209,7 @@ class Agent:
         run_async_concurrent: Run the agent asynchronously and concurrently
         construct_dynamic_prompt: Construct the dynamic prompt
         handle_artifacts: Handle artifacts
-        
+
 
     Examples:
     >>> from swarm_models import OpenAIChat
@@ -575,8 +576,6 @@ class Agent:
 
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
-        
-        
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
@@ -982,10 +981,14 @@ class Agent:
                     self.short_memory.get_str()
                 )
             )
-            
+
             # Handle artifacts
             if self.artifacts_on is True:
-                self.handle_artifacts(concat_strings(all_responses), self.artifacts_output_path, self.artifacts_file_extension)
+                self.handle_artifacts(
+                    concat_strings(all_responses),
+                    self.artifacts_output_path,
+                    self.artifacts_file_extension,
+                )
 
             # More flexible output types
             if (
@@ -2294,31 +2297,40 @@ class Agent:
         except Exception as e:
             logger.error(f"An error occurred during execution: {e}")
             raise e
-    
-    
-    def handle_artifacts(self, text: str, file_output_path: str, file_extension: str) -> None:
+
+    def handle_artifacts(
+        self, text: str, file_output_path: str, file_extension: str
+    ) -> None:
         """Handle creating and saving artifacts with error handling."""
         try:
-            logger.info(f"Creating artifact for file: {file_output_path}")
+            logger.info(
+                f"Creating artifact for file: {file_output_path}"
+            )
             artifact = Artifact(
                 file_path=file_output_path,
                 file_type=file_extension,
                 contents=text,
                 edit_count=0,
             )
-            
-            logger.info(f"Saving artifact with extension: {file_extension}")
+
+            logger.info(
+                f"Saving artifact with extension: {file_extension}"
+            )
             artifact.save_as(file_extension)
-            logger.success(f"Successfully saved artifact to {file_output_path}")
-            
+            logger.success(
+                f"Successfully saved artifact to {file_output_path}"
+            )
+
         except ValueError as e:
-            logger.error(f"Invalid input values for artifact: {str(e)}")
+            logger.error(
+                f"Invalid input values for artifact: {str(e)}"
+            )
             raise
         except IOError as e:
             logger.error(f"Error saving artifact to file: {str(e)}")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error handling artifact: {str(e)}")
+            logger.error(
+                f"Unexpected error handling artifact: {str(e)}"
+            )
             raise
-        
-        

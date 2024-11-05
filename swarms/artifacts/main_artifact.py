@@ -39,7 +39,11 @@ class Artifact(BaseModel):
         versions (List[FileVersion]): The list of file versions.
         edit_count (int): The number of times the file has been edited.
     """
-    folder_path: str = Field(default=os.getenv("WORKSPACE_DIR"), description="The path to the folder")
+
+    folder_path: str = Field(
+        default=os.getenv("WORKSPACE_DIR"),
+        description="The path to the folder",
+    )
     file_path: str = Field(..., description="The path to the file")
     file_type: str = Field(
         ...,
@@ -247,44 +251,48 @@ class Artifact(BaseModel):
     def save_as(self, output_format: str) -> None:
         """
         Saves the artifact's contents in the specified format.
-        
+
         Args:
             output_format (str): The desired output format ('.md', '.txt', '.pdf', '.py')
-        
+
         Raises:
             ValueError: If the output format is not supported
         """
-        supported_formats = {'.md', '.txt', '.pdf', '.py'}
-        
+        supported_formats = {".md", ".txt", ".pdf", ".py"}
+
         if output_format not in supported_formats:
-            raise ValueError(f"Unsupported output format. Supported formats are: {supported_formats}")
-            
-        output_path = os.path.splitext(self.file_path)[0] + output_format
-        
-        if output_format == '.pdf':
+            raise ValueError(
+                f"Unsupported output format. Supported formats are: {supported_formats}"
+            )
+
+        output_path = (
+            os.path.splitext(self.file_path)[0] + output_format
+        )
+
+        if output_format == ".pdf":
             self._save_as_pdf(output_path)
         else:
-            with open(output_path, 'w', encoding='utf-8') as f:
-                if output_format == '.md':
+            with open(output_path, "w", encoding="utf-8"):
+                if output_format == ".md":
                     # Create the file in the specified folder
                     create_file_in_folder(
                         self.folder_path,
                         self.file_path,
-                        f"{os.path.basename(self.file_path)}\n\n{self.contents}"
+                        f"{os.path.basename(self.file_path)}\n\n{self.contents}",
                     )
-                    
-                elif output_format == '.py':
-                    # Add Python file header                    
+
+                elif output_format == ".py":
+                    # Add Python file header
                     create_file_in_folder(
                         self.folder_path,
                         self.file_path,
-                        f"#{os.path.basename(self.file_path)}\n\n{self.contents}"
+                        f"#{os.path.basename(self.file_path)}\n\n{self.contents}",
                     )
                 else:  # .txt
                     create_file_in_folder(
                         self.folder_path,
                         self.file_path,
-                        self.contents
+                        self.contents,
                     )
 
     def _save_as_pdf(self, output_path: str) -> None:
@@ -294,11 +302,11 @@ class Artifact(BaseModel):
         try:
             from reportlab.pdfgen import canvas
             from reportlab.lib.pagesizes import letter
-            
+
             c = canvas.Canvas(output_path, pagesize=letter)
             # Split content into lines
             y = 750  # Starting y position
-            for line in self.contents.split('\n'):
+            for line in self.contents.split("\n"):
                 c.drawString(50, y, line)
                 y -= 15  # Move down for next line
                 if y < 50:  # New page if bottom reached
@@ -306,7 +314,9 @@ class Artifact(BaseModel):
                     y = 750
             c.save()
         except ImportError:
-            raise ImportError("reportlab package is required for PDF output. Install with: pip install reportlab")
+            raise ImportError(
+                "reportlab package is required for PDF output. Install with: pip install reportlab"
+            )
 
 
 # # Example usage
@@ -326,13 +336,13 @@ class Artifact(BaseModel):
 # print(artifact.get_metrics())
 
 
-# Testing saving in different artifact types 
+# Testing saving in different artifact types
 # Create an artifact
-#artifact = Artifact(file_path="/path/to/file", file_type=".txt",contents="",  edit_count=0  )
-#artifact.create("This is some content\nWith multiple lines")
+# artifact = Artifact(file_path="/path/to/file", file_type=".txt",contents="",  edit_count=0  )
+# artifact.create("This is some content\nWith multiple lines")
 
 # Save in different formats
-#artifact.save_as(".md")    # Creates example.md
-#artifact.save_as(".txt")   # Creates example.txt
-#artifact.save_as(".pdf")   # Creates example.pdf
-#artifact.save_as(".py")    # Creates example.py
+# artifact.save_as(".md")    # Creates example.md
+# artifact.save_as(".txt")   # Creates example.txt
+# artifact.save_as(".pdf")   # Creates example.pdf
+# artifact.save_as(".py")    # Creates example.py

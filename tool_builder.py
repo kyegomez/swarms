@@ -97,26 +97,35 @@ def execute_generated_code(code: str) -> Any:
     try:
         exec_namespace = {}
         exec(code, exec_namespace)
-        
+
         # Check for any callable functions in the namespace
         main_function = None
         for item in exec_namespace.values():
-            if callable(item) and not item.__name__.startswith('__'):
+            if callable(item) and not item.__name__.startswith("__"):
                 main_function = item
                 break
 
         if main_function:
             result = main_function()
-            logger.info(f"Code execution successful. Function result: {result}")
+            logger.info(
+                f"Code execution successful. Function result: {result}"
+            )
             return result
         elif "result" in exec_namespace:
-            logger.info(f"Code execution successful. Result variable: {exec_namespace['result']}")
-            return exec_namespace['result']
+            logger.info(
+                f"Code execution successful. Result variable: {exec_namespace['result']}"
+            )
+            return exec_namespace["result"]
         else:
-            logger.warning("Code execution completed but no result found")
+            logger.warning(
+                "Code execution completed but no result found"
+            )
             return "No result or function found in executed code."
     except Exception as e:
-        logger.error(f"Code execution failed with error: {str(e)}", exc_info=True)
+        logger.error(
+            f"Code execution failed with error: {str(e)}",
+            exc_info=True,
+        )
         return e
 
 
@@ -139,16 +148,21 @@ def retry_until_success(task: str, max_retries: int = 5):
         logger.info(f"Result: {result}")
 
         if isinstance(result, Exception):
-            logger.error(f"Attempt {attempts + 1} failed: {str(result)}")
+            logger.error(
+                f"Attempt {attempts + 1} failed: {str(result)}"
+            )
             print("Retrying with updated code...")
             attempts += 1
         else:
-            logger.info(f"Success on attempt {attempts + 1}. Result: {result}")
+            logger.info(
+                f"Success on attempt {attempts + 1}. Result: {result}"
+            )
             print(f"Code executed successfully: {result}")
             break
     else:
         logger.error("Max retries reached. Execution failed.")
         print("Max retries reached. Execution failed.")
+
 
 # Usage
 retry_until_success(
