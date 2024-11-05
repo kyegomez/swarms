@@ -5,6 +5,7 @@ import json
 from typing import List, Union, Dict, Any
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
+from swarms.utils.file_processing import create_file_in_folder
 
 
 class FileVersion(BaseModel):
@@ -38,7 +39,7 @@ class Artifact(BaseModel):
         versions (List[FileVersion]): The list of file versions.
         edit_count (int): The number of times the file has been edited.
     """
-
+    folder_path: str = Field(default=os.getenv("WORKSPACE_DIR"), description="The path to the folder")
     file_path: str = Field(..., description="The path to the file")
     file_type: str = Field(
         ...,
@@ -248,12 +249,13 @@ class Artifact(BaseModel):
         Saves the artifact's contents in the specified format.
         
         Args:
-            output_format (str): The desired output format ('md', 'txt', 'pdf', 'py')
+            output_format (str): The desired output format ('.md', '.txt', '.pdf', '.py')
         
         Raises:
             ValueError: If the output format is not supported
         """
         supported_formats = {'.md', '.txt', '.pdf', '.py'}
+        
         if output_format not in supported_formats:
             raise ValueError(f"Unsupported output format. Supported formats are: {supported_formats}")
             
@@ -264,17 +266,26 @@ class Artifact(BaseModel):
         else:
             with open(output_path, 'w', encoding='utf-8') as f:
                 if output_format == '.md':
-                    # Add markdown formatting if needed
-                    f.write(f"# {os.path.basename(self.file_path)}\n\n")
-                    f.write(self.contents)
+                    # Create the file in the specified folder
+                    create_file_in_folder(
+                        self.folder_path,
+                        self.file_path,
+                        f"{os.path.basename(self.file_path)}\n\n{self.contents}"
+                    )
+                    
                 elif output_format == '.py':
-                    # Add Python file header
-                    f.write('"""\n')
-                    f.write(f'Generated Python file from {self.file_path}\n')
-                    f.write('"""\n\n')
-                    f.write(self.contents)
+                    # Add Python file header                    
+                    create_file_in_folder(
+                        self.folder_path,
+                        self.file_path,
+                        f"#{os.path.basename(self.file_path)}\n\n{self.contents}"
+                    )
                 else:  # .txt
-                    f.write(self.contents)
+                    create_file_in_folder(
+                        self.folder_path,
+                        self.file_path,
+                        self.contents
+                    )
 
     def _save_as_pdf(self, output_path: str) -> None:
         """

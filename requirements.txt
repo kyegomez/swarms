@@ -13,7 +13,6 @@ pydantic==2.8.2
 tenacity==8.5.0
 Pillow==10.4.0
 psutil
-uvloop
 sentry-sdk
 python-dotenv
 opencv-python-headless

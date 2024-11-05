@@ -1,10 +1,14 @@
-import os
-from loguru import logger
 import json
+import os
 import time
 from typing import Dict
-from swarms_cloud.utils.log_to_swarms_database import log_agent_data
-from swarms_cloud.utils.capture_system_data import capture_system_data
+
+from loguru import logger
+
+from swarms.telemetry.capture_sys_data import (
+    capture_system_data,
+    log_agent_data,
+)
 
 
 class OnboardingProcess:

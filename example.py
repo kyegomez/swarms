@@ -19,7 +19,7 @@ agent = Agent(
     agent_name="Financial-Analysis-Agent",
     # system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     llm=model,
-    max_loops=3,
+    max_loops=1,
     autosave=True,
     dashboard=False,
     verbose=True,
@@ -29,15 +29,18 @@ agent = Agent(
     retry_attempts=1,
     context_length=200000,
     return_step_meta=True,
-    # output_type="json",
     output_type="json",  # "json", "dict", "csv" OR "string" soon "yaml" and
     streaming_on=False,
     auto_generate_prompt=False,  # Auto generate prompt for the agent based on name, description, and system prompt, task
+    artifacts_on=True,
+    artifacts_output_path="roth_ira_report",
+    artifacts_file_extension=".md",
+    max_tokens=8000,
 )
 
 
 print(
     agent.run(
-        "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
+        "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria. Create a report on this question."
     )
 )

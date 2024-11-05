@@ -1,8 +1,9 @@
-import time
 import json
 import os
-from typing import Callable, List
+import time
 import uuid
+from typing import Any, Callable, List
+
 from loguru import logger
 from pydantic import (
     BaseModel,
@@ -10,12 +11,12 @@ from pydantic import (
     constr,
 )
 from pydantic.v1 import validator
-from swarms_cloud.utils.log_to_swarms_database import log_agent_data
-from swarms_cloud.utils.capture_system_data import capture_system_data
-from swarms.tools.base_tool import BaseTool
 
-# from swarms.agents.ape_agent import auto_generate_prompt
-from typing import Any
+from swarms.telemetry.capture_sys_data import (
+    capture_system_data,
+    log_agent_data,
+)
+from swarms.tools.base_tool import BaseTool
 
 
 class Prompt(BaseModel):
@@ -123,9 +124,9 @@ class Prompt(BaseModel):
                 "New content must be different from the current content."
             )
 
-        logger.info(
-            f"Editing prompt {self.id}. Current content: '{self.content}'"
-        )
+        # logger.info(
+        #     f"Editing prompt {self.id}. Current content: '{self.content}'"
+        # )
         self.edit_history.append(new_content)
         self.content = new_content
         self.edit_count += 1

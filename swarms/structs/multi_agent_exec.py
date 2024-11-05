@@ -6,12 +6,11 @@ import threading
 from typing import List, Union, Any, Callable
 from multiprocessing import cpu_count
 
-import uvloop
+
 from swarms.structs.agent import Agent
 from swarms.utils.calculate_func_metrics import profile_func
-
-# Use uvloop for faster asyncio event loop
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+import sys
+    
 
 # Type definitions
 AgentType = Union[Agent, Callable]

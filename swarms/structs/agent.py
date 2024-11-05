@@ -173,6 +173,9 @@ class Agent:
         temperature (float): The temperature
         workspace_dir (str): The workspace directory
         timeout (int): The timeout
+        artifacts_on (bool): Enable artifacts
+        artifacts_output_path (str): The artifacts output path
+        artifacts_file_extension (str): The artifacts file extension
 
     Methods:
         run: Run the agent
@@ -204,8 +207,8 @@ class Agent:
         run_async_concurrent: Run the agent asynchronously and concurrently
         run_async_concurrent: Run the agent asynchronously and concurrently
         construct_dynamic_prompt: Construct the dynamic prompt
-        construct_dynamic_prompt: Construct the dynamic prompt
-
+        handle_artifacts: Handle artifacts
+        
 
     Examples:
     >>> from swarm_models import OpenAIChat
@@ -324,6 +327,9 @@ class Agent:
         auto_generate_prompt: bool = False,
         rag_every_loop: bool = False,
         plan_enabled: bool = False,
+        artifacts_on: bool = False,
+        artifacts_output_path: str = None,
+        artifacts_file_extension: str = None,
         *args,
         **kwargs,
     ):
@@ -431,6 +437,9 @@ class Agent:
         self.auto_generate_prompt = auto_generate_prompt
         self.rag_every_loop = rag_every_loop
         self.plan_enabled = plan_enabled
+        self.artifacts_on = artifacts_on
+        self.artifacts_output_path = artifacts_output_path
+        self.artifacts_file_extension = artifacts_file_extension
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -973,6 +982,10 @@ class Agent:
                     self.short_memory.get_str()
                 )
             )
+            
+            # Handle artifacts
+            if self.artifacts_on is True:
+                self.handle_artifacts(concat_strings(all_responses), self.artifacts_output_path, self.artifacts_file_extension)
 
             # More flexible output types
             if (
@@ -2283,10 +2296,29 @@ class Agent:
             raise e
     
     
-    def handle_artifacts(self, text: str, file_output_path: str, file_extension: str):
-        artifact = Artifact(
-            file_path=file_output_path,
-            file_type=file_extension,
-            contents=text,
+    def handle_artifacts(self, text: str, file_output_path: str, file_extension: str) -> None:
+        """Handle creating and saving artifacts with error handling."""
+        try:
+            logger.info(f"Creating artifact for file: {file_output_path}")
+            artifact = Artifact(
+                file_path=file_output_path,
+                file_type=file_extension,
+                contents=text,
+                edit_count=0,
+            )
             
-        )
+            logger.info(f"Saving artifact with extension: {file_extension}")
+            artifact.save_as(file_extension)
+            logger.success(f"Successfully saved artifact to {file_output_path}")
+            
+        except ValueError as e:
+            logger.error(f"Invalid input values for artifact: {str(e)}")
+            raise
+        except IOError as e:
+            logger.error(f"Error saving artifact to file: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error handling artifact: {str(e)}")
+            raise
+        
+        
