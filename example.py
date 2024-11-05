@@ -1,8 +1,12 @@
 import os
-from swarms import Agent
-from swarm_models import OpenAIChat
 
 from dotenv import load_dotenv
+from swarm_models import OpenAIChat
+
+from swarms import Agent
+from swarms.prompts.finance_agent_sys_prompt import (
+    FINANCIAL_AGENT_SYS_PROMPT,
+)
 
 load_dotenv()
 
@@ -17,7 +21,7 @@ model = OpenAIChat(
 # Initialize the agent
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
-    # system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+    system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     llm=model,
     max_loops=1,
     autosave=True,
