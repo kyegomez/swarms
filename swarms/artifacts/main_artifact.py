@@ -33,6 +33,7 @@ class Artifact(BaseModel):
     Represents a file artifact.
 
     Attributes:
+        folder_path
         file_path (str): The path to the file.
         file_type (str): The type of the file.
         contents (str): The contents of the file.
@@ -272,28 +273,27 @@ class Artifact(BaseModel):
         if output_format == ".pdf":
             self._save_as_pdf(output_path)
         else:
-            with open(output_path, "w", encoding="utf-8"):
-                if output_format == ".md":
-                    # Create the file in the specified folder
-                    create_file_in_folder(
-                        self.folder_path,
-                        self.file_path,
-                        f"{os.path.basename(self.file_path)}\n\n{self.contents}",
-                    )
+            if output_format == ".md":
+                # Create the file in the specified folder
+                create_file_in_folder(
+                    self.folder_path,
+                    self.file_path,
+                    f"{os.path.basename(self.file_path)}\n\n{self.contents}",
+                )
 
-                elif output_format == ".py":
-                    # Add Python file header
-                    create_file_in_folder(
-                        self.folder_path,
-                        self.file_path,
-                        f"#{os.path.basename(self.file_path)}\n\n{self.contents}",
-                    )
-                else:  # .txt
-                    create_file_in_folder(
-                        self.folder_path,
-                        self.file_path,
-                        self.contents,
-                    )
+            elif output_format == ".py":
+                # Add Python file header
+                create_file_in_folder(
+                    self.folder_path,
+                    self.file_path,
+                    f"#{os.path.basename(self.file_path)}\n\n{self.contents}",
+                )
+            else:  # .txt
+                create_file_in_folder(
+                    self.folder_path,
+                    self.file_path,
+                    self.contents,
+                )
 
     def _save_as_pdf(self, output_path: str) -> None:
         """

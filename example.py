@@ -38,7 +38,7 @@ agent = Agent(
     auto_generate_prompt=False,  # Auto generate prompt for the agent based on name, description, and system prompt, task
     artifacts_on=True,
     artifacts_output_path="roth_ira_report",
-    artifacts_file_extension=".md",
+    artifacts_file_extension=".txt",
     max_tokens=8000,
 )
 
