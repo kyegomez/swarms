@@ -294,3 +294,16 @@ except ValueError as e:
 - [Pydantic Documentation](https://pydantic-docs.helpmanual.io/)
 - [ThreadPoolExecutor in Python](https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor)
 - [Loguru for Logging in Python](https://loguru.readthedocs.io/en/stable/)
+
+### Agent Configuration Parameters
+
+When initializing agents for use with ConcurrentWorkflow, the following additional parameters are available:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `autosave` | `bool` | `True` | Whether to automatically save the agent's state |
+| `dashboard` | `bool` | `False` | Whether to enable dashboard visualization |
+| `verbose` | `bool` | `True` | Whether to output detailed logging information |
+| `context_length` | `int` | `200000` | Maximum context length for the agent |
+| `return_step_meta` | `bool` | `False` | Whether to return metadata for each step |
+| `user_name` | `str` | `"swarms_corp"` | Default username for the agent |

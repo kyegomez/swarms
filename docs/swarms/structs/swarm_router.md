@@ -2,7 +2,25 @@
 
 ## Overview
 
-The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, and `ConcurrentWorkflow`. We will be continously adding more and more swarm architectures here as we progress with new architectures.
+The `SwarmRouter` class is a flexible routing system designed to manage different 
+types of swarms for task execution. It provides a unified interface to interact with 
+various swarm types, including `AgentRearrange`, `MixtureOfAgents`, 
+`SpreadSheetSwarm`, `SequentialWorkflow`, and `ConcurrentWorkflow`. We will be 
+continously adding more and more swarm architectures here as we progress with new 
+architectures.
+## Types
+
+### SwarmType
+A literal type that can be one of:
+```python
+SwarmType = Literal[
+    "AgentRearrange",
+    "MixtureOfAgents",
+    "SpreadSheetSwarm",
+    "SequentialWorkflow",
+    "ConcurrentWorkflow",
+]
+```
 
 ## Classes
 
@@ -11,33 +29,50 @@ The `SwarmRouter` class is a flexible routing system designed to manage differen
 A Pydantic model for capturing log entries.
 
 #### Attributes:
-- `id` (str): Unique identifier for the log entry.
-- `timestamp` (datetime): Time of log creation.
-- `level` (str): Log level (e.g., "info", "error").
-- `message` (str): Log message content.
-- `swarm_type` (SwarmType): Type of swarm associated with the log.
-- `task` (str): Task being performed (optional).
-- `metadata` (Dict[str, Any]): Additional metadata (optional).
+- `id` (str): Unique identifier generated using UUID4
+- `timestamp` (datetime): UTC timestamp of log creation
+- `level` (str): Log level (e.g., "info", "error", "success")
+- `message` (str): Log message content
+- `swarm_type` (SwarmType): Type of swarm associated with the log
+- `task` (str): Task being performed (optional, defaults to "")
+- `metadata` (Dict[str, Any]): Additional metadata (optional, defaults to empty dict)
 
 ### SwarmRouter
 
 Main class for routing tasks to different swarm types.
 
-#### Attributes:
-- `name` (str): Name of the SwarmRouter instance.
-- `description` (str): Description of the SwarmRouter instance.
-- `max_loops` (int): Maximum number of loops to perform.
-- `agents` (List[Agent]): List of Agent objects to be used in the swarm.
-- `swarm_type` (SwarmType): Type of swarm to be used.
-- `swarm` (Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]): Instantiated swarm object.
+#### Parameters:
+- `name` (str, optional): Name of the SwarmRouter instance. Defaults to "swarm-router"
+- `description` (str, optional): Description of the SwarmRouter instance. Defaults to "Routes your task to the desired swarm"
+- `max_loops` (int, optional): Maximum number of loops to perform. Defaults to 1
+- `agents` (List[Agent]): List of Agent objects to be used in the swarm
+- `swarm_type` (SwarmType): Type of swarm to be used
+- `swarm` (Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, 
+SequentialWorkflow, ConcurrentWorkflow]): Instantiated swarm object.
 - `logs` (List[SwarmLog]): List of log entries captured during operations.
 
 #### Methods:
-- `__init__(self, name: str, description: str, max_loops: int, agents: List[Agent], swarm_type: SwarmType, *args, **kwargs)`: Initialize the SwarmRouter.
-- `_create_swarm(self, *args, **kwargs)`: Create and return the specified swarm type.
-- `_log(self, level: str, message: str, task: str, metadata: Dict[str, Any])`: Create a log entry and add it to the logs list.
-- `run(self, task: str, *args, **kwargs)`: Run the specified task on the selected swarm.
-- `get_logs(self)`: Retrieve all logged entries.
+- `__init__`: Initialize the SwarmRouter
+- `_create_swarm`: Create and return the specified swarm type
+- `_log`: Create a log entry and add it to the logs list
+- `run`: Run the specified task on the selected swarm
+- `get_logs`: Retrieve all logged entries
+
+### Log Levels
+The SwarmRouter supports the following log levels:
+- "info": General information
+- "error": Error messages
+- "success": Successful task completion
+
+### Error Handling
+
+The SwarmRouter includes several validation checks that may raise ValueError:
+- If no agents are provided (`agents` is None or empty)
+- If swarm type is None
+- If max_loops is 0
+- If an invalid swarm type is provided
+
+Additionally, any exceptions during task execution are logged and re-raised.
 
 ## Installation
 
