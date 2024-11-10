@@ -302,6 +302,7 @@ We provide vast array of features to save agent states using json, yaml, toml, u
 | `get_docs_from_doc_folders()` | Fetches all the documents from the doc folders. |
 | `activate_agentops()` | Activates agent operations. |
 | `check_end_session_agentops()` | Checks the end of the session for agent operations. |
+| `model_dump_markdown()` | Dumps the model output to a markdown file. |
 
 
 
@@ -544,7 +545,7 @@ Steps:
 
 For example, here's an example on how to create an agent from griptape.
 
-Here’s how you can create a custom **Griptape** agent that integrates with the **Swarms** framework by inheriting from the `Agent` class in **Swarms** and overriding the `run(task: str) -> str` method.
+Here's how you can create a custom **Griptape** agent that integrates with the **Swarms** framework by inheriting from the `Agent` class in **Swarms** and overriding the `run(task: str) -> str` method.
 
 
 ```python
@@ -1857,7 +1858,7 @@ Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 -----
 
 ## Folder Structure
-The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
+The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
 
 ```sh
 ├── __init__.py

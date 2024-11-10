@@ -442,6 +442,8 @@ class BaseTool(BaseModel):
                 f"Function {func.__name__} does not have type hints"
             )
 
+    
+
 
 # # Example function definitions and mappings
 # def get_current_weather(location, unit='celsius'):

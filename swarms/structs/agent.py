@@ -2001,8 +2001,97 @@ class Agent:
             model = YamlModel()
             return model.dict_to_yaml(self.agent_output.model_dump())
 
+        elif self.output_type == "markdown":
+            # Convert the responses to markdown format
+            markdown_output = "# Agent Output\n\n"
+            markdown_output += f"## Agent: {self.agent_name}\n\n"
+            markdown_output += "### Responses:\n\n"
+            for i, response in enumerate(responses, 1):
+                markdown_output += f"{i}. {response}\n\n"
+            return markdown_output
+
         elif self.output_type == "dict":
             return self.agent_output.model_dump()
 
         elif self.return_history:
             return self.short_memory.return_history_as_string()
+
+    def to_markdown(self) -> str:
+        """Convert agent output to markdown format
+        
+        Returns:
+            str: Markdown formatted string of agent output
+        """
+        markdown = []
+        
+        # Add agent name as title
+        markdown.append(f"# {self.agent_name}\n")
+        
+        # Add metadata section
+        markdown.append("## Metadata\n")
+        markdown.append(f"- **Created**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        markdown.append(f"- **Max Loops**: {self.max_loops}")
+        markdown.append(f"- **Autosave**: {self.autosave}")
+        markdown.append("")
+        
+        # Add system prompt if exists
+        if self.system_prompt:
+            markdown.append("## System Prompt\n")
+            markdown.append(f"{self.system_prompt}\n")
+        
+        # Add agent output
+        if hasattr(self, 'agent_output'):
+            markdown.append("## Output\n")
+            if isinstance(self.agent_output, list):
+                for i, output in enumerate(self.agent_output, 1):
+                    markdown.append(f"{i}. {output}\n")
+            else:
+                markdown.append(f"{self.agent_output}\n")
+        
+        # Add conversation history if exists
+        if self.short_memory and self.short_memory.messages:
+            markdown.append("## Conversation History\n")
+            for msg in self.short_memory.messages:
+                markdown.append(f"### {msg.role.title()}")
+                markdown.append(f"{msg.content}\n")
+        
+        # Add tools section if tools exist
+        if hasattr(self, 'tools') and self.tools:
+            markdown.append("## Tools Used\n")
+            for tool in self.tools:
+                markdown.append(f"- {tool.__class__.__name__}")
+            markdown.append("")
+        
+        return "\n".join(markdown)
+
+    def model_dump_markdown(self) -> str:
+        """Save the agent output as a markdown file
+        
+        Returns:
+            str: Path to saved markdown file
+        """
+        try:
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{self.agent_name}_{timestamp}.md"
+            
+            logger.info(
+                f"Saving {self.agent_name} model to Markdown in the {self.workspace_dir} directory"
+            )
+
+            # Create markdown content
+            markdown_content = self.to_markdown()
+
+            # Save to file
+            create_file_in_folder(
+                self.workspace_dir,
+                filename,
+                markdown_content,
+            )
+
+            logger.success(f"Successfully saved markdown to {filename}")
+            return f"Model saved to {self.workspace_dir}/{filename}"
+        
+        except Exception as e:
+            logger.error(f"Error saving markdown: {str(e)}")
+            raise
