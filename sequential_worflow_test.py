@@ -1,8 +1,7 @@
 import os
 from dotenv import load_dotenv
-from swarms import Agent
+from swarms import Agent, SequentialWorkflow
 from swarm_models import OpenAIChat
-from swarms.structs.swarm_router import SwarmRouter
 
 load_dotenv()
 
@@ -21,7 +20,7 @@ model = OpenAIChat(
 # Initialize specialized agents
 data_extractor_agent = Agent(
     agent_name="Data-Extractor",
-    system_prompt="You are a data extraction specialist. Extract relevant information from provided content.",
+    system_prompt=None,
     llm=model,
     max_loops=1,
     autosave=True,
@@ -36,7 +35,7 @@ data_extractor_agent = Agent(
 
 summarizer_agent = Agent(
     agent_name="Document-Summarizer",
-    system_prompt="You are a document summarization specialist. Provide clear and concise summaries.",
+    system_prompt=None,
     llm=model,
     max_loops=1,
     autosave=True,
@@ -51,7 +50,7 @@ summarizer_agent = Agent(
 
 financial_analyst_agent = Agent(
     agent_name="Financial-Analyst",
-    system_prompt="You are a financial analysis specialist. Analyze financial aspects of content.",
+    system_prompt=None,
     llm=model,
     max_loops=1,
     autosave=True,
@@ -66,7 +65,7 @@ financial_analyst_agent = Agent(
 
 market_analyst_agent = Agent(
     agent_name="Market-Analyst",
-    system_prompt="You are a market analysis specialist. Analyze market-related aspects.",
+    system_prompt=None,
     llm=model,
     max_loops=1,
     autosave=True,
@@ -81,7 +80,7 @@ market_analyst_agent = Agent(
 
 operational_analyst_agent = Agent(
     agent_name="Operational-Analyst",
-    system_prompt="You are an operational analysis specialist. Analyze operational aspects.",
+    system_prompt=None,
     llm=model,
     max_loops=1,
     autosave=True,
@@ -95,7 +94,7 @@ operational_analyst_agent = Agent(
 )
 
 # Initialize the SwarmRouter
-router = SwarmRouter(
+router = SequentialWorkflow(
     name="pe-document-analysis-swarm",
     description="Analyze documents for private equity due diligence and investment decision-making",
     max_loops=1,
@@ -106,10 +105,7 @@ router = SwarmRouter(
         market_analyst_agent,
         operational_analyst_agent,
     ],
-    swarm_type="SequentialWorkflow",  # or "SequentialWorkflow" or "ConcurrentWorkflow" or
-    auto_generate_prompts=True,
     output_type="all",
-    
 )
 
 # Example usage

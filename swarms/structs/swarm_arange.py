@@ -4,6 +4,7 @@ import uuid
 from typing import Any, Callable, Dict, List, Optional
 
 from swarms.utils.loguru_logger import logger
+from swarms.utils.any_to_str import any_to_str
 
 
 def swarm_id():
@@ -29,23 +30,27 @@ class SwarmRearrange:
     A class representing a swarm of swarms for rearranging tasks.
 
     Attributes:
-        swarms (dict): A dictionary of swarms, where the key is the swarm's name and the value is the swarm object.
-        flow (str): The flow pattern of the tasks.
-        max_loops (int): The maximum number of loops to run the swarm.
-        verbose (bool): A flag indicating whether to log verbose messages.
-        human_in_the_loop (bool): A flag indicating whether human intervention is required.
-        custom_human_in_the_loop (Callable[[str], str], optional): A custom function for human-in-the-loop intervention.
-        return_json (bool): A flag indicating whether to return the result in JSON format.
-        swarm_history (dict): A dictionary to keep track of the history of each swarm.
-        lock (threading.Lock): A lock for thread-safe operations.
+        id (str): Unique identifier for the swarm arrangement
+        name (str): Name of the swarm arrangement
+        description (str): Description of what this swarm arrangement does
+        swarms (dict): A dictionary of swarms, where the key is the swarm's name and the value is the swarm object
+        flow (str): The flow pattern of the tasks
+        max_loops (int): The maximum number of loops to run the swarm
+        verbose (bool): A flag indicating whether to log verbose messages
+        human_in_the_loop (bool): A flag indicating whether human intervention is required
+        custom_human_in_the_loop (Callable[[str], str], optional): A custom function for human-in-the-loop intervention
+        return_json (bool): A flag indicating whether to return the result in JSON format
+        swarm_history (dict): A dictionary to keep track of the history of each swarm
+        lock (threading.Lock): A lock for thread-safe operations
 
     Methods:
-        __init__(swarms: List[swarm] = None, flow: str = None): Initializes the SwarmRearrange object.
-        add_swarm(swarm: swarm): Adds an swarm to the swarm.
-        remove_swarm(swarm_name: str): Removes an swarm from the swarm.
-        add_swarms(swarms: List[swarm]): Adds multiple swarms to the swarm.
-        validate_flow(): Validates the flow pattern.
-        run(task): Runs the swarm to rearrange the tasks.
+        __init__(id: str, name: str, description: str, swarms: List[swarm], flow: str, max_loops: int, verbose: bool,
+                human_in_the_loop: bool, custom_human_in_the_loop: Callable, return_json: bool): Initializes the SwarmRearrange object
+        add_swarm(swarm: swarm): Adds an swarm to the swarm
+        remove_swarm(swarm_name: str): Removes an swarm from the swarm
+        add_swarms(swarms: List[swarm]): Adds multiple swarms to the swarm
+        validate_flow(): Validates the flow pattern
+        run(task): Runs the swarm to rearrange the tasks
     """
 
     def __init__(
@@ -69,8 +74,16 @@ class SwarmRearrange:
         Initializes the SwarmRearrange object.
 
         Args:
-            swarms (List[swarm], optional): A list of swarm objects. Defaults to None.
-            flow (str, optional): The flow pattern of the tasks. Defaults to None.
+            id (str): Unique identifier for the swarm arrangement. Defaults to generated UUID.
+            name (str): Name of the swarm arrangement. Defaults to "SwarmRearrange".
+            description (str): Description of what this swarm arrangement does.
+            swarms (List[swarm]): A list of swarm objects. Defaults to empty list.
+            flow (str): The flow pattern of the tasks. Defaults to None.
+            max_loops (int): Maximum number of loops to run. Defaults to 1.
+            verbose (bool): Whether to log verbose messages. Defaults to True.
+            human_in_the_loop (bool): Whether human intervention is required. Defaults to False.
+            custom_human_in_the_loop (Callable): Custom function for human intervention. Defaults to None.
+            return_json (bool): Whether to return results as JSON. Defaults to False.
         """
         self.id = id
         self.name = name
@@ -271,6 +284,7 @@ class SwarmRearrange:
                                 result = swarm.run(
                                     current_task, img, *args, **kwargs
                                 )
+                                result = any_to_str(result)
                                 logger.info(
                                     f"Swarm {swarm_name} returned result of type: {type(result)}"
                                 )
@@ -312,6 +326,7 @@ class SwarmRearrange:
                             result = swarm.run(
                                 current_task, img, *args, **kwargs
                             )
+                            result = any_to_str(result)
                             logger.info(
                                 f"Swarm {swarm_name} returned result of type: {type(result)}"
                             )
@@ -371,6 +386,7 @@ def swarm_arrange(
             flow,
         )
         result = swarm_arrangement.run(task, *args, **kwargs)
+        result = any_to_str(result)
         logger.info(
             f"Swarm arrangement {name} executed successfully with output type {output_type}."
         )

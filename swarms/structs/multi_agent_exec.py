@@ -5,10 +5,13 @@ from dataclasses import dataclass
 import threading
 from typing import List, Union, Any, Callable
 from multiprocessing import cpu_count
-
+import os
 
 from swarms.structs.agent import Agent
 from swarms.utils.calculate_func_metrics import profile_func
+from swarms.utils.wrapper_clusterop import (
+    exec_callable_with_clusterops,
+)
 
 
 # Type definitions
@@ -330,6 +333,103 @@ def run_agents_with_resource_monitoring(
             await asyncio.sleep(check_interval)
 
     # Implementation details...
+
+
+@profile_func
+def _run_agents_with_tasks_concurrently(
+    agents: List[AgentType],
+    tasks: List[str] = [],
+    batch_size: int = None,
+    max_workers: int = None,
+) -> List[Any]:
+    """
+    Run multiple agents with corresponding tasks concurrently.
+
+    Args:
+        agents: List of Agent instances to run
+        tasks: List of task strings to execute
+        batch_size: Number of agents to run in parallel
+        max_workers: Maximum number of threads
+
+    Returns:
+        List of outputs from each agent
+    """
+    if len(agents) != len(tasks):
+        raise ValueError(
+            "The number of agents must match the number of tasks."
+        )
+
+    cpu_cores = os.cpu_count()
+    batch_size = batch_size or cpu_cores
+    max_workers = max_workers or cpu_cores * 2
+    results = []
+
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    async def run_agent_task_pair(
+        agent: AgentType, task: str, executor: ThreadPoolExecutor
+    ) -> Any:
+        return await run_agent_async(agent, task, executor)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i in range(0, len(agents), batch_size):
+            batch_agents = agents[i : i + batch_size]
+            batch_tasks = tasks[i : i + batch_size]
+            batch_results = loop.run_until_complete(
+                asyncio.gather(
+                    *(
+                        run_agent_task_pair(agent, task, executor)
+                        for agent, task in zip(
+                            batch_agents, batch_tasks
+                        )
+                    )
+                )
+            )
+            results.extend(batch_results)
+
+    return results
+
+
+def run_agents_with_tasks_concurrently(
+    agents: List[AgentType],
+    tasks: List[str] = [],
+    batch_size: int = None,
+    max_workers: int = None,
+    device: str = "cpu",
+    device_id: int = 0,
+    all_cores: bool = True,
+) -> List[Any]:
+    """
+    Executes a list of agents with their corresponding tasks concurrently on a specified device.
+
+    This function orchestrates the concurrent execution of a list of agents with their respective tasks on a specified device, either CPU or GPU. It leverages the `exec_callable_with_clusterops` function to manage the execution on the specified device.
+
+    Args:
+        agents (List[AgentType]): A list of Agent instances or callable functions to execute concurrently.
+        tasks (List[str], optional): A list of task strings to execute for each agent. Defaults to an empty list.
+        batch_size (int, optional): The number of agents to run in parallel. Defaults to None.
+        max_workers (int, optional): The maximum number of threads to use for execution. Defaults to None.
+        device (str, optional): The device to use for execution. Defaults to "cpu".
+        device_id (int, optional): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
+        all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
+
+    Returns:
+        List[Any]: A list of outputs from each agent execution.
+    """
+    return exec_callable_with_clusterops(
+        device,
+        device_id,
+        all_cores,
+        _run_agents_with_tasks_concurrently,
+        agents,
+        tasks,
+        batch_size,
+        max_workers,
+    )
 
 
 # # Example usage:

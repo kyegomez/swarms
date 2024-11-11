@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "6.0.4"
+version = "6.0.9"
 description = "Swarms - Pytorch"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -78,6 +78,7 @@ swarm-models = "*"
 clusterops = "*"
 chromadb = "*"
 reportlab = "*"
+doc-master = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

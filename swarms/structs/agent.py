@@ -299,7 +299,6 @@ class Agent:
         rules: str = None,  # type: ignore
         planning: Optional[str] = False,
         planning_prompt: Optional[str] = None,
-        device: str = None,
         custom_planning_prompt: str = None,
         memory_chunk_size: int = 2000,
         agent_ops_on: bool = False,
@@ -331,6 +330,9 @@ class Agent:
         artifacts_on: bool = False,
         artifacts_output_path: str = None,
         artifacts_file_extension: str = None,
+        device: str = "cpu",
+        all_cores: bool = True,
+        device_id: int = 0,
         *args,
         **kwargs,
     ):
@@ -408,7 +410,6 @@ class Agent:
         self.execute_tool = execute_tool
         self.planning = planning
         self.planning_prompt = planning_prompt
-        self.device = device
         self.custom_planning_prompt = custom_planning_prompt
         self.rules = rules
         self.custom_tools_prompt = custom_tools_prompt
@@ -441,6 +442,9 @@ class Agent:
         self.artifacts_on = artifacts_on
         self.artifacts_output_path = artifacts_output_path
         self.artifacts_file_extension = artifacts_file_extension
+        self.device = device
+        self.all_cores = all_cores
+        self.device_id = device_id
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -729,16 +733,18 @@ class Agent:
     # Check parameters
     def check_parameters(self):
         if self.llm is None:
-            raise ValueError("Language model is not provided")
+            raise ValueError("Language model is not provided. Choose a model from the available models in swarm_models or create a class with a run(task: str) method and or a __call__ method.")
 
-        if self.max_loops is None:
+        if self.max_loops is None or self.max_loops == 0:
             raise ValueError("Max loops is not provided")
 
-        if self.max_tokens == 0:
+        if self.max_tokens == 0 or self.max_tokens is None:
             raise ValueError("Max tokens is not provided")
 
-        if self.context_length == 0:
+        if self.context_length == 0 or self.context_length is None:
             raise ValueError("Context length is not provided")
+        
+        
 
     # Main function
     def _run(
@@ -2264,6 +2270,9 @@ class Agent:
             ValueError: If an invalid device is specified.
             Exception: If any other error occurs during execution.
         """
+        device = device or self.device
+        device_id = device_id or self.device_id
+
         try:
             logger.info(f"Attempting to run on device: {device}")
             if device == "cpu":

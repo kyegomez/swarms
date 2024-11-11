@@ -115,6 +115,15 @@ def create_agents_from_yaml(
                 auto_generate_prompt=agent_config.get(
                     "auto_generate_prompt", "False"
                 ),
+                artifacts_on=agent_config.get(
+                    "artifacts_on", "False"
+                ),
+                artifacts_file_extension=agent_config.get(
+                    "artifacts_file_extension", ".md"
+                ),
+                artifacts_output_path=agent_config.get(
+                    "artifacts_output_path", ""
+                ),
                 *args,
                 **kwargs,
             )
@@ -138,7 +147,7 @@ def create_agents_from_yaml(
                 flow=swarm_config.get("flow"),
                 autosave=swarm_config.get("autosave"),
                 return_json=swarm_config.get("return_json"),
-                *args,
+                rules=swarm_config.get("rules", "") * args,
                 **kwargs,
             )
             logger.info(

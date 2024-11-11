@@ -43,8 +43,7 @@ agent = Agent(
 )
 
 
-print(
-    agent.run(
-        "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria. Create a report on this question."
-    )
+agent.run(
+    "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria. Create a report on this question.",
+    all_cores=True,
 )

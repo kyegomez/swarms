@@ -35,3 +35,4 @@ aiofiles
 swarm-models
 clusterops
 reportlab
+doc-master

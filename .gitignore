@@ -12,6 +12,7 @@ dataframe/
 static/generated
 runs
 Financial-Analysis-Agent_state.json
+experimental
 artifacts_five
 encryption
 errors

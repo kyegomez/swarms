@@ -74,7 +74,9 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
     run_agent_with_timeout,
     run_agents_with_resource_monitoring,
+    run_agents_with_tasks_concurrently,
 )
+from swarms.structs.agents_available import showcase_available_agents
 
 __all__ = [
     "Agent",
@@ -143,4 +145,6 @@ __all__ = [
     "run_agent_with_timeout",
     "run_agents_with_resource_monitoring",
     "swarm_router",
+    "run_agents_with_tasks_concurrently",
+    "showcase_available_agents",
 ]
