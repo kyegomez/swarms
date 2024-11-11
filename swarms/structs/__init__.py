@@ -75,9 +75,11 @@ from swarms.structs.multi_agent_exec import (
     run_agent_with_timeout,
     run_agents_with_resource_monitoring,
 )
+from swarms.structs.async_workflow import AsyncWorkflow
 
 __all__ = [
     "Agent",
+    "AsyncWorkflow",
     "AutoSwarm",
     "AutoSwarmRouter",
     "BaseStructure",
@@ -143,4 +145,5 @@ __all__ = [
     "run_agent_with_timeout",
     "run_agents_with_resource_monitoring",
     "swarm_router",
+    "AsyncWorkflow",
 ]

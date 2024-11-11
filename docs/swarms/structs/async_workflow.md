@@ -204,3 +204,63 @@ await workflow.add(tasks=[task_1, task_2])
 results = await workflow.run()
 print(results)  # Output: ["Task 1 Completed", "Task 2 Completed"]
 ```
+
+# Async Workflow
+
+The AsyncWorkflow allows multiple agents to process tasks concurrently using Python's asyncio framework.
+
+## Usage Example
+
+```python
+import asyncio
+from swarms import Agent, AsyncWorkflow
+from swarm_models import OpenAIChat
+
+# Initialize model
+model = OpenAIChat(
+    openai_api_key="your-api-key",
+    model_name="gpt-4",
+    temperature=0.7
+)
+
+# Create agents
+agents = [
+    Agent(
+        agent_name=f"Analysis-Agent-{i}",
+        llm=model,
+        max_loops=1,
+        dashboard=False,
+        verbose=True,
+    )
+    for i in range(3)
+]
+
+# Initialize workflow
+workflow = AsyncWorkflow(
+    name="Analysis-Workflow",
+    agents=agents,
+    max_workers=3,
+    verbose=True
+)
+
+# Run workflow
+async def main():
+    task = "Analyze the potential impact of AI on healthcare"
+    results = await workflow.run(task)
+    for i, result in enumerate(results):
+        print(f"Agent {i} result: {result}")
+
+# Execute
+asyncio.run(main())
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | str | "AsyncWorkflow" | Name of the workflow |
+| `agents` | List[Agent] | None | List of agents to execute tasks |
+| `max_workers` | int | 5 | Maximum number of concurrent workers |
+| `dashboard` | bool | False | Enable/disable dashboard |
+| `autosave` | bool | False | Enable/disable autosaving results |
+| `verbose` | bool | False | Enable/disable verbose logging |
