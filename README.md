@@ -399,6 +399,28 @@ print(f"Generated data: {generated_data}")
 
 
 ```
+## OpenAI Assistant Integration
+
+Swarms provides native support for OpenAI's Assistants API through the
+ `OpenAIAssistant` class:
+
+```python
+
+from swarms import OpenAIAssistant
+
+#Create an assistant
+assistant = OpenAIAssistant(
+    name="Research Assistant",
+    instructions="You help with research tasks.",
+    tools=[{"type": "code_interpreter"}]
+)
+
+#Run tasks
+response = assistant.run("Analyze this dataset")
+
+```
+
+See the [OpenAI Assistant documentation](docs/swarms/agents/openai_assistant.md) for more details.
 
 ### Multi Modal Autonomous Agent
 Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
@@ -1830,7 +1852,7 @@ Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 -----
 
 ## Folder Structure
-The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
+The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
 
 ```sh
 ├── __init__.py

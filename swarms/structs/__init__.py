@@ -3,6 +3,7 @@ from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
+from swarms.structs.async_workflow import AsyncWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.graph_workflow import (
@@ -78,6 +79,7 @@ from swarms.structs.multi_agent_exec import (
 
 __all__ = [
     "Agent",
+    "AsyncWorkflow",
     "AutoSwarm",
     "AutoSwarmRouter",
     "BaseStructure",
