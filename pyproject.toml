@@ -97,7 +97,7 @@ mypy-protobuf = "^3.0.0"
 pytest = "^8.1.1"
 termcolor = "^2.4.0"
 pandas = "^2.2.2"
-fastapi = "^0.110.1"
+fastapi = ">=0.110.1,<0.116.0"
 
 [tool.ruff]
 line-length = 70
