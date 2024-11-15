@@ -80,6 +80,9 @@ class SwarmRouter:
         flow: str = None,
         return_json: bool = True,
         auto_generate_prompts: bool = False,
+        output_files: Dict[str, str] = None,  # New parameter
+        output_formats: List[str] = None,     # New parameter
+        output_dir: str = "swarm_outputs",    # New parameter
         *args,
         **kwargs,
     ):
@@ -93,6 +96,28 @@ class SwarmRouter:
         self.return_json = return_json
         self.auto_generate_prompts = auto_generate_prompts
         self.logs = []
+
+        # Initialize output settings
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(exist_ok=True)
+        
+        # Default output formats if none specified
+        self.output_formats = output_formats or ["json"]
+        
+        # Custom output file paths or use defaults
+        self.output_files = output_files or {
+            fmt: self.output_dir / f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{fmt}"
+            for fmt in self.output_formats
+        }
+        
+        # Format handlers
+        self._format_handlers = {
+            "json": self._to_json,
+            "yaml": self._to_yaml,
+            "md": self._to_markdown,
+            "csv": self._to_csv,
+            "txt": self._to_text
+        }
 
         self.reliability_check()
 
@@ -287,6 +312,7 @@ class SwarmRouter:
                 task=task,
                 metadata={"result": str(result)},
             )
+            self._save_outputs(result)
             return result
         except Exception as e:
             self._log(
@@ -296,6 +322,38 @@ class SwarmRouter:
                 metadata={"error": str(e)},
             )
             raise
+
+    def _to_json(self, data: Any) -> str:
+        return json.dumps(data, indent=2)
+        
+    def _to_yaml(self, data: Any) -> str:
+        return yaml.dump(data)
+        
+    def _to_markdown(self, data: Any) -> str:
+        md = f"# {self.name} Results\n\n"
+        for agent_name, result in data.items():
+            md += f"## {agent_name}\n\n{result}\n\n"
+        return md
+        
+    def _to_csv(self, data: Any) -> str:
+        if isinstance(data, dict):
+            df = pd.DataFrame.from_dict(data, orient='index')
+            return df.to_csv()
+        return ""
+        
+    def _to_text(self, data: Any) -> str:
+        return str(data)
+
+    def _save_outputs(self, results: Any):
+        """Save results in all specified formats"""
+        for fmt, filepath in self.output_files.items():
+            if fmt in self._format_handlers:
+                try:
+                    formatted_data = self._format_handlers[fmt](results)
+                    with open(filepath, 'w') as f:
+                        f.write(formatted_data)
+                except Exception as e:
+                    logger.error(f"Failed to save {fmt} output: {str(e)}")
 
     def batch_run(
         self, tasks: List[str], *args, **kwargs
