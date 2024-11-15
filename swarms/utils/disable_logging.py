@@ -3,6 +3,7 @@ import logging
 import os
 import warnings
 from threading import Thread
+from swarms.utils.workspace_manager import WorkspaceManager
 
 
 def disable_langchain():
@@ -24,7 +25,9 @@ def disable_logging():
     Disables logging for specific modules and sets up file and stream handlers.
     Runs in a separate thread to avoid blocking the main thread.
     """
-    os.environ["WORKSPACE_DIR"] = "agent_workspace"
+    # Get workspace directory using WorkspaceManager instead of direct environment variable
+    workspace_dir = WorkspaceManager.get_workspace_dir()
+    os.environ["WORKSPACE_DIR"] = workspace_dir
 
     warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -60,9 +63,6 @@ def disable_logging():
 
     # Remove all existing handlers
     logging.getLogger().handlers = []
-
-    # Get the workspace directory from the environment variables
-    workspace_dir = os.environ["WORKSPACE_DIR"]
 
     # Check if the workspace directory exists, if not, create it
     if not os.path.exists(workspace_dir):

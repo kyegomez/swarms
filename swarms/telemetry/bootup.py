@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from swarms.telemetry.auto_upgrade_swarms import auto_update
 from swarms.utils.disable_logging import disable_logging
+from swarms.utils.workspace_manager import WorkspaceManager
 
 
 def bootup():
@@ -12,11 +13,13 @@ def bootup():
     logging.disable(logging.CRITICAL)
     os.environ["WANDB_SILENT"] = "true"
 
-    # Auto set workspace directory
-    workspace_dir = os.path.join(os.getcwd(), "agent_workspace")
-    if not os.path.exists(workspace_dir):
-        os.makedirs(workspace_dir)
-    os.environ["WORKSPACE_DIR"] = workspace_dir
+    # Set workspace directory using WorkspaceManager
+    try:
+        workspace_dir = WorkspaceManager.get_workspace_dir()
+        os.environ["WORKSPACE_DIR"] = workspace_dir
+    except Exception as e:
+        print(f"Error setting up workspace directory: {e}")
+        return
 
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 

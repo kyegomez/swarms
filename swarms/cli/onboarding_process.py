@@ -9,6 +9,7 @@ from swarms.telemetry.capture_sys_data import (
     capture_system_data,
     log_agent_data,
 )
+from swarms.utils.workspace_manager import WorkspaceManager
 
 
 class OnboardingProcess:
@@ -155,10 +156,11 @@ class OnboardingProcess:
 
     def collect_user_info(self) -> None:
         """
-        Initiates the onboarding process by collecting the user's full name, first name, email,
-        Swarms API key, and system data. Additionally, it reminds the user to set their WORKSPACE_DIR environment variable.
+        Initiates the onboarding process by collecting user information and setting up workspace.
         """
         logger.info("Initiating swarms cloud onboarding process...")
+        
+        # Collect user information
         self.ask_input(
             "Enter your first name (or type 'quit' to exit): ",
             "first_name",
@@ -168,24 +170,25 @@ class OnboardingProcess:
             "last_name",
         )
         self.ask_input(
-            "Enter your email (or type 'quit' to exit): ", "email"
+            "Enter your email (or type 'quit' to exit): ", 
+            "email"
         )
         self.ask_input(
             "Enter your Swarms API key (or type 'quit' to exit): Get this in your swarms dashboard: https://swarms.world/platform/api-keys ",
             "swarms_api_key",
         )
-        workspace = self.ask_input(
-            "Enter your WORKSPACE_DIR: This is where logs, errors, and agent configurations will be stored (or type 'quit' to exit). Remember to set this as an environment variable: https://docs.swarms.world/en/latest/swarms/install/quickstart/ || ",
-            "workspace_dir",
-        )
-        os.environ["WORKSPACE_DIR"] = workspace
-        logger.info(
-            "Important: Please ensure you have set your WORKSPACE_DIR environment variable as per the instructions provided."
-        )
-        logger.info(
-            "Additionally, remember to add your API keys for your respective models in your .env file."
-        )
-        logger.success("Onboarding process completed successfully!")
+        
+        # Set up workspace directory
+        try:
+            workspace = WorkspaceManager.get_workspace_dir()
+            logger.info(f"Using workspace directory: {workspace}")
+            logger.info(
+                "Additionally, remember to add your API keys for your respective models in your .env file."
+            )
+            logger.success("Onboarding process completed successfully!")
+        except Exception as e:
+            logger.error(f"Failed to set up workspace: {e}")
+            raise
 
     def run(self) -> None:
         """
