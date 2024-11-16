@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Literal, Union
 
 from doc_master import doc_master
-from loguru import logger
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -18,6 +17,9 @@ from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="swarm_router")
 
 SwarmType = Literal[
     "AgentRearrange",

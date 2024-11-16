@@ -17,7 +17,6 @@ from swarms.tools.prebuilt.math_eval import math_eval
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.try_except_wrapper import try_except_wrapper
-from swarms.utils.concurrent_utils import execute_concurrently
 from swarms.utils.calculate_func_metrics import profile_func
 
 
@@ -37,6 +36,5 @@ __all__ = [
     "extract_code_from_markdown",
     "pdf_to_text",
     "try_except_wrapper",
-    "execute_concurrently",
     "profile_func",
 ]

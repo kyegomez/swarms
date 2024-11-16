@@ -2,9 +2,12 @@ import platform
 import socket
 import psutil
 import uuid
-from loguru import logger
 from typing import Dict
 import requests
+
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="capture_sys_data")
 
 
 def capture_system_data() -> Dict[str, str]:

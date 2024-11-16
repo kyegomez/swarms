@@ -1,6 +1,22 @@
+import os
 from typing import List, Any
-from loguru import logger
 from swarms.structs.agent import Agent
+from loguru import logger
+import uuid
+
+WORKSPACE_DIR = os.getenv("WORKSPACE_DIR")
+uuid_for_log = str(uuid.uuid4())
+logger.add(
+    os.path.join(
+        WORKSPACE_DIR,
+        "agents_available",
+        f"agents-available-{uuid_for_log}.log",
+    ),
+    level="INFO",
+    colorize=True,
+    backtrace=True,
+    diagnose=True,
+)
 
 
 def get_agent_name(agent: Any) -> str:

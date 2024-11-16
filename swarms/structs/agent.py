@@ -26,7 +26,6 @@ from clusterops import (
     execute_on_gpu,
     execute_with_cpu_cores,
 )
-from loguru import logger
 from pydantic import BaseModel
 from swarm_models.tiktoken_wrapper import TikTokenizer
 from termcolor import colored
@@ -54,6 +53,9 @@ from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.artifacts.main_artifact import Artifact
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="agents")
 
 
 # Utils

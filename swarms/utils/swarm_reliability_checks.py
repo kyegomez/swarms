@@ -1,6 +1,9 @@
-from loguru import logger
-from typing import List, Union, Callable, Optional
+from typing import Callable, List, Optional, Union
+
 from swarms.structs.agent import Agent
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="swarm_reliability_checks")
 
 
 def reliability_check(

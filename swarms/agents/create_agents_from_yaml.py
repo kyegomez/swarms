@@ -2,10 +2,13 @@ import os
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import yaml
-from loguru import logger
+from swarms.utils.loguru_logger import initialize_logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
+
+
+logger = initialize_logger(log_folder="create_agents_from_yaml")
 
 
 def create_agents_from_yaml(

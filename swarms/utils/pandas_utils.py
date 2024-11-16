@@ -1,11 +1,13 @@
 import subprocess
 from typing import Any, Dict, List
 
-from loguru import logger
+from swarms.utils.loguru_logger import initialize_logger
+
 from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
 
+logger = initialize_logger(log_folder="pandas_utils")
 
 try:
     import pandas as pd

@@ -1,13 +1,16 @@
 import os
 from typing import Any
 
+
 from clusterops import (
     execute_on_gpu,
     execute_on_multiple_gpus,
     execute_with_cpu_cores,
     list_available_gpus,
 )
-from loguru import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="clusterops_wrapper")
 
 
 def exec_callable_with_clusterops(

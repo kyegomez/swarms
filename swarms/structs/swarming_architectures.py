@@ -2,11 +2,13 @@ import asyncio
 import math
 from typing import List, Union
 
-from loguru import logger
 from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentListType
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="swarming_architectures")
 
 
 # Define Pydantic schema for logging agent responses

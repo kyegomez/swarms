@@ -1,8 +1,11 @@
 import os
 import psutil
 from typing import Callable, Any
-from loguru import logger
 import functools
+
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="run_on_cpu")
 
 
 def run_on_cpu(func: Callable) -> Callable:

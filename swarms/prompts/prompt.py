@@ -4,7 +4,6 @@ import time
 import uuid
 from typing import Any, Callable, List
 
-from loguru import logger
 from pydantic import (
     BaseModel,
     Field,
@@ -17,6 +16,9 @@ from swarms.telemetry.capture_sys_data import (
     log_agent_data,
 )
 from swarms.tools.base_tool import BaseTool
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(file_name="prompts")
 
 
 class Prompt(BaseModel):
