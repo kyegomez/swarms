@@ -19,7 +19,6 @@ from swarms.structs.majority_voting import (
     parse_code_completion,
 )
 from swarms.structs.message import Message
-from swarms.structs.message_pool import MessagePool
 
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
@@ -93,7 +92,6 @@ __all__ = [
     "most_frequent",
     "parse_code_completion",
     "Message",
-    "MessagePool",
     "MultiAgentCollaboration",
     "SwarmNetwork",
     "AgentRearrange",

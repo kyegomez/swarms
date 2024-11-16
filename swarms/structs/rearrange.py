@@ -17,11 +17,18 @@ from swarms.utils.loguru_logger import logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-from swarms.utils.swarm_reliability_checks import reliability_check
 
 # Literal of output types
 OutputType = Literal[
-    "all", "final", "list", "dict", ".json", ".md", ".txt", ".yaml", ".toml"
+    "all",
+    "final",
+    "list",
+    "dict",
+    ".json",
+    ".md",
+    ".txt",
+    ".yaml",
+    ".toml",
 ]
 
 
@@ -451,14 +458,16 @@ class AgentRearrange(BaseSwarm):
             return output
 
         except Exception as e:
-            logger.error(f"An error occurred: {e} \n {traceback.format_exc()}")
+            logger.error(
+                f"An error occurred: {e} \n {traceback.format_exc()}"
+            )
             return e
 
     def run(
         self,
         task: str = None,
         img: str = None,
-        device: str = "cpu", 
+        device: str = "cpu",
         device_id: int = 1,
         all_cores: bool = True,
         all_gpus: bool = False,
@@ -492,7 +501,7 @@ class AgentRearrange(BaseSwarm):
             *args,
             **kwargs,
         )
-        
+
     def __call__(self, task: str, *args, **kwargs):
         """
         Make the class callable by executing the run() method.

@@ -10,7 +10,12 @@ def get_python_version():
     return platform.python_version()
 
 
-def get_pip_version():
+def get_pip_version() -> str:
+    """Get pip version
+
+    Returns:
+        str: The version of pip installed
+    """
     try:
         pip_version = (
             subprocess.check_output(["pip", "--version"])
@@ -22,7 +27,12 @@ def get_pip_version():
     return pip_version
 
 
-def get_swarms_verison():
+def get_swarms_verison() -> tuple[str, str]:
+    """Get swarms version from both command line and package
+
+    Returns:
+        tuple[str, str]: A tuple containing (command line version, package version)
+    """
     try:
         swarms_verison_cmd = (
             subprocess.check_output(["swarms", "--version"])
@@ -38,15 +48,30 @@ def get_swarms_verison():
     return swarms_verison
 
 
-def get_os_version():
+def get_os_version() -> str:
+    """Get operating system version
+
+    Returns:
+        str: The operating system version and platform details
+    """
     return platform.platform()
 
 
-def get_cpu_info():
+def get_cpu_info() -> str:
+    """Get CPU information
+
+    Returns:
+        str: The processor information
+    """
     return platform.processor()
 
 
-def get_ram_info():
+def get_ram_info() -> str:
+    """Get RAM information
+
+    Returns:
+        str: A formatted string containing total, used and free RAM in GB
+    """
     vm = psutil.virtual_memory()
     used_ram_gb = vm.used / (1024**3)
     free_ram_gb = vm.free / (1024**3)
@@ -57,7 +82,15 @@ def get_ram_info():
     )
 
 
-def get_package_mismatches(file_path="pyproject.toml"):
+def get_package_mismatches(file_path: str = "pyproject.toml") -> str:
+    """Get package version mismatches between pyproject.toml and installed packages
+
+    Args:
+        file_path (str, optional): Path to pyproject.toml file. Defaults to "pyproject.toml".
+
+    Returns:
+        str: A formatted string containing package version mismatches
+    """
     with open(file_path) as file:
         pyproject = toml.load(file)
     dependencies = pyproject["tool"]["poetry"]["dependencies"]
@@ -89,7 +122,12 @@ def get_package_mismatches(file_path="pyproject.toml"):
     return "\n" + "\n".join(mismatches)
 
 
-def system_info():
+def system_info() -> dict[str, str]:
+    """Get system information including Python, pip, OS, CPU and RAM details
+
+    Returns:
+        dict[str, str]: A dictionary containing system information
+    """
     return {
         "Python Version": get_python_version(),
         "Pip Version": get_pip_version(),

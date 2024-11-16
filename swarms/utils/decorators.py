@@ -1,46 +1,10 @@
 import functools
 import logging
 import threading
-import time
 import warnings
 
 
-def log_decorator(func):
-    def wrapper(*args, **kwargs):
-        logging.info(f"Entering {func.__name__}")
-        result = func(*args, **kwargs)
-        logging.info(f"Exiting {func.__name__}")
-        return result
-
-    return wrapper
-
-
-def error_decorator(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logging.error(f"Error in {func.__name__}: {str(e)}")
-            raise
-
-    return wrapper
-
-
-def timing_decorator(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        logging.info(
-            f"{func.__name__} executed in"
-            f" {end_time - start_time} seconds"
-        )
-        return result
-
-    return wrapper
-
-
-def retry_decorator(max_retries=5):
+def retry_decorator(max_retries: int = 5):
     """
     Decorator that retries a function a specified number of times if an exception occurs.
 

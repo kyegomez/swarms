@@ -44,8 +44,6 @@ class SequentialWorkflow:
 
         self.reliability_check()
 
-
-
         self.agent_rearrange = AgentRearrange(
             name=name,
             description=description,
@@ -58,10 +56,10 @@ class SequentialWorkflow:
             *args,
             **kwargs,
         )
-        
+
         # Handle agent showcase
         self.handle_agent_showcase()
-        
+
     def sequential_flow(self):
         # Only create flow if agents exist
         if self.agents:
@@ -70,21 +68,28 @@ class SequentialWorkflow:
             for agent in self.agents:
                 try:
                     # Try to get agent_name, fallback to name if not available
-                    agent_name = getattr(agent, 'agent_name', None) or agent.name
+                    agent_name = (
+                        getattr(agent, "agent_name", None)
+                        or agent.name
+                    )
                     agent_names.append(agent_name)
                 except AttributeError:
-                    logger.warning(f"Could not get name for agent {agent}")
+                    logger.warning(
+                        f"Could not get name for agent {agent}"
+                    )
                     continue
-                    
+
             if agent_names:
                 flow = " -> ".join(agent_names)
             else:
                 flow = ""
-                logger.warning("No valid agent names found to create flow")
+                logger.warning(
+                    "No valid agent names found to create flow"
+                )
         else:
             flow = ""
             logger.warning("No agents provided to create flow")
-            
+
         return flow
 
     def reliability_check(self):
@@ -93,9 +98,11 @@ class SequentialWorkflow:
 
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
-        
+
         if self.output_type not in OutputType:
-            raise ValueError("output_type must be 'all', 'final', 'list', 'dict', '.json', '.md', '.txt', '.yaml', or '.toml'")
+            raise ValueError(
+                "output_type must be 'all', 'final', 'list', 'dict', '.json', '.md', '.txt', '.yaml', or '.toml'"
+            )
 
         logger.info("Checks completed your swarm is ready.")
 

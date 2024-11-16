@@ -6,6 +6,12 @@ import yaml
 from termcolor import colored
 
 from swarms.structs.base_structure import BaseStructure
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from swarms.structs.agent import (
+        Agent,
+    )  # Only imported during type checking
 
 
 class Conversation(BaseStructure):
@@ -391,6 +397,33 @@ class Conversation(BaseStructure):
 
     def to_yaml(self):
         return yaml.dump(self.conversation_history)
+
+    def get_visible_messages(self, agent: "Agent", turn: int):
+        """
+        Get the visible messages for a given agent and turn.
+
+        Args:
+            agent (Agent): The agent.
+            turn (int): The turn number.
+
+        Returns:
+            List[Dict]: The list of visible messages.
+        """
+        # Get the messages before the current turn
+        prev_messages = [
+            message
+            for message in self.conversation_history
+            if message["turn"] < turn
+        ]
+
+        visible_messages = []
+        for message in prev_messages:
+            if (
+                message["visible_to"] == "all"
+                or agent.agent_name in message["visible_to"]
+            ):
+                visible_messages.append(message)
+        return visible_messages
 
 
 # # Example usage

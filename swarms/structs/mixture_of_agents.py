@@ -6,7 +6,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
-from swarms.telemetry.log_swarm_data import log_agent_data
+from swarms.telemetry.capture_sys_data import log_agent_data
 from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.prompts.ag_prompt import aggregator_system_prompt
 
