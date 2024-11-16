@@ -49,7 +49,7 @@ Swarms is an enterprise grade and production ready multi-agent collaboration fra
 -  Set an `.env` Variable with your desired workspace dir: `WORKSPACE_DIR="agent_workspace"` or do it in your terminal with `export WORKSPACE_DIR="agent_workspace"`
 -  Finally, `swarms onboarding` to get you started.
 
-## Onboarding
+## Guides and Walkthroughs
 Refer to our documentation for production grade implementation details.
 
 
