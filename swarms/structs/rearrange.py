@@ -13,10 +13,12 @@ from swarms.structs.agent import Agent
 from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.add_docs_to_agents import handle_input_docs
-from swarms.utils.loguru_logger import logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="rearrange")
 
 # Literal of output types
 OutputType = Literal[

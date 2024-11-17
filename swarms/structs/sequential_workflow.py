@@ -1,9 +1,11 @@
 from typing import List
 from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import logger
 from swarms.structs.rearrange import AgentRearrange, OutputType
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from swarms.structs.agents_available import showcase_available_agents
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="sequential_workflow")
 
 
 class SequentialWorkflow:

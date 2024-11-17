@@ -1,6 +1,8 @@
 from pydantic.v1 import BaseModel
 from typing import List, Callable
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="swarm_registry")
 
 
 class SwarmRegistry(BaseModel):

@@ -3,8 +3,10 @@ import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional
 
-from swarms.utils.loguru_logger import logger
 from swarms.utils.any_to_str import any_to_str
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="swarm_arange")
 
 
 def swarm_id():

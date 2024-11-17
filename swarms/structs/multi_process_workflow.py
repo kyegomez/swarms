@@ -1,9 +1,12 @@
 from multiprocessing import Manager, Pool, cpu_count
-from typing import Sequence, Union, Callable
+from typing import Sequence, Union, Callable, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_workflow import BaseWorkflow
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="multi_process_workflow")
 
 
 class MultiProcessWorkflow(BaseWorkflow):
@@ -13,7 +16,7 @@ class MultiProcessWorkflow(BaseWorkflow):
     Args:
         max_workers (int): The maximum number of workers to use for parallel processing.
         autosave (bool): Flag indicating whether to automatically save the workflow.
-        tasks (List[Task]): A list of Task objects representing the workflow tasks.
+        agents (List[Union[Agent, Callable]]): A list of Agent objects or callable functions representing the workflow tasks.
         *args: Additional positional arguments.
         **kwargs: Additional keyword arguments.
 
@@ -132,7 +135,7 @@ class MultiProcessWorkflow(BaseWorkflow):
                             callback=results_list.append,
                             timeout=task.timeout,
                         )
-                        for agent in self.agent
+                        for agent in self.agents
                     ]
 
                     # Wait for all jobs to complete
@@ -144,4 +147,98 @@ class MultiProcessWorkflow(BaseWorkflow):
                 return results
         except Exception as error:
             logger.error(f"Error in run: {error}")
+            return None
+
+    async def async_run(self, task: str, *args, **kwargs):
+        """Asynchronously run the workflow.
+
+        Args:
+            task (Task): The task to run.
+            *args: Additional positional arguments for the task execution.
+            **kwargs: Additional keyword arguments for the task execution.
+
+        Returns:
+            List[Any]: The results of all executed tasks.
+
+        """
+        try:
+            results = []
+            with ThreadPoolExecutor(
+                max_workers=self.max_workers
+            ) as executor:
+                futures = [
+                    executor.submit(
+                        self.execute_task, task, *args, **kwargs
+                    )
+                    for _ in range(len(self.agents))
+                ]
+                for future in as_completed(futures):
+                    result = future.result()
+                    results.append(result)
+
+            return results
+        except Exception as error:
+            logger.error(f"Error in async_run: {error}")
+            return None
+
+    def batched_run(
+        self, tasks: List[str], batch_size: int = 5, *args, **kwargs
+    ):
+        """Run tasks in batches.
+
+        Args:
+            tasks (List[str]): A list of tasks to run.
+            batch_size (int): The size of each batch.
+            *args: Additional positional arguments for the task execution.
+            **kwargs: Additional keyword arguments for the task execution.
+
+        Returns:
+            List[Any]: The results of all executed tasks.
+
+        """
+        try:
+            results = []
+            for i in range(0, len(tasks), batch_size):
+                batch = tasks[i : i + batch_size]
+                with Pool(processes=self.max_workers) as pool:
+                    results_list = pool.map(
+                        self.execute_task, batch, *args, **kwargs
+                    )
+                    results.extend(results_list)
+
+            return results
+        except Exception as error:
+            logger.error(f"Error in batched_run: {error}")
+            return None
+
+    def concurrent_run(self, tasks: List[str], *args, **kwargs):
+        """Run tasks concurrently.
+
+        Args:
+            tasks (List[str]): A list of tasks to run.
+            *args: Additional positional arguments for the task execution.
+            **kwargs: Additional keyword arguments for the task execution.
+
+        Returns:
+            List[Any]: The results of all executed tasks.
+
+        """
+        try:
+            results = []
+            with ThreadPoolExecutor(
+                max_workers=self.max_workers
+            ) as executor:
+                futures = [
+                    executor.submit(
+                        self.execute_task, task, *args, **kwargs
+                    )
+                    for task in tasks
+                ]
+                for future in as_completed(futures):
+                    result = future.result()
+                    results.append(result)
+
+            return results
+        except Exception as error:
+            logger.error(f"Error in concurrent_run: {error}")
             return None

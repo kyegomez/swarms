@@ -6,7 +6,9 @@ from termcolor import colored
 from swarms.structs.agent import Agent
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.task import Task
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger("base-workflow")
 
 
 class BaseWorkflow(BaseStructure):

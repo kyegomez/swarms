@@ -1,11 +1,13 @@
 import time
-from swarms.utils.loguru_logger import logger
 import os
 import json
 from typing import List, Union, Dict, Any
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from swarms.utils.file_processing import create_file_in_folder
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="main_artifact")
 
 
 class FileVersion(BaseModel):

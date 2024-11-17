@@ -9,8 +9,10 @@ from pydantic import BaseModel, Field
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
-from swarms.utils.loguru_logger import logger
 from typing import Optional
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="task")
 
 
 class Task(BaseModel):
