@@ -39,6 +39,21 @@
 
 
 Swarms is an enterprise grade and production ready multi-agent collaboration framework that enables you to orchestrate many agents to work collaboratively at scale to automate real-world activities.
+## ✨ Feature Comparison
+
+| Category | Features | Benefits |
+|----------|----------|-----------|
+| 🏢 Enterprise Architecture | • Production-Ready Infrastructure<br>• High Reliability Systems<br>• Modular Design<br>• Comprehensive Logging | • Reduced downtime<br>• Easier maintenance<br>• Better debugging<br>• Enhanced monitoring |
+| 🤖 Agent Orchestration | • Hierarchical Swarms<br>• Parallel Processing<br>• Sequential Workflows<br>• Graph-based Workflows<br>• Dynamic Agent Rearrangement | • Complex task handling<br>• Improved performance<br>• Flexible workflows<br>• Optimized execution |
+| 🔄 Integration Capabilities | • Multi-Model Support<br>• Custom Agent Creation<br>• Extensive Tool Library<br>• Multiple Memory Systems | • Provider flexibility<br>• Custom solutions<br>• Extended functionality<br>• Enhanced memory management |
+| 📈 Scalability | • Concurrent Processing<br>• Resource Management<br>• Load Balancing<br>• Horizontal Scaling | • Higher throughput<br>• Efficient resource use<br>• Better performance<br>• Easy scaling |
+| 🛠️ Developer Tools | • Simple API<br>• Extensive Documentation<br>• Active Community<br>• CLI Tools | • Faster development<br>• Easy learning curve<br>• Community support<br>• Quick deployment |
+| 🔐 Security Features | • Error Handling<br>• Rate Limiting<br>• Monitoring Integration<br>• Audit Logging | • Improved reliability<br>• API protection<br>• Better monitoring<br>• Enhanced tracking |
+| 📊 Advanced Features | • SpreadsheetSwarm<br>• Group Chat<br>• Agent Registry<br>• Mixture of Agents | • Mass agent management<br>• Collaborative AI<br>• Centralized control<br>• Complex solutions |
+| 🔌 Provider Support | • OpenAI<br>• Anthropic<br>• ChromaDB<br>• Custom Providers | • Provider flexibility<br>• Storage options<br>• Custom integration<br>• Vendor independence |
+| 💪 Production Features | • Automatic Retries<br>• Async Support<br>• Environment Management<br>• Type Safety | • Better reliability<br>• Improved performance<br>• Easy configuration<br>• Safer code |
+| 🎯 Use Case Support | • Task-Specific Agents<br>• Custom Workflows<br>• Industry Solutions<br>• Extensible Framework | • Quick deployment<br>• Flexible solutions<br>• Industry readiness<br>• Easy customization |
+
 
 ----
 
