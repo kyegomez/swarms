@@ -2,7 +2,9 @@ from functools import wraps
 from time import time
 from typing import Any, Callable
 
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger("try_except_wrapper")
 
 
 def retry(
@@ -113,12 +115,12 @@ def try_except_wrapper(verbose: bool = False):
                 return result
             except Exception as error:
                 if verbose:
-                    report_error(
+                    logger.error(
                         f"An error occurred in function {func.__name__}:"
                         f" {error}"
                     )
                 else:
-                    report_error(
+                    logger.error(
                         f"An error occurred in function {func.__name__}:"
                         f" {error}"
                     )
