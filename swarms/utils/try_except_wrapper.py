@@ -3,7 +3,6 @@ from time import time
 from typing import Any, Callable
 
 from swarms.utils.loguru_logger import logger
-from swarms.utils.report_error_loguru import report_error
 
 
 def retry(

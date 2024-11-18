@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, ValidationError
 
 from swarms import Agent
 from swarms.utils.loguru_logger import logger
-from swarms.utils.report_error_loguru import report_error
 
 
 class AgentConfigSchema(BaseModel):
