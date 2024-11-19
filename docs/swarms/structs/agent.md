@@ -132,6 +132,16 @@ graph TD
 | `data_memory` | Optional callable for data memory operations. |
 | `load_yaml_path` | String representing the path to a YAML file for loading configurations. |
 | `auto_generate_prompt` | Boolean indicating whether to automatically generate prompts. |
+| `rag_every_loop` | Boolean indicating whether to query RAG database for context on every loop |
+| `plan_enabled` | Boolean indicating whether planning functionality is enabled |
+| `artifacts_on` | Boolean indicating whether to save artifacts from agent execution |
+| `artifacts_output_path` | File path where artifacts should be saved |
+| `artifacts_file_extension` | File extension to use for saved artifacts |
+| `device` | Device to run computations on ("cpu" or "gpu") |
+| `all_cores` | Boolean indicating whether to use all CPU cores |
+| `device_id` | ID of the GPU device to use if running on GPU |
+| `scheduled_run_date` | Optional datetime for scheduling future agent runs |
+
 
 ## `Agent` Methods
 
@@ -200,6 +210,20 @@ graph TD
 | `handle_sop_ops()` | Handles operations related to standard operating procedures. | None | `agent.handle_sop_ops()` |
 | `agent_output_type(responses)` | Processes and returns the agent's output based on the specified output type. | `responses` (list): List of responses. | `formatted_output = agent.agent_output_type(responses)` |
 | `check_if_no_prompt_then_autogenerate(task)` | Checks if a system prompt is not set and auto-generates one if needed. | `task` (str): The task to use for generating a prompt. | `agent.check_if_no_prompt_then_autogenerate("Analyze data")` |
+| `check_if_no_prompt_then_autogenerate(task)` | Checks if auto_generate_prompt is enabled and generates a prompt by combining agent name, description and system prompt | `task` (str, optional): Task to use as fallback | `agent.check_if_no_prompt_then_autogenerate("Analyze data")` |
+| `handle_artifacts(response, output_path, extension)` | Handles saving artifacts from agent execution | `response` (str): Agent response<br>`output_path` (str): Output path<br>`extension` (str): File extension | `agent.handle_artifacts(response, "outputs/", ".txt")` |
+
+
+
+## Updated Run Method
+
+Update the run method documentation to include new parameters:
+
+| Method | Description | Inputs | Usage Example |
+|--------|-------------|--------|----------------|
+| `run(task, img=None, is_last=False, device="cpu", device_id=0, all_cores=True, scheduled_run_date=None)` | Runs the agent with specified parameters | `task` (str): Task to run<br>`img` (str, optional): Image path<br>`is_last` (bool): If this is last task<br>`device` (str): Device to use<br>`device_id` (int): GPU ID<br>`all_cores` (bool): Use all CPU cores<br>`scheduled_run_date` (datetime, optional): Future run date | `agent.run("Analyze data", device="gpu", device_id=0)` |
+
+
 
 ## Getting Started
 
@@ -538,5 +562,9 @@ print(agent.system_prompt)
 8. Optimize token usage with `dynamic_context_window` and `tokens_checks` methods.
 9. Use `concurrent` and `async` methods for performance-critical applications.
 10. Regularly review and analyze feedback using the `analyze_feedback` method.
+11. Use `artifacts_on` to save important outputs from agent execution
+12. Configure `device` and `device_id` appropriately for optimal performance
+13. Enable `rag_every_loop` when continuous context from long-term memory is needed
+14. Use `scheduled_run_date` for automated task scheduling
 
 By following these guidelines and leveraging the Swarm Agent's extensive features, you can create powerful, flexible, and efficient autonomous agents for a wide range of applications.

@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Literal, Union
 
 from doc_master import doc_master
-from loguru import logger
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -18,6 +17,9 @@ from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="swarm_router")
 
 SwarmType = Literal[
     "AgentRearrange",
@@ -187,7 +189,6 @@ class SwarmRouter:
 
         # Add documents to the logs
         # self.logs.append(Document(file_path=self.documents, data=data))
-        
 
     def activate_shared_memory(self):
         logger.info("Activating shared memory with all agents ")
@@ -451,7 +452,7 @@ class SwarmRouter:
     def __call__(self, task: str, *args, **kwargs) -> Any:
         """
         Make the SwarmRouter instance callable.
-        
+
         Args:
             task (str): The task to be executed by the swarm.
             *args: Variable length argument list.
@@ -611,7 +612,10 @@ class SwarmRouter:
         Raises:
             Exception: If an error occurs during task execution.
         """
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from concurrent.futures import (
+            ThreadPoolExecutor,
+            as_completed,
+        )
 
         results = []
         with ThreadPoolExecutor() as executor:
@@ -620,7 +624,7 @@ class SwarmRouter:
                 executor.submit(self.run, task, *args, **kwargs)
                 for task in tasks
             ]
-            
+
             # Process results as they complete rather than waiting for all
             for future in as_completed(futures):
                 try:
@@ -629,7 +633,7 @@ class SwarmRouter:
                 except Exception as e:
                     logger.error(f"Task execution failed: {str(e)}")
                     results.append(None)
-                    
+
         return results
 
 

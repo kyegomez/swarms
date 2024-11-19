@@ -3,13 +3,16 @@ import os
 import time
 from typing import Dict
 
-from loguru import logger
+from swarms.utils.loguru_logger import initialize_logger
+
 
 from swarms.telemetry.capture_sys_data import (
     capture_system_data,
     log_agent_data,
 )
 from swarms.utils.workspace_manager import WorkspaceManager
+
+logger = initialize_logger(log_folder="onboarding_process")
 
 
 class OnboardingProcess:

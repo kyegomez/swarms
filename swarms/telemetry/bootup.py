@@ -10,8 +10,9 @@ from swarms.utils.workspace_manager import WorkspaceManager
 
 def bootup():
     """Bootup swarms"""
-    logging.disable(logging.CRITICAL)
-    os.environ["WANDB_SILENT"] = "true"
+    try:
+        logging.disable(logging.CRITICAL)
+        os.environ["WANDB_SILENT"] = "true"
 
     # Set workspace directory using WorkspaceManager
     try:
@@ -21,9 +22,12 @@ def bootup():
         print(f"Error setting up workspace directory: {e}")
         return
 
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-    # Use ThreadPoolExecutor to run disable_logging and auto_update concurrently
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        executor.submit(disable_logging)
-        executor.submit(auto_update)
+        # Use ThreadPoolExecutor to run disable_logging and auto_update concurrently
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            executor.submit(disable_logging)
+            executor.submit(auto_update)
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        raise

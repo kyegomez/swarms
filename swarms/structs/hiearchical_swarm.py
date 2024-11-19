@@ -1,7 +1,7 @@
 from typing import List, Any
 
-from loguru import logger
 from pydantic import BaseModel, Field
+from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.agent import Agent
 from swarms.structs.concat import concat_strings
@@ -9,6 +9,7 @@ from swarms.structs.agent_registry import AgentRegistry
 from swarm_models.base_llm import BaseLLM
 from swarms.structs.conversation import Conversation
 
+logger = initialize_logger(log_folder="hiearchical_swarm")
 
 # Example usage:
 HIEARCHICAL_AGENT_SYSTEM_PROMPT = """

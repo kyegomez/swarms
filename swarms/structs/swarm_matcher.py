@@ -3,9 +3,11 @@ import numpy as np
 import torch
 from transformers import AutoTokenizer, AutoModel
 from pydantic import BaseModel, Field
-from loguru import logger
 import json
 from tenacity import retry, stop_after_attempt, wait_exponential
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="swarm_matcher")
 
 
 class SwarmType(BaseModel):

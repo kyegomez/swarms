@@ -4,7 +4,6 @@ import time
 import uuid
 from typing import Any, Callable, List
 
-from loguru import logger
 from pydantic import (
     BaseModel,
     Field,
@@ -17,6 +16,9 @@ from swarms.telemetry.capture_sys_data import (
     log_agent_data,
 )
 from swarms.tools.base_tool import BaseTool
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger("prompt")
 
 
 class Prompt(BaseModel):
@@ -131,9 +133,11 @@ class Prompt(BaseModel):
         self.content = new_content
         self.edit_count += 1
         self.last_modified_at = time.strftime("%Y-%m-%d %H:%M:%S")
-        logger.debug(
-            f"Prompt {self.id} updated. Edit count: {self.edit_count}. New content: '{self.content}'"
-        )
+        
+        
+        # logger.debug(
+        #     f"Prompt {self.id} updated. Edit count: {self.edit_count}. New content: '{self.content}'"
+        # )
 
         if self.autosave:
             self._autosave()
@@ -254,7 +258,9 @@ class Prompt(BaseModel):
         )
         with open(file_path, "w") as file:
             json.dump(self.model_dump(), file)
-        logger.info(f"Autosaved prompt {self.id} to {file_path}.")
+        # logger.info(f"Autosaved prompt {self.id} to {file_path}.")
+        
+        # return "Prompt autosaved successfully."
 
     # def auto_generate_prompt(self):
     #     logger.info(f"Auto-generating prompt for {self.name}")

@@ -8,6 +8,9 @@ from swarm_models import OpenAIFunctionCaller, OpenAIChat
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="auto_swarm_builder")
 
 
 class AgentConfig(BaseModel):

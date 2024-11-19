@@ -109,7 +109,6 @@ router = SwarmRouter(
     swarm_type="SequentialWorkflow",  # or "SequentialWorkflow" or "ConcurrentWorkflow" or
     auto_generate_prompts=True,
     output_type="all",
-    
 )
 
 # Example usage

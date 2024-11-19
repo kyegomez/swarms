@@ -1,3 +1,4 @@
+from datetime import datetime
 import asyncio
 import json
 import logging
@@ -25,7 +26,6 @@ from clusterops import (
     execute_on_gpu,
     execute_with_cpu_cores,
 )
-from loguru import logger
 from pydantic import BaseModel
 from swarm_models.tiktoken_wrapper import TikTokenizer
 from termcolor import colored
@@ -53,6 +53,9 @@ from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.artifacts.main_artifact import Artifact
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="agents")
 
 
 # Utils
@@ -177,6 +180,7 @@ class Agent:
         artifacts_on (bool): Enable artifacts
         artifacts_output_path (str): The artifacts output path
         artifacts_file_extension (str): The artifacts file extension (.pdf, .md, .txt, )
+        scheduled_run_date (datetime): The date and time to schedule the task
 
     Methods:
         run: Run the agent
@@ -333,6 +337,7 @@ class Agent:
         device: str = "cpu",
         all_cores: bool = True,
         device_id: int = 0,
+        scheduled_run_date: Optional[datetime] = None,
         *args,
         **kwargs,
     ):
@@ -445,6 +450,7 @@ class Agent:
         self.device = device
         self.all_cores = all_cores
         self.device_id = device_id
+        self.scheduled_run_date = scheduled_run_date
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -733,7 +739,9 @@ class Agent:
     # Check parameters
     def check_parameters(self):
         if self.llm is None:
-            raise ValueError("Language model is not provided. Choose a model from the available models in swarm_models or create a class with a run(task: str) method and or a __call__ method.")
+            raise ValueError(
+                "Language model is not provided. Choose a model from the available models in swarm_models or create a class with a run(task: str) method and or a __call__ method."
+            )
 
         if self.max_loops is None or self.max_loops == 0:
             raise ValueError("Max loops is not provided")
@@ -743,8 +751,6 @@ class Agent:
 
         if self.context_length == 0 or self.context_length is None:
             raise ValueError("Context length is not provided")
-        
-        
 
     # Main function
     def _run(
@@ -2245,13 +2251,16 @@ class Agent:
         device: str = "cpu",  # gpu
         device_id: int = 0,
         all_cores: bool = True,
+        scheduled_run_date: Optional[datetime] = None,
         *args,
         **kwargs,
     ) -> Any:
         """
-        Executes the agent's run method on a specified device.
+        Executes the agent's run method on a specified device, with optional scheduling.
 
         This method attempts to execute the agent's run method on a specified device, either CPU or GPU. It logs the device selection and the number of cores or GPU ID used. If the device is set to CPU, it can use all available cores or a specific core specified by `device_id`. If the device is set to GPU, it uses the GPU specified by `device_id`.
+
+        If a `scheduled_date` is provided, the method will wait until that date and time before executing the task.
 
         Args:
             task (Optional[str], optional): The task to be executed. Defaults to None.
@@ -2260,6 +2269,7 @@ class Agent:
             device (str, optional): The device to use for execution. Defaults to "cpu".
             device_id (int, optional): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
             all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
+            scheduled_run_date (Optional[datetime], optional): The date and time to schedule the task. Defaults to None.
             *args: Additional positional arguments to be passed to the execution method.
             **kwargs: Additional keyword arguments to be passed to the execution method.
 
@@ -2272,6 +2282,12 @@ class Agent:
         """
         device = device or self.device
         device_id = device_id or self.device_id
+
+        if scheduled_run_date:
+            while datetime.now() < scheduled_run_date:
+                time.sleep(
+                    1
+                )  # Sleep for a short period to avoid busy waiting
 
         try:
             logger.info(f"Attempting to run on device: {device}")

@@ -1,10 +1,12 @@
 from typing import List, Optional
 
 import chromadb
-from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 from typing import Union, Callable, Any
 from swarms import Agent
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="agent_router")
 
 
 class AgentRouter:

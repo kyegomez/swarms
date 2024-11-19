@@ -1,9 +1,13 @@
-from typing import Any, List, Optional, Union
-from pathlib import Path
-from loguru import logger
-from doc_master import doc_master
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Any, List, Optional, Union
+
+from doc_master import doc_master
 from tenacity import retry, stop_after_attempt, wait_exponential
+
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="add_docs_to_agents")
 
 
 @retry(
