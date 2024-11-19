@@ -181,6 +181,7 @@ class Agent:
         artifacts_output_path (str): The artifacts output path
         artifacts_file_extension (str): The artifacts file extension (.pdf, .md, .txt, )
         scheduled_run_date (datetime): The date and time to schedule the task
+        ssl_verify (bool): Enable SSL verification
 
     Methods:
         run: Run the agent
@@ -338,6 +339,7 @@ class Agent:
         all_cores: bool = True,
         device_id: int = 0,
         scheduled_run_date: Optional[datetime] = None,
+        ssl_verify: bool = True,  # Add this parameter
         *args,
         **kwargs,
     ):
@@ -451,6 +453,7 @@ class Agent:
         self.all_cores = all_cores
         self.device_id = device_id
         self.scheduled_run_date = scheduled_run_date
+        self.ssl_verify = ssl_verify  # Store the SSL verification setting
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -2167,7 +2170,9 @@ class Agent:
             "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
         }
 
-        response = requests.post(url, json=data_dict, headers=headers)
+        # Use the ssl_verify setting if it exists
+        verify = getattr(self, 'ssl_verify', True)
+        response = requests.post(url, json=data_dict, headers=headers, verify=verify)
 
         return response.json()
 
@@ -2214,6 +2219,10 @@ class Agent:
             The result of the method call on the `llm` object.
 
         """
+        # Add ssl_verify to kwargs if it exists
+        if hasattr(self, 'ssl_verify'):
+            kwargs['verify'] = self.ssl_verify
+            
         # Check if the llm has a __call__, or run, or any other method
         if hasattr(self.llm, "__call__"):
             return self.llm(task, *args, **kwargs)
