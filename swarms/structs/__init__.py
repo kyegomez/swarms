@@ -12,7 +12,7 @@ from swarms.structs.graph_workflow import (
     Node,
     NodeType,
 )
-from swarms.structs.groupchat import GroupChat
+from swarms.structs.groupchat import GroupChat, GroupChatState
 from swarms.structs.majority_voting import (
     MajorityVoting,
     majority_voting,
@@ -144,4 +144,5 @@ __all__ = [
     "swarm_router",
     "run_agents_with_tasks_concurrently",
     "showcase_available_agents",
+    "GroupChatState",
 ]

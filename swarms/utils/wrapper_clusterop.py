@@ -1,12 +1,12 @@
-import os
 from typing import Any
 
 
 from clusterops import (
     execute_on_gpu,
     execute_on_multiple_gpus,
-    execute_with_cpu_cores,
     list_available_gpus,
+    execute_with_all_cpu_cores,
+    execute_on_cpu,
 )
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -43,38 +43,51 @@ def exec_callable_with_clusterops(
         ValueError: If an invalid device is specified.
         Exception: If any other error occurs during execution.
     """
+    if func is None:
+        raise ValueError("A callable function must be provided")
+
     try:
         logger.info(f"Attempting to run on device: {device}")
+        device = device.lower()
+
         if device == "cpu":
             logger.info("Device set to CPU")
-            if all_cores is True:
-                count = os.cpu_count()
-                logger.info(f"Using all available CPU cores: {count}")
-            else:
-                count = device_id
-                logger.info(f"Using specific CPU core: {count}")
 
-            return execute_with_cpu_cores(
-                count, func, *args, **kwargs
-            )
+            if all_cores:
+                logger.info("Using all CPU cores")
+                return execute_with_all_cpu_cores(
+                    func, *args, **kwargs
+                )
 
-        # If device gpu
+            if device_id is not None:
+                logger.info(f"Using specific CPU core: {device_id}")
+                return execute_on_cpu(
+                    device_id, func, *args, **kwargs
+                )
+
         elif device == "gpu":
             logger.info("Device set to GPU")
+
+            if all_gpus:
+                logger.info("Using all available GPUs")
+                gpus = [int(gpu) for gpu in list_available_gpus()]
+                return execute_on_multiple_gpus(
+                    gpus, func, *args, **kwargs
+                )
+
+            logger.info(f"Using GPU device ID: {device_id}")
             return execute_on_gpu(device_id, func, *args, **kwargs)
-        elif device == "gpu" and all_gpus is True:
-            logger.info("Device set to GPU and running all gpus")
-            gpus = [int(gpu) for gpu in list_available_gpus()]
-            return execute_on_multiple_gpus(
-                gpus, func, *args, **kwargs
-            )
+
         else:
             raise ValueError(
                 f"Invalid device specified: {device}. Supported devices are 'cpu' and 'gpu'."
             )
+
     except ValueError as e:
-        logger.error(f"Invalid device specified: {e}")
-        raise e
+        logger.error(
+            f"Invalid device or configuration specified: {e}"
+        )
+        raise
     except Exception as e:
         logger.error(f"An error occurred during execution: {e}")
-        raise e
+        raise

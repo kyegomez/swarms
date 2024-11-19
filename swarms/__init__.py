@@ -1,7 +1,12 @@
 import concurrent.futures
 from dotenv import load_dotenv
 
+# from swarms.structs.workspace_manager import WorkspaceManager
+# workspace_manager = WorkspaceManager()
+# workspace_manager.run()
+
 load_dotenv()
+
 
 from swarms.telemetry.bootup import bootup  # noqa: E402, F403
 from swarms.telemetry.sentry_active import (

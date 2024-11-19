@@ -22,10 +22,6 @@ from typing import (
 
 import toml
 import yaml
-from clusterops import (
-    execute_on_gpu,
-    execute_with_cpu_cores,
-)
 from pydantic import BaseModel
 from swarm_models.tiktoken_wrapper import TikTokenizer
 from termcolor import colored
@@ -54,6 +50,9 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.artifacts.main_artifact import Artifact
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.wrapper_clusterop import (
+    exec_callable_with_clusterops,
+)
 
 logger = initialize_logger(log_folder="agents")
 
@@ -338,6 +337,7 @@ class Agent:
         all_cores: bool = True,
         device_id: int = 0,
         scheduled_run_date: Optional[datetime] = None,
+        do_not_use_cluster_ops: bool = True,
         *args,
         **kwargs,
     ):
@@ -451,6 +451,7 @@ class Agent:
         self.all_cores = all_cores
         self.device_id = device_id
         self.scheduled_run_date = scheduled_run_date
+        self.do_not_use_cluster_ops = do_not_use_cluster_ops
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -2247,11 +2248,12 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        is_last: bool = False,
         device: str = "cpu",  # gpu
         device_id: int = 0,
         all_cores: bool = True,
         scheduled_run_date: Optional[datetime] = None,
+        do_not_use_cluster_ops: bool = False,
+        all_gpus: bool = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -2265,11 +2267,11 @@ class Agent:
         Args:
             task (Optional[str], optional): The task to be executed. Defaults to None.
             img (Optional[str], optional): The image to be processed. Defaults to None.
-            is_last (bool, optional): Indicates if this is the last task. Defaults to False.
             device (str, optional): The device to use for execution. Defaults to "cpu".
             device_id (int, optional): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
             all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
             scheduled_run_date (Optional[datetime], optional): The date and time to schedule the task. Defaults to None.
+            do_not_use_cluster_ops (bool, optional): If True, does not use cluster ops. Defaults to False.
             *args: Additional positional arguments to be passed to the execution method.
             **kwargs: Additional keyword arguments to be passed to the execution method.
 
@@ -2282,6 +2284,11 @@ class Agent:
         """
         device = device or self.device
         device_id = device_id or self.device_id
+        all_cores = all_cores or self.all_cores
+        all_gpus = all_gpus or self.all_gpus
+        do_not_use_cluster_ops = do_not_use_cluster_ops or self.do_not_use_cluster_ops
+        
+        
 
         if scheduled_run_date:
             while datetime.now() < scheduled_run_date:
@@ -2290,32 +2297,24 @@ class Agent:
                 )  # Sleep for a short period to avoid busy waiting
 
         try:
-            logger.info(f"Attempting to run on device: {device}")
-            if device == "cpu":
-                logger.info("Device set to CPU")
-                if all_cores is True:
-                    count = os.cpu_count()
-                    logger.info(
-                        f"Using all available CPU cores: {count}"
-                    )
-                else:
-                    count = device_id
-                    logger.info(f"Using specific CPU core: {count}")
+            # If cluster ops disabled, run directly
+            if do_not_use_cluster_ops is True:
+                logger.info("Running without cluster operations")
+                return self._run(task=task, img=img, *args, **kwargs)
 
-                return execute_with_cpu_cores(
-                    count, self._run, task, img, *args, **kwargs
-                )
-
-            # If device gpu
-            elif device == "gpu":
-                logger.info("Device set to GPU")
-                return execute_on_gpu(
-                    device_id, self._run, task, img, *args, **kwargs
-                )
             else:
-                raise ValueError(
-                    f"Invalid device specified: {device}. Supported devices are 'cpu' and 'gpu'."
+                return exec_callable_with_clusterops(
+                    device=device,
+                    device_id=device_id,
+                    all_cores=all_cores,
+                    all_gpus=all_gpus,
+                    func=self._run,
+                    task=task,
+                    img=img,
+                    *args,
+                    **kwargs,
                 )
+                
         except ValueError as e:
             logger.error(f"Invalid device specified: {e}")
             raise e

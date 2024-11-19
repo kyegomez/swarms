@@ -133,8 +133,7 @@ class Prompt(BaseModel):
         self.content = new_content
         self.edit_count += 1
         self.last_modified_at = time.strftime("%Y-%m-%d %H:%M:%S")
-        
-        
+
         # logger.debug(
         #     f"Prompt {self.id} updated. Edit count: {self.edit_count}. New content: '{self.content}'"
         # )
@@ -165,15 +164,15 @@ class Prompt(BaseModel):
             )
             raise IndexError("Invalid version number for rollback.")
 
-        logger.info(
-            f"Rolling back prompt {self.id} to version {version}."
-        )
+        # logger.info(
+        #     f"Rolling back prompt {self.id} to version {version}."
+        # )
         self.content = self.edit_history[version]
         self.edit_count = version
         self.last_modified_at = time.strftime("%Y-%m-%d %H:%M:%S")
-        logger.debug(
-            f"Prompt {self.id} rolled back to version {version}. Current content: '{self.content}'"
-        )
+        # logger.debug(
+        #     f"Prompt {self.id} rolled back to version {version}. Current content: '{self.content}'"
+        # )
 
         self.log_telemetry()
 
@@ -203,7 +202,7 @@ class Prompt(BaseModel):
         Raises:
             NotImplementedError: This method is a placeholder for storage integration.
         """
-        logger.info(f"Saving prompt {self.id} to persistent storage.")
+        # logger.info(f"Saving prompt {self.id} to persistent storage.")
         raise NotImplementedError(
             "Persistent storage integration is required."
         )
@@ -221,9 +220,9 @@ class Prompt(BaseModel):
         Raises:
             NotImplementedError: This method is a placeholder for storage integration.
         """
-        logger.info(
-            f"Loading prompt {prompt_id} from persistent storage."
-        )
+        # logger.info(
+        #     f"Loading prompt {prompt_id} from persistent storage."
+        # )
         raise NotImplementedError(
             "Persistent storage integration is required."
         )
@@ -259,7 +258,7 @@ class Prompt(BaseModel):
         with open(file_path, "w") as file:
             json.dump(self.model_dump(), file)
         # logger.info(f"Autosaved prompt {self.id} to {file_path}.")
-        
+
         # return "Prompt autosaved successfully."
 
     # def auto_generate_prompt(self):

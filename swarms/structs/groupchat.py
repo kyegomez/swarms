@@ -59,6 +59,12 @@ class GroupChatState(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+# Todo:
+# Build a function that prompts the llm to output the
+# [Agent-Name] in square brackets and then the question or something
+# An agentic Language notation
+
+
 class AgentWrapper:
     """Wrapper class to standardize agent interfaces"""
 

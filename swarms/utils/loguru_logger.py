@@ -5,12 +5,16 @@ from loguru import logger
 
 def initialize_logger(log_folder: str = "logs"):
 
-    WORKSPACE_DIR = os.getenv("WORKSPACE_DIR")
-    if not os.path.exists(WORKSPACE_DIR):
-        os.makedirs(WORKSPACE_DIR)
+    AGENT_WORKSPACE = "agent_workspace"
 
-    # Create a folder within the workspace_dir
-    log_folder_path = os.path.join(WORKSPACE_DIR, log_folder)
+    # Check if WORKSPACE_DIR is set, if not, set it to AGENT_WORKSPACE
+    if "WORKSPACE_DIR" not in os.environ:
+        os.environ["WORKSPACE_DIR"] = AGENT_WORKSPACE
+
+    # Create a folder within the agent_workspace
+    log_folder_path = os.path.join(
+        os.getenv("WORKSPACE_DIR"), log_folder
+    )
     if not os.path.exists(log_folder_path):
         os.makedirs(log_folder_path)
 
@@ -28,6 +32,6 @@ def initialize_logger(log_folder: str = "logs"):
         diagnose=True,
         enqueue=True,
         retention="10 days",
-        compression="zip",
+        # compression="zip",
     )
     return logger
