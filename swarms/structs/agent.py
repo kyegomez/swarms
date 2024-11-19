@@ -1621,15 +1621,20 @@ class Agent:
                         memory_retrieval, self.memory_chunk_size
                     )
 
+                # Add memory retrieval to short term memory
                 self.short_memory.add(
                     role="Database",
                     content=memory_retrieval,
                 )
 
+                # Allow tool execution to continue by returning None
+                # instead of blocking the flow
                 return None
+
         except Exception as e:
-            logger.error(f"An error occurred: {e}")
-            raise e
+            logger.error(f"An error occurred during memory query: {e}")
+            # Log error but don't raise to allow tool execution to proceed
+            return None
 
     def sentiment_analysis_handler(self, response: str = None):
         """
@@ -1861,18 +1866,28 @@ class Agent:
             response (str): The response containing the function call.
 
         Returns:
-            None
-
-        Raises:
-            Exception: If there is an error parsing and executing the function call.
+            Any: The result of the tool execution or None if unsuccessful
         """
         try:
             if self.tools is not None:
+                # First check if we need to query memory
+                if self.long_term_memory is not None:
+                    try:
+                        self.memory_query(response)
+                    except Exception as memory_error:
+                        logger.error(f"Memory query failed: {memory_error}")
+                        # Add error to short memory so agent is aware
+                        self.short_memory.add(
+                            role="Error",
+                            content=f"Memory query error: {str(memory_error)}"
+                        )
+                
+                # Then execute the tool
                 tool_call_output = parse_and_execute_json(
                     self.tools, response, parse_md=True
                 )
 
-                if tool_call_output is not str:
+                if not isinstance(tool_call_output, str):
                     tool_call_output = str(tool_call_output)
 
                 logger.info(f"Tool Call Output: {tool_call_output}")
@@ -1882,15 +1897,16 @@ class Agent:
                 )
 
                 return tool_call_output
+                    
         except Exception as error:
-            logger.error(
-                f"Error parsing and executing function call: {error}"
+            error_msg = f"Error parsing and executing function call: {str(error)}"
+            logger.error(error_msg)
+            # Add error to short memory so agent is aware
+            self.short_memory.add(
+                role="Error",
+                content=error_msg
             )
-
-            # Raise a custom exception with the error message
-            raise Exception(
-                "Error parsing and executing function call"
-            ) from error
+            return None
 
     def activate_agentops(self):
         if self.agent_ops_on is True:
