@@ -24,6 +24,25 @@ WORKSPACE_DIR=/path/to/your/workspace
   - Keeps track of agent interactions
   - Preserves conversation logs
 
+#### `SWARMS_AUTOUPDATE_ON`
+- **Purpose**: Controls automatic updates of the Swarms framework
+- **Type**: Boolean
+- **Default**: `false`
+- **Example**:
+```bash
+SWARMS_AUTOUPDATE_ON=true
+```
+- **Features**:
+  - Automatically updates to the latest stable version
+  - Ensures you have the newest features
+  - Maintains compatibility with the latest improvements
+  - Handles dependency updates
+- **Considerations**:
+  - Set to `false` if you need version stability
+  - Recommended `true` for development environments
+  - Consider system requirements for auto-updates
+  - May require restart after updates
+
 ### Telemetry Configuration
 
 #### `USE_TELEMETRY`
@@ -70,6 +89,9 @@ touch .env
 # Basic configuration
 WORKSPACE_DIR=./my_workspace
 
+# Enable auto-updates
+SWARMS_AUTOUPDATE_ON=true
+
 # Enable telemetry
 USE_TELEMETRY=true
 
@@ -78,7 +100,7 @@ SWARMS_API_KEY=your_api_key_here
 ```
 
 3. Obtain your API key:
-   - Visit [swarms.ai dashboard](https://swarms.ai)
+   - Visit [swarms.ai](https://swarms.ai)
    - Create an account or log in
    - Navigate to the API section
    - Generate your unique API key
@@ -100,11 +122,18 @@ SWARMS_API_KEY=your_api_key_here
    - Consider privacy implications in production
    - Review collected data periodically
 
+4. **Auto-Update Management**:
+   - Test updates in development before enabling in production
+   - Keep backups before enabling auto-updates
+   - Monitor system resources during updates
+   - Schedule updates during low-traffic periods
+
 ## Examples
 
 ### Basic Development Setup
 ```bash
 WORKSPACE_DIR=./dev_workspace
+SWARMS_AUTOUPDATE_ON=true
 USE_TELEMETRY=true
 SWARMS_API_KEY=sk_test_xxxxxxxxxxxx
 ```
@@ -112,8 +141,17 @@ SWARMS_API_KEY=sk_test_xxxxxxxxxxxx
 ### Production Setup
 ```bash
 WORKSPACE_DIR=/var/log/swarms/prod_workspace
+SWARMS_AUTOUPDATE_ON=false
 USE_TELEMETRY=true
 SWARMS_API_KEY=sk_prod_xxxxxxxxxxxx
+```
+
+### Testing Environment
+```bash
+WORKSPACE_DIR=./test_workspace
+SWARMS_AUTOUPDATE_ON=true
+USE_TELEMETRY=false
+SWARMS_API_KEY=sk_test_xxxxxxxxxxxx
 ```
 
 ## Troubleshooting
@@ -134,6 +172,12 @@ Common issues and solutions:
    - Confirm network connectivity
    - Verify firewall settings
    - Check for proper boolean values
+
+4. **Auto-Update Issues**:
+   - Check internet connectivity
+   - Verify sufficient disk space
+   - Ensure proper permissions for updates
+   - Check system compatibility requirements
 
 ## Additional Resources
 

@@ -2286,9 +2286,9 @@ class Agent:
         device_id = device_id or self.device_id
         all_cores = all_cores or self.all_cores
         all_gpus = all_gpus or self.all_gpus
-        do_not_use_cluster_ops = do_not_use_cluster_ops or self.do_not_use_cluster_ops
-        
-        
+        do_not_use_cluster_ops = (
+            do_not_use_cluster_ops or self.do_not_use_cluster_ops
+        )
 
         if scheduled_run_date:
             while datetime.now() < scheduled_run_date:
@@ -2314,7 +2314,7 @@ class Agent:
                     *args,
                     **kwargs,
                 )
-                
+
         except ValueError as e:
             logger.error(f"Invalid device specified: {e}")
             raise e
