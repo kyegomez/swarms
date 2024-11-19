@@ -138,6 +138,7 @@ nav:
     - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
+      - Environment Configuration: "swarms/install/workspace_manager.md"
       - Quickstart: "swarms/install/quickstart.md"
       - Swarms CLI: "swarms/cli/main.md"
       # - Swarms + Docker: 
