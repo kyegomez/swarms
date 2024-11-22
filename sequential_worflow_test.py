@@ -112,6 +112,7 @@ router = SequentialWorkflow(
 if __name__ == "__main__":
     # Run a comprehensive private equity document analysis task
     result = router.run(
-        "Where is the best place to find template term sheets for series A startups. Provide links and references"
+        "Where is the best place to find template term sheets for series A startups. Provide links and references",
+        img=None,
     )
     print(result)

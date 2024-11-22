@@ -88,12 +88,9 @@ tasks = [
 
 # Run agents with tasks concurrently
 results = run_agents_with_tasks_concurrently(
-    agents,
-    tasks,
-    all_cores=True,
-    device="cpu",
+    agents, tasks, all_cores=True, device="cpu", no_clusterops=True
 )
 
 # Print the results
-for result in results:
-    print(result)
+# for result in results:
+#     print(result)

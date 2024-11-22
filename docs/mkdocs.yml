@@ -257,6 +257,7 @@ nav:
     - An Analysis on Prompting Strategies: "swarms/prompts/overview.md"
     - Managing Prompts in Production: "swarms/prompts/main.md"
   - Corporate:
+    - Culture: "corporate/culture.md"
     - Hiring: "corporate/hiring.md"
     - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
   - Clusterops:

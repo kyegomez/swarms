@@ -15,10 +15,11 @@ logger = initialize_logger(log_folder="clusterops_wrapper")
 
 def exec_callable_with_clusterops(
     device: str = "cpu",
-    device_id: int = 0,
+    device_id: int = 1,
     all_cores: bool = True,
     all_gpus: bool = False,
     func: callable = None,
+    enable_logging: bool = True,
     *args,
     **kwargs,
 ) -> Any:
@@ -33,6 +34,7 @@ def exec_callable_with_clusterops(
         all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
         all_gpus (bool, optional): If True, uses all available GPUs. Defaults to False.
         func (callable): The function to execute.
+        enable_logging (bool, optional): If True, enables logging. Defaults to True.
         *args: Additional positional arguments to be passed to the execution method.
         **kwargs: Additional keyword arguments to be passed to the execution method.
 
@@ -47,35 +49,44 @@ def exec_callable_with_clusterops(
         raise ValueError("A callable function must be provided")
 
     try:
-        logger.info(f"Attempting to run on device: {device}")
+        if enable_logging:
+            logger.info(f"Attempting to run on device: {device}")
         device = device.lower()
 
         if device == "cpu":
-            logger.info("Device set to CPU")
+            if enable_logging:
+                logger.info("Device set to CPU")
 
             if all_cores:
-                logger.info("Using all CPU cores")
+                if enable_logging:
+                    logger.info("Using all CPU cores")
                 return execute_with_all_cpu_cores(
                     func, *args, **kwargs
                 )
 
             if device_id is not None:
-                logger.info(f"Using specific CPU core: {device_id}")
+                if enable_logging:
+                    logger.info(
+                        f"Using specific CPU core: {device_id}"
+                    )
                 return execute_on_cpu(
                     device_id, func, *args, **kwargs
                 )
 
         elif device == "gpu":
-            logger.info("Device set to GPU")
+            if enable_logging:
+                logger.info("Device set to GPU")
 
             if all_gpus:
-                logger.info("Using all available GPUs")
+                if enable_logging:
+                    logger.info("Using all available GPUs")
                 gpus = [int(gpu) for gpu in list_available_gpus()]
                 return execute_on_multiple_gpus(
                     gpus, func, *args, **kwargs
                 )
 
-            logger.info(f"Using GPU device ID: {device_id}")
+            if enable_logging:
+                logger.info(f"Using GPU device ID: {device_id}")
             return execute_on_gpu(device_id, func, *args, **kwargs)
 
         else:
@@ -84,10 +95,12 @@ def exec_callable_with_clusterops(
             )
 
     except ValueError as e:
-        logger.error(
-            f"Invalid device or configuration specified: {e}"
-        )
+        if enable_logging:
+            logger.error(
+                f"Invalid device or configuration specified: {e}"
+            )
         raise
     except Exception as e:
-        logger.error(f"An error occurred during execution: {e}")
+        if enable_logging:
+            logger.error(f"An error occurred during execution: {e}")
         raise

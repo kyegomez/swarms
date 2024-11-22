@@ -9,6 +9,7 @@ from swarm_models import OpenAIFunctionCaller, OpenAIChat
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.structs.agents_available import showcase_available_agents
 
 logger = initialize_logger(log_folder="auto_swarm_builder")
 
@@ -27,10 +28,10 @@ class AgentConfig(BaseModel):
         description="The system prompt that defines the agent's behavior",
         example="You are a research agent. Your role is to gather and analyze information...",
     )
-    max_loops: int = Field(
-        description="Maximum number of reasoning loops the agent can perform",
-        example=3,
-    )
+    # max_loops: int = Field(
+    #     description="Maximum number of reasoning loops the agent can perform",
+    #     example=3,
+    # )
 
 
 class SwarmConfig(BaseModel):
@@ -214,9 +215,19 @@ class AutoSwarmBuilder:
                 agent_name=agent_config.name,
                 agent_description=agent_config.description,
                 agent_system_prompt=agent_config.system_prompt,
-                max_loops=agent_config.max_loops,
+                # max_loops=agent_config.max_loops,
             )
             agents.append(agent)
+
+        # Showcasing available agents
+        agents_available = showcase_available_agents(
+            name=self.name,
+            description=self.description,
+            agents=agents,
+        )
+
+        for agent in agents:
+            agent.system_prompt += "\n" + agents_available
 
         return agents
 
@@ -283,6 +294,8 @@ class AutoSwarmBuilder:
         """
         logger.info("Routing task through swarm")
         swarm_router_instance = SwarmRouter(
+            name=self.name,
+            description=self.description,
             agents=agents,
             swarm_type="auto",
             max_loops=1,
@@ -293,10 +306,14 @@ class AutoSwarmBuilder:
         )
 
 
-example = AutoSwarmBuilder()
+example = AutoSwarmBuilder(
+    name="ChipDesign-Swarm",
+    description="A swarm of specialized AI agents collaborating on chip architecture, logic design, verification, and optimization to create novel semiconductor designs",
+    max_loops=1,
+)
 
 print(
     example.run(
-        "Write multiple blog posts about the latest advancements in swarm intelligence all at once"
+        "Design a new AI accelerator chip optimized for transformer model inference. Consider the following aspects: 1) Overall chip architecture and block diagram 2) Memory hierarchy and interconnects 3) Processing elements and data flow 4) Power and thermal considerations 5) Physical layout recommendations -> "
     )
 )

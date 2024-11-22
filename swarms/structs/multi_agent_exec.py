@@ -8,7 +8,6 @@ from multiprocessing import cpu_count
 import os
 
 from swarms.structs.agent import Agent
-from swarms.utils.calculate_func_metrics import profile_func
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
@@ -63,7 +62,6 @@ async def run_agents_concurrently_async(
     return results
 
 
-@profile_func
 def run_agents_concurrently(
     agents: List[AgentType],
     task: str,
@@ -109,7 +107,6 @@ def run_agents_concurrently(
     return results
 
 
-@profile_func
 def run_agents_concurrently_multiprocess(
     agents: List[Agent], task: str, batch_size: int = cpu_count()
 ) -> List[Any]:
@@ -139,7 +136,6 @@ def run_agents_concurrently_multiprocess(
     return results
 
 
-@profile_func
 def run_agents_sequentially(
     agents: List[AgentType], task: str
 ) -> List[Any]:
@@ -156,7 +152,6 @@ def run_agents_sequentially(
     return [run_single_agent(agent, task) for agent in agents]
 
 
-@profile_func
 def run_agents_with_different_tasks(
     agent_task_pairs: List[tuple[AgentType, str]],
     batch_size: int = None,
@@ -233,7 +228,6 @@ async def run_agent_with_timeout(
         return None
 
 
-@profile_func
 def run_agents_with_timeout(
     agents: List[AgentType],
     task: str,
@@ -299,7 +293,6 @@ def get_system_metrics() -> ResourceMetrics:
     )
 
 
-@profile_func
 def run_agents_with_resource_monitoring(
     agents: List[AgentType],
     task: str,
@@ -335,7 +328,6 @@ def run_agents_with_resource_monitoring(
     # Implementation details...
 
 
-@profile_func
 def _run_agents_with_tasks_concurrently(
     agents: List[AgentType],
     tasks: List[str] = [],
@@ -400,8 +392,9 @@ def run_agents_with_tasks_concurrently(
     batch_size: int = None,
     max_workers: int = None,
     device: str = "cpu",
-    device_id: int = 0,
+    device_id: int = 1,
     all_cores: bool = True,
+    no_clusterops: bool = False,
 ) -> List[Any]:
     """
     Executes a list of agents with their corresponding tasks concurrently on a specified device.
@@ -420,16 +413,23 @@ def run_agents_with_tasks_concurrently(
     Returns:
         List[Any]: A list of outputs from each agent execution.
     """
-    return exec_callable_with_clusterops(
-        device,
-        device_id,
-        all_cores,
-        _run_agents_with_tasks_concurrently,
-        agents,
-        tasks,
-        batch_size,
-        max_workers,
-    )
+    # Make the first agent not use the ifrs
+    
+    if no_clusterops:
+        return _run_agents_with_tasks_concurrently(
+            agents, tasks, batch_size, max_workers
+        )
+    else:
+        return exec_callable_with_clusterops(
+            device,
+            device_id,
+            all_cores,
+            _run_agents_with_tasks_concurrently,
+            agents,
+            tasks,
+            batch_size,
+            max_workers,
+        )
 
 
 # # Example usage:

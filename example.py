@@ -31,15 +31,16 @@ agent = Agent(
     saved_state_path="finance_agent.json",
     user_name="swarms_corp",
     retry_attempts=1,
+    streaming_on=True,
     context_length=200000,
     return_step_meta=True,
     output_type="json",  # "json", "dict", "csv" OR "string" soon "yaml" and
-    streaming_on=False,
     auto_generate_prompt=False,  # Auto generate prompt for the agent based on name, description, and system prompt, task
     artifacts_on=True,
     artifacts_output_path="roth_ira_report",
     artifacts_file_extension=".txt",
     max_tokens=8000,
+    return_history=True,
 )
 
 

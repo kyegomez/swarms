@@ -53,6 +53,7 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
+from swarms.utils.formatter import formatter
 
 logger = initialize_logger(log_folder="agents")
 
@@ -338,6 +339,7 @@ class Agent:
         device_id: int = 0,
         scheduled_run_date: Optional[datetime] = None,
         do_not_use_cluster_ops: bool = True,
+        all_gpus: bool = False,
         *args,
         **kwargs,
     ):
@@ -452,6 +454,7 @@ class Agent:
         self.device_id = device_id
         self.scheduled_run_date = scheduled_run_date
         self.do_not_use_cluster_ops = do_not_use_cluster_ops
+        self.all_gpus = all_gpus
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -685,11 +688,11 @@ class Agent:
         try:
             if hasattr(self.llm, "temperature"):
                 # Randomly change the temperature attribute of self.llm object
+                logger.info("Enabling Random Dyamic Temperature")
                 self.llm.temperature = random.uniform(0.0, 1.0)
-                logger.info(f"Temperature: {self.llm.temperature}")
             else:
                 # Use a default temperature
-                self.llm.temperature = 0.7
+                self.llm.temperature = 0.5
         except Exception as error:
             print(
                 colored(
@@ -759,6 +762,7 @@ class Agent:
         task: Optional[str] = None,
         img: Optional[str] = None,
         is_last: bool = False,
+        print_task: bool = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -800,6 +804,15 @@ class Agent:
             # Query the long term memory first for the context
             if self.long_term_memory is not None:
                 self.memory_query(task)
+
+            # Print the user's request
+
+            # Print the request
+            if print_task is True:
+                formatter.print_panel(
+                    f"\n User: {task}",
+                    f"Task Request for {self.agent_name}",
+                )
 
             while (
                 self.max_loops == "auto"
@@ -847,9 +860,17 @@ class Agent:
 
                         # Print
                         if self.streaming_on is True:
-                            self.stream_response(response)
+                            # self.stream_response(response)
+                            formatter.print_panel_token_by_token(
+                                f"{self.agent_name}: {response}",
+                                title=f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
+                            )
                         else:
-                            logger.info(f"Response: {response}")
+                            # logger.info(f"Response: {response}")
+                            formatter.print_panel(
+                                f"{self.agent_name}: {response}",
+                                f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+                            )
 
                         # Check if response is a dictionary and has 'choices' key
                         if (
@@ -1026,7 +1047,12 @@ class Agent:
             elif self.return_step_meta is True:
                 return self.agent_output.model_dump_json(indent=4)
             elif self.return_history is True:
-                return self.short_memory.get_str()
+                history = self.short_memory.get_str()
+
+                formatter.print_panel(
+                    history, title=f"{self.agent_name} History"
+                )
+                return history
             else:
                 raise ValueError(
                     f"Invalid output type: {self.output_type}"
@@ -2358,3 +2384,26 @@ class Agent:
                 f"Unexpected error handling artifact: {str(e)}"
             )
             raise
+
+    def showcase_config(self):
+
+        # Convert all values in config_dict to concise string representations
+        config_dict = self.to_dict()
+        for key, value in config_dict.items():
+            if isinstance(value, list):
+                # Format list as a comma-separated string
+                config_dict[key] = ", ".join(
+                    str(item) for item in value
+                )
+            elif isinstance(value, dict):
+                # Format dict as key-value pairs in a single string
+                config_dict[key] = ", ".join(
+                    f"{k}: {v}" for k, v in value.items()
+                )
+            else:
+                # Ensure any non-iterable value is a string
+                config_dict[key] = str(value)
+
+        return formatter.print_table(
+            f"Agent: {self.agent_name} Configuration", config_dict
+        )

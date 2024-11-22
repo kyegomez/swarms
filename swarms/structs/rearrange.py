@@ -176,7 +176,7 @@ class AgentRearrange(BaseSwarm):
         # self.handle_input_docs()
 
         # Show the agents whose in the swarm
-        self.showcase_agents()
+        # self.showcase_agents()
 
     def showcase_agents(self):
         # Get formatted agent info once
@@ -380,6 +380,11 @@ class AgentRearrange(BaseSwarm):
                                 )
                             else:
                                 agent = self.agents[agent_name]
+                                current_task = (
+                                    str(current_task)
+                                    if current_task
+                                    else ""
+                                )
                                 result = agent.run(
                                     task=current_task,
                                     img=img,
@@ -387,6 +392,7 @@ class AgentRearrange(BaseSwarm):
                                     *args,
                                     **kwargs,
                                 )
+                                result = str(result)
                                 results.append(result)
                                 response_dict[agent_name] = result
                                 self.output_schema.outputs.append(
@@ -423,6 +429,11 @@ class AgentRearrange(BaseSwarm):
                             response_dict[agent_name] = current_task
                         else:
                             agent = self.agents[agent_name]
+                            current_task = (
+                                str(current_task)
+                                if current_task
+                                else ""
+                            )
                             current_task = agent.run(
                                 task=current_task,
                                 img=img,
@@ -430,6 +441,7 @@ class AgentRearrange(BaseSwarm):
                                 *args,
                                 **kwargs,
                             )
+                            current_task = str(current_task)
                             response_dict[agent_name] = current_task
                             self.output_schema.outputs.append(
                                 agent.agent_output
@@ -470,9 +482,10 @@ class AgentRearrange(BaseSwarm):
         task: str = None,
         img: str = None,
         device: str = "cpu",
-        device_id: int = 1,
+        device_id: int = 2,
         all_cores: bool = True,
         all_gpus: bool = False,
+        no_use_clusterops: bool = False,
         *args,
         **kwargs,
     ):
@@ -486,23 +499,32 @@ class AgentRearrange(BaseSwarm):
             device_id (int, optional): ID of specific device to use. Defaults to 1.
             all_cores (bool, optional): Whether to use all CPU cores. Defaults to True.
             all_gpus (bool, optional): Whether to use all available GPUs. Defaults to False.
+            no_use_clusterops (bool, optional): Whether to use clusterops. Defaults to False.
             *args: Additional positional arguments passed to _run().
             **kwargs: Additional keyword arguments passed to _run().
 
         Returns:
             The result from executing the task through the cluster operations wrapper.
         """
-        return exec_callable_with_clusterops(
-            device=device,
-            device_id=device_id,
-            all_cores=all_cores,
-            all_gpus=all_gpus,
-            func=self._run,
-            task=task,
-            img=img,
-            *args,
-            **kwargs,
-        )
+        if no_use_clusterops:
+            return self._run(
+                task=task,
+                img=img,
+                *args,
+                **kwargs,
+            )
+        else:
+            return exec_callable_with_clusterops(
+                device=device,
+                device_id=device_id,
+                all_cores=all_cores,
+                all_gpus=all_gpus,
+                func=self._run,
+                task=task,
+                img=img,
+                *args,
+                **kwargs,
+            )
 
     def __call__(self, task: str, *args, **kwargs):
         """

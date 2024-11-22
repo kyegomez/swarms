@@ -173,10 +173,6 @@ class OnboardingProcess:
         self.ask_input(
             "Enter your email (or type 'quit' to exit): ", "email"
         )
-        self.ask_input(
-            "Enter your Swarms API key (or type 'quit' to exit): Get this in your swarms dashboard: https://swarms.world/platform/api-keys ",
-            "swarms_api_key",
-        )
         workspace = self.ask_input(
             "Enter your WORKSPACE_DIR: This is where logs, errors, and agent configurations will be stored (or type 'quit' to exit). Remember to set this as an environment variable: https://docs.swarms.world/en/latest/swarms/install/quickstart/ || ",
             "workspace_dir",

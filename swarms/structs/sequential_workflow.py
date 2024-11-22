@@ -1,8 +1,7 @@
-from typing import List
+from typing import List, Optional
 from swarms.structs.agent import Agent
 from swarms.structs.rearrange import AgentRearrange, OutputType
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from swarms.structs.agents_available import showcase_available_agents
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="sequential_workflow")
@@ -59,9 +58,6 @@ class SequentialWorkflow:
             **kwargs,
         )
 
-        # Handle agent showcase
-        self.handle_agent_showcase()
-
     def sequential_flow(self):
         # Only create flow if agents exist
         if self.agents:
@@ -101,31 +97,17 @@ class SequentialWorkflow:
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
 
-        if self.output_type not in OutputType:
-            raise ValueError(
-                "output_type must be 'all', 'final', 'list', 'dict', '.json', '.md', '.txt', '.yaml', or '.toml'"
-            )
-
         logger.info("Checks completed your swarm is ready.")
-
-    def handle_agent_showcase(self):
-        # Get the showcase string once instead of regenerating for each agent
-        showcase_str = showcase_available_agents(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-        )
-
-        # Append showcase string to each agent's existing system prompt
-        for agent in self.agents:
-            agent.system_prompt += showcase_str
 
     def run(
         self,
         task: str,
+        img: Optional[str] = None,
         device: str = "cpu",
-        all_cpus: bool = False,
-        auto_gpu: bool = False,
+        all_cores: bool = False,
+        all_gpus: bool = False,
+        device_id: int = 0,
+        no_use_clusterops: bool = False,
         *args,
         **kwargs,
     ) -> str:
@@ -134,6 +116,12 @@ class SequentialWorkflow:
 
         Args:
             task (str): The task for the agents to execute.
+            device (str): The device to use for the agents to execute.
+            all_cores (bool): Whether to use all cores.
+            all_gpus (bool): Whether to use all gpus.
+            device_id (int): The device id to use for the agents to execute.
+            no_use_clusterops (bool): Whether to use clusterops.
+
 
         Returns:
             str: The final result after processing through all agents.
@@ -144,14 +132,14 @@ class SequentialWorkflow:
         """
 
         try:
-            logger.info(
-                f"Executing task with dynamic flow: {self.flow}"
-            )
             return self.agent_rearrange.run(
-                task,
+                task=task,
+                img=img,
                 device=device,
-                all_cpus=all_cpus,
-                auto_gpu=auto_gpu,
+                all_cores=all_cores,
+                device_id=device_id,
+                all_gpus=all_gpus,
+                no_use_clusterops=no_use_clusterops,
                 *args,
                 **kwargs,
             )
@@ -186,9 +174,6 @@ class SequentialWorkflow:
             )
 
         try:
-            logger.info(
-                f"Executing batch of tasks with dynamic flow: {self.flow}"
-            )
             return [self.agent_rearrange.run(task) for task in tasks]
         except Exception as e:
             logger.error(
@@ -214,9 +199,6 @@ class SequentialWorkflow:
             raise ValueError("Task must be a non-empty string")
 
         try:
-            logger.info(
-                f"Executing task with dynamic flow asynchronously: {self.flow}"
-            )
             return await self.agent_rearrange.run_async(task)
         except Exception as e:
             logger.error(
@@ -246,9 +228,6 @@ class SequentialWorkflow:
             )
 
         try:
-            logger.info(
-                f"Executing batch of tasks with dynamic flow concurrently: {self.flow}"
-            )
             with ThreadPoolExecutor() as executor:
                 results = [
                     executor.submit(self.agent_rearrange.run, task)
