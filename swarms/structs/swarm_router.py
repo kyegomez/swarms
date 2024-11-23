@@ -295,7 +295,7 @@ class SwarmRouter:
             return MixtureOfAgents(
                 name=self.name,
                 description=self.description,
-                reference_agents=self.agents,
+                agents=self.agents,
                 aggregator_system_prompt=aggregator_system_prompt.get_prompt(),
                 aggregator_agent=self.agents[-1],
                 layers=self.max_loops,

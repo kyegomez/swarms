@@ -1201,7 +1201,7 @@ Your final report should be well-structured, easy to understand, and provide a h
 
 # Create the Mixture of Agents class
 moa = MixtureOfAgents(
-    reference_agents=[agent1, agent2, agent3],
+    agents=[agent1, agent2, agent3],
     aggregator_agent=aggregator_agent,
     aggregator_system_prompt="""As the 10-K Report Aggregator, your task is to synthesize the analyses provided by the Financial Statement Analyzer, Risk Assessment Specialist, and Business Strategy Evaluator into a comprehensive and coherent report. 
 
