@@ -1,18 +1,14 @@
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
 
 
-[tool.poetry]
+[project]
 name = "swarms"
 version = "6.2.9"
 description = "Swarms - Pytorch"
-license = "MIT"
-authors = ["Kye Gomez <kye@apac.ai>"]
-homepage = "https://github.com/kyegomez/swarms"
-documentation = "https://docs.swarms.world"
+license = {text = "MIT License"}
+authors = [ 
+    { name = "Kye Gomez", email = "kye@swams.world" }, 
+]
 readme = "README.md"
-repository = "https://github.com/kyegomez/swarms"
 keywords = [
     "artificial intelligence",
     "deep learning",
@@ -45,7 +41,33 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.10",
 ]
+requires-python = ">=3.10,<4.0"
 
+
+[dependency-groups]
+lint = [
+    "black<25.0,>=23.1",
+    "ruff<0.7.4,>=0.5.1",
+    "types-toml<1.0.0.0,>=0.10.8.1",
+    "types-pytz<2025.0,>=2023.3",
+    "types-chardet<6.0.0.0,>=5.0.4.6",
+    "mypy-protobuf<4.0.0,>=3.0.0",
+]
+test = [
+    "pytest<9.0.0,>=8.1.1",
+    "termcolor<3.0.0,>=2.4.0",
+    "pandas<3.0.0,>=2.2.2",
+    "fastapi<0.116.0,>=0.110.1",
+]
+
+
+[project.urls]
+homepage = "https://github.com/kyegomez/swarms"
+repository = "https://github.com/kyegomez/swarms"
+documentation = "https://docs.swarms.world"
+
+[project.scripts]
+swarms = "swarms.cli.main:main"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
@@ -81,24 +103,14 @@ reportlab = "*"
 doc-master = "*"
 rich = "*"
 
-[tool.poetry.scripts]
-swarms = "swarms.cli.main:main"
+[tool.setuptools.packages.find]
+where = ["swarms"]
 
 
-[tool.poetry.group.lint.dependencies]
-black = ">=23.1,<25.0"
-ruff = ">=0.5.1,<0.7.4"
-types-toml = "^0.10.8.1"
-types-pytz = ">=2023.3,<2025.0"
-types-chardet = "^5.0.4.6"
-mypy-protobuf = "^3.0.0"
 
 
-[tool.poetry.group.test.dependencies]
-pytest = "^8.1.1"
-termcolor = "^2.4.0"
-pandas = "^2.2.2"
-fastapi = ">=0.110.1,<0.116.0"
+
+
 
 [tool.ruff]
 line-length = 70
