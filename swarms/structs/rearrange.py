@@ -121,16 +121,14 @@ class AgentRearrange(BaseSwarm):
         output_type: OutputType = "final",
         docs: List[str] = None,
         doc_folder: str = None,
+        device: str = "cpu",
+        device_id: int = 0,
+        all_cores: bool = False,
+        all_gpus: bool = True,
+        no_use_clusterops: bool = True,
         *args,
         **kwargs,
     ):
-        # reliability_check(
-        #     agents=agents,
-        #     name=name,
-        #     description=description,
-        #     flow=flow,
-        #     max_loops=max_loops,
-        # )
         super(AgentRearrange, self).__init__(
             name=name,
             description=description,
@@ -150,6 +148,11 @@ class AgentRearrange(BaseSwarm):
         self.output_type = output_type
         self.docs = docs
         self.doc_folder = doc_folder
+        self.device = device
+        self.device_id = device_id
+        self.all_cores = all_cores
+        self.all_gpus = all_gpus
+        self.no_use_clusterops = no_use_clusterops
         self.swarm_history = {
             agent.agent_name: [] for agent in agents
         }
@@ -506,7 +509,11 @@ class AgentRearrange(BaseSwarm):
         Returns:
             The result from executing the task through the cluster operations wrapper.
         """
-        if no_use_clusterops:
+        no_use_clusterops = (
+            no_use_clusterops or self.no_use_clusterops
+        )
+
+        if no_use_clusterops is True:
             return self._run(
                 task=task,
                 img=img,

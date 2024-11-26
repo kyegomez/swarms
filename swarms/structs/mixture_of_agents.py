@@ -86,9 +86,7 @@ class MixtureOfAgents:
         self.input_schema = MixtureOfAgentsInput(
             name=name,
             description=description,
-            agents=[
-                agent.to_dict() for agent in self.agents
-            ],
+            agents=[agent.to_dict() for agent in self.agents],
             aggregator_agent=aggregator_agent.to_dict(),
             aggregator_system_prompt=self.aggregator_system_prompt,
             layers=self.layers,

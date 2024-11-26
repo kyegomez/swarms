@@ -3,10 +3,9 @@ import json
 from typing import Any, Optional
 
 import yaml
-from termcolor import colored
-
 from swarms.structs.base_structure import BaseStructure
 from typing import TYPE_CHECKING
+from swarms.utils.formatter import formatter
 
 if TYPE_CHECKING:
     from swarms.structs.agent import (
@@ -191,18 +190,9 @@ class Conversation(BaseStructure):
         Args:
             detailed (bool, optional): detailed. Defaults to False.
         """
-        role_to_color = {
-            "system": "red",
-            "user": "green",
-            "assistant": "blue",
-            "function": "magenta",
-        }
         for message in self.conversation_history:
-            print(
-                colored(
-                    f"{message['role']}: {message['content']}\n\n",
-                    role_to_color[message["role"]],
-                )
+            formatter.print_panel(
+                f"{message['role']}: {message['content']}\n\n"
             )
 
     def export_conversation(self, filename: str, *args, **kwargs):
@@ -307,46 +297,36 @@ class Conversation(BaseStructure):
 
         for message in messages:
             if message["role"] == "system":
-                print(
-                    colored(
-                        f"system: {message['content']}\n",
-                        role_to_color[message["role"]],
-                    )
+                formatter.print_panel(
+                    f"system: {message['content']}\n",
+                    role_to_color[message["role"]],
                 )
             elif message["role"] == "user":
-                print(
-                    colored(
-                        f"user: {message['content']}\n",
-                        role_to_color[message["role"]],
-                    )
+                formatter.print_panel(
+                    f"user: {message['content']}\n",
+                    role_to_color[message["role"]],
                 )
             elif message["role"] == "assistant" and message.get(
                 "function_call"
             ):
-                print(
-                    colored(
-                        f"assistant: {message['function_call']}\n",
-                        role_to_color[message["role"]],
-                    )
+                formatter.print_panel(
+                    f"assistant: {message['function_call']}\n",
+                    role_to_color[message["role"]],
                 )
             elif message["role"] == "assistant" and not message.get(
                 "function_call"
             ):
-                print(
-                    colored(
-                        f"assistant: {message['content']}\n",
-                        role_to_color[message["role"]],
-                    )
+                formatter.print_panel(
+                    f"assistant: {message['content']}\n",
+                    role_to_color[message["role"]],
                 )
             elif message["role"] == "tool":
-                print(
-                    colored(
-                        (
-                            f"function ({message['name']}):"
-                            f" {message['content']}\n"
-                        ),
-                        role_to_color[message["role"]],
-                    )
+                formatter.print_panel(
+                    (
+                        f"function ({message['name']}):"
+                        f" {message['content']}\n"
+                    ),
+                    role_to_color[message["role"]],
                 )
 
     def truncate_memory_with_tokenizer(self):

@@ -3,8 +3,7 @@ from typing import Any, List
 
 import inspect
 from typing import Callable
-
-from termcolor import colored
+from swarms.utils.formatter import formatter
 
 
 def scrape_tool_func_docs(fn: Callable) -> str:
@@ -37,16 +36,15 @@ def scrape_tool_func_docs(fn: Callable) -> str:
             f" {inspect.getdoc(fn)}\nParameters:\n{parameters_str}"
         )
     except Exception as error:
-        print(
-            colored(
-                (
-                    f"Error scraping tool function docs {error} try"
-                    " optimizing your inputs with different"
-                    " variables and attempt once more."
-                ),
-                "red",
-            )
+        error_msg = (
+            formatter.print_panel(
+                f"Error scraping tool function docs {error} try"
+                " optimizing your inputs with different"
+                " variables and attempt once more."
+            ),
         )
+
+        raise error
 
 
 def tool_find_by_name(tool_name: str, tools: List[Any]):

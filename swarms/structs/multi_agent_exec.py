@@ -414,7 +414,7 @@ def run_agents_with_tasks_concurrently(
         List[Any]: A list of outputs from each agent execution.
     """
     # Make the first agent not use the ifrs
-    
+
     if no_clusterops:
         return _run_agents_with_tasks_concurrently(
             agents, tasks, batch_size, max_workers
