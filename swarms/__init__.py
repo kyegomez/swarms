@@ -7,8 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ruff: noqa: E402 # Ignore module level import not at top of file
 
-from swarms.telemetry.bootup import bootup  # noqa: E402, F403
+from swarms.telemetry.bootup import bootup  # noqa: F403
 from swarms.telemetry.sentry_active import (
     activate_sentry,
 )  # noqa: E402
