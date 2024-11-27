@@ -8,7 +8,8 @@ audio/
 video/
 artifacts_three
 dataframe/
-
+.ruff_cache
+.pytest_cache
 static/generated
 runs
 Financial-Analysis-Agent_state.json

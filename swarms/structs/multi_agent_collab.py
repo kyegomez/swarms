@@ -128,7 +128,13 @@ class MultiAgentCollaboration(BaseSwarm):
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            name=name,
+            description=description,
+            agents=agents,
+            *args,
+            **kwargs,
+        )
         self.name = name
         self.description = description
         self.director = director

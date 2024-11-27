@@ -14,8 +14,6 @@ from loguru import logger
 from pydantic import BaseModel
 from termcolor import colored
 
-import agentops
-
 from swarms.memory.base_vectordb import BaseVectorDatabase
 from swarms.models.tiktoken_wrapper import TikTokenizer
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
@@ -93,7 +91,6 @@ ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
 # [FEAT][AGENT]
-@agentops.track_agent()
 class Agent(BaseStructure):
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
