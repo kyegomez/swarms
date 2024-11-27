@@ -76,6 +76,38 @@ def summarize_expenses(data: SummarizeExpenses) -> dict:
     return {"total_expenses": total_expenses}
 ```
 
+#### Using Default BaseModel
+
+When initializing an Agent with tools but without specifying `list_base_models`, the system automatically uses a DefaultBaseModel:
+
+```python
+from pydantic import BaseModel, Field
+from typing import Any
+
+class DefaultBaseModel(BaseModel):
+    """A default base model that accepts any data structure"""
+    data: Any = Field(default=None, description="Any data type")
+    
+    class Config:
+        arbitrary_types_allowed = True
+        extra = "allow"
+
+# Agent will use DefaultBaseModel automatically if no list_base_models provided
+agent = Agent(
+    agent_name="Simple Agent",
+    tools=[your_tool_function],  # DefaultBaseModel will be used
+    llm=your_llm_instance
+)
+```
+
+⚠️ **Warning**: While the DefaultBaseModel provides flexibility, it's recommended to define your own specific Pydantic models for:
+- Type safety and validation
+- Clear documentation
+- Predictable behavior
+- Schema generation
+
+For production use, define custom models like the examples above (CalculateTax, GenerateInvoice).
+
 #### Using Functions Directly
 
 Tools can also be defined directly as functions without using Pydantic models. This approach is suitable for simpler tasks where complex validation is not required.

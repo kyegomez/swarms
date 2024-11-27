@@ -26,7 +26,7 @@ from clusterops import (
     execute_on_gpu,
     execute_with_cpu_cores,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from swarm_models.tiktoken_wrapper import TikTokenizer
 from termcolor import colored
 
@@ -90,6 +90,14 @@ ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
 # [FEAT][AGENT]
+class DefaultBaseModel(BaseModel):
+    """A default base model that accepts any data structure"""
+    data: Any = Field(default=None, description="Any data type")
+    
+    class Config:
+        arbitrary_types_allowed = True
+        extra = "allow"
+
 class Agent:
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
@@ -476,6 +484,24 @@ class Agent:
             or exists(list_base_models)
             or exists(tool_schema)
         ):
+
+            # If no base models provided, use the default one
+            if exists(tools) or exists(tool_schema):
+                if list_base_models is None:
+                    list_base_models = [DefaultBaseModel]
+                    logger.warning(
+                        colored(
+                            "\nUsing default base model for tool schema validation. "
+                            "This can lead to potential format mismatches or validation issues. "
+                            "Consider defining your own Pydantic BaseModel(s) with proper field definitions "
+                            "and validation rules for your specific use case.\n"
+                            "Example:\n"
+                            "class YourModel(BaseModel):\n"
+                            "    field1: str = Field(..., description='Description of field1')\n"
+                            "    field2: int = Field(..., description='Description of field2')\n",
+                            "yellow"
+                        )
+                    )
 
             self.tool_struct = BaseTool(
                 tools=tools,
