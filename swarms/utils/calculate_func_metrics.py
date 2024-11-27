@@ -4,7 +4,6 @@ from functools import wraps
 from typing import Any, Callable
 
 import psutil
-from loguru import logger
 from pydantic import BaseModel
 
 from swarms.utils.loguru_logger import initialize_logger
