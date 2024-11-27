@@ -1,3 +1,6 @@
+# ruff: noqa: E402 # Ignore module level import not at top of file
+
+
 import time
 
 start_time = time.time()
