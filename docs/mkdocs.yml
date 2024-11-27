@@ -69,7 +69,7 @@ theme:
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
-      primary: black
+      primary: white
       accent: red
       toggle:
         icon: material/brightness-4
@@ -82,6 +82,7 @@ theme:
         - navigation.expand
         - navigation.top
         - announce.dismiss
+        
 # Extensions
 markdown_extensions:
   - abbr
