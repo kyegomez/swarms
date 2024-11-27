@@ -110,7 +110,7 @@ def is_duplicate(new_prompt, published_prompts):
 def extract_use_cases(prompt):
     """Extract use cases from the prompt by chunking it into meaningful segments."""
     # This is a simple placeholder; you can use a more advanced method to extract use cases
-    chunks = [prompt[i : i + 50] for i in range(0, len(prompt), 50)]
+    chunks = [prompt[i: i + 50] for i in range(0, len(prompt), 50)]
     return [
         {"title": f"Use case {idx+1}", "description": chunk}
         for idx, chunk in enumerate(chunks)
