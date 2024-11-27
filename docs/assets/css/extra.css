@@ -1,105 +1,17 @@
-/* Root variables for primary colors */
-:root {
-    --md-primary-bg-color: #0d0d0d; /* Black background */
-    --md-secondary-bg-color: #1a1a1a; /* Slightly lighter black */
-    --md-accent-color: #FF073A; /* Neon red */
-    --md-accent-color--hover: #FF2050; /* Bright neon red for hover */
-    --md-text-color: #ffffff; /* White text */
-    --md-code-bg-color: #121212; /* Darker background for code blocks */
-    --md-code-border-color: #FF073A; /* Neon red border for code blocks */
-    --md-link-color: var(--md-accent-color);
-}
+* Further customization as needed */
 
-/* Apply background and text colors globally */
-body {
-    background-color: var(--md-primary-bg-color);
-    color: var(--md-text-color);
-}
 
-/* Headings with neon glow */
-h1, h2, h3, h4, h5, h6 {
-    color: var(--md-accent-color);
-    text-shadow: 0 0 5px var(--md-accent-color), 0 0 10px var(--md-accent-color);
-}
-
-/* Links with hover effects */
-a {
-    color: var(--md-link-color);
-    text-decoration: none;
-}
-a:hover {
-    color: var(--md-accent-color--hover);
-    text-shadow: 0 0 5px var(--md-accent-color--hover), 0 0 10px var(--md-accent-color--hover);
-}
-
-/* Sidebar styling */
-.md-sidebar {
-    background-color: var(--md-secondary-bg-color);
-    border-right: 2px solid var(--md-accent-color);
-}
-
-/* Navigation links in sidebar */
-.md-sidebar .md-nav__link {
-    color: var(--md-text-color);
-}
-.md-sidebar .md-nav__link:hover,
-.md-sidebar .md-nav__link--active {
-    color: var(--md-accent-color);
-    background-color: var(--md-primary-bg-color);
-}
-
-/* Code blocks with neon red accents */
-.md-typeset code {
-    background-color: var(--md-code-bg-color);
-    color: var(--md-text-color);
-    border: 1px solid var(--md-code-border-color);
-    border-radius: 4px;
-    padding: 2px 4px;
-    font-family: 'Fira Code', monospace;
-    text-shadow: 0 0 3px var(--md-code-border-color);
-}
-
-/* Tables */
 .md-typeset__table {
-    min-width: 100%;
-    border-collapse: collapse;
-    background-color: var(--md-secondary-bg-color);
-    color: var(--md-text-color);
-}
-.md-typeset__table th, .md-typeset__table td {
-    border: 1px solid var(--md-accent-color);
-    padding: 8px;
+   min-width: 100%;
 }
 
-/* Buttons */
-button {
-    background-color: var(--md-accent-color);
-    color: var(--md-text-color);
-    border: none;
-    border-radius: 4px;
-    padding: 10px 15px;
-    cursor: pointer;
-    text-shadow: 0 0 5px var(--md-accent-color);
-}
-button:hover {
-    background-color: var(--md-accent-color--hover);
+.md-typeset table:not([class]) {
+    display: table;
 }
 
-/* Additional styling for search bar */
-.md-search__form {
-    background-color: var(--md-secondary-bg-color);
-    border: 1px solid var(--md-accent-color);
-}
-.md-search__input {
-    background-color: var(--md-primary-bg-color);
-    color: var(--md-text-color);
-}
-
-/* Further customization */
-footer {
-    background-color: var(--md-secondary-bg-color);
-    color: var(--md-text-color);
-    text-align: center;
-    padding: 10px;
-    border-top: 2px solid var(--md-accent-color);
-}
+/* 
+:root {
+    --md-primary-fg-color:        #EE0F0F;
+    --md-primary-fg-color--light: #ECB7B7;
+    --md-primary-fg-color--dark:  #90030C;
+  } */
