@@ -19,5 +19,5 @@ def algorithm_of_thoughts_sop(objective: str):
     {objective}
     ###
     
-    """
+    """   # noqa: W291, W293
     return AOT_PROMPT
