@@ -39,7 +39,8 @@ agent = Agent(
     streaming_on=False,
 )
 
-# Function to measure time and memory usage
+
+# Function to measure time and memory usage   # noqa: E302
 def measure_time_and_memory(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
@@ -72,4 +73,4 @@ def run_agent_thread():
 asyncio.run(run_agent_async())
 run_agent_thread()
 
-
+# noqa: W391
