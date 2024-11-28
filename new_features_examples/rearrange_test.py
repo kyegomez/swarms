@@ -25,7 +25,7 @@ boss_agent = Agent(
     so the finance team can take actionable steps to cut off unproductive spending. You also monitor and 
     dynamically adapt the swarm to optimize their performance. Finally, you summarize their findings 
     into a coherent report.
-    """,
+    """,   # noqa: W291, W293
     llm=model,
     max_loops=1,
     dashboard=False,
@@ -45,7 +45,7 @@ worker1 = Agent(
     (e.g., marketing, operations, utilities, etc.), and flagging areas where there seems to be excessive spending. 
     You will provide a detailed breakdown of each category, along with specific recommendations for cost-cutting. 
     Pay close attention to monthly recurring subscriptions, office supplies, and non-essential expenditures.
-    """,
+    """,   # noqa: W291, W293
     llm=model,
     max_loops=1,
     dashboard=False,
@@ -65,7 +65,7 @@ worker2 = Agent(
     such as highlighting the specific transactions that can be immediately cut off and summarizing the areas 
     where the company is overspending. Your summary will be used by the BossAgent to generate the final report.
     Be clear and to the point, emphasizing the urgency of cutting unnecessary expenses.
-    """,
+    """,  # noqa: W291, W293
     llm=model,
     max_loops=1,
     dashboard=False,
@@ -85,7 +85,7 @@ swarm_prompt = """
     and providing recommendations for potential cost reduction. After the analysis, the SummaryGenerator will then 
     consolidate all the findings into an actionable summary that the finance team can use to immediately cut off unnecessary expenses. 
     Together, your collaboration is essential to streamlining and improving the company’s financial health.
-"""
+"""  # noqa: W291, W293
 
 # Create a list of agents
 agents = [boss_agent, worker1, worker2]
@@ -112,7 +112,7 @@ task = f"""
     analysis of recent transactions to identify which expenses can be cut off to improve profitability. 
     Analyze the provided transaction data and create a detailed report on cost-cutting opportunities, 
     focusing on recurring transactions and non-essential expenditures. 
-"""
+"""  # noqa: W291, W293
 
 # Run the swarm system with the task
 output = agent_system.run(task)
