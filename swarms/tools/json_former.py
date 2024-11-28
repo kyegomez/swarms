@@ -117,7 +117,7 @@ class Jsonformer:
                 response[0], skip_special_tokens=True
             )
 
-            response = response[len(prompt) :]
+            response = response[len(prompt) :]  # noqa: E203
             response = response.strip().rstrip(".")
             self.debug("[generate_number]", response)
             try:
@@ -136,7 +136,7 @@ class Jsonformer:
             prompt = self.get_prompt()
             self.debug("[generate_number]", prompt, is_prompt=True)
             response = self.llm(prompt)
-            response = response[len(prompt) :]
+            response = response[len(prompt) :]  # noqa: E203
             response = response.strip().rstrip(".")
             self.debug("[generate_number]", response)
             try:
@@ -231,7 +231,7 @@ class Jsonformer:
                     == input_tokens
                 ).all()
             ):
-                response = response[0][len(input_tokens[0]) :]
+                response = response[0][len(input_tokens[0]) :]  # noqa: E203
             if response.shape[0] == 1:
                 response = response[0]
 
@@ -261,7 +261,7 @@ class Jsonformer:
                     == input_tokens
                 ).all()
             ):
-                response = response[0][len(input_tokens[0]) :]
+                response = response[0][len(input_tokens[0]) :]  # noqa: E203
             if response.shape[0] == 1:
                 response = response[0]
 
