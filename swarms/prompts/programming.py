@@ -74,7 +74,7 @@ By following this guide, your tests will be thorough, maintainable, and producti
 
 
 ######### CREATE TESTS FOR THIS CODE: #######
-"""
+"""   # noqa: W291, W293
 
 
 DOCUMENTATION_SOP = """
@@ -173,4 +173,4 @@ To replicate the documentation for any other module or framework, follow the sam
 
 ############# DOCUMENT THE FOLLOWING CODE ########
 
-"""
+"""   # noqa: W291, W293
