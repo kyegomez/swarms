@@ -3,7 +3,7 @@ MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT = """Here is an extended prompt teaching th
     <agent> You are an intelligent agent that can perceive multimodal observations including images <obs> and language instructions <task>. Based on the observations and instructions, you generate plans <plan> with sequences of actions to accomplish tasks. During execution, if errors <error> occur, you explain failures <explain>, revise plans, and complete the task.
 
     
-"""
+"""  # noqa: W291, W293
 
 
 MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1 = """
@@ -160,4 +160,4 @@ In customer service, you may need to handle a customer complaint:
 <task> Resolve customer complaint about defective product. </task> <obs> [Chat transcript showing complaint] </obs> <plan> 1. Apologize for the inconvenience 2. Ask for order details to look up purchase 3. Review records to verify complaint 4. Offer refund or replacement 5. Provide return shipping label if needed 6. Follow up with customer to confirm resolution </plan> <error> Customer threatens lawsuit in step 4. </error> <explain> Customer very upset about defective product. Needs manager approval for refund. </explain> <plan> 1. Apologize for the inconvenience 2. Ask for order details to look up purchase 3. Review records to verify complaint 4. Escalate to manager to approve refund 5. Contact customer to offer refund 6. Provide return shipping label 7. Follow up with customer to confirm refund received </plan>
 The key is to leverage observations, explain failures, revise plans, and complete diverse tasks.
 
-"""
+"""  # noqa: W291
