@@ -34,7 +34,7 @@ commands: {
 """  # noqa: W291, W293
 
 
-#----------- FEW SHOT EXAMPLES ---------------#
+# ----------- FEW SHOT EXAMPLES ---------------#
 SCENARIOS = """
 commands: {
     "tools": {
