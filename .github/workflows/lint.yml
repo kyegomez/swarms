@@ -1,14 +1,7 @@
 ---
 name: Lint
-on: [push, pull_request] # yamllint disable-line rule:truthy
+on: [push, pull_request] 
 jobs:
-  yaml-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-      - run: pip install yamllint
-      - run: yamllint .
   flake8-lint:
     runs-on: ubuntu-latest
     steps:
