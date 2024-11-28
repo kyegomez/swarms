@@ -347,7 +347,7 @@ class GroupChat:
         
         Conversation history:
         {conversation_history}
-        """
+        """  # noqa: W291, W293
 
         try:
             next_speaker_name = self.selector_agent.run(
