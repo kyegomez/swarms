@@ -2,13 +2,13 @@
 AGENT_ROLE_IDENTIFICATION_AGENT_PROMPT = """
 Based on the following idea: '{user_idea}', identify and list the specific types of agents needed for the team. Detail their roles, responsibilities, and capabilities.
 Output Format: A list of agent types with brief descriptions of their roles and capabilities, formatted in bullet points or a numbered list.
-"""
+"""  # noqa: W291, W293
 
 # Prompt for Agent Configuration Agent
 AGENT_CONFIGURATION_AGENT_PROMPT = """
 Given these identified agent roles: '{agent_roles}', write SOPs/System Prompts for each agent type. Ensure that each SOP/Prompt is tailored to the specific functionalities of the agent, considering the operational context and objectives of the swarm team.
 Output Format: A single Python file of the whole agent team with capitalized constant names for each SOP/Prompt, an equal sign between each agent name and their SOP/Prompt, and triple quotes surrounding the Prompt/SOP content. Follow best-practice prompting standards.
-"""
+"""  # noqa: W291, W293
 
 # Prompt for Swarm Assembly Agent
 SWARM_ASSEMBLY_AGENT_PROMPT = """
@@ -73,13 +73,13 @@ role_identification_output = role_identification_agent.run(user_idea)
 agent_configuration_output = agent_configuration_agent.run(role_identification_output)
 swarm_assembly_output = swarm_assembly_agent.run(agent_configuration_output)
 testing_optimization_output = testing_optimization_agent.run(swarm_assembly_output)
-"""
+"""  # noqa: W291, W293
 
 
 # Prompt for Testing and Optimization Agent
 TESTING_OPTIMIZATION_AGENT_PROMPT = """
 Review this Python script for swarm demonstration: '{swarm_script}'. Create a testing and optimization plan that includes methods for validating each agent's functionality and the overall performance of the swarm. Suggest improvements for efficiency and effectiveness.
 Output Format: A structured plan in a textual format, outlining testing methodologies, key performance metrics, and optimization strategies.
-"""
+"""  # noqa: W291, W293
 
 # This file can be imported in the main script to access the prompts.
