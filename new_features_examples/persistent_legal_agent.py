@@ -14,7 +14,7 @@ Your role is to help draft preliminary versions of common VC legal documents whi
 5. Maintain consistency across related documents
 6. Output <DONE> only when document is complete and verified
 
-Remember: All output should be marked as 'DRAFT' and require professional legal review."""
+Remember: All output should be marked as 'DRAFT' and require professional legal review."""  # noqa: W291, W293
 
 
 def create_vc_legal_agent():
@@ -67,7 +67,7 @@ def generate_legal_document(agent, document_type, parameters):
 
     Returns:
         str: The generated document content
-    """
+    """  # noqa: W291, W293
     prompt = f"""
     Generate a {document_type} with the following parameters:
     {parameters}
@@ -80,7 +80,7 @@ def generate_legal_document(agent, document_type, parameters):
     5. Output <DONE> when complete
     
     Include [REQUIRES LEGAL REVIEW] tags for sections needing attorney attention.
-    """
+    """  # noqa: W291, W293
 
     return agent.run(prompt)
 
