@@ -1,3 +1,4 @@
+# noqa: W605
 import argparse
 import os
 import time
@@ -14,14 +15,14 @@ console = Console()
 
 
 ASCII_ART = """
-  _________                                     
+
  /   _____/_  _  _______ _______  _____   ______
  \_____  \\ \/ \/ /\__  \\_  __ \/     \ /  ___/
- /        \\     /  / __ \|  | \/  Y Y  \\___ \ 
+ /        \\     /  / __ \|  | \/  Y Y  \\___ \
 /_______  / \/\_/  (____  /__|  |__|_|  /____  >
-        \/              \/            \/     \/ 
+        \/              \/            \/     \/
 
-"""
+"""  # noqa: W605
 
 
 # Function to display the ASCII art in red
