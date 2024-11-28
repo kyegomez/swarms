@@ -98,7 +98,7 @@ def run_agents_concurrently(
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Process agents in batches
         for i in range(0, len(agents), batch_size):
-            batch = agents[i : i + batch_size]
+            batch = agents[i : i + batch_size]  # noqa: E203
             batch_results = loop.run_until_complete(
                 run_agents_concurrently_async(batch, task, executor)
             )
@@ -127,7 +127,7 @@ def run_agents_concurrently_multiprocess(
 
     # Process agents in batches to avoid overwhelming system resources
     for i in range(0, len(agents), batch_size):
-        batch = agents[i : i + batch_size]
+        batch = agents[i : i + batch_size]  # noqa: E203
         batch_results = loop.run_until_complete(
             run_agents_concurrently_async(batch, task)
         )
@@ -188,7 +188,7 @@ def run_agents_with_different_tasks(
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(0, len(agent_task_pairs), batch_size):
-            batch = agent_task_pairs[i : i + batch_size]
+            batch = agent_task_pairs[i : i + batch_size]  # noqa: E203
             batch_results = loop.run_until_complete(
                 asyncio.gather(
                     *(
@@ -261,7 +261,7 @@ def run_agents_with_timeout(
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(0, len(agents), batch_size):
-            batch = agents[i : i + batch_size]
+            batch = agents[i : i + batch_size]  # noqa: E203
             batch_results = loop.run_until_complete(
                 asyncio.gather(
                     *(
@@ -369,8 +369,8 @@ def _run_agents_with_tasks_concurrently(
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for i in range(0, len(agents), batch_size):
-            batch_agents = agents[i : i + batch_size]
-            batch_tasks = tasks[i : i + batch_size]
+            batch_agents = agents[i : i + batch_size]  # noqa: E203
+            batch_tasks = tasks[i : i + batch_size]  # noqa: E203
             batch_results = loop.run_until_complete(
                 asyncio.gather(
                     *(
@@ -414,7 +414,7 @@ def run_agents_with_tasks_concurrently(
         List[Any]: A list of outputs from each agent execution.
     """
     # Make the first agent not use the ifrs
-    
+
     if no_clusterops:
         return _run_agents_with_tasks_concurrently(
             agents, tasks, batch_size, max_workers
