@@ -54,5 +54,5 @@ def react_prompt(task: str = None):
         Guidance:
         Remember, your goal is to provide a transparent and logical process that leads from observation to effective action. Your responses should demonstrate clear thinking, an understanding of the problem, and a rational approach to solving it. The use of tokens helps to structure your response and clarify the different stages of your reasoning and action.
 
-    """
+    """   # noqa: W291, W293
     return PROMPT
