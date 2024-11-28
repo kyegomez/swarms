@@ -48,7 +48,7 @@ class NumberStoppingCriteria(StoppingCriteria):
         scores: torch.FloatTensor,
     ) -> bool:
         decoded = self.tokenizer.decode(
-            input_ids[0][self.prompt_length :],
+            input_ids[0][self.prompt_length :],   # noqa: E203
             skip_special_tokens=True,
         )  # noqa: E203
 
