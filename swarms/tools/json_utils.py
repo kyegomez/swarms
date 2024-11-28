@@ -32,7 +32,7 @@ def extract_json_from_str(response: str):
     """
     json_start = response.index("{")
     json_end = response.rfind("}")
-    return json.loads(response[json_start : json_end + 1])
+    return json.loads(response[json_start : json_end + 1])  # noqa: E203
 
 
 def str_to_json(response: str, indent: int = 3):
