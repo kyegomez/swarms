@@ -12,7 +12,7 @@ def auto_update():
     try:
         # Check if auto-update is disabled
         auto_update_enabled = os.getenv(
-            "SWARMS_AUTOUPDATE_ON", "true"
+            "SWARMS_AUTOUPDATE_ON", "false"
         ).lower()
         if auto_update_enabled == "false":
             logger.info(

@@ -36,7 +36,7 @@ def scrape_tool_func_docs(fn: Callable) -> str:
             f" {inspect.getdoc(fn)}\nParameters:\n{parameters_str}"
         )
     except Exception as error:
-        error_msg = (
+        (
             formatter.print_panel(
                 f"Error scraping tool function docs {error} try"
                 " optimizing your inputs with different"

@@ -1,5 +1,6 @@
+import os
 from typing import List, Dict, Any, Optional, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from datetime import datetime
 import inspect
@@ -7,7 +8,6 @@ import typing
 from typing import Union
 from swarms import Agent
 from swarm_models import OpenAIChat
-from dotenv import load_dotenv
 
 
 @dataclass
@@ -17,17 +17,6 @@ class ToolDefinition:
     parameters: Dict[str, Any]
     required_params: List[str]
     callable: Optional[Callable] = None
-
-
-@dataclass
-class ExecutionStep:
-    step_id: str
-    tool_name: str
-    parameters: Dict[str, Any]
-    purpose: str
-    depends_on: List[str]
-    completed: bool = False
-    result: Optional[Any] = None
 
 
 def extract_type_hints(func: Callable) -> Dict[str, Any]:
@@ -86,267 +75,343 @@ def extract_tool_info(func: Callable) -> ToolDefinition:
     )
 
 
-class ToolUsingAgent:
+@dataclass
+class FunctionSpec:
+    """Specification for a callable tool function."""
+
+    name: str
+    description: str
+    parameters: Dict[
+        str, dict
+    ]  # Contains type and description for each parameter
+    return_type: str
+    return_description: str
+
+
+@dataclass
+class ExecutionStep:
+    """Represents a single step in the execution plan."""
+
+    step_id: int
+    function_name: str
+    parameters: Dict[str, Any]
+    expected_output: str
+    completed: bool = False
+    result: Any = None
+
+
+@dataclass
+class ExecutionContext:
+    """Maintains state during execution."""
+
+    task: str
+    steps: List[ExecutionStep] = field(default_factory=list)
+    results: Dict[int, Any] = field(default_factory=dict)
+    current_step: int = 0
+    history: List[Dict[str, Any]] = field(default_factory=list)
+
+
+class ToolAgent:
     def __init__(
         self,
-        tools: List[Callable],
+        functions: List[Callable],
         openai_api_key: str,
         model_name: str = "gpt-4",
         temperature: float = 0.1,
-        max_loops: int = 10,
     ):
-        # Convert callable tools to ToolDefinitions
-        self.available_tools = {
-            tool.__name__: extract_tool_info(tool) for tool in tools
-        }
+        self.functions = {func.__name__: func for func in functions}
+        self.function_specs = self._analyze_functions(functions)
 
-        self.execution_plan: List[ExecutionStep] = []
-        self.current_step_index = 0
-        self.max_loops = max_loops
-
-        # Initialize the OpenAI model
         self.model = OpenAIChat(
             openai_api_key=openai_api_key,
             model_name=model_name,
             temperature=temperature,
         )
 
-        # Create system prompt with tool descriptions
         self.system_prompt = self._create_system_prompt()
-
         self.agent = Agent(
-            agent_name="Tool-Using-Agent",
+            agent_name="Tool-Agent",
             system_prompt=self.system_prompt,
             llm=self.model,
             max_loops=1,
-            autosave=True,
             verbose=True,
-            saved_state_path="tool_agent_state.json",
-            context_length=200000,
         )
 
+    def _analyze_functions(
+        self, functions: List[Callable]
+    ) -> Dict[str, FunctionSpec]:
+        """Analyze functions to create detailed specifications."""
+        specs = {}
+        for func in functions:
+            hints = get_type_hints(func)
+            sig = inspect.signature(func)
+            doc = inspect.getdoc(func) or ""
+
+            # Parse docstring for parameter descriptions
+            param_descriptions = {}
+            current_param = None
+            for line in doc.split("\n"):
+                if ":param" in line:
+                    param_name = (
+                        line.split(":param")[1].split(":")[0].strip()
+                    )
+                    desc = line.split(":", 2)[-1].strip()
+                    param_descriptions[param_name] = desc
+                elif ":return:" in line:
+                    return_desc = line.split(":return:")[1].strip()
+
+            # Build parameter specifications
+            parameters = {}
+            for name, param in sig.parameters.items():
+                param_type = hints.get(name, Any)
+                parameters[name] = {
+                    "type": str(param_type),
+                    "type_class": param_type,
+                    "description": param_descriptions.get(name, ""),
+                    "required": param.default == param.empty,
+                }
+
+            specs[func.__name__] = FunctionSpec(
+                name=func.__name__,
+                description=doc.split("\n")[0],
+                parameters=parameters,
+                return_type=str(hints.get("return", Any)),
+                return_description=(
+                    return_desc if "return_desc" in locals() else ""
+                ),
+            )
+
+        return specs
+
     def _create_system_prompt(self) -> str:
-        """Create system prompt with available tools information."""
-        tools_description = []
-        for tool_name, tool in self.available_tools.items():
-            tools_description.append(
+        """Create system prompt with detailed function specifications."""
+        functions_desc = []
+        for spec in self.function_specs.values():
+            params_desc = []
+            for name, details in spec.parameters.items():
+                params_desc.append(
+                    f"    - {name}: {details['type']} - {details['description']}"
+                )
+
+            functions_desc.append(
                 f"""
-                Tool: {tool_name}
-                Description: {tool.description}
-                Parameters: {json.dumps(tool.parameters, indent=2)}
-                Required Parameters: {tool.required_params}
-                """
+Function: {spec.name}
+Description: {spec.description}
+Parameters:
+{chr(10).join(params_desc)}
+Returns: {spec.return_type} - {spec.return_description}
+            """
             )
 
-        output = f"""You are an autonomous agent capable of executing complex tasks using available tools.
+        return f"""You are an AI agent that creates and executes plans using available functions.
 
-        Available Tools:
-        {chr(10).join(tools_description)}
+Available Functions:
+{chr(10).join(functions_desc)}
 
-        Follow these protocols:
-        1. Create a detailed plan using available tools
-        2. Execute each step in order
-        3. Handle errors appropriately
-        4. Maintain execution state
-        5. Return results in structured format
+You must respond in two formats depending on the phase:
 
-        You must ALWAYS respond in the following JSON format:
-        {{
-            "plan": {{
-                "description": "Brief description of the overall plan",
-                "steps": [
-                    {{
-                        "step_number": 1,
-                        "tool_name": "name_of_tool",
-                        "description": "What this step accomplishes",
-                        "parameters": {{
-                            "param1": "value1",
-                            "param2": "value2"
-                        }},
-                        "expected_output": "Description of expected output"
-                    }}
-                ]
-            }},
-            "reasoning": "Explanation of why this plan was chosen"
-        }}
+1. Planning Phase:
+{{
+    "phase": "planning",
+    "plan": {{
+        "description": "Overall plan description",
+        "steps": [
+            {{
+                "step_id": 1,
+                "function": "function_name",
+                "parameters": {{
+                    "param1": "value1",
+                    "param2": "value2"
+                }},
+                "purpose": "Why this step is needed"
+            }}
+        ]
+    }}
+}}
 
-        Before executing any tool:
-        1. Validate all required parameters are present
-        2. Verify parameter types match specifications
-        3. Check parameter values are within valid ranges/formats
-        4. Ensure logical dependencies between steps are met
+2. Execution Phase:
+{{
+    "phase": "execution",
+    "analysis": "Analysis of current result",
+    "next_action": {{
+        "type": "continue|request_input|complete",
+        "reason": "Why this action was chosen",
+        "needed_input": {{}} # If requesting input
+    }}
+}}
 
-        If any validation fails:
-        1. Return error in JSON format with specific details
-        2. Suggest corrections if possible
-        3. Do not proceed with execution
+Always:
+- Use exact function names
+- Ensure parameter types match specifications
+- Provide clear reasoning for each decision
+"""
 
-        After each step execution:
-        1. Verify output matches expected format
-        2. Log results and any warnings/errors
-        3. Update execution state
-        4. Determine if plan adjustment needed
-
-        Error Handling:
-        1. Catch and classify all errors
-        2. Provide detailed error messages
-        3. Suggest recovery steps
-        4. Maintain system stability
-
-        The final output must be valid JSON that can be parsed. Always check your response can be parsed as JSON before returning.
-        """
-        return output
-
-    def execute_tool(
-        self, tool_name: str, parameters: Dict[str, Any]
+    def _execute_function(
+        self, spec: FunctionSpec, parameters: Dict[str, Any]
     ) -> Any:
-        """Execute a tool with given parameters."""
-        tool = self.available_tools[tool_name]
-        if not tool.callable:
-            raise ValueError(
-                f"Tool {tool_name} has no associated callable"
-            )
-
-        # Convert parameters to appropriate types
+        """Execute a function with type checking."""
         converted_params = {}
-        for param_name, param_value in parameters.items():
-            param_info = tool.parameters[param_name]
-            param_type = eval(
-                param_info["type"]
-            )  # Note: Be careful with eval
-            converted_params[param_name] = param_type(param_value)
+        for name, value in parameters.items():
+            param_spec = spec.parameters[name]
+            try:
+                # Convert value to required type
+                param_type = param_spec["type_class"]
+                if param_type in (int, float, str, bool):
+                    converted_params[name] = param_type(value)
+                else:
+                    converted_params[name] = value
+            except (ValueError, TypeError) as e:
+                raise ValueError(
+                    f"Parameter '{name}' conversion failed: {str(e)}"
+                )
 
-        return tool.callable(**converted_params)
+        return self.functions[spec.name](**converted_params)
 
     def run(self, task: str) -> Dict[str, Any]:
-        """Execute the complete task with proper logging and error handling."""
+        """Execute task with planning and step-by-step execution."""
+        context = ExecutionContext(task=task)
         execution_log = {
             "task": task,
             "start_time": datetime.utcnow().isoformat(),
             "steps": [],
-            "final_result": None
+            "final_result": None,
         }
-        
+
         try:
-            # Create and execute plan
-            plan_response = self.agent.run(f"Create a plan for: {task}")
-            plan_data = json.loads(plan_response)
-            
-            # Extract steps from the correct path in JSON
-            steps = plan_data["plan"]["steps"]  # Changed from plan_data["steps"]
-            
-            for step in steps:
-                try:
-                    # Check if parameters need default values
-                    for param_name, param_value in step["parameters"].items():
-                        if isinstance(param_value, str) and not param_value.replace(".", "").isdigit():
-                            # If parameter is a description rather than a value, set default
-                            if "income" in param_name.lower():
-                                step["parameters"][param_name] = 75000.0
-                            elif "year" in param_name.lower():
-                                step["parameters"][param_name] = 2024
-                            elif "investment" in param_name.lower():
-                                step["parameters"][param_name] = 1000.0
-                    
-                    # Execute the tool
-                    result = self.execute_tool(
-                        step["tool_name"],
-                        step["parameters"]
+            # Planning phase
+            plan_prompt = f"Create a plan to: {task}"
+            plan_response = self.agent.run(plan_prompt)
+            plan_data = json.loads(
+                plan_response.replace("System:", "").strip()
+            )
+
+            # Convert plan to execution steps
+            for step in plan_data["plan"]["steps"]:
+                context.steps.append(
+                    ExecutionStep(
+                        step_id=step["step_id"],
+                        function_name=step["function"],
+                        parameters=step["parameters"],
+                        expected_output=step["purpose"],
                     )
+                )
+
+            # Execution phase
+            while context.current_step < len(context.steps):
+                step = context.steps[context.current_step]
+                print(
+                    f"\nExecuting step {step.step_id}: {step.function_name}"
+                )
+
+                try:
+                    # Execute function
+                    spec = self.function_specs[step.function_name]
+                    result = self._execute_function(
+                        spec, step.parameters
+                    )
+                    context.results[step.step_id] = result
+                    step.completed = True
+                    step.result = result
+
+                    # Get agent's analysis
+                    analysis_prompt = f"""
+                    Step {step.step_id} completed:
+                    Function: {step.function_name}
+                    Result: {json.dumps(result)}
+                    Remaining steps: {len(context.steps) - context.current_step - 1}
                     
-                    execution_log["steps"].append({
-                        "step_number": step["step_number"],
-                        "tool": step["tool_name"],
-                        "parameters": step["parameters"],
-                        "success": True,
-                        "result": result,
-                        "description": step["description"]
-                    })
-                    
+                    Analyze the result and decide next action.
+                    """
+
+                    analysis_response = self.agent.run(
+                        analysis_prompt
+                    )
+                    analysis_data = json.loads(
+                        analysis_response.replace(
+                            "System:", ""
+                        ).strip()
+                    )
+
+                    execution_log["steps"].append(
+                        {
+                            "step_id": step.step_id,
+                            "function": step.function_name,
+                            "parameters": step.parameters,
+                            "result": result,
+                            "analysis": analysis_data,
+                        }
+                    )
+
+                    if (
+                        analysis_data["next_action"]["type"]
+                        == "complete"
+                    ):
+                        if (
+                            context.current_step
+                            < len(context.steps) - 1
+                        ):
+                            continue
+                        break
+
+                    context.current_step += 1
+
                 except Exception as e:
-                    execution_log["steps"].append({
-                        "step_number": step["step_number"],
-                        "tool": step["tool_name"],
-                        "parameters": step["parameters"],
-                        "success": False,
-                        "error": str(e),
-                        "description": step["description"]
-                    })
-                    print(f"Error executing step {step['step_number']}: {str(e)}")
-                    # Continue with next step instead of raising
-                    continue
+                    print(f"Error in step {step.step_id}: {str(e)}")
+                    execution_log["steps"].append(
+                        {
+                            "step_id": step.step_id,
+                            "function": step.function_name,
+                            "parameters": step.parameters,
+                            "error": str(e),
+                        }
+                    )
+                    raise
+
+            # Final analysis
+            final_prompt = f"""
+            Task completed. Results:
+            {json.dumps(context.results, indent=2)}
             
-            # Only mark as success if at least some steps succeeded
-            successful_steps = [s for s in execution_log["steps"] if s["success"]]
-            if successful_steps:
-                execution_log["final_result"] = {
-                    "success": True,
-                    "results": successful_steps,
-                    "reasoning": plan_data.get("reasoning", "No reasoning provided")
-                }
-            else:
-                execution_log["final_result"] = {
-                    "success": False,
-                    "error": "No steps completed successfully",
-                    "plan": plan_data
-                }
-                
+            Provide final analysis and recommendations.
+            """
+
+            final_analysis = self.agent.run(final_prompt)
+            execution_log["final_result"] = {
+                "success": True,
+                "results": context.results,
+                "analysis": json.loads(
+                    final_analysis.replace("System:", "").strip()
+                ),
+            }
+
         except Exception as e:
             execution_log["final_result"] = {
                 "success": False,
                 "error": str(e),
-                "plan": plan_data if 'plan_data' in locals() else None
             }
-        
+
         execution_log["end_time"] = datetime.utcnow().isoformat()
         return execution_log
 
 
-# Example usage
-if __name__ == "__main__":
-    load_dotenv()
+def calculate_investment_return(
+    principal: float, rate: float, years: int
+) -> float:
+    """Calculate investment return with compound interest.
 
-    # Example tool functions
-    def research_ira_requirements() -> Dict[str, Any]:
-        """Research and return ROTH IRA eligibility requirements."""
-        return {
-            "age_requirement": "Must have earned income",
-            "income_limits": {"single": 144000, "married": 214000},
-        }
+    :param principal: Initial investment amount in dollars
+    :param rate: Annual interest rate as decimal (e.g., 0.07 for 7%)
+    :param years: Number of years to invest
+    :return: Final investment value
+    """
+    return principal * (1 + rate) ** years
 
-    def calculate_contribution_limit(
-        income: float, tax_year: int
-    ) -> Dict[str, float]:
-        """Calculate maximum ROTH IRA contribution based on income and tax year."""
-        base_limit = 6000 if tax_year <= 2022 else 6500
-        if income > 144000:
-            return {"limit": 0}
-        return {"limit": base_limit}
 
-    def find_brokers(min_investment: float) -> List[Dict[str, Any]]:
-        """Find suitable brokers for ROTH IRA based on minimum investment."""
-        return [
-            {"name": "Broker A", "min_investment": min_investment},
-            {
-                "name": "Broker B",
-                "min_investment": min_investment * 1.5,
-            },
-        ]
+agent = ToolAgent(
+    functions=[calculate_investment_return],
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+)
 
-    # Initialize agent with tools
-    agent = ToolUsingAgent(
-        tools=[
-            research_ira_requirements,
-            calculate_contribution_limit,
-            find_brokers,
-        ],
-        openai_api_key="",
-    )
-
-    # Run a task
-    result = agent.run(
-        "How can I establish a ROTH IRA to buy stocks and get a tax break? "
-        "What are the criteria?"
-    )
-
-    print(json.dumps(result, indent=2))
+result = agent.run(
+    "Calculate returns for $10000 invested at 7% for 10 years"
+)

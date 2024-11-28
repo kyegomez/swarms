@@ -5,8 +5,8 @@ from loguru import logger
 
 load_dotenv()
 
-# More reliable string comparison
-if os.getenv("SWARMS_VERBOSE_GLOBAL", "True").lower() == "false":
+# Disable logging by default
+if os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower() == "false":
     logger.disable("")
 
 # Import telemetry functions with error handling
