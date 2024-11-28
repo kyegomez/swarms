@@ -41,7 +41,7 @@ tool_usage_browser = """
 }
 ```
 
-"""
+"""  # noqa: W291, W293
 
 tool_usage_terminal = """
 
@@ -56,7 +56,7 @@ tool_usage_terminal = """
 }
 ```
 
-"""
+"""  # noqa: W291, W293
 
 
 browser_and_terminal_tool = """
@@ -78,7 +78,7 @@ browser_and_terminal_tool = """
 }
 ```
 
-"""
+"""  # noqa: W291, W293
 
 
 browser_and_terminal_tool_two = """
@@ -109,7 +109,7 @@ browser_and_terminal_tool_two = """
 
 ```
 
-"""
+"""  # noqa: W291, W293
 
 
 # Function to parse tools and get their documentation
@@ -206,6 +206,6 @@ def tool_usage_worker_prompt(
     
     {tool_docs}
     
-    """
+    """  # noqa: W291, W293
 
     return prompt
