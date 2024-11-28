@@ -10,7 +10,7 @@ def markdown_content_with_code():
     
     Some intro text here.
 Some additional text.
-"""
+"""  # noqa: W291, W293
 
 
 @pytest.fixture
