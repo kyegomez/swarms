@@ -4,7 +4,7 @@ Todo
 - You send structured data to the swarm through the users form they make
 - then connect rag for every agent using llama index to remember all the students data
 - structured outputs
-"""
+"""  # noqa: W291, W293
 
 import os
 from dotenv import load_dotenv
@@ -50,7 +50,7 @@ You are a college selection final decision maker. Your role is to:
     Focus on creating actionable, well-reasoned final recommendations that 
     balance all relevant factors and stakeholder input.
     
-"""
+"""  # noqa: W291, W293
 
 function_caller = OpenAIFunctionCaller(
     system_prompt=FINAL_AGENT_PROMPT,
@@ -71,7 +71,7 @@ profile_analyzer_agent = Agent(
     6. Create a comprehensive student profile summary
     
     Always consider both quantitative metrics (GPA, test scores) and qualitative aspects 
-    (personal growth, challenges overcome, unique perspectives).""",
+    (personal growth, challenges overcome, unique perspectives).""",  # noqa: W291, W293
     llm=model,
     max_loops=1,
     verbose=True,
@@ -94,7 +94,7 @@ college_research_agent = Agent(
     6. Track historical admission data and acceptance rates
     
     Focus on providing accurate, comprehensive information about each institution
-    while considering both academic and cultural fit factors.""",
+    while considering both academic and cultural fit factors.""",  # noqa: W291, W293
     llm=model,
     max_loops=1,
     verbose=True,
@@ -117,7 +117,7 @@ college_match_agent = Agent(
     6. Explain the reasoning behind each match
     
     Always provide a balanced list with realistic expectations while 
-    considering both student preferences and admission probability.""",
+    considering both student preferences and admission probability.""",  # noqa: W291, W293
     llm=model,
     max_loops=1,
     verbose=True,
@@ -140,7 +140,7 @@ debate_moderator_agent = Agent(
     6. Document key points of agreement and disagreement
     
     Maintain objectivity while ensuring all important factors are thoroughly discussed
-    and evaluated.""",
+    and evaluated.""",  # noqa: W291, W293
     llm=model,
     max_loops=1,
     verbose=True,
@@ -163,7 +163,7 @@ critique_agent = Agent(
     6. Suggest alternative options when appropriate
     
     Focus on constructive criticism that helps improve the final college list
-    while maintaining realistic expectations.""",
+    while maintaining realistic expectations.""",  # noqa: W291, W293
     llm=model,
     max_loops=1,
     verbose=True,
@@ -188,7 +188,7 @@ final_decision_agent = Agent(
     
     Focus on creating actionable, well-reasoned final recommendations that 
     balance all relevant factors and stakeholder input.
-    """,
+    """,  # noqa: W291, W293
     llm=model,
     max_loops=1,
     verbose=True,
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     - Extracurriculars: Robotics Club President, Math Team
     - Budget: Need financial aid
     - Preferred Environment: Medium-sized urban campus
-    """
+    """  # noqa: W291, W293
 
     # Run the comprehensive college selection analysis
     result = college_selection_workflow.run(
