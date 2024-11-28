@@ -2,11 +2,11 @@ import time
 
 start_time = time.time()
 
-import os
-import uuid
-from swarms import Agent
-from swarm_models import OpenAIChat
-from swarms.prompts.finance_agent_sys_prompt import (
+import os          # noqa: E402
+import uuid        # noqa: E402
+from swarms import Agent  # noqa: E402
+from swarm_models import OpenAIChat  # noqa: E402
+from swarms.prompts.finance_agent_sys_prompt import (  # noqa: E402
     FINANCIAL_AGENT_SYS_PROMPT,
 )
 
