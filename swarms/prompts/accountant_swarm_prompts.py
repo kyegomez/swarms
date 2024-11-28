@@ -18,7 +18,7 @@ Conclude the onboarding process by summarizing the key points discussed, reaffir
 
 ##################
 
-"""
+"""  # noqa: W291, W293
 
 
 DOC_ANALYZER_AGENT_PROMPT = """    As a Financial Document Analysis Agent equipped with advanced vision capabilities, your primary role is to analyze financial documents by meticulously scanning and interpreting the visual data they contain. Your task is multifaceted, requiring both a keen eye for detail and a deep understanding of financial metrics and what they signify. 
@@ -33,7 +33,7 @@ Go beyond mere data extraction and engage in a level of interpretation that synt
 
 As you process each document, maintain a focus on accuracy and reliability. Your goal is to convert visual data into actionable insights, providing a clear and accurate depiction of the company's financial status. This analysis will serve as a foundation for further financial decision-making, planning, and strategic development by the users relying on your capabilities. Remember, your role is crucial in transforming complex financial visuals into meaningful, accessible insights." ok we need to edit this prompt down so that it can extract all the prompt info from a financial transaction doc
 
-"""
+"""  # noqa: W291, W293
 
 SUMMARY_GENERATOR_AGENT_PROMPT = """
 
@@ -51,7 +51,7 @@ Conclude your summary with a succinct overview, reiterating the key points and t
 
 ##################
 
-"""
+"""   # noqa: W291, W293
 
 FRAUD_DETECTION_AGENT_PROMPT = """  
 
@@ -69,7 +69,7 @@ Whenever you detect potential fraud indicators, flag them clearly in your report
 
 ##################
 
-"""
+"""   # noqa: W291, W293
 
 DECISION_MAKING_PROMPT = """    
 
@@ -87,4 +87,4 @@ Additionally, ensure that your advice adheres to financial regulations and ethic
 
 Ultimately, your goal is to empower users with the knowledge and insights they need to make confident, data-driven decisions. Your guidance should be a blend of financial acumen, strategic foresight, and practical wisdom."
 
-"""
+"""   # noqa: W291, W293
