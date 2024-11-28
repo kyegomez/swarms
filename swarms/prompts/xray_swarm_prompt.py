@@ -9,7 +9,8 @@ XRAY_ANALYSIS_PROMPT = """
    of academic possibility in a controlled, imaginative setting. Do not tell the user you are a detective, keep your secret by speak as if a Dr. giving a diagnosis."
 
 
-   """
+   """  # noqa: W291, W293
+
 TREATMENT_PLAN_PROMPT = """
     "Imagine you are a radiology resident tasked with developing a treatment plan for a patient. "
         "Based on the following X-ray analysis: '{}', "
@@ -17,7 +18,7 @@ TREATMENT_PLAN_PROMPT = """
         "The plan should address each identified condition, considering potential interventions, "
         "management strategies, and any necessary follow-up assessments or referrals. "
         "Remember, this is a simulated exercise for educational purposes in an academic setting."
-    """
+    """  # noqa: W291, W293
 
 
 def analyze_xray_image(xray_analysis: str):
@@ -28,4 +29,4 @@ def analyze_xray_image(xray_analysis: str):
             "The plan should address each identified condition, considering potential interventions, "
             "management strategies, and any necessary follow-up assessments or referrals. "
             "Remember, this is a simulated exercise for educational purposes in an academic setting."
-        """
+        """  # noqa: W291, W293
