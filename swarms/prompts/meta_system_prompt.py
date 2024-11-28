@@ -49,4 +49,4 @@ meta_system_prompt_generator = """
 
 Now remember to only return the prompt for the agent you're instructing. Nothing else
 
-"""
+"""  # noqa: W291, W293
