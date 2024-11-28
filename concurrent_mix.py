@@ -26,7 +26,7 @@ delaware_ccorp_agent = Agent(
     insurance. Provide guidance on how to navigate the complexities of Delaware's 
     corporate law and ensure that all hiring practices are in compliance with 
     state and federal regulations.
-    """,
+    """,  # noqa: W291, W293
     llm=model,
     max_loops=1,
     autosave=False,
@@ -53,7 +53,7 @@ indian_foreign_agent = Agent(
     practices are in compliance with state and federal regulations. Consider the 
     implications of hiring foreign nationals and the requirements for obtaining 
     necessary visas and work permits.
-    """,
+    """,  # noqa: W291, W293
     llm=model,
     max_loops=1,
     autosave=False,
@@ -75,7 +75,7 @@ tasks = [
     programming languages, and data structures. Outline the key responsibilities, 
     including designing and developing AI agents, integrating with existing systems, 
     and ensuring scalability and performance.
-    """,
+    """,  # noqa: W291, W293
     """
     Generate a detailed job description for a Prompt Engineer, including 
     required skills and responsibilities. Ensure the description covers the 
@@ -83,7 +83,7 @@ tasks = [
     machine learning, and software development. Outline the key responsibilities, 
     including designing and optimizing prompts for AI systems, ensuring prompt 
     quality and consistency, and collaborating with cross-functional teams.
-    """,
+    """,  # noqa: W291, W293
 ]
 
 # Run agents with tasks concurrently
