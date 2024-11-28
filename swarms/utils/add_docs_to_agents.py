@@ -119,7 +119,7 @@ def handle_input_docs(
         for agent in agents.values():
             try:
                 for i in range(0, len(combined_data), chunk_size):
-                    chunk = combined_data[i : i + chunk_size]
+                    chunk = combined_data[i : i + chunk_size]  # noqa: E203
                     if i == 0:
                         agent.system_prompt += (
                             "\nDocuments:\n" + chunk
