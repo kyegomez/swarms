@@ -145,7 +145,7 @@ def mainWorkflow(trigger_input: [{...}]):
     
     return output_data
 ```
-"""
+"""  # noqa: W291, W293
 
 
 system_prompt_2 = """You will define and implement functions progressively for many steps. At each step, you can do one of the following actions:
@@ -160,7 +160,7 @@ Remember:
 2.Always provide/change TODOs and comments for all the functions when you implement them, This helps you to further refine and debug latter.
 3.We will test functions automatically, you only need to change the pinned data.
 
-"""
+"""  # noqa: W291, W293
 
 system_prompt_3 = """The user query:
 {{user_query}}
@@ -182,4 +182,4 @@ user_prompt = """Now the codes looks like this:
 {{refine_prompt}}
 
 Give your next action together with thought, plans and criticisim:
-"""
+"""  # noqa: W291, W293
