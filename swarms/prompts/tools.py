@@ -5,7 +5,7 @@ Now, when you 99% sure you have completed the task, you may follow the instructi
 
 When you have finished the task from the Human, output a special token: <DONE>
 This will enable you to leave the autonomous loop.
-"""
+"""  # noqa: W291, W293
 
 
 # Make it able to handle multi input tools
@@ -31,10 +31,10 @@ commands: {
     }
 }
 
-"""
+"""  # noqa: W291, W293
 
 
-########### FEW SHOT EXAMPLES ################
+#----------- FEW SHOT EXAMPLES ---------------#
 SCENARIOS = """
 commands: {
     "tools": {
@@ -56,7 +56,7 @@ commands: {
     }
 }
 
-"""
+"""  # noqa: W291, W293
 
 
 def tool_sop_prompt() -> str:
@@ -123,4 +123,4 @@ def tool_sop_prompt() -> str:
 
     Please proceed with your task accordingly.
 
-    """
+    """  # noqa: W291, W293
