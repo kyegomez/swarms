@@ -569,9 +569,9 @@ class AgentRearrange(BaseSwarm):
         """
         results = []
         for i in range(0, len(tasks), batch_size):
-            batch_tasks = tasks[i : i + batch_size]
+            batch_tasks = tasks[i : i + batch_size]  # noqa: E203
             batch_imgs = (
-                img[i : i + batch_size]
+                img[i : i + batch_size]  # noqa: E203
                 if img
                 else [None] * len(batch_tasks)
             )
@@ -615,9 +615,9 @@ class AgentRearrange(BaseSwarm):
         """
         results = []
         for i in range(0, len(tasks), batch_size):
-            batch_tasks = tasks[i : i + batch_size]
+            batch_tasks = tasks[i : i + batch_size]  # noqa: E203
             batch_imgs = (
-                img[i : i + batch_size]
+                img[i : i + batch_size]  # noqa: E203
                 if img
                 else [None] * len(batch_tasks)
             )
