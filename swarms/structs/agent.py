@@ -1711,7 +1711,7 @@ class Agent:
 
         # Shorten the context window if it exceeds the limit, keeping the last n tokens, need to implement the indexing
         if count > self.context_length:
-            history = history[-self.context_length :]
+            history = history[-self.context_length :]    # noqa: E203
 
         return history
 
