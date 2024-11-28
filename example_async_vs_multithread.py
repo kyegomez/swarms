@@ -1,6 +1,5 @@
 import os
 import asyncio
-import threading
 from swarms import Agent
 from swarm_models import OpenAIChat
 import time
