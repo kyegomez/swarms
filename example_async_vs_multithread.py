@@ -52,6 +52,7 @@ def measure_time_and_memory(func):
         return result
     return wrapper
 
+
 # Function to run the agent asynchronously
 @measure_time_and_memory
 async def run_agent_async():
@@ -61,11 +62,15 @@ async def run_agent_async():
         )
     )
 
+
 # Function to run the agent on another thread
 @measure_time_and_memory
 def run_agent_thread():
     asyncio.run(run_agent_async())
 
+
 # Run the agent asynchronously and on another thread to test the speed
 asyncio.run(run_agent_async())
 run_agent_thread()
+
+
