@@ -50,7 +50,7 @@ class NumberStoppingCriteria(StoppingCriteria):
         decoded = self.tokenizer.decode(
             input_ids[0][self.prompt_length :],
             skip_special_tokens=True,
-        )
+        )  # noqa: E203
 
         if decoded.count(".") > 1:
             return True
