@@ -199,7 +199,7 @@ class MultiProcessWorkflow(BaseWorkflow):
         try:
             results = []
             for i in range(0, len(tasks), batch_size):
-                batch = tasks[i : i + batch_size]
+                batch = tasks[i : i + batch_size]   # noqa: E203
                 with Pool(processes=self.max_workers) as pool:
                     results_list = pool.map(
                         self.execute_task, batch, *args, **kwargs
