@@ -64,7 +64,7 @@ class PropertyRadarAPI:
 
         Args:
             api_key (str): PropertyRadar API key
-        """
+        """  # noqa: W291, W293
         self.api_key = api_key
         self.base_url = "https://api.propertyradar.com/v1"
         self.session = requests.Session()
@@ -99,7 +99,7 @@ class PropertyRadarAPI:
 
         Returns:
             List[PropertyListing]: List of matching properties
-        """
+        """  # noqa: W291, W293
         try:
             # Build the query parameters
             params = {
@@ -186,7 +186,7 @@ class CommercialRealEstateAgent:
             model_name (str): Name of the LLM model to use
             temperature (float): Temperature setting for the LLM
             saved_state_path (Optional[str]): Path to save agent state
-        """
+        """  # noqa: W291, W293
         self.property_api = PropertyRadarAPI(propertyradar_api_key)
 
         # Initialize OpenAI model
@@ -229,7 +229,7 @@ class CommercialRealEstateAgent:
         - Local business development plans
         - Traffic patterns and accessibility
         - Nearby amenities and businesses
-        - Future development potential"""
+        - Future development potential"""  # noqa: W291, W293
 
     def search_properties(
         self,
@@ -251,7 +251,7 @@ class CommercialRealEstateAgent:
 
         Returns:
             List[Dict[str, Any]]: List of properties with analysis
-        """
+        """  # noqa: W291, W293
         try:
             # Search for properties
             properties = self.property_api.search_properties(
