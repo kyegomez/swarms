@@ -52,7 +52,7 @@ A few important notes:
 IMPORTANT: Avoid repeating actions such as doing the same CLICK event twice in a row. 
 
 Objective: {objective}
-"""
+"""  # noqa: W291, W293
 
 USER_QUESTION = (
     "Hello, I can help you with anything. What would you like done?"
@@ -74,7 +74,7 @@ Thing to note: The user can not respond to your summary. You are just sharing th
 The original objective was: {objective}
 
 Now share the results!
-"""
+"""  # noqa: W291, W293
 
 
 def format_summary_prompt(objective):
