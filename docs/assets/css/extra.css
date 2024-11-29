@@ -8,7 +8,7 @@
     display: table;
 }
 
-/* Dark mode */
+/* Dark mode
 [data-md-color-scheme="slate"] {
     --md-default-bg-color: black;
 }
@@ -24,4 +24,4 @@
 
 .md-header.md-header--shadow {
     color: black;
-}
+} */
