@@ -1,18 +1,27 @@
-
-/* Further customization as needed */
-
+/* * Further customization as needed */ */
 
 .md-typeset__table {
-   min-width: 100%;
+    min-width: 100%;
 }
 
 .md-typeset table:not([class]) {
     display: table;
 }
 
-/* 
-:root {
-    --md-primary-fg-color:        #EE0F0F;
-    --md-primary-fg-color--light: #ECB7B7;
-    --md-primary-fg-color--dark:  #90030C;
-  } */
+/* Dark mode */
+[data-md-color-scheme="slate"] {
+    --md-default-bg-color: black;
+}
+
+.header__ellipsis {
+    color: black;
+}
+
+.md-copyright__highlight {
+    color: black;
+}
+
+
+.md-header.md-header--shadow {
+    color: black;
+}

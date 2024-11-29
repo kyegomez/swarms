@@ -1,109 +1,87 @@
-import os
-from typing import List, Any
 from swarms.structs.agent import Agent
-from loguru import logger
-import uuid
-
-WORKSPACE_DIR = os.getenv("WORKSPACE_DIR")
-uuid_for_log = str(uuid.uuid4())
-logger.add(
-    os.path.join(
-        WORKSPACE_DIR,
-        "agents_available",
-        f"agents-available-{uuid_for_log}.log",
-    ),
-    level="INFO",
-    colorize=True,
-    backtrace=True,
-    diagnose=True,
-)
-
-
-def get_agent_name(agent: Any) -> str:
-    """Helper function to safely get agent name
-
-    Args:
-        agent (Any): The agent object to get name from
-
-    Returns:
-        str: The agent's name if found, 'Unknown' otherwise
-    """
-    if isinstance(agent, Agent) and hasattr(agent, "agent_name"):
-        return agent.agent_name
-    return "Unknown"
-
-
-def get_agent_description(agent: Any) -> str:
-    """Helper function to get agent description or system prompt preview
-
-    Args:
-        agent (Any): The agent object
-
-    Returns:
-        str: Description or first 100 chars of system prompt
-    """
-    if not isinstance(agent, Agent):
-        return "N/A"
-
-    if hasattr(agent, "description") and agent.description:
-        return agent.description
-
-    if hasattr(agent, "system_prompt") and agent.system_prompt:
-        return f"{agent.system_prompt[:150]}..."
-
-    return "N/A"
+from typing import List
 
 
 def showcase_available_agents(
+    agents: List[Agent],
     name: str = None,
     description: str = None,
-    agents: List[Agent] = [],
-    update_agents_on: bool = False,
+    format: str = "XML",
 ) -> str:
     """
-    Generate a formatted string showcasing all available agents and their descriptions.
+    Format the available agents in either XML or Table format.
 
     Args:
-        agents (List[Agent]): List of Agent objects to showcase.
-        update_agents_on (bool, optional): If True, updates each agent's system prompt with
-            the showcase information. Defaults to False.
+        agents (List[Agent]): A list of agents to represent
+        name (str, optional): Name of the swarm
+        description (str, optional): Description of the swarm
+        format (str, optional): Output format ("XML" or "Table"). Defaults to "XML"
 
     Returns:
-        str: Formatted string containing agent information, including names, descriptions
-            and IDs for all available agents.
+        str: Formatted string containing agent information
     """
-    logger.info(f"Showcasing {len(agents)} available agents")
 
-    formatted_agents = []
-    header = f"\n####### Agents available in the swarm: {name} ############\n"
-    header += f"{description}\n"
-    row_format = "{:<5} | {:<20} | {:<50}"
-    header_row = row_format.format("ID", "Agent Name", "Description")
-    separator = "-" * 80
+    def truncate(text: str, max_length: int = 130) -> str:
+        return (
+            f"{text[:max_length]}..."
+            if len(text) > max_length
+            else text
+        )
 
-    formatted_agents.append(header)
-    formatted_agents.append(separator)
-    formatted_agents.append(header_row)
-    formatted_agents.append(separator)
+    output = []
 
+    if format.upper() == "TABLE":
+        output.append("\n| ID | Agent Name | Description |")
+        output.append("|-----|------------|-------------|")
+        for idx, agent in enumerate(agents):
+            if isinstance(agent, Agent):
+                agent_name = getattr(agent, "agent_name", str(agent))
+                description = getattr(
+                    agent,
+                    "description",
+                    getattr(
+                        agent, "system_prompt", "Unknown description"
+                    ),
+                )
+                desc = truncate(description, 50)
+                output.append(
+                    f"| {idx + 1} | {agent_name} | {desc} |"
+                )
+            else:
+                output.append(
+                    f"| {idx + 1} | {agent} | Unknown description |"
+                )
+        return "\n".join(output)
+
+    # Default XML format
+    output.append("<agents>")
+    if name:
+        output.append(f"  <name>{name}</name>")
+    if description:
+        output.append(
+            f"  <description>{truncate(description)}</description>"
+        )
     for idx, agent in enumerate(agents):
-        if not isinstance(agent, Agent):
-            logger.warning(
-                f"Skipping non-Agent object: {type(agent)}"
+        output.append(f"  <agent id='{idx + 1}'>")
+        if isinstance(agent, Agent):
+            agent_name = getattr(agent, "agent_name", str(agent))
+            description = getattr(
+                agent,
+                "description",
+                getattr(
+                    agent, "system_prompt", "Unknown description"
+                ),
             )
-            continue
+            output.append(f"    <name>{agent_name}</name>")
+            output.append(
+                f"    <description>{truncate(description)}</description>"
+            )
+        else:
+            output.append(f"    <name>{agent}</name>")
+            output.append(
+                "    <description>Unknown description</description>"
+            )
+        output.append("  </agent>")
+    output.append("</agents>")
 
-        agent_name = get_agent_name(agent)
-        description = (
-            get_agent_description(agent)[:100] + "..."
-            if len(get_agent_description(agent)) > 100
-            else get_agent_description(agent)
-        )
-
-        formatted_agents.append(
-            row_format.format(idx + 1, agent_name, description)
-        )
-
-    showcase = "\n".join(formatted_agents)
-
-    return showcase
+    return "\n".join(output)

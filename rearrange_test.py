@@ -95,12 +95,14 @@ flow = "BossAgent -> ExpenseAnalyzer -> SummaryGenerator"
 
 # Using AgentRearrange class to manage the swarm
 agent_system = AgentRearrange(
+    name="pe-swarm",
+    description="ss",
     agents=agents,
     flow=flow,
     return_json=False,
     output_type="final",
     max_loops=1,
-    docs=["SECURITY.md"],
+    # docs=["SECURITY.md"],
 )
 
 # Input task for the swarm

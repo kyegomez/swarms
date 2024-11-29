@@ -1,5 +1,5 @@
-import traceback
 import asyncio
+import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -13,10 +13,10 @@ from swarms.structs.agent import Agent
 from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.add_docs_to_agents import handle_input_docs
+from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -121,16 +121,14 @@ class AgentRearrange(BaseSwarm):
         output_type: OutputType = "final",
         docs: List[str] = None,
         doc_folder: str = None,
+        device: str = "cpu",
+        device_id: int = 0,
+        all_cores: bool = False,
+        all_gpus: bool = True,
+        no_use_clusterops: bool = True,
         *args,
         **kwargs,
     ):
-        # reliability_check(
-        #     agents=agents,
-        #     name=name,
-        #     description=description,
-        #     flow=flow,
-        #     max_loops=max_loops,
-        # )
         super(AgentRearrange, self).__init__(
             name=name,
             description=description,
@@ -150,33 +148,11 @@ class AgentRearrange(BaseSwarm):
         self.output_type = output_type
         self.docs = docs
         self.doc_folder = doc_folder
-        self.swarm_history = {
-            agent.agent_name: [] for agent in agents
-        }
-
-        self.id = uuid.uuid4().hex if id is None else id
-
-        # Output schema
-        self.input_config = AgentRearrangeInput(
-            swarm_id=self.id,
-            name=self.name,
-            description=self.description,
-            flow=self.flow,
-            max_loops=self.max_loops,
-            output_type=self.output_type,
-        )
-
-        # Output schema
-        self.output_schema = AgentRearrangeOutput(
-            Input=self.input_config,
-            outputs=[],
-        )
-
-        # Run the reliability checks to validate the swarm
-        # self.handle_input_docs()
-
-        # Show the agents whose in the swarm
-        # self.showcase_agents()
+        self.device = device
+        self.device_id = device_id
+        self.all_cores = all_cores
+        self.all_gpus = all_gpus
+        self.no_use_clusterops = no_use_clusterops
 
     def showcase_agents(self):
         # Get formatted agent info once
@@ -184,12 +160,34 @@ class AgentRearrange(BaseSwarm):
             name=self.name,
             description=self.description,
             agents=self.agents,
+            format="Table",
         )
 
-        # Update all agents in one pass using values()
-        for agent in self.agents.values():
-            if isinstance(agent, Agent):
-                agent.system_prompt += agents_available
+        return agents_available
+
+    def rearrange_prompt_prep(self) -> str:
+        """Prepares a formatted prompt describing the swarm configuration.
+
+        Returns:
+            str: A formatted string containing the swarm's name, description,
+                 flow pattern, and participating agents.
+        """
+        agents_available = self.showcase_agents()
+        prompt = f"""
+        ===== Swarm Configuration =====
+        
+        Name: {self.name}
+        Description: {self.description}
+        
+        ===== Execution Flow =====
+        {self.flow}
+        
+        ===== Participating Agents =====
+        {agents_available}
+        
+        ===========================
+        """
+        return prompt
 
     def set_custom_flow(self, flow: str):
         self.flow = flow
@@ -322,6 +320,7 @@ class AgentRearrange(BaseSwarm):
             current_task = task
             all_responses = []
             response_dict = {}
+            previous_agent = None
 
             logger.info(
                 f"Starting task execution with {len(tasks)} steps"
@@ -346,11 +345,18 @@ class AgentRearrange(BaseSwarm):
                     f"Starting loop {loop_count + 1}/{self.max_loops}"
                 )
 
-                for task in tasks:
+                for task_idx, task in enumerate(tasks):
                     is_last = task == tasks[-1]
                     agent_names = [
                         name.strip() for name in task.split(",")
                     ]
+
+                    # Prepare prompt with previous agent info
+                    prompt_prefix = ""
+                    if previous_agent and task_idx > 0:
+                        prompt_prefix = f"Previous agent {previous_agent} output: {current_task}\n"
+                    elif task_idx == 0:
+                        prompt_prefix = "Initial task: "
 
                     if len(agent_names) > 1:
                         # Parallel processing
@@ -367,12 +373,14 @@ class AgentRearrange(BaseSwarm):
                                 ):
                                     current_task = (
                                         self.custom_human_in_the_loop(
-                                            current_task
+                                            prompt_prefix
+                                            + str(current_task)
                                         )
                                     )
                                 else:
                                     current_task = input(
-                                        "Enter your response:"
+                                        prompt_prefix
+                                        + "Enter your response: "
                                     )
                                 results.append(current_task)
                                 response_dict[agent_name] = (
@@ -380,13 +388,13 @@ class AgentRearrange(BaseSwarm):
                                 )
                             else:
                                 agent = self.agents[agent_name]
-                                current_task = (
-                                    str(current_task)
+                                task_with_context = (
+                                    prompt_prefix + str(current_task)
                                     if current_task
-                                    else ""
+                                    else prompt_prefix
                                 )
                                 result = agent.run(
-                                    task=current_task,
+                                    task=task_with_context,
                                     img=img,
                                     is_last=is_last,
                                     *args,
@@ -404,6 +412,7 @@ class AgentRearrange(BaseSwarm):
 
                         current_task = "; ".join(results)
                         all_responses.extend(results)
+                        previous_agent = ",".join(agent_names)
 
                     else:
                         # Sequential processing
@@ -419,23 +428,25 @@ class AgentRearrange(BaseSwarm):
                             ):
                                 current_task = (
                                     self.custom_human_in_the_loop(
-                                        current_task
+                                        prompt_prefix
+                                        + str(current_task)
                                     )
                                 )
                             else:
                                 current_task = input(
-                                    "Enter the next task: "
+                                    prompt_prefix
+                                    + "Enter the next task: "
                                 )
                             response_dict[agent_name] = current_task
                         else:
                             agent = self.agents[agent_name]
-                            current_task = (
-                                str(current_task)
+                            task_with_context = (
+                                prompt_prefix + str(current_task)
                                 if current_task
-                                else ""
+                                else prompt_prefix
                             )
                             current_task = agent.run(
-                                task=current_task,
+                                task=task_with_context,
                                 img=img,
                                 is_last=is_last,
                                 *args,
@@ -451,6 +462,7 @@ class AgentRearrange(BaseSwarm):
                             )
 
                         all_responses.append(current_task)
+                        previous_agent = agent_name
 
                 loop_count += 1
 
@@ -506,7 +518,11 @@ class AgentRearrange(BaseSwarm):
         Returns:
             The result from executing the task through the cluster operations wrapper.
         """
-        if no_use_clusterops:
+        no_use_clusterops = (
+            no_use_clusterops or self.no_use_clusterops
+        )
+
+        if no_use_clusterops is True:
             return self._run(
                 task=task,
                 img=img,
