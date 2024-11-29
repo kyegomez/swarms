@@ -63,40 +63,40 @@ def any_to_str(data: Union[str, Dict, List, Tuple, Any]) -> str:
         return f"Error converting data: {str(e)}"
 
 
-def main():
-    # Example 1: Dictionary
-    print("Dictionary:")
-    print(
-        any_to_str(
-            {
-                "name": "John",
-                "age": 30,
-                "hobbies": ["reading", "hiking"],
-            }
-        )
-    )
+# def main():
+#     # Example 1: Dictionary
+#     print("Dictionary:")
+#     print(
+#         any_to_str(
+#             {
+#                 "name": "John",
+#                 "age": 30,
+#                 "hobbies": ["reading", "hiking"],
+#             }
+#         )
+#     )
 
-    print("\nNested Dictionary:")
-    print(
-        any_to_str(
-            {
-                "user": {
-                    "id": 123,
-                    "details": {"city": "New York", "active": True},
-                },
-                "data": [1, 2, 3],
-            }
-        )
-    )
+#     print("\nNested Dictionary:")
+#     print(
+#         any_to_str(
+#             {
+#                 "user": {
+#                     "id": 123,
+#                     "details": {"city": "New York", "active": True},
+#                 },
+#                 "data": [1, 2, 3],
+#             }
+#         )
+#     )
 
-    print("\nList and Tuple:")
-    print(any_to_str([1, "text", None, (1, 2)]))
-    print(any_to_str((True, False, None)))
+#     print("\nList and Tuple:")
+#     print(any_to_str([1, "text", None, (1, 2)]))
+#     print(any_to_str((True, False, None)))
 
-    print("\nEmpty Collections:")
-    print(any_to_str([]))
-    print(any_to_str({}))
+#     print("\nEmpty Collections:")
+#     print(any_to_str([]))
+#     print(any_to_str({}))
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

@@ -202,7 +202,6 @@ class GraphSwarm:
         self.memory_collection = memory_collection
         self.memory = SwarmMemory(collection_name=memory_collection)
 
-
         if agents:
             self.initialize_agents(agents)
 
