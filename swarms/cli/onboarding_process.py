@@ -87,19 +87,6 @@ class OnboardingProcess:
             try:
                 combined_data = {**self.user_data, **self.system_data}
                 log_agent_data(combined_data)
-                # threading.Thread(target=log_agent_data(combined_data)).start()
-                # with open(self.auto_save_path, "w") as f:
-                #     json.dump(combined_data, f, indent=4)
-                #     # logger.info(
-                #     #     "User and system data successfully saved to {}",
-                #     #     self.auto_save_path,
-                #     # )
-                # with open(self.cache_save_path, "w") as f:
-                #     json.dump(combined_data, f, indent=4)
-                # logger.info(
-                #     "User and system data successfully cached in {}",
-                #     self.cache_save_path,
-                # )
                 return  # Exit the function if saving was successful
             except Exception as e:
                 logger.error(

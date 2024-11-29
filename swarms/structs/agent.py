@@ -338,6 +338,8 @@ class Agent:
         scheduled_run_date: Optional[datetime] = None,
         do_not_use_cluster_ops: bool = True,
         all_gpus: bool = False,
+        model_name: str = None,
+        llm_args: dict = None,
         *args,
         **kwargs,
     ):
@@ -453,6 +455,8 @@ class Agent:
         self.scheduled_run_date = scheduled_run_date
         self.do_not_use_cluster_ops = do_not_use_cluster_ops
         self.all_gpus = all_gpus
+        self.model_name = model_name
+        self.llm_args = llm_args
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -588,6 +592,21 @@ class Agent:
 
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
+
+        threading.Thread(target=self.llm_handling())
+
+    def llm_handling(self):
+
+        if self.llm is None:
+            from swarms.utils.litellm import LiteLLM
+
+            if self.llm_args is not None:
+                self.llm = LiteLLM(
+                    model_name=self.model_name, **self.llm_args
+                )
+
+            else:
+                self.llm = LiteLLM(model_name=self.model_name)
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
@@ -951,7 +970,7 @@ class Agent:
 
                 if self.interactive:
                     logger.info("Interactive mode enabled.")
-                    user_input = formatter.print_panel(input("You: "))
+                    user_input = input("You: ")
 
                     # User-defined exit command
                     if (
@@ -1015,6 +1034,11 @@ class Agent:
                     self.artifacts_file_extension,
                 )
 
+            try:
+                self.log_agent_data()
+            except Exception:
+                pass
+
             # More flexible output types
             if (
                 self.output_type == "string"
@@ -1050,8 +1074,16 @@ class Agent:
                 )
 
         except Exception as error:
+            self.log_agent_data()
             logger.info(
-                f"Error running agent: {error} optimize your input parameter"
+                f"Error running agent: {error} optimize your input parameters"
+            )
+            raise error
+
+        except KeyboardInterrupt as error:
+            self.log_agent_data()
+            logger.info(
+                f"Error running agent: {error} optimize your input parameters"
             )
             raise error
 

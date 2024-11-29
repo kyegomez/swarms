@@ -7,7 +7,7 @@ from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from async_executor import HighSpeedExecutor
+from new_features_examples.async_executor import HighSpeedExecutor
 
 load_dotenv()
 
