@@ -141,10 +141,14 @@ model = OpenAIChat(
 
 agent = Agent(
     agent_name="Stock-Analysis-Agent",
-    model_name="gpt-4o-mini",
+    system_prompt="You are a stock market analysis expert. Analyze market trends and provide insights.",
+    llm=model,
     max_loops="auto",
     interactive=True,
     streaming_on=True,
+    verbose=True,
+    autosave=True,
+    saved_state_path="stock_analysis_agent.json"
 )
 
 agent.run("What is the current market trend for tech stocks?")
@@ -157,29 +161,31 @@ The `Agent` class offers a range of settings to tailor its behavior to specific 
 | Setting | Description | Default Value |
 | --- | --- | --- |
 | `agent_name` | The name of the agent. | "DefaultAgent" |
-| `system_prompt` | The system prompt to use for the agent. | "Default system prompt." |
-| `llm` | The language model to use for processing tasks. | `OpenAIChat` instance |
+| `system_prompt` | The system prompt to use for the agent. | None |
+| `llm` | The language model to use for processing tasks. | Required |
 | `max_loops` | The maximum number of loops to execute for a task. | 1 |
 | `autosave` | Enables or disables autosaving of the agent's state. | False |
 | `dashboard` | Enables or disables the dashboard for the agent. | False |
 | `verbose` | Controls the verbosity of the agent's output. | False |
+| `streaming_on` | Enables or disables response streaming. | True |
 | `dynamic_temperature_enabled` | Enables or disables dynamic temperature adjustment for the language model. | False |
-| `saved_state_path` | The path to save the agent's state. | "agent_state.json" |
-| `user_name` | The username associated with the agent. | "default_user" |
-| `retry_attempts` | The number of retry attempts for failed tasks. | 1 |
-| `context_length` | The maximum length of the context to consider for tasks. | 200000 |
-| `return_step_meta` | Controls whether to return step metadata in the output. | False |
-| `output_type` | The type of output to return (e.g., "json", "string"). | "string" |
+| `saved_state_path` | The path to save the agent's state. | None |
+| `user_name` | The username associated with the agent. | "User" |
+| `retry_attempts` | The number of retry attempts for failed tasks. | 3 |
+| `context_length` | The maximum length of the context to consider for tasks. | 8192 |
+| `multi_modal` | Enables or disables multimodal support. | False |
+| `code_interpreter` | Enables or disables code execution. | False |
+| `self_healing_enabled` | Enables or disables error recovery. | False |
+| `sentiment_threshold` | The threshold for response evaluation. | 0.7 |
+| `tags` | A list of strings for categorizing the agent. | None |
+| `use_cases` | A list of dictionaries documenting the agent's use cases. | None |
 
 
 ```python
 import os
 from swarms import Agent
 from swarms.models import OpenAIChat
-
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
+from swarms.prompts.finance_agent_sys_prompt import FINANCIAL_AGENT_SYS_PROMPT
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -187,7 +193,7 @@ load_dotenv()
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("OPENAI_API_KEY")
 
-# Create an instance of the OpenAIChat class
+# Create model instance
 model = OpenAIChat(
     openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
 )
@@ -201,21 +207,29 @@ agent = Agent(
     autosave=True,
     dashboard=False,
     verbose=True,
+    streaming_on=True,
     dynamic_temperature_enabled=True,
     saved_state_path="finance_agent.json",
     user_name="swarms_corp",
-    retry_attempts=1,
+    retry_attempts=3,
     context_length=200000,
-    return_step_meta=False,
-    output_type="string",
-    streaming_on=False,
+    multi_modal=False,
+    code_interpreter=True,
+    self_healing_enabled=True,
+    sentiment_threshold=0.7,
+    tags=["finance", "analysis"],
+    use_cases=[{"name": "Financial Analysis", "description": "Analyze financial data and provide insights"}]
 )
 
+# Modern method usage
+agent.update_system_prompt("New system prompt")
+agent.update_max_loops(5)
+agent.update_loop_interval(2)
+agent.update_retry_attempts(5)
+print(agent.get_llm_parameters())
 
-agent.run(
-    "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
-)
-
+# Run the agent
+agent.run("Analyze the latest quarterly financial report for Tesla")
 ```
 -----
 ### Integrating RAG with Swarms for Enhanced Long-Term Memory
@@ -244,7 +258,10 @@ from swarms.memory import ChromaDB
 chromadb = ChromaDB(
     metric="cosine",  # Metric for similarity measurement
     output_dir="finance_agent_rag",  # Directory for storing RAG data
-    # docs_folder="artifacts",  # Uncomment and specify the folder containing your documents
+    limit_tokens=1000,  # Maximum tokens per query
+    n_results=1,  # Number of results to retrieve
+    docs_folder=None,  # Optional folder containing documents to add
+    verbose=False  # Enable verbose logging if needed
 )
 ```
 
