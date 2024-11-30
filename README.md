@@ -131,6 +131,13 @@ The `run` method is the primary entry point for executing tasks with an `Agent` 
 
 ```python
 from swarms import Agent
+from swarms.models import OpenAIChat
+
+model = OpenAIChat(
+    openai_api_key="your-api-key",
+    model_name="gpt-4o-mini",
+    temperature=0.1
+)
 
 agent = Agent(
     agent_name="Stock-Analysis-Agent",
@@ -168,7 +175,7 @@ The `Agent` class offers a range of settings to tailor its behavior to specific 
 ```python
 import os
 from swarms import Agent
-from swarm_models import OpenAIChat
+from swarms.models import OpenAIChat
 
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
@@ -231,7 +238,7 @@ graph TD
 ```python
 import os
 
-from swarms_memory import ChromaDB
+from swarms.memory import ChromaDB
 
 # Initialize the ChromaDB client for long-term memory management
 chromadb = ChromaDB(
@@ -243,7 +250,7 @@ chromadb = ChromaDB(
 
 **Step 2: Define the Model**
 ```python
-from swarm_models import Anthropic
+from swarms.models import Anthropic
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
@@ -378,7 +385,7 @@ The following is an example of an agent that intakes a pydantic basemodel and ou
 ```python
 from pydantic import BaseModel, Field
 from swarms import Agent
-from swarm_models import Anthropic
+from swarms.models import OpenAIChat
 
 
 # Initialize the schema for the person's information
@@ -410,7 +417,11 @@ agent = Agent(
     ),
     # Set the tool schema to the JSON string -- this is the key difference
     tool_schema=tool_schema,
-    llm=Anthropic(),
+    llm=OpenAIChat(
+        openai_api_key="your-api-key",
+        model_name="gpt-4o",
+        temperature=0.1
+    ),
     max_loops=3,
     autosave=True,
     dashboard=False,
@@ -442,6 +453,7 @@ Run the agent with multiple modalities useful for various real-world tasks in ma
 import os
 from dotenv import load_dotenv
 from swarms import Agent
+from swarms.models import OpenAIChat
 
 from swarm_models import GPT4VisionAPI
 
@@ -450,7 +462,7 @@ load_dotenv()
 
 
 # Initialize the language model
-llm = GPT4VisionAPI(
+llm = OpenAIChat(
     openai_api_key=os.environ.get("OPENAI_API_KEY"),
     max_tokens=500,
 )
@@ -552,7 +564,7 @@ Steps:
 
 For example, here's an example on how to create an agent from griptape.
 
-Here’s how you can create a custom **Griptape** agent that integrates with the **Swarms** framework by inheriting from the `Agent` class in **Swarms** and overriding the `run(task: str) -> str` method.
+Here's how you can create a custom **Griptape** agent that integrates with the **Swarms** framework by inheriting from the `Agent` class in **Swarms** and overriding the `run(task: str) -> str` method.
 
 
 ```python
@@ -694,7 +706,7 @@ In this example, each `Agent` represents a task that is executed sequentially. T
 ```python
 import os
 from swarms import Agent, SequentialWorkflow
-from swarm_models import OpenAIChat
+from swarms.models import OpenAIChat
 
 # model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
 company = "Nvidia"
@@ -911,7 +923,7 @@ The `run` method returns the final output after all agents have processed the in
 from swarms import Agent, AgentRearrange
 
 
-from swarm_models import Anthropic
+from swarm.models import Anthropic
 
 # Initialize the director agent
 
@@ -1288,7 +1300,7 @@ The `run` method returns a dictionary containing the outputs of each agent that 
 ```python
 import os
 from swarms import Agent
-from swarm_models import OpenAIChat
+from swarms.models import OpenAIChat
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
 # Define custom system prompts for each social media platform
@@ -1613,7 +1625,7 @@ The `SwarmRouter` class is a flexible routing system designed to manage differen
 import os
 from dotenv import load_dotenv
 from swarms import Agent
-from swarm_models import OpenAIChat
+from swarms.models import OpenAIChat
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
 
 load_dotenv()
