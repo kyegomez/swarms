@@ -113,14 +113,36 @@ Here are some example scripts to get you started. For more comprehensive documen
 | Swarms Examples | A collection of simple examples to demonstrate Swarms capabilities. | Basic Usage | [https://github.com/The-Swarm-Corporation/swarms-examples?tab=readme-ov-file](https://github.com/The-Swarm-Corporation/swarms-examples?tab=readme-ov-file) |
 | Cookbook | A comprehensive guide with recipes for various use cases and scenarios. | Advanced Usage | [https://github.com/The-Swarm-Corporation/Cookbook](https://github.com/The-Swarm-Corporation/Cookbook) |
 
+
+
+
 ---
 
 ## `Agent` Class
 The `Agent` class is a fundamental component of the Swarms framework, designed to execute tasks autonomously. It fuses llms, tools and long-term memory capabilities to create a full stack agent. The `Agent` class is highly customizable, allowing for fine-grained control over its behavior and interactions.
 
-### `run` Method
-The `run` method is the primary entry point for executing tasks with an `Agent` instance. It accepts a task string as the main input task and processes it according to the agent's configuration. And, it can also accept an `img` parameter such as `img="image_filepath.png` to process images if you have a VLM
 
+### `run` Method
+The `run` method is the primary entry point for executing tasks with an `Agent` instance. It accepts a task string as the main input task and processes it according to the agent's configuration. And, it can also accept an `img` parameter such as `img="image_filepath.png` to process images if you have a VLM attached such as `GPT4VisionAPI`
+
+
+
+## Simple Example
+
+```python
+from swarms import Agent
+
+agent = Agent(
+    agent_name="Stock-Analysis-Agent",
+    model_name="gpt-4o-mini",
+    max_loops="auto",
+    interactive=True,
+    streaming_on=True,
+)
+
+agent.run("What is the current market trend for tech stocks?")
+
+```
 
 ### Settings and Customization
 The `Agent` class offers a range of settings to tailor its behavior to specific needs. Some key settings include:

@@ -1,8 +1,7 @@
 import json
 from typing import Any, Dict, List, Optional
 
-from termcolor import colored
-
+from swarms.utils.formatter import formatter
 from swarms.structs.agent import Agent
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.task import Task
@@ -132,9 +131,10 @@ class BaseWorkflow(BaseStructure):
             for task in self.tasks:
                 task.result = None
         except Exception as error:
-            print(
-                colored(f"Error resetting workflow: {error}", "red"),
+            formatter.print_panel(
+                f"Error resetting workflow: {error}"
             )
+            raise error
 
     def get_task_results(self) -> Dict[str, Any]:
         """
@@ -148,10 +148,8 @@ class BaseWorkflow(BaseStructure):
                 task.description: task.result for task in self.tasks
             }
         except Exception as error:
-            print(
-                colored(
-                    f"Error getting task results: {error}", "red"
-                ),
+            formatter.print_panel(
+                f"Error getting task results: {error}"
             )
 
     def remove_task(self, task: str) -> None:
@@ -163,12 +161,10 @@ class BaseWorkflow(BaseStructure):
                 if task.description != task
             ]
         except Exception as error:
-            print(
-                colored(
-                    f"Error removing task from workflow: {error}",
-                    "red",
-                ),
+            formatter.print_panel(
+                f"Error removing task from workflow: {error}",
             )
+            raise error
 
     def update_task(self, task: str, **updates) -> None:
         """
@@ -203,11 +199,9 @@ class BaseWorkflow(BaseStructure):
                     f"Task {task} not found in workflow."
                 )
         except Exception as error:
-            print(
-                colored(
-                    f"Error updating task in workflow: {error}", "red"
-                ),
-            )
+            formatter.print_panel(
+                f"Error updating task in workflow: {error}"
+            ),
 
     def delete_task(self, task: str) -> None:
         """
@@ -240,12 +234,10 @@ class BaseWorkflow(BaseStructure):
                     f"Task {task} not found in workflow."
                 )
         except Exception as error:
-            print(
-                colored(
-                    f"Error deleting task from workflow: {error}",
-                    "red",
-                ),
+            formatter.print_panel(
+                f"Error deleting task from workflow: {error}",
             )
+            raise error
 
     def save_workflow_state(
         self,
@@ -287,23 +279,18 @@ class BaseWorkflow(BaseStructure):
                 }
                 json.dump(state, f, indent=4)
         except Exception as error:
-            print(
-                colored(
-                    f"Error saving workflow state: {error}",
-                    "red",
-                )
+            formatter.print_panel(
+                f"Error saving workflow state: {error}",
             )
+            raise error
 
     def add_objective_to_workflow(self, task: str, **kwargs) -> None:
         """Adds an objective to the workflow."""
         try:
-            print(
-                colored(
-                    """
-                    Adding Objective to Workflow...""",
-                    "green",
-                    attrs=["bold", "underline"],
-                )
+            formatter.print_panel(
+                """
+                Adding Objective to Workflow...""",
+                "green",
             )
 
             task = Task(
@@ -314,12 +301,10 @@ class BaseWorkflow(BaseStructure):
             )
             self.tasks.append(task)
         except Exception as error:
-            print(
-                colored(
-                    f"Error adding objective to workflow: {error}",
-                    "red",
-                )
+            formatter.print_panel(
+                f"Error adding objective to workflow: {error}",
             )
+            raise error
 
     def load_workflow_state(
         self, filepath: str = None, **kwargs
@@ -359,11 +344,8 @@ class BaseWorkflow(BaseStructure):
                     )
                     self.tasks.append(task)
         except Exception as error:
-            print(
-                colored(
-                    f"Error loading workflow state: {error}",
-                    "red",
-                )
+            formatter.print_panel(
+                f"Error loading workflow state: {error}",
             )
 
     def workflow_dashboard(self, **kwargs) -> None:
@@ -383,25 +365,21 @@ class BaseWorkflow(BaseStructure):
         >>> workflow.workflow_dashboard()
 
         """
-        print(
-            colored(
-                f"""
-                Sequential Workflow Dashboard
-                --------------------------------
-                Name: {self.name}
-                Description: {self.description}
-                task_pool: {len(self.task_pool)}
-                Max Loops: {self.max_loops}
-                Autosave: {self.autosave}
-                Autosave Filepath: {self.saved_state_filepath}
-                Restore Filepath: {self.restore_state_filepath}
-                --------------------------------
-                Metadata:
-                kwargs: {kwargs}
-                """,
-                "cyan",
-                attrs=["bold", "underline"],
-            )
+        formatter.print_panel(
+            f"""
+            Sequential Workflow Dashboard
+            --------------------------------
+            Name: {self.name}
+            Description: {self.description}
+            task_pool: {len(self.task_pool)}
+            Max Loops: {self.max_loops}
+            Autosave: {self.autosave}
+            Autosave Filepath: {self.saved_state_filepath}
+            Restore Filepath: {self.restore_state_filepath}
+            --------------------------------
+            Metadata:
+            kwargs: {kwargs}
+            """
         )
 
     def workflow_bootup(self, **kwargs) -> None:
@@ -409,11 +387,6 @@ class BaseWorkflow(BaseStructure):
         Workflow bootup.
 
         """
-        print(
-            colored(
-                """
-                Sequential Workflow Initializing...""",
-                "green",
-                attrs=["bold", "underline"],
-            )
+        formatter.print_panel(
+            """Sequential Workflow Initializing...""",
         )

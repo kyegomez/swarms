@@ -1,4 +1,4 @@
-from termcolor import colored
+from swarms.utils.formatter import formatter
 
 
 def display_markdown_message(message: str, color: str = "cyan"):
@@ -12,13 +12,10 @@ def display_markdown_message(message: str, color: str = "cyan"):
         if line == "":
             print()
         elif line == "---":
-            print(colored("-" * 50, color))
+            formatter.print_panel("-" * 50)
         else:
-            print(colored(line, color))
+            formatter.print_panel(line)
 
     if "\n" not in message and message.startswith(">"):
         # Aesthetic choice. For these tags, they need a space below them
         print()
-
-
-# display_markdown_message("I love you and you are beautiful.", "cyan")

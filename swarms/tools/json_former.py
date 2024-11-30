@@ -1,7 +1,6 @@
 import json
 from typing import Any, Dict, List, Union
 
-from termcolor import cprint
 from transformers import PreTrainedModel, PreTrainedTokenizer
 from pydantic import BaseModel
 from swarms.tools.logits_processor import (
@@ -67,15 +66,6 @@ class Jsonformer:
         self.max_number_tokens = max_number_tokens
         self.temperature = temperature
         self.max_string_token_length = max_string_token_length
-
-    def debug(self, caller: str, value: str, is_prompt: bool = False):
-        if self.debug_on:
-            if is_prompt:
-                cprint(caller, "green", end=" ")
-                cprint(value, "yellow")
-            else:
-                cprint(caller, "green", end=" ")
-                cprint(value, "blue")
 
     def generate_number(
         self, temperature: Union[float, None] = None, iterations=0

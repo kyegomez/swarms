@@ -107,7 +107,7 @@ class SequentialWorkflow:
         all_cores: bool = False,
         all_gpus: bool = False,
         device_id: int = 0,
-        no_use_clusterops: bool = False,
+        no_use_clusterops: bool = True,
         *args,
         **kwargs,
     ) -> str:

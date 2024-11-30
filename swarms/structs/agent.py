@@ -24,8 +24,6 @@ import toml
 import yaml
 from pydantic import BaseModel
 from swarm_models.tiktoken_wrapper import TikTokenizer
-from termcolor import colored
-
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
@@ -340,6 +338,8 @@ class Agent:
         scheduled_run_date: Optional[datetime] = None,
         do_not_use_cluster_ops: bool = True,
         all_gpus: bool = False,
+        model_name: str = None,
+        llm_args: dict = None,
         *args,
         **kwargs,
     ):
@@ -455,6 +455,8 @@ class Agent:
         self.scheduled_run_date = scheduled_run_date
         self.do_not_use_cluster_ops = do_not_use_cluster_ops
         self.all_gpus = all_gpus
+        self.model_name = model_name
+        self.llm_args = llm_args
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -591,6 +593,21 @@ class Agent:
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
 
+        threading.Thread(target=self.llm_handling())
+
+    def llm_handling(self):
+
+        if self.llm is None:
+            from swarms.utils.litellm import LiteLLM
+
+            if self.llm_args is not None:
+                self.llm = LiteLLM(
+                    model_name=self.model_name, **self.llm_args
+                )
+
+            else:
+                self.llm = LiteLLM(model_name=self.model_name)
+
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
         Checks if auto_generate_prompt is enabled and generates a prompt by combining agent name, description and system prompt if available.
@@ -671,11 +688,8 @@ class Agent:
                 return self.stopping_condition(response)
             return False
         except Exception as error:
-            print(
-                colored(
-                    f"Error checking stopping condition: {error}",
-                    "red",
-                )
+            logger.error(
+                f"Error checking stopping condition: {error}"
             )
 
     def dynamic_temperature(self):
@@ -688,21 +702,20 @@ class Agent:
         try:
             if hasattr(self.llm, "temperature"):
                 # Randomly change the temperature attribute of self.llm object
-                logger.info("Enabling Random Dyamic Temperature")
                 self.llm.temperature = random.uniform(0.0, 1.0)
             else:
                 # Use a default temperature
                 self.llm.temperature = 0.5
         except Exception as error:
-            print(
-                colored(
-                    f"Error dynamically changing temperature: {error}"
-                )
+            logger.error(
+                f"Error dynamically changing temperature: {error}"
             )
 
     def print_dashboard(self):
         """Print dashboard"""
-        print(colored("Initializing Agent Dashboard...", "yellow"))
+        formatter.print_panel(
+            f"Initializing Agent: {self.agent_name}"
+        )
 
         data = self.to_dict()
 
@@ -710,22 +723,19 @@ class Agent:
         # data = json.dumps(data, indent=4)
         # json_data = json.dumps(data, indent=4)
 
-        print(
-            colored(
-                f"""
-                Agent Dashboard
-                --------------------------------------------
+        formatter.print_panel(
+            f"""
+            Agent Dashboard
+            --------------------------------------------
 
-                Agent {self.agent_name} is initializing for {self.max_loops} with the following configuration:
-                ----------------------------------------
+            Agent {self.agent_name} is initializing for {self.max_loops} with the following configuration:
+            ----------------------------------------
 
-                Agent Configuration:
-                    Configuration: {data}
+            Agent Configuration:
+                Configuration: {data}
 
-                ----------------------------------------
-                """,
-                "green",
-            )
+            ----------------------------------------
+        """,
         )
 
     def loop_count_print(
@@ -737,7 +747,7 @@ class Agent:
             loop_count (_type_): _description_
             max_loops (_type_): _description_
         """
-        print(colored(f"\nLoop {loop_count} of {max_loops}", "cyan"))
+        logger.info(f"\nLoop {loop_count} of {max_loops}")
         print("\n")
 
     # Check parameters
@@ -761,8 +771,8 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        is_last: bool = False,
-        print_task: bool = False,
+        is_last: Optional[bool] = False,
+        print_task: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -960,7 +970,7 @@ class Agent:
 
                 if self.interactive:
                     logger.info("Interactive mode enabled.")
-                    user_input = colored(input("You: "), "red")
+                    user_input = input("You: ")
 
                     # User-defined exit command
                     if (
@@ -1024,6 +1034,11 @@ class Agent:
                     self.artifacts_file_extension,
                 )
 
+            try:
+                self.log_agent_data()
+            except Exception:
+                pass
+
             # More flexible output types
             if (
                 self.output_type == "string"
@@ -1059,6 +1074,14 @@ class Agent:
                 )
 
         except Exception as error:
+            self.log_agent_data()
+            logger.info(
+                f"Error running agent: {error} optimize your input parameters"
+            )
+            raise error
+
+        except KeyboardInterrupt as error:
+            self.log_agent_data()
             logger.info(
                 f"Error running agent: {error} optimize your input parameters"
             )
@@ -1261,7 +1284,7 @@ class Agent:
             logger.info(f"Running bulk tasks: {inputs}")
             return [self.run(**input_data) for input_data in inputs]
         except Exception as error:
-            print(colored(f"Error running bulk run: {error}", "red"))
+            logger.info(f"Error running bulk run: {error}", "red")
 
     def save(self) -> None:
         """Save the agent history to a file.
@@ -1438,9 +1461,7 @@ class Agent:
             with open(file_path, "w") as f:
                 yaml.dump(self.to_dict(), f)
         except Exception as error:
-            logger.error(
-                colored(f"Error saving agent to YAML: {error}", "red")
-            )
+            logger.error(f"Error saving agent to YAML: {error}")
             raise error
 
     def get_llm_parameters(self):
@@ -1505,7 +1526,7 @@ class Agent:
                 role=self.user_name, content=data
             )
         except Exception as error:
-            print(colored(f"Error ingesting docs: {error}", "red"))
+            logger.info(f"Error ingesting docs: {error}", "red")
 
     def ingest_pdf(self, pdf: str):
         """Ingest the pdf into the memory
@@ -1520,7 +1541,7 @@ class Agent:
                 role=self.user_name, content=text
             )
         except Exception as error:
-            print(colored(f"Error ingesting pdf: {error}", "red"))
+            logger.info(f"Error ingesting pdf: {error}", "red")
 
     def receieve_message(self, name: str, message: str):
         """Receieve a message"""
@@ -1604,12 +1625,10 @@ class Agent:
                 role=self.user_name, content=text
             )
         except Exception as error:
-            print(
-                colored(
-                    f"Error getting docs from doc folders: {error}",
-                    "red",
-                )
+            logger.error(
+                f"Error getting docs from doc folders: {error}"
             )
+            raise error
 
     def check_end_session_agentops(self):
         if self.agent_ops_on is True:
@@ -1629,7 +1648,8 @@ class Agent:
         try:
             # Query the long term memory
             if self.long_term_memory is not None:
-                logger.info(f"Querying long term memory for: {task}")
+                formatter.print_panel(f"Querying RAG for: {task}")
+
                 memory_retrieval = self.long_term_memory.query(
                     task, *args, **kwargs
                 )
@@ -1638,15 +1658,15 @@ class Agent:
                     f"Documents Available: {str(memory_retrieval)}"
                 )
 
-                # Count the tokens
-                memory_token_count = self.tokenizer.count_tokens(
-                    memory_retrieval
-                )
-                if memory_token_count > self.memory_chunk_size:
-                    # Truncate the memory by the memory chunk size
-                    memory_retrieval = self.truncate_string_by_tokens(
-                        memory_retrieval, self.memory_chunk_size
-                    )
+                # # Count the tokens
+                # memory_token_count = self.tokenizer.count_tokens(
+                #     memory_retrieval
+                # )
+                # if memory_token_count > self.memory_chunk_size:
+                #     # Truncate the memory by the memory chunk size
+                #     memory_retrieval = self.truncate_string_by_tokens(
+                #         memory_retrieval, self.memory_chunk_size
+                #     )
 
                 self.short_memory.add(
                     role="Database",
