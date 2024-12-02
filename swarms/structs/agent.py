@@ -771,8 +771,11 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
+        speech: Optional[str] = None,
+        video: Optional[str] = None,
         is_last: Optional[bool] = False,
         print_task: Optional[bool] = False,
+        generate_speech: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -2294,12 +2297,13 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        device: str = "cpu",  # gpu
-        device_id: int = 0,
-        all_cores: bool = True,
+        device: Optional[str] = "cpu",  # gpu
+        device_id: Optional[int] = 0,
+        all_cores: Optional[bool] = True,
         scheduled_run_date: Optional[datetime] = None,
-        do_not_use_cluster_ops: bool = False,
-        all_gpus: bool = False,
+        do_not_use_cluster_ops: Optional[bool] = False,
+        all_gpus: Optional[bool] = False,
+        generate_speech: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -2346,7 +2350,12 @@ class Agent:
             # If cluster ops disabled, run directly
             if do_not_use_cluster_ops is True:
                 logger.info("Running without cluster operations")
-                return self._run(task=task, img=img, *args, **kwargs)
+                return self._run(
+                    task=task,
+                    img=img,
+                    generate_speech=generate_speech * args,
+                    **kwargs,
+                )
 
             else:
                 return exec_callable_with_clusterops(
@@ -2357,6 +2366,7 @@ class Agent:
                     func=self._run,
                     task=task,
                     img=img,
+                    generate_speech=generate_speech,
                     *args,
                     **kwargs,
                 )
