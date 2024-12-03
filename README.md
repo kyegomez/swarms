@@ -462,7 +462,7 @@ from pydantic import BaseModel, Field
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from swarms import ToolAgent
-from swarms.utils.json_utils import base_model_to_json
+from swarms.tools.json_utils import base_model_to_json
 
 # Load the pre-trained model and tokenizer
 model = AutoModelForCausalLM.from_pretrained(
