@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any, Callable
 import time
 from openai import OpenAI
-from swarms import Agent
+from swarms.structs.agent import Agent
 import json
 
 class OpenAIAssistant(Agent):
