@@ -1621,11 +1621,16 @@ class Agent:
             files = os.listdir(self.docs_folder)
 
             # Extract the text from the files
+            # Process each file and combine their contents
+            all_text = ""
             for file in files:
-                text = data_to_text(file)
+                file_path = os.path.join(self.docs_folder, file)
+                text = data_to_text(file_path)
+                all_text += f"\nContent from {file}:\n{text}\n"
 
+            # Add the combined content to memory
             return self.short_memory.add(
-                role=self.user_name, content=text
+                role=self.user_name, content=all_text
             )
         except Exception as error:
             logger.error(
