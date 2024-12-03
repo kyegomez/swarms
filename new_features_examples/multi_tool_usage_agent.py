@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional, Callable, get_type_hints
 from dataclasses import dataclass, field
 import json
 from datetime import datetime
@@ -109,6 +109,9 @@ class ExecutionContext:
     results: Dict[int, Any] = field(default_factory=dict)
     current_step: int = 0
     history: List[Dict[str, Any]] = field(default_factory=list)
+
+
+hints = get_type_hints(func)
 
 
 class ToolAgent:

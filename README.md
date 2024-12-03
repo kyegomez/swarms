@@ -81,9 +81,10 @@ Refer to our documentation for production grade implementation details.
 
 
 ## Install 💻
+Install the following packages with copy and paste
 
 ```bash
-$ pip3 install -U swarms
+$ pip3 install -U swarms swarm-models swarms-memory
 ```
 
 
@@ -168,28 +169,15 @@ The `Agent` class offers a range of settings to tailor its behavior to specific 
 ```python
 import os
 from swarms import Agent
-from swarm_models import OpenAIChat
 
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
-
 # Initialize the agent
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-    llm=model,
+    model_name="gpt-4o-mini",
     max_loops=1,
     autosave=True,
     dashboard=False,
@@ -211,10 +199,9 @@ agent.run(
 
 ```
 -----
+
 ### Integrating RAG with Swarms for Enhanced Long-Term Memory
 `Agent` equipped with quasi-infinite long term memory using RAG (Relational Agent Graph) for advanced document understanding, analysis, and retrieval capabilities.
-
-
 
 **Mermaid Diagram for RAG Integration**
 ```mermaid
@@ -227,8 +214,11 @@ graph TD
     F --> G[Return Output]
 ```
 
-**Step 1: Initialize the ChromaDB Client**
 ```python
+from swarms import Agent
+from swarms.prompts.finance_agent_sys_prompt import (
+    FINANCIAL_AGENT_SYS_PROMPT,
+)
 import os
 
 from swarms_memory import ChromaDB
@@ -239,29 +229,13 @@ chromadb = ChromaDB(
     output_dir="finance_agent_rag",  # Directory for storing RAG data
     # docs_folder="artifacts",  # Uncomment and specify the folder containing your documents
 )
-```
-
-**Step 2: Define the Model**
-```python
-from swarm_models import Anthropic
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
-
-# Define the Anthropic model for language processing
-model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
-```
-
-**Step 3: Initialize the Agent with RAG**
-```python
-from swarms import Agent
 
 # Initialize the agent with RAG capabilities
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     agent_description="Agent creates a comprehensive financial analysis",
-    llm=model,
+    model_name="gpt-4o-mini",
     max_loops="auto",  # Auto-adjusts loops based on task complexity
     autosave=True,  # Automatically saves agent state
     dashboard=False,  # Disables dashboard for this example
@@ -378,7 +352,6 @@ The following is an example of an agent that intakes a pydantic basemodel and ou
 ```python
 from pydantic import BaseModel, Field
 from swarms import Agent
-from swarm_models import Anthropic
 
 
 # Initialize the schema for the person's information
@@ -410,7 +383,7 @@ agent = Agent(
     ),
     # Set the tool schema to the JSON string -- this is the key difference
     tool_schema=tool_schema,
-    llm=Anthropic(),
+    model_name="gpt-4o",
     max_loops=3,
     autosave=True,
     dashboard=False,
@@ -617,8 +590,6 @@ You can now easily plug this custom Griptape agent into the **Swarms Framework**
 
 ## Understanding Swarms
 
-### What is a Swarm?
-
 A swarm refers to a group of more than two agents working collaboratively to achieve a common goal. These agents can be software entities, such as llms that interact with each other to perform complex tasks. The concept of a swarm is inspired by natural systems like ant colonies or bird flocks, where simple individual behaviors lead to complex group dynamics and problem-solving capabilities.
 
 ### How Swarm Architectures Facilitate Communication
@@ -631,9 +602,6 @@ Swarm architectures are designed to establish and manage communication between a
 
 3. **Sequential Communication**: Sequential swarms process tasks in a linear order, where each agent's output becomes the input for the next agent. This ensures that tasks with dependencies are handled in the correct sequence, maintaining the integrity of the workflow.
 
-4. **Mesh Communication**: In mesh swarms, agents are fully connected, allowing any agent to communicate with any other agent. This setup provides high flexibility and redundancy, making it ideal for complex systems requiring dynamic interactions.
-
-5. **Federated Communication**: Federated swarms involve multiple independent swarms that collaborate by sharing information and results. Each swarm operates autonomously but can contribute to a larger task, enabling distributed problem-solving across different nodes.
 
 Swarm architectures leverage these communication patterns to ensure that agents work together efficiently, adapting to the specific requirements of the task at hand. By defining clear communication protocols and interaction models, swarm architectures enable the seamless orchestration of multiple agents, leading to enhanced performance and problem-solving capabilities.
 
@@ -911,14 +879,12 @@ The `run` method returns the final output after all agents have processed the in
 from swarms import Agent, AgentRearrange
 
 
-from swarm_models import Anthropic
-
 # Initialize the director agent
 
 director = Agent(
     agent_name="Director",
     system_prompt="Directs the tasks for the workers",
-    llm=Anthropic(),
+    model_name="claude-2",
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -934,7 +900,7 @@ director = Agent(
 worker1 = Agent(
     agent_name="Worker1",
     system_prompt="Generates a transcript for a youtube video on what swarms are",
-    llm=Anthropic(),
+    model_name="claude-2",
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -949,7 +915,7 @@ worker1 = Agent(
 worker2 = Agent(
     agent_name="Worker2",
     system_prompt="Summarizes the transcript generated by Worker1",
-    llm=Anthropic(),
+    model_name="claude-2",
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -1103,20 +1069,12 @@ The `run` method returns the final output after all agents have processed the in
 ```python
 
 import os
-from swarm_models import OpenAIChat
 from swarms import Agent, MixtureOfAgents
-
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create individual agents with the OpenAIChat model
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4", temperature=0.1
-)
 
 # Agent 1: Financial Statement Analyzer
 agent1 = Agent(
     agent_name="FinancialStatementAnalyzer",
-    llm=model,
+    model_name="gpt-4o",
     system_prompt="""You are a Financial Statement Analyzer specializing in 10-K SEC reports. Your primary focus is on analyzing the financial statements, including the balance sheet, income statement, and cash flow statement. 
 
 Key responsibilities:
@@ -1142,7 +1100,7 @@ When analyzing, consider industry standards and compare the company's performanc
 # Agent 2: Risk Assessment Specialist
 agent2 = Agent(
     agent_name="RiskAssessmentSpecialist",
-    llm=model,
+    model_name="gpt-4o",
     system_prompt="""You are a Risk Assessment Specialist focusing on 10-K SEC reports. Your primary role is to identify, analyze, and evaluate potential risks disclosed in the report.
 
 Key responsibilities:
@@ -1169,7 +1127,7 @@ Your analysis should provide a comprehensive overview of the company's risk land
 # Agent 3: Business Strategy Evaluator
 agent3 = Agent(
     agent_name="BusinessStrategyEvaluator",
-    llm=model,
+    model_name="gpt-4o",
     system_prompt="""You are a Business Strategy Evaluator specializing in analyzing 10-K SEC reports. Your focus is on assessing the company's overall strategy, market position, and future outlook.
 
 Key responsibilities:
@@ -1197,7 +1155,7 @@ Your analysis should provide insights into the company's strategic direction, it
 # Aggregator Agent
 aggregator_agent = Agent(
     agent_name="10KReportAggregator",
-    llm=model,
+    model_name="gpt-4o",
     system_prompt="""You are the 10-K Report Aggregator, responsible for synthesizing and summarizing the analyses provided by the Financial Statement Analyzer, Risk Assessment Specialist, and Business Strategy Evaluator. Your goal is to create a comprehensive, coherent, and insightful summary of the 10-K SEC report.
 
 Key responsibilities:
@@ -1287,9 +1245,8 @@ The `run` method returns a dictionary containing the outputs of each agent that 
 
 ```python
 import os
-from swarms import Agent
+from swarms import Agent, SpreadSheetSwarm
 from swarm_models import OpenAIChat
-from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
 # Define custom system prompts for each social media platform
 TWITTER_AGENT_SYS_PROMPT = """
@@ -1312,20 +1269,12 @@ EMAIL_AGENT_SYS_PROMPT = """
 You are an Email marketing expert specializing in real estate. Your task is to write compelling email campaigns to promote properties, focusing on personalization, subject lines, and effective call-to-action strategies to drive conversions.
 """
 
-# Example usage:
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
-
 # Initialize your agents for different social media platforms
 agents = [
     Agent(
         agent_name="Twitter-RealEstate-Agent",
         system_prompt=TWITTER_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4o",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="twitter_realestate_agent.json",
@@ -1335,7 +1284,7 @@ agents = [
     Agent(
         agent_name="Instagram-RealEstate-Agent",
         system_prompt=INSTAGRAM_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4o",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="instagram_realestate_agent.json",
@@ -1345,7 +1294,7 @@ agents = [
     Agent(
         agent_name="Facebook-RealEstate-Agent",
         system_prompt=FACEBOOK_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4o",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="facebook_realestate_agent.json",
@@ -1355,7 +1304,7 @@ agents = [
     Agent(
         agent_name="LinkedIn-RealEstate-Agent",
         system_prompt=LINKEDIN_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4o",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="linkedin_realestate_agent.json",
@@ -1365,7 +1314,7 @@ agents = [
     Agent(
         agent_name="Email-RealEstate-Agent",
         system_prompt=EMAIL_AGENT_SYS_PROMPT,
-        llm=model,
+        model_name="gpt-4o",
         max_loops=1,
         dynamic_temperature_enabled=True,
         saved_state_path="email_realestate_agent.json",
@@ -1474,7 +1423,7 @@ The `run` method returns the output from the most relevant agent selected based 
 
 
 ```python
-from swarms.structs.tree_swarm import TreeAgent, Tree, ForestSwarm
+from swarms import TreeAgent, Tree, ForestSwarm
 
 # Create agents with varying system prompts and dynamically generated distances/keywords
 agents_tree1 = [
