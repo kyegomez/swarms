@@ -1,6 +1,6 @@
 import importlib.util
 import sys
-
+import os
 import pkg_resources
 import requests
 from packaging import version
@@ -47,6 +47,9 @@ def check_for_update() -> bool:
     """
     try:
         # Fetch the latest version from the PyPI API
+        auto_update = os.getenv("SWARMS_AUTOUPDATE_ON", "false").lower() == "true"
+        if not auto_update:
+            return
         response = requests.get("https://pypi.org/pypi/swarms/json")
         response.raise_for_status()  # Raises an HTTPError if the response status code is 4XX/5XX
         latest_version = response.json()["info"]["version"]

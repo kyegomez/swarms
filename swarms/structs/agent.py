@@ -312,7 +312,7 @@ class Agent:
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
         temperature: float = 0.1,
-        workspace_dir: str = "agent_workspace",
+        workspace_dir: str = None,
         timeout: Optional[int] = None,
         # short_memory: Optional[str] = None,
         created_at: float = time.time(),
@@ -426,7 +426,7 @@ class Agent:
         self.frequency_penalty = frequency_penalty
         self.presence_penalty = presence_penalty
         self.temperature = temperature
-        self.workspace_dir = workspace_dir
+        self.workspace_dir = workspace_dir or os.getenv("WORKSPACE_DIR", "./workspace")
         self.timeout = timeout
         self.created_at = created_at
         self.return_step_meta = return_step_meta
@@ -469,7 +469,10 @@ class Agent:
         self.executor = ThreadPoolExecutor(
             max_workers=executor_workers
         )
-
+        #check and create workspace dir
+        if not os.path.exists(self.workspace_dir):
+            os.makedirs(self.workspace_dir)
+            
         # Initialize the tool struct
         if (
             exists(tools)
