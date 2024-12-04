@@ -20,13 +20,15 @@ from swarms_memory import BaseVectorDatabase
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
-from swarms.utils.loguru_logger import logger
 from pydantic import BaseModel
 from swarms.utils.pandas_utils import (
     dict_to_dataframe,
     display_agents_info,
     pydantic_model_to_dataframe,
 )
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="base_swarm")
 
 
 class BaseSwarm(ABC):

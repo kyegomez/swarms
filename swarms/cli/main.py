@@ -1,244 +1,348 @@
 import argparse
 import os
+import subprocess
 import time
+import webbrowser
 
 from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 from rich.text import Text
-from swarms.cli.onboarding_process import OnboardingProcess
+
+from swarms.agents.auto_generate_swarm_config import (
+    generate_swarm_config,
+)
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
-import subprocess
+from swarms.cli.onboarding_process import OnboardingProcess
+from swarms.utils.formatter import formatter
 
+# Initialize console with custom styling
 console = Console()
 
 
-ASCII_ART = """
-  _________                                     
- /   _____/_  _  _______ _______  _____   ______
- \_____  \\ \/ \/ /\__  \\_  __ \/     \ /  ___/
- /        \\     /  / __ \|  | \/  Y Y  \\___ \ 
-/_______  / \/\_/  (____  /__|  |__|_|  /____  >
-        \/              \/            \/     \/ 
+class SwarmCLIError(Exception):
+    """Custom exception for Swarm CLI errors"""
 
+    pass
+
+
+# Color scheme
+COLORS = {
+    "primary": "red",
+    "secondary": "#FF6B6B",
+    "accent": "#4A90E2",
+    "success": "#2ECC71",
+    "warning": "#F1C40F",
+    "error": "#E74C3C",
+    "text": "#FFFFFF",
+}
+
+ASCII_ART = """
+   ▄████████  ▄█     █▄     ▄████████    ▄████████   ▄▄▄▄███▄▄▄▄      ▄████████ 
+  ███    ███ ███     ███   ███    ███   ███    ███ ▄██▀▀▀███▀▀▀██▄   ███    ███ 
+  ███    █▀  ███     ███   ███    ███   ███    ███ ███   ███   ███   ███    █▀  
+  ███        ███     ███   ███    ███  ▄███▄▄▄▄██▀ ███   ███   ███   ███        
+▀███████████ ███     ███ ▀███████████ ▀▀███▀▀▀▀▀   ███   ███   ███ ▀███████████ 
+         ███ ███     ███   ███    ███ ▀███████████ ███   ███   ███          ███ 
+   ▄█    ███ ███ ▄█▄ ███   ███    ███   ███    ███ ███   ███   ███    ▄█    ███ 
+ ▄████████▀   ▀███▀███▀    ███    █▀    ███    ███  ▀█   ███   █▀   ▄████████▀  
+                                        ███    ███                                 
 """
 
 
-# Function to display the ASCII art in red
+def create_spinner(text: str) -> Progress:
+    """Create a custom spinner with the given text."""
+    return Progress(
+        SpinnerColumn(style=COLORS["primary"]),
+        TextColumn("[{task.description}]", style=COLORS["text"]),
+        console=console,
+    )
+
+
 def show_ascii_art():
-    text = Text(ASCII_ART, style="bold cyan")
-    console.print(text)
+    """Display the ASCII art with a glowing effect."""
+    panel = Panel(
+        Text(ASCII_ART, style=f"bold {COLORS['primary']}"),
+        border_style=COLORS["secondary"],
+        title="[bold]Welcome to Swarms[/bold]",
+        subtitle="[dim]Power to the Swarms[/dim]",
+    )
+    console.print(panel)
 
 
-# Help command
+def create_command_table() -> Table:
+    """Create a beautifully formatted table of commands."""
+    table = Table(
+        show_header=True,
+        header_style=f"bold {COLORS['primary']}",
+        border_style=COLORS["secondary"],
+        title="Available Commands",
+        padding=(0, 2),
+    )
+
+    table.add_column("Command", style="bold white")
+    table.add_column("Description", style="dim white")
+
+    commands = [
+        ("onboarding", "Start the interactive onboarding process"),
+        ("help", "Display this help message"),
+        ("get-api-key", "Retrieve your API key from the platform"),
+        ("check-login", "Verify login status and initialize cache"),
+        ("run-agents", "Execute agents from your YAML configuration"),
+        ("auto-upgrade", "Update Swarms to the latest version"),
+        ("book-call", "Schedule a strategy session with our team"),
+        ("autoswarm", "Generate and execute an autonomous swarm"),
+    ]
+
+    for cmd, desc in commands:
+        table.add_row(cmd, desc)
+
+    return table
+
+
 def show_help():
+    """Display a beautifully formatted help message."""
     console.print(
-        """
-    [bold cyan]Swarms CLI - Help[/bold cyan]
-
-    [bold magenta]Commands:[/bold magenta]
-    [bold white]onboarding[/bold white]    : Starts the onboarding process
-    [bold white]help[/bold white]          : Shows this help message
-    [bold white]get-api-key[/bold white]   : Retrieves your API key from the platform
-    [bold white]check-login[/bold white]   : Checks if you're logged in and starts the cache
-    [bold white]read-docs[/bold white]     : Redirects you to swarms cloud documentation!
-    [bold white]run-agents[/bold white]    : Run your Agents from your specified yaml file. Specify the yaml file with path the `--yaml-file` arg. Example: `--yaml-file agents.yaml`
-    [bold white]generate-prompt[/bold white]    : Generate a prompt through automated prompt engineering. Requires an OPENAI Key in your `.env` Example: --prompt "Generate a prompt for an agent to analyze legal docs"
-    [bold white]auto-upgrade[/bold white]   : Automatically upgrades Swarms to the latest version
-    [bold white]book-call[/bold white]     : Book a strategy session with our team to discuss your use case and get personalized guidance
-
-    For more details, visit: https://docs.swarms.world
-    """
+        "\n[bold]Swarms CLI - Command Reference[/bold]\n",
+        style=COLORS["primary"],
+    )
+    console.print(create_command_table())
+    console.print(
+        "\n[dim]For detailed documentation, visit: https://docs.swarms.world[/dim]"
     )
 
-    # [bold white]add-agent[/bold white]   : Add an agent to the marketplace under your name. Must have a Dockerfile + your agent.yaml to publish. Learn more Here: https://docs.swarms.world/en/latest/swarms_cloud/vision/
+
+def show_error(message: str, help_text: str = None):
+    """Display error message in a formatted panel"""
+    error_panel = Panel(
+        f"[bold red]{message}[/bold red]",
+        title="Error",
+        border_style="red",
+    )
+    console.print(error_panel)
+
+    if help_text:
+        console.print(f"\n[yellow]ℹ️ {help_text}[/yellow]")
 
 
-# Fetch API key from platform
+def execute_with_spinner(action: callable, text: str) -> None:
+    """Execute an action with a spinner animation."""
+    with create_spinner(text) as progress:
+        task = progress.add_task(text, total=None)
+        result = action()
+        progress.remove_task(task)
+    return result
+
+
 def get_api_key():
+    """Retrieve API key with visual feedback."""
+    with create_spinner("Opening API key portal...") as progress:
+        task = progress.add_task("Opening browser...")
+        webbrowser.open("https://swarms.world/platform/api-keys")
+        time.sleep(1)
+        progress.remove_task(task)
     console.print(
-        "[bold yellow]Opening the API key retrieval page...[/bold yellow]"
-    )
-    # Simulating API key retrieval process by opening the website
-    import webbrowser
-
-    webbrowser.open("https://swarms.world/platform/api-keys")
-    time.sleep(2)
-    console.print(
-        "[bold green]Your API key is available on the dashboard.[/bold green]"
+        f"\n[{COLORS['success']}]✓ API key page opened in your browser[/{COLORS['success']}]"
     )
 
 
-# Redirect to docs
-def redirect_to_docs():
-    console.print(
-        "[bold yellow]Opening the Docs page...[/bold yellow]"
-    )
-    # Simulating API key retrieval process by opening the website
-    import webbrowser
-
-    webbrowser.open("https://docs.swarms.world")
-    time.sleep(2)
-
-
-# Redirect to docs
-def redirect_to_call():
-    console.print(
-        "[bold yellow]Opening the Call page...[/bold yellow]"
-    )
-    # Simulating API key retrieval process by opening the website
-    import webbrowser
-
-    webbrowser.open("https://cal.com/swarms/swarms-strategy-session")
-    time.sleep(2)
-
-
-# Check and start cache (login system simulation)
 def check_login():
+    """Verify login status with enhanced visual feedback."""
     cache_file = "cache.txt"
 
     if os.path.exists(cache_file):
         with open(cache_file, "r") as f:
-            cache_content = f.read()
-        if cache_content == "logged_in":
-            console.print(
-                "[bold green]You are already logged in.[/bold green]"
-            )
-        else:
-            console.print(
-                "[bold red]You are not logged in.[/bold red]"
-            )
-    else:
-        console.print("[bold yellow]Logging in...[/bold yellow]")
-        time.sleep(2)
+            if f.read() == "logged_in":
+                console.print(
+                    f"[{COLORS['success']}]✓ Authentication verified[/{COLORS['success']}]"
+                )
+                return True
+
+    with create_spinner("Authenticating...") as progress:
+        task = progress.add_task("Initializing session...")
+        time.sleep(1)
         with open(cache_file, "w") as f:
             f.write("logged_in")
-        console.print("[bold green]Login successful![/bold green]")
+        progress.remove_task(task)
+
+    console.print(
+        f"[{COLORS['success']}]✓ Login successful![/{COLORS['success']}]"
+    )
+    return True
+
+
+def run_autoswarm(task: str, model: str):
+    """Run autoswarm with enhanced error handling"""
+    try:
+        console.print(
+            "[yellow]Initializing autoswarm configuration...[/yellow]"
+        )
+
+        # Set LiteLLM verbose mode for debugging
+        import litellm
+
+        litellm.set_verbose = True
+
+        # Validate inputs
+        if not task or task.strip() == "":
+            raise SwarmCLIError("Task cannot be empty")
+
+        if not model or model.strip() == "":
+            raise SwarmCLIError("Model name cannot be empty")
+
+        # Attempt to generate swarm configuration
+        console.print(
+            f"[yellow]Generating swarm for task: {task}[/yellow]"
+        )
+        result = generate_swarm_config(task=task, model=model)
+
+        if result:
+            console.print(
+                "[green]✓ Swarm configuration generated successfully![/green]"
+            )
+        else:
+            raise SwarmCLIError(
+                "Failed to generate swarm configuration"
+            )
+
+    except Exception as e:
+        if "No YAML content found" in str(e):
+            show_error(
+                "Failed to generate YAML configuration",
+                "This might be due to an API key issue or invalid model configuration.\n"
+                + "1. Check if your OpenAI API key is set correctly\n"
+                + "2. Verify the model name is valid\n"
+                + "3. Try running with --model gpt-4",
+            )
+        else:
+            show_error(
+                f"Error during autoswarm execution: {str(e)}",
+                "For debugging, try:\n"
+                + "1. Check your API keys are set correctly\n"
+                + "2. Verify your network connection\n"
+                + "3. Try a different model",
+            )
 
 
 def check_and_upgrade_version():
-    console.print(
-        "[bold yellow]Checking for Swarms updates...[/bold yellow]"
-    )
-    try:
-        # Check for updates using pip
+    """Check for updates with visual progress."""
+
+    def check_update():
         result = subprocess.run(
             ["pip", "list", "--outdated", "--format=freeze"],
             capture_output=True,
             text=True,
         )
-        outdated_packages = result.stdout.splitlines()
+        return result.stdout.splitlines()
 
-        # Check if Swarms is outdated
-        for package in outdated_packages:
-            if package.startswith("swarms=="):
-                console.print(
-                    "[bold magenta]New version available! Upgrading...[/bold magenta]"
+    outdated = execute_with_spinner(
+        check_update, "Checking for updates..."
+    )
+
+    for package in outdated:
+        if package.startswith("swarms=="):
+            console.print(
+                f"[{COLORS['warning']}]↑ Update available![/{COLORS['warning']}]"
+            )
+            with create_spinner("Upgrading Swarms...") as progress:
+                task = progress.add_task(
+                    "Installing latest version..."
                 )
                 subprocess.run(
                     ["pip", "install", "--upgrade", "swarms"],
                     check=True,
                 )
-                console.print(
-                    "[bold green]Swarms upgraded successfully![/bold green]"
-                )
-                return
+                progress.remove_task(task)
+            console.print(
+                f"[{COLORS['success']}]✓ Swarms upgraded successfully![/{COLORS['success']}]"
+            )
+            return
 
-        console.print(
-            "[bold green]Swarms is up-to-date.[/bold green]"
-        )
-    except Exception as e:
-        console.print(
-            f"[bold red]Error checking for updates: {e}[/bold red]"
-        )
+    console.print(
+        f"[{COLORS['success']}]✓ Swarms is up to date![/{COLORS['success']}]"
+    )
 
 
-# Main CLI handler
 def main():
-    parser = argparse.ArgumentParser(description="Swarms Cloud CLI")
+    try:
 
-    # Adding arguments for different commands
-    parser.add_argument(
-        "command",
-        choices=[
-            "onboarding",
-            "help",
-            "get-api-key",
-            "check-login",
-            "run-agents",
-            "generate-prompt",  # Added new command for generating prompts
-            "auto-upgrade",  # Added new command for auto-upgrade,
-            "book-call",
-        ],
-        help="Command to run",
-    )
-    parser.add_argument(
-        "--yaml-file",
-        type=str,
-        default="agents.yaml",
-        help="Specify the YAML file for running agents",
-    )
-    parser.add_argument(
-        "--prompt",
-        type=str,
-        help="Specify the task for generating a prompt",
-    )
-    parser.add_argument(
-        "--num-loops",
-        type=int,
-        default=1,
-        help="Specify the number of loops for generating a prompt",
-    )
-    parser.add_argument(
-        "--autosave",
-        action="store_true",
-        help="Enable autosave for the prompt generator",
-    )
-    parser.add_argument(
-        "--save-to-yaml",
-        action="store_true",
-        help="Save the generated prompt to a YAML file",
-    )
+        show_ascii_art()
 
-    args = parser.parse_args()
-
-    show_ascii_art()
-
-    # Determine which command to run
-    if args.command == "onboarding":
-        OnboardingProcess().run()
-    elif args.command == "help":
-        show_help()
-    elif args.command == "get-api-key":
-        get_api_key()
-    elif args.command == "check-login":
-        check_login()
-    elif args.command == "run-agents":
-        create_agents_from_yaml(
-            yaml_file=args.yaml_file, return_type="tasks"
+        parser = argparse.ArgumentParser(
+            description="Swarms Cloud CLI"
         )
-    # elif args.command == "generate-prompt":
-    #     if (
-    #         args.prompt
-    #     ):  # Corrected from args.prompt_task to args.prompt
-    #         generate_prompt(
-    #             num_loops=args.num_loops,
-    #             autosave=args.autosave,
-    #             save_to_yaml=args.save_to_yaml,
-    #             prompt=args.prompt,  # Corrected from args.prompt_task to args.prompt
-    #         )
-    #     else:
-    #         console.print(
-    #             "[bold red]Please specify a task for generating a prompt using '--prompt'.[/bold red]"
-    #         )
-    elif args.command == "auto-upgrade":
-        check_and_upgrade_version()
-    elif args.command == "book-call":
-        redirect_to_call()
-    else:
-        console.print(
-            "[bold red]Unknown command! Type 'help' for usage.[/bold red]"
+        parser.add_argument(
+            "command",
+            choices=[
+                "onboarding",
+                "help",
+                "get-api-key",
+                "check-login",
+                "run-agents",
+                "auto-upgrade",
+                "book-call",
+                "autoswarm",
+            ],
+            help="Command to execute",
         )
+        parser.add_argument(
+            "--yaml-file",
+            type=str,
+            default="agents.yaml",
+            help="YAML configuration file path",
+        )
+        parser.add_argument(
+            "--task", type=str, help="Task for autoswarm"
+        )
+        parser.add_argument(
+            "--model",
+            type=str,
+            default="gpt-4",
+            help="Model for autoswarm",
+        )
+
+        args = parser.parse_args()
+
+        try:
+            if args.command == "onboarding":
+                OnboardingProcess().run()
+            elif args.command == "help":
+                show_help()
+            elif args.command == "get-api-key":
+                get_api_key()
+            elif args.command == "check-login":
+                check_login()
+            elif args.command == "run-agents":
+                create_agents_from_yaml(
+                    yaml_file=args.yaml_file, return_type="tasks"
+                )
+            elif args.command == "auto-upgrade":
+                check_and_upgrade_version()
+            elif args.command == "book-call":
+                webbrowser.open(
+                    "https://cal.com/swarms/swarms-strategy-session"
+                )
+            elif args.command == "autoswarm":
+                if not args.task:
+                    show_error(
+                        "Missing required argument: --task",
+                        "Example usage: python cli.py autoswarm --task 'analyze this data' --model gpt-4",
+                    )
+                    exit(1)
+                run_autoswarm(args.task, args.model)
+        except Exception as e:
+            console.print(
+                f"[{COLORS['error']}]Error: {str(e)}[/{COLORS['error']}]"
+            )
+            return
+    except Exception as error:
+        formatter.print_panel(
+            f"Error detected: {error} check your args"
+        )
+        raise error
 
 
 if __name__ == "__main__":

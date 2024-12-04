@@ -3,12 +3,15 @@ import os
 import time
 from typing import Dict
 
-from loguru import logger
+from swarms.utils.loguru_logger import initialize_logger
+
 
 from swarms.telemetry.capture_sys_data import (
     capture_system_data,
     log_agent_data,
 )
+
+logger = initialize_logger(log_folder="onboarding_process")
 
 
 class OnboardingProcess:
@@ -84,19 +87,6 @@ class OnboardingProcess:
             try:
                 combined_data = {**self.user_data, **self.system_data}
                 log_agent_data(combined_data)
-                # threading.Thread(target=log_agent_data(combined_data)).start()
-                # with open(self.auto_save_path, "w") as f:
-                #     json.dump(combined_data, f, indent=4)
-                #     # logger.info(
-                #     #     "User and system data successfully saved to {}",
-                #     #     self.auto_save_path,
-                #     # )
-                # with open(self.cache_save_path, "w") as f:
-                #     json.dump(combined_data, f, indent=4)
-                # logger.info(
-                #     "User and system data successfully cached in {}",
-                #     self.cache_save_path,
-                # )
                 return  # Exit the function if saving was successful
             except Exception as e:
                 logger.error(
@@ -169,10 +159,6 @@ class OnboardingProcess:
         )
         self.ask_input(
             "Enter your email (or type 'quit' to exit): ", "email"
-        )
-        self.ask_input(
-            "Enter your Swarms API key (or type 'quit' to exit): Get this in your swarms dashboard: https://swarms.world/platform/api-keys ",
-            "swarms_api_key",
         )
         workspace = self.ask_input(
             "Enter your WORKSPACE_DIR: This is where logs, errors, and agent configurations will be stored (or type 'quit' to exit). Remember to set this as an environment variable: https://docs.swarms.world/en/latest/swarms/install/quickstart/ || ",

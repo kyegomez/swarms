@@ -1,3 +1,4 @@
+from datetime import datetime
 import asyncio
 import json
 import logging
@@ -21,15 +22,8 @@ from typing import (
 
 import toml
 import yaml
-from clusterops import (
-    execute_on_gpu,
-    execute_with_cpu_cores,
-)
-from loguru import logger
 from pydantic import BaseModel
 from swarm_models.tiktoken_wrapper import TikTokenizer
-from termcolor import colored
-
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
@@ -53,6 +47,13 @@ from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.artifacts.main_artifact import Artifact
+from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.wrapper_clusterop import (
+    exec_callable_with_clusterops,
+)
+from swarms.utils.formatter import formatter
+
+logger = initialize_logger(log_folder="agents")
 
 
 # Utils
@@ -177,6 +178,7 @@ class Agent:
         artifacts_on (bool): Enable artifacts
         artifacts_output_path (str): The artifacts output path
         artifacts_file_extension (str): The artifacts file extension (.pdf, .md, .txt, )
+        scheduled_run_date (datetime): The date and time to schedule the task
 
     Methods:
         run: Run the agent
@@ -299,7 +301,6 @@ class Agent:
         rules: str = None,  # type: ignore
         planning: Optional[str] = False,
         planning_prompt: Optional[str] = None,
-        device: str = None,
         custom_planning_prompt: str = None,
         memory_chunk_size: int = 2000,
         agent_ops_on: bool = False,
@@ -331,6 +332,14 @@ class Agent:
         artifacts_on: bool = False,
         artifacts_output_path: str = None,
         artifacts_file_extension: str = None,
+        device: str = "cpu",
+        all_cores: bool = True,
+        device_id: int = 0,
+        scheduled_run_date: Optional[datetime] = None,
+        do_not_use_cluster_ops: bool = True,
+        all_gpus: bool = False,
+        model_name: str = None,
+        llm_args: dict = None,
         *args,
         **kwargs,
     ):
@@ -408,7 +417,6 @@ class Agent:
         self.execute_tool = execute_tool
         self.planning = planning
         self.planning_prompt = planning_prompt
-        self.device = device
         self.custom_planning_prompt = custom_planning_prompt
         self.rules = rules
         self.custom_tools_prompt = custom_tools_prompt
@@ -441,6 +449,14 @@ class Agent:
         self.artifacts_on = artifacts_on
         self.artifacts_output_path = artifacts_output_path
         self.artifacts_file_extension = artifacts_file_extension
+        self.device = device
+        self.all_cores = all_cores
+        self.device_id = device_id
+        self.scheduled_run_date = scheduled_run_date
+        self.do_not_use_cluster_ops = do_not_use_cluster_ops
+        self.all_gpus = all_gpus
+        self.model_name = model_name
+        self.llm_args = llm_args
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -577,6 +593,21 @@ class Agent:
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
 
+        threading.Thread(target=self.llm_handling())
+
+    def llm_handling(self):
+
+        if self.llm is None:
+            from swarms.utils.litellm import LiteLLM
+
+            if self.llm_args is not None:
+                self.llm = LiteLLM(
+                    model_name=self.model_name, **self.llm_args
+                )
+
+            else:
+                self.llm = LiteLLM(model_name=self.model_name)
+
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
         Checks if auto_generate_prompt is enabled and generates a prompt by combining agent name, description and system prompt if available.
@@ -657,11 +688,8 @@ class Agent:
                 return self.stopping_condition(response)
             return False
         except Exception as error:
-            print(
-                colored(
-                    f"Error checking stopping condition: {error}",
-                    "red",
-                )
+            logger.error(
+                f"Error checking stopping condition: {error}"
             )
 
     def dynamic_temperature(self):
@@ -675,20 +703,19 @@ class Agent:
             if hasattr(self.llm, "temperature"):
                 # Randomly change the temperature attribute of self.llm object
                 self.llm.temperature = random.uniform(0.0, 1.0)
-                logger.info(f"Temperature: {self.llm.temperature}")
             else:
                 # Use a default temperature
-                self.llm.temperature = 0.7
+                self.llm.temperature = 0.5
         except Exception as error:
-            print(
-                colored(
-                    f"Error dynamically changing temperature: {error}"
-                )
+            logger.error(
+                f"Error dynamically changing temperature: {error}"
             )
 
     def print_dashboard(self):
         """Print dashboard"""
-        print(colored("Initializing Agent Dashboard...", "yellow"))
+        formatter.print_panel(
+            f"Initializing Agent: {self.agent_name}"
+        )
 
         data = self.to_dict()
 
@@ -696,22 +723,19 @@ class Agent:
         # data = json.dumps(data, indent=4)
         # json_data = json.dumps(data, indent=4)
 
-        print(
-            colored(
-                f"""
-                Agent Dashboard
-                --------------------------------------------
+        formatter.print_panel(
+            f"""
+            Agent Dashboard
+            --------------------------------------------
 
-                Agent {self.agent_name} is initializing for {self.max_loops} with the following configuration:
-                ----------------------------------------
+            Agent {self.agent_name} is initializing for {self.max_loops} with the following configuration:
+            ----------------------------------------
 
-                Agent Configuration:
-                    Configuration: {data}
+            Agent Configuration:
+                Configuration: {data}
 
-                ----------------------------------------
-                """,
-                "green",
-            )
+            ----------------------------------------
+        """,
         )
 
     def loop_count_print(
@@ -723,21 +747,23 @@ class Agent:
             loop_count (_type_): _description_
             max_loops (_type_): _description_
         """
-        print(colored(f"\nLoop {loop_count} of {max_loops}", "cyan"))
+        logger.info(f"\nLoop {loop_count} of {max_loops}")
         print("\n")
 
     # Check parameters
     def check_parameters(self):
         if self.llm is None:
-            raise ValueError("Language model is not provided")
+            raise ValueError(
+                "Language model is not provided. Choose a model from the available models in swarm_models or create a class with a run(task: str) method and or a __call__ method."
+            )
 
-        if self.max_loops is None:
+        if self.max_loops is None or self.max_loops == 0:
             raise ValueError("Max loops is not provided")
 
-        if self.max_tokens == 0:
+        if self.max_tokens == 0 or self.max_tokens is None:
             raise ValueError("Max tokens is not provided")
 
-        if self.context_length == 0:
+        if self.context_length == 0 or self.context_length is None:
             raise ValueError("Context length is not provided")
 
     # Main function
@@ -745,7 +771,11 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        is_last: bool = False,
+        speech: Optional[str] = None,
+        video: Optional[str] = None,
+        is_last: Optional[bool] = False,
+        print_task: Optional[bool] = False,
+        generate_speech: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -787,6 +817,15 @@ class Agent:
             # Query the long term memory first for the context
             if self.long_term_memory is not None:
                 self.memory_query(task)
+
+            # Print the user's request
+
+            # Print the request
+            if print_task is True:
+                formatter.print_panel(
+                    f"\n User: {task}",
+                    f"Task Request for {self.agent_name}",
+                )
 
             while (
                 self.max_loops == "auto"
@@ -834,9 +873,17 @@ class Agent:
 
                         # Print
                         if self.streaming_on is True:
-                            self.stream_response(response)
+                            # self.stream_response(response)
+                            formatter.print_panel_token_by_token(
+                                f"{self.agent_name}: {response}",
+                                title=f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
+                            )
                         else:
-                            logger.info(f"Response: {response}")
+                            # logger.info(f"Response: {response}")
+                            formatter.print_panel(
+                                f"{self.agent_name}: {response}",
+                                f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+                            )
 
                         # Check if response is a dictionary and has 'choices' key
                         if (
@@ -926,7 +973,7 @@ class Agent:
 
                 if self.interactive:
                     logger.info("Interactive mode enabled.")
-                    user_input = colored(input("You: "), "red")
+                    user_input = input("You: ")
 
                     # User-defined exit command
                     if (
@@ -990,6 +1037,11 @@ class Agent:
                     self.artifacts_file_extension,
                 )
 
+            try:
+                self.log_agent_data()
+            except Exception:
+                pass
+
             # More flexible output types
             if (
                 self.output_type == "string"
@@ -1013,13 +1065,26 @@ class Agent:
             elif self.return_step_meta is True:
                 return self.agent_output.model_dump_json(indent=4)
             elif self.return_history is True:
-                return self.short_memory.get_str()
+                history = self.short_memory.get_str()
+
+                formatter.print_panel(
+                    history, title=f"{self.agent_name} History"
+                )
+                return history
             else:
                 raise ValueError(
                     f"Invalid output type: {self.output_type}"
                 )
 
         except Exception as error:
+            self.log_agent_data()
+            logger.info(
+                f"Error running agent: {error} optimize your input parameters"
+            )
+            raise error
+
+        except KeyboardInterrupt as error:
+            self.log_agent_data()
             logger.info(
                 f"Error running agent: {error} optimize your input parameters"
             )
@@ -1222,7 +1287,7 @@ class Agent:
             logger.info(f"Running bulk tasks: {inputs}")
             return [self.run(**input_data) for input_data in inputs]
         except Exception as error:
-            print(colored(f"Error running bulk run: {error}", "red"))
+            logger.info(f"Error running bulk run: {error}", "red")
 
     def save(self) -> None:
         """Save the agent history to a file.
@@ -1399,9 +1464,7 @@ class Agent:
             with open(file_path, "w") as f:
                 yaml.dump(self.to_dict(), f)
         except Exception as error:
-            logger.error(
-                colored(f"Error saving agent to YAML: {error}", "red")
-            )
+            logger.error(f"Error saving agent to YAML: {error}")
             raise error
 
     def get_llm_parameters(self):
@@ -1466,7 +1529,7 @@ class Agent:
                 role=self.user_name, content=data
             )
         except Exception as error:
-            print(colored(f"Error ingesting docs: {error}", "red"))
+            logger.info(f"Error ingesting docs: {error}", "red")
 
     def ingest_pdf(self, pdf: str):
         """Ingest the pdf into the memory
@@ -1481,7 +1544,7 @@ class Agent:
                 role=self.user_name, content=text
             )
         except Exception as error:
-            print(colored(f"Error ingesting pdf: {error}", "red"))
+            logger.info(f"Error ingesting pdf: {error}", "red")
 
     def receieve_message(self, name: str, message: str):
         """Receieve a message"""
@@ -1558,19 +1621,22 @@ class Agent:
             files = os.listdir(self.docs_folder)
 
             # Extract the text from the files
+            # Process each file and combine their contents
+            all_text = ""
             for file in files:
-                text = data_to_text(file)
+                file_path = os.path.join(self.docs_folder, file)
+                text = data_to_text(file_path)
+                all_text += f"\nContent from {file}:\n{text}\n"
 
+            # Add the combined content to memory
             return self.short_memory.add(
-                role=self.user_name, content=text
+                role=self.user_name, content=all_text
             )
         except Exception as error:
-            print(
-                colored(
-                    f"Error getting docs from doc folders: {error}",
-                    "red",
-                )
+            logger.error(
+                f"Error getting docs from doc folders: {error}"
             )
+            raise error
 
     def check_end_session_agentops(self):
         if self.agent_ops_on is True:
@@ -1590,7 +1656,8 @@ class Agent:
         try:
             # Query the long term memory
             if self.long_term_memory is not None:
-                logger.info(f"Querying long term memory for: {task}")
+                formatter.print_panel(f"Querying RAG for: {task}")
+
                 memory_retrieval = self.long_term_memory.query(
                     task, *args, **kwargs
                 )
@@ -1599,15 +1666,15 @@ class Agent:
                     f"Documents Available: {str(memory_retrieval)}"
                 )
 
-                # Count the tokens
-                memory_token_count = self.tokenizer.count_tokens(
-                    memory_retrieval
-                )
-                if memory_token_count > self.memory_chunk_size:
-                    # Truncate the memory by the memory chunk size
-                    memory_retrieval = self.truncate_string_by_tokens(
-                        memory_retrieval, self.memory_chunk_size
-                    )
+                # # Count the tokens
+                # memory_token_count = self.tokenizer.count_tokens(
+                #     memory_retrieval
+                # )
+                # if memory_token_count > self.memory_chunk_size:
+                #     # Truncate the memory by the memory chunk size
+                #     memory_retrieval = self.truncate_string_by_tokens(
+                #         memory_retrieval, self.memory_chunk_size
+                #     )
 
                 self.short_memory.add(
                     role="Database",
@@ -2235,25 +2302,31 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        is_last: bool = False,
-        device: str = "cpu",  # gpu
-        device_id: int = 0,
-        all_cores: bool = True,
+        device: Optional[str] = "cpu",  # gpu
+        device_id: Optional[int] = 0,
+        all_cores: Optional[bool] = True,
+        scheduled_run_date: Optional[datetime] = None,
+        do_not_use_cluster_ops: Optional[bool] = False,
+        all_gpus: Optional[bool] = False,
+        generate_speech: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
         """
-        Executes the agent's run method on a specified device.
+        Executes the agent's run method on a specified device, with optional scheduling.
 
         This method attempts to execute the agent's run method on a specified device, either CPU or GPU. It logs the device selection and the number of cores or GPU ID used. If the device is set to CPU, it can use all available cores or a specific core specified by `device_id`. If the device is set to GPU, it uses the GPU specified by `device_id`.
+
+        If a `scheduled_date` is provided, the method will wait until that date and time before executing the task.
 
         Args:
             task (Optional[str], optional): The task to be executed. Defaults to None.
             img (Optional[str], optional): The image to be processed. Defaults to None.
-            is_last (bool, optional): Indicates if this is the last task. Defaults to False.
             device (str, optional): The device to use for execution. Defaults to "cpu".
             device_id (int, optional): The ID of the GPU to use if device is set to "gpu". Defaults to 0.
             all_cores (bool, optional): If True, uses all available CPU cores. Defaults to True.
+            scheduled_run_date (Optional[datetime], optional): The date and time to schedule the task. Defaults to None.
+            do_not_use_cluster_ops (bool, optional): If True, does not use cluster ops. Defaults to False.
             *args: Additional positional arguments to be passed to the execution method.
             **kwargs: Additional keyword arguments to be passed to the execution method.
 
@@ -2264,33 +2337,45 @@ class Agent:
             ValueError: If an invalid device is specified.
             Exception: If any other error occurs during execution.
         """
+        device = device or self.device
+        device_id = device_id or self.device_id
+        all_cores = all_cores or self.all_cores
+        all_gpus = all_gpus or self.all_gpus
+        do_not_use_cluster_ops = (
+            do_not_use_cluster_ops or self.do_not_use_cluster_ops
+        )
+
+        if scheduled_run_date:
+            while datetime.now() < scheduled_run_date:
+                time.sleep(
+                    1
+                )  # Sleep for a short period to avoid busy waiting
+
         try:
-            logger.info(f"Attempting to run on device: {device}")
-            if device == "cpu":
-                logger.info("Device set to CPU")
-                if all_cores is True:
-                    count = os.cpu_count()
-                    logger.info(
-                        f"Using all available CPU cores: {count}"
-                    )
-                else:
-                    count = device_id
-                    logger.info(f"Using specific CPU core: {count}")
-
-                return execute_with_cpu_cores(
-                    count, self._run, task, img, *args, **kwargs
+            # If cluster ops disabled, run directly
+            if do_not_use_cluster_ops is True:
+                logger.info("Running without cluster operations")
+                return self._run(
+                    task=task,
+                    img=img,
+                    generate_speech=generate_speech * args,
+                    **kwargs,
                 )
 
-            # If device gpu
-            elif device == "gpu":
-                logger.info("Device set to GPU")
-                return execute_on_gpu(
-                    device_id, self._run, task, img, *args, **kwargs
-                )
             else:
-                raise ValueError(
-                    f"Invalid device specified: {device}. Supported devices are 'cpu' and 'gpu'."
+                return exec_callable_with_clusterops(
+                    device=device,
+                    device_id=device_id,
+                    all_cores=all_cores,
+                    all_gpus=all_gpus,
+                    func=self._run,
+                    task=task,
+                    img=img,
+                    generate_speech=generate_speech,
+                    *args,
+                    **kwargs,
                 )
+
         except ValueError as e:
             logger.error(f"Invalid device specified: {e}")
             raise e
@@ -2334,3 +2419,26 @@ class Agent:
                 f"Unexpected error handling artifact: {str(e)}"
             )
             raise
+
+    def showcase_config(self):
+
+        # Convert all values in config_dict to concise string representations
+        config_dict = self.to_dict()
+        for key, value in config_dict.items():
+            if isinstance(value, list):
+                # Format list as a comma-separated string
+                config_dict[key] = ", ".join(
+                    str(item) for item in value
+                )
+            elif isinstance(value, dict):
+                # Format dict as key-value pairs in a single string
+                config_dict[key] = ", ".join(
+                    f"{k}: {v}" for k, v in value.items()
+                )
+            else:
+                # Ensure any non-iterable value is a string
+                config_dict[key] = str(value)
+
+        return formatter.print_table(
+            f"Agent: {self.agent_name} Configuration", config_dict
+        )

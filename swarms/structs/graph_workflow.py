@@ -5,7 +5,9 @@ import networkx as nx
 from pydantic.v1 import BaseModel, Field, validator
 
 from swarms.structs.agent import Agent  # noqa: F401
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="graph_workflow")
 
 
 class NodeType(str, Enum):

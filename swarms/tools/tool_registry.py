@@ -1,9 +1,11 @@
 import os
 from typing import Any, Callable, Dict, List, Optional
 import time
-from loguru import logger
 from pydantic import BaseModel, Field
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="tool_registry")
 
 
 class ToolMetadata(BaseModel):

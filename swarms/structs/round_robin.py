@@ -2,12 +2,14 @@ import random
 from swarms.structs.base_swarm import BaseSwarm
 from typing import List
 from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import logger
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 from swarms.schemas.agent_step_schemas import ManySteps
 import tenacity
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger("round-robin")
 
 datetime_stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

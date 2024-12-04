@@ -19,7 +19,9 @@ from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger("swarm-network")
 
 
 # Pydantic models

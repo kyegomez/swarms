@@ -5,7 +5,9 @@ from typing import Callable, List, Optional
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="swarm_load_balancer")
 
 
 class AgentLoadBalancer(BaseSwarm):

@@ -1,34 +1,64 @@
 import re
 
 
-def extract_code_from_markdown(markdown_content: str) -> str:
+def extract_code_blocks_with_language(markdown_text: str):
     """
-    Extracts code blocks from a Markdown string and returns them as a single string.
+    Extracts all code blocks from Markdown text along with their languages.
 
     Args:
-    - markdown_content (str): The Markdown content as a string.
+        markdown_text (str): The input Markdown text.
 
     Returns:
-    - str: A single string containing all the code blocks separated by newlines.
+        list[dict]: A list of dictionaries, each containing:
+                    - 'language': The detected language (or 'plaintext' if none specified).
+                    - 'content': The content of the code block.
     """
-    # Regular expression for fenced code blocks with optional language specifier
-    pattern = r"```(?:\w+\n)?(.*?)```"
+    # Regex pattern to match code blocks and optional language specifiers
+    pattern = r"```(\w+)?\n(.*?)```"
 
-    # Find all matches of the pattern
-    matches = re.finditer(pattern, markdown_content, re.DOTALL)
+    # Find all matches (language and content)
+    matches = re.findall(pattern, markdown_text, re.DOTALL)
 
-    # Extract the content inside the backticks
-    code_blocks = [match.group(1).strip() for match in matches]
+    # Parse results
+    code_blocks = []
+    for language, content in matches:
+        language = (
+            language.strip() if language else "plaintext"
+        )  # Default to 'plaintext'
+        code_blocks.append(
+            {"language": language, "content": content.strip()}
+        )
 
-    # Concatenate all code blocks separated by newlines
-    return "\n".join(code_blocks)
+    return code_blocks
 
 
-# example = """
-# hello im an agent
-# ```bash
-# pip install swarms
-# ```
-# """
+def extract_code_from_markdown(
+    markdown_text: str, language: str = None
+):
+    """
+    Extracts content of code blocks for a specific language or all blocks if no language specified.
 
-# print(extract_code_from_markdown(example))  # Output: { "type": "function", "function": { "name": "fetch_financial_news", "parameters": { "query": "Nvidia news", "num_articles": 5 } } }
+    Args:
+        markdown_text (str): The input Markdown text.
+        language (str, optional): The language to filter by (e.g., 'yaml', 'python').
+
+    Returns:
+        str: The concatenated content of matched code blocks or an empty string if none found.
+    """
+    # Get all code blocks with detected languages
+    code_blocks = extract_code_blocks_with_language(markdown_text)
+
+    # Filter by language if specified
+    if language:
+        code_blocks = [
+            block["content"]
+            for block in code_blocks
+            if block["language"] == language
+        ]
+    else:
+        code_blocks = [
+            block["content"] for block in code_blocks
+        ]  # Include all blocks
+
+    # Return concatenated content
+    return "\n\n".join(code_blocks) if code_blocks else ""

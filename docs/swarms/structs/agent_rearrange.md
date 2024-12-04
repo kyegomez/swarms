@@ -7,10 +7,22 @@ The `AgentRearrange` class represents a swarm of agents for rearranging tasks. I
 
 | Attribute | Type | Description |
 | --- | --- | --- |
-| `agents` | `dict` | A dictionary of agents, where the key is the agent's name and the value is the agent object. |
-| `flow` | `str` | The flow pattern of the tasks. |
-| `max_loops` | `int` | The maximum number of loops for the agents to run. |
-| `verbose` | `bool` | Whether to enable verbose logging or not. |
+| `id` | `str` | Unique identifier for the swarm |
+| `name` | `str` | Name of the swarm |
+| `description` | `str` | Description of the swarm's purpose |
+| `agents` | `dict` | Dictionary mapping agent names to Agent objects |
+| `flow` | `str` | Flow pattern defining task execution order |
+| `max_loops` | `int` | Maximum number of execution loops |
+| `verbose` | `bool` | Whether to enable verbose logging |
+| `memory_system` | `BaseVectorDatabase` | Memory system for storing agent interactions |
+| `human_in_the_loop` | `bool` | Whether human intervention is enabled |
+| `custom_human_in_the_loop` | `Callable` | Custom function for human intervention |
+| `return_json` | `bool` | Whether to return output in JSON format |
+| `output_type` | `OutputType` | Format of output ("all", "final", "list", or "dict") |
+| `docs` | `List[str]` | List of document paths to add to agent prompts |
+| `doc_folder` | `str` | Folder path containing documents to add to agent prompts |
+| `swarm_history` | `dict` | History of agent interactions |
+
 
 ## Methods
 -------
@@ -62,19 +74,54 @@ Validates the flow pattern.
 
 -   `bool`: `True` if the flow pattern is valid.
 
-### `run(self, task: str, *args, **kwargs)`
+### `run(self, task: str = None, img: str = None, device: str = "cpu", device_id: int = 1, all_cores: bool = True, all_gpus: bool = False, *args, **kwargs)`
 
-Runs the swarm to rearrange the tasks.
+Executes the agent rearrangement task with specified compute resources.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `task` | `str` | The initial task to be processed. |
-| `*args` | - | Additional positional arguments. |
-| `**kwargs` | - | Additional keyword arguments. |
+| `task` | `str` | The task to execute |
+| `img` | `str` | Path to input image if required |
+| `device` | `str` | Computing device to use ('cpu' or 'gpu') |
+| `device_id` | `int` | ID of specific device to use |
+| `all_cores` | `bool` | Whether to use all CPU cores |
+| `all_gpus` | `bool` | Whether to use all available GPUs |
 
 **Returns:**
 
 -   `str`: The final processed task.
+
+### `batch_run(self, tasks: List[str], img: Optional[List[str]] = None, batch_size: int = 10, device: str = "cpu", device_id: int = None, all_cores: bool = True, all_gpus: bool = False, *args, **kwargs)`
+
+Process multiple tasks in batches.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `tasks` | `List[str]` | List of tasks to process |
+| `img` | `List[str]` | Optional list of images corresponding to tasks |
+| `batch_size` | `int` | Number of tasks to process simultaneously |
+| `device` | `str` | Computing device to use |
+| `device_id` | `int` | Specific device ID if applicable |
+| `all_cores` | `bool` | Whether to use all CPU cores |
+| `all_gpus` | `bool` | Whether to use all available GPUs |
+
+
+
+### `concurrent_run(self, tasks: List[str], img: Optional[List[str]] = None, max_workers: Optional[int] = None, device: str = "cpu", device_id: int = None, all_cores: bool = True, all_gpus: bool = False, *args, **kwargs)`
+
+Process multiple tasks concurrently using ThreadPoolExecutor.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `tasks` | `List[str]` | List of tasks to process |
+| `img` | `List[str]` | Optional list of images corresponding to tasks |
+| `max_workers` | `int` | Maximum number of worker threads |
+| `device` | `str` | Computing device to use |
+| `device_id` | `int` | Specific device ID if applicable |
+| `all_cores` | `bool` | Whether to use all CPU cores |
+| `all_gpus` | `bool` | Whether to use all available GPUs |
+
+
 
 ## Documentation for `rearrange` Function
 ======================================
@@ -246,18 +293,6 @@ Additionally, you can modify the `run` method of the `AgentRearrange` class to i
 -----------
 
 It's important to note that the `AgentRearrange` class and the `rearrange` function rely on the individual agents to process tasks correctly. The quality of the output will depend on the capabilities and configurations of the agents used in the swarm. Additionally, the `AgentRearrange` class does not provide any mechanisms for task prioritization or load balancing among the agents.
-
-## Future Improvements
--------------------
-
-Here are some potential future improvements for the `AgentRearrange` class and the `rearrange` function:
-
--   **Task Prioritization**: Implement a mechanism to prioritize tasks based on factors such as urgency, importance, or resource availability.
--   **Load Balancing**: Incorporate load balancing algorithms to distribute tasks among agents more efficiently, taking into account factors such as agent availability, performance, and resource utilization.
--   **Dynamic Flow Reconfiguration**: Allow for dynamic reconfiguration of the flow pattern during runtime, enabling the addition, removal, or reordering of agents based on specific conditions or events.
--   **Error Handling and Fault Tolerance**: Enhance error handling and fault tolerance mechanisms to gracefully handle agent failures, task timeouts, or other exceptional situations.
--   **Monitoring and Metrics**: Implement monitoring and metrics collection to track the performance and efficiency of the swarm, as well as individual agent performance.
--   **Scalability**: Enhance the scalability of the system to handle larger numbers of agents and tasks efficiently.
 
 ## Conclusion
 ----------

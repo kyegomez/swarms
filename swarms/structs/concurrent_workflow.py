@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from loguru import logger
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -19,6 +18,9 @@ from clusterops import (
     execute_on_multiple_gpus,
     list_available_gpus,
 )
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="concurrent_workflow")
 
 
 class AgentOutputSchema(BaseModel):

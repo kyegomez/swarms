@@ -1,6 +1,5 @@
 from typing import Any
 
-from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from swarms.prompts.prompt_generator import (
@@ -9,6 +8,9 @@ from swarms.prompts.prompt_generator import (
 from swarms.prompts.prompt_generator_optimizer import (
     prompt_generator_sys_prompt,
 )
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="ape_agent")
 
 
 @retry(

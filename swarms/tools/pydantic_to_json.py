@@ -2,7 +2,9 @@ from typing import Any, List
 
 from docstring_parser import parse
 from pydantic import BaseModel
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger("pydantic_to_json")
 
 
 def _remove_a_key(d: dict, remove_key: str) -> None:

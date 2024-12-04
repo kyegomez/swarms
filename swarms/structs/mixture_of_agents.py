@@ -2,13 +2,15 @@ import asyncio
 import time
 from typing import Any, Dict, List, Optional
 
-from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
-from swarms.telemetry.log_swarm_data import log_agent_data
+from swarms.telemetry.capture_sys_data import log_agent_data
 from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.prompts.ag_prompt import aggregator_system_prompt
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="mixture_of_agents")
 
 time_stamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -18,7 +20,7 @@ class MixtureOfAgentsInput(BaseModel):
     description: str = (
         "A class to run a mixture of agents and aggregate their responses."
     )
-    reference_agents: List[Dict[str, Any]]
+    agents: List[Dict[str, Any]]
     aggregator_agent: Any = Field(
         ...,
         description="An aggregator agent to be used in the mixture.",
@@ -58,7 +60,7 @@ class MixtureOfAgents:
         self,
         name: str = "MixtureOfAgents",
         description: str = "A class to run a mixture of agents and aggregate their responses.",
-        reference_agents: List[Agent] = [],
+        agents: List[Agent] = [],
         aggregator_agent: Agent = None,
         aggregator_system_prompt: str = "",
         layers: int = 3,
@@ -69,14 +71,14 @@ class MixtureOfAgents:
         Args:
             name (str, optional): The name of the mixture of agents. Defaults to "MixtureOfAgents".
             description (str, optional): A description of the mixture of agents. Defaults to "A class to run a mixture of agents and aggregate their responses.".
-            reference_agents (List[Agent], optional): A list of reference agents to be used in the mixture. Defaults to [].
+            agents (List[Agent], optional): A list of reference agents to be used in the mixture. Defaults to [].
             aggregator_agent (Agent, optional): The aggregator agent to be used in the mixture. Defaults to None.
             aggregator_system_prompt (str, optional): The system prompt for the aggregator agent. Defaults to "".
             layers (int, optional): The number of layers to process in the mixture. Defaults to 3.
         """
         self.name = name
         self.description = description
-        self.reference_agents: List[Agent] = reference_agents
+        self.agents: List[Agent] = agents
         self.aggregator_agent: Agent = aggregator_agent
         self.aggregator_system_prompt: str = aggregator_system_prompt
         self.layers: int = layers
@@ -84,9 +86,7 @@ class MixtureOfAgents:
         self.input_schema = MixtureOfAgentsInput(
             name=name,
             description=description,
-            reference_agents=[
-                agent.to_dict() for agent in self.reference_agents
-            ],
+            agents=[agent.to_dict() for agent in self.agents],
             aggregator_agent=aggregator_agent.to_dict(),
             aggregator_system_prompt=self.aggregator_system_prompt,
             layers=self.layers,
@@ -111,7 +111,7 @@ class MixtureOfAgents:
             "Checking the reliability of the Mixture of Agents class."
         )
 
-        if not self.reference_agents:
+        if not self.agents:
             raise ValueError("No reference agents provided.")
 
         if not self.aggregator_agent:
@@ -203,7 +203,7 @@ class MixtureOfAgents:
         results: List[str] = await asyncio.gather(
             *[
                 self._run_agent_async(agent, task)
-                for agent in self.reference_agents
+                for agent in self.agents
             ]
         )
 
@@ -214,7 +214,7 @@ class MixtureOfAgents:
                     self._run_agent_async(
                         agent, task, prev_responses=results
                     )
-                    for agent in self.reference_agents
+                    for agent in self.agents
                 ]
             )
 

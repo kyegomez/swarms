@@ -1,14 +1,12 @@
-import sys
 from swarms.utils.try_except_wrapper import try_except_wrapper
 
 try:
     import pypdf
 except ImportError:
-    print(
-        "pypdf not installed. Please install it using: pip install"
-        " pypdf"
-    )
-    sys.exit(1)
+    import subprocess
+
+    subprocess.check_call(["python", "-m", "pip", "install", "pypdf"])
+    import pypdf
 
 
 @try_except_wrapper

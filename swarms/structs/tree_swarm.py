@@ -3,11 +3,13 @@ from collections import Counter
 from datetime import datetime
 from typing import Any, List, Optional
 
-from loguru import logger
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer, util
 
-from swarms import Agent
+from swarms.structs.agent import Agent
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="tree_swarm")
 
 # Pretrained model for embeddings
 embedding_model = SentenceTransformer(

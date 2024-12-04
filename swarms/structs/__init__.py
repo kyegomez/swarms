@@ -1,4 +1,5 @@
 from swarms.structs.agent import Agent
+from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -11,7 +12,7 @@ from swarms.structs.graph_workflow import (
     Node,
     NodeType,
 )
-from swarms.structs.groupchat import GroupChat
+from swarms.structs.groupchat import GroupChat, GroupChatState
 from swarms.structs.majority_voting import (
     MajorityVoting,
     majority_voting,
@@ -19,16 +20,31 @@ from swarms.structs.majority_voting import (
     parse_code_completion,
 )
 from swarms.structs.message import Message
-from swarms.structs.message_pool import MessagePool
-
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
+from swarms.structs.multi_agent_exec import (
+    run_agent_with_timeout,
+    run_agents_concurrently,
+    run_agents_concurrently_async,
+    run_agents_concurrently_multiprocess,
+    run_agents_sequentially,
+    run_agents_with_different_tasks,
+    run_agents_with_resource_monitoring,
+    run_agents_with_tasks_concurrently,
+    run_single_agent,
+)
 from swarms.structs.queue_swarm import TaskQueueSwarm
 from swarms.structs.rearrange import AgentRearrange, rearrange
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
+from swarms.structs.swarm_arange import SwarmRearrange
 from swarms.structs.swarm_net import SwarmNetwork
+from swarms.structs.swarm_router import (
+    SwarmRouter,
+    SwarmType,
+    swarm_router,
+)
 from swarms.structs.swarming_architectures import (
     broadcast,
     circular_swarm,
@@ -93,7 +109,6 @@ __all__ = [
     "most_frequent",
     "parse_code_completion",
     "Message",
-    "MessagePool",
     "MultiAgentCollaboration",
     "SwarmNetwork",
     "AgentRearrange",
@@ -146,4 +161,7 @@ __all__ = [
     "run_agents_with_resource_monitoring",
     "swarm_router",
     "AsyncWorkflow",
+    "run_agents_with_tasks_concurrently",
+    "showcase_available_agents",
+    "GroupChatState",
 ]

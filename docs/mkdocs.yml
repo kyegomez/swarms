@@ -57,29 +57,35 @@ extra:
     property: G-MPE9C65596
 
 theme:
-    name: material
-    custom_dir: overrides
-    logo: assets/img/swarms-logo.png
-    palette:
+  name: material
+  custom_dir: overrides
+  logo: assets/img/swarms-logo.png
+  palette:
     - scheme: default
-      primary: black
+      primary: white      # White background
+      accent: white       # Black accents for interactive elements
       toggle:
-        icon: material/brightness-7 
+        icon: material/brightness-7
         name: Switch to dark mode
-    # Palette toggle for dark mode
-    - scheme: slate
+    - scheme: slate       # Optional: lighter shades for accessibility
       primary: black
+      accent: black
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-    features:
-        - content.code.copy
-        - content.code.annotate
-        - navigation.tabs
-        - navigation.sections
-        - navigation.expand
-        - navigation.top
-        - announce.dismiss
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - announce.dismiss
+  font:
+    text: "Fira Sans"      # Clean and readable text
+    code: "Fira Code"      # Modern look for code snippets
+
+
 # Extensions
 markdown_extensions:
   - abbr
@@ -138,6 +144,7 @@ nav:
     - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
+      - Environment Configuration: "swarms/install/workspace_manager.md"
       - Quickstart: "swarms/install/quickstart.md"
       - Swarms CLI: "swarms/cli/main.md"
       # - Swarms + Docker: 
@@ -257,6 +264,7 @@ nav:
     - An Analysis on Prompting Strategies: "swarms/prompts/overview.md"
     - Managing Prompts in Production: "swarms/prompts/main.md"
   - Corporate:
+    - Culture: "corporate/culture.md"
     - Hiring: "corporate/hiring.md"
     - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
   - Clusterops:

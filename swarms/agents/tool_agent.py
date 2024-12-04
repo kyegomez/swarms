@@ -1,11 +1,11 @@
 from typing import Any, Optional, Callable
-
-from swarms.structs.agent import Agent
 from swarms.tools.json_former import Jsonformer
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="tool_agent")
 
 
-class ToolAgent(Agent):
+class ToolAgent:
     """
     Represents a tool agent that performs a specific task using a model and tokenizer.
 
@@ -151,3 +151,6 @@ class ToolAgent(Agent):
                 f"Error running {self.name} for task: {task}"
             )
             raise error
+
+    def __call__(self, task: str, *args, **kwargs):
+        return self.run(task, *args, **kwargs)

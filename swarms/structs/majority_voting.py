@@ -1,26 +1,14 @@
 import concurrent.futures
 import re
-import sys
 from collections import Counter
 from typing import Any, Callable, List, Optional
-
-from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.file_processing import create_file
+from swarms.utils.loguru_logger import initialize_logger
 
-# Configure loguru logger with advanced settings
-logger.remove()
-logger.add(
-    sys.stderr,
-    colorize=True,
-    format="<green>{time}</green> <level>{message}</level>",
-    backtrace=True,
-    diagnose=True,
-    enqueue=True,
-    catch=True,
-)
+logger = initialize_logger(log_folder="majority_voting")
 
 
 def extract_last_python_code_block(text):

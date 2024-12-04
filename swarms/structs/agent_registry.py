@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, ValidationError
 
 from swarms import Agent
 from swarms.utils.loguru_logger import logger
-from swarms.utils.report_error_loguru import report_error
 
 
 class AgentConfigSchema(BaseModel):
@@ -229,7 +228,7 @@ class AgentRegistry:
                 logger.info("Listing all agents.")
                 return agent_names
         except Exception as e:
-            report_error(e)
+            logger.error(f"Error: {e}")
             raise e
 
     def return_all_agents(self) -> List[Agent]:
@@ -245,7 +244,7 @@ class AgentRegistry:
                 logger.info("Returning all agents.")
                 return agents
         except Exception as e:
-            report_error(e)
+            logger.error(f"Error: {e}")
             raise e
 
     def query(
@@ -276,7 +275,7 @@ class AgentRegistry:
                 logger.info("Querying agents with condition.")
                 return agents
         except Exception as e:
-            report_error(e)
+            logger.error(f"Error: {e}")
             raise e
 
     def find_agent_by_name(self, agent_name: str) -> Optional[Agent]:
@@ -300,7 +299,7 @@ class AgentRegistry:
                     if agent.agent_name == agent_name:
                         return agent
         except Exception as e:
-            report_error(e)
+            logger.error(f"Error: {e}")
             raise e
 
     def agent_to_py_model(self, agent: Agent):

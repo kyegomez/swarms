@@ -14,7 +14,9 @@ from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
     multi_base_model_to_openai_function,
 )
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
+
+logger = initialize_logger(log_folder="base_tool")
 
 ToolType = Union[BaseModel, Dict[str, Any], Callable[..., Any]]
 

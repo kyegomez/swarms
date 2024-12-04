@@ -2,8 +2,11 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import logger
 from swarms.structs.base_swarm import BaseSwarm
+from swarms.utils.loguru_logger import initialize_logger
+
+
+logger = initialize_logger("company-swarm")
 
 
 @dataclass
