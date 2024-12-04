@@ -127,7 +127,7 @@ Before you begin, ensure you have the following installed:
                 poetry install --extras "desktop"
                 ```
 
-=== "Using Docker"
+=== "Using Docker COMING SOON [DOES NOT WORK YET]"
 
     Docker is an excellent option for creating isolated and reproducible environments, suitable for both development and production.
 

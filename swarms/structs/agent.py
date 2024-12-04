@@ -338,6 +338,8 @@ class Agent:
         scheduled_run_date: Optional[datetime] = None,
         do_not_use_cluster_ops: bool = True,
         all_gpus: bool = False,
+        model_name: str = None,
+        llm_args: dict = None,
         *args,
         **kwargs,
     ):
@@ -453,6 +455,8 @@ class Agent:
         self.scheduled_run_date = scheduled_run_date
         self.do_not_use_cluster_ops = do_not_use_cluster_ops
         self.all_gpus = all_gpus
+        self.model_name = model_name
+        self.llm_args = llm_args
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -588,6 +592,21 @@ class Agent:
 
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
+
+        threading.Thread(target=self.llm_handling())
+
+    def llm_handling(self):
+
+        if self.llm is None:
+            from swarms.utils.litellm import LiteLLM
+
+            if self.llm_args is not None:
+                self.llm = LiteLLM(
+                    model_name=self.model_name, **self.llm_args
+                )
+
+            else:
+                self.llm = LiteLLM(model_name=self.model_name)
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
@@ -752,8 +771,11 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
+        speech: Optional[str] = None,
+        video: Optional[str] = None,
         is_last: Optional[bool] = False,
         print_task: Optional[bool] = False,
+        generate_speech: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -951,7 +973,7 @@ class Agent:
 
                 if self.interactive:
                     logger.info("Interactive mode enabled.")
-                    user_input = formatter.print_panel(input("You: "))
+                    user_input = input("You: ")
 
                     # User-defined exit command
                     if (
@@ -1015,6 +1037,11 @@ class Agent:
                     self.artifacts_file_extension,
                 )
 
+            try:
+                self.log_agent_data()
+            except Exception:
+                pass
+
             # More flexible output types
             if (
                 self.output_type == "string"
@@ -1050,8 +1077,16 @@ class Agent:
                 )
 
         except Exception as error:
+            self.log_agent_data()
             logger.info(
-                f"Error running agent: {error} optimize your input parameter"
+                f"Error running agent: {error} optimize your input parameters"
+            )
+            raise error
+
+        except KeyboardInterrupt as error:
+            self.log_agent_data()
+            logger.info(
+                f"Error running agent: {error} optimize your input parameters"
             )
             raise error
 
@@ -1586,11 +1621,16 @@ class Agent:
             files = os.listdir(self.docs_folder)
 
             # Extract the text from the files
+            # Process each file and combine their contents
+            all_text = ""
             for file in files:
-                text = data_to_text(file)
+                file_path = os.path.join(self.docs_folder, file)
+                text = data_to_text(file_path)
+                all_text += f"\nContent from {file}:\n{text}\n"
 
+            # Add the combined content to memory
             return self.short_memory.add(
-                role=self.user_name, content=text
+                role=self.user_name, content=all_text
             )
         except Exception as error:
             logger.error(
@@ -2262,12 +2302,13 @@ class Agent:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        device: str = "cpu",  # gpu
-        device_id: int = 0,
-        all_cores: bool = True,
+        device: Optional[str] = "cpu",  # gpu
+        device_id: Optional[int] = 0,
+        all_cores: Optional[bool] = True,
         scheduled_run_date: Optional[datetime] = None,
-        do_not_use_cluster_ops: bool = False,
-        all_gpus: bool = False,
+        do_not_use_cluster_ops: Optional[bool] = False,
+        all_gpus: Optional[bool] = False,
+        generate_speech: Optional[bool] = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -2314,7 +2355,12 @@ class Agent:
             # If cluster ops disabled, run directly
             if do_not_use_cluster_ops is True:
                 logger.info("Running without cluster operations")
-                return self._run(task=task, img=img, *args, **kwargs)
+                return self._run(
+                    task=task,
+                    img=img,
+                    generate_speech=generate_speech * args,
+                    **kwargs,
+                )
 
             else:
                 return exec_callable_with_clusterops(
@@ -2325,6 +2371,7 @@ class Agent:
                     func=self._run,
                     task=task,
                     img=img,
+                    generate_speech=generate_speech,
                     *args,
                     **kwargs,
                 )
