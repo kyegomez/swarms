@@ -399,32 +399,10 @@ print(f"Generated data: {generated_data}")
 
 
 ```
-## OpenAI Assistant Integration
-
-Swarms provides native support for OpenAI's Assistants API through the
- `OpenAIAssistant` class:
-
-```python
-
-from swarms import OpenAIAssistant
-
-#Create an assistant
-assistant = OpenAIAssistant(
-    name="Research Assistant",
-    instructions="You help with research tasks.",
-    tools=[{"type": "code_interpreter"}]
-)
-
-#Run tasks
-response = assistant.run("Analyze this dataset")
-
-```
-
-See the [OpenAI Assistant documentation](docs/swarms/agents/openai_assistant.md) for more details.
 
 ### Multi Modal Autonomous Agent
 Run the agent with multiple modalities useful for various real-world tasks in manufacturing, logistics, and health.
-
+    
 ```python
 import os
 from dotenv import load_dotenv
