@@ -387,39 +387,38 @@ class BaseTool(BaseModel):
             "Converting tools into OpenAI function calling schema"
         )
 
+        tool_schema_list = []  # Store all tool schemas
+
         for tool in self.tools:
-            # Transform the tool into a openai function calling schema
-            if self.check_func_if_have_docs(
-                tool
-            ) and self.check_func_if_have_type_hints(tool):
+            # Check if the tool has both documentation and type hints
+            if self.check_func_if_have_docs(tool) and self.check_func_if_have_type_hints(tool):
                 name = tool.__name__
                 description = tool.__doc__
 
                 logger.info(
-                    f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
+                    f"Converting tool: {name} into OpenAI schema."
                 )
-                tool_schema_list = (
-                    get_openai_function_schema_from_func(
-                        tool, name=name, description=description
-                    )
+                schema = get_openai_function_schema_from_func(
+                    tool, name=name, description=description
                 )
 
                 logger.info(
                     f"Tool {name} converted successfully into OpenAI schema"
                 )
-
-                # Transform the dictionary to a string
-                tool_schema_list = json.dumps(
-                    tool_schema_list, indent=4
-                )
-
-                return tool_schema_list
+                tool_schema_list.append(schema)
             else:
-                logger.error(
-                    f"Tool {tool.__name__} does not have documentation or type hints, please add them to make the tool execution reliable."
-                )
+                # Log specific errors for missing documentation or type hints
+                if not self.check_func_if_have_docs(tool):
+                    logger.error(
+                        f"Tool {tool.__name__} is missing documentation."
+                    )
+                if not self.check_func_if_have_type_hints(tool):
+                    logger.error(
+                        f"Tool {tool.__name__} is missing type hints."
+                    )
 
-        return tool_schema_list
+        # Return the list as a JSON string
+        return json.dumps(tool_schema_list, indent=4)
 
     def check_func_if_have_docs(self, func: callable):
         if func.__doc__ is not None:
