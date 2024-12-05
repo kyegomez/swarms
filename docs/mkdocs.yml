@@ -159,6 +159,7 @@ nav:
       - Complete Agent API: "swarms/structs/agent.md"
       - OpenAI Assistant: "swarms/agents/openai_assistant.md"
       - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
+      - Self Healing Agent: "swarms/agents/self_healing_agent.md"
       - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
       - Tools:
         - Overview: "swarms/tools/main.md"
