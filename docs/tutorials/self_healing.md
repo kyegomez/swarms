@@ -41,7 +41,7 @@ from error_prone import divide_numbers, access_nested_dict, process_list
 
 # Initialize the agent
 agent = SelfHealingAgent(
-    model_name="gpt-4",
+    model_name="gpt-4o-mini",
     max_retries=3,
     verbose=True
 )
