@@ -1,15 +1,5 @@
-import os
 from swarms.structs.agent import Agent
-from swarm_models.popular_llms import OpenAIChat
 from swarms.structs.agent_registry import AgentRegistry
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
 
 
 # Registry of agents
@@ -19,7 +9,12 @@ agent_registry = AgentRegistry(
 )
 
 
-def create_agent(name: str, system_prompt: str, max_loops: int = 1):
+def create_agent(
+    name: str,
+    system_prompt: str,
+    max_loops: int = 1,
+    model_name: str = "gpt-4o",
+):
     """
     Create and initialize an agent with the given parameters.
 
@@ -36,7 +31,7 @@ def create_agent(name: str, system_prompt: str, max_loops: int = 1):
     agent = Agent(
         agent_name=name,
         system_prompt=system_prompt,
-        llm=model,
+        model_name=model_name,
         max_loops=max_loops,
         autosave=True,
         dashboard=False,

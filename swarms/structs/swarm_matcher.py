@@ -1,11 +1,14 @@
 from typing import List, Tuple, Optional
 import numpy as np
-import torch
-from transformers import AutoTokenizer, AutoModel
+from swarms.utils.lazy_loader import lazy_import_decorator
 from pydantic import BaseModel, Field
 import json
 from tenacity import retry, stop_after_attempt, wait_exponential
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.auto_download_check_packages import (
+    auto_check_and_download_package,
+)
+
 
 logger = initialize_logger(log_folder="swarm_matcher")
 
@@ -25,6 +28,7 @@ class SwarmMatcherConfig(BaseModel):
     )
 
 
+@lazy_import_decorator
 class SwarmMatcher:
     """
     A class for matching tasks to swarm types based on their descriptions.
@@ -41,12 +45,34 @@ class SwarmMatcher:
         """
         logger.add("swarm_matcher_debug.log", level="DEBUG")
         logger.debug("Initializing SwarmMatcher")
+
+        try:
+            import torch
+        except ImportError:
+            auto_check_and_download_package(
+                "torch", package_manager="pip", upgrade=True
+            )
+            import torch
+
+        try:
+            import transformers
+        except ImportError:
+            auto_check_and_download_package(
+                "transformers", package_manager="pip", upgrade=True
+            )
+            import transformers
+
+        self.torch = torch
         try:
             self.config = config
-            self.tokenizer = AutoTokenizer.from_pretrained(
+            self.tokenizer = (
+                transformers.AutoTokenizer.from_pretrained(
+                    config.model_name
+                )
+            )
+            self.model = transformers.AutoModel.from_pretrained(
                 config.model_name
             )
-            self.model = AutoModel.from_pretrained(config.model_name)
             self.swarm_types: List[SwarmType] = []
             logger.debug("SwarmMatcher initialized successfully")
         except Exception as e:
@@ -76,7 +102,7 @@ class SwarmMatcher:
                 truncation=True,
                 max_length=512,
             )
-            with torch.no_grad():
+            with self.torch.no_grad():
                 outputs = self.model(**inputs)
             embedding = (
                 outputs.last_hidden_state.mean(dim=1)
@@ -244,6 +270,7 @@ def initialize_swarm_types(matcher: SwarmMatcher):
     logger.debug("Swarm types initialized")
 
 
+@lazy_import_decorator
 def swarm_matcher(task: str, *args, **kwargs):
     """
     Runs the SwarmMatcher example with predefined tasks and swarm types.

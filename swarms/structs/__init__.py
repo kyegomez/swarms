@@ -19,7 +19,6 @@ from swarms.structs.majority_voting import (
     most_frequent,
     parse_code_completion,
 )
-from swarms.structs.message import Message
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 from swarms.structs.multi_agent_exec import (
@@ -39,7 +38,6 @@ from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_arange import SwarmRearrange
-from swarms.structs.swarm_net import SwarmNetwork
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -90,9 +88,7 @@ __all__ = [
     "majority_voting",
     "most_frequent",
     "parse_code_completion",
-    "Message",
     "MultiAgentCollaboration",
-    "SwarmNetwork",
     "AgentRearrange",
     "rearrange",
     "RoundRobinSwarm",

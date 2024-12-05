@@ -1,21 +1,35 @@
-import torch
-from transformers import (
-    LogitsWarper,
-    PreTrainedTokenizer,
-    StoppingCriteria,
+from swarms.utils.auto_download_check_packages import (
+    auto_check_and_download_package,
 )
 
 
-class StringStoppingCriteria(StoppingCriteria):
+try:
+    import torch
+except ImportError:
+    auto_check_and_download_package(
+        "torch", package_manager="pip", upgrade=True
+    )
+    import torch
+
+try:
+    import transformers
+except ImportError:
+    auto_check_and_download_package(
+        "transformers", package_manager="pip", upgrade=True
+    )
+    import transformers
+
+
+class StringStoppingCriteria(transformers.StoppingCriteria):
     def __init__(
-        self, tokenizer: PreTrainedTokenizer, prompt_length: int
+        self, tokenizer: transformers.PreTrainedTokenizer, prompt_length: int  # type: ignore
     ):
         self.tokenizer = tokenizer
         self.prompt_length = prompt_length
 
     def __call__(
         self,
-        input_ids: torch.LongTensor,
+        input_ids: torch.LongTensor,  # type: ignore
         _,
     ) -> bool:
         if len(input_ids[0]) <= self.prompt_length:
@@ -31,10 +45,10 @@ class StringStoppingCriteria(StoppingCriteria):
         return result
 
 
-class NumberStoppingCriteria(StoppingCriteria):
+class NumberStoppingCriteria(transformers.StoppingCriteria):
     def __init__(
         self,
-        tokenizer: PreTrainedTokenizer,
+        tokenizer: transformers.PreTrainedTokenizer,  # type: ignore
         prompt_length: int,
         precision: int = 3,
     ):
@@ -44,8 +58,8 @@ class NumberStoppingCriteria(StoppingCriteria):
 
     def __call__(
         self,
-        input_ids: torch.LongTensor,
-        scores: torch.FloatTensor,
+        input_ids: torch.LongTensor,  # type: ignore
+        scores: torch.FloatTensor,  # type: ignore
     ) -> bool:
         decoded = self.tokenizer.decode(
             input_ids[0][self.prompt_length :],
@@ -71,8 +85,8 @@ class NumberStoppingCriteria(StoppingCriteria):
         return False
 
 
-class OutputNumbersTokens(LogitsWarper):
-    def __init__(self, tokenizer: PreTrainedTokenizer, prompt: str):
+class OutputNumbersTokens(transformers.LogitsWarper):
+    def __init__(self, tokenizer: transformers.PreTrainedTokenizer, prompt: str):  # type: ignore
         self.tokenizer = tokenizer
         self.tokenized_prompt = tokenizer(prompt, return_tensors="pt")
         vocab_size = len(tokenizer)

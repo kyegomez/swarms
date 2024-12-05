@@ -4,17 +4,14 @@ from datetime import datetime
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer, util
-
 from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.auto_download_check_packages import (
+    auto_check_and_download_package,
+)
+
 
 logger = initialize_logger(log_folder="tree_swarm")
-
-# Pretrained model for embeddings
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)  # A small, fast model for embedding
 
 
 # Pydantic Models for Logging
@@ -68,7 +65,7 @@ class TreeAgent(Agent):
         name: str = None,
         description: str = None,
         system_prompt: str = None,
-        llm: callable = None,
+        model_name: str = "gpt-4o",
         agent_name: Optional[str] = None,
         *args,
         **kwargs,
@@ -78,12 +75,29 @@ class TreeAgent(Agent):
             name=name,
             description=description,
             system_prompt=system_prompt,
-            llm=llm,
+            model_name=model_name,
             agent_name=agent_name,
             *args,
             **kwargs,
         )
-        self.system_prompt_embedding = embedding_model.encode(
+
+        try:
+            import sentence_transformers
+        except ImportError:
+            auto_check_and_download_package(
+                "sentence-transformers", package_manager="pip"
+            )
+            import sentence_transformers
+
+        self.sentence_transformers = sentence_transformers
+
+        # Pretrained model for embeddings
+        self.embedding_model = (
+            sentence_transformers.SentenceTransformer(
+                "all-MiniLM-L6-v2"
+            )
+        )
+        self.system_prompt_embedding = self.embedding_model.encode(
             system_prompt, convert_to_tensor=True
         )
 
@@ -103,7 +117,7 @@ class TreeAgent(Agent):
         Returns:
             float: Distance score between 0 and 1, with 0 being close and 1 being far.
         """
-        similarity = util.pytorch_cos_sim(
+        similarity = self.sentence_transformers.util.pytorch_cos_sim(
             self.system_prompt_embedding,
             other_agent.system_prompt_embedding,
         ).item()
@@ -154,12 +168,14 @@ class TreeAgent(Agent):
 
         # Perform embedding similarity match if keyword match is not found
         if not keyword_match:
-            task_embedding = embedding_model.encode(
+            task_embedding = self.embedding_model.encode(
                 task, convert_to_tensor=True
             )
-            similarity = util.pytorch_cos_sim(
-                self.system_prompt_embedding, task_embedding
-            ).item()
+            similarity = (
+                self.sentence_transformers.util.pytorch_cos_sim(
+                    self.system_prompt_embedding, task_embedding
+                ).item()
+            )
             logger.info(
                 f"Semantic similarity between task and {self.agent_name}: {similarity:.2f}"
             )

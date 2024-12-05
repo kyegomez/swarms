@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 import psutil
 from dataclasses import dataclass
 import threading
-from typing import List, Union, Any, Callable
+from typing import List, Any
 from multiprocessing import cpu_count
 import os
 

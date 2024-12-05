@@ -3,10 +3,9 @@ import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Callable, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, Field
-from swarms_memory import BaseVectorDatabase
 
 from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.structs.agent import Agent
@@ -17,21 +16,9 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
+from swarms.structs.output_types import OutputType
 
 logger = initialize_logger(log_folder="rearrange")
-
-# Literal of output types
-OutputType = Literal[
-    "all",
-    "final",
-    "list",
-    "dict",
-    ".json",
-    ".md",
-    ".txt",
-    ".yaml",
-    ".toml",
-]
 
 
 def swarm_id():
@@ -112,7 +99,7 @@ class AgentRearrange(BaseSwarm):
         flow: str = None,
         max_loops: int = 1,
         verbose: bool = True,
-        memory_system: BaseVectorDatabase = None,
+        memory_system: Any = None,
         human_in_the_loop: bool = False,
         custom_human_in_the_loop: Optional[
             Callable[[str], str]

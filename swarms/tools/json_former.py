@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List, Union
 
-from transformers import PreTrainedModel, PreTrainedTokenizer
+from swarms.utils.lazy_loader import lazy_import_decorator
 from pydantic import BaseModel
 from swarms.tools.logits_processor import (
     NumberStoppingCriteria,
@@ -9,10 +9,23 @@ from swarms.tools.logits_processor import (
     StringStoppingCriteria,
 )
 from swarm_models.base_llm import BaseLLM
+from swarms.utils.auto_download_check_packages import (
+    auto_check_and_download_package,
+)
+
+try:
+    import transformers
+except ImportError:
+    auto_check_and_download_package(
+        "transformers", package_manager="pip"
+    )
+    import transformers
+
 
 GENERATION_MARKER = "|GENERATION|"
 
 
+@lazy_import_decorator
 class Jsonformer:
     """
     Initializes the FormatTools class.
@@ -35,8 +48,8 @@ class Jsonformer:
 
     def __init__(
         self,
-        model: PreTrainedModel = None,
-        tokenizer: PreTrainedTokenizer = None,
+        model: transformers.PreTrainedModel = None,  # type: ignore
+        tokenizer: transformers.PreTrainedTokenizer = None,  # type: ignore
         json_schema: Union[Dict[str, Any], BaseModel] = None,
         schemas: List[Union[Dict[str, Any], BaseModel]] = [],
         prompt: str = None,

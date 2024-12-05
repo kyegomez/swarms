@@ -24,7 +24,6 @@ pytest>=8.1.1
 pandas>=2.2.2
 networkx
 aiofiles
-swarm-models
 clusterops
 reportlab
 doc-master
