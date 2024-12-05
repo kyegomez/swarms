@@ -3,6 +3,7 @@ import json
 from time import sleep
 
 BASE_URL = "http://0.0.0.0:8000/v1"
+#BASE_URL = "http://api.swarms.ai:8000"
 
 
 def make_request(method, endpoint, data=None):

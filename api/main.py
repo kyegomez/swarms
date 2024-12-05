@@ -105,7 +105,7 @@ class AgentConfig(BaseModel):
         ..., description="System prompt for the agent"
     )
     model_name: str = Field(
-        default="gpt-4", description="Model name to use"
+        default="gpt-4o-mini", description="Model name to use"
     )
     temperature: float = Field(
         default=0.1,
@@ -144,6 +144,10 @@ class AgentConfig(BaseModel):
     auto_generate_prompt: bool = Field(
         default=False,
         description="Auto-generate prompt based on agent details such as name, description, etc.",
+    )
+    max_tokens: int = Field(
+        default_factory=int,
+        description="The number of max output tokens",
     )
 
 
@@ -286,6 +290,7 @@ class AgentStore:
                 streaming_on=config.streaming_on,
                 stopping_token=config.stopping_token,
                 auto_generate_prompt=config.auto_generate_prompt,
+                max_tokens=config.max_tokens,
             )
 
             agent_id = uuid4()
@@ -552,8 +557,10 @@ class AgentStore:
                 response=response,
                 metadata={
                     "agent_name": agent.agent_name,
-                    # "model_name": agent.llm.model_name,
-                    # "temperature": 0.5,
+                    "model_name": agent.llm.model_name,
+                    "temperature": agent.llm.temperature,
+                    "max_loops": agent.max_loops,
+                    "context_window": agent.context_length,
                 },
                 timestamp=datetime.utcnow(),
                 processing_time=processing_time,

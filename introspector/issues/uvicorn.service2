@@ -1,0 +1,27 @@
+# from https://github.com/encode/uvicorn/issues/678
+[Unit]
+Description=swarms
+After=network.target
+
+[Service]
+Type=simple
+User=swarms
+Group=swarms
+DynamicUser=true
+WorkingDirectory=ROOT/var/run/swarms/
+PrivateTmp=true
+EnvironmentFile=ROOT/var/run/swarms/secrets/env
+ExecStart=ROOT/var/run/uvicorn/env/bin/uvicorn \
+        --proxy-headers \
+        --forwarded-allow-ips='*' \
+        --workers=4 \
+        --port=54748 \
+        --no-access-log \
+	--uds ROOT/run/uvicorn/uvicorn-swarms-api.sock \
+        _.asgi:application
+ExecReload=/bin/kill -HUP ${MAINPID}
+RestartSec=1
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

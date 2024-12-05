@@ -1,0 +1,64 @@
+░░ 
+░░ A start job for unit swarms-uvicorn.service has finished successfully.
+░░ 
+░░ The job identifier is 155034.
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]: Traceback (most recent call last):
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/bin/uvicorn", line 8, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     sys.exit(main())
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/click/core.py", line 1157, in __call__
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     return self.main(*args, **kwargs)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/click/core.py", line 1078, in main
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     rv = self.invoke(ctx)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/click/core.py", line 1434, in invoke
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     return ctx.invoke(self.callback, **ctx.params)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/click/core.py", line 783, in invoke
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     return __callback(*args, **kwargs)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/uvicorn/main.py", line 412, in main
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     run(
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/uvicorn/main.py", line 579, in run
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     server.run()
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 65, in run
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     return asyncio.run(self.serve(sockets=sockets))
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/usr/lib/python3.10/asyncio/runners.py", line 44, in run
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     return loop.run_until_complete(main)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 69, in serve
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     await self._serve(sockets)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/uvicorn/server.py", line 76, in _serve
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     config.load()
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/uvicorn/config.py", line 434, in load
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     self.loaded_app = import_from_string(self.app)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     module = importlib.import_module(module_str)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/usr/lib/python3.10/importlib/__init__.py", line 126, in import_module
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     return _bootstrap._gcd_import(name[level:], package, level)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/api/main.py", line 18, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     from swarms import Agent
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/swarms/__init__.py", line 13, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     from swarms.telemetry.bootup import bootup  # noqa: E402, F403
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/swarms/telemetry/bootup.py", line 6, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     from swarms.telemetry.auto_upgrade_swarms import auto_update
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/swarms/telemetry/auto_upgrade_swarms.py", line 4, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     from swarms.utils.loguru_logger import initialize_logger
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/swarms/utils/__init__.py", line 2, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     from swarms.utils.data_to_text import (
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/swarms/utils/data_to_text.py", line 5, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     from swarms.utils.pdf_to_text import pdf_to_text
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/swarms/utils/pdf_to_text.py", line 1, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     from swarms.utils.try_except_wrapper import try_except_wrapper
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/swarms/utils/try_except_wrapper.py", line 7, in <module>
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     logger = initialize_logger("try_except_wrapper")
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/opt/swarms/swarms/utils/loguru_logger.py", line 28, in initialize_logger
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     logger.add(
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/loguru/_logger.py", line 802, in add
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     wrapped_sink = FileSink(path, **kwargs)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/loguru/_file_sink.py", line 192, in __init__
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     self._create_file(path)
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:   File "/mnt/data1/swarms/var/swarms/agent_workspace/.venv/lib/python3.10/site-packages/loguru/_file_sink.py", line 226, in _create_file
+Dec 12 10:55:50 mdupont-G470 unbuffer[3921723]:     self._file = open(path, **self._kwargs)

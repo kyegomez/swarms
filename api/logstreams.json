@@ -1,0 +1,768 @@
+{
+  "logStreams": [
+    {
+      "logStreamName": "0654eb29-8948-4c3b-bf5c-ea057bdda8a2/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735052065253,
+      "firstEventTimestamp": 1735052065225,
+      "lastEventTimestamp": 1735052065225,
+      "lastIngestionTime": 1735052065276,
+      "uploadSequenceToken": "49039859613988222776763637742290862475585593660493682344",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:0654eb29-8948-4c3b-bf5c-ea057bdda8a2/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "0654eb29-8948-4c3b-bf5c-ea057bdda8a2/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735052065255,
+      "firstEventTimestamp": 1735052065225,
+      "lastEventTimestamp": 1735052065225,
+      "lastIngestionTime": 1735052065276,
+      "uploadSequenceToken": "49039859613988222776763637742290863632254093157312911099",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:0654eb29-8948-4c3b-bf5c-ea057bdda8a2/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "065e7a0d-7c43-4eab-b653-b9ebabc7b37f/i-0fc541c128fc194ec/Deploy/stderr",
+      "creationTime": 1734899238367,
+      "firstEventTimestamp": 1734899238330,
+      "lastEventTimestamp": 1734899297327,
+      "lastIngestionTime": 1734899297329,
+      "uploadSequenceToken": "49039859613785159344752651490819636558466064069737469684",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:065e7a0d-7c43-4eab-b653-b9ebabc7b37f/i-0fc541c128fc194ec/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "065e7a0d-7c43-4eab-b653-b9ebabc7b37f/i-0fc541c128fc194ec/Deploy/stdout",
+      "creationTime": 1734899238369,
+      "firstEventTimestamp": 1734899238339,
+      "lastEventTimestamp": 1734899298326,
+      "lastIngestionTime": 1734899298328,
+      "uploadSequenceToken": "49039859613785160672651419279950594505581625482055407181",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:065e7a0d-7c43-4eab-b653-b9ebabc7b37f/i-0fc541c128fc194ec/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "0e5ccc67-1f79-4d01-84f6-2dd97a656b58/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735005102663,
+      "firstEventTimestamp": 1735005102632,
+      "lastEventTimestamp": 1735005102632,
+      "lastIngestionTime": 1735005102684,
+      "uploadSequenceToken": "49039859613925798784722613018397360500005004744706643512",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:0e5ccc67-1f79-4d01-84f6-2dd97a656b58/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "0e5ccc67-1f79-4d01-84f6-2dd97a656b58/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735005102670,
+      "firstEventTimestamp": 1735005102632,
+      "lastEventTimestamp": 1735005102632,
+      "lastIngestionTime": 1735005102690,
+      "uploadSequenceToken": "49039859613925798792697980993106856627627363850950432327",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:0e5ccc67-1f79-4d01-84f6-2dd97a656b58/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "1172b81b-62ca-4a15-99eb-f30d9a346ca0/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735055856519,
+      "firstEventTimestamp": 1735055856488,
+      "lastEventTimestamp": 1735055858489,
+      "lastIngestionTime": 1735055858492,
+      "uploadSequenceToken": "49039859613993264825664897017738619986883194897110554355",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:1172b81b-62ca-4a15-99eb-f30d9a346ca0/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "1172b81b-62ca-4a15-99eb-f30d9a346ca0/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735055856522,
+      "firstEventTimestamp": 1735055856488,
+      "lastEventTimestamp": 1735055856488,
+      "lastIngestionTime": 1735055856544,
+      "uploadSequenceToken": "49039859613993262236328761228722500242420278656791107156",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:1172b81b-62ca-4a15-99eb-f30d9a346ca0/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "2a7102b2-dc75-4a54-892b-59a3f6fd06c1/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735057193938,
+      "firstEventTimestamp": 1735057193900,
+      "lastEventTimestamp": 1735057195901,
+      "lastIngestionTime": 1735057195902,
+      "uploadSequenceToken": "49039859613995042548478739722076201475673363666687645245",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:2a7102b2-dc75-4a54-892b-59a3f6fd06c1/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "2a7102b2-dc75-4a54-892b-59a3f6fd06c1/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735057193935,
+      "firstEventTimestamp": 1735057193900,
+      "lastEventTimestamp": 1735057193900,
+      "lastIngestionTime": 1735057193957,
+      "uploadSequenceToken": "49039859613995039963130287920414829151619369814831552100",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:2a7102b2-dc75-4a54-892b-59a3f6fd06c1/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "2cea03be-962a-4284-860c-6f6a22316c4d/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735054554607,
+      "firstEventTimestamp": 1735054554576,
+      "lastEventTimestamp": 1735054554576,
+      "lastIngestionTime": 1735054554630,
+      "uploadSequenceToken": "49039859613991531695791856905758746050334104337153676827",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:2cea03be-962a-4284-860c-6f6a22316c4d/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "2cea03be-962a-4284-860c-6f6a22316c4d/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735054554605,
+      "firstEventTimestamp": 1735054554576,
+      "lastEventTimestamp": 1735054554576,
+      "lastIngestionTime": 1735054554627,
+      "uploadSequenceToken": "49039859613991531691804172918403999064288358809319921154",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:2cea03be-962a-4284-860c-6f6a22316c4d/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "313e88da-c7e7-4bad-a818-edb4360b2b1f/i-0c6fd324f8eea1aab/Deploy/stderr",
+      "creationTime": 1734870795997,
+      "firstEventTimestamp": 1734870795949,
+      "lastEventTimestamp": 1734870854947,
+      "lastIngestionTime": 1734870854950,
+      "uploadSequenceToken": "49039859613747352938319126511079397131401121383887820324",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:313e88da-c7e7-4bad-a818-edb4360b2b1f/i-0c6fd324f8eea1aab/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "313e88da-c7e7-4bad-a818-edb4360b2b1f/i-0c6fd324f8eea1aab/Deploy/stdout",
+      "creationTime": 1734870795998,
+      "firstEventTimestamp": 1734870795954,
+      "lastEventTimestamp": 1734870855948,
+      "lastIngestionTime": 1734870855951,
+      "uploadSequenceToken": "49039859613747354268876350291780186335989982121728824915",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:313e88da-c7e7-4bad-a818-edb4360b2b1f/i-0c6fd324f8eea1aab/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "557f68da-0078-4fa9-a978-538b9c2c4e5e/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735057433187,
+      "firstEventTimestamp": 1735057433156,
+      "lastEventTimestamp": 1735057435156,
+      "lastIngestionTime": 1735057435157,
+      "uploadSequenceToken": "49039859613995360572922871242123376126157469071980779228",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:557f68da-0078-4fa9-a978-538b9c2c4e5e/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "557f68da-0078-4fa9-a978-538b9c2c4e5e/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735057433185,
+      "firstEventTimestamp": 1735057433156,
+      "lastEventTimestamp": 1735057433156,
+      "lastIngestionTime": 1735057433206,
+      "uploadSequenceToken": "49039859613995357979599051465752508652951185554904340048",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:557f68da-0078-4fa9-a978-538b9c2c4e5e/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "617c0b4f-317a-40e2-9484-5a47157cb6c3/i-0fc541c128fc194ec/Deploy/stderr",
+      "creationTime": 1734904353404,
+      "firstEventTimestamp": 1734904353362,
+      "lastEventTimestamp": 1734904431373,
+      "lastIngestionTime": 1734904431379,
+      "uploadSequenceToken": "49039859613791983667744411038156926901475617546398750277",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:617c0b4f-317a-40e2-9484-5a47157cb6c3/i-0fc541c128fc194ec/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "617c0b4f-317a-40e2-9484-5a47157cb6c3/i-0fc541c128fc194ec/Deploy/stdout",
+      "creationTime": 1734904353398,
+      "firstEventTimestamp": 1734904353360,
+      "lastEventTimestamp": 1734904433362,
+      "lastIngestionTime": 1734904433365,
+      "uploadSequenceToken": "49039859613791986307591210666999851103808292347067651736",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:617c0b4f-317a-40e2-9484-5a47157cb6c3/i-0fc541c128fc194ec/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "694d4ac6-12a7-4e96-a6c9-06f010415df9/i-0102c629cfe30ab41/Deploy/stderr",
+      "creationTime": 1734858621142,
+      "firstEventTimestamp": 1734858621107,
+      "lastEventTimestamp": 1734858678106,
+      "lastIngestionTime": 1734858678110,
+      "uploadSequenceToken": "49039859613731167141690932916081590350341220235971810915",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:694d4ac6-12a7-4e96-a6c9-06f010415df9/i-0102c629cfe30ab41/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "694d4ac6-12a7-4e96-a6c9-06f010415df9/i-0102c629cfe30ab41/Deploy/stdout",
+      "creationTime": 1734858621142,
+      "firstEventTimestamp": 1734858621106,
+      "lastEventTimestamp": 1734858679105,
+      "lastIngestionTime": 1734858679109,
+      "uploadSequenceToken": "49039859613731168469589700705212547784983172850546267812",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:694d4ac6-12a7-4e96-a6c9-06f010415df9/i-0102c629cfe30ab41/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "6a6fe26e-841f-42a4-aca4-5a2656821b29/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735058328627,
+      "firstEventTimestamp": 1735058328582,
+      "lastEventTimestamp": 1735058329582,
+      "lastIngestionTime": 1735058329584,
+      "uploadSequenceToken": "49039859613996549470331457157072832959656785139474519737",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:6a6fe26e-841f-42a4-aca4-5a2656821b29/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "6a6fe26e-841f-42a4-aca4-5a2656821b29/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735058328626,
+      "firstEventTimestamp": 1735058328582,
+      "lastEventTimestamp": 1735058329582,
+      "lastIngestionTime": 1735058329584,
+      "uploadSequenceToken": "49039859613996549470331457157072833567318475661320803988",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:6a6fe26e-841f-42a4-aca4-5a2656821b29/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "6c96c523-2970-4071-9d5d-f95a041703ef/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735058290048,
+      "firstEventTimestamp": 1735058290011,
+      "lastEventTimestamp": 1735058291010,
+      "lastIngestionTime": 1735058291012,
+      "uploadSequenceToken": "49039859613996498199349203741297784502672927255682766343",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:6c96c523-2970-4071-9d5d-f95a041703ef/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "6c96c523-2970-4071-9d5d-f95a041703ef/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735058290047,
+      "firstEventTimestamp": 1735058290009,
+      "lastEventTimestamp": 1735058291008,
+      "lastIngestionTime": 1735058291010,
+      "uploadSequenceToken": "49039859613996498196690747749727953601812660823865054910",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:6c96c523-2970-4071-9d5d-f95a041703ef/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "73e818e3-25b4-4b2d-9efe-07b74226b91e/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735044217329,
+      "firstEventTimestamp": 1735044217309,
+      "lastEventTimestamp": 1735044217309,
+      "lastIngestionTime": 1735044217370,
+      "uploadSequenceToken": "49039859613977791120400149326302420330339315638580696710",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:73e818e3-25b4-4b2d-9efe-07b74226b91e/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "73e818e3-25b4-4b2d-9efe-07b74226b91e/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735044217344,
+      "firstEventTimestamp": 1735044217309,
+      "lastEventTimestamp": 1735044217309,
+      "lastIngestionTime": 1735044217366,
+      "uploadSequenceToken": "49039859613977791115083237343162757449412196868898576123",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:73e818e3-25b4-4b2d-9efe-07b74226b91e/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "78aa5989-2ff2-4445-84b6-1a6c7f970381/i-0102c629cfe30ab41/Deploy/stderr",
+      "creationTime": 1734856658896,
+      "firstEventTimestamp": 1734856658859,
+      "lastEventTimestamp": 1734856724859,
+      "lastIngestionTime": 1734856724862,
+      "uploadSequenceToken": "49039859613728570829766622020722677450385238021455632064",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:78aa5989-2ff2-4445-84b6-1a6c7f970381/i-0102c629cfe30ab41/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "78aa5989-2ff2-4445-84b6-1a6c7f970381/i-0102c629cfe30ab41/Deploy/stdout",
+      "creationTime": 1734856658897,
+      "firstEventTimestamp": 1734856658859,
+      "lastEventTimestamp": 1734856725859,
+      "lastIngestionTime": 1734856725862,
+      "uploadSequenceToken": "49039859613728572158994617805638550864288006496292067018",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:78aa5989-2ff2-4445-84b6-1a6c7f970381/i-0102c629cfe30ab41/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "82d43144-a4f4-4b6d-a507-23ad5179e0b4/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735005234228,
+      "firstEventTimestamp": 1735005234199,
+      "lastEventTimestamp": 1735005234199,
+      "lastIngestionTime": 1735005234249,
+      "uploadSequenceToken": "49039859613925973664603878460854192727649656492823303866",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:82d43144-a4f4-4b6d-a507-23ad5179e0b4/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "82d43144-a4f4-4b6d-a507-23ad5179e0b4/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735005234229,
+      "firstEventTimestamp": 1735005234199,
+      "lastEventTimestamp": 1735005234199,
+      "lastIngestionTime": 1735005234250,
+      "uploadSequenceToken": "49039859613925973665933106456639109128303282286887851775",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:82d43144-a4f4-4b6d-a507-23ad5179e0b4/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "93cea26c-bb71-4b98-8923-b3ed3b3f4c4a/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735055317414,
+      "firstEventTimestamp": 1735055317383,
+      "lastEventTimestamp": 1735055317383,
+      "lastIngestionTime": 1735055317439,
+      "uploadSequenceToken": "49039859613992545642870093601650851001566812901843293740",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:93cea26c-bb71-4b98-8923-b3ed3b3f4c4a/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "93cea26c-bb71-4b98-8923-b3ed3b3f4c4a/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735055317416,
+      "firstEventTimestamp": 1735055317383,
+      "lastEventTimestamp": 1735055317383,
+      "lastIngestionTime": 1735055317438,
+      "uploadSequenceToken": "49039859613992545641540865605865935623338388911938229871",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:93cea26c-bb71-4b98-8923-b3ed3b3f4c4a/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "93e43e30-ae7f-4a8c-83cf-a2745b46dbd9/i-046ddceb61d38baa4/Deploy/stderr",
+      "creationTime": 1734818540131,
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:93e43e30-ae7f-4a8c-83cf-a2745b46dbd9/i-046ddceb61d38baa4/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "93e43e30-ae7f-4a8c-83cf-a2745b46dbd9/i-046ddceb61d38baa4/Deploy/stdout",
+      "creationTime": 1734818540128,
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:93e43e30-ae7f-4a8c-83cf-a2745b46dbd9/i-046ddceb61d38baa4/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "9af6222c-21c3-425c-b965-a5ce3426c0c4/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735058057641,
+      "firstEventTimestamp": 1735058057609,
+      "lastEventTimestamp": 1735058060610,
+      "lastIngestionTime": 1735058060612,
+      "uploadSequenceToken": "49039859613996191945218974896680674139788828833329600156",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:9af6222c-21c3-425c-b965-a5ce3426c0c4/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "9af6222c-21c3-425c-b965-a5ce3426c0c4/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735058057643,
+      "firstEventTimestamp": 1735058057609,
+      "lastEventTimestamp": 1735058057609,
+      "lastIngestionTime": 1735058057667,
+      "uploadSequenceToken": "49039859613996188030642527310103428934121513664810735175",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:9af6222c-21c3-425c-b965-a5ce3426c0c4/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "9b400186-1c4a-4405-b99f-c5062ee8f6fe/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735057233804,
+      "firstEventTimestamp": 1735057233769,
+      "lastEventTimestamp": 1735057235769,
+      "lastIngestionTime": 1735057235771,
+      "uploadSequenceToken": "49039859613995095543469703670887153246153117076553618958",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:9b400186-1c4a-4405-b99f-c5062ee8f6fe/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "9b400186-1c4a-4405-b99f-c5062ee8f6fe/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735057233797,
+      "firstEventTimestamp": 1735057233769,
+      "lastEventTimestamp": 1735057233769,
+      "lastIngestionTime": 1735057233815,
+      "uploadSequenceToken": "49039859613995092943499743915591706324624816391965267548",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:9b400186-1c4a-4405-b99f-c5062ee8f6fe/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "a2d8a6c6-f797-4ae2-a3c7-4420e92a0343/i-03f02fde2519d21d2/Deploy/stderr",
+      "creationTime": 1734830413282,
+      "firstEventTimestamp": 1734830413242,
+      "lastEventTimestamp": 1734830433243,
+      "lastIngestionTime": 1734830433276,
+      "uploadSequenceToken": "49039859613693623317601835267547467856431474809478469252",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:a2d8a6c6-f797-4ae2-a3c7-4420e92a0343/i-03f02fde2519d21d2/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "a2d8a6c6-f797-4ae2-a3c7-4420e92a0343/i-03f02fde2519d21d2/Deploy/stdout",
+      "creationTime": 1734830413288,
+      "firstEventTimestamp": 1734830413242,
+      "lastEventTimestamp": 1734830433246,
+      "lastIngestionTime": 1734830433252,
+      "uploadSequenceToken": "49039859613693623285700363368709487386499566467274397437",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:a2d8a6c6-f797-4ae2-a3c7-4420e92a0343/i-03f02fde2519d21d2/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "ab133779-b3ec-44b2-b198-194e6795567e/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735057357453,
+      "firstEventTimestamp": 1735057357422,
+      "lastEventTimestamp": 1735057359422,
+      "lastIngestionTime": 1735057359426,
+      "uploadSequenceToken": "49039859613995259909157522454659419100657152802661750380",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:ab133779-b3ec-44b2-b198-194e6795567e/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "ab133779-b3ec-44b2-b198-194e6795567e/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735057357450,
+      "firstEventTimestamp": 1735057357422,
+      "lastEventTimestamp": 1735057357422,
+      "lastIngestionTime": 1735057357476,
+      "uploadSequenceToken": "49039859613995257317162930674073467432332307574061684451",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:ab133779-b3ec-44b2-b198-194e6795567e/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "affbd717-8495-4b3c-b9a9-fe1cb4a38049/i-0fc541c128fc194ec/Deploy/stderr",
+      "creationTime": 1734904330835,
+      "firstEventTimestamp": 1734904330793,
+      "lastEventTimestamp": 1734904412792,
+      "lastIngestionTime": 1734904412798,
+      "uploadSequenceToken": "49039859613791958969359021358635106202736237108550063861",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:affbd717-8495-4b3c-b9a9-fe1cb4a38049/i-0fc541c128fc194ec/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "affbd717-8495-4b3c-b9a9-fe1cb4a38049/i-0fc541c128fc194ec/Deploy/stdout",
+      "creationTime": 1734904330833,
+      "firstEventTimestamp": 1734904330794,
+      "lastEventTimestamp": 1734904414792,
+      "lastIngestionTime": 1734904414794,
+      "uploadSequenceToken": "49039859613791961622498100945327188974427354123974104746",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:affbd717-8495-4b3c-b9a9-fe1cb4a38049/i-0fc541c128fc194ec/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "b8fe6970-5ccc-4d74-8e8a-e5887649ca79/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735055525532,
+      "firstEventTimestamp": 1735055525476,
+      "lastEventTimestamp": 1735055529477,
+      "lastIngestionTime": 1735055529478,
+      "uploadSequenceToken": "49039859613992827491045091839427632436711007109045442148",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:b8fe6970-5ccc-4d74-8e8a-e5887649ca79/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "b8fe6970-5ccc-4d74-8e8a-e5887649ca79/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735055525531,
+      "firstEventTimestamp": 1735055525492,
+      "lastEventTimestamp": 1735055527477,
+      "lastIngestionTime": 1735055527492,
+      "uploadSequenceToken": "49039859613992824851198292210584709371014820662651803280",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:b8fe6970-5ccc-4d74-8e8a-e5887649ca79/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "c1f49ab1-170a-4a69-b73d-5f35205febdc/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735054456369,
+      "firstEventTimestamp": 1735054456335,
+      "lastEventTimestamp": 1735054456335,
+      "lastIngestionTime": 1735054456396,
+      "uploadSequenceToken": "49039859613991401120408918970332906052237331985426437749",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:c1f49ab1-170a-4a69-b73d-5f35205febdc/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "c1f49ab1-170a-4a69-b73d-5f35205febdc/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735054456371,
+      "firstEventTimestamp": 1735054456335,
+      "lastEventTimestamp": 1735054456335,
+      "lastIngestionTime": 1735054456395,
+      "uploadSequenceToken": "49039859613991401119079690974547990635818383155419567797",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:c1f49ab1-170a-4a69-b73d-5f35205febdc/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "c2947dc0-ba37-4043-bb3f-dcbcec1b1048/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735057898295,
+      "firstEventTimestamp": 1735057898263,
+      "lastEventTimestamp": 1735057900263,
+      "lastIngestionTime": 1735057900265,
+      "uploadSequenceToken": "49039859613995978807497534772775208356660176145935652414",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:c2947dc0-ba37-4043-bb3f-dcbcec1b1048/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "c2947dc0-ba37-4043-bb3f-dcbcec1b1048/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735057898299,
+      "firstEventTimestamp": 1735057898263,
+      "lastEventTimestamp": 1735057898263,
+      "lastIngestionTime": 1735057898322,
+      "uploadSequenceToken": "49039859613995976224807538962683667811200001701897459307",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:c2947dc0-ba37-4043-bb3f-dcbcec1b1048/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "c916fcee-bc52-4857-aaa0-2374308031ac/i-03f02fde2519d21d2/Deploy/stderr",
+      "creationTime": 1734830394075,
+      "firstEventTimestamp": 1734830394042,
+      "lastEventTimestamp": 1734830472041,
+      "lastIngestionTime": 1734830472043,
+      "uploadSequenceToken": "49039859613693674847783547861384144735279739289454982245",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:c916fcee-bc52-4857-aaa0-2374308031ac/i-03f02fde2519d21d2/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "c916fcee-bc52-4857-aaa0-2374308031ac/i-03f02fde2519d21d2/Deploy/stdout",
+      "creationTime": 1734830394075,
+      "firstEventTimestamp": 1734830394042,
+      "lastEventTimestamp": 1734830473042,
+      "lastIngestionTime": 1734830473045,
+      "uploadSequenceToken": "49039859613693676179669999637869850504453252257646589025",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:c916fcee-bc52-4857-aaa0-2374308031ac/i-03f02fde2519d21d2/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-2gt45qizfn4ezip8dpkrilhaa4",
+      "creationTime": 1734982366536,
+      "firstEventTimestamp": 1734982366502,
+      "lastEventTimestamp": 1734983612502,
+      "lastIngestionTime": 1734983612523,
+      "uploadSequenceToken": "49039859613897233461087487854920254489498942830027682928",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-2gt45qizfn4ezip8dpkrilhaa4",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-2qj8xj6luppbvlilgdivc5sug8",
+      "creationTime": 1734866718407,
+      "firstEventTimestamp": 1734866718373,
+      "lastEventTimestamp": 1734866718373,
+      "lastIngestionTime": 1734866718430,
+      "uploadSequenceToken": "49039859613741854560130002290875861318885575337716691992",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-2qj8xj6luppbvlilgdivc5sug8",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-6kq4qtpy72q753vkvy6if872q4",
+      "creationTime": 1734820331291,
+      "firstEventTimestamp": 1734820935254,
+      "lastEventTimestamp": 1734820935254,
+      "lastIngestionTime": 1734820935319,
+      "uploadSequenceToken": "49039859613680998367254673955341045032917736173318386920",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-6kq4qtpy72q753vkvy6if872q4",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-9d9hresjnrxhaoqz8a5pesy9uy",
+      "creationTime": 1734869641914,
+      "firstEventTimestamp": 1734869641884,
+      "lastEventTimestamp": 1734869993883,
+      "lastIngestionTime": 1734869993885,
+      "uploadSequenceToken": "49039859613746208386614935972496344653675690982984332418",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-9d9hresjnrxhaoqz8a5pesy9uy",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-acc5uyp4sfig2tz6zxf5fei6ji",
+      "creationTime": 1734866903573,
+      "firstEventTimestamp": 1734866903548,
+      "lastEventTimestamp": 1734867977549,
+      "lastIngestionTime": 1734867977576,
+      "uploadSequenceToken": "49039859613743528252243982884557566430997070622784959605",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-acc5uyp4sfig2tz6zxf5fei6ji",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-ale49vtarq3lv2qh5g4bbgbo2u",
+      "creationTime": 1734823328568,
+      "firstEventTimestamp": 1734823328544,
+      "lastEventTimestamp": 1734823328544,
+      "lastIngestionTime": 1734823328587,
+      "uploadSequenceToken": "49039859613684179566081690129382359560174988019272201245",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-ale49vtarq3lv2qh5g4bbgbo2u",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-cfi2lbnsn34debav6jbb726ooa",
+      "creationTime": 1734821129540,
+      "firstEventTimestamp": 1734821129509,
+      "lastEventTimestamp": 1734821129509,
+      "lastIngestionTime": 1734821129570,
+      "uploadSequenceToken": "49039859613681256571122083171034274844280438270068470784",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-cfi2lbnsn34debav6jbb726ooa",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-ecrtlu7kr5rch6g5ndble8kqha",
+      "creationTime": 1734856273279,
+      "firstEventTimestamp": 1734856273247,
+      "lastEventTimestamp": 1734856273247,
+      "lastIngestionTime": 1734856273300,
+      "uploadSequenceToken": "49039859613727970600914389392544321167059767430010844324",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-ecrtlu7kr5rch6g5ndble8kqha",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-ehhpaubgebqzgzc6qos2jc9qz8",
+      "creationTime": 1734869593887,
+      "firstEventTimestamp": 1734869593858,
+      "lastEventTimestamp": 1734869655858,
+      "lastIngestionTime": 1734869655863,
+      "uploadSequenceToken": "49039859613745759078309344763663156946262011664604542059",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-ehhpaubgebqzgzc6qos2jc9qz8",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-gag5kejahuzr9873ietdbkpoa8",
+      "creationTime": 1734823566407,
+      "firstEventTimestamp": 1734823566372,
+      "lastEventTimestamp": 1734825788372,
+      "lastIngestionTime": 1734825788392,
+      "uploadSequenceToken": "49039859613687449207751861844371110110764337414286292026",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-gag5kejahuzr9873ietdbkpoa8",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-haaiif5dpxck5ehtqbqxbhflu8",
+      "creationTime": 1734871696978,
+      "firstEventTimestamp": 1734871696953,
+      "lastEventTimestamp": 1734872507953,
+      "lastIngestionTime": 1734872507972,
+      "uploadSequenceToken": "49039859613749550181439174884288509989399115071987856439",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-haaiif5dpxck5ehtqbqxbhflu8",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-j5tad5uqe6rg579d76npjrbyta",
+      "creationTime": 1734856254710,
+      "firstEventTimestamp": 1734856254693,
+      "lastEventTimestamp": 1734856254693,
+      "lastIngestionTime": 1734856254734,
+      "uploadSequenceToken": "49039859613727945922467419649796227269299585648452908096",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-j5tad5uqe6rg579d76npjrbyta",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-nbs3222zo2bdt8n5lqz6i5e2h4",
+      "creationTime": 1734856866781,
+      "firstEventTimestamp": 1734856866754,
+      "lastEventTimestamp": 1734858481754,
+      "lastIngestionTime": 1734858481781,
+      "uploadSequenceToken": "49039859613730906175687748459336230657047697575836857590",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-nbs3222zo2bdt8n5lqz6i5e2h4",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-psfjp3f7bnkatx76s852aocut4",
+      "creationTime": 1734823506148,
+      "firstEventTimestamp": 1734823506113,
+      "lastEventTimestamp": 1734823506113,
+      "lastIngestionTime": 1734823506173,
+      "uploadSequenceToken": "49039859613684415618364549589452569865211766620082091138",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-psfjp3f7bnkatx76s852aocut4",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-taejkp2vrs9ptlzfk3hi7sc8tu",
+      "creationTime": 1735057761372,
+      "firstEventTimestamp": 1735057761331,
+      "lastEventTimestamp": 1735059010330,
+      "lastIngestionTime": 1735059010356,
+      "uploadSequenceToken": "49039859613997454371532603645824513397886961371254043702",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-taejkp2vrs9ptlzfk3hi7sc8tu",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-tx6jfbkpuisogketgtnii3loiq",
+      "creationTime": 1734821136150,
+      "firstEventTimestamp": 1734821136115,
+      "lastEventTimestamp": 1734821136115,
+      "lastIngestionTime": 1734821136170,
+      "uploadSequenceToken": "49039859613681265344026855351479041441540820263578055706",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-tx6jfbkpuisogketgtnii3loiq",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-u28lll5bhz7293b56aqzlo6i9a",
+      "creationTime": 1734868152559,
+      "firstEventTimestamp": 1734868152530,
+      "lastEventTimestamp": 1734869653530,
+      "lastIngestionTime": 1734869653598,
+      "uploadSequenceToken": "49039859613745756067607934310828709627686385468631102662",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-u28lll5bhz7293b56aqzlo6i9a",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "dupont-zq8btstj4tr9ajp9xps278hkqq",
+      "creationTime": 1734860241487,
+      "firstEventTimestamp": 1734860241462,
+      "lastEventTimestamp": 1734861464462,
+      "lastIngestionTime": 1734861464487,
+      "uploadSequenceToken": "49039859613734870872006144102619839037825530972265460909",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:dupont-zq8btstj4tr9ajp9xps278hkqq",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "ec25d72c-83ea-4df2-be57-bc64df26ef7c/i-0fc541c128fc194ec/Deploy/stderr",
+      "creationTime": 1734899352252,
+      "firstEventTimestamp": 1734899352209,
+      "lastEventTimestamp": 1734899414209,
+      "lastIngestionTime": 1734899414213,
+      "uploadSequenceToken": "49039859613785314710237710814929589941728888154770584703",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:ec25d72c-83ea-4df2-be57-bc64df26ef7c/i-0fc541c128fc194ec/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "ec25d72c-83ea-4df2-be57-bc64df26ef7c/i-0fc541c128fc194ec/Deploy/stdout",
+      "creationTime": 1734899352254,
+      "firstEventTimestamp": 1734899352213,
+      "lastEventTimestamp": 1734899415209,
+      "lastIngestionTime": 1734899415211,
+      "uploadSequenceToken": "49039859613785316036807250608275631703066569194125079656",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:ec25d72c-83ea-4df2-be57-bc64df26ef7c/i-0fc541c128fc194ec/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "f1c32370-313b-4eb8-9013-65f8f28b9830/i-046ddceb61d38baa4/Deploy/stderr",
+      "creationTime": 1734817872118,
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:f1c32370-313b-4eb8-9013-65f8f28b9830/i-046ddceb61d38baa4/Deploy/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "f1c32370-313b-4eb8-9013-65f8f28b9830/i-046ddceb61d38baa4/Deploy/stdout",
+      "creationTime": 1734817872118,
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:f1c32370-313b-4eb8-9013-65f8f28b9830/i-046ddceb61d38baa4/Deploy/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "f985b14a-9914-413c-b1a9-2cd3cc533c92/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735056783402,
+      "firstEventTimestamp": 1735056783370,
+      "lastEventTimestamp": 1735056785369,
+      "lastIngestionTime": 1735056785372,
+      "uploadSequenceToken": "49039859613994496860509630140565960835917365413277283529",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:f985b14a-9914-413c-b1a9-2cd3cc533c92/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "f985b14a-9914-413c-b1a9-2cd3cc533c92/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735056783407,
+      "firstEventTimestamp": 1735056783370,
+      "lastEventTimestamp": 1735056783370,
+      "lastIngestionTime": 1735056783431,
+      "uploadSequenceToken": "49039859613994494280478090322044252140748316444795286615",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:f985b14a-9914-413c-b1a9-2cd3cc533c92/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "fdf9e780-ad22-4acb-a9f7-5fe6fa97ecef/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "creationTime": 1735005652683,
+      "firstEventTimestamp": 1735005652644,
+      "lastEventTimestamp": 1735005652644,
+      "lastIngestionTime": 1735005652707,
+      "uploadSequenceToken": "49039859613926529890692538625183589108539545514173740282",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:fdf9e780-ad22-4acb-a9f7-5fe6fa97ecef/i-0a3dae164f8f3c09a/DeployDocker/stderr",
+      "storedBytes": 0
+    },
+    {
+      "logStreamName": "fdf9e780-ad22-4acb-a9f7-5fe6fa97ecef/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "creationTime": 1735005652676,
+      "firstEventTimestamp": 1735005652644,
+      "lastEventTimestamp": 1735005652644,
+      "lastIngestionTime": 1735005652699,
+      "uploadSequenceToken": "49039859613926529880058714658904262714740208262181499974",
+      "arn": "arn:aws:logs:us-east-2:916723593639:log-group:/ssm/session-logs-20241221151803393300000006:log-stream:fdf9e780-ad22-4acb-a9f7-5fe6fa97ecef/i-0a3dae164f8f3c09a/DeployDocker/stdout",
+      "storedBytes": 0
+    }
+  ]
+}

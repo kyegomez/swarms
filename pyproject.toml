@@ -5,7 +5,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "6.7.9"
+version = "6.7.5"
+
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -62,9 +63,12 @@ python = ">=3.10,<4.0"
 asyncio = ">=3.4.3,<4.0"
 toml = "*"
 pypdf = "5.1.0"
-swarm-models = "*"
 loguru = "*"
+<<<<<<< HEAD
 pydantic = "*"
+=======
+pydantic = ">=2.8.2<3.0"
+>>>>>>> 66cb7a58 ([6.5.7])
 tenacity = "*"
 psutil = "*"
 sentry-sdk = "*"
@@ -74,13 +78,21 @@ docstring_parser = "0.16" # TODO:
 tiktoken = "*"
 networkx = "*"
 aiofiles = "*"
+<<<<<<< HEAD
+=======
+clusterops = "*"
+>>>>>>> 66cb7a58 ([6.5.7])
 # chromadb = "*"
 reportlab = "*"
 doc-master = "*"
 rich = "*"
 # sentence-transformers = "*"
+swarm-models = "*"
+<<<<<<< HEAD
 termcolor = "*"
 clusterops = { git = "https://github.com/patrickbdevaney/clusterops.git", branch = "main" }
+=======
+>>>>>>> 66cb7a58 ([6.5.7])
 
 
 # [tool.poetry.extras]
