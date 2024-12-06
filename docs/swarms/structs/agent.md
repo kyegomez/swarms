@@ -141,6 +141,9 @@ graph TD
 | `all_cores` | Boolean indicating whether to use all CPU cores |
 | `device_id` | ID of the GPU device to use if running on GPU |
 | `scheduled_run_date` | Optional datetime for scheduling future agent runs |
+| `expertise_areas` | List of areas the agent specializes in |
+| `importance_threshold` | Minimum importance threshold for notifications |
+| `notification_profile` | Profile containing notification preferences |
 
 
 ## `Agent` Methods
@@ -212,6 +215,8 @@ graph TD
 | `check_if_no_prompt_then_autogenerate(task)` | Checks if a system prompt is not set and auto-generates one if needed. | `task` (str): The task to use for generating a prompt. | `agent.check_if_no_prompt_then_autogenerate("Analyze data")` |
 | `check_if_no_prompt_then_autogenerate(task)` | Checks if auto_generate_prompt is enabled and generates a prompt by combining agent name, description and system prompt | `task` (str, optional): Task to use as fallback | `agent.check_if_no_prompt_then_autogenerate("Analyze data")` |
 | `handle_artifacts(response, output_path, extension)` | Handles saving artifacts from agent execution | `response` (str): Agent response<br>`output_path` (str): Output path<br>`extension` (str): File extension | `agent.handle_artifacts(response, "outputs/", ".txt")` |
+| `update_notification_preferences` | Update agent's notification preferences | `expertise_areas`: List[str]<br>`importance_threshold`: float | `agent.update_notification_preferences(expertise_areas=["finance"])` |
+| `handle_vector_db_update` | Handle notification of vector DB update | `update_metadata`: UpdateMetadata | `agent.handle_vector_db_update(update)` |
 
 
 
@@ -568,3 +573,31 @@ print(agent.system_prompt)
 14. Use `scheduled_run_date` for automated task scheduling
 
 By following these guidelines and leveraging the Swarm Agent's extensive features, you can create powerful, flexible, and efficient autonomous agents for a wide range of applications.
+
+## Notification Example
+ ```python
+ from swarms import Agent
+ from swarms.structs.notification_manager import UpdateMetadata
+ from datetime import datetime
+ 
+ # Create agent with notification preferences
+ agent = Agent(
+     agent_name="FinancialAgent",
+     expertise_areas=["finance", "stocks", "trading"],
+     importance_threshold=0.6
+ )
+ 
+ # Update notification preferences
+ agent.update_notification_preferences(
+     expertise_areas=["finance", "cryptocurrency"],
+     importance_threshold=0.7
+ )
+ 
+ # Handle vector DB update
+ update = UpdateMetadata(
+     topic="crypto_market",
+     importance=0.8,
+     timestamp=datetime.now(),
+     affected_areas=["cryptocurrency", "trading"]
+ )
+ agent.handle_vector_db_update(update) ```
