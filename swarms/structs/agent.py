@@ -52,6 +52,7 @@ from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
 from swarms.utils.formatter import formatter
+from .notification_manager import AgentProfile
 
 logger = initialize_logger(log_folder="agents")
 
@@ -179,6 +180,8 @@ class Agent:
         artifacts_output_path (str): The artifacts output path
         artifacts_file_extension (str): The artifacts file extension (.pdf, .md, .txt, )
         scheduled_run_date (datetime): The date and time to schedule the task
+        expertise_areas (List[str]): The expertise areas of the agent
+        importance_threshold (float): The importance threshold of the agent
 
     Methods:
         run: Run the agent
@@ -211,6 +214,8 @@ class Agent:
         run_async_concurrent: Run the agent asynchronously and concurrently
         construct_dynamic_prompt: Construct the dynamic prompt
         handle_artifacts: Handle artifacts
+        update_notification_preferences: Update agent's notification preferences
+        handle_vector_db_update: Handle notification of vector DB update
 
 
     Examples:
@@ -340,6 +345,8 @@ class Agent:
         all_gpus: bool = False,
         model_name: str = None,
         llm_args: dict = None,
+        expertise_areas: List[str] = None,
+        importance_threshold: float = 0.5,
         *args,
         **kwargs,
     ):
@@ -457,6 +464,8 @@ class Agent:
         self.all_gpus = all_gpus
         self.model_name = model_name
         self.llm_args = llm_args
+        self.expertise_areas = expertise_areas or []
+        self.importance_threshold = importance_threshold
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -594,6 +603,13 @@ class Agent:
         threading.Thread(target=self.log_agent_data).start()
 
         threading.Thread(target=self.llm_handling())
+
+        # Add notification preferences
+        self.notification_profile = AgentProfile(
+            agent_id=agent_name,
+            expertise_areas=expertise_areas or [],
+            importance_threshold=importance_threshold
+        )
 
     def llm_handling(self):
 
@@ -2442,3 +2458,19 @@ class Agent:
         return formatter.print_table(
             f"Agent: {self.agent_name} Configuration", config_dict
         )
+
+    def update_notification_preferences(
+        self,
+        expertise_areas: List[str] = None,
+        importance_threshold: float = None
+    ):
+        """Update agent's notification preferences"""
+        if expertise_areas is not None:
+            self.notification_profile.expertise_areas = expertise_areas
+        if importance_threshold is not None:
+            self.notification_profile.importance_threshold = importance_threshold
+            
+    def handle_vector_db_update(self, update_metadata: UpdateMetadata):
+        """Handle notification of vector DB update"""
+        # Process the update based on agent's specific needs
+        pass
