@@ -27,25 +27,13 @@ def run_agent_by_name(
     Returns:
         The output of the task run by the agent.
     """
-    # Initialize the agent
-    agent = Agent(
-        agent_name=name,
-        system_prompt=system_prompt,
-        model_name=model_name,
-        max_loops=max_loops,
-        autosave=True,
-        dashboard=False,
-        verbose=True,
-        dynamic_temperature_enabled=True,
-        saved_state_path=f"{name}.json",
-        user_name="swarms_corp",
-        retry_attempts=1,
-        context_length=200000,
-        # return_step_meta=True,
-        # disable_print_every_step=True,
-        # output_type="json",
-        interactive=True,
-    )
+    try:
+        agent = Agent(
+            agent_name=name,
+            system_prompt=system_prompt,
+            model_name=model_name,
+            max_loops=max_loops,
+        )
 
         output = agent.run(task=task, img=img, *args, **kwargs)
 

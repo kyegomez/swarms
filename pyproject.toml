@@ -5,8 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "6.7.5"
-
+version = "6.5.7"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -64,35 +63,23 @@ asyncio = ">=3.4.3,<4.0"
 toml = "*"
 pypdf = "5.1.0"
 loguru = "*"
-<<<<<<< HEAD
-pydantic = "*"
-=======
-pydantic = ">=2.8.2<3.0"
->>>>>>> 66cb7a58 ([6.5.7])
+pydantic = "2.8.2"
 tenacity = "*"
 psutil = "*"
-sentry-sdk = "*"
+sentry-sdk = {version = "*", extras = ["http"]}  # Updated here
 python-dotenv = "*"
 PyYAML = "*"
-docstring_parser = "0.16" # TODO:
+docstring_parser = "0.16"
 tiktoken = "*"
 networkx = "*"
 aiofiles = "*"
-<<<<<<< HEAD
-=======
 clusterops = "*"
->>>>>>> 66cb7a58 ([6.5.7])
 # chromadb = "*"
 reportlab = "*"
 doc-master = "*"
 rich = "*"
 # sentence-transformers = "*"
 swarm-models = "*"
-<<<<<<< HEAD
-termcolor = "*"
-clusterops = { git = "https://github.com/patrickbdevaney/clusterops.git", branch = "main" }
-=======
->>>>>>> 66cb7a58 ([6.5.7])
 
 
 # [tool.poetry.extras]
@@ -124,7 +111,7 @@ swarms = "swarms.cli.main:main"
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<25.0"
-ruff = ">=0.5.1,<0.8.4"
+ruff = ">=0.5.1,<0.8.3"
 types-toml = "^0.10.8.1"
 types-pytz = ">=2023.3,<2025.0"
 types-chardet = "^5.0.4.6"
