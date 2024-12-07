@@ -50,7 +50,7 @@ def capture_system_data() -> Dict[str, str]:
 
 
 def log_agent_data(
-    data_dict: dict, retry_attempts: int = 1
+    data_dict: dict
 ) -> dict | None:
     """
     Logs agent data to the Swarms database with retry logic.

@@ -63,7 +63,7 @@ asyncio = ">=3.4.3,<4.0"
 toml = "*"
 pypdf = "4.3.1"
 loguru = "*"
-pydantic = ">=2.8.2<3.0"
+pydantic = "2.8.2"
 tenacity = "*"
 psutil = "*"
 sentry-sdk = {version = "*", extras = ["http"]}  # Updated here
