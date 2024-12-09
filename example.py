@@ -7,6 +7,9 @@ from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
+from swarms.structs.orchestrator import Orchestrator
+from swarms.structs.notification_manager import UpdateMetadata
+from datetime import datetime
 
 load_dotenv()
 
@@ -43,6 +46,22 @@ agent = Agent(
     return_history=True,
 )
 
+# Create orchestrator
+orchestrator = Orchestrator()
+
+# Register agents
+orchestrator.register_agent(agent)
+
+# Example vector DB update
+update = UpdateMetadata(
+    topic="stock_market",
+    importance=0.8,
+    timestamp=datetime.now(),
+    affected_areas=["finance", "trading"]
+)
+
+# Handle update - only Financial-Analysis-Agent will be notified
+orchestrator.handle_vector_db_update(update)
 
 agent.run(
     "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria. Create a report on this question.",

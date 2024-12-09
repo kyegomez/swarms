@@ -51,6 +51,7 @@
 | 🔌 Provider Support | • OpenAI<br>• Anthropic<br>• ChromaDB<br>• Custom Providers | • Provider flexibility<br>• Storage options<br>• Custom integration<br>• Vendor independence |
 | 💪 Production Features | • Automatic Retries<br>• Async Support<br>• Environment Management<br>• Type Safety | • Better reliability<br>• Improved performance<br>• Easy configuration<br>• Safer code |
 | 🎯 Use Case Support | • Task-Specific Agents<br>• Custom Workflows<br>• Industry Solutions<br>• Extensible Framework | • Quick deployment<br>• Flexible solutions<br>• Industry readiness<br>• Easy customization |
+| 🔔 Notification System | • Selective Updates<br>• Expertise-Based Routing<br>• Relevance Scoring<br>• Centralized Orchestration | • Reduced noise<br>• Efficient updates<br>• Smart routing<br>• Better coordination |
 
 
 ----
@@ -77,6 +78,7 @@ Refer to our documentation for production grade implementation details.
 | Why You Need Swarms | [Why MultiAgent Collaboration is Necessary](https://docs.swarms.world/en/latest/swarms/concept/why/)                                                 |
 | Swarm Architectures Analysis | [Swarm Architectures](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
 | Choosing the Right Swarm for Your Business Problem¶ | [CLICK HERE](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
+| Selective Notification System | [Orchestrator Documentation](https://docs.swarms.world/en/latest/swarms/structs/orchestrator/)                                                 |
 | AgentRearrange Docs| [CLICK HERE](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)                                                 |
 
 
@@ -1855,7 +1857,7 @@ Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 -----
 
 ## Folder Structure
-The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
+The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
 
 ```sh
 ├── __init__.py
