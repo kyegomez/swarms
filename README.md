@@ -1855,7 +1855,7 @@ Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 -----
 
 ## Folder Structure
-The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
+The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
 
 ```sh
 ├── __init__.py
@@ -1904,3 +1904,36 @@ Join our growing community around the world, for real-time support, ideas, and d
 # License
 
 GNU AFFERO GENERAL PUBLIC LICENSE
+
+### Self-Healing Agent
+The Self-Healing Agent is a specialized agent that can automatically detect, analyze, and fix runtime errors in your code using LLM-based analysis. It provides structured error analysis and generates fixes in JSON format.
+
+```python
+from swarms.agents import SelfHealingAgent
+
+# Initialize the self-healing agent
+agent = SelfHealingAgent(
+    model_name="gpt-4",
+    max_retries=3,
+    verbose=True
+)
+
+# Example usage with error handling
+try:
+    result = some_function_that_might_fail()
+except Exception as e:
+    # Agent will analyze the error and propose fixes
+    fix = agent.analyze_and_fix(e)
+    print(f"Error Analysis: {fix['analysis']}")
+    print(f"Proposed Fix: {fix['solution']}")
+```
+
+**Key Features:**
+- Runtime error detection and analysis
+- LLM-powered error understanding
+- Structured JSON output with error analysis and solutions
+- Automatic code fix generation
+- Configurable retry attempts
+- Detailed error context tracking
+
+For more details, see the [Self-Healing Agent Documentation](docs/swarms/agents/self_healing_agent.md).

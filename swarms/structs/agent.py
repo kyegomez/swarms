@@ -52,6 +52,8 @@ from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
 from swarms.utils.formatter import formatter
+from swarms.utils.terminal_output import terminal
+from swarms.utils.self_healing import health_monitor
 
 logger = initialize_logger(log_folder="agents")
 
@@ -594,6 +596,19 @@ class Agent:
         threading.Thread(target=self.log_agent_data).start()
 
         threading.Thread(target=self.llm_handling())
+
+        # Register recovery actions
+        health_monitor.register_recovery_action(
+            "RuntimeError", 
+            lambda e: self.handle_runtime_error(e)
+        )
+        health_monitor.register_recovery_action(
+            "MemoryError",
+            lambda e: self.handle_memory_error(e)
+        )
+        
+        # Start system monitoring
+        health_monitor.start_monitoring()
 
     def llm_handling(self):
 
@@ -2298,20 +2313,65 @@ class Agent:
 
         logger.info("SOP Uploaded into the memory")
 
-    def run(
-        self,
-        task: Optional[str] = None,
-        img: Optional[str] = None,
-        device: Optional[str] = "cpu",  # gpu
-        device_id: Optional[int] = 0,
-        all_cores: Optional[bool] = True,
-        scheduled_run_date: Optional[datetime] = None,
-        do_not_use_cluster_ops: Optional[bool] = False,
-        all_gpus: Optional[bool] = False,
-        generate_speech: Optional[bool] = False,
-        *args,
-        **kwargs,
-    ) -> Any:
+    def handle_runtime_error(self, error: Exception):
+        """Handle runtime errors with recovery logic"""
+        terminal.status_panel("Attempting to recover from runtime error", "info")
+        try:
+            # Reset agent state
+            self.reset_state()
+            # Retry last operation if available
+            if hasattr(self, 'last_operation'):
+                terminal.status_panel("Retrying last operation", "info")
+                self.last_operation()
+        except Exception as e:
+            terminal.status_panel(f"Recovery failed: {str(e)}", "error")
+
+    def handle_memory_error(self, error: Exception):
+        """Handle memory errors with recovery logic"""
+        terminal.status_panel("Attempting to recover from memory error", "info")
+        try:
+            # Clear caches and temporary data
+            self.clear_memory()
+            # Garbage collection
+            import gc
+            gc.collect()
+        except Exception as e:
+            terminal.status_panel(f"Memory recovery failed: {str(e)}", "error")
+
+    def run(self, *args, **kwargs):
+        """Enhanced run method with error handling and monitoring"""
+        try:
+            # Store operation for potential recovery
+            self.last_operation = lambda: super().run(*args, **kwargs)
+            
+            # Check system health before running
+            if not health_monitor.check_system_health():
+                terminal.status_panel("System health check failed, proceeding with caution", "warning")
+            
+            # Execute with progress tracking
+            with terminal.progress_bar() as progress:
+                task = progress.add_task("Running agent...", total=None)
+                result = self.last_operation()
+                progress.update(task, completed=True)
+            
+            # Show execution summary
+            terminal.status_panel("Execution completed successfully", "success")
+            return result
+            
+        except Exception as e:
+            health_monitor.handle_error(e, context="Agent execution")
+            raise
+
+    def showcase_config(self) -> None:
+        """Enhanced config display with system health info"""
+        config_dict = self.to_dict()
+        
+        # Add system health info
+        health_report = health_monitor.get_health_report()
+        config_dict["system_health"] = health_report
+        
+        # Format and display
+        terminal.chunked_table([config_dict])
         """
         Executes the agent's run method on a specified device, with optional scheduling.
 
