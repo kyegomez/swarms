@@ -28,3 +28,4 @@ swarm-models
 clusterops
 reportlab
 doc-master
+google-generativeai>=0.3.1
