@@ -80,7 +80,7 @@ chromadb = "*"
 reportlab = "*"
 doc-master = "*"
 rich = "*"
-
+lambda_multiprocessing = "*"
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
 

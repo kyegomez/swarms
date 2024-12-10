@@ -1,10 +1,19 @@
-from multiprocessing import Manager, Pool, cpu_count
+import os
+# Check if running in AWS Lambda environment
+if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+    from lambda_multiprocessing import Manager, Pool, cpu_count  # Lambda-specific import
+else:
+    from multiprocessing import Manager, Pool, cpu_count  # Regular multiprocessing import
+
+
 from typing import Sequence, Union, Callable, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_workflow import BaseWorkflow
 from swarms.utils.loguru_logger import initialize_logger
+
+
 
 logger = initialize_logger(log_folder="multi_process_workflow")
 

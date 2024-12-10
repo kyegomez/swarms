@@ -29,3 +29,4 @@ clusterops
 reportlab
 doc-master
 google-generativeai>=0.3.1
+lambda_multiprocessing

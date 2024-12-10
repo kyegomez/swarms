@@ -1,5 +1,11 @@
 import asyncio
-import multiprocessing as mp
+import os
+# Check if running in AWS Lambda environment
+if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+    import lambda_multiprocessing as mp  # Lambda-specific import
+else:
+    import multiprocessing as mp  # Regular multiprocessing import
+
 import time
 from functools import partial
 from typing import Any, Dict, Union

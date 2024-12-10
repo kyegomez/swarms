@@ -7,7 +7,12 @@ Todo
 """
 
 import asyncio
-import multiprocessing
+import os
+if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+    import lambda_multiprocessing  # Lambda-specific import
+else:
+    import multiprocessing # Regular multiprocessing import
+
 import queue
 import threading
 from typing import List, Optional
