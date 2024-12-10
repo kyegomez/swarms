@@ -6,11 +6,10 @@ from swarm_models import OpenAIChat  # or any other model you prefer
 @pytest.mark.asyncio
 async def test_async_workflow():
     # Create test agents
-    model = OpenAIChat()  # Initialize with appropriate parameters
     agents = [
         Agent(
             agent_name=f"Test-Agent-{i}",
-            llm=model,
+            llm="gpt4o-mini",
             max_loops=1,
             dashboard=False,
             verbose=True,
