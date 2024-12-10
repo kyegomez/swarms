@@ -178,6 +178,7 @@ nav:
         - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Workflows:
+            - AsyncWorkflow: "swarms/structs/async_workflow.md"
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         - Structs:
