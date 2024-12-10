@@ -4,8 +4,13 @@ import psutil
 from dataclasses import dataclass
 import threading
 from typing import List, Union, Any, Callable
-from multiprocessing import cpu_count
 import os
+# Check if running in AWS Lambda environment
+if os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+    from lambda_multiprocessing import cpu_count  # Lambda-specific import
+else:
+    from multiprocessing import cpu_count  # Regular multiprocessing import
+
 
 from swarms.structs.agent import Agent
 from swarms.utils.wrapper_clusterop import (
