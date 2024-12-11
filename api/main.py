@@ -1,5 +1,6 @@
 import os
 import secrets
+import sys
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -10,25 +11,29 @@ from uuid import UUID, uuid4
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import (
-    BackgroundTasks,
-    Depends,
-    FastAPI,
-    Header,
-    HTTPException,
-    Query,
-    Request,
-    status,
-)
+from fastapi import (BackgroundTasks, Depends, FastAPI, Header, HTTPException,
+                     Query, Request, status)
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 
+
+#print("starting")
 # Load environment variables
 load_dotenv()
 
+# # Configure Loguru
+# logger.add(
+#     "logs/api_{time}.log",
+#     rotation="500 MB",
+#     retention="10 days",
+#     level="TRACE",
+#     format="{time} {level} {message}",
+#     backtrace=True,
+#     diagnose=True,
+# )
 
 class AgentStatus(str, Enum):
     """Enum for agent status."""
@@ -843,20 +848,23 @@ def create_app() -> FastAPI:
     logger.info("FastAPI application created successfully")
     return app
 
-
 app = create_app()
 
-if __name__ == "__main__":
-    try:
-        logger.info("Starting API server...")
-        print("Starting API server on http://0.0.0.0:8000")
+if __name__ == '__main__':
+    # freeze_support()
+    #print("yes in main")
+    # Configure uvicorn logging
+    logger.info("API Starting")
 
-        uvicorn.run(
-            app,  # Pass the app instance directly
-            host="0.0.0.0",
-            port=8000,
-            log_level="info",
-        )
-    except Exception as e:
-        logger.error(f"Failed to start API: {str(e)}")
-        print(f"Error starting server: {str(e)}")
+    uvicorn.run(
+        "main:create_app",
+        host="0.0.0.0",
+        port=8000,
+        log_level="TRACE",
+        workers=1,
+        # reload=True,
+    )
+else:
+    #print("not in main")
+    pass
+

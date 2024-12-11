@@ -1,11 +1,22 @@
+import os
+import time
+
 import requests
 from loguru import logger
+
 import time
 from typing import Dict, Optional, Tuple
 from uuid import UUID
 
-BASE_URL = "http://0.0.0.0:8000/v1"
+# # Configure loguru
+# logger.add(
+#     "api_tests_{time}.log",
+#     rotation="100 MB",
+#     level="DEBUG",
+#     format="{time} {level} {message}",
+# )
 
+BASE_URL = os.getenv("SWARMS_URL","http://localhost:8000/v1")
 
 def check_api_server() -> bool:
     """Check if the API server is running and accessible."""
