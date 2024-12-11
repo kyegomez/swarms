@@ -8,8 +8,8 @@ from swarms.utils.disable_logging import disable_logging
 def bootup():
     """Bootup swarms"""
     try:
-        logging.disable(logging.CRITICAL)
-        os.environ["WANDB_SILENT"] = "true"
+        #logging.disable(logging.CRITICAL)
+        #os.environ["WANDB_SILENT"] = "true"
 
         # Auto set workspace directory
         workspace_dir = os.path.join(os.getcwd(), "agent_workspace")
@@ -17,7 +17,7 @@ def bootup():
             os.makedirs(workspace_dir, exist_ok=True)
         os.environ["WORKSPACE_DIR"] = workspace_dir
 
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        #warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # Use ThreadPoolExecutor to run disable_logging and auto_update concurrently
         with ThreadPoolExecutor(max_workers=1) as executor:

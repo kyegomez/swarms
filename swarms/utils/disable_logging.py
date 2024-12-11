@@ -6,81 +6,90 @@ from threading import Thread
 
 
 def disable_langchain():
-    """
-    Disables the LangChain deprecation warning.
-    """
-    from langchain_core._api.deprecation import (
-        LangChainDeprecationWarning,
-    )
+    pass
+    # """
+    # Disables the LangChain deprecation warning.
+    # """
+    # from langchain_core._api.deprecation import (
+    #     LangChainDeprecationWarning,
+    # )
 
-    # Ignore LangChainDeprecationWarning
-    warnings.filterwarnings(
-        "ignore", category=LangChainDeprecationWarning
-    )
+    # # Ignore LangChainDeprecationWarning
+    # warnings.filterwarnings(
+    #     "ignore", category=LangChainDeprecationWarning
+    # )
 
 
 def disable_logging():
-    """
-    Disables logging for specific modules and sets up file and stream handlers.
-    Runs in a separate thread to avoid blocking the main thread.
-    """
-    os.environ["WORKSPACE_DIR"] = "agent_workspace"
+    pass
+    for logger_name in logging.root.manager.loggerDict.keys():
+        print("LOGGER",logger_name)
+        override_logger = logging.getLogger(logger_name)
+        for handler in override_logger.handlers:
+            print(handler)
+            handler.setFormatter(formatter)
 
-    warnings.filterwarnings("ignore", category=UserWarning)
+    # """
+    # Disables logging for specific modules and sets up file and stream handlers.
+    # Runs in a separate thread to avoid blocking the main thread.
+    # """
+    # os.environ["WORKSPACE_DIR"] = "agent_workspace"
 
-    # disable tensorflow warnings
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+    # warnings.filterwarnings("ignore", category=UserWarning)
 
-    # Set the logging level for the entire module
-    logging.basicConfig(level=logging.ERROR)
+    # # disable tensorflow warnings
+    # os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-    try:
-        log = logging.getLogger("pytorch")
-        log.propagate = False
-        log.setLevel(logging.ERROR)
-    except Exception as error:
-        print(f"Pytorch logging not disabled: {error}")
+    # # Set the logging level for the entire module
+    # logging.basicConfig(level=logging.ERROR)
 
-    logger_names = [
-        "tensorflow",
-        "h5py",
-        "numexpr",
-        "git",
-        "wandb.docker.auth",
-        "langchain",
-        "distutils",
-        "urllib3",
-        "elasticsearch",
-        "packaging",
-    ]
+    # try:
+    #     log = logging.getLogger("pytorch")
+    #     log.propagate = False
+    #     log.setLevel(logging.ERROR)
+    # except Exception as error:
+    #     print(f"Pytorch logging not disabled: {error}")
 
-    # Use concurrent futures to set the level for each logger concurrently
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(set_logger_level, logger_names)
+    # logger_names = [
+    #     "tensorflow",
+    #     "h5py",
+    #     "numexpr",
+    #     "git",
+    #     "wandb.docker.auth",
+    #     "langchain",
+    #     "distutils",
+    #     "urllib3",
+    #     "elasticsearch",
+    #     "packaging",
+    # ]
 
-    # Remove all existing handlers
-    logging.getLogger().handlers = []
+    # # Use concurrent futures to set the level for each logger concurrently
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    #     executor.map(set_logger_level, logger_names)
 
-    # Get the workspace directory from the environment variables
-    workspace_dir = os.environ["WORKSPACE_DIR"]
+    # # Remove all existing handlers
+    # logging.getLogger().handlers = []
 
-    # Check if the workspace directory exists, if not, create it
-    if not os.path.exists(workspace_dir):
-        os.makedirs(workspace_dir)
+    # # Get the workspace directory from the environment variables
+    # workspace_dir = os.environ["WORKSPACE_DIR"]
 
-    # Create a file handler to log errors to the file
-    file_handler = logging.FileHandler(
-        os.path.join(workspace_dir, "error.txt")
-    )
-    file_handler.setLevel(logging.ERROR)
-    logging.getLogger().addHandler(file_handler)
+    # # Check if the workspace directory exists, if not, create it
+    # if not os.path.exists(workspace_dir):
+    #     os.makedirs(workspace_dir)
 
-    # Create a stream handler to log errors to the terminal
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.ERROR)
-    logging.getLogger().addHandler(stream_handler)
+    # # Create a file handler to log errors to the file
+    # file_handler = logging.FileHandler(
+    #     os.path.join(workspace_dir, "error.txt")
+    # )
+    # file_handler.setLevel(logging.ERROR)
+    # logging.getLogger().addHandler(file_handler)
 
-    disable_langchain()
+    # # Create a stream handler to log errors to the terminal
+    # stream_handler = logging.StreamHandler()
+    # stream_handler.setLevel(logging.ERROR)
+    # logging.getLogger().addHandler(stream_handler)
+
+    # disable_langchain()
 
 
 def set_logger_level(logger_name: str) -> None:
@@ -91,7 +100,7 @@ def set_logger_level(logger_name: str) -> None:
         logger_name (str): The name of the logger to modify.
     """
     logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.CRITICAL)
+    logger.setLevel(logging.TRACE)
 
 
 def start_disable_logging_in_thread():

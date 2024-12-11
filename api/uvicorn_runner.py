@@ -4,12 +4,6 @@ import re
 import sys
 import pdb
 import logging
-for logger_name in logging.root.manager.loggerDict.keys():
-    print(logger_name)
-    override_logger = logging.getLogger(logger_name)
-for handler in override_logger.handlers:
-    print(handler)
-    handler.setFormatter(formatter)
     
 # from uvicorn.main import main
 # if __name__ == '__main__':
@@ -27,6 +21,9 @@ for handler in override_logger.handlers:
 import sys
 import uvicorn
 from uvicorn.config import LOGGING_CONFIG
+import hunter
+hunter.trace(stdlib=False,
+             action=hunter.CallPrinter)
 
 def main():
     #root_path = ''
@@ -41,6 +38,13 @@ def main():
     LOGGING_CONFIG["formatters"]["default"]["datefmt"] = date_fmt
     LOGGING_CONFIG["formatters"]["access"]["datefmt"] = date_fmt
     ##
+    for logger_name in logging.root.manager.loggerDict.keys():
+        print(logger_name)
+        override_logger = logging.getLogger(logger_name)
+        for handler in override_logger.handlers:
+            print(handler)
+            handler.setFormatter(formatter)
+
     uvicorn.run(
         "main:app",
         host="127.0.0.1",

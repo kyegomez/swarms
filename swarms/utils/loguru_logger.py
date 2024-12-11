@@ -21,12 +21,13 @@ def initialize_logger(log_folder: str = "logs"):
     # Generate a unique identifier for the log file
     uuid_for_log = str(uuid.uuid4())
     log_file_path = os.path.join(
-        log_folder_path, f"{log_folder}_{uuid_for_log}.log"
+        #log_folder_path, f"{log_folder}_{uuid_for_log}.log"
+        log_folder_path, f"{log_folder}.log"
     )
 
     logger.add(
         log_file_path,
-        level="INFO",
+        level="TRACE",
         colorize=True,
         backtrace=True,
         diagnose=True,

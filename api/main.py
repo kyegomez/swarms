@@ -9,16 +9,46 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
+import hunter
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import (BackgroundTasks, Depends, FastAPI, Header, HTTPException,
-                     Query, Request, status)
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 
+
+seen = {}
+kind = {}
+def foo(x):
+    #<Event kind='call'
+    #function='<module>'
+    #module='ray.experimental.channel'
+    #filename='/mnt/data1/nix/time/2024/05/31/swarms/api/.venv/lib/python3.10/site-packages/ray/experimental/channel/__init__.py'
+    #lineno=1>
+    m = x.module
+    k = x.kind
+
+    if k not in kind:
+        print("KIND",x)
+        kind[k]=1
+
+    if "swarms" in m:        
+        hunter.CallPrinter(x)
+        
+    if m not in seen:
+
+        print("MOD",m)
+        seen[m]=1
+    else:
+        seen[m]=seen[m]+11
+
+hunter.trace(
+    stdlib=False,
+    action=foo
+)
 
 #print("starting")
 # Load environment variables
