@@ -1,0 +1,41 @@
+service:
+  readiness_probe:
+    path: /docs
+    initial_delay_seconds: 300
+    timeout_seconds: 30
+  
+  replica_policy:
+    min_replicas: 1
+    max_replicas: 50
+    target_qps_per_replica: 5
+    upscale_delay_seconds: 180
+    downscale_delay_seconds: 600
+
+resources:
+  ports: 8000  # FastAPI default port
+  cpus: 16
+  memory: 64
+  disk_size: 100
+  use_spot: true
+
+workdir: /app
+
+setup: |
+  git clone https://github.com/kyegomez/swarms.git
+  cd swarms/api
+  pip install -r requirements.txt
+  pip install swarms
+
+run: |
+  cd swarms/api
+  uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# env:
+#   PYTHONPATH: /app/swarms
+#   LOG_LEVEL: "INFO"
+#   # MAX_WORKERS: "4"
+
+# metadata:
+#   name: swarms-api-service
+#   version: "1.0.0"
+#   environment: production
