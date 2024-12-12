@@ -3,7 +3,7 @@
 # to be run as swarms user
 set -e
 set -x
-export ROOT="/mnt/data1/swarms"
+export ROOT=""
 export HOME="${ROOT}/home/swarms"
 unset CONDA_EXE
 unset CONDA_PYTHON_EXE
@@ -24,9 +24,9 @@ cd "${ROOT}/var/swarms/"
 pip install  -e "${ROOT}/opt/swarms-memory"
 pip install "fastapi[standard]"
 pip install "loguru"
+pip install "hunter" # for tracing
 pip install  pydantic==2.8.2
 
-
-# pip freeze
+pip freeze
 # launch as systemd
 # python /opt/swarms/api/main.py

@@ -34,9 +34,14 @@ def foo(x):
     if k not in kind:
         print("KIND",x)
         kind[k]=1
-
     if "swarms" in m:        
-        hunter.CallPrinter(x)
+        #hunter.CallPrinter(x)
+        print(x)
+    elif "uvicorn" in m:        
+        #hunter.CallPrinter(x)
+        #print(x)
+        pass
+
         
     if m not in seen:
 
@@ -54,16 +59,6 @@ hunter.trace(
 # Load environment variables
 load_dotenv()
 
-# # Configure Loguru
-# logger.add(
-#     "logs/api_{time}.log",
-#     rotation="500 MB",
-#     retention="10 days",
-#     level="TRACE",
-#     format="{time} {level} {message}",
-#     backtrace=True,
-#     diagnose=True,
-# )
 
 class AgentStatus(str, Enum):
     """Enum for agent status."""
@@ -232,11 +227,12 @@ class AgentStore:
         )  # user_id -> [agent_ids]
         self.executor = ThreadPoolExecutor(max_workers=4)
         self._ensure_directories()
-
+        logger.info(f"Created agent store: {self}")
+            
     def _ensure_directories(self):
         """Ensure required directories exist."""
-        Path("logs").mkdir(exist_ok=True)
-        Path("states").mkdir(exist_ok=True)
+        #Path("logs").mkdir(exist_ok=True)
+        #Path("states").mkdir(exist_ok=True)
 
     def create_api_key(self, user_id: UUID, key_name: str) -> APIKey:
         """Create a new API key for a user."""
@@ -329,11 +325,9 @@ class AgentStore:
                 "successful_completions": 0,
             }
 
-            # Add to user's agents list
-            if user_id not in self.user_agents:
-                self.user_agents[user_id] = []
-            self.user_agents[user_id].append(agent_id)
-
+            logger.info(f"Created agent with ID: {agent_id}")
+            logger.debug(f"Created agents:{self.agents.keys()}")
+            logger.info(f"agent store: {self}")
             return agent_id
 
         except Exception as e:
@@ -345,6 +339,9 @@ class AgentStore:
 
     async def get_agent(self, agent_id: UUID) -> Agent:
         """Retrieve an agent by ID."""
+        logger.info(f"agent store: {self}")
+        logger.info(f"Agent found: {agent_id}")
+        logger.debug(f"current agents:{self.agents.keys()}")
         agent = self.agents.get(agent_id)
         if not agent:
             logger.error(f"Agent not found: {agent_id}")
@@ -882,7 +879,7 @@ app = create_app()
 
 if __name__ == '__main__':
     # freeze_support()
-    #print("yes in main")
+    print("yes in main")
     # Configure uvicorn logging
     logger.info("API Starting")
 
@@ -895,6 +892,6 @@ if __name__ == '__main__':
         # reload=True,
     )
 else:
-    #print("not in main")
+    print("not in main")
     pass
 

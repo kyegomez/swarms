@@ -1,4 +1,4 @@
-# from https://github.com/encode/uvicorn/issues/678
+# derived from https://github.com/encode/uvicorn/issues/678
 [Unit]
 Description=swarms
 After=network.target
@@ -9,22 +9,26 @@ User=swarms
 Group=swarms
 DynamicUser=true
 WorkingDirectory=ROOT/opt/swarms/api/
+ReadWritePaths=ROOT/opt/swarms/api/agent_workspace/
+StateDirectory=swarms_state
 PrivateTmp=true
+ProtectHome=true
 EnvironmentFile=ROOT/var/run/swarms/secrets/env
 
 # for debugging use
-#ExecStart=/usr/bin/unbuffer ROOT/var/run/uvicorn/env/bin/uvicorn \
+#ExecStart=/usr/bin/unbuffer ROOT/var/run/uvicorn/env/bin/uvicorn
 
-ExecStart=ROOT/var/run/uvicorn/env/bin/uvicorn \
+# this runs and is modifiable by the agent, so this can be destabilized
+# FIXME: containerize the run(chroot jail?)
+ExecStart=/usr/bin/unbuffer ROOT/var/swarms/agent_workspace/.venv/bin/uvicorn \
         --proxy-headers \
         --forwarded-allow-ips='*' \
         --workers=4 \
-        --port=54748 \
-        --no-access-log \
-	--uds ROOT/run/uvicorn/uvicorn-swarms-api.sock \
-        _.asgi:application
+        --port=5474 \
+        main:create_app
+
 ExecReload=/bin/kill -HUP ${MAINPID}
-RestartSec=1
+RestartSec=10
 Restart=always
 
 [Install]

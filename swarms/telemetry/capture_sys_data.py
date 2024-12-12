@@ -66,33 +66,27 @@ def log_agent_data(data_dict: dict) -> dict | None:
     if not data_dict:
         logger.error("Empty data dictionary provided")
         raise ValueError("data_dict cannot be empty")
-
-#    url = "https://swarms.world/api/get-agents/log-agents"
-#    headers = {
-#        "Content-Type": "application/json",
-#        "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
-#    }
-
     print(data_dict)
+    #    url = "https://swarms.world/api/get-agents/log-agents"
+    #    headers = {
+    #        "Content-Type": "application/json",
+    #        "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
+    #    }
+    # print(data_dict)
     #try:
     #     response = requests.post(
     #         url, json=data_dict, headers=headers, timeout=10
     #     )
     #     response.raise_for_status()
-
     #     result = response.json()
     #     return result
-
     # except requests.exceptions.Timeout:
     #     logger.warning("Request timed out")
-
     # except requests.exceptions.HTTPError as e:
     #     logger.error(f"HTTP error occurred: {e}")
     #     if response.status_code == 401:
     #         logger.error("Authentication failed - check API key")
-
     # except requests.exceptions.RequestException as e:
     #     logger.error(f"Error logging agent data: {e}")
-
     #logger.error("Failed to log agent data")
     return {}
