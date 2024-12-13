@@ -1,47 +1,8 @@
-
-# # Get the list of instance IDs and their states
-# instances=$(aws ec2 describe-instances --query "Reservations[*].Instances[*].[InstanceId,State.Name]" --output text)
-
-# # aws ssm send-command --document-name AWS-RunShellScript --targets Key=instanceids,Values=i-073378237c5a9dda1 --parameters 'commands=["sudo su - -c \"tail /var/log/cloud-init-output.log\""]'
-
-# parse_command_id(){
-#     # send_command_output
-#     local send_command_output=$1
-#     echo "$send_command_output" | jq -r '.Command.CommandId'
-# }
-
-# # Loop through each instance ID and state
-# while read -r instance_id state; do
-#     if [[ $state == "running" ]]; then
-#         echo "Starting session for instance: $instance_id"
-        
-#         # Start a session and execute commands (replace with your commands)
-#         #aws ssm start-session --target "$instance_id" --document-name "AWS-StartInteractiveCommand" --parameters 'commands=["sudo su -","tail /var/log/cloud-init-output.log"]'
-
-# 	#--target "$instance_id"
-# 	send_command_output=$(aws ssm send-command --document-name "AWS-RunShellScript" --targets "Key=instanceids,Values=$instance_id" --parameters 'commands=["sudo su - -c \"tail /var/log/cloud-init-output.log\""]')
-
-	
-# 	# now get the command id
-# 	command_id=$(parse_command_id send_command_output)
-	
-# 	# now for 4 times, sleep 1 sec,
-# 	for i in {1..4}; do
-# 	    sleep 1
-# 	    command_status=$(aws ssm list-command-invocations --command-id "$command_id" --details)
-# 	    echo "$command_status"
-# 	done
-
-#     fi
-# done <<< "$instances"
-# # rewrite in python
-
-
-# Here is the equivalent Python script using `boto3` to interact with AWS SSM:
-
-# ```python
-import boto3
 import time
+
+import boto3
+#from dateutil import tz
+
 
 def parse_command_id(send_command_output):
     return send_command_output['Command']['CommandId']
@@ -74,9 +35,20 @@ def main():
 
             # Check the command status every second for 4 seconds
             for _ in range(4):
-                time.sleep(1)
+                time.sleep(20)
                 command_status = ssm_client.list_command_invocations(CommandId=command_id, Details=True)
+                
                 print(command_status)
+                for invocation in command_status['CommandInvocations']:
+                    if invocation['Status'] == 'Success':
+                        for plugin in invocation['CommandPlugins']:
+                            if plugin['Status'] == 'Success':
+                                print(f"Output from instance {instance_id}:\n{plugin['Output']}")
+                            else:
+                                print(f"Error in plugin execution for instance {instance_id}: {plugin['StatusDetails']}")
+                    else:
+                        print(f"Command for instance {instance_id} is still in progress... Status: {invocation['Status']}")
+
 
 if __name__ == "__main__":
     main()
