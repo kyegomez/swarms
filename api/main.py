@@ -34,30 +34,31 @@ kind = {}
 
 
 def process_hunter_event(x):
+    "Callback for trace events"
     # <Event kind='call'
     # function='<module>'
     # module='ray.experimental.channel'
-    # filename='/mnt/data1/nix/time/2024/05/31/swarms/api/.venv/lib/python3.10/site-packages/ray/experimental/channel/__init__.py'
-    # lineno=1>
-    m = x.module
-    k = x.kind
 
-    if k not in kind:
+    # lineno=1>
+    mod = x.module
+    kind = x.kind
+
+    if kind not in kind:
         print("KIND", x)
-        kind[k] = 1
-    if "swarms" in m:
+        kind[kind] = 1
+    if "swarms" in mod:
         # hunter.CallPrinter(x)
         print(x)
-    elif "uvicorn" in m:
+    elif "uvicorn" in mod:
         # hunter.CallPrinter(x)
         # print(x)
         pass
 
-    if m not in seen:
-        print("MOD", m)
-        seen[m] = 1
+    if mod not in seen:
+        print("MOD", mod)
+        seen[mod] = 1
     else:
-        seen[m] = seen[m]+11
+        seen[mod] = seen[mod]+11
 
 
 hunter.trace(
@@ -258,8 +259,6 @@ class AgentStore:
         api_key = secrets.token_urlsafe(API_KEY_LENGTH)
 
         # Create the API key object
-        key_name = "fixme"
-        user_id = "fixme"
         key_object = APIKey(
             key=api_key,
             name=key_name,
@@ -302,8 +301,9 @@ class AgentStore:
         self, config: AgentConfig, user_id: UUID
     ) -> UUID:
         """Create a new agent with the given configuration."""
+        states_time = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        states_json = f"states/{config.agent_name}_{states_time}.json"
         try:
-
             agent = Agent(
                 agent_name=config.agent_name,
                 system_prompt=config.system_prompt,
@@ -338,6 +338,11 @@ class AgentStore:
                 "downtime": timedelta(),
                 "successful_completions": 0,
             }
+
+            # Add to user's agents list
+            if user_id not in self.user_agents:
+                self.user_agents[user_id] = []
+            self.user_agents[user_id].append(agent_id)
 
             logger.info(f"Created agent with ID: {agent_id}")
             logger.debug(f"Created agents:{self.agents.keys()}")
@@ -568,8 +573,9 @@ class AgentStore:
         except Exception as e:
             metadata["error_count"] += 1
             metadata["status"] = AgentStatus.ERROR
+            err= traceback.format_exc()
             logger.error(
-                f"Error in completion processing: {str(e)}\n{traceback.format_exc()}"
+                f"Error in completion processing: {str(e)}\n{err}"
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
