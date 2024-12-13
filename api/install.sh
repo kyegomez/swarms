@@ -153,5 +153,3 @@ systemctl start nginx
 journalctl -xeu swarms-uvicorn.service | tail -200 || echo oops
 systemctl status swarms-uvicorn.service || echo oops2
 
-# mikes tools
-apt install -y  emacs-nox tmux
