@@ -1,18 +1,27 @@
 import os
 import secrets
-import sys
+# import sys
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
+# from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import hunter
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, status
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -22,40 +31,41 @@ from swarms.structs.agent import Agent
 
 seen = {}
 kind = {}
-def foo(x):
-    #<Event kind='call'
-    #function='<module>'
-    #module='ray.experimental.channel'
-    #filename='/mnt/data1/nix/time/2024/05/31/swarms/api/.venv/lib/python3.10/site-packages/ray/experimental/channel/__init__.py'
-    #lineno=1>
+
+
+def process_hunter_event(x):
+    # <Event kind='call'
+    # function='<module>'
+    # module='ray.experimental.channel'
+    # filename='/mnt/data1/nix/time/2024/05/31/swarms/api/.venv/lib/python3.10/site-packages/ray/experimental/channel/__init__.py'
+    # lineno=1>
     m = x.module
     k = x.kind
 
     if k not in kind:
-        print("KIND",x)
-        kind[k]=1
-    if "swarms" in m:        
-        #hunter.CallPrinter(x)
+        print("KIND", x)
+        kind[k] = 1
+    if "swarms" in m:
+        # hunter.CallPrinter(x)
         print(x)
-    elif "uvicorn" in m:        
-        #hunter.CallPrinter(x)
-        #print(x)
+    elif "uvicorn" in m:
+        # hunter.CallPrinter(x)
+        # print(x)
         pass
 
-        
     if m not in seen:
-
-        print("MOD",m)
-        seen[m]=1
+        print("MOD", m)
+        seen[m] = 1
     else:
-        seen[m]=seen[m]+11
+        seen[m] = seen[m]+11
+
 
 hunter.trace(
     stdlib=False,
-    action=foo
+    action=process_hunter_event
 )
 
-#print("starting")
+# print("starting")
 # Load environment variables
 load_dotenv()
 
@@ -82,10 +92,12 @@ class APIKey(BaseModel):
 
 
 class APIKeyCreate(BaseModel):
+    "Fixme"
     name: str  # A friendly name for the API key
 
 
 class User(BaseModel):
+    "User "
     id: UUID
     username: str
     is_active: bool = True
@@ -228,11 +240,11 @@ class AgentStore:
         self.executor = ThreadPoolExecutor(max_workers=4)
         self._ensure_directories()
         logger.info(f"Created agent store: {self}")
-            
+
     def _ensure_directories(self):
         """Ensure required directories exist."""
-        #Path("logs").mkdir(exist_ok=True)
-        #Path("states").mkdir(exist_ok=True)
+        # Path("logs").mkdir(exist_ok=True)
+        # Path("states").mkdir(exist_ok=True)
 
     def create_api_key(self, user_id: UUID, key_name: str) -> APIKey:
         """Create a new API key for a user."""
@@ -246,6 +258,8 @@ class AgentStore:
         api_key = secrets.token_urlsafe(API_KEY_LENGTH)
 
         # Create the API key object
+        key_name = "fixme"
+        user_id = "fixme"
         key_object = APIKey(
             key=api_key,
             name=key_name,
@@ -330,11 +344,11 @@ class AgentStore:
             logger.info(f"agent store: {self}")
             return agent_id
 
-        except Exception as e:
-            logger.error(f"Error creating agent: {str(e)}")
+        except Exception as exp:
+            logger.error(f"Error creating agent: {str(exp)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create agent: {str(e)}",
+                detail=f"Failed to create agent: {str(exp)}",
             )
 
     async def get_agent(self, agent_id: UUID) -> Agent:
