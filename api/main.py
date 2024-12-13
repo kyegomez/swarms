@@ -93,7 +93,6 @@ class APIKey(BaseModel):
 
 
 class APIKeyCreate(BaseModel):
-    "Fixme"
     name: str  # A friendly name for the API key
 
 

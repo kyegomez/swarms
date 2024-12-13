@@ -14,7 +14,8 @@ fi
 
 if [ ! -f "${ROOT}/opt/swarms/install/apt.txt" ]; then
     apt update
-    apt install --allow-change-held-packages -y git virtualenv nginx expect 
+    apt install --allow-change-held-packages -y git python3-virtualenv nginx
+    snap install expect 
     snap install aws-cli --classic
     echo 1 >"${ROOT}/opt/swarms/install/apt.txt"
 fi
