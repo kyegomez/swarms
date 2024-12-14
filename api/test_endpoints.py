@@ -21,10 +21,12 @@ def main():
                 if state == 'running':
 
                     ip = instance["PublicIpAddress"]
-                    BASE_URL=f"http://{ip}:80/v1/"
-                    print(f"Starting command for instance: {instance_id} {BASE_URL}")
+                    BASE_URL=f"http://{ip}:80/v1"
+                    target = f"{BASE_URL}/docs"
+                    print(f"Starting command for instance: {instance_id} {target} ")
                     try:
-                        response = requests.get(f"{BASE_URL}/docs", timeout=3)
+                        response = requests.get(target, timeout=8)
+                        #http://18.205.7.10/v1/docs
                         print(response)
                     except Exception as exp:
                         print(BASE_URL,exp)
