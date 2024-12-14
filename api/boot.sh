@@ -26,7 +26,7 @@ pip install "fastapi[standard]"
 pip install "loguru"
 pip install "hunter" # for tracing
 pip install  pydantic==2.8.2
-
+pip install pathos || echo oops
 pip freeze
 # launch as systemd
 # python /opt/swarms/api/main.py
