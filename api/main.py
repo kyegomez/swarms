@@ -44,18 +44,20 @@ def process_hunter_event(x):
     kind = x.kind
 
     if kind not in kind:
-        print("KIND", x)
+        logger.debug(f"new kind: {kind}")
+        #print("KIND", x)
         kind[kind] = 1
     if "swarms" in mod:
         # hunter.CallPrinter(x)
-        print(x)
+        #print(x)
+        logger.debug(f"new swarms event:{kind} value:{x}")
     elif "uvicorn" in mod:
         # hunter.CallPrinter(x)
         # print(x)
         pass
 
     if mod not in seen:
-        print("MOD", mod)
+        logger.debug(f"new module: {mod}")
         seen[mod] = 1
     else:
         seen[mod] = seen[mod]+11
@@ -898,7 +900,8 @@ app = create_app()
 
 if __name__ == '__main__':
     # freeze_support()
-    print("yes in main")
+    #print("yes in main")
+    logger.debug(f"in main")
     # Configure uvicorn logging
     logger.info("API Starting")
 
@@ -911,6 +914,7 @@ if __name__ == '__main__':
         # reload=True,
     )
 else:
-    print("not in main")
+    #print("not in main")
+    logger.debug(f"not in main")
     pass
 
