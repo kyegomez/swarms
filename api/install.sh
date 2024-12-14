@@ -153,3 +153,13 @@ systemctl start nginx
 journalctl -xeu swarms-uvicorn.service | tail -200 || echo oops
 systemctl status swarms-uvicorn.service || echo oops2
 
+# now after swarms is up, we restart nginx
+HOST="localhost"
+PORT=5474
+while ! nc -z $HOST $PORT; do
+  sleep 1
+  echo -n "."
+done
+echo "Port $PORT is now open!"
+
+systemctl restart nginx
