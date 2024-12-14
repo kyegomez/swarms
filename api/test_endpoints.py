@@ -21,17 +21,20 @@ def main():
                 if state == 'running':
 
                     ip = instance["PublicIpAddress"]
+                    instance_type = instance["InstanceType"]
                     BASE_URL=f"http://{ip}:80/v1"
                     target = f"{BASE_URL}/docs"
-                    print(f"Starting command for instance: {instance_id} {target} ")
+                    print(f"Starting command for instance: {instance_id} {target} {instance_type}")
                     try:
-                        response = requests.get(target, timeout=8)
-                        #http://18.205.7.10/v1/docs
-                        print(response)
+                        response = requests.get(target, timeout=8)                   
+                        print(f"got response: {instance_id} {target} {instance_type} {response}")
                     except Exception as exp:
-                        print(BASE_URL,exp)
+                        print(f"got error: {instance_id} {target} {instance_type} {exp}")
 
-                    # {'AmiLaunchIndex': 0, 'ImageId': 'ami-0e2c8caa4b6378d8c', 'InstanceId': 'i-0d41e4263f40babec', 'InstanceType': 't3.small', 'KeyName': 'mdupont-deployer-key', 'LaunchTime': datetime.datetime(2024, 12, 14, 16, 1, 50, tzinfo=tzutc()),
+                    # {'AmiLaunchIndex': 0, 'ImageId': 'ami-0e2c8caa4b6378d8c',
+                    #'InstanceId': 'i-0d41e4263f40babec',
+                    #'InstanceType': 't3.small',
+                    #'KeyName': 'mdupont-deployer-key', 'LaunchTime': datetime.datetime(2024, 12, 14, 16, 1, 50, tzinfo=tzutc()),
                     #  'Monitoring': {'State': 'disabled'},
                     #  'Placement': {'AvailabilityZone': 'us-east-1a', 'GroupName': '', 'Tenancy': 'default'}, 'PrivateDnsName': 'ip-10-0-4-18.ec2.internal', 'PrivateIpAddress': '10.0.4.18', 'ProductCodes': [],
                     #'PublicDnsName': 'ec2-3-228-14-220.compute-1.amazonaws.com',
