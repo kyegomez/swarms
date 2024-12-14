@@ -2355,16 +2355,15 @@ class Agent:
         import requests
 
         data_dict = {"data": self.to_dict()}
-
-        url = "https://swarms.world/api/get-agents/log-agents"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
-        }
-
-        response = requests.post(url, json=data_dict, headers=headers)
-
-        return response.json()
+        logger.info(f"was going to send to swarms { data_dict}")
+        #        url = "https://swarms.world/api/get-agents/log-agents"
+        #        headers = {
+        #            "Content-Type": "application/json",
+        #            "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
+        #        }
+        #        response = requests.post(url, json=data_dict, headers=headers)
+        #        return response.json()
+        return {}
 
     def handle_tool_schema_ops(self):
         if exists(self.tool_schema):
