@@ -2,10 +2,25 @@ import asyncio
 from typing import Any, List
 from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import logger
+from swarms.utils.loguru_logger import initialize_logger
 
+logger = initialize_logger("async_workflow")
 
 class AsyncWorkflow(BaseWorkflow):
+    """
+    Represents an asynchronous workflow that can execute tasks concurrently using multiple agents.
+    
+    Attributes:
+    - name (str): The name of the workflow.
+    - agents (List[Agent]): A list of agents participating in the workflow.
+    - max_workers (int): The maximum number of workers to use for concurrent execution.
+    - dashboard (bool): Indicates if a dashboard should be displayed.
+    - autosave (bool): Indicates if the results should be autosaved.
+    - verbose (bool): Indicates if verbose logging is enabled.
+    - task_pool (List): A pool of tasks to be executed.
+    - results (List): The results of the executed tasks.
+    - loop (asyncio.AbstractEventLoop): The event loop used for asynchronous execution.
+    """
     def __init__(
         self,
         name: str = "AsyncWorkflow",
@@ -30,7 +45,16 @@ class AsyncWorkflow(BaseWorkflow):
     async def _execute_agent_task(
         self, agent: Agent, task: str
     ) -> Any:
-        """Execute a single agent task asynchronously"""
+        """
+        Executes a single agent task asynchronously.
+        
+        Args:
+        - agent (Agent): The agent executing the task.
+        - task (str): The task to be executed.
+        
+        Returns:
+        - Any: The result of the task execution or an error message if an exception occurs.
+        """
         try:
             if self.verbose:
                 logger.info(
@@ -49,7 +73,15 @@ class AsyncWorkflow(BaseWorkflow):
             return str(e)
 
     async def run(self, task: str) -> List[Any]:
-        """Run the workflow with all agents processing the task concurrently"""
+        """
+        Runs the workflow with all agents processing the task concurrently.
+        
+        Args:
+        - task (str): The task to be executed by all agents.
+        
+        Returns:
+        - List[Any]: A list of results from all agents or error messages if exceptions occur.
+        """
         if not self.agents:
             raise ValueError("No agents provided to the workflow")
 
