@@ -21,8 +21,6 @@ from typing import (
 
 import toml
 import yaml
-
-# from swarms.utils.loguru_logger import initialize_logger
 from loguru import logger
 from pydantic import BaseModel
 from swarm_models.tiktoken_wrapper import TikTokenizer
@@ -499,10 +497,6 @@ class Agent:
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
         if preset_stopping_token is not None:
             self.stopping_token = "<DONE>"
-
-        # # Check the parameters
-        # # Telemetry Processor to log agent data
-        # threading.Thread(target=self.agent_initialization()).start
 
         # If the docs exist then ingest the docs
         if exists(self.docs):

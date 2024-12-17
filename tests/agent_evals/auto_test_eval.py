@@ -92,9 +92,6 @@ class SwarmsIssueReporter:
         self.issues_created = []
         self.last_issue_time = datetime.now()
 
-        # Validate GitHub token
-        # self._validate_github_credentials()
-
     def _get_swarms_version(self) -> str:
         """Get the installed version of Swarms."""
         try:
@@ -315,11 +312,6 @@ class SwarmsIssueReporter:
             logger.error(f"Error creating Swarms issue: {str(e)}")
             return None
 
-
-# from swarms import Agent
-# from swarm_models import OpenAIChat
-# from swarms.utils.issue_reporter import SwarmsIssueReporter
-# import os
 
 # Setup the reporter with your GitHub token
 reporter = SwarmsIssueReporter(

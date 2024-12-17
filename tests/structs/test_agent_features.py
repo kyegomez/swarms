@@ -1,11 +1,13 @@
 import asyncio
-from swarms import Agent
-from swarm_models import OpenAIChat
-import os
-import time
 import json
-import yaml
+import os
 import tempfile
+import time
+
+import yaml
+from swarm_models import OpenAIChat
+
+from swarms import Agent
 
 
 def test_basic_agent_functionality():
