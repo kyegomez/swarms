@@ -137,6 +137,7 @@ class SwarmRouter:
         rules: str = None,
         documents: List[str] = [],  # A list of docs file paths
         output_type: str = "string",  # Md, PDF, Txt, csv
+        no_cluster_ops: bool = False,
         *args,
         **kwargs,
     ):
@@ -153,6 +154,7 @@ class SwarmRouter:
         self.rules = rules
         self.documents = documents
         self.output_type = output_type
+        self.no_cluster_ops = no_cluster_ops
         self.logs = []
 
         self.reliability_check()
@@ -175,6 +177,12 @@ class SwarmRouter:
 
         # if self.documents is not None:
         #     self.handle_docs()
+
+        # let's make a function that checks the agents parameter and disables clusterops
+
+    def deactivate_clusterops(self):
+        for agent in self.agents:
+            agent.do_not_use_cluster_ops = True
 
     def handle_docs(self):
         # Process all documents in parallel using list comprehension
@@ -278,6 +286,9 @@ class SwarmRouter:
             self.swarm_type = str(swarm_matcher(task))
 
             self._create_swarm(self.swarm_type)
+
+        if self.no_cluster_ops:
+            self.deactivate_clusterops()
 
         elif self.swarm_type == "AgentRearrange":
             return AgentRearrange(

@@ -8,7 +8,7 @@ from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
 from swarms.utils.formatter import formatter
-from swarms.utils.litellm import LiteLLM
+from swarms.utils.litellm_wrapper import LiteLLM
 
 load_dotenv()
 

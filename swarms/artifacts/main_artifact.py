@@ -2,7 +2,8 @@ import time
 import os
 import json
 from typing import List, Union, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
+from pydantic.v1 import validator
 from datetime import datetime
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.loguru_logger import initialize_logger

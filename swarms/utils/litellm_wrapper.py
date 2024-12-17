@@ -8,6 +8,7 @@ except ImportError:
     from litellm import completion
 
     litellm.set_verbose = True
+    litellm.ssl_verify = False
 
 
 class LiteLLM:
@@ -23,6 +24,7 @@ class LiteLLM:
         stream: bool = False,
         temperature: float = 0.5,
         max_tokens: int = 4000,
+        ssl_verify: bool = False,
     ):
         """
         Initialize the LiteLLM with the given parameters.
@@ -39,6 +41,7 @@ class LiteLLM:
         self.stream = stream
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.ssl_verify = ssl_verify
 
     def _prepare_messages(self, task: str) -> list:
         """

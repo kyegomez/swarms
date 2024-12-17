@@ -28,6 +28,7 @@ from swarms.tools.cohere_func_call_schema import (
     ParameterDefinition,
 )
 from swarms.tools.tool_registry import ToolStorage, tool_registry
+from swarms.tools.json_utils import base_model_to_json
 
 
 __all__ = [
@@ -51,4 +52,5 @@ __all__ = [
     "ParameterDefinition",
     "ToolStorage",
     "tool_registry",
+    "base_model_to_json",
 ]

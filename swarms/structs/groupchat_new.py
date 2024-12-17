@@ -3,7 +3,6 @@ import asyncio
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
 from swarms import Agent
-from swarm_models import OpenAIChat
 from dotenv import load_dotenv
 from swarms.utils.formatter import formatter
 
@@ -181,64 +180,64 @@ class GroupChat:
         ]
 
 
-# Example Usage
-if __name__ == "__main__":
+# # Example Usage
+# if __name__ == "__main__":
 
-    load_dotenv()
+#     load_dotenv()
 
-    # Get the OpenAI API key from the environment variable
-    api_key = os.getenv("OPENAI_API_KEY")
+#     # Get the OpenAI API key from the environment variable
+#     api_key = os.getenv("OPENAI_API_KEY")
 
-    # Create an instance of the OpenAIChat class
-    model = OpenAIChat(
-        openai_api_key=api_key,
-        model_name="gpt-4o-mini",
-        temperature=0.1,
-    )
+#     # Create an instance of the OpenAIChat class
+#     model = OpenAIChat(
+#         openai_api_key=api_key,
+#         model_name="gpt-4o-mini",
+#         temperature=0.1,
+#     )
 
-    # Example agents
-    agent1 = Agent(
-        agent_name="Financial-Analysis-Agent",
-        system_prompt="You are a financial analyst specializing in investment strategies.",
-        llm=model,
-        max_loops=1,
-        autosave=False,
-        dashboard=False,
-        verbose=True,
-        dynamic_temperature_enabled=True,
-        user_name="swarms_corp",
-        retry_attempts=1,
-        context_length=200000,
-        output_type="string",
-        streaming_on=False,
-    )
+#     # Example agents
+#     agent1 = Agent(
+#         agent_name="Financial-Analysis-Agent",
+#         system_prompt="You are a financial analyst specializing in investment strategies.",
+#         llm=model,
+#         max_loops=1,
+#         autosave=False,
+#         dashboard=False,
+#         verbose=True,
+#         dynamic_temperature_enabled=True,
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         output_type="string",
+#         streaming_on=False,
+#     )
 
-    agent2 = Agent(
-        agent_name="Tax-Adviser-Agent",
-        system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
-        llm=model,
-        max_loops=1,
-        autosave=False,
-        dashboard=False,
-        verbose=True,
-        dynamic_temperature_enabled=True,
-        user_name="swarms_corp",
-        retry_attempts=1,
-        context_length=200000,
-        output_type="string",
-        streaming_on=False,
-    )
+#     agent2 = Agent(
+#         agent_name="Tax-Adviser-Agent",
+#         system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
+#         llm=model,
+#         max_loops=1,
+#         autosave=False,
+#         dashboard=False,
+#         verbose=True,
+#         dynamic_temperature_enabled=True,
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         output_type="string",
+#         streaming_on=False,
+#     )
 
-    # Create group chat
-    group_chat = GroupChat(
-        name="Financial Discussion",
-        description="A group chat for financial analysis and tax advice.",
-        agents=[agent1, agent2],
-    )
+#     # Create group chat
+#     group_chat = GroupChat(
+#         name="Financial Discussion",
+#         description="A group chat for financial analysis and tax advice.",
+#         agents=[agent1, agent2],
+#     )
 
-    # Run the group chat
-    asyncio.run(
-        group_chat.run(
-            "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria? What do you guys think?"
-        )
-    )
+#     # Run the group chat
+#     asyncio.run(
+#         group_chat.run(
+#             "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria? What do you guys think?"
+#         )
+#     )

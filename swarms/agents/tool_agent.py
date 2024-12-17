@@ -1,10 +1,12 @@
 from typing import Any, Optional, Callable
 from swarms.tools.json_former import Jsonformer
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.lazy_loader import lazy_import_decorator
 
 logger = initialize_logger(log_folder="tool_agent")
 
 
+@lazy_import_decorator
 class ToolAgent:
     """
     Represents a tool agent that performs a specific task using a model and tokenizer.

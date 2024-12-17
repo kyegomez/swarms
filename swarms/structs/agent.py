@@ -598,7 +598,7 @@ class Agent:
     def llm_handling(self):
 
         if self.llm is None:
-            from swarms.utils.litellm import LiteLLM
+            from swarms.utils.litellm_wrapper import LiteLLM
 
             if self.llm_args is not None:
                 self.llm = LiteLLM(
