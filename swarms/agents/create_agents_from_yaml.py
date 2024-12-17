@@ -16,7 +16,7 @@ from pydantic import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
-from swarms.utils.litellm import LiteLLM
+from swarms.utils.litellm_wrapper import LiteLLM
 
 logger = initialize_logger(log_folder="create_agents_from_yaml")
 

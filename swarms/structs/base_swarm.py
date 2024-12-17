@@ -16,7 +16,6 @@ from typing import (
 
 import yaml
 
-from swarms_memory import BaseVectorDatabase
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
@@ -98,9 +97,7 @@ class BaseSwarm(ABC):
         agentops_on: Optional[bool] = False,
         speaker_selection_func: Optional[Callable] = None,
         rules: Optional[str] = None,
-        collective_memory_system: Optional[
-            BaseVectorDatabase
-        ] = False,
+        collective_memory_system: Optional[Any] = False,
         agent_ops_on: bool = False,
         output_schema: Optional[BaseModel] = None,
         *args,

@@ -1,4 +1,4 @@
-from swarms.agents.stopping_conditions import (
+from swarms.structs.stopping_conditions import (
     check_cancelled,
     check_complete,
     check_done,

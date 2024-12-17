@@ -19,7 +19,6 @@ from swarms.structs.majority_voting import (
     most_frequent,
     parse_code_completion,
 )
-from swarms.structs.message import Message
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 from swarms.structs.multi_agent_exec import (
@@ -39,7 +38,6 @@ from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_arange import SwarmRearrange
-from swarms.structs.swarm_net import SwarmNetwork
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -75,22 +73,6 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
-from swarms.structs.swarm_router import (
-    SwarmRouter,
-    SwarmType,
-    swarm_router,
-)
-from swarms.structs.swarm_arange import SwarmRearrange
-from swarms.structs.multi_agent_exec import (
-    run_agents_concurrently,
-    run_agents_concurrently_async,
-    run_single_agent,
-    run_agents_concurrently_multiprocess,
-    run_agents_sequentially,
-    run_agents_with_different_tasks,
-    run_agent_with_timeout,
-    run_agents_with_resource_monitoring,
-)
 from swarms.structs.async_workflow import AsyncWorkflow
 
 __all__ = [
@@ -108,9 +90,7 @@ __all__ = [
     "majority_voting",
     "most_frequent",
     "parse_code_completion",
-    "Message",
     "MultiAgentCollaboration",
-    "SwarmNetwork",
     "AgentRearrange",
     "rearrange",
     "RoundRobinSwarm",
