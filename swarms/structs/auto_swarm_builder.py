@@ -50,13 +50,11 @@ class SwarmConfig(BaseModel):
                 name="Research-Agent",
                 description="Gathers information",
                 system_prompt="You are a research agent...",
-                max_loops=2,
             ),
             AgentConfig(
                 name="Writing-Agent",
                 description="Writes content",
                 system_prompt="You are a writing agent...",
-                max_loops=1,
             ),
         ],
     )
@@ -195,7 +193,7 @@ class AutoSwarmBuilder:
         self.name = agents_dictionary.name
         self.description = agents_dictionary.description
         self.max_loops = getattr(
-            agents_dictionary, "max_loops", 1
+            agents_dictionary
         )  # Default to 1 if not set
 
         logger.info(
@@ -213,7 +211,6 @@ class AutoSwarmBuilder:
                 agent_name=agent_config.name,
                 agent_description=agent_config.description,
                 agent_system_prompt=agent_config.system_prompt,
-                # max_loops=agent_config.max_loops,
             )
             agents.append(agent)
 

@@ -387,6 +387,8 @@ class BaseTool(BaseModel):
             "Converting tools into OpenAI function calling schema"
         )
 
+        tool_schemas = []
+
         for tool in self.tools:
             # Transform the tool into a openai function calling schema
             if self.check_func_if_have_docs(
@@ -398,7 +400,7 @@ class BaseTool(BaseModel):
                 logger.info(
                     f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
                 )
-                tool_schema_list = (
+                tool_schema = (
                     get_openai_function_schema_from_func(
                         tool, name=name, description=description
                     )
@@ -408,18 +410,21 @@ class BaseTool(BaseModel):
                     f"Tool {name} converted successfully into OpenAI schema"
                 )
 
-                # Transform the dictionary to a string
-                tool_schema_list = json.dumps(
-                    tool_schema_list, indent=4
-                )
-
-                return tool_schema_list
+                tool_schemas.append(tool_schema)
             else:
                 logger.error(
                     f"Tool {tool.__name__} does not have documentation or type hints, please add them to make the tool execution reliable."
                 )
 
-        return tool_schema_list
+        # Combine all tool schemas into a single schema
+        if tool_schemas:
+            combined_schema = {
+                "type": "function",
+                "functions": [schema["function"] for schema in tool_schemas]
+            }
+            return json.dumps(combined_schema, indent=4)
+        
+        return None
 
     def check_func_if_have_docs(self, func: callable):
         if func.__doc__ is not None:

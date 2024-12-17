@@ -453,8 +453,8 @@ agent.run(task, img)
 ----
 
 
-### `ToolAgent`
-ToolAgent is an agent that can use tools through JSON function calling. It intakes any open source model from huggingface and is extremely modular and plug in and play. We need help adding general support to all models soon.
+### Local Agent `ToolAgent`
+ToolAgent is an fully local agent that can use tools through JSON function calling. It intakes any open source model from huggingface and is extremely modular and plug in and play. We need help adding general support to all models soon.
 
 
 ```python
@@ -462,7 +462,7 @@ from pydantic import BaseModel, Field
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from swarms import ToolAgent
-from swarms.utils.json_utils import base_model_to_json
+from swarms.tools.json_utils import base_model_to_json
 
 # Load the pre-trained model and tokenizer
 model = AutoModelForCausalLM.from_pretrained(
@@ -509,83 +509,6 @@ generated_data = agent.run(task)
 print(f"Generated data: {generated_data}")
 
 ```
-
-
-## Integrating External Agents
-Integrating external agents from other agent frameworks is easy with swarms.
-
-Steps:
-
-1. Create a new class that inherits `Agent`
-2. Create a `.run(task: str) -> str` method that runs the agent and returns the response. 
-3. The new Agent must return a string of the response. But you may add additional methods to save the output to JSON.
-
-
-### Griptape Example
-
-For example, here's an example on how to create an agent from griptape.
-
-Here’s how you can create a custom **Griptape** agent that integrates with the **Swarms** framework by inheriting from the `Agent` class in **Swarms** and overriding the `run(task: str) -> str` method.
-
-
-```python
-from swarms import (
-    Agent as SwarmsAgent,
-)  # Import the base Agent class from Swarms
-from griptape.structures import Agent as GriptapeAgent
-from griptape.tools import (
-    WebScraperTool,
-    FileManagerTool,
-    PromptSummaryTool,
-)
-
-
-# Create a custom agent class that inherits from SwarmsAgent
-class GriptapeSwarmsAgent(SwarmsAgent):
-    def __init__(self, *args, **kwargs):
-        # Initialize the Griptape agent with its tools
-        self.agent = GriptapeAgent(
-            input="Load {{ args[0] }}, summarize it, and store it in a file called {{ args[1] }}.",
-            tools=[
-                WebScraperTool(off_prompt=True),
-                PromptSummaryTool(off_prompt=True),
-                FileManagerTool(),
-            ],
-            *args,
-            **kwargs,
-            # Add additional settings
-        )
-
-    # Override the run method to take a task and execute it using the Griptape agent
-    def run(self, task: str) -> str:
-        # Extract URL and filename from task (you can modify this parsing based on task structure)
-        url, filename = task.split(
-            ","
-        )  # Example of splitting task string
-        # Execute the Griptape agent with the task inputs
-        result = self.agent.run(url.strip(), filename.strip())
-        # Return the final result as a string
-        return str(result)
-
-
-# Example usage:
-griptape_swarms_agent = GriptapeSwarmsAgent()
-output = griptape_swarms_agent.run(
-    "https://griptape.ai, griptape.txt"
-)
-print(output)
-```
-
-### Key Components:
-1. **GriptapeSwarmsAgent**: A custom class that inherits from the `SwarmsAgent` class and integrates the Griptape agent.
-2. **run(task: str) -> str**: A method that takes a task string, processes it (e.g., splitting into a URL and filename), and runs the Griptape agent with the provided inputs.
-3. **Griptape Tools**: The tools integrated into the Griptape agent (e.g., `WebScraperTool`, `PromptSummaryTool`, `FileManagerTool`) allow for web scraping, summarization, and file management.
-
-You can now easily plug this custom Griptape agent into the **Swarms Framework** and use it to run tasks!
-
-
-
-
 
 
 ## Understanding Swarms
@@ -851,6 +774,8 @@ print(
 
 The `AgentRearrange` orchestration technique, inspired by Einops and einsum, allows you to define and map out the relationships between various agents. It provides a powerful tool for orchestrating complex workflows, enabling you to specify linear and sequential relationships such as `a -> a1 -> a2 -> a3`, or concurrent relationships where the first agent sends a message to 3 agents simultaneously: `a -> a1, a2, a3`. This level of customization allows for the creation of highly efficient and dynamic workflows, where agents can work in parallel or in sequence as needed. The `AgentRearrange` technique is a valuable addition to the swarms library, providing a new level of flexibility and control over the orchestration of agents. For more detailed information and examples, please refer to the [official documentation](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/).
 
+[Check out my video on agent rearrange!](https://youtu.be/Rq8wWQ073mg)
+
 
 
 ### Methods
@@ -876,68 +801,184 @@ The `run` method returns the final output after all agents have processed the in
 
 ```python
 
-from swarms import Agent, AgentRearrange
+from datetime import datetime
 
+from swarms import Agent, AgentRearrange, create_file_in_folder
 
-# Initialize the director agent
-
-director = Agent(
-    agent_name="Director",
-    system_prompt="Directs the tasks for the workers",
-    model_name="claude-2",
+chief_medical_officer = Agent(
+    agent_name="Chief Medical Officer",
+    system_prompt="""You are the Chief Medical Officer coordinating a team of medical specialists for viral disease diagnosis.
+    Your responsibilities include:
+    - Gathering initial patient symptoms and medical history
+    - Coordinating with specialists to form differential diagnoses
+    - Synthesizing different specialist opinions into a cohesive diagnosis
+    - Ensuring all relevant symptoms and test results are considered
+    - Making final diagnostic recommendations
+    - Suggesting treatment plans based on team input
+    - Identifying when additional specialists need to be consulted
+    
+    Guidelines:
+    1. Always start with a comprehensive patient history
+    2. Consider both common and rare viral conditions
+    3. Factor in patient demographics and risk factors
+    4. Document your reasoning process clearly
+    5. Highlight any critical or emergency symptoms
+    6. Note any limitations or uncertainties in the diagnosis
+    
+    Format all responses with clear sections for:
+    - Initial Assessment
+    - Differential Diagnoses
+    - Specialist Consultations Needed
+    - Recommended Next Steps""",
+    model_name="gpt-4o",  # Models from litellm -> claude-2
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="director.json",
 )
 
-
-# Initialize worker 1
-
-worker1 = Agent(
-    agent_name="Worker1",
-    system_prompt="Generates a transcript for a youtube video on what swarms are",
-    model_name="claude-2",
+# Viral Disease Specialist
+virologist = Agent(
+    agent_name="Virologist",
+    system_prompt="""You are a specialist in viral diseases with expertise in:
+    - Respiratory viruses (Influenza, Coronavirus, RSV)
+    - Systemic viral infections (EBV, CMV, HIV)
+    - Childhood viral diseases (Measles, Mumps, Rubella)
+    - Emerging viral threats
+    
+    Your role involves:
+    1. Analyzing symptoms specific to viral infections
+    2. Distinguishing between different viral pathogens
+    3. Assessing viral infection patterns and progression
+    4. Recommending specific viral tests
+    5. Evaluating epidemiological factors
+    
+    For each case, consider:
+    - Incubation periods
+    - Transmission patterns
+    - Seasonal factors
+    - Geographic prevalence
+    - Patient immune status
+    - Current viral outbreaks
+    
+    Provide detailed analysis of:
+    - Characteristic viral symptoms
+    - Disease progression timeline
+    - Risk factors for severe disease
+    - Potential complications""",
+    model_name="gpt-4o",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="worker1.json",
 )
 
-
-# Initialize worker 2
-worker2 = Agent(
-    agent_name="Worker2",
-    system_prompt="Summarizes the transcript generated by Worker1",
-    model_name="claude-2",
+# Internal Medicine Specialist
+internist = Agent(
+    agent_name="Internist",
+    system_prompt="""You are an Internal Medicine specialist responsible for:
+    - Comprehensive system-based evaluation
+    - Integration of symptoms across organ systems
+    - Identification of systemic manifestations
+    - Assessment of comorbidities
+    
+    For each case, analyze:
+    1. Vital signs and their implications
+    2. System-by-system review (cardiovascular, respiratory, etc.)
+    3. Impact of existing medical conditions
+    4. Medication interactions and contraindications
+    5. Risk stratification
+    
+    Consider these aspects:
+    - Age-related factors
+    - Chronic disease impact
+    - Medication history
+    - Social and environmental factors
+    
+    Document:
+    - Physical examination findings
+    - System-specific symptoms
+    - Relevant lab abnormalities
+    - Risk factors for complications""",
+    model_name="gpt-4o",
     max_loops=1,
-    dashboard=False,
-    streaming_on=True,
-    verbose=True,
-    stopping_token="<DONE>",
-    state_save_file_type="json",
-    saved_state_path="worker2.json",
+)
+
+# Diagnostic Synthesizer
+synthesizer = Agent(
+    agent_name="Diagnostic Synthesizer",
+    system_prompt="""You are responsible for synthesizing all specialist inputs to create a final diagnostic assessment:
+    
+    Core responsibilities:
+    1. Integrate findings from all specialists
+    2. Identify patterns and correlations
+    3. Resolve conflicting opinions
+    4. Generate probability-ranked differential diagnoses
+    5. Recommend additional testing if needed
+    
+    Analysis framework:
+    - Weight evidence based on reliability and specificity
+    - Consider epidemiological factors
+    - Evaluate diagnostic certainty
+    - Account for test limitations
+    
+    Provide structured output including:
+    1. Primary diagnosis with confidence level
+    2. Supporting evidence summary
+    3. Alternative diagnoses to consider
+    4. Recommended confirmatory tests
+    5. Red flags or warning signs
+    6. Follow-up recommendations
+    
+    Documentation requirements:
+    - Clear reasoning chain
+    - Evidence quality assessment
+    - Confidence levels for each diagnosis
+    - Knowledge gaps identified
+    - Risk assessment""",
+    model_name="gpt-4o",
+    max_loops=1,
+)
+
+# Create agent list
+agents = [chief_medical_officer, virologist, internist, synthesizer]
+
+# Define diagnostic flow
+flow = f"""{chief_medical_officer.agent_name} -> {virologist.agent_name} -> {internist.agent_name} -> {synthesizer.agent_name}"""
+
+# Create the swarm system
+diagnosis_system = AgentRearrange(
+    name="Medical-nlp-diagnosis-swarm",
+    description="natural language symptions to diagnosis report",
+    agents=agents,
+    flow=flow,
+    max_loops=1,
+    output_type="all",
 )
 
 
-# Create a list of agents
-agents = [director, worker1, worker2]
+# Example usage
+if __name__ == "__main__":
+    # Example patient case
+    patient_case = """
+    Patient: 45-year-old female
+    Presenting symptoms: 
+    - Fever (101.5°F) for 3 days
+    - Dry cough
+    - Fatigue
+    - Mild shortness of breath
+    Medical history:
+    - Controlled hypertension
+    - No recent travel
+    - Fully vaccinated for COVID-19
+    - No known sick contacts
+    """
 
-# Define the flow pattern
-flow = "Director -> Worker1 -> Worker2"
+    # Add timestamp to the patient case
+    case_info = f"Timestamp: {datetime.now()}\nPatient Information: {patient_case}"
 
-# Using AgentRearrange class
-agent_system = AgentRearrange(agents=agents, flow=flow)
-output = agent_system.run(
-    "Create a format to express and communicate swarms of llms in a structured manner for youtube"
-)
-print(output)
+    # Run the diagnostic process
+    diagnosis = diagnosis_system.run(case_info)
+
+    # Create a folder and file called reports
+    create_file_in_folder(
+        "reports", "medical_analysis_agent_rearrange.md", diagnosis
+    )
+
 
 ```
 

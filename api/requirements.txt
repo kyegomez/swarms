@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pydantic
+loguru
+python-dotenv
+swarms  # Specify the version or source if it's not on PyPI
