@@ -598,7 +598,7 @@ class Agent:
     def llm_handling(self):
 
         if self.llm is None:
-            from swarms.utils.litellm import LiteLLM
+            from swarms.utils.litellm_wrapper import LiteLLM
 
             if self.llm_args is not None:
                 self.llm = LiteLLM(
@@ -2388,36 +2388,42 @@ class Agent:
     ) -> None:
         """Handle creating and saving artifacts with error handling."""
         try:
-            logger.info(
-                f"Creating artifact for file: {file_output_path}"
-            )
+            # Ensure file_extension starts with a dot
+            if not file_extension.startswith('.'):
+                file_extension = '.' + file_extension
+
+            # If file_output_path doesn't have an extension, treat it as a directory
+            # and create a default filename based on timestamp
+            if not os.path.splitext(file_output_path)[1]:
+                timestamp = time.strftime("%Y%m%d_%H%M%S")
+                filename = f"artifact_{timestamp}{file_extension}"
+                full_path = os.path.join(file_output_path, filename)
+            else:
+                full_path = file_output_path
+
+            # Create the directory if it doesn't exist
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
+            logger.info(f"Creating artifact for file: {full_path}")
             artifact = Artifact(
-                file_path=file_output_path,
+                file_path=full_path,
                 file_type=file_extension,
                 contents=text,
                 edit_count=0,
             )
 
-            logger.info(
-                f"Saving artifact with extension: {file_extension}"
-            )
+            logger.info(f"Saving artifact with extension: {file_extension}")
             artifact.save_as(file_extension)
-            logger.success(
-                f"Successfully saved artifact to {file_output_path}"
-            )
+            logger.success(f"Successfully saved artifact to {full_path}")
 
         except ValueError as e:
-            logger.error(
-                f"Invalid input values for artifact: {str(e)}"
-            )
+            logger.error(f"Invalid input values for artifact: {str(e)}")
             raise
         except IOError as e:
             logger.error(f"Error saving artifact to file: {str(e)}")
             raise
         except Exception as e:
-            logger.error(
-                f"Unexpected error handling artifact: {str(e)}"
-            )
+            logger.error(f"Unexpected error handling artifact: {str(e)}")
             raise
 
     def showcase_config(self):

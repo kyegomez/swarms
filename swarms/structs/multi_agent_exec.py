@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 import psutil
 from dataclasses import dataclass
 import threading
-from typing import List, Union, Any, Callable
+from typing import List, Any
 from multiprocessing import cpu_count
 import os
 
@@ -12,9 +12,7 @@ from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
 
-
-# Type definitions
-AgentType = Union[Agent, Callable]
+from swarms.structs.omni_agent_types import AgentType
 
 
 def run_single_agent(agent: AgentType, task: str) -> Any:

@@ -4,17 +4,15 @@ from datetime import datetime
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer, util
-
 from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.auto_download_check_packages import (
+    auto_check_and_download_package,
+)
+from swarms.structs.conversation import Conversation
+
 
 logger = initialize_logger(log_folder="tree_swarm")
-
-# Pretrained model for embeddings
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)  # A small, fast model for embedding
 
 
 # Pydantic Models for Logging
@@ -68,7 +66,7 @@ class TreeAgent(Agent):
         name: str = None,
         description: str = None,
         system_prompt: str = None,
-        llm: callable = None,
+        model_name: str = "gpt-4o",
         agent_name: Optional[str] = None,
         *args,
         **kwargs,
@@ -78,12 +76,29 @@ class TreeAgent(Agent):
             name=name,
             description=description,
             system_prompt=system_prompt,
-            llm=llm,
+            model_name=model_name,
             agent_name=agent_name,
             *args,
             **kwargs,
         )
-        self.system_prompt_embedding = embedding_model.encode(
+
+        try:
+            import sentence_transformers
+        except ImportError:
+            auto_check_and_download_package(
+                "sentence-transformers", package_manager="pip"
+            )
+            import sentence_transformers
+
+        self.sentence_transformers = sentence_transformers
+
+        # Pretrained model for embeddings
+        self.embedding_model = (
+            sentence_transformers.SentenceTransformer(
+                "all-MiniLM-L6-v2"
+            )
+        )
+        self.system_prompt_embedding = self.embedding_model.encode(
             system_prompt, convert_to_tensor=True
         )
 
@@ -103,7 +118,7 @@ class TreeAgent(Agent):
         Returns:
             float: Distance score between 0 and 1, with 0 being close and 1 being far.
         """
-        similarity = util.pytorch_cos_sim(
+        similarity = self.sentence_transformers.util.pytorch_cos_sim(
             self.system_prompt_embedding,
             other_agent.system_prompt_embedding,
         ).item()
@@ -112,7 +127,9 @@ class TreeAgent(Agent):
         )  # Closer agents have a smaller distance
         return distance
 
-    def run_task(self, task: str) -> Any:
+    def run_task(
+        self, task: str, img: str = None, *args, **kwargs
+    ) -> Any:
         input_log = AgentLogInput(
             agent_name=self.agent_name,
             task=task,
@@ -121,7 +138,7 @@ class TreeAgent(Agent):
         logger.info(f"Running task on {self.agent_name}: {task}")
         logger.debug(f"Input Log: {input_log.json()}")
 
-        result = self.run(task)
+        result = self.run(task=task, img=img, *args, **kwargs)
 
         output_log = AgentLogOutput(
             agent_name=self.agent_name,
@@ -154,12 +171,14 @@ class TreeAgent(Agent):
 
         # Perform embedding similarity match if keyword match is not found
         if not keyword_match:
-            task_embedding = embedding_model.encode(
+            task_embedding = self.embedding_model.encode(
                 task, convert_to_tensor=True
             )
-            similarity = util.pytorch_cos_sim(
-                self.system_prompt_embedding, task_embedding
-            ).item()
+            similarity = (
+                self.sentence_transformers.util.pytorch_cos_sim(
+                    self.system_prompt_embedding, task_embedding
+                ).item()
+            )
             logger.info(
                 f"Semantic similarity between task and {self.agent_name}: {similarity:.2f}"
             )
@@ -241,16 +260,33 @@ class Tree:
 
 
 class ForestSwarm:
-    def __init__(self, trees: List[Tree], *args, **kwargs):
+    def __init__(
+        self,
+        name: str = "default-forest-swarm",
+        description: str = "Standard forest swarm",
+        trees: List[Tree] = [],
+        shared_memory: Any = None,
+        rules: str = None,
+        *args,
+        **kwargs,
+    ):
         """
         Initializes the structure with multiple trees of agents.
 
         Args:
             trees (List[Tree]): A list of trees in the structure.
         """
+        self.name = name
+        self.description = description
         self.trees = trees
-        # Add auto grouping based on trees.
-        # Add auto group agents
+        self.shared_memory = shared_memory
+        self.save_file_path = f"forest_swarm_{uuid.uuid4().hex}.json"
+        self.conversation = Conversation(
+            time_enabled=True,
+            auto_save=True,
+            save_filepath=self.save_file_path,
+            rules=rules,
+        )
 
     def find_relevant_tree(self, task: str) -> Optional[Tree]:
         """
@@ -271,7 +307,7 @@ class ForestSwarm:
         logger.warning(f"No relevant tree found for task: {task}")
         return None
 
-    def run(self, task: str) -> Any:
+    def run(self, task: str, img: str = None, *args, **kwargs) -> Any:
         """
         Executes the given task by finding the most relevant tree and agent within that tree.
 
@@ -281,21 +317,30 @@ class ForestSwarm:
         Returns:
             Any: The result of the task after it has been processed by the agents.
         """
-        logger.info(
-            f"Running task across MultiAgentTreeStructure: {task}"
-        )
-        relevant_tree = self.find_relevant_tree(task)
-        if relevant_tree:
-            agent = relevant_tree.find_relevant_agent(task)
-            if agent:
-                result = agent.run_task(task)
-                relevant_tree.log_tree_execution(task, agent, result)
-                return result
-        else:
-            logger.error(
-                "Task could not be completed: No relevant agent or tree found."
+        try:
+            logger.info(
+                f"Running task across MultiAgentTreeStructure: {task}"
             )
-            return "No relevant agent found to handle this task."
+            relevant_tree = self.find_relevant_tree(task)
+            if relevant_tree:
+                agent = relevant_tree.find_relevant_agent(task)
+                if agent:
+                    result = agent.run_task(
+                        task, img=img, *args, **kwargs
+                    )
+                    relevant_tree.log_tree_execution(
+                        task, agent, result
+                    )
+                    return result
+            else:
+                logger.error(
+                    "Task could not be completed: No relevant agent or tree found."
+                )
+                return "No relevant agent found to handle this task."
+        except Exception as error:
+            logger.error(
+                f"Error detected in the ForestSwarm, check your inputs and try again ;) {error}"
+            )
 
 
 # # Example Usage:

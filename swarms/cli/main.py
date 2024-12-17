@@ -1,6 +1,5 @@
 import argparse
 import os
-import subprocess
 import time
 import webbrowser
 
@@ -227,45 +226,6 @@ def run_autoswarm(task: str, model: str):
             )
 
 
-def check_and_upgrade_version():
-    """Check for updates with visual progress."""
-
-    def check_update():
-        result = subprocess.run(
-            ["pip", "list", "--outdated", "--format=freeze"],
-            capture_output=True,
-            text=True,
-        )
-        return result.stdout.splitlines()
-
-    outdated = execute_with_spinner(
-        check_update, "Checking for updates..."
-    )
-
-    for package in outdated:
-        if package.startswith("swarms=="):
-            console.print(
-                f"[{COLORS['warning']}]↑ Update available![/{COLORS['warning']}]"
-            )
-            with create_spinner("Upgrading Swarms...") as progress:
-                task = progress.add_task(
-                    "Installing latest version..."
-                )
-                subprocess.run(
-                    ["pip", "install", "--upgrade", "swarms"],
-                    check=True,
-                )
-                progress.remove_task(task)
-            console.print(
-                f"[{COLORS['success']}]✓ Swarms upgraded successfully![/{COLORS['success']}]"
-            )
-            return
-
-    console.print(
-        f"[{COLORS['success']}]✓ Swarms is up to date![/{COLORS['success']}]"
-    )
-
-
 def main():
     try:
 
@@ -319,8 +279,6 @@ def main():
                 create_agents_from_yaml(
                     yaml_file=args.yaml_file, return_type="tasks"
                 )
-            elif args.command == "auto-upgrade":
-                check_and_upgrade_version()
             elif args.command == "book-call":
                 webbrowser.open(
                     "https://cal.com/swarms/swarms-strategy-session"

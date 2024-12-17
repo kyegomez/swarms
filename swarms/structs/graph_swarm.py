@@ -1,10 +1,3 @@
-"""
-GraphSwarm: A production-grade framework for orchestrating swarms of agents
-Author: Claude
-License: MIT
-Version: 2.0.0
-"""
-
 import asyncio
 import json
 import time
@@ -12,13 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import chromadb
 import networkx as nx
 from loguru import logger
 from pydantic import BaseModel, Field
-
-from swarms import Agent
-
+from swarms.utils.auto_download_check_packages import (
+    auto_check_and_download_package,
+)
+from swarms.structs.agent import Agent
 
 # Configure logging
 logger.add(
@@ -57,6 +50,15 @@ class SwarmMemory:
 
     def __init__(self, collection_name: str = "swarm_memories"):
         """Initialize SwarmMemory with ChromaDB."""
+
+        try:
+            import chromadb
+        except ImportError:
+            auto_check_and_download_package(
+                "chromadb", package_manager="pip", upgrade=True
+            )
+            import chromadb
+
         self.client = chromadb.Client()
 
         # Get or create collection

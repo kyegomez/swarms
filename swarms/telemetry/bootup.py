@@ -2,8 +2,6 @@ import os
 import logging
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-
-from swarms.telemetry.auto_upgrade_swarms import auto_update
 from swarms.utils.disable_logging import disable_logging
 
 
@@ -22,9 +20,8 @@ def bootup():
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         # Use ThreadPoolExecutor to run disable_logging and auto_update concurrently
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             executor.submit(disable_logging)
-            executor.submit(auto_update)
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         raise

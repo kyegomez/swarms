@@ -12,21 +12,31 @@ class DynamicParser:
     @staticmethod
     def extract_fields(model: Type[BaseModel]) -> Dict[str, Any]:
         return {
-            field_name: (field.annotation, ... if field.is_required() else None)
+            field_name: (
+                field.annotation,
+                ... if field.is_required() else None,
+            )
             for field_name, field in model.model_fields.items()
         }
-    
+
     @staticmethod
-    def create_partial_model(model: Type[BaseModel], data: Dict[str, Any]) -> Type[BaseModel]:
+    def create_partial_model(
+        model: Type[BaseModel], data: Dict[str, Any]
+    ) -> Type[BaseModel]:
         fields = {
-            field_name: (field.annotation, ... if field.is_required() else None)
+            field_name: (
+                field.annotation,
+                ... if field.is_required() else None,
+            )
             for field_name, field in model.model_fields.items()
             if field_name in data
         }
         return create_model(f"Partial{model.__name__}", **fields)
 
     @classmethod
-    def parse(cls, data: Union[str, Dict[str, Any]], model: Type[BaseModel]) -> Optional[BaseModel]:
+    def parse(
+        cls, data: Union[str, Dict[str, Any]], model: Type[BaseModel]
+    ) -> Optional[BaseModel]:
         if isinstance(data, str):
             try:
                 data = json.loads(data)
@@ -47,25 +57,52 @@ class DynamicParser:
 
 load_dotenv()
 
+
 # Define the Thoughts schema
 class Thoughts(BaseModel):
-    text: str = Field(..., description="Current thoughts or observations regarding the task.")
-    reasoning: str = Field(..., description="Logical reasoning behind the thought process.")
-    plan: str = Field(..., description="A short bulleted list that conveys the immediate and long-term plan.")
-    criticism: str = Field(..., description="Constructive self-criticism to improve future responses.")
-    speak: str = Field(..., description="A concise summary of thoughts intended for the user.")
+    text: str = Field(
+        ...,
+        description="Current thoughts or observations regarding the task.",
+    )
+    reasoning: str = Field(
+        ...,
+        description="Logical reasoning behind the thought process.",
+    )
+    plan: str = Field(
+        ...,
+        description="A short bulleted list that conveys the immediate and long-term plan.",
+    )
+    criticism: str = Field(
+        ...,
+        description="Constructive self-criticism to improve future responses.",
+    )
+    speak: str = Field(
+        ...,
+        description="A concise summary of thoughts intended for the user.",
+    )
+
 
 # Define the Command schema
 class Command(BaseModel):
-    name: str = Field(..., description="Command name to execute from the provided list of commands.")
-    args: Dict[str, Any] = Field(..., description="Arguments required to execute the command.")
+    name: str = Field(
+        ...,
+        description="Command name to execute from the provided list of commands.",
+    )
+    args: Dict[str, Any] = Field(
+        ..., description="Arguments required to execute the command."
+    )
+
 
 # Define the AgentResponse schema
 class AgentResponse(BaseModel):
-    thoughts: Thoughts = Field(..., description="The agent's current thoughts and reasoning.")
-    command: Command = Field(..., description="The command to execute along with its arguments.")
-    
-    
+    thoughts: Thoughts = Field(
+        ..., description="The agent's current thoughts and reasoning."
+    )
+    command: Command = Field(
+        ...,
+        description="The command to execute along with its arguments.",
+    )
+
 
 # Define tool functions
 def fluid_api_command(task: str):
@@ -90,17 +127,26 @@ def do_nothing_command():
 def task_complete_command(reason: str):
     """Mark the task as complete and provide a reason."""
     print(f"Task completed: {reason}")
-    return {"status": "success", "message": f"Task completed: {reason}"}
+    return {
+        "status": "success",
+        "message": f"Task completed: {reason}",
+    }
 
 
 # Dynamic command execution
 def execute_command(name: str, args: Dict[str, Any]):
     """Dynamically execute a command based on its name and arguments."""
     command_map: Dict[str, Callable] = {
-        "fluid_api": lambda **kwargs: fluid_api_command(task=kwargs.get("task")),
-        "send_tweet": lambda **kwargs: send_tweet_command(text=kwargs.get("text")),
+        "fluid_api": lambda **kwargs: fluid_api_command(
+            task=kwargs.get("task")
+        ),
+        "send_tweet": lambda **kwargs: send_tweet_command(
+            text=kwargs.get("text")
+        ),
         "do_nothing": lambda **kwargs: do_nothing_command(),
-        "task_complete": lambda **kwargs: task_complete_command(reason=kwargs.get("reason")),
+        "task_complete": lambda **kwargs: task_complete_command(
+            reason=kwargs.get("reason")
+        ),
     }
 
     if name not in command_map:
@@ -110,23 +156,26 @@ def execute_command(name: str, args: Dict[str, Any]):
     return command_map[name](**args)
 
 
-def parse_and_execute_command(response: Union[str, Dict[str, Any]], base_model: Type[BaseModel] = AgentResponse) -> Any:
+def parse_and_execute_command(
+    response: Union[str, Dict[str, Any]],
+    base_model: Type[BaseModel] = AgentResponse,
+) -> Any:
     """Enhanced command parser with flexible input handling"""
     parsed = DynamicParser.parse(response, base_model)
     if not parsed:
         raise ValueError("Failed to parse response")
-        
-    if hasattr(parsed, 'command'):
+
+    if hasattr(parsed, "command"):
         command_name = parsed.command.name
         command_args = parsed.command.args
         return execute_command(command_name, command_args)
-    
+
     return parsed
 
 
 ainame = "AutoAgent"
 userprovided = "assistant"
-    
+
 SYSTEM_PROMPT = f"""
 You are {ainame}, an advanced and autonomous {userprovided}.
 Your role is to make decisions and complete tasks independently without seeking user assistance. Leverage your strengths as an LLM to solve tasks efficiently, adhering strictly to the commands and resources provided.
@@ -174,7 +223,7 @@ model = OpenAIFunctionCaller(
     temperature=0.9,
     base_model=AgentResponse,  # Pass the Pydantic schema as the base model
     parallel_tool_calls=False,
-    openai_api_key=os.getenv("OPENAI_API_KEY")
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
 )
 
 # Example usage
