@@ -77,7 +77,7 @@ class LiteLLM:
             str: The content of the response from the model.
         """
         try:
-            
+
             messages = self._prepare_messages(task)
 
             response = completion(
@@ -85,14 +85,15 @@ class LiteLLM:
                 messages=messages,
                 stream=self.stream,
                 temperature=self.temperature,
-                # max_completion_tokens=self.max_tokens,
                 max_tokens=self.max_tokens,
                 *args,
                 **kwargs,
             )
+
             content = response.choices[
                 0
             ].message.content  # Accessing the content
+
             return content
         except Exception as error:
             print(error)

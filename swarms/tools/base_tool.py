@@ -400,10 +400,8 @@ class BaseTool(BaseModel):
                 logger.info(
                     f"Converting tool: {name} into a OpenAI certified function calling schema. Add documentation and type hints."
                 )
-                tool_schema = (
-                    get_openai_function_schema_from_func(
-                        tool, name=name, description=description
-                    )
+                tool_schema = get_openai_function_schema_from_func(
+                    tool, name=name, description=description
                 )
 
                 logger.info(
@@ -420,10 +418,12 @@ class BaseTool(BaseModel):
         if tool_schemas:
             combined_schema = {
                 "type": "function",
-                "functions": [schema["function"] for schema in tool_schemas]
+                "functions": [
+                    schema["function"] for schema in tool_schemas
+                ],
             }
             return json.dumps(combined_schema, indent=4)
-        
+
         return None
 
     def check_func_if_have_docs(self, func: callable):

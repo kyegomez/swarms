@@ -192,15 +192,6 @@ nav:
           - Conversation: "swarms/structs/conversation.md"
     #   - Task: "swarms/structs/task.md"
     - Full API Reference: "swarms/framework/reference.md"
-    - Contributing: 
-      - Contributing: "swarms/contributing.md"
-      - Tests: "swarms/framework/test.md"
-      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
-      - Philosophy: "swarms/concept/philosophy.md"
-    - Changelog:
-      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
-      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
-      - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
@@ -254,16 +245,25 @@ nav:
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
     #   - Add Tools: "swarms_platform/fetch_tools.md"
-  - Guides:
-    - Unlocking Efficiency and Cost Savings in Healthcare; How Swarms of LLM Agents Can Revolutionize Medical Operations and Save Millions: "guides/healthcare_blog.md"
-    - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
-    - Agent Glossary: "swarms/glossary.md"
-    - The Ultimate Technical Guide to the Swarms CLI; A Step-by-Step Developers Guide: "swarms/cli/cli_guide.md"
-  - Prompting Guide:
-    - The Essence of Enterprise-Grade Prompting: "swarms/prompts/essence.md"
-    - An Analysis on Prompting Strategies: "swarms/prompts/overview.md"
-    - Managing Prompts in Production: "swarms/prompts/main.md"
+  # - Guides:
+  #   - Unlocking Efficiency and Cost Savings in Healthcare; How Swarms of LLM Agents Can Revolutionize Medical Operations and Save Millions: "guides/healthcare_blog.md"
+  #   - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
+  #   - Agent Glossary: "swarms/glossary.md"
+  #   - The Ultimate Technical Guide to the Swarms CLI; A Step-by-Step Developers Guide: "swarms/cli/cli_guide.md"
+  # - Prompting Guide:
+  #   - The Essence of Enterprise-Grade Prompting: "swarms/prompts/essence.md"
+  #   - An Analysis on Prompting Strategies: "swarms/prompts/overview.md"
+  #   - Managing Prompts in Production: "swarms/prompts/main.md"
   - Community:
+    - Contributing: 
+      - Contributing: "swarms/contributing.md"
+      - Tests: "swarms/framework/test.md"
+      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
+      - Philosophy: "swarms/concept/philosophy.md"
+    - Changelog:
+      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
+      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
+      - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
     - Bounty Program: "corporate/bounty_program.md"
   - Corporate:
     - Culture: "corporate/culture.md"

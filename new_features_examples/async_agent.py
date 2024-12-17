@@ -30,7 +30,15 @@ agent = Agent(
     interactive=False,
 )
 
-agent.run(
-    "Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
-    all_cores=True,
-)
+
+async def run_agent():
+    await agent.arun(
+        "Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
+        all_cores=True,
+    )
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(run_agent())
