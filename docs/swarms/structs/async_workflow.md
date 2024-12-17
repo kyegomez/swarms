@@ -94,8 +94,7 @@ print(results)
 ### Example: Stock Analysis and Investment Strategy
 ```python
 import asyncio
-from swarms import Agent
-from async_workflow import AsyncWorkflow
+from swarms import Agent, AsyncWorkflow
 from swarms.prompts.finance_agent_sys_prompt import FINANCIAL_AGENT_SYS_PROMPT
 
 # Initialize multiple Financial Agents
