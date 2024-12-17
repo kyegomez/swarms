@@ -111,7 +111,7 @@ swarms = "swarms.cli.main:main"
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<25.0"
-ruff = ">=0.5.1,<0.8.3"
+ruff = ">=0.5.1,<0.8.4"
 types-toml = "^0.10.8.1"
 types-pytz = ">=2023.3,<2025.0"
 types-chardet = "^5.0.4.6"
