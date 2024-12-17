@@ -263,9 +263,11 @@ nav:
     - The Essence of Enterprise-Grade Prompting: "swarms/prompts/essence.md"
     - An Analysis on Prompting Strategies: "swarms/prompts/overview.md"
     - Managing Prompts in Production: "swarms/prompts/main.md"
+  - Community:
+    - Bounty Program: "corporate/bounty_program.md"
   - Corporate:
     - Culture: "corporate/culture.md"
     - Hiring: "corporate/hiring.md"
     - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
-  - Clusterops:
-    - Overview: "clusterops/reference.md"
+  # - Clusterops:
+  #   - Overview: "clusterops/reference.md"
