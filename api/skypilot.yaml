@@ -35,3 +35,7 @@ run: |
 #   LOG_LEVEL: "INFO"
 #   # MAX_WORKERS: "4"
 
+# metadata:
+#   name: swarms-api-service
+#   version: "1.0.0"
+#   environment: production

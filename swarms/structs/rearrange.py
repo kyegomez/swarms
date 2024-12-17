@@ -17,7 +17,6 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-from swarms.structs.output_types import OutputType
 
 logger = initialize_logger(log_folder="rearrange")
 
