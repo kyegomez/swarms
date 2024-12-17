@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "6.5.7"
+version = "6.6.8"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -63,10 +63,10 @@ asyncio = ">=3.4.3,<4.0"
 toml = "*"
 pypdf = "4.3.1"
 loguru = "*"
-pydantic = "2.8.2"
+pydantic = "*"
 tenacity = "*"
 psutil = "*"
-sentry-sdk = {version = "*", extras = ["http"]}  # Updated here
+sentry-sdk = "*"
 python-dotenv = "*"
 PyYAML = "*"
 docstring_parser = "0.16"

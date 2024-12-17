@@ -1,4 +1,3 @@
-
 from swarms import Agent, SwarmRouter
 
 # Portfolio Analysis Specialist
@@ -147,19 +146,19 @@ portfolio_agents = [
     allocation_strategist,
     risk_manager,
     implementation_specialist,
-    monitoring_specialist
+    monitoring_specialist,
 ]
 
 
 # Router
 router = SwarmRouter(
-    name = "etf-portfolio-management-swarm",
+    name="etf-portfolio-management-swarm",
     description="Creates and suggests an optimal portfolio",
-    agents = portfolio_agents,
-    swarm_type="SequentialWorkflow", # ConcurrentWorkflow
-    max_loops = 1,
+    agents=portfolio_agents,
+    swarm_type="SequentialWorkflow",  # ConcurrentWorkflow
+    max_loops=1,
 )
 
 router.run(
-    task = "I have 10,000$ and I want to create a porfolio based on energy, ai, and datacenter companies. high growth."
+    task="I have 10,000$ and I want to create a porfolio based on energy, ai, and datacenter companies. high growth."
 )

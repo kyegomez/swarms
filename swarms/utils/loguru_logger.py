@@ -5,6 +5,7 @@ from loguru import logger
 import requests
 from swarms.telemetry.sys_info import system_info
 
+
 def log_agent_data(data: Any) -> Dict:
     """
     Send data to the agent logging API endpoint.
@@ -35,6 +36,7 @@ def log_agent_data(data: Any) -> Dict:
     except Exception as e:
         logger.error(f"Failed to log agent data: {e}")
         return {"error": str(e)}
+
 
 def initialize_logger(log_folder: str = "logs"):
     """
@@ -87,8 +89,9 @@ def initialize_logger(log_folder: str = "logs"):
                     "metadata": system_info(),
                 }
                 response = log_agent_data(payload)
-                logger.debug(f"Sent to API: {payload}, Response: {response}")
-
+                logger.debug(
+                    f"Sent to API: {payload}, Response: {response}"
+                )
 
     logger.add(AgentLogHandler(), level="INFO")
 

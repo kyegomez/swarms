@@ -11,12 +11,12 @@ from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.structs.agent import Agent
 from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.base_swarm import BaseSwarm
+from swarms.structs.output_types import OutputType
 from swarms.utils.add_docs_to_agents import handle_input_docs
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-from swarms.structs.output_types import OutputType
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -41,7 +41,10 @@ class AgentRearrangeInput(BaseModel):
 
 
 class AgentRearrangeOutput(BaseModel):
-    Input: Optional[AgentRearrangeInput] = None
+    output_id: str = Field(
+        default=swarm_id(), description="Output-UUID"
+    )
+    input: Optional[AgentRearrangeInput] = None
     outputs: Optional[List[ManySteps]] = None
     time: str = Field(
         default_factory=lambda: datetime.now().strftime(
@@ -105,7 +108,7 @@ class AgentRearrange(BaseSwarm):
             Callable[[str], str]
         ] = None,
         return_json: bool = False,
-        output_type: OutputType = "final",
+        output_type: OutputType = "all",
         docs: List[str] = None,
         doc_folder: str = None,
         device: str = "cpu",
@@ -140,6 +143,17 @@ class AgentRearrange(BaseSwarm):
         self.all_cores = all_cores
         self.all_gpus = all_gpus
         self.no_use_clusterops = no_use_clusterops
+
+        self.output_schema = AgentRearrangeOutput(
+            input=AgentRearrangeInput(
+                swarm_id=id,
+                name=name,
+                description=description,
+                flow=flow,
+                max_loops=max_loops,
+            ),
+            outputs=[],
+        )
 
     def showcase_agents(self):
         # Get formatted agent info once
@@ -448,7 +462,9 @@ class AgentRearrange(BaseSwarm):
                                 f"Agent {agent_name} output: {current_task}"
                             )
 
-                        all_responses.append(current_task)
+                        all_responses.append(
+                            f"Agent Name: {agent.agent_name} \n Output: {current_task} "
+                        )
                         previous_agent = agent_name
 
                 loop_count += 1
@@ -685,6 +701,7 @@ def rearrange(
     agents: List[Agent] = None,
     flow: str = None,
     task: str = None,
+    img: str = None,
     *args,
     **kwargs,
 ):
@@ -710,4 +727,4 @@ def rearrange(
     agent_system = AgentRearrange(
         agents=agents, flow=flow, *args, **kwargs
     )
-    return agent_system.run(task, *args, **kwargs)
+    return agent_system.run(task, img=img, *args, **kwargs)

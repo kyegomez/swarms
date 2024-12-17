@@ -9,6 +9,7 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
+from swarms.structs.conversation import Conversation
 
 
 logger = initialize_logger(log_folder="tree_swarm")
@@ -126,7 +127,9 @@ class TreeAgent(Agent):
         )  # Closer agents have a smaller distance
         return distance
 
-    def run_task(self, task: str) -> Any:
+    def run_task(
+        self, task: str, img: str = None, *args, **kwargs
+    ) -> Any:
         input_log = AgentLogInput(
             agent_name=self.agent_name,
             task=task,
@@ -135,7 +138,7 @@ class TreeAgent(Agent):
         logger.info(f"Running task on {self.agent_name}: {task}")
         logger.debug(f"Input Log: {input_log.json()}")
 
-        result = self.run(task)
+        result = self.run(task=task, img=img, *args, **kwargs)
 
         output_log = AgentLogOutput(
             agent_name=self.agent_name,
@@ -257,16 +260,33 @@ class Tree:
 
 
 class ForestSwarm:
-    def __init__(self, trees: List[Tree], *args, **kwargs):
+    def __init__(
+        self,
+        name: str = "default-forest-swarm",
+        description: str = "Standard forest swarm",
+        trees: List[Tree] = [],
+        shared_memory: Any = None,
+        rules: str = None,
+        *args,
+        **kwargs,
+    ):
         """
         Initializes the structure with multiple trees of agents.
 
         Args:
             trees (List[Tree]): A list of trees in the structure.
         """
+        self.name = name
+        self.description = description
         self.trees = trees
-        # Add auto grouping based on trees.
-        # Add auto group agents
+        self.shared_memory = shared_memory
+        self.save_file_path = f"forest_swarm_{uuid.uuid4().hex}.json"
+        self.conversation = Conversation(
+            time_enabled=True,
+            auto_save=True,
+            save_filepath=self.save_file_path,
+            rules=rules,
+        )
 
     def find_relevant_tree(self, task: str) -> Optional[Tree]:
         """
@@ -287,7 +307,7 @@ class ForestSwarm:
         logger.warning(f"No relevant tree found for task: {task}")
         return None
 
-    def run(self, task: str) -> Any:
+    def run(self, task: str, img: str = None, *args, **kwargs) -> Any:
         """
         Executes the given task by finding the most relevant tree and agent within that tree.
 
@@ -297,21 +317,30 @@ class ForestSwarm:
         Returns:
             Any: The result of the task after it has been processed by the agents.
         """
-        logger.info(
-            f"Running task across MultiAgentTreeStructure: {task}"
-        )
-        relevant_tree = self.find_relevant_tree(task)
-        if relevant_tree:
-            agent = relevant_tree.find_relevant_agent(task)
-            if agent:
-                result = agent.run_task(task)
-                relevant_tree.log_tree_execution(task, agent, result)
-                return result
-        else:
-            logger.error(
-                "Task could not be completed: No relevant agent or tree found."
+        try:
+            logger.info(
+                f"Running task across MultiAgentTreeStructure: {task}"
             )
-            return "No relevant agent found to handle this task."
+            relevant_tree = self.find_relevant_tree(task)
+            if relevant_tree:
+                agent = relevant_tree.find_relevant_agent(task)
+                if agent:
+                    result = agent.run_task(
+                        task, img=img, *args, **kwargs
+                    )
+                    relevant_tree.log_tree_execution(
+                        task, agent, result
+                    )
+                    return result
+            else:
+                logger.error(
+                    "Task could not be completed: No relevant agent or tree found."
+                )
+                return "No relevant agent found to handle this task."
+        except Exception as error:
+            logger.error(
+                f"Error detected in the ForestSwarm, check your inputs and try again ;) {error}"
+            )
 
 
 # # Example Usage:
