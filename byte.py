@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import torch
 import struct
+import magic
 
 
 from enum import auto
