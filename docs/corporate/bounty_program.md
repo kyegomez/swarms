@@ -63,6 +63,7 @@ Beyond monetary rewards, contributors gain intangible benefits that elevate thei
 
 ## Contact Us
 For any questions, support, or clarifications, reach out to the Swarms team:
+
 - **Discord**: Engage directly with the team and fellow contributors in our active channels.
 
 - **GitHub**: Open an issue for specific questions or suggestions related to the project. We’re here to guide and assist you at every step of your contribution journey.
