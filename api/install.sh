@@ -16,6 +16,7 @@ if [ ! -f "${ROOT}/opt/swarms/install/apt.txt" ]; then
     apt update
     apt install --allow-change-held-packages -y git python3-virtualenv nginx
     apt install --allow-change-held-packages -y expect
+    apt install jq netcat-traditional # missing packages
     snap install aws-cli --classic
     echo 1 >"${ROOT}/opt/swarms/install/apt.txt"
 fi
