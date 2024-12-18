@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from swarms import Agent
+from swarms.structs.agent import Agent
 
 # Load environment variables
 load_dotenv()
@@ -127,8 +127,8 @@ class AgentUpdate(BaseModel):
 
     description: Optional[str] = None
     system_prompt: Optional[str] = None
-    temperature: Optional[float] = None
-    max_loops: Optional[int] = None
+    temperature: Optional[float] = 0.5
+    max_loops: Optional[int] = 1
     tags: Optional[List[str]] = None
     status: Optional[AgentStatus] = None
 
@@ -167,7 +167,7 @@ class CompletionRequest(BaseModel):
     max_tokens: Optional[int] = Field(
         None, description="Maximum tokens to generate"
     )
-    temperature_override: Optional[float] = None
+    temperature_override: Optional[float] = 0.5
     stream: bool = Field(
         default=False, description="Enable streaming response"
     )
@@ -267,7 +267,7 @@ class AgentStore:
                 autosave=config.autosave,
                 dashboard=config.dashboard,
                 verbose=config.verbose,
-                dynamic_temperature_enabled=config.dynamic_temperature_enabled,
+                dynamic_temperature_enabled=True,
                 saved_state_path=f"states/{config.agent_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                 user_name=config.user_name,
                 retry_attempts=config.retry_attempts,
@@ -328,8 +328,6 @@ class AgentStore:
 
         if update.system_prompt:
             agent.system_prompt = update.system_prompt
-        if update.temperature is not None:
-            agent.llm.temperature = update.temperature
         if update.max_loops is not None:
             agent.max_loops = update.max_loops
         if update.tags is not None:
@@ -434,8 +432,8 @@ class AgentStore:
             agent_name=new_name,
             description=f"Clone of {original_agent.agent_name}",
             system_prompt=original_agent.system_prompt,
-            model_name=original_agent.llm.model_name,
-            temperature=original_agent.llm.temperature,
+            model_name=original_agent.model_name,
+            temperature=0.5,
             max_loops=original_agent.max_loops,
             tags=original_metadata["tags"],
         )
@@ -476,17 +474,8 @@ class AgentStore:
             metadata["status"] = AgentStatus.PROCESSING
             metadata["last_used"] = start_time
 
-            # Apply temporary overrides if specified
-            original_temp = agent.llm.temperature
-            if temperature_override is not None:
-                agent.llm.temperature = temperature_override
-
             # Process the completion
             response = agent.run(prompt)
-
-            # Reset overrides
-            if temperature_override is not None:
-                agent.llm.temperature = original_temp
 
             # Update metrics
             processing_time = (
@@ -518,8 +507,8 @@ class AgentStore:
                 response=response,
                 metadata={
                     "agent_name": agent.agent_name,
-                    "model_name": agent.llm.model_name,
-                    "temperature": agent.llm.temperature,
+                    # "model_name": agent.llm.model_name,
+                    # "temperature": 0.5,
                 },
                 timestamp=datetime.utcnow(),
                 processing_time=processing_time,
@@ -790,7 +779,7 @@ class SwarmsAPI:
                     request.prompt,
                     request.agent_id,
                     request.max_tokens,
-                    request.temperature_override,
+                    0.5,
                 )
 
                 # Schedule background cleanup

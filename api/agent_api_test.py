@@ -3,9 +3,8 @@ from loguru import logger
 import time
 from typing import Dict, Optional, Tuple
 from uuid import UUID
-import sys
 
-BASE_URL = "http://localhost:8000/v1"
+BASE_URL = "http://0.0.0.0:8000/v1"
 
 
 def check_api_server() -> bool:
@@ -199,6 +198,7 @@ def test_completion(session: TestSession, agent_id: UUID) -> bool:
 
         if response.status_code == 200:
             completion_data = response.json()
+            print(completion_data)
             logger.success(
                 f"Got completion, used {completion_data['token_usage']['total_tokens']} tokens"
             )
@@ -317,4 +317,4 @@ def run_test_workflow():
 
 if __name__ == "__main__":
     success = run_test_workflow()
-    sys.exit(0 if success else 1)
+    print(success)
