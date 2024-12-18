@@ -27,3 +27,4 @@ aiofiles
 clusterops
 reportlab
 doc-master
+pathos
