@@ -44,6 +44,7 @@ class TestSession:
     @property
     def headers(self) -> Dict[str, str]:
         """Get headers with authentication."""
+        print("HEADERS",self.api_key)
         return {"api-key": self.api_key} if self.api_key else {}
 
 
