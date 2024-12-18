@@ -17,6 +17,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+from typing import Dict, Optional, Tuple
+from uuid import UUID
+
+BASE_URL = "http://0.0.0.0:8000/v1"
 
 # Configuration
 @dataclass
@@ -132,6 +136,191 @@ class TestRunner:
         logger.info(f"\nRunning test: {test_name}")
         start_time = time.time()
 
+<<<<<<< HEAD
+=======
+
+def create_test_user(session: TestSession) -> Tuple[bool, str]:
+    """Create a test user and store credentials in session."""
+    logger.info("Creating test user")
+
+    try:
+        response = requests.post(
+            f"{BASE_URL}/users",
+            json={"username": f"test_user_{int(time.time())}"},
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            session.user_id = data["user_id"]
+            session.api_key = data["api_key"]
+            logger.success(f"Created user with ID: {session.user_id}")
+            return True, "Success"
+        else:
+            logger.error(f"Failed to create user: {response.text}")
+            return False, response.text
+    except Exception as e:
+        logger.exception("Exception during user creation")
+        return False, str(e)
+
+
+def create_additional_api_key(
+    session: TestSession,
+) -> Tuple[bool, str]:
+    """Test creating an additional API key."""
+    logger.info("Creating additional API key")
+
+    try:
+        response = requests.post(
+            f"{BASE_URL}/users/{session.user_id}/api-keys",
+            headers=session.headers,
+            json={"name": "Test Key"},
+        )
+
+        if response.status_code == 200:
+            logger.success("Created additional API key")
+            return True, response.json()["key"]
+        else:
+            logger.error(f"Failed to create API key: {response.text}")
+            return False, response.text
+    except Exception as e:
+        logger.exception("Exception during API key creation")
+        return False, str(e)
+
+
+def test_create_agent(
+    session: TestSession,
+) -> Tuple[bool, Optional[UUID]]:
+    """Test creating a new agent."""
+    logger.info("Testing agent creation")
+
+    payload = {
+        "agent_name": f"Test Agent {int(time.time())}",
+        "system_prompt": "You are a helpful assistant",
+        "model_name": "gpt-4",
+        "description": "Test agent",
+        "tags": ["test", "automated"],
+    }
+
+    try:
+        response = requests.post(
+            f"{BASE_URL}/agent", headers=session.headers, json=payload
+        )
+
+        if response.status_code == 200:
+            agent_id = response.json()["agent_id"]
+            session.test_agents.append(agent_id)
+            logger.success(f"Created agent with ID: {agent_id}")
+            return True, agent_id
+        else:
+            logger.error(f"Failed to create agent: {response.text}")
+            return False, None
+    except Exception:
+        logger.exception("Exception during agent creation")
+        return False, None
+
+
+def test_list_user_agents(session: TestSession) -> bool:
+    """Test listing user's agents."""
+    logger.info("Testing user agent listing")
+
+    try:
+        response = requests.get(
+            f"{BASE_URL}/users/me/agents", headers=session.headers
+        )
+
+        if response.status_code == 200:
+            agents = response.json()
+            logger.success(f"Found {len(agents)} user agents")
+            return True
+        else:
+            logger.error(
+                f"Failed to list user agents: {response.text}"
+            )
+            return False
+    except Exception:
+        logger.exception("Exception during agent listing")
+        return False
+
+
+def test_agent_operations(
+    session: TestSession, agent_id: UUID
+) -> bool:
+    """Test various operations on an agent."""
+    logger.info(f"Testing operations for agent {agent_id}")
+
+    # Test update
+    try:
+        update_response = requests.patch(
+            f"{BASE_URL}/agent/{agent_id}",
+            headers=session.headers,
+            json={
+                "description": "Updated description",
+                "tags": ["test", "updated"],
+            },
+        )
+        if update_response.status_code != 200:
+            logger.error(
+                f"Failed to update agent: {update_response.text}"
+            )
+            return False
+
+        # Test metrics
+        metrics_response = requests.get(
+            f"{BASE_URL}/agent/{agent_id}/metrics",
+            headers=session.headers,
+        )
+        if metrics_response.status_code != 200:
+            logger.error(
+                f"Failed to get agent metrics: {metrics_response.text}"
+            )
+            return False
+
+        logger.success("Successfully performed agent operations")
+        return True
+    except Exception:
+        logger.exception("Exception during agent operations")
+        return False
+
+
+def test_completion(session: TestSession, agent_id: UUID) -> bool:
+    """Test running a completion."""
+    logger.info("Testing completion")
+
+    payload = {
+        "prompt": "What is the weather like today?",
+        "agent_id": agent_id,
+        "max_tokens": 100,
+    }
+
+    try:
+        response = requests.post(
+            f"{BASE_URL}/agent/completions",
+            headers=session.headers,
+            json=payload,
+        )
+
+        if response.status_code == 200:
+            completion_data = response.json()
+            print(completion_data)
+            logger.success(
+                f"Got completion, used {completion_data['token_usage']['total_tokens']} tokens"
+            )
+            return True
+        else:
+            logger.error(f"Failed to get completion: {response.text}")
+            return False
+    except Exception:
+        logger.exception("Exception during completion")
+        return False
+
+
+def cleanup_test_resources(session: TestSession):
+    """Clean up all test resources."""
+    logger.info("Cleaning up test resources")
+
+    # Delete test agents
+    for agent_id in session.test_agents:
+>>>>>>> 68728698 ([AGENT][LiteLLM FIX] [API FIX])
         try:
             test_func()
             self.results["passed"] += 1
@@ -281,6 +470,7 @@ Total Time: {self.results['total_time']:.2f}s
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     try:
         runner = TestRunner()
         runner.run_all_tests()
@@ -289,3 +479,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Test suite failed: {str(e)}")
         logger.exception(e)
+=======
+    success = run_test_workflow()
+    print(success)
+>>>>>>> 68728698 ([AGENT][LiteLLM FIX] [API FIX])
