@@ -7,7 +7,7 @@ export BRANCH="feature/ec2"
 #export ROOT="/mnt/data1/swarms"
 export ROOT="" # empty
 export WORKSOURCE="${ROOT}/opt/swarms/api"
-if [ ! -f "${ROOT}/opt/swarms/install/setup.txt" ]; then
+
     cd "${ROOT}/opt/swarms/" || exit 1 # "we need swarms"
     git checkout --force  $BRANCH
     git pull 
@@ -17,26 +17,18 @@ if [ ! -f "${ROOT}/opt/swarms/install/setup.txt" ]; then
     chmod +x "${ROOT}/var/swarms/agent_workspace/boot.sh"
     chown -R swarms:swarms "${ROOT}/var/swarms/" "${ROOT}/home/swarms" "${ROOT}/opt/swarms"
 
-    echo 1 >"${ROOT}/opt/swarms/install/setup.txt"
-fi
-
-if [ ! -f "${ROOT}/opt/swarms/install/boot.txt" ]; then
     # user install but do not start
     su -c "bash -e -x ${ROOT}/var/swarms/agent_workspace/boot.sh" swarms
-    echo 1 >"${ROOT}/opt/swarms/install/boot.txt"
-fi
+
     
 
-if [ ! -f "${ROOT}/opt/swarms/install/pull.txt" ]; then
+
     cd "${ROOT}/opt/swarms/" || exit 1 # "we need swarms"
 #    git fetch local 
 #    git stash
     git checkout --force  $BRANCH
     git pull # $BRANCH
-    echo 1 >"${ROOT}/opt/swarms/install/pull.txt"
-fi
 
-if [ ! -f "${ROOT}/opt/swarms/install/config.txt" ]; then
     mkdir -p "${ROOT}/var/run/swarms/secrets/"
     mkdir -p "${ROOT}/home/swarms/.cache/huggingface/hub"
     # aws ssm get-parameter     --name "swarms_openai_key" > /root/openaikey.txt
@@ -51,8 +43,7 @@ if [ ! -f "${ROOT}/opt/swarms/install/config.txt" ]; then
     #EnvironmentFile=ROOT/var/run/swarms/secrets/env
     #ExecStart=ROOT/var/run/uvicorn/env/bin/uvicorn \
 	#	--uds ROOT/run/uvicorn/uvicorn-swarms-api.sock \
-    echo 1 >"${ROOT}/opt/swarms/install/config.txt"    
-fi
+
 
 
 chown -R swarms:swarms ${ROOT}/var/run/swarms/
