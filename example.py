@@ -2,10 +2,6 @@ from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from swarm_models import OpenAIChat
-
-model = OpenAIChat(model_name="gpt-4o")
-
 
 # Initialize the agent
 agent = Agent(
@@ -14,7 +10,7 @@ agent = Agent(
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT
     + "Output the <DONE> token when you're done creating a portfolio of etfs, index, funds, and more for AI",
     max_loops=1,
-    llm=model,
+    model_name="gpt-4o",
     dynamic_temperature_enabled=True,
     user_name="Kye",
     retry_attempts=3,

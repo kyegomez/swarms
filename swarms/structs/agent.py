@@ -572,7 +572,7 @@ class Agent:
         # Telemetry Processor to log agent data
         threading.Thread(target=self.log_agent_data).start()
 
-        if self.llm is not None and self.model_name is not None:
+        if self.llm is None and self.model_name is not None:
             self.llm = self.llm_handling()
 
     def llm_handling(self):
@@ -2406,21 +2406,38 @@ class Agent:
             **kwargs: Arbitrary keyword arguments.
 
         Returns:
-            The result of the method call on the `llm` object.
+            str: The result of the method call on the `llm` object.
 
+        Raises:
+            AttributeError: If no suitable method is found in the llm object.
+            TypeError: If task is not a string or llm object is None.
+            ValueError: If task is empty.
         """
-        if hasattr(self.llm, "__call__"):
-            return self.llm(task, *args, **kwargs)
-        elif hasattr(self.llm, "run"):
-            return self.llm.run(task, *args, **kwargs)
-        elif hasattr(self.llm, "generate"):
-            return self.llm.generate(task, *args, **kwargs)
-        elif hasattr(self.llm, "invoke"):
-            return self.llm.invoke(task, *args, **kwargs)
-        else:
-            raise AttributeError(
-                "No suitable method found in the llm object."
-            )
+        if not isinstance(task, str):
+            raise TypeError("Task must be a string")
+
+        if not task.strip():
+            raise ValueError("Task cannot be empty")
+
+        if self.llm is None:
+            raise TypeError("LLM object cannot be None")
+
+        # Define common method names for LLM interfaces
+        method_names = ["run", "__call__", "generate", "invoke"]
+
+        for method_name in method_names:
+            if hasattr(self.llm, method_name):
+                try:
+                    method = getattr(self.llm, method_name)
+                    return method(task, *args, **kwargs)
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Error calling {method_name}: {str(e)}"
+                    )
+
+        raise AttributeError(
+            f"No suitable method found in the llm object. Expected one of: {method_names}"
+        )
 
     def handle_sop_ops(self):
         # If the user inputs a list of strings for the sop then join them and set the sop

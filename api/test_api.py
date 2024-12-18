@@ -2,7 +2,7 @@ import requests
 import json
 from time import sleep
 
-BASE_URL = "http://api.swarms.ai:8000"
+BASE_URL = "http://swarms-api-893767232.us-east-2.elb.amazonaws.com"
 
 
 def make_request(method, endpoint, data=None):
