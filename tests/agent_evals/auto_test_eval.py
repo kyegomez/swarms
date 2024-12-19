@@ -98,7 +98,7 @@ class SwarmsIssueReporter:
             import swarms
 
             return swarms.__version__
-        except:
+        except ImportError:
             return "Unknown"
 
     def _get_gpu_info(self) -> Tuple[bool, Optional[str]]:
