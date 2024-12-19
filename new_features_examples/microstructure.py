@@ -418,41 +418,6 @@ class TickDataAgent(BaseMarketAgent):
         exchange_manager = ExchangeManager()
         self.exchange = exchange_manager.get_primary_exchange()
 
-    def calculate_tick_metrics(
-        self, ticks: List[Dict]
-    ) -> Dict[str, float]:
-        df = pd.DataFrame(ticks)
-        df["price"] = pd.to_numeric(df["price"])
-        df["volume"] = pd.to_numeric(df["amount"])
-
-        # Calculate key metrics
-        metrics = {}
-
-        # Volume-weighted average price (VWAP)
-        metrics["vwap"] = (df["price"] * df["volume"]).sum() / df[
-            "volume"
-        ].sum()
-
-        # Price momentum
-        metrics["price_momentum"] = df["price"].diff().mean()
-
-        # Volume profile
-        metrics["volume_mean"] = df["volume"].mean()
-        metrics["volume_std"] = df["volume"].std()
-
-        # Trade intensity
-        time_diff = (
-            df["timestamp"].max() - df["timestamp"].min()
-        ) / 1000  # Convert to seconds
-        metrics["trade_intensity"] = (
-            len(df) / time_diff if time_diff > 0 else 0
-        )
-
-        # Microstructure indicators
-        metrics["kyle_lambda"] = self.calculate_kyle_lambda(df)
-        metrics["roll_spread"] = self.calculate_roll_spread(df)
-
-        return metrics
 
     def calculate_kyle_lambda(self, df: pd.DataFrame) -> float:
         """Calculate Kyle's Lambda (price impact coefficient)"""
