@@ -108,7 +108,7 @@ class SwarmsIssueReporter:
 
             cuda_available = torch.cuda.is_available()
             if cuda_available:
-            gpu_info = torch.cuda.get_device_name(0)
+                gpu_info = torch.cuda.get_device_name(0)
             return cuda_available, gpu_info
             return False, None
         except ImportError:
