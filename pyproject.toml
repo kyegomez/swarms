@@ -80,7 +80,6 @@ doc-master = "*"
 rich = "*"
 # sentence-transformers = "*"
 swarm-models = "*"
-pathos = "*"
 
 
 # [tool.poetry.extras]
