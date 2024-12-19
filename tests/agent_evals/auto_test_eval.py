@@ -208,7 +208,7 @@ class SwarmsIssueReporter:
 
             deps = []
             for dist in pkg_resources.working_set:
-            deps.append(f"- {dist.key} {dist.version}")
+                deps.append(f"- {dist.key} {dist.version}")
             return "\n".join(deps)
         except Exception as e:
             logger.error(f"Error fetching dependency information: {str(e)}")
