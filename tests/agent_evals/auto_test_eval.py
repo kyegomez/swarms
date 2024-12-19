@@ -108,10 +108,13 @@ class SwarmsIssueReporter:
 
             cuda_available = torch.cuda.is_available()
             if cuda_available:
-                gpu_info = torch.cuda.get_device_name(0)
-                return cuda_available, gpu_info
+            gpu_info = torch.cuda.get_device_name(0)
+            return cuda_available, gpu_info
             return False, None
-        except:
+        except ImportError:
+            return False, None
+        except Exception as e:
+            logger.error(f"Error getting GPU info: {str(e)}")
             return False, None
 
     def _get_system_info(self) -> SwarmSystemInfo:
