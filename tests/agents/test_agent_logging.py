@@ -1,14 +1,11 @@
-"""
-Unit tests for the Agent logging functionality.
-"""
-
 from unittest.mock import MagicMock
 import unittest
 from swarms.structs.agent import Agent
+from swarms.tools.tool_parse_exec import parse_and_execute_json
 
 # Mock parse_and_execute_json for testing
-mock_parse_and_execute_json = MagicMock()
-mock_parse_and_execute_json.return_value = {
+parse_and_execute_json = MagicMock()
+parse_and_execute_json.return_value = {
     "tool_name": "calculator",
     "args": {"numbers": [2, 2]},
     "output": "4",
