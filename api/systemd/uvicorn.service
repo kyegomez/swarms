@@ -26,7 +26,8 @@ ExecStart=/usr/bin/unbuffer ROOT/var/swarms/agent_workspace/.venv/bin/uvicorn \
         --workers=4 \
         --port=5474 \
         main:create_app
-
+StandardOutput=file:/var/log/swarms_systemd.log
+StandardError=file:/var/log/swarms_systemd.log
 ExecReload=/bin/kill -HUP ${MAINPID}
 RestartSec=10
 Restart=always
