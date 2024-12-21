@@ -20,7 +20,16 @@ logger = logging.getLogger(__name__)
 from typing import Dict, Optional, Tuple
 from uuid import UUID
 
-BASE_URL = "http://0.0.0.0:8000/v1"
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("api_tests.log"),
+        logging.StreamHandler(),
+    ],
+)
+logger = logging.getLogger(__name__)
 
 # Configuration
 @dataclass
@@ -135,9 +144,6 @@ class TestRunner:
         """Run a single test with timing and logging"""
         logger.info(f"\nRunning test: {test_name}")
         start_time = time.time()
-
-<<<<<<< HEAD
-=======
 
 def create_test_user(session: TestSession) -> Tuple[bool, str]:
     """Create a test user and store credentials in session."""
