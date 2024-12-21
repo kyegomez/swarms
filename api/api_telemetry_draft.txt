@@ -8,6 +8,22 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+#consider if the following imports need to be added to the main swarms requirements.txt:
+#opentelemetry-api
+#opentelemetry-sdk
+#opentelemetry-instrumentation-fastapi
+#opentelemetry-instrumentation-requests
+#opentelemetry-exporter-otlp-proto-grpc
+
+
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import (
@@ -26,8 +42,8 @@ from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 
-# Original API, drafting OpenTelemetry Integrations in this directory
-
+OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "swarms-api")
+OTEL_EXPORTER_OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://aws-otel-collector:4317")
 
 # Load environment variables
 load_dotenv()
@@ -460,58 +476,71 @@ class AgentStore:
         del self.agent_metadata[agent_id]
         logger.info(f"Deleted agent {agent_id}")
 
-    async def process_completion(
-        self,
-        agent: Agent,
-        prompt: str,
-        agent_id: UUID,
-        max_tokens: Optional[int] = None,
-        temperature_override: Optional[float] = None,
-    ) -> CompletionResponse:
-        """Process a completion request using the specified agent."""
+   async def process_completion(
+    self,
+    agent: Agent,
+    prompt: str,
+    agent_id: UUID,
+    max_tokens: Optional[int] = None,
+    temperature_override: Optional[float] = None,
+) -> CompletionResponse:
+    """Process a completion request using the specified agent."""
+        # TELEMETRY CHANGE 6: Initialize tracer for this module
+    tracer = trace.get_tracer(__name__)
+        # TELEMETRY CHANGE 7: Create parent span for entire completion process
+    with tracer.start_as_current_span("process_completion") as span:
+         # TELEMETRY CHANGE 8: Add context attributes
+        span.set_attribute("agent.id", str(agent_id))
+        span.set_attribute("agent.name", agent.agent_name)
+        span.set_attribute("prompt.length", len(prompt))
+        if max_tokens:
+            span.set_attribute("max_tokens", max_tokens)
+            
         start_time = datetime.utcnow()
         metadata = self.agent_metadata[agent_id]
 
         try:
-            # Update agent status
-            metadata["status"] = AgentStatus.PROCESSING
-            metadata["last_used"] = start_time
+            with tracer.start_span("update_agent_status") as status_span:
+                metadata["status"] = AgentStatus.PROCESSING
+                metadata["last_used"] = start_time
+                status_span.set_attribute("agent.status", AgentStatus.PROCESSING.value)
 
-            # Process the completion
-            response = agent.run(prompt)
+            with tracer.start_span("process_agent_completion") as completion_span:
+                response = agent.run(prompt)
+                     
+                completion_span.set_attribute("completion.success", True)
 
-            # Update metrics
-            processing_time = (
-                datetime.utcnow() - start_time
-            ).total_seconds()
-            metadata["response_times"].append(processing_time)
-            metadata["total_completions"] += 1
-            metadata["successful_completions"] += 1
+            with tracer.start_span("update_metrics") as metrics_span:
+                processing_time = (datetime.utcnow() - start_time).total_seconds()
+                metadata["response_times"].append(processing_time)
+                metadata["total_completions"] += 1
+                metadata["successful_completions"] += 1
+                
+                prompt_tokens = len(prompt.split()) * 1.3
+                completion_tokens = len(response.split()) * 1.3
+                total_tokens = int(prompt_tokens + completion_tokens)
+                metadata["total_tokens"] += total_tokens
+                
+                metrics_span.set_attribute("processing.time", processing_time)
+                metrics_span.set_attribute("tokens.total", total_tokens)
+                metrics_span.set_attribute("tokens.prompt", int(prompt_tokens))
+                metrics_span.set_attribute("tokens.completion", int(completion_tokens))
 
-            # Estimate token usage (this is a rough estimate)
-            prompt_tokens = len(prompt.split()) * 1.3
-            completion_tokens = len(response.split()) * 1.3
-            total_tokens = int(prompt_tokens + completion_tokens)
-            metadata["total_tokens"] += total_tokens
+            with tracer.start_span("update_token_tracking") as token_span:
+                current_minute = datetime.utcnow().replace(second=0, microsecond=0)
+                if "tokens_per_minute" not in metadata:
+                    metadata["tokens_per_minute"] = {}
+                metadata["tokens_per_minute"][current_minute] = (
+                    metadata["tokens_per_minute"].get(current_minute, 0) + total_tokens
+                )
+                token_span.set_attribute("tokens.per_minute", 
+                    metadata["tokens_per_minute"][current_minute])
 
-            # Update tokens per minute tracking
-            current_minute = datetime.utcnow().replace(
-                second=0, microsecond=0
-            )
-            if "tokens_per_minute" not in metadata:
-                metadata["tokens_per_minute"] = {}
-            metadata["tokens_per_minute"][current_minute] = (
-                metadata["tokens_per_minute"].get(current_minute, 0)
-                + total_tokens
-            )
-
-            return CompletionResponse(
+            completion_response = CompletionResponse(
                 agent_id=agent_id,
                 response=response,
                 metadata={
                     "agent_name": agent.agent_name,
-                    # "model_name": agent.llm.model_name,
-                    # "temperature": 0.5,
                 },
                 timestamp=datetime.utcnow(),
                 processing_time=processing_time,
@@ -521,10 +550,19 @@ class AgentStore:
                     "total_tokens": total_tokens,
                 },
             )
+             # TELEMETRY CHANGE 10: Detailed error tracking
+            span.set_attribute("completion.status", "success")
+            return completion_response
 
         except Exception as e:
             metadata["error_count"] += 1
             metadata["status"] = AgentStatus.ERROR
+             # TELEMETRY CHANGE 11: Detailed error recording
+            span.set_attribute("completion.status", "error")
+            span.set_attribute("error.type", e.__class__.__name__)
+            span.set_attribute("error.message", str(e))
+            span.record_exception(e)
+            
             logger.error(
                 f"Error in completion processing: {str(e)}\n{traceback.format_exc()}"
             )
@@ -534,6 +572,7 @@ class AgentStore:
             )
         finally:
             metadata["status"] = AgentStatus.IDLE
+            span.set_attribute("agent.final_status", AgentStatus.IDLE.value)
 
 
 class StoreManager:
@@ -837,15 +876,47 @@ class SwarmsAPI:
                     if k > cutoff
                 }
 
+    @app.middleware("http")
+async def add_trace_context(request: Request, call_next):
+    span = trace.get_current_span()
+    span.set_attribute("http.url", str(request.url))
+    span.set_attribute("http.method", request.method)
+    response = await call_next(request)
+    span.set_attribute("http.status_code", response.status_code)
+    return response
+
+
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     logger.info("Creating FastAPI application")
+    
+        # TELEMETRY CHANGE 1: Configure OpenTelemetry resource with service name
+    resource = Resource.create({"service.name": "swarms-api"})
+    trace.set_tracer_provider(TracerProvider(resource=resource))
+    
+    # TELEMETRY CHANGE 2: Set up OTLP exporter for AWS
+    otlp_exporter = OTLPSpanExporter(
+        endpoint="http://aws-otel-collector:4317",  # AWS OpenTelemetry Collector endpoint
+        insecure=True
+    )
+    
+        # TELEMETRY CHANGE 3: Configure batch processing of spans
+    span_processor = BatchSpanProcessor(otlp_exporter)
+    trace.get_tracer_provider().add_span_processor(span_processor)
+    
     api = SwarmsAPI()
     app = api.app
+    
+   
+    # TELEMETRY CHANGE 4: Instrument FastAPI framework
+    FastAPIInstrumentor.instrument_app(app)
+    
+ # TELEMETRY CHANGE 5: Instrument HTTP client library
+    RequestsInstrumentor().instrument()
+    
     logger.info("FastAPI application created successfully")
     return app
-
 
 app = create_app()
 
