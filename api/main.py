@@ -28,7 +28,6 @@ from swarms.structs.agent import Agent
 
 # Original API, drafting OpenTelemetry Integrations in this directory
 
-
 # Load environment variables
 load_dotenv()
 
