@@ -2,7 +2,7 @@
 # review and improve
 . ./.env # for secrets
 set -e # stop  on any error
-set -x
+#set -x dont echo
 #export BRANCH="feature/ec2"
 #export ROOT="/mnt/data1/swarms"
 export ROOT="" # empty
