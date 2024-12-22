@@ -19,7 +19,7 @@ from typing import (
 
 from pydantic import BaseModel, Field
 from pydantic.version import VERSION as PYDANTIC_VERSION
-from typing_extensions import Annotated, Literal, get_args, get_origin
+from typing_extensions import Annotated, Literal, get_origin
 
 T = TypeVar("T")
 

@@ -111,8 +111,7 @@ class ExecutionContext:
     history: List[Dict[str, Any]] = field(default_factory=list)
 
 
-hints = get_type_hints(func)
-
+hints = get_type_hints(func)  # noqa: F821
 
 class ToolAgent:
     def __init__(

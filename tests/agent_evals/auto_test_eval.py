@@ -98,7 +98,7 @@ class SwarmsIssueReporter:
             import swarms
 
             return swarms.__version__
-        except:
+        except ImportError:
             return "Unknown"
 
     def _get_gpu_info(self) -> Tuple[bool, Optional[str]]:
@@ -109,9 +109,12 @@ class SwarmsIssueReporter:
             cuda_available = torch.cuda.is_available()
             if cuda_available:
                 gpu_info = torch.cuda.get_device_name(0)
-                return cuda_available, gpu_info
+            return cuda_available, gpu_info
             return False, None
-        except:
+        except ImportError:
+            return False, None
+        except Exception as e:
+            logger.error(f"Error getting GPU info: {str(e)}")
             return False, None
 
     def _get_system_info(self) -> SwarmSystemInfo:
@@ -207,7 +210,8 @@ class SwarmsIssueReporter:
             for dist in pkg_resources.working_set:
                 deps.append(f"- {dist.key} {dist.version}")
             return "\n".join(deps)
-        except:
+        except Exception as e:
+            logger.error(f"Error fetching dependency information: {str(e)}")
             return "Unable to fetch dependency information"
 
     # First, add this method to your SwarmsIssueReporter class
