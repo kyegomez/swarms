@@ -49,6 +49,11 @@ echo "HOME=${ROOT}/home/swarms" >> "${ROOT}/var/run/swarms/secrets/env"
 # attempt to move the workspace
 echo 'WORKSPACE_DIR=${STATE_DIRECTORY}' >> "${ROOT}/var/run/swarms/secrets/env"
 
+# setup the systemd service again
+sed -e "s!ROOT!${ROOT}!g" > /etc/nginx/sites-enabled/default < "${WORKSOURCE}/nginx/site.conf"
+sed -e "s!ROOT!${ROOT}!g" > /etc/systemd/system/swarms-uvicorn.service < "${WORKSOURCE}/systemd/uvicorn.service"
+grep . -h -n /etc/systemd/system/swarms-uvicorn.service
+
 chown -R swarms:swarms ${ROOT}/var/run/swarms/
 mkdir -p ${ROOT}/opt/swarms/api/agent_workspace/try_except_wrapper/
 chown -R swarms:swarms ${ROOT}/opt/swarms/api/
