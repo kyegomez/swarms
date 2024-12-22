@@ -3,7 +3,7 @@
 . ./.env # for secrets
 set -e # stop  on any error
 set -x
-export BRANCH="feature/ec2"
+#export BRANCH="feature/ec2"
 #export ROOT="/mnt/data1/swarms"
 export ROOT="" # empty
 export WORKSOURCE="${ROOT}/opt/swarms/api"
@@ -13,7 +13,7 @@ git config --global --add safe.directory "${ROOT}/opt/swarms"
 git config --global --add safe.directory "${ROOT}/opt/swarms-memory"
 
 cd "${ROOT}/opt/swarms/" || exit 1 # "we need swarms"
-git checkout --force  $BRANCH
+#git checkout --force  $BRANCH we did this before
 git pull 
 git log -2 --patch | head  -1000
 
@@ -22,7 +22,7 @@ mkdir -p "${ROOT}/home/swarms"
 
 
 cd "${ROOT}/opt/swarms/" || exit 1 # "we need swarms"
-git checkout --force  $BRANCH
+#git checkout --force  $BRANCH
 git pull 
 git log -2 --patch | head  -1000
 cp "${WORKSOURCE}/boot_fast.sh" "${ROOT}/var/swarms/agent_workspace/boot_fast.sh"
