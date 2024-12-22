@@ -19,6 +19,13 @@ logger = initialize_logger(log_folder="spreadsheet_swarm")
 time = datetime.datetime.now().isoformat()
 uuid_hex = uuid.uuid4().hex
 
+# --------------- NEW CHANGE START ---------------
+# Format time variable to be compatible across operating systems
+formatted_time = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+
+# Create the save file path with the formatted time and UUID hex
+self.save_file_path = f"spreadsheet_swarm_{formatted_time}_run_id_{uuid_hex}.csv"
+# --------------- NEW CHANGE END ---------------
 
 class AgentOutput(BaseModel):
     agent_name: str
@@ -89,9 +96,10 @@ class SpreadSheetSwarm(BaseSwarm):
         self.max_loops = max_loops
         self.workspace_dir = workspace_dir
 
-        self.save_file_path = (
-            f"spreadsheet_swarm_{time}_run_id_{uuid_hex}.csv"
-        )
+        # --------------- NEW CHANGE START ---------------
+        # The save_file_path now uses the formatted_time and uuid_hex
+        self.save_file_path = f"spreadsheet_swarm_{formatted_time}_run_id_{uuid_hex}.csv"
+        # --------------- NEW CHANGE END ---------------
 
         self.metadata = SwarmRunMetadata(
             run_id=f"spreadsheet_swarm_run_{time}",
