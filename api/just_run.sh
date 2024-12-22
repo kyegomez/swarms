@@ -14,7 +14,7 @@ git config --global --add safe.directory "${ROOT}/opt/swarms-memory"
 
 cd "${ROOT}/opt/swarms/" || exit 1 # "we need swarms"
 #git checkout --force  $BRANCH we did this before
-git pull 
+#git pull 
 git log -2 --patch | head  -1000
 
 mkdir -p "${ROOT}/var/swarms/agent_workspace/"
@@ -23,8 +23,8 @@ mkdir -p "${ROOT}/home/swarms"
 
 cd "${ROOT}/opt/swarms/" || exit 1 # "we need swarms"
 #git checkout --force  $BRANCH
-git pull 
-git log -2 --patch | head  -1000
+#git pull 
+
 cp "${WORKSOURCE}/boot_fast.sh" "${ROOT}/var/swarms/agent_workspace/boot_fast.sh"
 mkdir -p "${ROOT}/var/swarms/logs"
 chmod +x "${ROOT}/var/swarms/agent_workspace/boot_fast.sh"
@@ -35,7 +35,7 @@ su -c "bash -e -x ${ROOT}/var/swarms/agent_workspace/boot_fast.sh" swarms
 
 cd "${ROOT}/opt/swarms/" || exit 1 # "we need swarms"
 #git checkout --force  $BRANCH
-git pull # $BRANCH
+#git pull # $BRANCH
 
 mkdir -p "${ROOT}/var/run/swarms/secrets/"
 mkdir -p "${ROOT}/home/swarms/.cache/huggingface/hub"
