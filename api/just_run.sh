@@ -34,7 +34,7 @@ chown -R swarms:swarms "${ROOT}/var/swarms/" "${ROOT}/home/swarms" "${ROOT}/opt/
 su -c "bash -e -x ${ROOT}/var/swarms/agent_workspace/boot_fast.sh" swarms
 
 cd "${ROOT}/opt/swarms/" || exit 1 # "we need swarms"
-git checkout --force  $BRANCH
+#git checkout --force  $BRANCH
 git pull # $BRANCH
 
 mkdir -p "${ROOT}/var/run/swarms/secrets/"
