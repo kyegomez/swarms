@@ -19,6 +19,7 @@ from clusterops import (
     list_available_gpus,
 )
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.structs.swarm_id_generator import generate_swarm_id
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -50,7 +51,7 @@ class AgentOutputSchema(BaseModel):
 
 class MetadataSchema(BaseModel):
     swarm_id: Optional[str] = Field(
-        ..., description="Unique ID for the run"
+        generate_swarm_id(), description="Unique ID for the run"
     )
     task: Optional[str] = Field(
         ..., description="Task or query given to all agents"

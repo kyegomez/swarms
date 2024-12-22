@@ -1,17 +1,22 @@
-import asyncio
+import multiprocessing
 import os
 import secrets
 import signal
 import sys
+import threading
+import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+from multiprocessing import Lock, Process, Queue, Value
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 
-from fastapi.concurrency import asynccontextmanager
+import httpx
+import psutil
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import (
@@ -30,23 +35,125 @@ from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 
-# Original API, drafting OpenTelemetry Integrations in this directory
-
 # Load environment variables
 load_dotenv()
 
 
-class UvicornServer(uvicorn.Server):
-    """Customized uvicorn server with graceful shutdown support"""
+# # Set start method to 'fork' at the very beginning of the script
+# multiprocessing.set_start_method('fork')
 
-    async def setup(self, sockets=None):
-        """Setup the server"""
-        await super().setup(sockets)
 
-    async def shutdown(self, sockets=None):
-        """Gracefully shutdown the server"""
-        logger.info("Shutting down server...")
-        await super().shutdown(sockets)
+@dataclass
+class ProcessMetrics:
+    """Metrics for each API process."""
+
+    pid: int
+    cpu_usage: float
+    memory_usage: float
+    request_count: int
+    last_heartbeat: float
+    port: int
+
+
+class ProcessManager:
+    """Manages multiple API processes and their metrics."""
+
+    def __init__(
+        self, num_processes: int = None, start_port: int = 8000
+    ):
+        self.num_processes = (
+            num_processes or multiprocessing.cpu_count()
+        )
+        self.start_port = start_port
+        self.processes: Dict[int, Process] = {}
+        self.metrics: Dict[int, ProcessMetrics] = {}
+        self.metrics_lock = Lock()
+        self.heartbeat_queue = Queue()
+        self.shutdown_event = multiprocessing.Event()
+
+    def start_api_process(self, port: int) -> Process:
+        """Start a single API process on the specified port."""
+        process = Process(
+            target=run_api_instance,
+            args=(port, self.heartbeat_queue, self.shutdown_event),
+        )
+        process.start()
+        return process
+
+    def start_all_processes(self):
+        """Start all API processes."""
+        for i in range(self.num_processes):
+            port = self.start_port + i + 1
+            process = self.start_api_process(port)
+            self.processes[process.pid] = process
+            self.metrics[process.pid] = ProcessMetrics(
+                pid=process.pid,
+                cpu_usage=0.0,
+                memory_usage=0.0,
+                request_count=0,
+                last_heartbeat=time.time(),
+                port=port,
+            )
+
+    def monitor_processes(self):
+        """Monitor process health and metrics."""
+        while not self.shutdown_event.is_set():
+            try:
+                # Update metrics from heartbeat queue
+                while not self.heartbeat_queue.empty():
+                    pid, cpu, memory, requests = (
+                        self.heartbeat_queue.get_nowait()
+                    )
+                    with self.metrics_lock:
+                        if pid in self.metrics:
+                            self.metrics[pid].cpu_usage = cpu
+                            self.metrics[pid].memory_usage = memory
+                            self.metrics[pid].request_count = requests
+                            self.metrics[pid].last_heartbeat = (
+                                time.time()
+                            )
+
+                # Check for dead processes and restart them
+                current_time = time.time()
+                with self.metrics_lock:
+                    for pid, metrics in list(self.metrics.items()):
+                        if (
+                            current_time - metrics.last_heartbeat > 30
+                        ):  # 30 seconds timeout
+                            print(
+                                f"Process {pid} appears to be dead, restarting..."
+                            )
+                            if pid in self.processes:
+                                self.processes[pid].terminate()
+                                del self.processes[pid]
+                            new_process = self.start_api_process(
+                                metrics.port
+                            )
+                            self.processes[new_process.pid] = (
+                                new_process
+                            )
+                            self.metrics[new_process.pid] = (
+                                ProcessMetrics(
+                                    pid=new_process.pid,
+                                    cpu_usage=0.0,
+                                    memory_usage=0.0,
+                                    request_count=0,
+                                    last_heartbeat=time.time(),
+                                    port=metrics.port,
+                                )
+                            )
+                            del self.metrics[pid]
+
+                time.sleep(1)
+            except Exception as e:
+                print(f"Error in process monitoring: {e}")
+
+    def shutdown(self):
+        """Shutdown all processes gracefully."""
+        self.shutdown_event.set()
+        for process in self.processes.values():
+            process.terminate()
+            process.join()
 
 
 class AgentStatus(str, Enum):
@@ -79,16 +186,7 @@ class User(BaseModel):
     username: str
     is_active: bool = True
     is_admin: bool = False
-    api_keys: Dict[str, APIKey] = Field(default_factory=dict)
-
-    def ensure_active_api_key(self) -> Optional[APIKey]:
-        """Ensure user has at least one active API key."""
-        active_keys = [
-            key for key in self.api_keys.values() if key.is_active
-        ]
-        if not active_keys:
-            return None
-        return active_keys[0]
+    api_keys: Dict[str, APIKey] = {}  # key -> APIKey object
 
 
 class AgentConfig(BaseModel):
@@ -117,6 +215,15 @@ class AgentConfig(BaseModel):
     max_loops: int = Field(
         default=1, ge=1, description="Maximum number of loops"
     )
+    autosave: bool = Field(
+        default=True, description="Enable autosave"
+    )
+    dashboard: bool = Field(
+        default=False, description="Enable dashboard"
+    )
+    verbose: bool = Field(
+        default=True, description="Enable verbose output"
+    )
     dynamic_temperature_enabled: bool = Field(
         default=True, description="Enable dynamic temperature"
     )
@@ -139,13 +246,6 @@ class AgentConfig(BaseModel):
         default_factory=list,
         description="Tags for categorizing the agent",
     )
-    stopping_token: str = Field(
-        default="<DONE>", description="Stopping token for the agent"
-    )
-    auto_generate_prompt: bool = Field(
-        default=False,
-        description="Auto-generate prompt based on agent details such as name, description, etc.",
-    )
 
 
 class AgentUpdate(BaseModel):
@@ -165,7 +265,6 @@ class AgentSummary(BaseModel):
     agent_id: UUID
     agent_name: str
     description: str
-    system_prompt: str
     created_at: datetime
     last_used: datetime
     total_completions: int
@@ -223,7 +322,19 @@ class AgentStore:
             {}
         )  # user_id -> [agent_ids]
         self.executor = ThreadPoolExecutor(max_workers=4)
+        self.total_requests = Value(
+            "i", 0
+        )  # Shared counter for total requests
         self._ensure_directories()
+
+    def increment_request_count(self):
+        """Increment the total request counter."""
+        with self.total_requests.get_lock():
+            self.total_requests.value += 1
+
+    def get_total_requests(self) -> int:
+        """Get the total number of requests processed."""
+        return self.total_requests.value
 
     def _ensure_directories(self):
         """Ensure required directories exist."""
@@ -266,6 +377,20 @@ class AgentStore:
             or self.users[user_id].is_admin
         )
 
+    def validate_api_key(self, api_key: str) -> Optional[UUID]:
+        """Validate an API key and return the associated user ID."""
+        user_id = self.api_keys.get(api_key)
+        if not user_id or api_key not in self.users[user_id].api_keys:
+            return None
+
+        key_object = self.users[user_id].api_keys[api_key]
+        if not key_object.is_active:
+            return None
+
+        # Update last used timestamp
+        key_object.last_used = datetime.utcnow()
+        return user_id
+
     async def create_agent(
         self, config: AgentConfig, user_id: UUID
     ) -> UUID:
@@ -277,16 +402,17 @@ class AgentStore:
                 system_prompt=config.system_prompt,
                 model_name=config.model_name,
                 max_loops=config.max_loops,
+                autosave=config.autosave,
+                dashboard=config.dashboard,
                 verbose=config.verbose,
                 dynamic_temperature_enabled=True,
+                saved_state_path=f"states/{config.agent_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                 user_name=config.user_name,
                 retry_attempts=config.retry_attempts,
                 context_length=config.context_length,
-                return_step_meta=False,
+                return_step_meta=True,
                 output_type="str",
                 streaming_on=config.streaming_on,
-                stopping_token=config.stopping_token,
-                auto_generate_prompt=config.auto_generate_prompt,
             )
 
             agent_id = uuid4()
@@ -355,39 +481,6 @@ class AgentStore:
 
         logger.info(f"Updated agent {agent_id}")
 
-    def ensure_user_api_key(self, user_id: UUID) -> APIKey:
-        """Ensure user has at least one active API key."""
-        if user_id not in self.users:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
-
-        user = self.users[user_id]
-        existing_key = user.ensure_active_api_key()
-        if existing_key:
-            return existing_key
-
-        # Create new API key if none exists
-        return self.create_api_key(user_id, "Default Key")
-
-    def validate_api_key(self, api_key: str) -> Optional[UUID]:
-        """Validate an API key and return the associated user ID."""
-        if not api_key:
-            return None
-
-        user_id = self.api_keys.get(api_key)
-        if not user_id or api_key not in self.users[user_id].api_keys:
-            return None
-
-        key_object = self.users[user_id].api_keys[api_key]
-        if not key_object.is_active:
-            return None
-
-        # Update last used timestamp
-        key_object.last_used = datetime.utcnow()
-        return user_id
-
     async def list_agents(
         self,
         tags: Optional[List[str]] = None,
@@ -410,7 +503,6 @@ class AgentStore:
                 AgentSummary(
                     agent_id=agent_id,
                     agent_name=agent.agent_name,
-                    system_prompt=agent.system_prompt,
                     description=metadata["description"],
                     created_at=metadata["created_at"],
                     last_used=metadata["last_used"],
@@ -595,7 +687,7 @@ def get_store() -> AgentStore:
     return StoreManager.get_instance()
 
 
-# Modify the get_current_user dependency
+# Security utility function using the new dependency
 async def get_current_user(
     api_key: str = Header(
         ..., description="API key for authentication"
@@ -603,13 +695,6 @@ async def get_current_user(
     store: AgentStore = Depends(get_store),
 ) -> User:
     """Validate API key and return current user."""
-    if not api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key is required",
-            headers={"WWW-Authenticate": "ApiKey"},
-        )
-
     user_id = store.validate_api_key(api_key)
     if not user_id:
         raise HTTPException(
@@ -617,19 +702,7 @@ async def get_current_user(
             detail="Invalid or expired API key",
             headers={"WWW-Authenticate": "ApiKey"},
         )
-
-    user = store.users.get(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
-    if not user.ensure_active_api_key():
-        # Attempt to create new API key
-        store.ensure_user_api_key(user_id)
-
-    return user
+    return store.users[user_id]
 
 
 class SwarmsAPI:
@@ -663,8 +736,6 @@ class SwarmsAPI:
         """Set up API routes."""
 
         # In your API code
-
-        # Modify the create_user endpoint
         @self.app.post("/v1/users", response_model=Dict[str, Any])
         async def create_user(request: Request):
             """Create a new user and initial API key."""
@@ -679,17 +750,9 @@ class SwarmsAPI:
                 user_id = uuid4()
                 user = User(id=user_id, username=username)
                 self.store.users[user_id] = user
-
-                # Always create initial API key
                 initial_key = self.store.create_api_key(
                     user_id, "Initial Key"
                 )
-                if not initial_key:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Failed to create initial API key",
-                    )
-
                 return {
                     "user_id": user_id,
                     "api_key": initial_key.key,
@@ -697,6 +760,26 @@ class SwarmsAPI:
             except Exception as e:
                 logger.error(f"Error creating user: {str(e)}")
                 raise HTTPException(status_code=400, detail=str(e))
+
+        @self.app.post(
+            "/v1/users/{user_id}/api-keys", response_model=APIKey
+        )
+        async def create_api_key(
+            user_id: UUID,
+            key_create: APIKeyCreate,
+            current_user: User = Depends(get_current_user),
+        ):
+            """Create a new API key for a user."""
+            if (
+                current_user.id != user_id
+                and not current_user.is_admin
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to create API keys for this user",
+                )
+
+            return self.store.create_api_key(user_id, key_create.name)
 
         @self.app.get(
             "/v1/users/{user_id}/api-keys",
@@ -765,6 +848,13 @@ class SwarmsAPI:
                 )
                 if agent.agent_id in user_agents
             ]
+
+        @self.app.middleware("http")
+        async def count_requests(request: Request, call_next):
+            """Middleware to count all incoming requests."""
+            self.store.increment_request_count()
+            response = await call_next(request)
+            return response
 
         # Modify existing routes to use API key authentication
         @self.app.post("/v1/agent", response_model=Dict[str, UUID])
@@ -890,92 +980,303 @@ class SwarmsAPI:
                 }
 
 
-class APIServer:
-    def __init__(
-        self, app: FastAPI, host: str = "0.0.0.0", port: int = 8000
-    ):
-        self.app = app
-        self.host = host
-        self.port = port
-        self.config = uvicorn.Config(
-            app=app,
-            host=host,
-            port=port,
-            log_level="info",
-            access_log=True,
-            workers=os.cpu_count() * 2,
+def run_api_instance(
+    port: int, heartbeat_queue: Queue, shutdown_event: any
+):
+    """Run a single API instance and report metrics."""
+    try:
+        # Initialize API
+        api = SwarmsAPI()
+        process = psutil.Process()
+
+        # Start metrics reporting
+        def report_metrics():
+            while not shutdown_event.is_set():
+                try:
+                    cpu_percent = process.cpu_percent()
+                    memory_percent = process.memory_percent()
+                    heartbeat_queue.put(
+                        (
+                            process.pid,
+                            cpu_percent,
+                            memory_percent,
+                            api.store.get_total_requests(),
+                        )
+                    )
+                    time.sleep(5)
+                except Exception as e:
+                    logger.error(f"Error reporting metrics: {e}")
+
+        metrics_thread = threading.Thread(target=report_metrics)
+        metrics_thread.daemon = True
+        metrics_thread.start()
+
+        # Run API
+        uvicorn.run(
+            api.app, host="0.0.0.0", port=port, log_level="info"
         )
-        self.server = UvicornServer(config=self.config)
 
-        # Setup signal handlers
-        signal.signal(signal.SIGTERM, self._handle_signal)
-        signal.signal(signal.SIGINT, self._handle_signal)
-
-    def _handle_signal(self, signum, frame):
-        """Handle shutdown signals"""
-        logger.info(f"Received signal {signum}")
-        asyncio.create_task(self.shutdown())
-
-    async def startup(self) -> None:
-        """Start the server"""
-        try:
-            logger.info(
-                f"Starting API server on http://{self.host}:{self.port}"
-            )
-            print(
-                f"Starting API server on http://{self.host}:{self.port}"
-            )
-            await self.server.serve()
-        except Exception as e:
-            logger.error(f"Failed to start server: {str(e)}")
-            raise
-
-    async def shutdown(self) -> None:
-        """Shutdown the server"""
-        try:
-            logger.info("Initiating graceful shutdown...")
-            await self.server.shutdown()
-        except Exception as e:
-            logger.error(f"Error during shutdown: {str(e)}")
-            raise
+    except Exception as e:
+        logger.error(f"Error in API instance: {e}")
+        sys.exit(1)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator:
-    """Lifespan context manager for the FastAPI app"""
-    # Startup
-    logger.info("Starting up API server...")
-    yield
-    # Shutdown
-    logger.info("Shutting down API server...")
+class MultiProcessManager:
+    """Manages multiple API processes."""
+
+    def __init__(
+        self, base_port: int = 8000, num_processes: int = None
+    ):
+        self.base_port = base_port
+        self.num_processes = (
+            num_processes or multiprocessing.cpu_count()
+        )
+        self.processes: Dict[int, Process] = {}
+        self.metrics: Dict[int, ProcessMetrics] = {}
+        self.active = Value("b", True)
+
+    def start_process(self, port: int) -> Process:
+        """Start a single API process."""
+        process = Process(target=run_api_instance, args=(port,))
+        process.start()
+        self.metrics[process.pid] = ProcessMetrics(process.pid, port)
+        self.processes[process.pid] = process
+        return process
+
+    def monitor_processes(self):
+        """Monitor process health and metrics."""
+        while self.active.value:
+            for pid, metrics in list(self.metrics.items()):
+                try:
+                    # Update process metrics
+                    process = psutil.Process(pid)
+                    metrics.cpu_usage = process.cpu_percent()
+                    metrics.memory_usage = process.memory_percent()
+                    metrics.last_heartbeat = time.time()
+                except psutil.NoSuchProcess:
+                    # Restart dead process
+                    logger.warning(
+                        f"Process {pid} died, restarting..."
+                    )
+                    if pid in self.processes:
+                        self.processes[pid].terminate()
+                        del self.processes[pid]
+                    self.start_process(metrics.port)
+                    del self.metrics[pid]
+            time.sleep(5)
+
+    def start(self):
+        """Start all API processes."""
+        logger.info(f"Starting {self.num_processes} API processes...")
+
+        # Start worker processes
+        for i in range(self.num_processes):
+            port = self.base_port + i + 1
+            self.start_process(port)
+
+        # Start monitoring thread
+        monitor_thread = threading.Thread(
+            target=self.monitor_processes
+        )
+        monitor_thread.daemon = True
+        monitor_thread.start()
+
+        logger.info("All processes started successfully")
+
+    def shutdown(self):
+        """Shutdown all processes."""
+        self.active.value = False
+        for process in self.processes.values():
+            process.terminate()
+            process.join()
 
 
 def create_app() -> FastAPI:
-    """Create and configure the FastAPI application"""
+    """Create and configure the FastAPI application."""
     logger.info("Creating FastAPI application")
     api = SwarmsAPI()
     app = api.app
-
-    # Add lifespan handling
-    app.router.lifespan_context = lifespan
-
     logger.info("FastAPI application created successfully")
     return app
 
 
-def run_server():
-    """Run the API server"""
-    try:
-        # Create the FastAPI app
-        app = create_app()
+class LoadBalancer:
+    """Load balancer for distributing requests across API instances."""
 
-        # Create and run the server
-        server = APIServer(app)
-        asyncio.run(server.startup())
+    def __init__(self, process_manager: ProcessManager):
+        self.process_manager = process_manager
+        self.last_selected_pid = None
+        self._lock = Lock()
+
+    def get_best_instance(self) -> Tuple[int, int]:
+        """Select the best instance to handle the next request based on load."""
+        with self.process_manager.metrics_lock:
+            valid_instances = [
+                (pid, metrics)
+                for pid, metrics in self.process_manager.metrics.items()
+                if time.time() - metrics.last_heartbeat < 30
+            ]
+
+            if not valid_instances:
+                raise RuntimeError(
+                    "No healthy API instances available"
+                )
+
+            # Calculate load score for each instance
+            scores = []
+            for pid, metrics in valid_instances:
+                cpu_score = metrics.cpu_usage / 100.0
+                memory_score = metrics.memory_usage / 100.0
+                request_score = (
+                    metrics.request_count / 1000.0
+                )  # Normalize request count
+                total_score = (
+                    cpu_score + memory_score + request_score
+                ) / 3
+                scores.append((pid, metrics.port, total_score))
+
+            # Select instance with lowest load score
+            selected_pid, selected_port, _ = min(
+                scores, key=lambda x: x[2]
+            )
+            return selected_pid, selected_port
+
+
+class LoadBalancedAPI(SwarmsAPI):
+    """Enhanced API class with load balancing capabilities."""
+
+    def __init__(
+        self,
+        process_manager: ProcessManager,
+        load_balancer: LoadBalancer,
+    ):
+        super().__init__()
+        self.process_manager = process_manager
+        self.load_balancer = load_balancer
+        self.request_count = Value("i", 0)
+        self.add_middleware()
+
+    def add_middleware(self):
+        """Add middleware for request routing and metrics collection."""
+
+        @self.app.middleware("http")
+        async def route_request(request: Request, call_next):
+            try:
+                # Increment request count
+                with self.request_count.get_lock():
+                    self.request_count.value += 1
+
+                # Get best instance for processing
+                pid, port = self.load_balancer.get_best_instance()
+
+                # Forward request if not already on the best instance
+                if request.url.port != port:
+                    async with httpx.AsyncClient() as client:
+                        forwarded_url = f"http://localhost:{port}{request.url.path}"
+                        response = await client.request(
+                            request.method,
+                            forwarded_url,
+                            headers=dict(request.headers),
+                            content=await request.body(),
+                        )
+                        return httpx.Response(
+                            content=response.content,
+                            status_code=response.status_code,
+                            headers=dict(response.headers),
+                        )
+
+                # Process request locally if already on the best instance
+                response = await call_next(request)
+                return response
+
+            except Exception as e:
+                logger.error(f"Error routing request: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=str(e),
+                )
+
+
+def run_worker(port: int):
+    """Run a single worker instance."""
+    try:
+        api = SwarmsAPI()
+        uvicorn.run(
+            api.app, host="0.0.0.0", port=port, log_level="info"
+        )
+        logger.info(f"Worker started on port {port}")
     except Exception as e:
-        logger.error(f"Failed to start API: {str(e)}")
-        print(f"Error starting server: {str(e)}"
+        logger.error(f"Worker error: {e}")
+
+
+def main():
+    """Main entry point for the multi-process API."""
+    # Initialize processes list before any potential exceptions
+    processes = []
+
+    try:
+        # Try to get current method, only set if not already set
+        try:
+            current_method = multiprocessing.get_start_method()
+            logger.info(
+                f"Using existing start method: {current_method}"
+            )
+        except RuntimeError:
+            try:
+                multiprocessing.set_start_method("fork")
+                logger.info("Set start method to fork")
+            except RuntimeError:
+                logger.warning("Using default start method")
+
+        # Calculate number of workers
+        num_workers = max(1, multiprocessing.cpu_count() - 1)
+        base_port = 8000
+
+        # Start worker processes
+        for i in range(num_workers):
+            port = base_port + i + 1
+            process = Process(target=run_worker, args=(port,))
+            process.start()
+            processes.append(process)
+            logger.info(f"Started worker on port {port}")
+
+        # Run main instance
+        api = SwarmsAPI()
+
+        def shutdown_handler(signum, frame):
+            logger.info("Shutting down workers...")
+            for p in processes:
+                try:
+                    p.terminate()
+                    p.join(timeout=5)
+                    logger.info(f"Worker {p.pid} terminated")
+                except Exception as e:
+                    logger.error(f"Error shutting down worker: {e}")
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, shutdown_handler)
+        signal.signal(signal.SIGTERM, shutdown_handler)
+
+        # Run main instance
+        uvicorn.run(
+            api.app, host="0.0.0.0", port=base_port, log_level="info"
+        )
+        logger.info(f"Main instance started on port {base_port}")
+
+    except Exception as e:
+        logger.error(f"Startup error: {e}")
+        # Clean up any started processes
+        for p in processes:
+            try:
+                p.terminate()
+                p.join(timeout=5)
+                logger.info(
+                    f"Worker {p.pid} terminated during cleanup"
+                )
+            except Exception as cleanup_error:
+                logger.error(f"Error during cleanup: {cleanup_error}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    run_server()
+    main()

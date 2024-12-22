@@ -2422,22 +2422,15 @@ class Agent:
         if self.llm is None:
             raise TypeError("LLM object cannot be None")
 
-        # Define common method names for LLM interfaces
-        method_names = ["run", "__call__", "generate", "invoke"]
+        try:
+            out = self.llm.run(task, *args, **kwargs)
 
-        for method_name in method_names:
-            if hasattr(self.llm, method_name):
-                try:
-                    method = getattr(self.llm, method_name)
-                    return method(task, *args, **kwargs)
-                except Exception as e:
-                    raise RuntimeError(
-                        f"Error calling {method_name}: {str(e)}"
-                    )
-
-        raise AttributeError(
-            f"No suitable method found in the llm object. Expected one of: {method_names}"
-        )
+            return out
+        except AttributeError as e:
+            logger.error(
+                f"Error calling LLM: {e} You need a class with a run(task: str) method"
+            )
+            raise e
 
     def handle_sop_ops(self):
         # If the user inputs a list of strings for the sop then join them and set the sop
