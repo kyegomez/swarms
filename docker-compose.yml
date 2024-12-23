@@ -1,0 +1,36 @@
+services:
+  swarms:
+    image: swarm
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    network_mode: host
+    ipc: host
+
+#    environment:
+#      - OPENAI_API_KEY=sk-1234
+#      - OPENAI_API_BASE=http://100.96.149.57:7091
+#      - OPENAI_API_BASE=http://localhost:5000/v1
+#    command: python3 example.py
+
+#    restart: always
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+    user: swarms
+    volumes:
+      - ./api:/opt/swarms/api
+      - ./swarms:/opt/swarms/swarms
+      - ./logs:/var/log  # Mounting volume for logs
+    # environment:
+    #   - ENV_VAR_1=value1  # Add necessary environment variables
+    #   - ENV_VAR_2=value2
+    # restart: always
+    # ports:
+    #   - "5474:5474"

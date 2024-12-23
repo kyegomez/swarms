@@ -1,0 +1,2 @@
+rerun:
+	bash ./rerun.sh

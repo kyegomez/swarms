@@ -1,0 +1,82 @@
+convert this to docker and remove systemd
+# derived from https://github.com/encode/uvicorn/issues/678
+[Unit]
+Description=swarms
+After=network.target
+
+[Service]
+Type=simple
+User=swarms
+Group=swarms
+DynamicUser=true
+WorkingDirectory=ROOT/opt/swarms/api/
+ReadWritePaths=ROOT/opt/swarms/api/agent_workspace/
+StateDirectory=swarms_state
+PrivateTmp=true
+ProtectHome=true
+EnvironmentFile=ROOT/var/run/swarms/secrets/env
+
+# for debugging use
+#ExecStart=/usr/bin/unbuffer ROOT/var/run/uvicorn/env/bin/uvicorn
+
+# this runs and is modifiable by the agent, so this can be destabilized
+# FIXME: containerize the run(chroot jail?)
+ExecStart=/usr/bin/unbuffer ROOT/var/swarms/agent_workspace/.venv/bin/uvicorn \
+        --proxy-headers \
+        --forwarded-allow-ips='*' \
+        --workers=4 \
+        --port=5474 \
+        main:create_app
+StandardOutput=file:/var/log/swarms_systemd.log
+StandardError=file:/var/log/swarms_systemd.log
+ExecReload=/bin/kill -HUP ${MAINPID}
+RestartSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+To convert the provided systemd service configuration to a Docker container, you'll need a `Dockerfile` and potentially a `docker-compose.yml` file for easier management. Here's a basic setup:
+
+**Dockerfile**:
+```Dockerfile
+# Use the appropriate base image
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /opt/swarms/api
+
+# Copy application files
+COPY . .
+
+# Install dependencies (assuming requirements.txt is in root)
+RUN pip install -r requirements.txt
+
+# Set up environment variables
+COPY ROOT/var/run/swarms/secrets/env /root/env
+ENV $(cat /root/env | xargs)
+
+# Expose the port
+EXPOSE 5474
+
+# Command to run the application
+CMD ["/usr/bin/unbuffer", "/root/swarms/agent_workspace/.venv/bin/uvicorn", "--proxy-headers", "--forwarded-allow-ips='*'", "--workers=4", "--port=5474", "main:create_app"]
+```
+
+**docker-compose.yml** (optional):
+```yaml
+
+```
+
+### Steps to Build and Run
+1. Save the `Dockerfile` and `docker-compose.yml` in your project directory.
+2. Build and run the container using:
+   ```bash
+   docker-compose up --build
+   ```
+
+### Notes
+- Adjust the Python base image version as needed.
+- Ensure that your `requirements.txt` includes the necessary dependencies for your application.
+- You can configure volume mounts and environment variables as per your requirement. 
+- Logs can be managed by your logging mechanism or Docker logging options.

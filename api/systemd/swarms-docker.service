@@ -1,0 +1,26 @@
+# derived from https://github.com/encode/uvicorn/issues/678
+# dervied from https://blog.container-solutions.com/running-docker-containers-with-systemd
+[Unit]
+Description=swarms
+After=docker.service
+#Required=docker.service
+
+[Service]
+EnvironmentFile=ROOT/var/run/swarms/secrets/env
+RestartSec=10
+TimeoutStartSec=0
+Restart=always
+ExecStartPre=-/usr/bin/docker stop %n
+ExecStartPre=-/usr/bin/docker rm %n
+ExecStartPre=/usr/bin/docker pull h4ckermike/swarms-api:experimental
+#ExecStart=/usr/bin/docker run --rm --name %n h4ckermike/swarms-api:experimental
+ExecStart=/usr/bin/docker run --rm --name %n --network host h4ckermike/swarms-api:experimental
+StandardOutput=file:/var/log/swarms_systemd.log
+StandardError=file:/var/log/swarms_systemd.log
+ExecReload=/bin/kill -HUP ${MAINPID}
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

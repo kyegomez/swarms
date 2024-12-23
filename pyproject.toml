@@ -120,7 +120,7 @@ mypy-protobuf = "^3.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
-pandas = "^2.2.2"
+#pandas = "^2.2.2"
 
 [tool.ruff]
 line-length = 70
