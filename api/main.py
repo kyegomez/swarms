@@ -2,7 +2,6 @@ import asyncio
 import os
 import secrets
 import signal
-import sys
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -973,7 +972,8 @@ def run_server():
         asyncio.run(server.startup())
     except Exception as e:
         logger.error(f"Failed to start API: {str(e)}")
-        print(f"Error starting server: {str(e)}")  # <-- Fixed here
+        print(f"Error starting server: {str(e)}")
+
 
 if __name__ == "__main__":
     run_server()

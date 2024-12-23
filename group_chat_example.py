@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from swarm_models import OpenAIChat
-from swarms import Agent, GroupChat, expertise_based
+from swarms import Agent, GroupChat
 
 
 if __name__ == "__main__":
@@ -61,7 +61,6 @@ if __name__ == "__main__":
         name="Investment Advisory",
         description="Financial, tax, and stock analysis group",
         agents=agents,
-        speaker_fn=expertise_based,
     )
 
     history = chat.run(

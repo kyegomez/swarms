@@ -65,6 +65,40 @@ def random_selection(history: List[str], agent: Agent) -> bool:
     return random.choice([True, False])
 
 
+def custom_speaker(history: List[str], agent: Agent) -> bool:
+    """
+    Custom speaker function with complex logic.
+
+    Args:
+        history: Previous conversation messages
+        agent: Current agent being evaluated
+
+    Returns:
+        bool: Whether agent should speak
+    """
+    # No history - let everyone speak
+    if not history:
+        return True
+
+    last_message = history[-1].lower()
+
+    # Check for agent expertise keywords
+    expertise_relevant = any(
+        keyword in last_message
+        for keyword in agent.description.lower().split()
+    )
+
+    # Check for direct mentions
+    mentioned = agent.agent_name.lower() in last_message
+
+    # Check if agent hasn't spoken recently
+    not_recent_speaker = not any(
+        agent.agent_name in msg for msg in history[-3:]
+    )
+
+    return expertise_relevant or mentioned or not_recent_speaker
+
+
 def most_recent(history: List[str], agent: Agent) -> bool:
     """
     Most recent speaker function.
@@ -128,9 +162,14 @@ class GroupChat:
             AgentResponse: The agent's response captured in a structured format.
         """
         try:
-            context = f"""You are {agent.name} with role: {agent.system_prompt}.
-                         Other agents: {[a.name for a in self.agents if a != agent]}
-                         Previous messages: {[t.responses[-3:] for t in self.chat_history.turns[-3:]]}"""
+            # Provide the agent with information about the chat and other agents
+            chat_info = f"Chat Name: {self.name}\nChat Description: {self.description}\nAgents in Chat: {[a.agent_name for a in self.agents]}"
+            context = f"""You are {agent.agent_name} 
+                        Conversation History: 
+                        \n{chat_info}
+                        Other agents: {[a.agent_name for a in self.agents if a != agent]}
+                        Previous messages: {self.get_full_chat_history()}
+            """  # Updated line
 
             message = agent.run(context + prompt)
             return AgentResponse(
@@ -149,6 +188,21 @@ class GroupChat:
                 turn_number=turn_number,
                 preceding_context=[],
             )
+
+    def get_full_chat_history(self) -> str:
+        """
+        Get the full chat history formatted for agent context.
+
+        Returns:
+            str: The full chat history with sender names.
+        """
+        messages = []
+        for turn in self.chat_history.turns:
+            for response in turn.responses:
+                messages.append(
+                    f"{response.agent_name}: {response.message}"
+                )
+        return "\n".join(messages)
 
     def get_recent_messages(self, n: int = 3) -> List[str]:
         """
