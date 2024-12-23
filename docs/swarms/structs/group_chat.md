@@ -1,231 +1,341 @@
-# GroupChat Class Documentation
+# GroupChat Swarm Documentation
+
+A production-grade multi-agent system enabling sophisticated group conversations between AI agents with customizable speaking patterns, parallel processing capabilities, and comprehensive conversation tracking.
+
+## Advanced Configuration
+
+### Agent Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| agent_name | str | Required | Unique identifier for the agent |
+| system_prompt | str | Required | Role and behavior instructions |
+| llm | Any | Required | Language model instance |
+| max_loops | int | 1 | Maximum conversation turns |
+| autosave | bool | False | Enable conversation saving |
+| dashboard | bool | False | Enable monitoring dashboard |
+| verbose | bool | True | Enable detailed logging |
+| dynamic_temperature | bool | True | Enable dynamic temperature |
+| retry_attempts | int | 1 | Failed request retry count |
+| context_length | int | 200000 | Maximum context window |
+| output_type | str | "string" | Response format type |
+| streaming_on | bool | False | Enable streaming responses |
+
+### GroupChat Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| name | str | "GroupChat" | Chat group identifier |
+| description | str | "" | Purpose description |
+| agents | List[Agent] | [] | Participating agents |
+| speaker_fn | Callable | round_robin | Speaker selection function |
+| max_turns | int | 10 | Maximum conversation turns |
 
 
-The GroupChat class manages multi-agent conversations with state persistence, comprehensive logging, and flexible agent configurations. It supports both Agent class instances and callable functions, making it versatile for different use cases.
+## Table of Contents
+
+- [Installation](#installation)
+- [Core Concepts](#core-concepts)
+- [Basic Usage](#basic-usage)
+- [Advanced Configuration](#advanced-configuration)
+- [Speaker Functions](#speaker-functions)
+- [Response Models](#response-models)
+- [Advanced Examples](#advanced-examples)
+- [API Reference](#api-reference)
+- [Best Practices](#best-practices)
 
 ## Installation
+
 ```bash
-pip install swarms python-dotenv pydantic
+pip3 install swarms swarm-models loguru
 ```
 
+## Core Concepts
 
-## Attributes
+The GroupChat system consists of several key components:
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| state_path | str | Path for saving/loading chat state |
-| wrapped_agents | List[AgentWrapper] | List of wrapped agent instances |
-| selector_agent | AgentWrapper | Agent responsible for speaker selection |
-| state | GroupChatState | Current state of the group chat |
+1. **Agents**: Individual AI agents with specialized knowledge and roles
+2. **Speaker Functions**: Control mechanisms for conversation flow
+3. **Chat History**: Structured conversation tracking
+4. **Response Models**: Pydantic models for data validation
 
-## Methods
+## Basic Usage
 
-### Core Methods
-
-```python
-def run(self, task: str) -> str:
-    """Execute the group chat conversation"""
-
-def save_state(self) -> None:
-    """Save current state to disk"""
-
-@classmethod
-def load_state(cls, state_path: str) -> 'GroupChat':
-    """Load GroupChat from saved state"""
-
-def get_conversation_summary(self) -> Dict[str, Any]:
-    """Return a summary of the conversation"""
-
-def export_conversation(self, format: str = "json") -> Union[str, Dict]:
-    """Export the conversation in specified format"""
-```
-
-### Internal Methods
-
-```python
-def _log_interaction(self, agent_name: str, position: int, input_text: str, output_text: str) -> None:
-    """Log a single interaction"""
-
-def _add_message(self, role: str, content: str) -> None:
-    """Add a message to the conversation history"""
-
-def select_next_speaker(self, last_speaker: AgentWrapper) -> AgentWrapper:
-    """Select the next speaker using the selector agent"""
-```
-
-## Usage Examples
-
-### 1. Basic Setup with Two Agents
 ```python
 import os
-from swarms import Agent
+from dotenv import load_dotenv
 from swarm_models import OpenAIChat
+from swarms import Agent, GroupChat
+from loguru import logger
 
-# Initialize OpenAI
+# Load environment variables
+load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
-model = OpenAIChat(openai_api_key=api_key, model_name="gpt-4-mini")
 
-# Create agents
-analyst = Agent(
-    agent_name="Financial-Analyst",
-    system_prompt="You are a financial analyst...",
+# Initialize LLM
+model = OpenAIChat(
+    openai_api_key=api_key,
+    model_name="gpt-4o-mini",
+    temperature=0.1
+)
+
+# Create financial analyst agent
+financial_analyst = Agent(
+    agent_name="Financial-Analysis-Agent",
+    system_prompt="You are a financial analyst specializing in investment strategies.",
+    llm=model,
+    max_loops=1,
+    autosave=False,
+    dashboard=False,
+    verbose=True,
+    dynamic_temperature_enabled=True,
+    retry_attempts=1,
+    context_length=200000,
+    output_type="string"
+)
+
+# Create tax advisor agent
+tax_advisor = Agent(
+    agent_name="Tax-Adviser-Agent", 
+    system_prompt="You are a tax adviser providing clear tax guidance.",
+    llm=model,
+    max_loops=1,
+    autosave=False,
+    dashboard=False,
+    verbose=True,
+    dynamic_temperature_enabled=True,
+    retry_attempts=1,
+    context_length=200000,
+    output_type="string"
+)
+
+# Initialize group chat
+chat = GroupChat(
+    name="Investment Advisory",
+    description="Financial and tax analysis group",
+    agents=[financial_analyst, tax_advisor],
+    speaker_fn=expertise_based
+)
+
+# Run conversation
+history = chat.run("How to optimize tax strategy for investments?")
+```
+
+## Speaker Functions
+
+
+### Built-in Functions
+
+```python
+def round_robin(history: List[str], agent: Agent) -> bool:
+    """
+    Enables agents to speak in turns.
+    Returns True for each agent in sequence.
+    """
+    return True
+
+def expertise_based(history: List[str], agent: Agent) -> bool:
+    """
+    Enables agents to speak based on their expertise.
+    Returns True if agent's role matches conversation context.
+    """
+    return agent.system_prompt.lower() in history[-1].lower() if history else True
+
+def random_selection(history: List[str], agent: Agent) -> bool:
+    """
+    Randomly selects speaking agents.
+    Returns True/False with 50% probability.
+    """
+    import random
+    return random.choice([True, False])
+
+def most_recent(history: List[str], agent: Agent) -> bool:
+    """
+    Enables agents to respond to their mentions.
+    Returns True if agent was last speaker.
+    """
+    return agent.agent_name == history[-1].split(":")[0].strip() if history else True
+```
+
+### Custom Speaker Function Example
+
+```python
+def custom_speaker(history: List[str], agent: Agent) -> bool:
+    """
+    Custom speaker function with complex logic.
+    
+    Args:
+        history: Previous conversation messages
+        agent: Current agent being evaluated
+        
+    Returns:
+        bool: Whether agent should speak
+    """
+    # No history - let everyone speak
+    if not history:
+        return True
+        
+    last_message = history[-1].lower()
+    
+    # Check for agent expertise keywords
+    expertise_relevant = any(
+        keyword in last_message 
+        for keyword in agent.expertise_keywords
+    )
+    
+    # Check for direct mentions
+    mentioned = agent.agent_name.lower() in last_message
+    
+    # Check if agent hasn't spoken recently
+    not_recent_speaker = not any(
+        agent.agent_name in msg 
+        for msg in history[-3:]
+    )
+    
+    return expertise_relevant or mentioned or not_recent_speaker
+
+# Usage
+chat = GroupChat(
+    agents=[agent1, agent2],
+    speaker_fn=custom_speaker
+)
+```
+
+## Response Models
+
+### Complete Schema
+
+```python
+class AgentResponse(BaseModel):
+    """Individual agent response in a conversation turn"""
+    agent_name: str
+    role: str
+    message: str
+    timestamp: datetime = Field(default_factory=datetime.now)
+    turn_number: int
+    preceding_context: List[str] = Field(default_factory=list)
+
+class ChatTurn(BaseModel):
+    """Single turn in the conversation"""
+    turn_number: int
+    responses: List[AgentResponse]
+    task: str
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+class ChatHistory(BaseModel):
+    """Complete conversation history"""
+    turns: List[ChatTurn]
+    total_messages: int
+    name: str
+    description: str
+    start_time: datetime = Field(default_factory=datetime.now)
+```
+
+## Advanced Examples
+
+### Multi-Agent Analysis Team
+
+```python
+# Create specialized agents
+data_analyst = Agent(
+    agent_name="Data-Analyst",
+    system_prompt="You analyze numerical data and patterns",
     llm=model
 )
 
-advisor = Agent(
-    agent_name="Investment-Advisor",
-    system_prompt="You are an investment advisor...",
+market_expert = Agent(
+    agent_name="Market-Expert",
+    system_prompt="You provide market insights and trends",
     llm=model
 )
 
-# Create group chat
-chat = GroupChat(
-    name="Investment Team",
-    agents=[analyst, advisor],
-    max_rounds=5,
-    group_objective="Provide investment advice"
+strategy_advisor = Agent(
+    agent_name="Strategy-Advisor",
+    system_prompt="You formulate strategic recommendations",
+    llm=model
 )
 
-response = chat.run("What's the best investment strategy for retirement?")
-```
-
-### 2. Advanced Setup with State Management
-```python
-# Create group chat with state persistence
-chat = GroupChat(
-    name="Investment Advisory Team",
-    description="Expert team for financial planning",
-    agents=[analyst, advisor, tax_specialist],
-    max_rounds=10,
-    admin_name="Senior Advisor",
-    group_objective="Provide comprehensive financial planning",
-    state_path="investment_chat_state.json",
-    rules="1. Always provide sources\n2. Be concise\n3. Focus on practical advice"
+# Create analysis team
+analysis_team = GroupChat(
+    name="Market Analysis Team",
+    description="Comprehensive market analysis group",
+    agents=[data_analyst, market_expert, strategy_advisor],
+    speaker_fn=expertise_based,
+    max_turns=15
 )
 
-# Run chat and save state
-response = chat.run("Create a retirement plan for a 35-year old")
-chat.save_state()
-
-# Load existing chat state
-loaded_chat = GroupChat.load_state("investment_chat_state.json")
+# Run complex analysis
+history = analysis_team.run("""
+    Analyze the current market conditions:
+    1. Identify key trends
+    2. Evaluate risks
+    3. Recommend investment strategy
+""")
 ```
 
-### 3. Using Custom Callable Agents
-```python
-def custom_agent(input_text: str) -> str:
-    # Custom logic here
-    return f"Processed: {input_text}"
-
-# Mix of regular agents and callable functions
-chat = GroupChat(
-    name="Hybrid Team",
-    agents=[analyst, custom_agent],
-    max_rounds=3
-)
-```
-
-### 4. Export and Analysis
-```python
-# Run chat
-chat.run("Analyze market conditions")
-
-# Get summary
-summary = chat.get_conversation_summary()
-print(summary)
-
-# Export in different formats
-json_conv = chat.export_conversation(format="json")
-text_conv = chat.export_conversation(format="text")
-```
-
-### 5. Advanced Configuration with Custom Selector
-```python
-class CustomSelector(Agent):
-    def run(self, input_text: str) -> str:
-        # Custom selection logic
-        return "Financial-Analyst"
-
-chat = GroupChat(
-    name="Custom Selection Team",
-    agents=[analyst, advisor],
-    selector_agent=CustomSelector(
-        agent_name="Custom-Selector",
-        system_prompt="Select the next speaker based on expertise",
-        llm=model
-    ),
-    max_rounds=5
-)
-```
-
-### 6. Debugging Setup
-```python
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
-
-chat = GroupChat(
-    name="Debug Team",
-    agents=[analyst, advisor],
-    max_rounds=3,
-    state_path="debug_chat.json"
-)
-
-# Run with detailed logging
-try:
-    response = chat.run("Complex query")
-except Exception as e:
-    logger.error(f"Chat failed: {str(e)}")
-    # Access last successful state
-    state = chat.state
-```
-
-## Error Handling
-
-The GroupChat class includes comprehensive error handling:
+### Parallel Processing
 
 ```python
-try:
-    chat = GroupChat(agents=[analyst])  # Will raise ValueError
-except ValueError as e:
-    print("Configuration error:", str(e))
+# Define multiple analysis tasks
+tasks = [
+    "Analyze tech sector trends",
+    "Evaluate real estate market",
+    "Review commodity prices",
+    "Assess global economic indicators"
+]
 
-try:
-    response = chat.run("Query")
-except Exception as e:
-    # Access error state
-    error_summary = chat.get_conversation_summary()
-    print("Execution error:", str(e))
-    print("State at error:", error_summary)
+# Run tasks concurrently
+histories = chat.concurrent_run(tasks)
+
+# Process results
+for task, history in zip(tasks, histories):
+    print(f"\nAnalysis for: {task}")
+    for turn in history.turns:
+        for response in turn.responses:
+            print(f"{response.agent_name}: {response.message}")
 ```
 
 ## Best Practices
 
-1. **State Management**:
-   - Always specify a `state_path` for important conversations
-   - Use `save_state()` after critical operations
-   - Implement regular state backups for long conversations
+1. **Agent Design**
+   - Give agents clear, specific roles
+   - Use detailed system prompts
+   - Set appropriate context lengths
+   - Enable retries for reliability
 
-2. **Agent Configuration**:
-   - Provide clear system prompts for each agent
-   - Use descriptive agent names
-   - Consider agent expertise when setting the group objective
+2. **Speaker Functions**
+   - Match function to use case
+   - Consider conversation flow
+   - Handle edge cases
+   - Add appropriate logging
 
-3. **Performance**:
-   - Keep `max_rounds` reasonable (5-10 for most cases)
-   - Use early stopping conditions when possible
-   - Monitor conversation length and complexity
+3. **Error Handling**
+   - Use try-except blocks
+   - Log errors appropriately
+   - Implement retry logic
+   - Provide fallback responses
 
-4. **Error Handling**:
-   - Always wrap chat execution in try-except blocks
-   - Implement proper logging
-   - Save states before potentially risky operations
+4. **Performance**
+   - Use concurrent processing for multiple tasks
+   - Monitor context lengths
+   - Implement proper cleanup
+   - Cache responses when appropriate
 
-## Limitations
+## API Reference
 
-- Agents must either have a `run` method or be callable
-- State files can grow large with many interactions
-- Selector agent may need optimization for large agent groups
-- Real-time streaming not supported in basic configuration
+### GroupChat Methods
 
+| Method | Description | Arguments | Returns |
+|--------|-------------|-----------|---------|
+| run | Run single conversation | task: str | ChatHistory |
+| batched_run | Run multiple sequential tasks | tasks: List[str] | List[ChatHistory] |
+| concurrent_run | Run multiple parallel tasks | tasks: List[str] | List[ChatHistory] |
+| get_recent_messages | Get recent messages | n: int = 3 | List[str] |
+
+### Agent Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| run | Process single task | str |
+| generate_response | Generate LLM response | str |
+| save_context | Save conversation context | None |
