@@ -102,17 +102,28 @@ class SwarmsIssueReporter:
             return "Unknown"
 
     def _get_gpu_info(self) -> Tuple[bool, Optional[str]]:
-        """Get GPU information and CUDA availability."""
-        try:
-            import torch
+    """Get GPU information and CUDA availability."""
+    try:
+        import torch
 
-            cuda_available = torch.cuda.is_available()
-            if cuda_available:
-                gpu_info = torch.cuda.get_device_name(0)
-                return cuda_available, gpu_info
-            return False, None
-        except:
-            return False, None
+        cuda_available = torch.cuda.is_available()
+        if cuda_available:
+            gpu_info = torch.cuda.get_device_name(0)
+            return cuda_available, gpu_info
+        return False, None
+    except ModuleNotFoundError as e:
+        # Handle the case where 'torch' is not installed
+        print(f"Error: {e}")
+        return False, None
+    except RuntimeError as e:
+        # Handle CUDA-related errors
+        print(f"Error: {e}")
+        return False, None
+    except Exception as e:
+        # Catch any other exceptions
+        print(f"Unexpected error: {e}")
+        return False, None
+
 
     def _get_system_info(self) -> SwarmSystemInfo:
         """Collect system and Swarms-specific information."""
@@ -199,16 +210,23 @@ class SwarmsIssueReporter:
         """
 
     def _get_dependencies_info(self) -> str:
-        """Get information about installed dependencies."""
-        try:
-            import pkg_resources
+    """Get information about installed dependencies."""
+    try:
+        import pkg_resources
 
-            deps = []
-            for dist in pkg_resources.working_set:
-                deps.append(f"- {dist.key} {dist.version}")
-            return "\n".join(deps)
-        except:
-            return "Unable to fetch dependency information"
+        deps = []
+        for dist in pkg_resources.working_set:
+            deps.append(f"- {dist.key} {dist.version}")
+        return "\n".join(deps)
+    except ImportError as e:
+        # Handle the case where pkg_resources is not available
+        print(f"Error: {e}")
+        return "Unable to fetch dependency information"
+    except Exception as e:
+        # Catch any other unexpected exceptions
+        print(f"Unexpected error: {e}")
+        return "Unable to fetch dependency information"
+
 
     # First, add this method to your SwarmsIssueReporter class
     def _check_rate_limit(self) -> bool:
