@@ -8,21 +8,21 @@ if __name__ == "__main__":
         # Create agents
         data_collector = Agent(
             agent_name="Market-Data-Collector",
-            model_name="gpt-4o-mini",
+            model_name="openai/gpt-4o",
             max_loops=1,
             streaming_on=True,
         )
 
         trend_analyzer = Agent(
             agent_name="Market-Trend-Analyzer",
-            model_name="gpt-4o-mini",
+            model_name="openai/gpt-4o",
             max_loops=1,
             streaming_on=True,
         )
 
         report_generator = Agent(
             agent_name="Investment-Report-Generator",
-            model_name="gpt-4o-mini",
+            model_name="openai/gpt-4o",
             max_loops=1,
             streaming_on=True,
         )

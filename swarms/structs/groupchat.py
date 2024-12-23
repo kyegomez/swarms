@@ -1,493 +1,301 @@
-from typing import List, Dict, Optional, Union, Callable, Any
-from pydantic import BaseModel, Field
+import concurrent.futures
 from datetime import datetime
-import json
-from uuid import uuid4
-import logging
+from typing import Callable, List
+
+from loguru import logger
+from pydantic import BaseModel, Field
+
 from swarms.structs.agent import Agent
-from swarms.structs.agents_available import showcase_available_agents
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
-class Message(BaseModel):
-    """Single message in the conversation"""
-
+class AgentResponse(BaseModel):
+    agent_name: str
     role: str
-    content: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    message: str
+    timestamp: datetime = Field(default_factory=datetime.now)
+    turn_number: int
+    preceding_context: List[str] = Field(default_factory=list)
 
 
-class AgentMetadata(BaseModel):
-    """Metadata for tracking agent state and configuration"""
-
-    agent_name: str
-    agent_type: str
-    system_prompt: Optional[str] = None
-    description: Optional[str] = None
-    config: Dict[str, Any] = Field(default_factory=dict)
+class ChatTurn(BaseModel):
+    turn_number: int
+    responses: List[AgentResponse]
+    task: str
+    timestamp: datetime = Field(default_factory=datetime.now)
 
 
-class InteractionLog(BaseModel):
-    """Log entry for a single interaction"""
-
-    id: str = Field(default_factory=lambda: uuid4().hex)
-    agent_name: str
-    position: int
-    input_text: str
-    output_text: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+class ChatHistory(BaseModel):
+    turns: List[ChatTurn]
+    total_messages: int
+    name: str
+    description: str
+    start_time: datetime = Field(default_factory=datetime.now)
 
 
-class GroupChatState(BaseModel):
-    """Complete state of the group chat"""
-
-    id: str = Field(default_factory=lambda: uuid4().hex)
-    name: Optional[str] = None
-    description: Optional[str] = None
-    admin_name: str
-    group_objective: str
-    max_rounds: int
-    rules: Optional[str] = None
-    agent_metadata: List[AgentMetadata]
-    messages: List[Message]
-    interactions: List[InteractionLog]
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+SpeakerFunction = Callable[[List[str], "Agent"], bool]
 
 
-# Todo:
-# Build a function that prompts the llm to output the
-# [Agent-Name] in square brackets and then the question or something
-# An agentic Language notation
+def round_robin(history: List[str], agent: Agent) -> bool:
+    """
+    Round robin speaker function.
+    Each agent speaks in turn, in a circular order.
+    """
+    return True
 
 
-class AgentWrapper:
-    """Wrapper class to standardize agent interfaces"""
+def expertise_based(history: List[str], agent: Agent) -> bool:
+    """
+    Expertise based speaker function.
+    An agent speaks if their system prompt is in the last message.
+    """
+    return (
+        agent.system_prompt.lower() in history[-1].lower()
+        if history
+        else True
+    )
 
-    def __init__(
-        self,
-        agent: Union["Agent", Callable],
-        agent_name: str,
-        system_prompt: Optional[str] = None,
-    ):
-        self.agent = agent
-        self.agent_name = agent_name
-        self.system_prompt = system_prompt
-        self._validate_agent()
 
-    def _validate_agent(self):
-        """Validate that the agent has the required interface"""
-        if hasattr(self.agent, "run"):
-            self.run = self.agent.run
-        elif callable(self.agent):
-            self.run = self.agent
-        else:
-            raise ValueError(
-                "Agent must either have a 'run' method or be callable"
-            )
+def random_selection(history: List[str], agent: Agent) -> bool:
+    """
+    Random selection speaker function.
+    An agent speaks randomly.
+    """
+    import random
 
-    def get_metadata(self) -> AgentMetadata:
-        """Extract metadata from the agent"""
-        return AgentMetadata(
-            agent_name=self.agent_name,
-            agent_type=type(self.agent).__name__,
-            system_prompt=self.system_prompt,
-            config={
-                k: v
-                for k, v in self.agent.__dict__.items()
-                if isinstance(v, (str, int, float, bool, dict, list))
-            },
-        )
+    return random.choice([True, False])
+
+
+def most_recent(history: List[str], agent: Agent) -> bool:
+    """
+    Most recent speaker function.
+    An agent speaks if they are the last speaker.
+    """
+    return (
+        agent.agent_name == history[-1].split(":")[0].strip()
+        if history
+        else True
+    )
 
 
 class GroupChat:
-    """Enhanced GroupChat manager with state persistence and comprehensive logging.
-
-    This class implements a multi-agent chat system with the following key features:
-    - State persistence to disk
-    - Comprehensive interaction logging
-    - Configurable agent selection
-    - Early stopping conditions
-    - Conversation export capabilities
-
-    The GroupChat coordinates multiple agents to have a goal-directed conversation,
-    with one agent speaking at a time based on a selector agent's decisions.
-
-    Attributes:
-        name (Optional[str]): Name of the group chat
-        description (Optional[str]): Description of the group chat's purpose
-        agents (List[Union["Agent", Callable]]): List of participating agents
-        max_rounds (int): Maximum number of conversation rounds
-        admin_name (str): Name of the administrator
-        group_objective (str): The goal/objective of the conversation
-        selector_agent (Union["Agent", Callable]): Agent that selects next speaker
-        rules (Optional[str]): Rules governing the conversation
-        state_path (Optional[str]): Path to save conversation state
-        showcase_agents_on (bool): Whether to showcase agent capabilities
+    """
+    GroupChat class to enable multiple agents to communicate in a synchronous group chat.
+    Each agent is aware of all other agents, every message exchanged, and the social context.
     """
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        agents: List[Union["Agent", Callable]] = None,
-        max_rounds: int = 10,
-        admin_name: str = "Admin",
-        group_objective: str = None,
-        selector_agent: Union["Agent", Callable] = None,
-        rules: Optional[str] = None,
-        state_path: Optional[str] = None,
-        showcase_agents_on: bool = False,
+        name: str = "GroupChat",
+        description: str = "A group chat for multiple agents",
+        agents: List[Agent] = [],
+        speaker_fn: SpeakerFunction = round_robin,
+        max_turns: int = 10,
     ):
-        """Initialize a new GroupChat instance.
+        """
+        Initialize the GroupChat.
 
         Args:
-            name: Name of the group chat
-            description: Description of the group chat's purpose
-            agents: List of participating agents
-            max_rounds: Maximum number of conversation rounds
-            admin_name: Name of the administrator
-            group_objective: The goal/objective of the conversation
-            selector_agent: Agent that selects next speaker
-            rules: Rules governing the conversation
-            state_path: Path to save conversation state
-            showcase_agents_on: Whether to showcase agent capabilities
-
-        Raises:
-            ValueError: If no agents are provided
+            name (str): Name of the group chat.
+            description (str): Description of the purpose of the group chat.
+            agents (List[Agent]): A list of agents participating in the chat.
+            speaker_fn (SpeakerFunction): The function to determine which agent should speak next.
+            max_turns (int): Maximum number of turns in the chat.
         """
         self.name = name
         self.description = description
         self.agents = agents
-        self.max_rounds = max_rounds
-        self.admin_name = admin_name
-        self.group_objective = group_objective
-        self.selector_agent = selector_agent
-        self.rules = rules
-        self.state_path = state_path
-        self.showcase_agents_on = showcase_agents_on
-
-        if not agents:
-            raise ValueError("At least two agents are required")
-
-        # Generate unique state path if not provided
-        self.state_path = (
-            state_path or f"group_chat_{uuid4().hex}.json"
-        )
-
-        # Wrap all agents to standardize interface
-        self.wrapped_agents = [
-            AgentWrapper(
-                agent,
-                (
-                    f"Agent_{i}"
-                    if not hasattr(agent, "agent_name")
-                    else agent.agent_name
-                ),
-            )
-            for i, agent in enumerate(agents)
-        ]
-
-        # Configure selector agent
-        self.selector_agent = AgentWrapper(
-            selector_agent or self.wrapped_agents[0].agent,
-            "Selector",
-            "Select the next speaker based on the conversation context",
-        )
-
-        # Initialize conversation state
-        self.state = GroupChatState(
+        self.speaker_fn = speaker_fn
+        self.max_turns = max_turns
+        self.chat_history = ChatHistory(
+            turns=[],
+            total_messages=0,
             name=name,
             description=description,
-            admin_name=admin_name,
-            group_objective=group_objective,
-            max_rounds=max_rounds,
-            rules=rules,
-            agent_metadata=[
-                agent.get_metadata() for agent in self.wrapped_agents
-            ],
-            messages=[],
-            interactions=[],
         )
 
-        # Showcase agents if enabled
-        if self.showcase_agents_on is True:
-            self.showcase_agents()
-
-    def showcase_agents(self):
-        """Showcase available agents and update their system prompts.
-
-        This method displays agent capabilities and updates each agent's
-        system prompt with information about other agents in the group.
+    def _get_response_sync(
+        self, agent: Agent, prompt: str, turn_number: int
+    ) -> AgentResponse:
         """
-        out = showcase_available_agents(
-            name=self.name,
-            description=self.description,
-            agents=self.wrapped_agents,
-        )
-
-        for agent in self.wrapped_agents:
-            # Initialize system_prompt if None
-            if agent.system_prompt is None:
-                agent.system_prompt = ""
-            agent.system_prompt += out
-
-    def save_state(self) -> None:
-        """Save current conversation state to disk.
-
-        The state is saved as a JSON file at the configured state_path.
-        """
-        with open(self.state_path, "w") as f:
-            json.dump(self.state.dict(), f, default=str, indent=2)
-        logger.info(f"State saved to {self.state_path}")
-
-    @classmethod
-    def load_state(cls, state_path: str) -> "GroupChat":
-        """Load GroupChat from saved state.
+        Get the response from an agent synchronously.
 
         Args:
-            state_path: Path to the saved state JSON file
+            agent (Agent): The agent responding.
+            prompt (str): The message triggering the response.
+            turn_number (int): The current turn number.
 
         Returns:
-            GroupChat: A new GroupChat instance with restored state
-
-        Raises:
-            FileNotFoundError: If state file doesn't exist
-            json.JSONDecodeError: If state file is invalid JSON
-        """
-        with open(state_path, "r") as f:
-            state_dict = json.load(f)
-
-        # Convert loaded data back to state model
-        state = GroupChatState(**state_dict)
-
-        # Initialize with minimal config, then restore state
-        instance = cls(
-            name=state.name,
-            admin_name=state.admin_name,
-            agents=[],  # Temporary empty list
-            group_objective=state.group_objective,
-        )
-        instance.state = state
-        return instance
-
-    def _log_interaction(
-        self,
-        agent_name: str,
-        position: int,
-        input_text: str,
-        output_text: str,
-    ) -> None:
-        """Log a single interaction in the conversation.
-
-        Args:
-            agent_name: Name of the speaking agent
-            position: Position in conversation sequence
-            input_text: Input context provided to agent
-            output_text: Agent's response
-        """
-        log_entry = InteractionLog(
-            agent_name=agent_name,
-            position=position,
-            input_text=input_text,
-            output_text=output_text,
-            metadata={
-                "current_agents": [
-                    a.agent_name for a in self.wrapped_agents
-                ],
-                "round": position // len(self.wrapped_agents),
-            },
-        )
-        self.state.interactions.append(log_entry)
-        self.save_state()
-
-    def _add_message(self, role: str, content: str) -> None:
-        """Add a message to the conversation history.
-
-        Args:
-            role: Speaker's role/name
-            content: Message content
-        """
-        message = Message(role=role, content=content)
-        self.state.messages.append(message)
-        self.save_state()
-
-    def select_next_speaker(
-        self, last_speaker: AgentWrapper
-    ) -> AgentWrapper:
-        """Select the next speaker using the selector agent.
-
-        Args:
-            last_speaker: The agent who spoke last
-
-        Returns:
-            AgentWrapper: The next agent to speak
-
-        Note:
-            Falls back to round-robin selection if selector agent fails
-        """
-        conversation_history = "\n".join(
-            [
-                f"{msg.role}: {msg.content}"
-                for msg in self.state.messages
-            ]
-        )
-
-        selection_prompt = f"""
-        Current speakers: {[agent.agent_name for agent in self.wrapped_agents]}
-        Last speaker: {last_speaker.agent_name}
-        Group objective: {self.state.group_objective}
-        
-        Based on the conversation history and group objective, select the next most appropriate speaker.
-        Only return the speaker's name.
-        
-        Conversation history:
-        {conversation_history}
-        """
-
-        try:
-            next_speaker_name = self.selector_agent.run(
-                selection_prompt
-            ).strip()
-            return next(
-                agent
-                for agent in self.wrapped_agents
-                if agent.agent_name in next_speaker_name
-            )
-        except (StopIteration, Exception) as e:
-            logger.warning(
-                f"Selector agent failed: {str(e)}. Falling back to round-robin."
-            )
-            # Fallback to round-robin if selection fails
-            current_idx = self.wrapped_agents.index(last_speaker)
-            return self.wrapped_agents[
-                (current_idx + 1) % len(self.wrapped_agents)
-            ]
-
-    def run(self, task: str) -> str:
-        """Execute the group chat conversation.
-
-        Args:
-            task: The initial task/question to discuss
-
-        Returns:
-            str: The final response from the conversation
-
-        Raises:
-            Exception: If any error occurs during execution
+            AgentResponse: The agent's response captured in a structured format.
         """
         try:
-            logger.info(f"Starting GroupChat with task: {task}")
-            self._add_message(self.state.admin_name, task)
+            context = f"""You are {agent.name} with role: {agent.system_prompt}.
+                         Other agents: {[a.name for a in self.agents if a != agent]}
+                         Previous messages: {[t.responses[-3:] for t in self.chat_history.turns[-3:]]}"""
 
-            current_speaker = self.wrapped_agents[0]
-            final_response = None
-
-            for round_num in range(self.state.max_rounds):
-                # Select next speaker
-                current_speaker = self.select_next_speaker(
-                    current_speaker
-                )
-                logger.info(
-                    f"Selected speaker: {current_speaker.agent_name}"
-                )
-
-                # Prepare context and get response
-                conversation_history = "\n".join(
-                    [
-                        f"{msg.role}: {msg.content}"
-                        for msg in self.state.messages[
-                            -10:
-                        ]  # Last 10 messages for context
-                    ]
-                )
-
-                try:
-                    response = current_speaker.run(
-                        conversation_history
-                    )
-                    final_response = response
-                except Exception as e:
-                    logger.error(
-                        f"Agent {current_speaker.agent_name} failed: {str(e)}"
-                    )
-                    continue
-
-                # Log interaction and add to message history
-                self._log_interaction(
-                    current_speaker.agent_name,
-                    round_num,
-                    conversation_history,
-                    response,
-                )
-                self._add_message(
-                    current_speaker.agent_name, response
-                )
-
-                # Optional: Add early stopping condition based on response content
-                if (
-                    "TASK_COMPLETE" in response
-                    or "CONCLUSION" in response
-                ):
-                    logger.info(
-                        "Task completion detected, ending conversation"
-                    )
-                    break
-
-            return final_response or "No valid response generated"
-
+            message = agent.run(context + prompt)
+            return AgentResponse(
+                agent_name=agent.name,
+                role=agent.system_prompt,
+                message=message,
+                turn_number=turn_number,
+                preceding_context=self.get_recent_messages(3),
+            )
         except Exception as e:
-            logger.error(f"Error in GroupChat execution: {str(e)}")
-            raise
+            logger.error(f"Error from {agent.name}: {e}")
+            return AgentResponse(
+                agent_name=agent.name,
+                role=agent.system_prompt,
+                message=f"Error generating response: {str(e)}",
+                turn_number=turn_number,
+                preceding_context=[],
+            )
 
-    def get_conversation_summary(self) -> Dict[str, Any]:
-        """Return a summary of the conversation.
-
-        Returns:
-            Dict containing conversation metrics and status
+    def get_recent_messages(self, n: int = 3) -> List[str]:
         """
-        return {
-            "id": self.state.id,
-            "total_interactions": len(self.state.interactions),
-            "participating_agents": [
-                agent.agent_name for agent in self.wrapped_agents
-            ],
-            "conversation_length": len(self.state.messages),
-            "duration": (
-                datetime.utcnow() - self.state.created_at
-            ).total_seconds(),
-            "objective_completed": any(
-                "TASK_COMPLETE" in msg.content
-                for msg in self.state.messages
-            ),
-        }
-
-    def export_conversation(
-        self, format: str = "json"
-    ) -> Union[str, Dict]:
-        """Export the conversation in the specified format.
+        Get the most recent messages in the chat.
 
         Args:
-            format: Output format ("json" or "text")
+            n (int): The number of recent messages to retrieve.
 
         Returns:
-            Union[str, Dict]: Conversation in requested format
-
-        Raises:
-            ValueError: If format is not supported
+            List[str]: The most recent messages in the chat.
         """
-        if format == "json":
-            return self.state.dict()
-        elif format == "text":
-            return "\n".join(
-                [
-                    f"{msg.role} ({msg.timestamp}): {msg.content}"
-                    for msg in self.state.messages
-                ]
+        messages = []
+        for turn in self.chat_history.turns[-n:]:
+            for response in turn.responses:
+                messages.append(
+                    f"{response.agent_name}: {response.message}"
+                )
+        return messages
+
+    def run(self, task: str) -> ChatHistory:
+        """
+        Run the group chat.
+
+        Args:
+            task (str): The initial message to start the chat.
+
+        Returns:
+            ChatHistory: The history of the chat.
+        """
+        try:
+            logger.info(
+                f"Starting chat '{self.name}' with task: {task}"
             )
-        else:
-            raise ValueError(f"Unsupported export format: {format}")
+
+            for turn in range(self.max_turns):
+                current_turn = ChatTurn(
+                    turn_number=turn, responses=[], task=task
+                )
+
+                for agent in self.agents:
+                    if self.speaker_fn(
+                        self.get_recent_messages(), agent
+                    ):
+                        response = self._get_response_sync(
+                            agent, task, turn
+                        )
+                        current_turn.responses.append(response)
+                        self.chat_history.total_messages += 1
+                        logger.debug(
+                            f"Turn {turn}, {agent.name} responded"
+                        )
+
+                self.chat_history.turns.append(current_turn)
+
+            return self.chat_history
+        except Exception as e:
+            logger.error(f"Error in chat: {e}")
+            raise e
+
+    def batched_run(self, tasks: List[str], *args, **kwargs):
+        """
+        Run the group chat with a batch of tasks.
+
+        Args:
+            tasks (List[str]): The list of tasks to run in the chat.
+
+        Returns:
+            List[ChatHistory]: The history of each chat.
+        """
+        return [self.run(task, *args, **kwargs) for task in tasks]
+
+    def concurrent_run(self, tasks: List[str], *args, **kwargs):
+        """
+        Run the group chat with a batch of tasks concurrently using a thread pool.
+
+        Args:
+            tasks (List[str]): The list of tasks to run in the chat.
+
+        Returns:
+            List[ChatHistory]: The history of each chat.
+        """
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            return list(
+                executor.map(
+                    lambda task: self.run(task, *args, **kwargs),
+                    tasks,
+                )
+            )
+
+
+# if __name__ == "__main__":
+
+#     load_dotenv()
+
+#     # Get the OpenAI API key from the environment variable
+#     api_key = os.getenv("OPENAI_API_KEY")
+
+#     # Create an instance of the OpenAIChat class
+#     model = OpenAIChat(
+#         openai_api_key=api_key,
+#         model_name="gpt-4o-mini",
+#         temperature=0.1,
+#     )
+
+#     # Example agents
+#     agent1 = Agent(
+#         agent_name="Financial-Analysis-Agent",
+#         system_prompt="You are a financial analyst specializing in investment strategies.",
+#         llm=model,
+#         max_loops=1,
+#         autosave=False,
+#         dashboard=False,
+#         verbose=True,
+#         dynamic_temperature_enabled=True,
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         output_type="string",
+#         streaming_on=False,
+#     )
+
+#     agent2 = Agent(
+#         agent_name="Tax-Adviser-Agent",
+#         system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
+#         llm=model,
+#         max_loops=1,
+#         autosave=False,
+#         dashboard=False,
+#         verbose=True,
+#         dynamic_temperature_enabled=True,
+#         user_name="swarms_corp",
+#         retry_attempts=1,
+#         context_length=200000,
+#         output_type="string",
+#         streaming_on=False,
+#     )
+
+#     agents = [agent1, agent2]
+
+#     chat = GroupChat(
+#         name="Investment Advisory",
+#         description="Financial and tax analysis group",
+#         agents=agents,
+#         speaker_fn=expertise_based,
+#     )
+
+#     history = chat.run(
+#         "How to optimize tax strategy for investments?"
+#     )
+#     print(history.model_dump_json(indent=2))

@@ -45,12 +45,13 @@ class SequentialWorkflow:
         self.shared_memory_system = shared_memory_system
 
         self.reliability_check()
+        self.flow = self.sequential_flow()
 
         self.agent_rearrange = AgentRearrange(
             name=name,
             description=description,
             agents=agents,
-            flow=self.sequential_flow(),
+            flow=self.flow,
             max_loops=max_loops,
             output_type=output_type,
             return_json=return_json,
