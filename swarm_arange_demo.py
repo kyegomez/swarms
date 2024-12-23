@@ -2,11 +2,9 @@ import os
 
 from swarm_models import OpenAIChat
 
-from swarms import Agent, AgentRearrange
-from swarms.structs.swarm_arange import SwarmRearrange
+from swarms import Agent, AgentRearrange, SwarmRearrange
 
-# model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
-company = "TGSC"
+company = "NVDA"
 
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("GROQ_API_KEY")
@@ -203,16 +201,19 @@ blackstone_market_analysis = AgentRearrange(
 )
 
 swarm_arrange = SwarmRearrange(
+    name = "Blackstone-Swarm",
+    description = "A swarm that processes tasks concurrently using multiple agents and rearranges the flow based on the task requirements.",
     swarms=[
         blackstone_acquisition_analysis,
         blackstone_investment_strategy,
         blackstone_market_analysis,
     ],
     flow=f"{blackstone_acquisition_analysis.name} -> {blackstone_investment_strategy.name} -> {blackstone_market_analysis.name}",
+    max_loops=1,
 )
 
 print(
     swarm_arrange.run(
-        "Analyze AI ETFs, focusing on their performance, market trends, and potential for growth"
+        "Analyze NVIDIA's performance, market trends, and potential for growth in the AI industry"
     )
 )
