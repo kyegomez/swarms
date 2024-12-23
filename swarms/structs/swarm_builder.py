@@ -2,6 +2,7 @@ import os
 import subprocess
 from typing import List, Optional
 
+from loguru import logger
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
 from swarm_models import OpenAIChat
@@ -13,7 +14,6 @@ from tenacity import (
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
-from loguru import logger
 
 logger.add("swarm_builder.log", rotation="10 MB", backtrace=True)
 
@@ -507,7 +507,10 @@ swarm = AutoSwarmBuilder(
     swarm_type="ConcurrentWorkflow",
 )
 
-result = swarm.run(
-    "Design a new AI accelerator chip optimized for transformer model inference..."
-)
-print(result)
+try:
+    result = swarm.run(
+        "Design a new AI accelerator chip optimized for transformer model inference..."
+    )
+    print(result)
+except Exception as e:
+    print(f"An error occurred: {e}")
