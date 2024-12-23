@@ -17,7 +17,7 @@ from swarms.structs.groupchat import (
     ChatHistory,
     ChatTurn,
     AgentResponse,
-    expertise_based
+    expertise_based,
 )
 from swarms.structs.majority_voting import (
     MajorityVoting,
