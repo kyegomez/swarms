@@ -127,43 +127,52 @@ Before you begin, ensure you have the following installed:
                 poetry install --extras "desktop"
                 ```
 
-=== "Using Docker COMING SOON [DOES NOT WORK YET]"
+=== "Using Docker"
 
-    Docker is an excellent option for creating isolated and reproducible environments, suitable for both development and production.
+    Docker is an excellent option for creating isolated and reproducible environments, suitable for both development and production. Contact us if there are any issues with the docker setup
 
     1. **Pull the Docker image:**
 
         ```bash
-        docker pull kyegomez/swarms
+        docker pull swarmscorp/swarms:tagname
+
         ```
 
     2. **Run the Docker container:**
 
         ```bash
-        docker run -it --rm kyegomez/swarms
+        docker run -it --rm swarmscorp/swarms:tagname
         ```
 
     3. **Build and run a custom Docker image:**
 
         ```dockerfile
-        # Dockerfile
-        FROM python:3.10-slim
+        # Use Python 3.11 instead of 3.13
+        FROM python:3.11-slim
 
-        # Set up environment
-        WORKDIR /app
-        COPY . /app
+        # Set environment variables
+        ENV PYTHONDONTWRITEBYTECODE=1 \
+            PYTHONUNBUFFERED=1 \
+            WORKSPACE_DIR="agent_workspace" \
+            OPENAI_API_KEY="your_swarm_api_key_here"
 
-        # Install dependencies
-        RUN pip install --upgrade pip && \
-            pip install -e .
+        # Set the working directory
+        WORKDIR /usr/src/swarms
 
-        CMD ["python", "your_script.py"]
-        ```
+        # Install system dependencies
+        RUN apt-get update && apt-get install -y \
+            build-essential \
+            gcc \
+            g++ \
+            gfortran \
+            && rm -rf /var/lib/apt/lists/*
 
-        ```bash
-        # Build and run the Docker image
-        docker build -t swarms-custom .
-        docker run -it --rm swarms-custom
+        # Install swarms package
+        RUN pip3 install -U swarm-models
+        RUN pip3 install -U swarms
+
+        # Copy the application
+        COPY . .
         ```
 
 === "Using Kubernetes"
