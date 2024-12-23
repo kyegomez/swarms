@@ -1,6 +1,6 @@
 import asyncio
 import csv
-import datetime
+from datetime import datetime  # Correct import statement
 import os
 import uuid
 from typing import List, Union
@@ -16,15 +16,14 @@ from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
-time = datetime.datetime.now().isoformat()
+# Corrected line
+time = datetime.now().isoformat()  # Use datetime.now() instead of datetime.datetime.now()
 uuid_hex = uuid.uuid4().hex
 
 # --------------- NEW CHANGE START ---------------
 # Format time variable to be compatible across operating systems
 formatted_time = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
-# Create the save file path with the formatted time and UUID hex
-self.save_file_path = f"spreadsheet_swarm_{formatted_time}_run_id_{uuid_hex}.csv"
 # --------------- NEW CHANGE END ---------------
 
 class AgentOutput(BaseModel):
