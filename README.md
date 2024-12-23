@@ -1847,7 +1847,7 @@ result = mixture_router.run("Evaluate the potential acquisition of TechStartup I
 A production-grade multi-agent system enabling sophisticated group conversations between AI agents with customizable speaking patterns, parallel processing capabilities, and comprehensive conversation tracking.
 
 
-````python
+```python
 
 import os
 from dotenv import load_dotenv
@@ -1917,8 +1917,6 @@ if __name__ == "__main__":
     print(history.model_dump_json(indent=2))
 
 ```
-
---------
 
 
 ----------
