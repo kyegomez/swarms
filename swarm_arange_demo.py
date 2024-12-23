@@ -1,7 +1,9 @@
-from swarms.structs.swarm_arange import SwarmRearrange
 import os
-from swarms import Agent, AgentRearrange
+
 from swarm_models import OpenAIChat
+
+from swarms import Agent, AgentRearrange
+from swarms.structs.swarm_arange import SwarmRearrange
 
 # model = Anthropic(anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"))
 company = "TGSC"

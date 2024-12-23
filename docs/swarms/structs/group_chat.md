@@ -62,63 +62,74 @@ The GroupChat system consists of several key components:
 ## Basic Usage
 
 ```python
+
 import os
 from dotenv import load_dotenv
 from swarm_models import OpenAIChat
-from swarms import Agent, GroupChat
-from loguru import logger
+from swarms import Agent, GroupChat, expertise_based
 
-# Load environment variables
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
 
-# Initialize LLM
-model = OpenAIChat(
-    openai_api_key=api_key,
-    model_name="gpt-4o-mini",
-    temperature=0.1
-)
+if __name__ == "__main__":
 
-# Create financial analyst agent
-financial_analyst = Agent(
-    agent_name="Financial-Analysis-Agent",
-    system_prompt="You are a financial analyst specializing in investment strategies.",
-    llm=model,
-    max_loops=1,
-    autosave=False,
-    dashboard=False,
-    verbose=True,
-    dynamic_temperature_enabled=True,
-    retry_attempts=1,
-    context_length=200000,
-    output_type="string"
-)
+    load_dotenv()
 
-# Create tax advisor agent
-tax_advisor = Agent(
-    agent_name="Tax-Adviser-Agent", 
-    system_prompt="You are a tax adviser providing clear tax guidance.",
-    llm=model,
-    max_loops=1,
-    autosave=False,
-    dashboard=False,
-    verbose=True,
-    dynamic_temperature_enabled=True,
-    retry_attempts=1,
-    context_length=200000,
-    output_type="string"
-)
+    # Get the OpenAI API key from the environment variable
+    api_key = os.getenv("OPENAI_API_KEY")
 
-# Initialize group chat
-chat = GroupChat(
-    name="Investment Advisory",
-    description="Financial and tax analysis group",
-    agents=[financial_analyst, tax_advisor],
-    speaker_fn=expertise_based
-)
+    # Create an instance of the OpenAIChat class
+    model = OpenAIChat(
+        openai_api_key=api_key,
+        model_name="gpt-4o-mini",
+        temperature=0.1,
+    )
 
-# Run conversation
-history = chat.run("How to optimize tax strategy for investments?")
+    # Example agents
+    agent1 = Agent(
+        agent_name="Financial-Analysis-Agent",
+        system_prompt="You are a financial analyst specializing in investment strategies.",
+        llm=model,
+        max_loops=1,
+        autosave=False,
+        dashboard=False,
+        verbose=True,
+        dynamic_temperature_enabled=True,
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        output_type="string",
+        streaming_on=False,
+    )
+
+    agent2 = Agent(
+        agent_name="Tax-Adviser-Agent",
+        system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
+        llm=model,
+        max_loops=1,
+        autosave=False,
+        dashboard=False,
+        verbose=True,
+        dynamic_temperature_enabled=True,
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        output_type="string",
+        streaming_on=False,
+    )
+
+    agents = [agent1, agent2]
+
+    chat = GroupChat(
+        name="Investment Advisory",
+        description="Financial and tax analysis group",
+        agents=agents,
+        speaker_fn=expertise_based,
+    )
+
+    history = chat.run(
+        "How to optimize tax strategy for investments?"
+    )
+    print(history.model_dump_json(indent=2))
+
 ```
 
 ## Speaker Functions
