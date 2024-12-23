@@ -201,8 +201,8 @@ blackstone_market_analysis = AgentRearrange(
 )
 
 swarm_arrange = SwarmRearrange(
-    name = "Blackstone-Swarm",
-    description = "A swarm that processes tasks concurrently using multiple agents and rearranges the flow based on the task requirements.",
+    name="Blackstone-Swarm",
+    description="A swarm that processes tasks concurrently using multiple agents and rearranges the flow based on the task requirements.",
     swarms=[
         blackstone_acquisition_analysis,
         blackstone_investment_strategy,
