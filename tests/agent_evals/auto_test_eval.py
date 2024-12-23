@@ -93,13 +93,13 @@ class SwarmsIssueReporter:
         self.last_issue_time = datetime.now()
 
     def _get_swarms_version(self) -> str:
-        """Get the installed version of Swarms."""
-        try:
-            import swarms
+    """Get the installed version of Swarms."""
+    try:
+        import swarms
 
-            return swarms.__version__
-        except:
-            return "Unknown"
+        return swarms.__version__
+    except:
+        return "Unknown"
 
     def _get_gpu_info(self) -> Tuple[bool, Optional[str]]:
     """Get GPU information and CUDA availability."""
