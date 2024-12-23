@@ -74,10 +74,12 @@ docstring_parser = "0.16" # TODO:
 tiktoken = "*"
 networkx = "*"
 aiofiles = "*"
-clusterops = "*"
 # chromadb = "*"
 rich = "*"
 # sentence-transformers = "*"
+swarm-models = "*"
+termcolor = "*"
+clusterops = "*"
 
 
 # [tool.poetry.extras]
