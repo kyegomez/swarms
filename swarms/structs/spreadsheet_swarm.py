@@ -16,8 +16,13 @@ from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
-# Replace timestamp-based time with a UUID for file naming
-run_id = uuid.uuid4().hex  # Unique identifier for each run
+time = datetime.datetime.now().isoformat()
+uuid_hex = uuid.uuid4().hex
+
+# --------------- NEW CHANGE START ---------------
+# Format time variable to be compatible across operating systems
+formatted_time = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+# --------------- NEW CHANGE END ---------------
 
 class AgentOutput(BaseModel):
     agent_name: str
