@@ -1,6 +1,6 @@
 import asyncio
 import csv
-import datetime
+from datetime import datetime  # Correct import statement
 import os
 import uuid
 from typing import List, Union
@@ -16,15 +16,14 @@ from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
-time = datetime.datetime.now().isoformat()
+# Corrected line
+time = datetime.now().isoformat()  # Use datetime.now() instead of datetime.datetime.now()
 uuid_hex = uuid.uuid4().hex
 
 # --------------- NEW CHANGE START ---------------
 # Format time variable to be compatible across operating systems
 formatted_time = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
-# Create the save file path with the formatted time and UUID hex
-self.save_file_path = f"spreadsheet_swarm_{formatted_time}_run_id_{uuid_hex}.csv"
 # --------------- NEW CHANGE END ---------------
 
 class AgentOutput(BaseModel):
@@ -151,8 +150,14 @@ class SpreadSheetSwarm(BaseSwarm):
         logger.info(f"Running the swarm with task: {task}")
         self.metadata.start_time = time
 
-        # Run the asyncio event loop
-        asyncio.run(self._run_tasks(task, *args, **kwargs))
+        # Check if we're already in an event loop
+        if asyncio.get_event_loop().is_running():
+            # If so, create and run tasks directly using `create_task` without `asyncio.run`
+            task_future = asyncio.create_task(self._run_tasks(task, *args, **kwargs))
+            asyncio.get_event_loop().run_until_complete(task_future)
+        else:
+            # If no event loop is running, run using `asyncio.run`
+            asyncio.run(self._run_tasks(task, *args, **kwargs))
 
         self.metadata.end_time = time
 
