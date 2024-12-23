@@ -213,6 +213,6 @@ swarm_arrange = SwarmRearrange(
 
 print(
     swarm_arrange.run(
-        "Analyze swarms, 150k revenue with 45m+ agents build, with 1.4m downloads since march 2024"
+        "Analyze AI ETFs, focusing on their performance, market trends, and potential for growth"
     )
 )

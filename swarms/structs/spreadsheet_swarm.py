@@ -21,10 +21,7 @@ uuid_hex = uuid.uuid4().hex
 
 # --------------- NEW CHANGE START ---------------
 # Format time variable to be compatible across operating systems
-formatted_time = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-
-# Create the save file path with the formatted time and UUID hex
-self.save_file_path = f"spreadsheet_swarm_{formatted_time}_run_id_{uuid_hex}.csv"
+formatted_time = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 # --------------- NEW CHANGE END ---------------
 
 class AgentOutput(BaseModel):
