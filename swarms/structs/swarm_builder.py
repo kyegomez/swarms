@@ -1,8 +1,7 @@
 import os
+import subprocess
 from typing import List, Optional
 
-from dotenv import load_dotenv
-from openai import OpenAI
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
 from swarm_models import OpenAIChat
@@ -17,8 +16,6 @@ from swarms.structs.swarm_router import SwarmRouter, SwarmType
 from loguru import logger
 
 logger.add("swarm_builder.log", rotation="10 MB", backtrace=True)
-
-load_dotenv()
 
 
 class OpenAIFunctionCaller:
@@ -47,6 +44,16 @@ class OpenAIFunctionCaller:
         self.temperature = temperature
         self.base_model = base_model
         self.max_tokens = max_tokens
+        
+        
+        try:
+            from openai import OpenAI
+        except ImportError:
+            logger.error("OpenAI library not found. Please install the OpenAI library by running 'pip install openai'")
+            subprocess.run(["pip", "install", "openai"])
+            from openai import OpenAI
+        
+        
         self.client = OpenAI(api_key=api_key)
 
     def run(self, task: str, *args, **kwargs) -> BaseModel:
