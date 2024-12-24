@@ -24,7 +24,6 @@ uuid_hex = uuid.uuid4().hex
 # Format time variable to be compatible across operating systems
 
 formatted_time = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-
 # --------------- NEW CHANGE END ---------------
 
 
