@@ -9,11 +9,10 @@ from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.loguru_logger import initialize_logger
 from swarm_models import OpenAIChat
-
+import re  # Import the regular expression module
 
 # Initialize logger
 logger = initialize_logger(log_folder="swarm_ui")
-
 
 # Load environment variables
 load_dotenv()
@@ -38,7 +37,6 @@ model = OpenAIChat(
 
 PROMPT_JSON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_prompts.json")
 logger.info(f"Loading prompts from: {PROMPT_JSON_PATH}")
-
 
 def load_prompts_from_json() -> Dict[str, str]:
     try:
@@ -69,13 +67,12 @@ def load_prompts_from_json() -> Dict[str, str]:
                     "agent.onboarding_agent": "You are an onboarding agent..."
                 }
 
-
             prompts = {}
             for agent_name, details in data.items():
                 if not isinstance(details, dict) or "system_prompt" not in details:
                    continue
 
-                prompts[f"agent-{agent_name}"] = details["system_prompt"]
+                prompts[f"agent.{agent_name}"] = details["system_prompt"]
 
             if not prompts:
                # Load default prompts
@@ -95,9 +92,7 @@ def load_prompts_from_json() -> Dict[str, str]:
             "agent.onboarding_agent": "You are an onboarding agent..."
         }
 
-
 AGENT_PROMPTS = load_prompts_from_json()
-
 
 def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]:
     agents = []
@@ -136,12 +131,8 @@ def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]
 
     return agents
 
-
 async def execute_task(task: str, max_loops: int, dynamic_temp: float,
                         swarm_type: str, agent_keys: List[str], flow: str = None) -> Tuple[Any, 'SwarmRouter', str]:
-    """
-    Enhanced task execution with comprehensive error handling and raw result return.
-    """
     try:
         # Initialize agents
         try:
@@ -187,26 +178,25 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
                     pass
                 os.remove(output_path)  # Clean up the test file
             except OSError as e:
-                 return None, None, str(e)
+                return None, None, str(e)
 
             router_kwargs["output_path"] = output_path
         # Create and execute SwarmRouter
         try:
             timeout = 450 if swarm_type != "SpreadSheetSwarm" else 900  # SpreadSheetSwarm will have different timeout.
             router = SwarmRouter(**router_kwargs)
-            
+
             if swarm_type == "AgentRearrange":
                  result = await asyncio.wait_for(
                     asyncio.to_thread(router._run, task),
                     timeout=timeout
                 )
                  return result, router, ""
-            
+
             result = await asyncio.wait_for(
                 asyncio.to_thread(router.run, task),
                 timeout=timeout
             )
-
 
             if swarm_type == "SpreadSheetSwarm":
                 # Verify the output file was created
@@ -225,6 +215,102 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
     except Exception as e:
         return None, None, str(e)
 
+def parse_agent_rearrange_output(data: Optional[str]) -> str:
+    """
+    Parses the AgentRearrange output string and formats it for display.
+    """
+    if data is None:
+        return "Error: No data provided for parsing."
+
+    print(f"Raw data received for parsing:\n{data}")  # Debug: Print raw data
+
+    try:
+        parsed_data = json.loads(data)
+
+        if "input" not in parsed_data or not isinstance(parsed_data.get("input"), dict):
+            return "Error: 'input' data is missing or not a dictionary."
+        
+        if "swarm_id" not in parsed_data["input"] :
+            return "Error: 'swarm_id' key is missing in the 'input'."
+        
+        if "name" not in parsed_data["input"]:
+           return "Error: 'name' key is missing in the 'input'."
+        
+        if "flow" not in parsed_data["input"]:
+           return "Error: 'flow' key is missing in the 'input'."
+        
+        if "time" not in parsed_data :
+           return "Error: 'time' key is missing."
+
+        swarm_id = parsed_data["input"]["swarm_id"]
+        swarm_name = parsed_data["input"]["name"]
+        agent_flow = parsed_data["input"]["flow"]
+        overall_time = parsed_data["time"]
+
+
+        output = f"**Workflow Execution Details**\n\n"
+        output += f"*   **Swarm ID:** `{swarm_id}`\n"
+        output += f"*   **Swarm Name:** `{swarm_name}`\n"
+        output += f"*   **Agent Flow:** `{agent_flow}`\n\n---\n"
+        output += f"**Agent Task Execution**\n\n"
+
+        if "outputs" not in parsed_data:
+            return "Error: 'outputs' key is missing"
+            
+        if  parsed_data["outputs"] is None:
+            return "Error: 'outputs' data is None"
+            
+        if not isinstance(parsed_data["outputs"], list):
+            return "Error: 'outputs' data is not a list."
+
+        for i, agent_output in enumerate(parsed_data["outputs"], start=1):
+            if not isinstance(agent_output, dict):
+                 return f"Error: Agent output at index {i} is not a dictionary"
+            
+            if "agent_name" not in agent_output:
+                return f"Error: 'agent_name' key is missing at index {i}"
+            
+            if "steps" not in agent_output:
+               return f"Error: 'steps' key is missing at index {i}"
+            
+            if agent_output["steps"] is None:
+               return f"Error: 'steps' data is None at index {i}"
+            
+            if not isinstance(agent_output["steps"], list):
+               return f"Error: 'steps' data is not a list at index {i}"
+
+            agent_name = agent_output["agent_name"]
+            output += f"**Run {i} (Agent: `{agent_name}`)**\n\n"
+            output += "<details>\n<summary>Show/Hide Agent Steps</summary>\n\n"
+
+            # Iterate over steps
+            for j, step in enumerate(agent_output["steps"], start=1):
+                 if not isinstance(step, dict):
+                     return f"Error: step at index {j} is not a dictionary at {i} agent output."
+                 
+                 if step is None:
+                     return f"Error: step at index {j} is None at {i} agent output"
+
+                 if "role" not in step:
+                     return f"Error: 'role' key missing at step {j} at {i} agent output."
+                 
+                 if "content" not in step:
+                    return f"Error: 'content' key missing at step {j} at {i} agent output."
+                
+                 role = step["role"]
+                 content = step["content"]
+                 output += f"  **Step {j}:** ({role})\n"
+                 output += f"  > {content}\n\n"
+
+            output += "</details>\n\n---\n"
+
+        output += f"**Overall Completion Time:** `{overall_time}`"
+        return output
+    except json.JSONDecodeError as e :
+       return f"Error during parsing: json.JSONDecodeError {e}"
+    
+    except Exception as e:
+        return f"Error during parsing: {str(e)}"
 
 class UI:
     def __init__(self, theme):
@@ -351,7 +437,7 @@ class UI:
             - Data Extraction Agent: Specialized in extracting relevant information
             - Summary Agent: Creates concise summaries of information
             - Analysis Agent: Performs detailed analysis of data
-            
+
             **Swarm Types:**
             - ConcurrentWorkflow: Agents work in parallel
             - SequentialWorkflow: Agents work in sequence
@@ -373,7 +459,6 @@ class UI:
                 lines=10
             )
             return logs_display
-
 
 def create_app():
     # Initialize UI
@@ -504,10 +589,7 @@ def create_app():
                     )
 
                 async def run_task_wrapper(task, max_loops, dynamic_temp, swarm_type, agent_prompt_selector, flow_text):
-                    """
-                    Execute the task and update the UI with progress, saving the raw AgentRearrange response
-                    and parsing it for display.
-                    """
+                    """Execute the task and update the UI with progress."""
                     try:
                         if not task:
                             yield "Please provide a task description.", "Error: Missing task"
@@ -528,7 +610,7 @@ def create_app():
                                 return
                             flow = flow_text
 
-                        # Execute the task
+                        # Execute task
                         result, router, error = await execute_task(
                             task=task,
                             max_loops=max_loops,
@@ -542,72 +624,33 @@ def create_app():
                             yield f"Error: {error}", "Error occurred"
                             return
 
-                        # Process result based on swarm type
-                        if swarm_type == "AgentRearrange":
-                            # Store raw response in a temporary JSON file
-                            temp_json_path = "temp_agent_rearrange.json"
-                            with open(temp_json_path, "w", encoding="utf-8") as temp_file:
-                                json.dump(result, temp_file, indent=4)
-
-                            # Read from the temporary JSON file
-                            with open(temp_json_path, "r", encoding="utf-8") as temp_file:
-                                temp_json = json.load(temp_file)
-
-                            # Parse and format the JSON output
-                            formatted_output = parse_agent_rearrange_output(temp_json)
-                            yield formatted_output, "Completed"
-                            return
-
-                        # Generic processing for other swarm types
+                        # Format output based on swarm type
                         output_lines = []
-                        if isinstance(result, dict):  # For JSON-like outputs
-                            for key, value in result.items():
-                                output_lines.append(f"### {key} ###\n{value}\n{'=' * 50}\n")
+                        if swarm_type == "SpreadSheetSwarm":
+                            output_lines.append(f"### Spreadsheet Output ###\n{result}\n{'=' * 50}\n")
+                        elif swarm_type == "AgentRearrange":
+                           parsed_output = parse_agent_rearrange_output(result)
+                           output_lines.append(parsed_output)
+                        elif isinstance(result, dict):  # checking if result is dict or string.
+
+                            if swarm_type == "MixtureOfAgents":
+                                # Add individual agent outputs
+                                for key, value in result.items():
+                                    if key != "Aggregated Summary":
+                                        output_lines.append(f"### {key} ###\n{value}\n")
+                                # Add aggregated summary at the end
+                                if "Aggregated Summary" in result:
+                                    output_lines.append(f"\n### Aggregated Summary ###\n{result['Aggregated Summary']}\n{'=' * 50}\n")
+                            else:  # SequentialWorkflow, ConcurrentWorkflow, Auto
+                                for key, value in result.items():
+                                    output_lines.append(f"### {key} ###\n{value}\n{'=' * 50}\n")
                         elif isinstance(result, str):
-                            output_lines.append(result)
+                            output_lines.append(str(result))
 
                         yield "\n".join(output_lines), "Completed"
 
                     except Exception as e:
                         yield f"Error: {str(e)}", "Error occurred"
-
-
-                def parse_agent_rearrange_output(raw_json: dict) -> str:
-                    """
-                    Parse the AgentRearrange JSON output and format it for display.
-                    """
-                    output_lines = []
-
-                    # Input Section
-                    input_data = raw_json.get("input", {})
-                    swarm_id = input_data.get("swarm_id", "N/A")
-                    swarm_name = input_data.get("name", "N/A")
-                    flow = input_data.get("flow", "N/A")
-
-                    output_lines.append(f"### Swarm ID: {swarm_id} ###")
-                    output_lines.append(f"### Swarm Name: {swarm_name} ###")
-                    output_lines.append(f"### Flow: {flow} ###")
-
-
-                    # Outputs Section
-                    outputs = raw_json.get("outputs", [])
-                    for i, agent_output in enumerate(outputs, start=1):
-                        agent_name = agent_output.get("agent_name", "N/A")
-                        task = agent_output.get("task", "N/A")
-                        output_lines.append(f"\n#### Agent: {agent_name} (Step {i}) ####")
-                        output_lines.append(f"Task: {task}")
-
-                        # Steps Section
-                        steps = agent_output.get("steps", [])
-                        for step_idx, step in enumerate(steps, start=1):
-                            role = step.get("role", "N/A")
-                            content = step.get("content", "N/A")
-                            output_lines.append(f"  - **Loop 1: Role:** {role} **Content:** {content}")
-
-                        output_lines.append(f"{'=' * 30}\n")
-
-                    return "\n".join(output_lines)
-
 
                 # Connect the update functions
                 agent_selector.change(
