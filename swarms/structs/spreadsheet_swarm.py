@@ -23,7 +23,6 @@ uuid_hex = uuid.uuid4().hex
 # --------------- NEW CHANGE START ---------------
 # Format time variable to be compatible across operating systems
 formatted_time = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-
 # --------------- NEW CHANGE END ---------------
 
 class AgentOutput(BaseModel):
@@ -72,7 +71,7 @@ class SpreadSheetSwarm(BaseSwarm):
     def __init__(
         self,
         name: str = "Spreadsheet-Swarm",
-        description: str = "A swarm that that processes tasks concurrently using multiple agents and saves the metadata to a CSV file.",
+        description: str = "A swarm that processes tasks concurrently using multiple agents and saves the metadata to a CSV file.",
         agents: Union[Agent, List[Agent]] = [],
         autosave_on: bool = True,
         save_file_path: str = None,
@@ -270,38 +269,19 @@ class SpreadSheetSwarm(BaseSwarm):
         """
         Save the swarm metadata to a CSV file.
         """
-        logger.info(
-            f"Saving swarm metadata to: {self.save_file_path}"
-        )
+        logger.info(f"Saving swarm metadata to: {self.save_file_path}")
         run_id = uuid.uuid4()
 
         # Check if file exists before opening it
         file_exists = os.path.exists(self.save_file_path)
 
-        async with aiofiles.open(
-            self.save_file_path, mode="a"
-        ) as file:
-            writer = csv.writer(file)
-
+        async with aiofiles.open(self.save_file_path, mode="a") as file:
             # Write header if file doesn't exist
             if not file_exists:
-                await writer.writerow(
-                    [
-                        "Run ID",
-                        "Agent Name",
-                        "Task",
-                        "Result",
-                        "Timestamp",
-                    ]
-                )
+                header = "Run ID,Agent Name,Task,Result,Timestamp\n"
+                await file.write(header)
 
+            # Write each output as a new row
             for output in self.metadata.outputs:
-                await writer.writerow(
-                    [
-                        str(run_id),
-                        output.agent_name,
-                        output.task,
-                        output.result,
-                        output.timestamp,
-                    ]
-                )
+                row = f"{run_id},{output.agent_name},{output.task},{output.result},{output.timestamp}\n"
+                await file.write(row)

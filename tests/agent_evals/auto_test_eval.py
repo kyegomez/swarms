@@ -117,7 +117,15 @@ class SwarmsIssueReporter:
         return False, None
     except RuntimeError as e:
         # Handle CUDA-related errors
-        print(f"Error: {e}")
+        print(f"Error: {e}")def _get_swarms_version(self) -> str:
+    """Get the installed version of Swarms."""
+    try:
+        import swarms
+
+        return swarms.__version__
+    except:
+        return "Unknown"
+
         return False, None
     except Exception as e:
         # Catch any other exceptions
