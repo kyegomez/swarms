@@ -69,7 +69,7 @@ def main():
     print("Exported JSON metadata:")
     print(swarm_json)
 
-    # Log agent data
+    # Log agent data (without ClusterOps imports)
     print("Logging agent data:")
     print(log_agent_data(swarm.metadata.model_dump()))
 

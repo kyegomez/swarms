@@ -1,6 +1,6 @@
 import asyncio
 import csv
-from datetime import datetime  # Correct import statement
+from datetime import datetime
 import os
 import uuid
 from typing import List, Union
@@ -16,14 +16,8 @@ from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
-# Corrected line
-time = datetime.now().isoformat()  # Use datetime.now() instead of datetime.datetime.now()
-uuid_hex = uuid.uuid4().hex
-
-# --------------- NEW CHANGE START ---------------
-# Format time variable to be compatible across operating systems
-formatted_time = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-# --------------- NEW CHANGE END ---------------
+# Replace timestamp-based time with a UUID for file naming
+run_id = uuid.uuid4().hex  # Unique identifier for each run
 
 class AgentOutput(BaseModel):
     agent_name: str
@@ -34,13 +28,13 @@ class AgentOutput(BaseModel):
 
 class SwarmRunMetadata(BaseModel):
     run_id: str = Field(
-        default_factory=lambda: f"spreadsheet_swarm_run_{uuid_hex}"
+        default_factory=lambda: f"spreadsheet_swarm_run_{run_id}"
     )
     name: str
     description: str
     agents: List[str]
     start_time: str = Field(
-        default_factory=lambda: time,
+        default_factory=lambda: str(datetime.now().timestamp()),  # Numeric timestamp
         description="The start time of the swarm run.",
     )
     end_time: str
@@ -94,17 +88,18 @@ class SpreadSheetSwarm(BaseSwarm):
         self.max_loops = max_loops
         self.workspace_dir = workspace_dir
 
-        # --------------- NEW CHANGE START ---------------
-        # The save_file_path now uses the formatted_time and uuid_hex
-        self.save_file_path = f"spreadsheet_swarm_{formatted_time}_run_id_{uuid_hex}.csv"
-        # --------------- NEW CHANGE END ---------------
+        # Create a timestamp without colons or periods
+        timestamp = datetime.now().isoformat().replace(":", "_").replace(".", "_")
+
+        # Use this timestamp in the CSV filename
+        self.save_file_path = f"spreadsheet_swarm_{timestamp}_run_id_{run_id}.csv"
 
         self.metadata = SwarmRunMetadata(
-            run_id=f"spreadsheet_swarm_run_{time}",
+            run_id=f"spreadsheet_swarm_run_{run_id}",
             name=name,
             description=description,
             agents=[agent.name for agent in agents],
-            start_time=time,
+            start_time=str(datetime.now().timestamp()),  # Numeric timestamp
             end_time="",
             tasks_completed=0,
             outputs=[],
@@ -147,7 +142,7 @@ class SpreadSheetSwarm(BaseSwarm):
 
         """
         logger.info(f"Running the swarm with task: {task}")
-        self.metadata.start_time = time
+        self.metadata.start_time = str(datetime.now().timestamp())  # Numeric timestamp
 
         # Check if we're already in an event loop
         if asyncio.get_event_loop().is_running():
@@ -158,7 +153,7 @@ class SpreadSheetSwarm(BaseSwarm):
             # If no event loop is running, run using `asyncio.run`
             asyncio.run(self._run_tasks(task, *args, **kwargs))
 
-        self.metadata.end_time = time
+        self.metadata.end_time = str(datetime.now().timestamp())  # Numeric timestamp
 
         # Synchronously save metadata
         logger.info("Saving metadata to CSV and JSON...")
@@ -233,7 +228,7 @@ class SpreadSheetSwarm(BaseSwarm):
                 agent_name=agent_name,
                 task=task,
                 result=result,
-                timestamp=time,
+                timestamp=str(datetime.now().timestamp()),  # Numeric timestamp
             )
         )
 
