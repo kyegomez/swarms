@@ -8,7 +8,7 @@ import gradio as gr
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.loguru_logger import initialize_logger
-from swarm_models import OpenAIChat  
+from swarm_models import OpenAIChat
 
 
 # Initialize logger
@@ -39,57 +39,10 @@ model = OpenAIChat(
 PROMPT_JSON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_prompts.json")
 logger.info(f"Loading prompts from: {PROMPT_JSON_PATH}")
 
-# Global log storage
-
-execution_logs = []
-
-
-def log_event(level: str, message: str, metadata: Optional[Dict] = None):
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    log_entry = {
-        "timestamp": timestamp,
-        "level": level,
-        "message": message,
-        "metadata": metadata or {}
-    }
-    execution_logs.append(log_entry)
-    log_func = getattr(logger, level.lower(), logger.info)
-    log_func(message)
-
-
-def get_logs(router: Optional['SwarmRouter'] = None) -> List[str]:
-    formatted_logs = []
-    for log in execution_logs:
-        metadata_str = ""
-        if log["metadata"]:
-            metadata_str = f" | Metadata: {json.dumps(log['metadata'])}"
-        formatted_logs.append(
-            f"[{log['timestamp']}] {log['level'].upper()}: {log['message']}{metadata_str}"
-        )
-
-    # Add router logs if available
-    if router and hasattr(router, 'get_logs'):
-        try:
-            router_logs = router.get_logs()
-            formatted_logs.extend([
-                f"[{log.timestamp}] ROUTER - {log.level}: {log.message}"
-                for log in router_logs
-            ])
-        except Exception as e:
-            formatted_logs.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Failed to get router logs: {str(e)}")
-
-    return formatted_logs
-
-
-def clear_logs():
-    execution_logs.clear()
-
 
 def load_prompts_from_json() -> Dict[str, str]:
     try:
         if not os.path.exists(PROMPT_JSON_PATH):
-            error_msg = f"Prompts file not found at: {PROMPT_JSON_PATH}"
-            log_event("error", error_msg)
             # Load default prompts
             return {
                 "agent.data_extractor": "You are a data extraction agent...",
@@ -100,27 +53,7 @@ def load_prompts_from_json() -> Dict[str, str]:
         with open(PROMPT_JSON_PATH, 'r', encoding='utf-8') as f:
             try:
                 data = json.load(f)
-            except json.JSONDecodeError as e:
-                error_msg = f"Invalid JSON in prompts file: {str(e)}"
-                log_event("error", error_msg)
-                raise
-
-            if not isinstance(data, dict):
-                error_msg = "Prompts file must contain a JSON object"
-                log_event("error", error_msg)
-                raise ValueError(error_msg)
-
-            prompts = {}
-            for agent_name, details in data.items():
-                if not isinstance(details, dict) or "system_prompt" not in details:
-                    log_event("warning", f"Skipping invalid agent config: {agent_name}")
-                    continue
-
-                prompts[f"agent.{agent_name}"] = details["system_prompt"]
-
-            if not prompts:
-                error_msg = "No valid prompts found in prompts file"
-                log_event("error", error_msg)
+            except json.JSONDecodeError:
                 # Load default prompts
                 return {
                     "agent.data_extractor": "You are a data extraction agent...",
@@ -128,12 +61,33 @@ def load_prompts_from_json() -> Dict[str, str]:
                     "agent.onboarding_agent": "You are an onboarding agent..."
                 }
 
-            log_event("info", f"Successfully loaded {len(prompts)} prompts from JSON")
+            if not isinstance(data, dict):
+                # Load default prompts
+                 return {
+                    "agent.data_extractor": "You are a data extraction agent...",
+                    "agent.summarizer": "You are a summarization agent...",
+                    "agent.onboarding_agent": "You are an onboarding agent..."
+                }
+
+
+            prompts = {}
+            for agent_name, details in data.items():
+                if not isinstance(details, dict) or "system_prompt" not in details:
+                   continue
+
+                prompts[f"agent.{agent_name}"] = details["system_prompt"]
+
+            if not prompts:
+               # Load default prompts
+                return {
+                    "agent.data_extractor": "You are a data extraction agent...",
+                    "agent.summarizer": "You are a summarization agent...",
+                    "agent.onboarding_agent": "You are an onboarding agent..."
+                }
+
             return prompts
 
-    except Exception as e:
-        error_msg = f"Error loading prompts: {str(e)}"
-        log_event("error", error_msg)
+    except Exception:
         # Load default prompts
         return {
             "agent.data_extractor": "You are a data extraction agent...",
@@ -188,18 +142,12 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
     """
     Enhanced task execution with comprehensive error handling and raw result return.
     """
-    start_time = time.time()
-    log_event("info", f"Starting task execution: {task}")
-
     try:
         # Initialize agents
         try:
             agents = initialize_agents(dynamic_temp, agent_keys)
-            log_event("info", f"Successfully initialized {len(agents)} agents")
         except Exception as e:
-            error_msg = f"Agent initialization error: {str(e)}"
-            log_event("error", error_msg)
-            return None, None, error_msg
+            return None, None, str(e)
 
         # Swarm-specific configurations
         router_kwargs = {
@@ -210,9 +158,9 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
             "autosave": True,
             "return_json": True,
             "output_type": "string",
-            "swarm_type": swarm_type, # Pass swarm_type here
+            "swarm_type": swarm_type,  # Pass swarm_type here
         }
-        
+
         if swarm_type == "AgentRearrange":
             if not flow:
                 return None, None, "Flow configuration is required for AgentRearrange"
@@ -223,15 +171,15 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
                 return None, None, "MixtureOfAgents requires at least 2 agents"
 
         if swarm_type == "SpreadSheetSwarm":
-             # spread sheet swarm needs specific setup
+            # spread sheet swarm needs specific setup
             output_dir = "swarm_outputs"
             os.makedirs(output_dir, exist_ok=True)
-            
+
             # Create a sanitized filename using only safe characters
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             output_file = f"swarm_output_{timestamp}.csv"
             output_path = os.path.join(output_dir, output_file)
-            
+
             # Validate the output path
             try:
                 # Ensure the path is valid and writable
@@ -239,14 +187,12 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
                     pass
                 os.remove(output_path)  # Clean up the test file
             except OSError as e:
-                error_msg = f"Invalid output path: {str(e)}"
-                log_event("error", error_msg)
-                return None, None, error_msg
-            
+                return None, None, str(e)
+
             router_kwargs["output_path"] = output_path
         # Create and execute SwarmRouter
         try:
-            timeout = 450 if swarm_type != "SpreadSheetSwarm" else 900 # SpreadSheetSwarm will have different timeout.
+            timeout = 450 if swarm_type != "SpreadSheetSwarm" else 900  # SpreadSheetSwarm will have different timeout.
             router = SwarmRouter(**router_kwargs)
             
             if swarm_type == "AgentRearrange":
@@ -257,34 +203,27 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
                  return result, router, ""
             
             result = await asyncio.wait_for(
-                 asyncio.to_thread(router.run, task),
+                asyncio.to_thread(router.run, task),
                 timeout=timeout
             )
-        
+
+
             if swarm_type == "SpreadSheetSwarm":
                 # Verify the output file was created
                 if not os.path.exists(output_path):
-                    error_msg = "Output file was not created"
-                    log_event("error", error_msg)
-                    return None, None, error_msg
-                
+                    return None, None, "Output file was not created"
+
                 return output_path, router, ""
-                
+
             return result, router, ""
 
         except asyncio.TimeoutError:
-                error_msg = f"Task execution timed out after {timeout} seconds"
-                log_event("error", error_msg)
-                return None, None, error_msg
+            return None, None, f"Task execution timed out after {timeout} seconds"
         except Exception as e:
-            error_msg = f"Task execution error: {str(e)}"
-            log_event("error", error_msg)
-            return None, None, error_msg
+            return None, None, str(e)
 
     except Exception as e:
-        error_msg = f"Unexpected error in task execution: {str(e)}"
-        log_event("error", error_msg)
-        return None, None, error_msg
+        return None, None, str(e)
 
 
 class UI:
@@ -538,10 +477,8 @@ def create_app():
                 def update_flow_agents(agent_keys):
                     """Update flow agents based on selected agent prompts."""
                     if not agent_keys:
-                        log_event("warning", "No agents selected for flow configuration")
-                        return [], "No agents selected"
+                       return [], "No agents selected"
                     agent_names = [key.split('.')[-1] for key in agent_keys]
-                    log_event("info", f"Updated flow agents with {len(agent_names)} agents")
                     return agent_names, "Select agents in execution order"
 
                 def update_flow_preview(selected_flow_agents):
@@ -549,7 +486,6 @@ def create_app():
                     if not selected_flow_agents:
                         return "Flow will be shown here..."
                     flow = " -> ".join(selected_flow_agents)
-                    log_event("info", f"Updated flow preview: {flow}")
                     return flow
 
                 def update_ui_for_swarm_type(swarm_type):
@@ -559,7 +495,6 @@ def create_app():
                     is_spreadsheet = swarm_type == "SpreadSheetSwarm"
 
                     max_loops = 5 if is_mixture or is_spreadsheet else 10
-                    log_event("info", f"Swarm type changed to {swarm_type}, max loops set to {max_loops}")
 
                     # Return visibility state for flow configuration and max loops update
                     return (
@@ -579,7 +514,6 @@ def create_app():
                             yield "Please select at least one agent.", "Error: No agents selected"
                             return
 
-                        log_event("info", f"Starting task with agents: {agent_prompt_selector}")
 
                         # Update status
                         yield "Processing...", "Running task..."
@@ -631,9 +565,7 @@ def create_app():
                         yield "\n".join(output_lines), "Completed"
 
                     except Exception as e:
-                        error_msg = f"Error: {str(e)}"
-                        log_event("error", error_msg)
-                        yield error_msg, "Error occurred"
+                        yield f"Error: {str(e)}", "Error occurred"
 
                 # Connect the update functions
                 agent_selector.change(
@@ -659,7 +591,6 @@ def create_app():
 
                 # Connect cancel button to interrupt processing
                 def cancel_task():
-                    log_event("info", "Task cancelled by user")
                     return "Task cancelled.", "Cancelled"
 
                 cancel_button.click(
@@ -679,9 +610,7 @@ def create_app():
 
                         def update_logs_display():
                             """Update logs display with current logs."""
-                            logs = get_logs()
-                            formatted_logs = "\n".join(logs)
-                            return formatted_logs
+                            return ""
 
                         # Update logs when tab is selected
                         logs_tab = gr.Tab("Logs")
