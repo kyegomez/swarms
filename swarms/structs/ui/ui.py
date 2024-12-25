@@ -8,9 +8,11 @@ import gradio as gr
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.loguru_logger import initialize_logger
-from swarm_models import OpenAIChat
-import re  # Import the regular expression module
-
+import re
+import csv # Import the csv module for csv parsing
+from swarms.utils.litellm_wrapper import LiteLLM
+from litellm import models_by_provider
+from dotenv import set_key, find_dotenv
 # Initialize logger
 logger = initialize_logger(log_folder="swarm_ui")
 
@@ -20,19 +22,7 @@ load_dotenv()
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("GROQ_API_KEY")
 
-# changed to swarms_models
-# adding functionality to view other models of swarms models
-
-# Model initialization
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
-
 # Define the path to agent_prompts.json
-
 # locates the json file and then fetches the promopts
 
 PROMPT_JSON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_prompts.json")
@@ -94,7 +84,8 @@ def load_prompts_from_json() -> Dict[str, str]:
 
 AGENT_PROMPTS = load_prompts_from_json()
 
-def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]:
+def initialize_agents(dynamic_temp: float, agent_keys: List[str], model_name: str,
+                        provider: str, api_key: str, temperature:float, max_tokens:int) -> List[Agent]:
     agents = []
     seen_names = set()
     for agent_key in agent_keys:
@@ -112,10 +103,18 @@ def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]
             counter += 1
         seen_names.add(agent_name)
 
+        llm = LiteLLM(
+            model_name=model_name,
+            system_prompt=agent_prompt,
+            temperature=temperature,
+            max_tokens = max_tokens,
+        )
+
+
         agent = Agent(
             agent_name=f"Agent-{agent_name}",
             system_prompt=agent_prompt,
-            llm=model,
+            llm=llm,
             max_loops=1,
             autosave=True,
             verbose=True,
@@ -132,11 +131,12 @@ def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]
     return agents
 
 async def execute_task(task: str, max_loops: int, dynamic_temp: float,
-                        swarm_type: str, agent_keys: List[str], flow: str = None) -> Tuple[Any, 'SwarmRouter', str]:
+                        swarm_type: str, agent_keys: List[str], flow: str = None, model_name:str = "gpt-4o",
+                         provider:str = "openai", api_key:str=None, temperature:float=0.5, max_tokens:int=4000) -> Tuple[Any, 'SwarmRouter', str]:
     try:
         # Initialize agents
         try:
-            agents = initialize_agents(dynamic_temp, agent_keys)
+             agents = initialize_agents(dynamic_temp, agent_keys, model_name, provider, api_key, temperature, max_tokens)
         except Exception as e:
             return None, None, str(e)
 
@@ -160,27 +160,12 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
         if swarm_type == "MixtureOfAgents":
             if len(agents) < 2:
                 return None, None, "MixtureOfAgents requires at least 2 agents"
+        
+        if swarm_type == "SequentialWorkflow":
+            if len(agents) < 2:
+                return None, None, "SequentialWorkflow requires at least 2 agents"
 
-        if swarm_type == "SpreadSheetSwarm":
-            # spread sheet swarm needs specific setup
-            output_dir = "swarm_outputs"
-            os.makedirs(output_dir, exist_ok=True)
 
-            # Create a sanitized filename using only safe characters
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            output_file = f"swarm_output_{timestamp}.csv"
-            output_path = os.path.join(output_dir, output_file)
-
-            # Validate the output path
-            try:
-                # Ensure the path is valid and writable
-                with open(output_path, 'w') as f:
-                    pass
-                os.remove(output_path)  # Clean up the test file
-            except OSError as e:
-                return None, None, str(e)
-
-            router_kwargs["output_path"] = output_path
         # Create and execute SwarmRouter
         try:
             timeout = 450 if swarm_type != "SpreadSheetSwarm" else 900  # SpreadSheetSwarm will have different timeout.
@@ -197,13 +182,6 @@ async def execute_task(task: str, max_loops: int, dynamic_temp: float,
                 asyncio.to_thread(router.run, task),
                 timeout=timeout
             )
-
-            if swarm_type == "SpreadSheetSwarm":
-                # Verify the output file was created
-                if not os.path.exists(output_path):
-                    return None, None, "Output file was not created"
-
-                return output_path, router, ""
 
             return result, router, ""
 
@@ -248,11 +226,11 @@ def parse_agent_rearrange_output(data: Optional[str]) -> str:
         overall_time = parsed_data["time"]
 
 
-        output = f"**Workflow Execution Details**\n\n"
-        output += f"*   **Swarm ID:** `{swarm_id}`\n"
-        output += f"*   **Swarm Name:** `{swarm_name}`\n"
-        output += f"*   **Agent Flow:** `{agent_flow}`\n\n---\n"
-        output += f"**Agent Task Execution**\n\n"
+        output = f"Workflow Execution Details\n\n"
+        output += f"Swarm ID: `{swarm_id}`\n"
+        output += f"Swarm Name: `{swarm_name}`\n"
+        output += f"Agent Flow: `{agent_flow}`\n\n---\n"
+        output += f"Agent Task Execution\n\n"
 
         if "outputs" not in parsed_data:
             return "Error: 'outputs' key is missing"
@@ -263,7 +241,7 @@ def parse_agent_rearrange_output(data: Optional[str]) -> str:
         if not isinstance(parsed_data["outputs"], list):
             return "Error: 'outputs' data is not a list."
 
-        for i, agent_output in enumerate(parsed_data["outputs"], start=1):
+        for i, agent_output in enumerate(parsed_data["outputs"], start=3):
             if not isinstance(agent_output, dict):
                  return f"Error: Agent output at index {i} is not a dictionary"
             
@@ -280,11 +258,11 @@ def parse_agent_rearrange_output(data: Optional[str]) -> str:
                return f"Error: 'steps' data is not a list at index {i}"
 
             agent_name = agent_output["agent_name"]
-            output += f"**Run {i} (Agent: `{agent_name}`)**\n\n"
-            output += "<details>\n<summary>Show/Hide Agent Steps</summary>\n\n"
+            output += f"Run {(3-i)} (Agent: `{agent_name}`)**\n\n"
+            # output += "<details>\n<summary>Show/Hide Agent Steps</summary>\n\n"
 
             # Iterate over steps
-            for j, step in enumerate(agent_output["steps"], start=1):
+            for j, step in enumerate(agent_output["steps"], start=3):
                  if not isinstance(step, dict):
                      return f"Error: step at index {j} is not a dictionary at {i} agent output."
                  
@@ -296,21 +274,279 @@ def parse_agent_rearrange_output(data: Optional[str]) -> str:
                  
                  if "content" not in step:
                     return f"Error: 'content' key missing at step {j} at {i} agent output."
-                
-                 role = step["role"]
-                 content = step["content"]
-                 output += f"  **Step {j}:** ({role})\n"
-                 output += f"  > {content}\n\n"
+                 
+                 if step["role"].strip() != "System:":  # Filter out system prompts
+                    #  role = step["role"]
+                     content = step["content"]
+                     output += f"Step {(3-j)}: \n"
+                     output += f"Response :\n {content}\n\n"
 
-            output += "</details>\n\n---\n"
+            # output += "</details>\n\n---\n"
 
-        output += f"**Overall Completion Time:** `{overall_time}`"
+        output += f"Overall Completion Time: `{overall_time}`"
         return output
     except json.JSONDecodeError as e :
        return f"Error during parsing: json.JSONDecodeError {e}"
     
     except Exception as e:
         return f"Error during parsing: {str(e)}"
+
+def parse_mixture_of_agents_output(data: Optional[str]) -> str:
+    """Parses the MixtureOfAgents output string and formats it for display."""
+    if data is None:
+        return "Error: No data provided for parsing."
+    
+    print(f"Raw data received for parsing:\n{data}")  # Debug: Print raw data
+
+    try:
+        parsed_data = json.loads(data)
+        
+        if "InputConfig" not in parsed_data or not isinstance(parsed_data["InputConfig"], dict):
+            return "Error: 'InputConfig' data is missing or not a dictionary."
+        
+        if "name" not in parsed_data["InputConfig"]:
+           return "Error: 'name' key is missing in 'InputConfig'."
+        if "description" not in parsed_data["InputConfig"]:
+           return "Error: 'description' key is missing in 'InputConfig'."
+        
+        if "agents" not in parsed_data["InputConfig"] or not isinstance(parsed_data["InputConfig"]["agents"], list) :
+           return "Error: 'agents' key is missing in 'InputConfig' or not a list."
+        
+
+        name = parsed_data["InputConfig"]["name"]
+        description = parsed_data["InputConfig"]["description"]
+
+        output = f"Mixture of Agents Workflow Details\n\n"
+        output += f"Name: `{name}`\n"
+        output += f"Description: `{description}`\n\n---\n"
+        output += f"Agent Task Execution\n\n"
+        
+        for agent in parsed_data["InputConfig"]["agents"]:
+            if not isinstance(agent, dict):
+               return "Error: agent is not a dict in InputConfig agents"
+            if "agent_name" not in agent:
+                return "Error: 'agent_name' key is missing in agents."
+            
+            if "system_prompt" not in agent:
+                 return f"Error: 'system_prompt' key is missing in agents."
+
+            agent_name = agent["agent_name"]
+            # system_prompt = agent["system_prompt"]
+            output += f"Agent: `{agent_name}`\n"
+            # output += f"*   **System Prompt:** `{system_prompt}`\n\n"
+
+
+        if "normal_agent_outputs" not in parsed_data or not isinstance(parsed_data["normal_agent_outputs"], list) :
+              return "Error: 'normal_agent_outputs' key is missing or not a list."
+        
+        for i, agent_output in enumerate(parsed_data["normal_agent_outputs"], start=3):
+             if not isinstance(agent_output, dict):
+                return f"Error: agent output at index {i} is not a dictionary."
+             if "agent_name" not in agent_output:
+                 return f"Error: 'agent_name' key is missing at index {i}"
+             if "steps" not in agent_output:
+                return f"Error: 'steps' key is missing at index {i}"
+             
+             if agent_output["steps"] is None:
+                 return f"Error: 'steps' is None at index {i}"
+             if not isinstance(agent_output["steps"], list):
+                return f"Error: 'steps' data is not a list at index {i}."
+
+             agent_name = agent_output["agent_name"]
+             output += f"Run {(3-i)} (Agent: `{agent_name}`)\n\n"
+            #  output += "<details>\n<summary>Show/Hide Agent Steps</summary>\n\n"
+             for j, step in enumerate(agent_output["steps"], start=3):
+                 if not isinstance(step, dict):
+                    return f"Error: step at index {j} is not a dictionary at {i} agent output."
+                 
+                 if step is None:
+                     return f"Error: step at index {j} is None at {i} agent output."
+                 
+                 if "role" not in step:
+                    return f"Error: 'role' key missing at step {j} at {i} agent output."
+
+                 if "content" not in step:
+                    return f"Error: 'content' key missing at step {j} at {i} agent output."
+                
+                 if step["role"].strip() != "System:":  # Filter out system prompts
+                    #  role = step["role"]
+                     content = step["content"]
+                     output += f"Step {(3-j)}: \n"
+                     output += f"Response:\n {content}\n\n"
+
+            #  output += "</details>\n\n---\n"
+
+        if "aggregator_agent_summary" in parsed_data:
+            output += f"\nAggregated Summary :\n{parsed_data['aggregator_agent_summary']}\n{'=' * 50}\n"
+        
+        return output
+
+    except json.JSONDecodeError as e:
+         return f"Error during parsing json.JSONDecodeError : {e}"
+    
+    except Exception as e:
+        return f"Error during parsing: {str(e)}"
+
+def parse_sequential_workflow_output(data: Optional[str]) -> str:
+   """Parses the SequentialWorkflow output string and formats it for display."""
+   if data is None:
+      return "Error: No data provided for parsing."
+   
+   print(f"Raw data received for parsing:\n{data}")  # Debug: Print raw data
+
+   try:
+        parsed_data = json.loads(data)
+
+        if "input" not in parsed_data or not isinstance(parsed_data.get("input"), dict):
+            return "Error: 'input' data is missing or not a dictionary."
+        
+        if "swarm_id" not in parsed_data["input"] :
+            return "Error: 'swarm_id' key is missing in the 'input'."
+        
+        if "name" not in parsed_data["input"]:
+           return "Error: 'name' key is missing in the 'input'."
+        
+        if "flow" not in parsed_data["input"]:
+           return "Error: 'flow' key is missing in the 'input'."
+        
+        if "time" not in parsed_data :
+           return "Error: 'time' key is missing."
+
+        swarm_id = parsed_data["input"]["swarm_id"]
+        swarm_name = parsed_data["input"]["name"]
+        agent_flow = parsed_data["input"]["flow"]
+        overall_time = parsed_data["time"]
+
+
+        output = f"Workflow Execution Details\n\n"
+        output += f"Swarm ID: `{swarm_id}`\n"
+        output += f"Swarm Name: `{swarm_name}`\n"
+        output += f"Agent Flow: `{agent_flow}`\n\n---\n"
+        output += f"Agent Task Execution\n\n"
+
+        if "outputs" not in parsed_data:
+            return "Error: 'outputs' key is missing"
+            
+        if  parsed_data["outputs"] is None:
+            return "Error: 'outputs' data is None"
+            
+        if not isinstance(parsed_data["outputs"], list):
+            return "Error: 'outputs' data is not a list."
+
+        for i, agent_output in enumerate(parsed_data["outputs"], start=3):
+            if not isinstance(agent_output, dict):
+                 return f"Error: Agent output at index {i} is not a dictionary"
+            
+            if "agent_name" not in agent_output:
+                return f"Error: 'agent_name' key is missing at index {i}"
+            
+            if "steps" not in agent_output:
+               return f"Error: 'steps' key is missing at index {i}"
+            
+            if agent_output["steps"] is None:
+               return f"Error: 'steps' data is None at index {i}"
+            
+            if not isinstance(agent_output["steps"], list):
+               return f"Error: 'steps' data is not a list at index {i}"
+
+            agent_name = agent_output["agent_name"]
+            output += f"Run {(3-i)} (Agent: `{agent_name}`)\n\n"
+            # output += "<details>\n<summary>Show/Hide Agent Steps</summary>\n\n"
+
+            # Iterate over steps
+            for j, step in enumerate(agent_output["steps"], start=3):
+                 if not isinstance(step, dict):
+                     return f"Error: step at index {j} is not a dictionary at {i} agent output."
+                 
+                 if step is None:
+                     return f"Error: step at index {j} is None at {i} agent output"
+
+                 if "role" not in step:
+                     return f"Error: 'role' key missing at step {j} at {i} agent output."
+                 
+                 if "content" not in step:
+                    return f"Error: 'content' key missing at step {j} at {i} agent output."
+                 
+                 if step["role"].strip() != "System:":  # Filter out system prompts
+                    #  role = step["role"]
+                     content = step["content"]
+                     output += f"Step {(3-j)}:\n"
+                     output += f"Response : {content}\n\n"
+
+            # output += "</details>\n\n---\n"
+
+        output += f"Overall Completion Time: `{overall_time}`"
+        return output
+
+   except json.JSONDecodeError as e :
+        return f"Error during parsing json.JSONDecodeError : {e}"
+   
+   except Exception as e:
+        return f"Error during parsing: {str(e)}"
+
+
+def parse_spreadsheet_swarm_output(file_path: str) -> str:
+    """Parses the SpreadSheetSwarm output CSV file and formats it for display."""
+    if not file_path:
+        return "Error: No file path provided for parsing."
+
+    print(f"Parsing spreadsheet output from: {file_path}")
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            csv_reader = csv.reader(file)
+            header = next(csv_reader, None)  # Read the header row
+            if not header:
+               return "Error: CSV file is empty or has no header"
+            
+            output = "### Spreadsheet Swarm Output ###\n\n"
+            output += "| " + " | ".join(header) + " |\n" # Adding header
+            output += "| " + " | ".join(["---"] * len(header)) + " |\n" # Adding header seperator
+
+            for row in csv_reader:
+                output += "| " + " | ".join(row) + " |\n" # Adding row
+            
+            output += "\n"
+        return output
+    
+    except FileNotFoundError:
+        return "Error: CSV file not found."
+    except Exception as e:
+        return f"Error during parsing CSV file: {str(e)}"
+def parse_json_output(data:str) -> str:
+    """Parses a JSON string and formats it for display."""
+    if not data:
+        return "Error: No data provided for parsing."
+
+    print(f"Parsing json output from: {data}")
+    try:
+        parsed_data = json.loads(data)
+
+        output = "### Swarm Metadata ###\n\n"
+        
+        for key,value in parsed_data.items():
+            if key == "outputs":
+              output += f"**{key}**:\n"
+              if isinstance(value, list):
+                for item in value:
+                   output += f"  -  Agent Name : {item.get('agent_name', 'N/A')}\n"
+                   output += f"     Task : {item.get('task', 'N/A')}\n"
+                   output += f"     Result : {item.get('result', 'N/A')}\n"
+                   output += f"     Timestamp : {item.get('timestamp', 'N/A')}\n\n"
+
+              else :
+                  output += f"  {value}\n"
+            
+            else :
+                output += f"**{key}**: {value}\n"
+
+        return output
+    
+    except json.JSONDecodeError as e:
+        return f"Error: Invalid JSON format - {e}"
+    
+    except Exception as e:
+        return f"Error during JSON parsing: {str(e)}"
 
 class UI:
     def __init__(self, theme):
@@ -345,7 +581,7 @@ class UI:
             label=label,
             interactive=True,
         )
-        self.components[f'slider_{label}']
+        self.components[f'slider_{label}'] = slider
         return slider
 
     def create_dropdown(self, label, choices, value=None, multiselect=False):
@@ -414,9 +650,9 @@ class UI:
 
     @staticmethod
     def create_ui_theme(primary_color="red"):
-        return gr.themes.Soft(
+        return gr.themes.Ocean(
             primary_hue=primary_color,
-            secondary_hue="gray",
+            secondary_hue=primary_color,
             neutral_hue="gray",
         ).set(
             body_background_fill="#20252c",
@@ -465,6 +701,25 @@ def create_app():
     theme = UI.create_ui_theme(primary_color="red")
     ui = UI(theme=theme)
 
+    # Available providers and models
+    providers = [
+        "openai",
+        "anthropic",
+        "cohere",
+        "gemini",
+        "mistral",
+        "groq",
+        "nvidia_nim",
+        "huggingface",
+        "perplexity"
+    ]
+
+    filtered_models = {}
+
+    for provider in providers:
+        filtered_models[provider] = models_by_provider.get(provider, [])
+
+
     with ui.blocks:
         with gr.Row():
             with gr.Column(scale=4):  # Left column (80% width)
@@ -494,7 +749,7 @@ def create_app():
                             with gr.Column(scale=1):
                                 # Get available swarm types
                                 swarm_types = [
-                                    "SequentialWorkflow", "ConcurrentWorkflow", "AgentRearrange",
+                                    "SequentialWorkflow", "ConcurrentWorkflow","AgentRearrange",
                                     "MixtureOfAgents", "SpreadSheetSwarm", "auto"
                                 ]
                                 agent_selector = gr.Dropdown(
@@ -509,7 +764,7 @@ def create_app():
                                 with gr.Column(visible=False) as flow_config:
                                     flow_text = gr.Textbox(
                                         label="Agent Flow Configuration",
-                                        placeholder="Enter agent flow (e.g., Agent1 -> Agent2 -> Agent3)",
+                                        placeholder="Enter agent flow !",
                                         lines=2
                                     )
                                     gr.Markdown(
@@ -522,7 +777,48 @@ def create_app():
                                     )
 
                     with gr.Column(scale=2, min_width=200):
-                        with gr.Row():
+                         with gr.Row():
+                            # Provider selection dropdown
+                            provider_dropdown = gr.Dropdown(
+                                label="Select Provider",
+                                choices=providers,
+                                value=providers[0] if providers else None,
+                                interactive=True,
+                            )
+                        #  with gr.Row():
+                        #     # Model selection dropdown (initially empty)
+                            model_dropdown = gr.Dropdown(
+                                label="Select Model",
+                                choices=[],
+                                interactive=True,
+                            )
+                         with gr.Row():
+                            # API key input
+                            api_key_input = gr.Textbox(
+                                label="API Key",
+                                placeholder="Enter your API key",
+                                type="password",
+                            )
+                         with gr.Row():
+                             # temp slider
+                            temperature_slider = gr.Slider(
+                                label="Temperature",
+                                minimum=0,
+                                maximum=1,
+                                value=0.1,
+                                step=0.01
+                            )
+                        #  with gr.Row():
+                            # max tokens slider
+                            max_tokens_slider = gr.Slider(
+                                label="Max Tokens",
+                                minimum=100,
+                                maximum=10000,
+                                value=4000,
+                                step=100,
+                            )
+
+                         with gr.Row():
                             max_loops_slider = gr.Slider(
                                 label="Max Loops",
                                 minimum=1,
@@ -530,21 +826,25 @@ def create_app():
                                 value=1,
                                 step=1
                             )
-
-                        with gr.Row():
+                         with gr.Row():
                             dynamic_slider = gr.Slider(
-                                label="Dynamic Temp",
+                                label="Dyn. Temp",
                                 minimum=0,
                                 maximum=1,
                                 value=0.1,
                                 step=0.01
                             )
-                        with gr.Row():
+                         with gr.Row():
                             loading_status = gr.Textbox(
                                 label="Status",
                                 value="Ready",
                                 interactive=False
                             )
+                         #Hidden textbox to store API Key
+                         env_api_key_textbox = gr.Textbox(
+                            value="",
+                            visible=False
+                        )
 
                 with gr.Row():
                     run_button = gr.Button("Run Task", variant="primary")
@@ -587,28 +887,70 @@ def create_app():
                         gr.update(maximum=max_loops),  # For max_loops_slider
                         f"Selected {swarm_type}"  # For loading_status
                     )
+                def update_model_dropdown(provider):
+                    """Update model dropdown based on selected provider."""
+                    models = filtered_models.get(provider, [])
+                    return gr.update(choices=models, value=models[0] if models else None)
 
-                async def run_task_wrapper(task, max_loops, dynamic_temp, swarm_type, agent_prompt_selector, flow_text):
+                async def run_task_wrapper(task, max_loops, dynamic_temp, swarm_type, agent_prompt_selector, flow_text,
+                                           provider, model_name, api_key, temperature, max_tokens):
                     """Execute the task and update the UI with progress."""
                     try:
                         if not task:
-                            yield "Please provide a task description.", "Error: Missing task"
+                            yield "Please provide a task description.", "Error: Missing task", ""
                             return
 
                         if not agent_prompt_selector or len(agent_prompt_selector) == 0:
-                            yield "Please select at least one agent.", "Error: No agents selected"
+                            yield "Please select at least one agent.", "Error: No agents selected", ""
                             return
+                        
+                        if not provider:
+                             yield "Please select a provider.", "Error: No provider selected", ""
+                             return
+                        
+                        if not model_name:
+                             yield "Please select a model.", "Error: No model selected", ""
+                             return
+                        
+                        if not api_key:
+                             yield "Please enter an API Key", "Error: API Key is required", ""
+                             return
+
 
                         # Update status
-                        yield "Processing...", "Running task..."
+                        yield "Processing...", "Running task...", ""
 
                         # Prepare flow for AgentRearrange
                         flow = None
                         if swarm_type == "AgentRearrange":
                             if not flow_text:
-                                yield "Please provide the agent flow configuration.", "Error: Flow not configured"
+                                yield "Please provide the agent flow configuration.", "Error: Flow not configured", ""
                                 return
                             flow = flow_text
+
+                        # Save API key to .env
+                        env_path = find_dotenv()
+                        if provider == "openai":
+                             set_key(env_path, "OPENAI_API_KEY", api_key)
+                        elif provider == "anthropic":
+                             set_key(env_path, "ANTHROPIC_API_KEY", api_key)
+                        elif provider == "cohere":
+                             set_key(env_path, "COHERE_API_KEY", api_key)
+                        elif provider == "gemini":
+                             set_key(env_path, "GEMINI_API_KEY", api_key)
+                        elif provider == "mistral":
+                             set_key(env_path, "MISTRAL_API_KEY", api_key)
+                        elif provider == "groq":
+                             set_key(env_path, "GROQ_API_KEY", api_key)
+                        elif provider == "nvidia_nim":
+                             set_key(env_path, "NVIDIA_NIM_API_KEY", api_key)
+                        elif provider == "huggingface":
+                             set_key(env_path, "HUGGINGFACE_API_KEY", api_key)
+                        elif provider == "perplexity":
+                             set_key(env_path, "PERPLEXITY_API_KEY", api_key)
+                        else:
+                            yield f"Error: {provider} this provider is not present", f"Error: {provider} not supported", ""
+                            return
 
                         # Execute task
                         result, router, error = await execute_task(
@@ -617,22 +959,40 @@ def create_app():
                             dynamic_temp=dynamic_temp,
                             swarm_type=swarm_type,
                             agent_keys=agent_prompt_selector,
-                            flow=flow
+                            flow=flow,
+                            model_name=model_name,
+                            provider=provider,
+                            api_key=api_key,
+                            temperature=temperature,
+                            max_tokens = max_tokens,
                         )
 
                         if error:
-                            yield f"Error: {error}", "Error occurred"
+                            yield f"Error: {error}", f"Error: {error}", ""
                             return
 
                         # Format output based on swarm type
                         output_lines = []
                         if swarm_type == "SpreadSheetSwarm":
-                            output_lines.append(f"### Spreadsheet Output ###\n{result}\n{'=' * 50}\n")
+                             # Check if the result is a file path or JSON
+                             if os.path.exists(result):
+                                parsed_output = parse_spreadsheet_swarm_output(result)
+                                output_lines.append(parsed_output)
+                             else:
+                                parsed_output = parse_json_output(result)
+                                output_lines.append(parsed_output)
+
                         elif swarm_type == "AgentRearrange":
                            parsed_output = parse_agent_rearrange_output(result)
                            output_lines.append(parsed_output)
+                        elif swarm_type == "MixtureOfAgents":
+                           parsed_output = parse_mixture_of_agents_output(result)
+                           output_lines.append(parsed_output)
+                        elif swarm_type == "SequentialWorkflow":
+                           parsed_output = parse_sequential_workflow_output(result)
+                           output_lines.append(parsed_output)
                         elif isinstance(result, dict):  # checking if result is dict or string.
-
+                            
                             if swarm_type == "MixtureOfAgents":
                                 # Add individual agent outputs
                                 for key, value in result.items():
@@ -647,16 +1007,21 @@ def create_app():
                         elif isinstance(result, str):
                             output_lines.append(str(result))
 
-                        yield "\n".join(output_lines), "Completed"
-
+                        yield "\n".join(output_lines), "Completed", api_key
+                        
                     except Exception as e:
-                        yield f"Error: {str(e)}", "Error occurred"
+                         yield f"Error: {str(e)}", f"Error: {str(e)}", ""
 
                 # Connect the update functions
                 agent_selector.change(
                     fn=update_ui_for_swarm_type,
                     inputs=[agent_selector],
                     outputs=[flow_config, max_loops_slider, loading_status]
+                )
+                provider_dropdown.change(
+                    fn=update_model_dropdown,
+                    inputs=[provider_dropdown],
+                    outputs=[model_dropdown]
                 )
 
                 # Create event trigger
@@ -669,19 +1034,24 @@ def create_app():
                         dynamic_slider,
                         agent_selector,
                         agent_prompt_selector,
-                        flow_text
+                        flow_text,
+                        provider_dropdown,
+                        model_dropdown,
+                        api_key_input,
+                        temperature_slider,
+                        max_tokens_slider
                     ],
-                    outputs=[agent_output_display, loading_status]
+                    outputs=[agent_output_display, loading_status, env_api_key_textbox]
                 )
 
                 # Connect cancel button to interrupt processing
                 def cancel_task():
-                    return "Task cancelled.", "Cancelled"
+                    return "Task cancelled.", "Cancelled", ""
 
                 cancel_button.click(
                     fn=cancel_task,
                     inputs=None,
-                    outputs=[agent_output_display, loading_status],
+                    outputs=[agent_output_display, loading_status, env_api_key_textbox],
                     cancels=run_event
                 )
 
