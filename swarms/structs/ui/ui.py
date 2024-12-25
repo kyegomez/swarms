@@ -84,8 +84,7 @@ def load_prompts_from_json() -> Dict[str, str]:
 
 AGENT_PROMPTS = load_prompts_from_json()
 
-def initialize_agents(dynamic_temp: float, agent_keys: List[str], model_name: str,
-                        provider: str, api_key: str, temperature:float, max_tokens:int) -> List[Agent]:
+def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]:
     agents = []
     seen_names = set()
     for agent_key in agent_keys:
@@ -103,18 +102,10 @@ def initialize_agents(dynamic_temp: float, agent_keys: List[str], model_name: st
             counter += 1
         seen_names.add(agent_name)
 
-        llm = LiteLLM(
-            model_name=model_name,
-            system_prompt=agent_prompt,
-            temperature=temperature,
-            max_tokens = max_tokens,
-        )
-
-
         agent = Agent(
             agent_name=f"Agent-{agent_name}",
             system_prompt=agent_prompt,
-            llm=llm,
+            llm=model,
             max_loops=1,
             autosave=True,
             verbose=True,
@@ -124,7 +115,7 @@ def initialize_agents(dynamic_temp: float, agent_keys: List[str], model_name: st
             retry_attempts=1,
             context_length=200000,
             output_type="string",  # here is the output type which is string
-            temperature=dynamic_temp,
+            temperature=dynamic_temp, # THIS LINE IS CHANGED
         )
         agents.append(agent)
 
@@ -736,7 +727,62 @@ def create_app():
                                 lines=3
                             )
                         with gr.Row():
+                            
                             with gr.Column(scale=1):
+                                with gr.Row():
+                            # Provider selection dropdown
+                                    provider_dropdown = gr.Dropdown(
+                                        label="Select Provider",
+                                        choices=providers,
+                                        value=providers[0] if providers else None,
+                                        interactive=True,
+                                    )
+                                #  with gr.Row():
+                                #     # Model selection dropdown (initially empty)
+                                    model_dropdown = gr.Dropdown(
+                                        label="Select Model",
+                                        choices=[],
+                                        interactive=True,
+                                    )
+                                with gr.Row():
+                                    # API key input
+                                    api_key_input = gr.Textbox(
+                                        label="API Key",
+                                        placeholder="Enter your API key",
+                                        type="password",
+                                    )
+                            with gr.Column(scale=1):
+                                with gr.Row():
+                                    dynamic_slider = gr.Slider(
+                                        label="Dyn. Temp",
+                                        minimum=0,
+                                        maximum=1,
+                                        value=0.1,
+                                        step=0.01
+                                    )
+                                        
+                                #  with gr.Row():
+                                #     max tokens slider
+                                    max_loops_slider = gr.Slider(
+                                        label="Max Loops",
+                                        minimum=1,
+                                        maximum=10,
+                                        value=1,
+                                        step=1
+                                    )
+                                    
+
+                                with gr.Row():
+                                    max_tokens_slider = gr.Slider(
+                                        label="Max Tokens",
+                                        minimum=100,
+                                        maximum=10000,
+                                        value=4000,
+                                        step=100,
+                                    )
+
+                    with gr.Column(scale=2, min_width=200):
+                         with gr.Column(scale=1):
                                 # Get available agent prompts
                                 available_prompts = list(AGENT_PROMPTS.keys()) if AGENT_PROMPTS else ["No agents available"]
                                 agent_prompt_selector = gr.Dropdown(
@@ -746,7 +792,7 @@ def create_app():
                                     multiselect=True,
                                     interactive=True
                                 )
-                            with gr.Column(scale=1):
+                            # with gr.Column(scale=1):
                                 # Get available swarm types
                                 swarm_types = [
                                     "SequentialWorkflow", "ConcurrentWorkflow","AgentRearrange",
@@ -775,71 +821,18 @@ def create_app():
                                         - Use exact agent names from the prompts above
                                         """
                                     )
-
-                    with gr.Column(scale=2, min_width=200):
-                         with gr.Row():
-                            # Provider selection dropdown
-                            provider_dropdown = gr.Dropdown(
-                                label="Select Provider",
-                                choices=providers,
-                                value=providers[0] if providers else None,
-                                interactive=True,
-                            )
+                    
+                         
+                            
                         #  with gr.Row():
-                        #     # Model selection dropdown (initially empty)
-                            model_dropdown = gr.Dropdown(
-                                label="Select Model",
-                                choices=[],
-                                interactive=True,
-                            )
-                         with gr.Row():
-                            # API key input
-                            api_key_input = gr.Textbox(
-                                label="API Key",
-                                placeholder="Enter your API key",
-                                type="password",
-                            )
-                         with gr.Row():
-                             # temp slider
-                            temperature_slider = gr.Slider(
-                                label="Temperature",
-                                minimum=0,
-                                maximum=1,
-                                value=0.1,
-                                step=0.01
-                            )
-                        #  with gr.Row():
-                            # max tokens slider
-                            max_tokens_slider = gr.Slider(
-                                label="Max Tokens",
-                                minimum=100,
-                                maximum=10000,
-                                value=4000,
-                                step=100,
-                            )
-
-                         with gr.Row():
-                            max_loops_slider = gr.Slider(
-                                label="Max Loops",
-                                minimum=1,
-                                maximum=10,
-                                value=1,
-                                step=1
-                            )
-                         with gr.Row():
-                            dynamic_slider = gr.Slider(
-                                label="Dyn. Temp",
-                                minimum=0,
-                                maximum=1,
-                                value=0.1,
-                                step=0.01
-                            )
-                         with gr.Row():
-                            loading_status = gr.Textbox(
-                                label="Status",
-                                value="Ready",
-                                interactive=False
-                            )
+                        #     temperature_slider = gr.Slider(
+                        #         label="Temperature",
+                        #         minimum=0,
+                        #         maximum=1,
+                        #         value=0.1,
+                        #         step=0.01
+                        #     )
+                         
                          #Hidden textbox to store API Key
                          env_api_key_textbox = gr.Textbox(
                             value="",
@@ -847,8 +840,17 @@ def create_app():
                         )
 
                 with gr.Row():
-                    run_button = gr.Button("Run Task", variant="primary")
-                    cancel_button = gr.Button("Cancel", variant="secondary")
+                    with gr.Column(scale=1):
+                        run_button = gr.Button("Run Task", variant="primary")
+                        cancel_button = gr.Button("Cancel", variant="secondary")
+                    with gr.Column(scale=1):
+                        with gr.Row():
+                            loading_status = gr.Textbox(
+                                label="Status",
+                                value="Ready",
+                                interactive=False
+                            )
+
 
                 # Add loading indicator and status
                 with gr.Row():
@@ -892,79 +894,36 @@ def create_app():
                     models = filtered_models.get(provider, [])
                     return gr.update(choices=models, value=models[0] if models else None)
 
-                async def run_task_wrapper(task, max_loops, dynamic_temp, swarm_type, agent_prompt_selector, flow_text,
-                                           provider, model_name, api_key, temperature, max_tokens):
+                async def run_task_wrapper(task, max_loops, dynamic_temp, swarm_type, agent_prompt_selector, flow_text):
                     """Execute the task and update the UI with progress."""
                     try:
                         if not task:
-                            yield "Please provide a task description.", "Error: Missing task", ""
+                            yield "Please provide a task description.", "Error: Missing task"
                             return
 
                         if not agent_prompt_selector or len(agent_prompt_selector) == 0:
-                            yield "Please select at least one agent.", "Error: No agents selected", ""
+                            yield "Please select at least one agent.", "Error: No agents selected"
                             return
-                        
-                        if not provider:
-                             yield "Please select a provider.", "Error: No provider selected", ""
-                             return
-                        
-                        if not model_name:
-                             yield "Please select a model.", "Error: No model selected", ""
-                             return
-                        
-                        if not api_key:
-                             yield "Please enter an API Key", "Error: API Key is required", ""
-                             return
-
 
                         # Update status
-                        yield "Processing...", "Running task...", ""
+                        yield "Processing...", "Running task..."
 
                         # Prepare flow for AgentRearrange
                         flow = None
                         if swarm_type == "AgentRearrange":
                             if not flow_text:
-                                yield "Please provide the agent flow configuration.", "Error: Flow not configured", ""
+                                yield "Please provide the agent flow configuration.", "Error: Flow not configured"
                                 return
                             flow = flow_text
-
-                        # Save API key to .env
-                        env_path = find_dotenv()
-                        if provider == "openai":
-                             set_key(env_path, "OPENAI_API_KEY", api_key)
-                        elif provider == "anthropic":
-                             set_key(env_path, "ANTHROPIC_API_KEY", api_key)
-                        elif provider == "cohere":
-                             set_key(env_path, "COHERE_API_KEY", api_key)
-                        elif provider == "gemini":
-                             set_key(env_path, "GEMINI_API_KEY", api_key)
-                        elif provider == "mistral":
-                             set_key(env_path, "MISTRAL_API_KEY", api_key)
-                        elif provider == "groq":
-                             set_key(env_path, "GROQ_API_KEY", api_key)
-                        elif provider == "nvidia_nim":
-                             set_key(env_path, "NVIDIA_NIM_API_KEY", api_key)
-                        elif provider == "huggingface":
-                             set_key(env_path, "HUGGINGFACE_API_KEY", api_key)
-                        elif provider == "perplexity":
-                             set_key(env_path, "PERPLEXITY_API_KEY", api_key)
-                        else:
-                            yield f"Error: {provider} this provider is not present", f"Error: {provider} not supported", ""
-                            return
 
                         # Execute task
                         result, router, error = await execute_task(
                             task=task,
                             max_loops=max_loops,
-                            dynamic_temp=dynamic_temp,
+                            dynamic_temp=dynamic_temp, # THIS LINE IS CHANGED
                             swarm_type=swarm_type,
                             agent_keys=agent_prompt_selector,
-                            flow=flow,
-                            model_name=model_name,
-                            provider=provider,
-                            api_key=api_key,
-                            temperature=temperature,
-                            max_tokens = max_tokens,
+                            flow=flow
                         )
 
                         if error:
@@ -1038,7 +997,6 @@ def create_app():
                         provider_dropdown,
                         model_dropdown,
                         api_key_input,
-                        temperature_slider,
                         max_tokens_slider
                     ],
                     outputs=[agent_output_display, loading_status, env_api_key_textbox]
