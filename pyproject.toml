@@ -73,7 +73,6 @@ docstring_parser = "0.16" # TODO:
 tiktoken = "*"
 networkx = "*"
 aiofiles = "*"
-clusterops = "*"
 # chromadb = "*"
 reportlab = "*"
 doc-master = "*"
@@ -81,6 +80,7 @@ rich = "*"
 # sentence-transformers = "*"
 swarm-models = "*"
 termcolor = "*"
+clusterops = { git = "https://github.com/patrickbdevaney/clusterops.git", branch = "main" }
 
 
 # [tool.poetry.extras]
