@@ -33,9 +33,9 @@ def load_prompts_from_json() -> Dict[str, str]:
         if not os.path.exists(PROMPT_JSON_PATH):
             # Load default prompts
             return {
-                "agent.data_extractor": "You are a data extraction agent...",
-                "agent.summarizer": "You are a summarization agent...",
-                "agent.onboarding_agent": "You are an onboarding agent..."
+                "agent.Agent_Data_Extractor": "You are a data extraction agent...",
+                "agent.Agent_Summarizer": "You are a summarization agent...",
+                "agent.Agent_Onboarding_Agent": "You are an onboarding agent..."
             }
 
         with open(PROMPT_JSON_PATH, 'r', encoding='utf-8') as f:
@@ -44,32 +44,32 @@ def load_prompts_from_json() -> Dict[str, str]:
             except json.JSONDecodeError:
                 # Load default prompts
                 return {
-                    "agent.data_extractor": "You are a data extraction agent...",
-                    "agent.summarizer": "You are a summarization agent...",
-                    "agent.onboarding_agent": "You are an onboarding agent..."
+                    "agent.Agent_Data_Extractor": "You are a data extraction agent...",
+                    "agent.Agent_Summarizer": "You are a summarization agent...",
+                    "agent.Agent_Onboarding_Agent": "You are an onboarding agent..."
                 }
 
             if not isinstance(data, dict):
                 # Load default prompts
                  return {
-                    "agent.data_extractor": "You are a data extraction agent...",
-                    "agent.summarizer": "You are a summarization agent...",
-                    "agent.onboarding_agent": "You are an onboarding agent..."
+                    "agent.Agent_Data_Extractor": "You are a data extraction agent...",
+                    "agent.Agent_Summarizer": "You are a summarization agent...",
+                    "agent.Agent_Onboarding_Agent": "You are an onboarding agent..."
                 }
 
             prompts = {}
             for agent_name, details in data.items():
                 if not isinstance(details, dict) or "system_prompt" not in details:
                    continue
-
+                
                 prompts[f"agent.{agent_name}"] = details["system_prompt"]
 
             if not prompts:
                # Load default prompts
                 return {
-                    "agent.data_extractor": "You are a data extraction agent...",
-                    "agent.summarizer": "You are a summarization agent...",
-                    "agent.onboarding_agent": "You are an onboarding agent..."
+                    "agent.Agent_Data_Extractor": "You are a data extraction agent...",
+                    "agent.Agent_Summarizer": "You are a summarization agent...",
+                    "agent.Agent_Onboarding_Agent": "You are an onboarding agent..."
                 }
 
             return prompts
@@ -77,14 +77,15 @@ def load_prompts_from_json() -> Dict[str, str]:
     except Exception:
         # Load default prompts
         return {
-            "agent.data_extractor": "You are a data extraction agent...",
-            "agent.summarizer": "You are a summarization agent...",
-            "agent.onboarding_agent": "You are an onboarding agent..."
+             "agent.Agent_Data_Extractor": "You are a data extraction agent...",
+                "agent.Agent_Summarizer": "You are a summarization agent...",
+                "agent.Agent_Onboarding_Agent": "You are an onboarding agent..."
         }
 
 AGENT_PROMPTS = load_prompts_from_json()
 
-def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]:
+def initialize_agents(dynamic_temp: float, agent_keys: List[str], model_name: str,
+                        provider: str, api_key: str, temperature:float, max_tokens:int) -> List[Agent]:
     agents = []
     seen_names = set()
     for agent_key in agent_keys:
@@ -102,10 +103,18 @@ def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]
             counter += 1
         seen_names.add(agent_name)
 
+        llm = LiteLLM(
+            model_name=model_name,
+            system_prompt=agent_prompt,
+            temperature=temperature,
+            max_tokens = max_tokens,
+        )
+
+
         agent = Agent(
             agent_name=f"Agent-{agent_name}",
             system_prompt=agent_prompt,
-            llm=model,
+            llm=llm,
             max_loops=1,
             autosave=True,
             verbose=True,
@@ -115,7 +124,7 @@ def initialize_agents(dynamic_temp: float, agent_keys: List[str]) -> List[Agent]
             retry_attempts=1,
             context_length=200000,
             output_type="string",  # here is the output type which is string
-            temperature=dynamic_temp, # THIS LINE IS CHANGED
+            temperature=dynamic_temp,
         )
         agents.append(agent)
 
@@ -773,6 +782,7 @@ def create_app():
                                     
 
                                 with gr.Row():
+                                    # max tokens slider
                                     max_tokens_slider = gr.Slider(
                                         label="Max Tokens",
                                         minimum=100,
@@ -821,7 +831,19 @@ def create_app():
                                         - Use exact agent names from the prompts above
                                         """
                                     )
-                    
+                                # Create Agent Prompt Section
+                                with gr.Accordion("Create Agent Prompt", open=False) as create_prompt_accordion:
+                                    with gr.Row():
+                                        with gr.Column():
+                                            new_agent_name_input = gr.Textbox(label="New Agent Name")
+                                        with gr.Column():
+                                            new_agent_prompt_input = gr.Textbox(label="New Agent Prompt", lines=3)
+                                    with gr.Row():
+                                        with gr.Column():
+                                            create_agent_button = gr.Button("Save New Prompt")
+                                            generate_agent_button = gr.Button("Generate_Final_p")
+                                        with gr.Column():
+                                            create_agent_status = gr.Textbox(label="Status", interactive=False)
                          
                             
                         #  with gr.Row():
@@ -861,6 +883,8 @@ def create_app():
                         lines=10
                     )
 
+                
+
                 def update_flow_agents(agent_keys):
                     """Update flow agents based on selected agent prompts."""
                     if not agent_keys:
@@ -874,6 +898,13 @@ def create_app():
                         return "Flow will be shown here..."
                     flow = " -> ".join(selected_flow_agents)
                     return flow
+                
+                def update_agent_dropdown():
+                    """Update agent dropdown when a new agent is added"""
+                    global AGENT_PROMPTS
+                    AGENT_PROMPTS = load_prompts_from_json()
+                    available_prompts = list(AGENT_PROMPTS.keys()) if AGENT_PROMPTS else ["No agents available"]
+                    return gr.update(choices = available_prompts, value = available_prompts[0] if available_prompts else None)
 
                 def update_ui_for_swarm_type(swarm_type):
                     """Update UI components based on selected swarm type."""
@@ -893,37 +924,108 @@ def create_app():
                     """Update model dropdown based on selected provider."""
                     models = filtered_models.get(provider, [])
                     return gr.update(choices=models, value=models[0] if models else None)
+                
+                def save_new_agent_prompt(agent_name, agent_prompt):
+                    """Saves a new agent prompt to the JSON file."""
+                    try:
+                        if not agent_name or not agent_prompt:
+                            return "Error: Agent name and prompt cannot be empty."
 
-                async def run_task_wrapper(task, max_loops, dynamic_temp, swarm_type, agent_prompt_selector, flow_text):
+                        if not agent_name.isalnum() and not  "_" in agent_name:
+                           return "Error : Agent name must be alphanumeric or underscore(_) "
+                        
+                        if "agent."+agent_name in AGENT_PROMPTS:
+                            return "Error : Agent name already exists"
+
+                        with open(PROMPT_JSON_PATH, 'r+', encoding='utf-8') as f:
+                            try:
+                                data = json.load(f)
+                            except json.JSONDecodeError:
+                                data = {}
+
+                            data[agent_name] = {"system_prompt": agent_prompt}
+                            f.seek(0)
+                            json.dump(data, f, indent=4)
+                            f.truncate()
+
+                        return "New agent prompt saved successfully"
+
+                    except Exception as e:
+                         return f"Error saving agent prompt {str(e)}"
+
+                async def run_task_wrapper(task, max_loops, dynamic_temp, swarm_type, agent_prompt_selector, flow_text,
+                                            provider, model_name, api_key, temperature, max_tokens):
                     """Execute the task and update the UI with progress."""
                     try:
                         if not task:
-                            yield "Please provide a task description.", "Error: Missing task"
+                            yield "Please provide a task description.", "Error: Missing task", ""
                             return
 
                         if not agent_prompt_selector or len(agent_prompt_selector) == 0:
-                            yield "Please select at least one agent.", "Error: No agents selected"
+                            yield "Please select at least one agent.", "Error: No agents selected", ""
                             return
+                        
+                        if not provider:
+                             yield "Please select a provider.", "Error: No provider selected", ""
+                             return
+                        
+                        if not model_name:
+                             yield "Please select a model.", "Error: No model selected", ""
+                             return
+                        
+                        if not api_key:
+                             yield "Please enter an API Key", "Error: API Key is required", ""
+                             return
+
 
                         # Update status
-                        yield "Processing...", "Running task..."
+                        yield "Processing...", "Running task...", ""
 
                         # Prepare flow for AgentRearrange
                         flow = None
                         if swarm_type == "AgentRearrange":
                             if not flow_text:
-                                yield "Please provide the agent flow configuration.", "Error: Flow not configured"
+                                yield "Please provide the agent flow configuration.", "Error: Flow not configured", ""
                                 return
                             flow = flow_text
+
+                        # Save API key to .env
+                        env_path = find_dotenv()
+                        if provider == "openai":
+                             set_key(env_path, "OPENAI_API_KEY", api_key)
+                        elif provider == "anthropic":
+                             set_key(env_path, "ANTHROPIC_API_KEY", api_key)
+                        elif provider == "cohere":
+                             set_key(env_path, "COHERE_API_KEY", api_key)
+                        elif provider == "gemini":
+                             set_key(env_path, "GEMINI_API_KEY", api_key)
+                        elif provider == "mistral":
+                             set_key(env_path, "MISTRAL_API_KEY", api_key)
+                        elif provider == "groq":
+                             set_key(env_path, "GROQ_API_KEY", api_key)
+                        elif provider == "nvidia_nim":
+                             set_key(env_path, "NVIDIA_NIM_API_KEY", api_key)
+                        elif provider == "huggingface":
+                             set_key(env_path, "HUGGINGFACE_API_KEY", api_key)
+                        elif provider == "perplexity":
+                             set_key(env_path, "PERPLEXITY_API_KEY", api_key)
+                        else:
+                            yield f"Error: {provider} this provider is not present", f"Error: {provider} not supported", ""
+                            return
 
                         # Execute task
                         result, router, error = await execute_task(
                             task=task,
                             max_loops=max_loops,
-                            dynamic_temp=dynamic_temp, # THIS LINE IS CHANGED
+                            dynamic_temp=dynamic_temp,
                             swarm_type=swarm_type,
                             agent_keys=agent_prompt_selector,
-                            flow=flow
+                            flow=flow,
+                            model_name=model_name,
+                            provider=provider,
+                            api_key=api_key,
+                            temperature=temperature,
+                            max_tokens = max_tokens,
                         )
 
                         if error:
@@ -981,6 +1083,16 @@ def create_app():
                     fn=update_model_dropdown,
                     inputs=[provider_dropdown],
                     outputs=[model_dropdown]
+                )
+                # Event for creating new agent prompts
+                create_agent_button.click(
+                    fn=save_new_agent_prompt,
+                    inputs=[new_agent_name_input, new_agent_prompt_input],
+                    outputs=[create_agent_status]
+                ).then(
+                    fn=update_agent_dropdown,
+                    inputs=None,
+                    outputs=[agent_prompt_selector]
                 )
 
                 # Create event trigger
