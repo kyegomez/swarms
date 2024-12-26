@@ -14,7 +14,7 @@ ExecStartPre=-/usr/bin/docker stop %n
 ExecStartPre=-/usr/bin/docker rm %n
 ExecStartPre=/usr/bin/docker pull h4ckermike/swarms-api:experimental
 #ExecStart=/usr/bin/docker run --rm --name %n h4ckermike/swarms-api:experimental
-ExecStart=/usr/bin/docker run -p 8000:8000 -w /var/swarms/agent_workspace --mount type=bind,source=/opt/swarms,target=/opt/swarms  -e WORKSPACE_DIR=/var/swarms/agent_workspace/ --rm --name "swarms-api"  h4ckermike/swarms-api:experimental /usr/bin/unbuffer /var/swarms/agent_workspace/.venv/bin/uvicorn --app-dir /opt/swarms/api --proxy-headers --forwarded-allow-ips='*'--workers=4 --port=8000 --reload-delay=30 main:create_app
+ExecStart=/usr/bin/docker run -p 8000:8000 -w /opt/swarms/api --mount type=bind,source=/opt/swarms,target=/opt/swarms  -e WORKSPACE_DIR=/var/swarms/agent_workspace/ --rm --name "swarms-api"  h4ckermike/swarms-api:experimental /usr/bin/unbuffer /var/swarms/agent_workspace/.venv/bin/uvicorn --proxy-headers --forwarded-allow-ips='*'--workers=4 --port=8000 --reload-delay=30 main:create_app
 # --network host
 StandardOutput=file:/var/log/swarms_systemd.log
 StandardError=file:/var/log/swarms_systemd.log

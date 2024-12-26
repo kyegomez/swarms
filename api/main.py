@@ -233,8 +233,9 @@ class AgentStore:
 
     def _ensure_directories(self):
         """Ensure required directories exist."""
-        Path("logs").mkdir(exist_ok=True)
-        Path("states").mkdir(exist_ok=True)
+        workspace_dir = os.environ.get("WORKSPACE_DIR","/var/swarms/agent_workspace/")
+        Path(workspace_dir + "/logs").mkdir(exist_ok=True)
+        Path(workspace_dir + "/states").mkdir(exist_ok=True)
 
     def create_api_key(self, user_id: UUID, key_name: str) -> APIKey:
         """Create a new API key for a user."""
