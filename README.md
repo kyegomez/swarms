@@ -1990,3 +1990,8 @@ Join our growing community around the world, for real-time support, ideas, and d
 # License
 
 GNU AFFERO GENERAL PUBLIC LICENSE
+
+# Build and test
+```
+docker build . -t h4ckermike/swarms-api:experimental
+```
