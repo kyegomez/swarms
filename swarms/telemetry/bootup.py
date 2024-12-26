@@ -26,12 +26,14 @@ def bootup():
             logging.disable(logging.CRITICAL)
 
         # Silent wandb
-        os.environ["WANDB_SILENT"] = "true"
 
         # Configure workspace
-        workspace_dir = os.path.join(os.getcwd(), "agent_workspace")
-        os.makedirs(workspace_dir, exist_ok=True)
-        os.environ["WORKSPACE_DIR"] = workspace_dir
+
+        workspace_dir = os.environ.get("WORKSPACE_DIR")
+        if workspace_dir is not None:
+            workspace_dir = os.path.join(os.getcwd(), "agent_workspace")
+            os.makedirs(workspace_dir, exist_ok=True)
+            os.environ["WORKSPACE_DIR"] = workspace_dir
 
         # Suppress warnings
         warnings.filterwarnings("ignore", category=DeprecationWarning)
