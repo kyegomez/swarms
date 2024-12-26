@@ -32,13 +32,13 @@ cd "/opt/swarms/" || exit 1 # "we need swarms"
 mkdir -p "/var/swarms/logs"
 chown -R swarms:swarms "/var/swarms/" "/home/swarms" "/opt/swarms"
 
-if [ -f "/var/swarms/agent_workspace/boot_fast.sh" ];
-then
-    chmod +x "/var/swarms/agent_workspace/boot_fast.sh" || echo faild
+#if [ -f "/var/swarms/agent_workspace/boot_fast.sh" ];
+#then
+#    chmod +x "/var/swarms/agent_workspace/boot_fast.sh" || echo faild
     
-    # user install but do not start
-    su -c "bash -e -x /var/swarms/agent_workspace/boot_fast.sh" swarms
-fi
+#    # user install but do not start
+#    su -c "bash -e -x /var/swarms/agent_workspace/boot_fast.sh" swarms
+#fi
 cd "/opt/swarms/" || exit 1 # "we need swarms"
 
 mkdir -p "/var/run/swarms/secrets/"
@@ -74,7 +74,13 @@ chown -R swarms:swarms /var/run/swarms/
 mkdir -p /opt/swarms/api/agent_workspace/try_except_wrapper/
 chown -R swarms:swarms /opt/swarms/api/
 
+
 # always reload
+# might be leftover on the ami,
+systemctl stop swarms-uvicorn || echo ok
+systemctl disable swarms-uvicorn || echo ok
+rm /etc/systemd/system/swarms-uvicorn.service
+
 systemctl daemon-reload
 systemctl start swarms-docker || journalctl -xeu swarms-docker
 systemctl enable swarms-docker || journalctl -xeu swarms-docker
