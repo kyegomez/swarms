@@ -187,5 +187,5 @@ RUN /var/swarms/agent_workspace/.venv/bin/python -m pip install -e /opt/swarms/
 #COPY requirements.txt .
 # things that change
 COPY api/main.py /opt/swarms/api/main.py
-WORKDIR /opt/swarms/api/
+WORKDIR /var/swarms/agent_workspace
 CMD ["/usr/bin/unbuffer", "/var/swarms/agent_workspace/.venv/bin/uvicorn", "--proxy-headers", "--forwarded-allow-ips='*'", "--workers=4", "--port=8000",    "--reload-delay=30",  "main:create_app"]
