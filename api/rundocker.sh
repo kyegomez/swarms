@@ -86,11 +86,11 @@ systemctl status swarms-docker || echo oops2
 
 # now after swarms is up, we restart nginx
 HOST="localhost"
-PORT=5474
+PORT=8000
 while ! nc -z $HOST $PORT; do
   sleep 1
   echo -n "."
 done
 echo "Port ${PORT} is now open!"
 
-osystemctl restart nginx
+systemctl restart nginx
