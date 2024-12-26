@@ -1,9 +1,9 @@
 from typing import Any, Optional, Callable
 from swarms.tools.json_former import Jsonformer
-from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.loguru_logger import initialize_logger, initialize_watchtower_logger
 from swarms.utils.lazy_loader import lazy_import_decorator
 
-logger = initialize_logger(log_folder="tool_agent")
+logger = initialize_watchtower_logger(log_folder="tool_agent")
 
 
 @lazy_import_decorator

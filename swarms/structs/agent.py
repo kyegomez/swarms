@@ -53,6 +53,7 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
+from swarms.utils.loguru_logger import initialize_watchtower_logger
 
 
 # Utils

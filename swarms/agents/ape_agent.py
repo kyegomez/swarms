@@ -8,9 +8,9 @@ from swarms.prompts.prompt_generator import (
 from swarms.prompts.prompt_generator_optimizer import (
     prompt_generator_sys_prompt,
 )
-from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.loguru_logger import initialize_logger, initialize_watchtower_logger
 
-logger = initialize_logger(log_folder="ape_agent")
+logger = initialize_watchtower_logger(log_folder="ape_agent")
 
 
 @retry(
