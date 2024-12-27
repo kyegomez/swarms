@@ -1,12 +1,11 @@
 import asyncio
 import json
-import uuid
-from datetime import datetime
-import aiohttp
-import sys
-from typing import Dict, Any, Optional
-from loguru import logger
 import os
+import sys
+from typing import Any, Dict
+
+import aiohttp
+from loguru import logger
 
 # Configure loguru
 LOG_PATH = "api_tests.log"
@@ -17,7 +16,7 @@ logger.add(LOG_PATH,
     level="DEBUG"
 )
 
-BASE_URL = "https://dev.api.swarms.ai/v1"  # Change this to match your server URL
+BASE_URL = "https://api.swarms.ai/v1"  # Change this to match your server URL
 
 async def log_request_details(method: str, url: str, headers: dict, data: Any = None):
     """Log request details before sending."""
@@ -249,7 +248,7 @@ def main():
         asyncio.run(run_tests())
     except KeyboardInterrupt:
         logger.warning("Test execution interrupted by user.")
-    except Exception as e:
+    except Exception:
         logger.exception("Fatal error in test execution:")
     finally:
         logger.info("Test suite shutdown complete.")

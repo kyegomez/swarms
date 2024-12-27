@@ -123,7 +123,7 @@ class GroupChat:
         description: str = "A group chat for multiple agents",
         agents: List[Agent] = [],
         speaker_fn: SpeakerFunction = round_robin,
-        max_turns: int = 10,
+        max_loops: int = 10,
     ):
         """
         Initialize the GroupChat.
@@ -133,13 +133,13 @@ class GroupChat:
             description (str): Description of the purpose of the group chat.
             agents (List[Agent]): A list of agents participating in the chat.
             speaker_fn (SpeakerFunction): The function to determine which agent should speak next.
-            max_turns (int): Maximum number of turns in the chat.
+            max_loops (int): Maximum number of turns in the chat.
         """
         self.name = name
         self.description = description
         self.agents = agents
         self.speaker_fn = speaker_fn
-        self.max_turns = max_turns
+        self.max_loops = max_loops
         self.chat_history = ChatHistory(
             turns=[],
             total_messages=0,
@@ -237,7 +237,7 @@ class GroupChat:
                 f"Starting chat '{self.name}' with task: {task}"
             )
 
-            for turn in range(self.max_turns):
+            for turn in range(self.max_loops):
                 current_turn = ChatTurn(
                     turn_number=turn, responses=[], task=task
                 )

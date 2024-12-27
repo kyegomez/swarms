@@ -111,6 +111,9 @@ class ExecutionContext:
     history: List[Dict[str, Any]] = field(default_factory=list)
 
 
+def func():
+    pass
+
 hints = get_type_hints(func)
 
 

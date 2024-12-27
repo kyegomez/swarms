@@ -1,3 +1,5 @@
+name: agentapi
+
 service:
   readiness_probe:
     path: /docs
@@ -11,14 +13,19 @@ service:
     upscale_delay_seconds: 180
     downscale_delay_seconds: 600
 
+
+envs:
+  WORKSPACE_DIR: "agent_workspace"
+  OPENAI_API_KEY: ""
+
 resources:
   ports: 8000  # FastAPI default port
   cpus: 16
   memory: 64
-  disk_size: 100
+  disk_size: 50
   use_spot: true
 
-workdir: /app
+workdir: .
 
 setup: |
   git clone https://github.com/kyegomez/swarms.git
@@ -27,7 +34,6 @@ setup: |
   pip install swarms
 
 run: |
-  cd swarms/api
   uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 
 # env:
