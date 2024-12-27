@@ -25,6 +25,3 @@ pandas>=2.2.2
 networkx
 aiofiles
 clusterops
-reportlab
-doc-master
-termcolor

@@ -3,15 +3,15 @@ import csv
 import datetime
 import os
 import uuid
-from typing import List, Union
+from typing import Dict, List, Union
 
 import aiofiles
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.utils.file_processing import create_file_in_folder
 from swarms.telemetry.capture_sys_data import log_agent_data
+from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
@@ -23,6 +23,15 @@ uuid_hex = uuid.uuid4().hex
 # Format time variable to be compatible across operating systems
 formatted_time = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 # --------------- NEW CHANGE END ---------------
+
+
+class AgentConfig(BaseModel):
+    """Configuration for an agent loaded from CSV"""
+
+    agent_name: str
+    description: str
+    system_prompt: str
+    task: str
 
 
 class AgentOutput(BaseModel):
@@ -77,6 +86,7 @@ class SpreadSheetSwarm(BaseSwarm):
         save_file_path: str = None,
         max_loops: int = 1,
         workspace_dir: str = os.getenv("WORKSPACE_DIR"),
+        load_path: str = None,
         *args,
         **kwargs,
     ):
@@ -93,6 +103,8 @@ class SpreadSheetSwarm(BaseSwarm):
         self.autosave_on = autosave_on
         self.max_loops = max_loops
         self.workspace_dir = workspace_dir
+        self.load_path = load_path
+        self.agent_configs: Dict[str, AgentConfig] = {}
 
         # --------------- NEW CHANGE START ---------------
         # The save_file_path now uses the formatted_time and uuid_hex
@@ -122,18 +134,143 @@ class SpreadSheetSwarm(BaseSwarm):
         """
         logger.info("Checking the reliability of the swarm...")
 
-        if not self.agents:
-            raise ValueError("No agents are provided.")
-        if not self.save_file_path:
-            raise ValueError("No save file path is provided.")
+        # if not self.agents:
+        #     raise ValueError("No agents are provided.")
+        # if not self.save_file_path:
+        #     raise ValueError("No save file path is provided.")
         if not self.max_loops:
             raise ValueError("No max loops are provided.")
 
         logger.info("Swarm reliability check passed.")
         logger.info("Swarm is ready to run.")
 
-    # @profile_func
-    def run(self, task: str, *args, **kwargs):
+    async def _load_from_csv(self):
+        """
+        Load agent configurations from a CSV file.
+        Expected CSV format: agent_name,description,system_prompt,task
+
+        Args:
+            csv_path (str): Path to the CSV file containing agent configurations
+        """
+        try:
+            csv_path = self.load_path
+            logger.info(
+                f"Loading agent configurations from {csv_path}"
+            )
+
+            async with aiofiles.open(csv_path, mode="r") as file:
+                content = await file.read()
+                csv_reader = csv.DictReader(content.splitlines())
+
+                for row in csv_reader:
+                    config = AgentConfig(
+                        agent_name=row["agent_name"],
+                        description=row["description"],
+                        system_prompt=row["system_prompt"],
+                        task=row["task"],
+                    )
+
+                    # Create new agent with configuration
+                    new_agent = Agent(
+                        agent_name=config.agent_name,
+                        system_prompt=config.system_prompt,
+                        description=config.description,
+                        model_name=(
+                            row["model_name"]
+                            if "model_name" in row
+                            else "openai/gpt-4o"
+                        ),
+                        docs=[row["docs"]] if "docs" in row else "",
+                        dynamic_temperature_enabled=True,
+                        max_loops=row["max_loops"] if "max_loops" in row else 1,
+                        user_name=row["user_name"] if "user_name" in row else "user",
+                        # output_type="str",
+                        stopping_token=row["stopping_token"] if "stopping_token" in row else None,
+                    )
+
+                    # Add agent to swarm
+                    self.agents.append(new_agent)
+                    self.agent_configs[config.agent_name] = config
+
+            # Update metadata with new agents
+            self.metadata.agents = [
+                agent.name for agent in self.agents
+            ]
+            self.metadata.number_of_agents = len(self.agents)
+            logger.info(
+                f"Loaded {len(self.agent_configs)} agent configurations"
+            )
+        except Exception as e:
+            logger.error(f"Error loading agent configurations: {e}")
+
+    def load_from_csv(self):
+        asyncio.run(self._load_from_csv())
+
+    async def run_from_config(self):
+        """
+        Run all agents with their configured tasks concurrently
+        """
+        logger.info("Running agents from configuration")
+        self.metadata.start_time = time
+
+        tasks = []
+        for agent in self.agents:
+            config = self.agent_configs.get(agent.agent_name)
+            if config:
+                for _ in range(self.max_loops):
+                    tasks.append(
+                        asyncio.to_thread(
+                            self._run_agent_task, agent, config.task
+                        )
+                    )
+
+        # Run all tasks concurrently
+        results = await asyncio.gather(*tasks)
+
+        # Process the results
+        for result in results:
+            self._track_output(*result)
+
+        self.metadata.end_time = time
+
+        # Save metadata
+        logger.info("Saving metadata to CSV and JSON...")
+        await self._save_metadata()
+
+        if self.autosave_on:
+            self.data_to_json_file()
+
+        log_agent_data(self.metadata.model_dump())
+        return self.metadata.model_dump_json(indent=4)
+
+    async def _run(self, task: str = None, *args, **kwargs):
+        """
+        Run the swarm either with a specific task or using configured tasks.
+
+        Args:
+            task (str, optional): The task to be executed by all agents. If None, uses tasks from config.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            str: The JSON representation of the swarm metadata.
+        """
+        if task is None and self.agent_configs:
+            return await self.run_from_config()
+        else:
+            self.metadata.start_time = time
+            await self._run_tasks(task, *args, **kwargs)
+            self.metadata.end_time = time
+            await self._save_metadata()
+
+            if self.autosave_on:
+                self.data_to_json_file()
+
+            print(log_agent_data(self.metadata.model_dump()))
+            return self.metadata.model_dump_json(indent=4)
+        
+        
+    def run(self, task: str = None, *args, **kwargs):
         """
         Run the swarm with the specified task.
 
@@ -146,24 +283,11 @@ class SpreadSheetSwarm(BaseSwarm):
             str: The JSON representation of the swarm metadata.
 
         """
-        logger.info(f"Running the swarm with task: {task}")
-        self.metadata.start_time = time
-
-        # Run the asyncio event loop
-        asyncio.run(self._run_tasks(task, *args, **kwargs))
-
-        self.metadata.end_time = time
-
-        # Synchronously save metadata
-        logger.info("Saving metadata to CSV and JSON...")
-        asyncio.run(self._save_metadata())
-
-        if self.autosave_on:
-            self.data_to_json_file()
-
-        print(log_agent_data(self.metadata.model_dump()))
-
-        return self.metadata.model_dump_json(indent=4)
+        try:
+            return asyncio.run(self._run(task, *args, **kwargs))
+        except Exception as e:
+            logger.error(f"Error running swarm: {e}")
+            raise e
 
     async def _run_tasks(self, task: str, *args, **kwargs):
         """
@@ -208,9 +332,15 @@ class SpreadSheetSwarm(BaseSwarm):
         Returns:
             Tuple[str, str, str]: A tuple containing the agent name, task, and result.
         """
-        result = agent.run(task, *args, **kwargs)
-        # Assuming agent.run() is a blocking call
-        return agent.agent_name, task, result
+        try:
+            result = agent.run(task=task, *args, **kwargs)
+            # Assuming agent.run() is a blocking call
+            return agent.agent_name, task, result
+        except Exception as e:
+            logger.error(
+                f"Error running task for {agent.agent_name}: {e}"
+            )
+            return agent.agent_name, task, str(e)
 
     def _track_output(self, agent_name: str, task: str, result: str):
         """

@@ -276,7 +276,6 @@ class AgentStore:
                 system_prompt=config.system_prompt,
                 model_name=config.model_name,
                 max_loops=config.max_loops,
-                verbose=config.verbose,
                 dynamic_temperature_enabled=True,
                 user_name=config.user_name,
                 retry_attempts=config.retry_attempts,

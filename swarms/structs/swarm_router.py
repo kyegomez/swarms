@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Literal, Union
 
-from doc_master import doc_master
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -175,28 +174,11 @@ class SwarmRouter:
         if self.rules is not None:
             self.handle_rules()
 
-        # if self.documents is not None:
-        #     self.handle_docs()
-
         # let's make a function that checks the agents parameter and disables clusterops
 
     def deactivate_clusterops(self):
         for agent in self.agents:
             agent.do_not_use_cluster_ops = True
-
-    def handle_docs(self):
-        # Process all documents in parallel using list comprehension
-        data = "".join(
-            [doc_master(file_path=doc) for doc in self.documents]
-        )
-
-        # Update all agents' prompts at once
-        doc_prompt = f"##### Documents Available ########## {data}"
-        for agent in self.agents:
-            agent.system_prompt += doc_prompt
-
-        # Add documents to the logs
-        # self.logs.append(Document(file_path=self.documents, data=data))
 
     def activate_shared_memory(self):
         logger.info("Activating shared memory with all agents ")

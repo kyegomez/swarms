@@ -136,9 +136,9 @@ class BaseSwarm(ABC):
             raise TypeError("Agents must be a list.")
 
         # Ensure that agents is not empty
-        if len(self.agents) == 0:
-            logger.error("Agents list must not be empty.")
-            raise ValueError("Agents list must not be empty.")
+        # if len(self.agents) == 0:
+        #     logger.error("Agents list must not be empty.")
+        #     raise ValueError("Agents list must not be empty.")
 
         # Initialize conversation
         self.conversation = Conversation(

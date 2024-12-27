@@ -1,10 +1,14 @@
-import time
-import os
+
 import json
-from typing import List, Union, Dict, Any
+import os
+import subprocess
+import time
+from datetime import datetime
+from typing import Any, Dict, List, Union
+
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
-from datetime import datetime
+
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -303,23 +307,24 @@ class Artifact(BaseModel):
         Helper method to save content as PDF using reportlab
         """
         try:
-            from reportlab.pdfgen import canvas
             from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
+        except ImportError as e:
+            logger.error(f"Error importing reportlab: {e}")
+            subprocess.run(["pip", "install", "reportlab"])
+            from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
 
-            c = canvas.Canvas(output_path, pagesize=letter)
-            # Split content into lines
-            y = 750  # Starting y position
-            for line in self.contents.split("\n"):
-                c.drawString(50, y, line)
-                y -= 15  # Move down for next line
-                if y < 50:  # New page if bottom reached
-                    c.showPage()
-                    y = 750
-            c.save()
-        except ImportError:
-            raise ImportError(
-                "reportlab package is required for PDF output. Install with: pip install reportlab"
-            )
+        c = canvas.Canvas(output_path, pagesize=letter)
+        # Split content into lines
+        y = 750  # Starting y position
+        for line in self.contents.split("\n"):
+            c.drawString(50, y, line)
+            y -= 15  # Move down for next line
+            if y < 50:  # New page if bottom reached
+                c.showPage()
+                y = 750
+        c.save()
 
 
 # # Example usage
