@@ -1,0 +1,91 @@
+graph TB
+    %% Styles and Classes
+    classDef core fill:#2374f7,color:white
+    classDef workflow fill:#48a999,color:white
+    classDef infrastructure fill:#f7c223,color:white
+    classDef tools fill:#23a7f7,color:white
+    classDef memory fill:#a723f7,color:white
+    classDef external fill:#cccccc,color:black
+
+    %% Core Framework Layer
+    subgraph CoreFramework
+        AgentCore["Agent Core"]
+        AgentRegistry["Agent Registry"]
+        SwarmRouter["Swarm Router"]
+        BaseWorkflow["Base Workflow"]
+        TaskMgmt["Task Management"]
+        ConvHandler["Conversation Handler"]
+        AutoSwarm["Auto Swarm"]
+    end
+
+    %% Workflow Layer
+    subgraph WorkflowTypes
+        Sequential["Sequential Workflow"]
+        Concurrent["Concurrent Workflow"]
+        Graph["Graph Workflow"]
+        MixtureAgents["Mixture of Agents"]
+    end
+
+    %% Tools Layer
+    subgraph ToolSystem
+        ToolIntegration["Tool Integration"]
+        ToolRegistry["Tool Registry"]
+    end
+
+    %% Infrastructure Layer
+    subgraph Infrastructure
+        CLI["CLI Interface"]
+        Telemetry["Telemetry System"]
+    end
+
+    %% External Services
+    subgraph ExternalServices
+        LLMAPIs["LLM APIs"]
+        VectorStores["Vector Stores"]
+    end
+
+    %% Relationships
+    AgentCore --> AgentRegistry
+    AgentRegistry --> SwarmRouter
+    SwarmRouter --> BaseWorkflow
+    BaseWorkflow --> Sequential
+    BaseWorkflow --> Concurrent
+    BaseWorkflow --> Graph
+    BaseWorkflow --> MixtureAgents
+    SwarmRouter --> TaskMgmt
+    TaskMgmt --> ConvHandler
+    AutoSwarm --> SwarmRouter
+    
+    ToolIntegration --> ToolRegistry
+    ToolRegistry --> AgentCore
+    
+    CLI --> SwarmRouter
+    Telemetry --> AgentCore
+    Telemetry --> SwarmRouter
+    
+    AgentCore --> LLMAPIs
+    ConvHandler --> VectorStores
+
+    %% Click Events
+    click AgentCore "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/agent.py"
+    click ToolIntegration "https://github.com/jmikedupont2/swarms/blob/master/swarms/tools/base_tool.py"
+    click Telemetry "https://github.com/jmikedupont2/swarms/blob/master/swarms/telemetry/__init__.py"
+    click CLI "https://github.com/jmikedupont2/swarms/blob/master/swarms/cli/main.py"
+    click Sequential "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/sequential_workflow.py"
+    click Concurrent "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/concurrent_workflow.py"
+    click Graph "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/graph_workflow.py"
+    click MixtureAgents "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/mixture_of_agents.py"
+    click AgentRegistry "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/agent_registry.py"
+    click SwarmRouter "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/swarm_router.py"
+    click BaseWorkflow "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/base_workflow.py"
+    click TaskMgmt "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/task.py"
+    click ConvHandler "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/conversation.py"
+    click ToolRegistry "https://github.com/jmikedupont2/swarms/blob/master/swarms/tools/tool_registry.py"
+    click AutoSwarm "https://github.com/jmikedupont2/swarms/blob/master/swarms/structs/auto_swarm.py"
+
+    %% Style Applications
+    class AgentCore,AgentRegistry,SwarmRouter,BaseWorkflow,TaskMgmt,ConvHandler,AutoSwarm core
+    class Sequential,Concurrent,Graph,MixtureAgents workflow
+    class CLI,Telemetry infrastructure
+    class ToolIntegration,ToolRegistry tools
+    class LLMAPIs,VectorStores external
