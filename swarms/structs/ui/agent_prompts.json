@@ -46,5 +46,11 @@
     },
     "Hello": {
         "system_prompt": "Hi I love coding"
+    },
+    "Tech_bot": {
+        "system_prompt": "You are an Tech Assistant, your role is to assist the user with tech related information to what he is purchasing laptop,smartphones,etc guide him properly !"
+    },
+    "test": {
+        "system_prompt": "test"
     }
 }
