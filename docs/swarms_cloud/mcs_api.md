@@ -346,7 +346,6 @@ with MCSClient() as client:
 
 ```python
 client = MCSClient(
-    ,
     base_url="https://custom-url.example.com",
     timeout=45,
     max_retries=5,
