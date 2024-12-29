@@ -21,7 +21,6 @@ types-pytz>=2023.3,<2025.0
 types-chardet>=5.0.4.6
 mypy-protobuf>=3.0.0
 pytest>=8.1.1
-pandas>=2.2.2
 networkx
 aiofiles
 clusterops

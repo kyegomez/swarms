@@ -9,12 +9,6 @@ from swarms.structs.agent import Agent
 
 logger = initialize_logger(log_folder="pandas_utils")
 
-try:
-    import pandas as pd
-except ImportError:
-    logger.error("Failed to import pandas")
-    subprocess.run(["pip", "install", "pandas"])
-    import pandas as pd
 
 
 def display_agents_info(agents: List[Agent]) -> None:
@@ -24,6 +18,16 @@ def display_agents_info(agents: List[Agent]) -> None:
     :param agents: List of Agent instances.
     """
     # Extracting relevant information from each agent
+    
+    try:
+        import pandas as pd
+    except ImportError:
+        logger.error("Failed to import pandas")
+        subprocess.run(["pip", "install", "pandas"])
+        import pandas as pd
+
+
+
     agent_data = []
     for agent in agents:
         try:
@@ -57,19 +61,26 @@ def display_agents_info(agents: List[Agent]) -> None:
         logger.error(f"Failed to print DataFrame: {e}")
 
 
-def dict_to_dataframe(data: Dict[str, Any]) -> pd.DataFrame:
+def dict_to_dataframe(data: Dict[str, Any]):
     """
     Converts a dictionary into a pandas DataFrame.
 
     :param data: Dictionary to convert.
     :return: A pandas DataFrame representation of the dictionary.
     """
+    try:
+        import pandas as pd
+    except ImportError:
+        logger.error("Failed to import pandas")
+        subprocess.run(["pip", "install", "pandas"])
+        import pandas as pd
+
     # Convert dictionary to DataFrame
     df = pd.json_normalize(data)
     return df
 
 
-def pydantic_model_to_dataframe(model: BaseModel) -> pd.DataFrame:
+def pydantic_model_to_dataframe(model: BaseModel) -> any:
     """
     Converts a Pydantic Base Model into a pandas DataFrame.
 
