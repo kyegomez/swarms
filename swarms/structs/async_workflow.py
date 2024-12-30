@@ -63,7 +63,7 @@ class SpeakerMessage(BaseModel):
 
 
 class GroupChatConfig(BaseModel):
-    max_turns: int = 10
+    max_loops: int = 10
     timeout_per_turn: float = 30.0
     require_all_speakers: bool = False
     allow_concurrent: bool = True
@@ -309,7 +309,7 @@ class AsyncWorkflow(BaseWorkflow):
         messages: List[SpeakerMessage] = []
         current_turn = 0
 
-        while current_turn < self.group_chat_config.max_turns:
+        while current_turn < self.group_chat_config.max_loops:
             turn_context = {
                 "turn": current_turn,
                 "history": messages,
@@ -627,7 +627,7 @@ def create_default_workflow(
         verbose=True,
         enable_group_chat=enable_group_chat,
         group_chat_config=GroupChatConfig(
-            max_turns=5,
+            max_loops=5,
             allow_concurrent=True,
             require_all_speakers=False,
         ),

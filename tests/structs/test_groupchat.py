@@ -63,12 +63,12 @@ def test_expertise_based_speaking():
         assert first_response.agent_name == agent.agent_name
 
 
-def test_max_turns_limit():
-    max_turns = 3
-    chat = GroupChat(agents=setup_test_agents(), max_turns=max_turns)
+def test_max_loops_limit():
+    max_loops = 3
+    chat = GroupChat(agents=setup_test_agents(), max_loops=max_loops)
     history = chat.run("Test message")
 
-    assert len(history.turns) == max_turns
+    assert len(history.turns) == max_loops
 
 
 def test_error_handling():
@@ -106,7 +106,7 @@ def test_large_agent_group():
 
 
 def test_long_conversations():
-    chat = GroupChat(agents=setup_test_agents(), max_turns=50)
+    chat = GroupChat(agents=setup_test_agents(), max_loops=50)
     history = chat.run("Long conversation test")
 
     assert len(history.turns) == 50
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         test_round_robin_speaking,
         test_concurrent_processing,
         test_expertise_based_speaking,
-        test_max_turns_limit,
+        test_max_loops_limit,
         test_error_handling,
         test_conversation_context,
         test_large_agent_group,

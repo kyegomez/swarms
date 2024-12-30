@@ -29,7 +29,7 @@ A production-grade multi-agent system enabling sophisticated group conversations
 | description | str | "" | Purpose description |
 | agents | List[Agent] | [] | Participating agents |
 | speaker_fn | Callable | round_robin | Speaker selection function |
-| max_turns | int | 10 | Maximum conversation turns |
+| max_loops | int | 10 | Maximum conversation turns |
 
 
 ## Table of Contents
@@ -272,7 +272,7 @@ analysis_team = GroupChat(
     description="Comprehensive market analysis group",
     agents=[data_analyst, market_expert, strategy_advisor],
     speaker_fn=expertise_based,
-    max_turns=15
+    max_loops=15
 )
 
 # Run complex analysis
