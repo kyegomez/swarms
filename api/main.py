@@ -958,7 +958,6 @@ def create_app() -> FastAPI:
     logger.info("FastAPI application created successfully")
     return app
 
-
 def run_server():
     """Run the API server"""
     try:
@@ -970,8 +969,7 @@ def run_server():
         asyncio.run(server.startup())
     except Exception as e:
         logger.error(f"Failed to start API: {str(e)}")
-        print(f"Error starting server: {str(e)}")
-
+        print(f"Error starting server: {str(e)}")  # <-- Fixed here
 
 if __name__ == "__main__":
     run_server()
