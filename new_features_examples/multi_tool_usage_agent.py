@@ -19,7 +19,7 @@ class ToolDefinition:
     callable: Optional[Callable] = None
 
 
-def extract_type_hints(func: Callable) -> dict:
+def extract_type_hints(func: Callable) -> Dict[str, Any]:
     """Extract parameter types from function type hints."""
     return typing.get_type_hints(func)
 
@@ -110,6 +110,9 @@ class ExecutionContext:
     current_step: int = 0
     history: List[Dict[str, Any]] = field(default_factory=list)
 
+
+def func():
+    pass
 
 hints = get_type_hints(func)
 

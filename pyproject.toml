@@ -80,7 +80,7 @@ rich = "*"
 # sentence-transformers = "*"
 swarm-models = "*"
 termcolor = "*"
-clusterops = { git = "https://github.com/The-Swarm-Corporation/clusterops.git", branch = "main" }
+clusterops = "*"
 
 
 # [tool.poetry.extras]

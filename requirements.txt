@@ -24,7 +24,7 @@ pytest>=8.1.1
 pandas>=2.2.2
 networkx
 aiofiles
-git+https://github.com/The-Swarm-Corporation/clusterops.git@main#egg=clusterops
+clusterops
 reportlab
 doc-master
 termcolor
