@@ -272,5 +272,7 @@ nav:
     - Culture: "corporate/culture.md"
     - Hiring: "corporate/hiring.md"
     - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
+  - Examples:
+    - Unique Swarms: "examples/unique_swarms.md"
   # - Clusterops:
   #   - Overview: "clusterops/reference.md"
