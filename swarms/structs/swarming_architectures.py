@@ -1,4 +1,3 @@
-import asyncio
 import math
 from typing import List, Union
 
@@ -343,47 +342,6 @@ def sinusoidal_swarm(agents: AgentListType, task: str):
         agents[index].run(task)
 
 
-async def one_to_three(
-    sender: Agent, agents: AgentListType, task: str
-):
-    """
-    Sends a message from the sender agent to three other agents.
-
-    Args:
-        sender (Agent): The agent sending the message.
-        agents (AgentListType): The list of agents to receive the message.
-        task (str): The message to be sent.
-
-    Raises:
-        Exception: If there is an error while sending the message.
-
-    Returns:
-        None
-    """
-    if len(agents) != 3:
-        raise ValueError("The number of agents must be exactly 3.")
-
-    if not task:
-        raise ValueError("The task cannot be empty.")
-
-    if not sender:
-        raise ValueError("The sender cannot be empty.")
-
-    try:
-        receive_tasks = []
-        for agent in agents:
-            receive_tasks.append(
-                agent.receive_message(sender.agent_name, task)
-            )
-
-        await asyncio.gather(*receive_tasks)
-    except Exception as error:
-        logger.error(
-            f"[ERROR][CLASS: Agent][METHOD: one_to_three] {error}"
-        )
-        raise error
-
-
 """
 This module contains functions for facilitating communication between agents in a swarm. It includes methods for one-to-one communication, broadcasting, and other swarm architectures.
 """
@@ -440,36 +398,70 @@ def one_to_one(
     return conversation.return_history()
 
 
-# Broadcasting: A message from one agent to many
 async def broadcast(
     sender: Agent, agents: AgentListType, task: str
 ) -> None:
-    """
-    Facilitates broadcasting of a message from one agent to multiple agents.
-
-    Args:
-        sender (Agent): The agent sending the message.
-        agents (AgentListType): The list of agents to receive the message.
-        task (str): The message to be sent.
-
-    Raises:
-        ValueError: If the sender, agents, or task is empty.
-        Exception: If there is an error during the broadcasting process.
-    """
     conversation = Conversation()
 
     if not sender or not agents or not task:
         raise ValueError("Sender, agents, and task cannot be empty.")
 
     try:
-        receive_tasks = []
+        # First get the sender's broadcast message
+        broadcast_message = sender.run(task)
+        conversation.add_log(
+            agent_name=sender.agent_name,
+            task=task,
+            response=broadcast_message,
+        )
+
+        # Then have all agents process it
         for agent in agents:
-            receive_tasks.append(agent.run(task))
+            response = agent.run(broadcast_message)
             conversation.add_log(
-                agent_name=agent.agent_name, task=task, response=task
+                agent_name=agent.agent_name,
+                task=broadcast_message,
+                response=response,
             )
 
-        await asyncio.gather(*receive_tasks)
+        return conversation.return_history()
+
     except Exception as error:
         logger.error(f"Error during broadcast: {error}")
+        raise error
+
+
+async def one_to_three(
+    sender: Agent, agents: AgentListType, task: str
+):
+    if len(agents) != 3:
+        raise ValueError("The number of agents must be exactly 3.")
+
+    if not task or not sender:
+        raise ValueError("Sender and task cannot be empty.")
+
+    conversation = Conversation()
+
+    try:
+        # Get sender's message
+        sender_message = sender.run(task)
+        conversation.add_log(
+            agent_name=sender.agent_name,
+            task=task,
+            response=sender_message,
+        )
+
+        # Have each receiver process the message
+        for agent in agents:
+            response = agent.run(sender_message)
+            conversation.add_log(
+                agent_name=agent.agent_name,
+                task=sender_message,
+                response=response,
+            )
+
+        return conversation.return_history()
+
+    except Exception as error:
+        logger.error(f"Error in one_to_three: {error}")
         raise error

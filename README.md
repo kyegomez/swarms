@@ -295,7 +295,7 @@ print(agent.model_dump_json())
 print(agent.model_dump_yaml())
 
 # Ingest documents into the agent's knowledge base
-agent.ingest_docs("your_pdf_path.pdf")
+("your_pdf_path.pdf")
 
 # Receive a message from a user and process it
 agent.receive_message(name="agent_name", message="message")

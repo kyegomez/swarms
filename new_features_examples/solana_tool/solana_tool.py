@@ -234,7 +234,7 @@ def fetch_wallet_transactions(wallet_address: str) -> str:
 
                 # Small delay between transaction fetches
                 time.sleep(0.1)
-                
+
                 # print(tx)
                 logger.info(f"Enriched transaction: {tx}")
 

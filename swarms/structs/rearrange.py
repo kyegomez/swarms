@@ -482,13 +482,15 @@ class AgentRearrange(BaseSwarm):
 
         except Exception as e:
             self._catch_error(e)
-        
+
     def _catch_error(self, e: Exception):
         if self.autosave is True:
             log_agent_data(self.to_dict())
-            
-        logger.error(f"An error occurred with your swarm {self.name}: Error: {e} Traceback: {e.__traceback__}")
-        
+
+        logger.error(
+            f"An error occurred with your swarm {self.name}: Error: {e} Traceback: {e.__traceback__}"
+        )
+
         return e
 
     def run(
@@ -653,7 +655,9 @@ class AgentRearrange(BaseSwarm):
 
                 # Process batch using asyncio.gather
                 batch_coros = [
-                    self.astream(task=task, img=img_path, *args, **kwargs)
+                    self.astream(
+                        task=task, img=img_path, *args, **kwargs
+                    )
                     for task, img_path in zip(batch_tasks, batch_imgs)
                 ]
                 batch_results = await asyncio.gather(*batch_coros)
@@ -691,7 +695,9 @@ class AgentRearrange(BaseSwarm):
             List of results corresponding to input tasks
         """
         try:
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            with ThreadPoolExecutor(
+                max_workers=max_workers
+            ) as executor:
                 imgs = img if img else [None] * len(tasks)
                 futures = [
                     executor.submit(
@@ -710,8 +716,7 @@ class AgentRearrange(BaseSwarm):
                 return [future.result() for future in futures]
         except Exception as e:
             self._catch_error(e)
-        
-        
+
     def _serialize_callable(
         self, attr_value: Callable
     ) -> Dict[str, Any]:
@@ -769,7 +774,6 @@ class AgentRearrange(BaseSwarm):
             attr_name: self._serialize_attr(attr_name, attr_value)
             for attr_name, attr_value in self.__dict__.items()
         }
-
 
 
 def rearrange(

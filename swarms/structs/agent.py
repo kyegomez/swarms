@@ -499,10 +499,10 @@ class Agent:
             self.stopping_token = "<DONE>"
 
         # If the docs exist then ingest the docs
-        if exists(self.docs):
-            threading.Thread(
-                target=self.ingest_docs, args=(self.docs)
-            ).start()
+        # if exists(self.docs):
+        #     threading.Thread(
+        #         target=self.ingest_docs, args=(self.docs)
+        #     ).start()
 
         # If docs folder exists then get the docs from docs folder
         if exists(self.docs_folder):
@@ -1175,6 +1175,13 @@ class Agent:
             )
         except Exception as error:
             self._handle_run_error(error)
+
+    def receive_message(
+        self, agent_name: str, task: str, *args, **kwargs
+    ):
+        return self.run(
+            task=f"From {agent_name}: {task}", *args, **kwargs
+        )
 
     def dict_to_csv(self, data: dict) -> str:
         """

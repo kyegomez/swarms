@@ -10,7 +10,6 @@ from swarms.structs.agent import Agent
 logger = initialize_logger(log_folder="pandas_utils")
 
 
-
 def display_agents_info(agents: List[Agent]) -> None:
     """
     Displays information about all agents in a list using a DataFrame.
@@ -18,15 +17,13 @@ def display_agents_info(agents: List[Agent]) -> None:
     :param agents: List of Agent instances.
     """
     # Extracting relevant information from each agent
-    
+
     try:
         import pandas as pd
     except ImportError:
         logger.error("Failed to import pandas")
         subprocess.run(["pip", "install", "pandas"])
         import pandas as pd
-
-
 
     agent_data = []
     for agent in agents:

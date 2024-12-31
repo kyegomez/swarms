@@ -108,7 +108,9 @@ class SpreadSheetSwarm(BaseSwarm):
 
         # --------------- NEW CHANGE START ---------------
         # The save_file_path now uses the formatted_time and uuid_hex
-        self.save_file_path = f"spreadsheet_swarm_{formatted_time}_run_id_{uuid_hex}.csv"
+        self.save_file_path = (
+            f"spreadsheet_swarm_run_id_{uuid_hex}.csv"
+        )
         # --------------- NEW CHANGE END ---------------
 
         self.metadata = SwarmRunMetadata(
@@ -182,10 +184,22 @@ class SpreadSheetSwarm(BaseSwarm):
                         ),
                         docs=[row["docs"]] if "docs" in row else "",
                         dynamic_temperature_enabled=True,
-                        max_loops=row["max_loops"] if "max_loops" in row else 1,
-                        user_name=row["user_name"] if "user_name" in row else "user",
+                        max_loops=(
+                            row["max_loops"]
+                            if "max_loops" in row
+                            else 1
+                        ),
+                        user_name=(
+                            row["user_name"]
+                            if "user_name" in row
+                            else "user"
+                        ),
                         # output_type="str",
-                        stopping_token=row["stopping_token"] if "stopping_token" in row else None,
+                        stopping_token=(
+                            row["stopping_token"]
+                            if "stopping_token" in row
+                            else None
+                        ),
                     )
 
                     # Add agent to swarm
@@ -268,8 +282,7 @@ class SpreadSheetSwarm(BaseSwarm):
 
             print(log_agent_data(self.metadata.model_dump()))
             return self.metadata.model_dump_json(indent=4)
-        
-        
+
     def run(self, task: str = None, *args, **kwargs):
         """
         Run the swarm with the specified task.
@@ -378,7 +391,7 @@ class SpreadSheetSwarm(BaseSwarm):
 
         create_file_in_folder(
             folder_path=f"{self.workspace_dir}/Spreedsheet-Swarm-{self.name}/{self.name}",
-            file_name=f"spreedsheet-swarm-{self.metadata.run_id}_metadata.json",
+            file_name=f"spreedsheet-swarm-{uuid_hex}_metadata.json",
             content=out,
         )
 
