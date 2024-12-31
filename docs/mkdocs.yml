@@ -195,7 +195,7 @@ nav:
     #   - Task: "swarms/structs/task.md"
     - Full API Reference: "swarms/framework/reference.md"
   - Examples:
-    - Unique Swarms: "examples/unique_swarms.md"
+    - Unique Swarms: "swarms/examples/unique_swarms.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
