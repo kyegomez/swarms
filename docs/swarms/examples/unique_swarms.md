@@ -46,6 +46,7 @@ flowchart LR
 ```
 
 **Best Used When:**
+
 - You need continuous processing of tasks
 
 - Tasks need to be processed by every agent in sequence
@@ -53,6 +54,7 @@ flowchart LR
 - You want predictable, ordered task distribution
 
 **Key Features:**
+
 - Tasks move in a circular pattern through all agents
 
 - Each agent processes each task once
@@ -78,6 +80,7 @@ flowchart LR
 ```
 
 **Best Used When:**
+
 - Tasks need sequential, pipeline-style processing
 
 - Each agent performs a specific transformation step
@@ -111,6 +114,7 @@ flowchart TD
 ```
 
 **Best Used When:**
+
 - You need centralized control
 
 - Tasks require coordination or oversight
@@ -143,6 +147,7 @@ flowchart TD
 ```
 
 **Best Used When:**
+
 - You need maximum flexibility
 
 - Task processing order isn't critical
@@ -170,6 +175,7 @@ flowchart TD
 ```
 
 **Best Used When:**
+
 - You need natural scaling patterns
 
 - Tasks have increasing complexity
@@ -207,6 +213,7 @@ flowchart TD
 ```
 
 **Best Used When:**
+
 - You need hierarchical task processing
 
 - Tasks require multiple levels of oversight
@@ -235,6 +242,7 @@ flowchart TD
 ```
 
 **Best Used When:**
+
 - Tasks have spatial relationships
 
 - You need neighbor-based processing
@@ -257,6 +265,7 @@ flowchart LR
 ```
 
 **Best Used When:**
+
 - Direct agent communication is needed
 
 - Tasks require back-and-forth interaction
@@ -279,6 +288,7 @@ flowchart TD
 ```
 
 **Best Used When:**
+
 - Information needs to reach all agents
 
 - Tasks require global coordination
