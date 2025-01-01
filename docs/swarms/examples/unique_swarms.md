@@ -47,12 +47,16 @@ flowchart LR
 
 **Best Used When:**
 - You need continuous processing of tasks
+
 - Tasks need to be processed by every agent in sequence
+
 - You want predictable, ordered task distribution
 
 **Key Features:**
 - Tasks move in a circular pattern through all agents
+
 - Each agent processes each task once
+
 - Maintains strict ordering of task processing
 
 ### Linear Swarm
@@ -75,7 +79,9 @@ flowchart LR
 
 **Best Used When:**
 - Tasks need sequential, pipeline-style processing
+
 - Each agent performs a specific transformation step
+
 - Order of processing is critical
 
 ### Star Swarm
@@ -106,7 +112,9 @@ flowchart TD
 
 **Best Used When:**
 - You need centralized control
+
 - Tasks require coordination or oversight
+
 - You want to maintain a single point of task distribution
 
 ### Mesh Swarm
@@ -136,7 +144,9 @@ flowchart TD
 
 **Best Used When:**
 - You need maximum flexibility
+
 - Task processing order isn't critical
+
 - You want fault tolerance
 
 ## Mathematical Swarm Patterns
@@ -161,7 +171,9 @@ flowchart TD
 
 **Best Used When:**
 - You need natural scaling patterns
+
 - Tasks have increasing complexity
+
 - You want organic growth in processing capacity
 
 ### Pyramid Swarm
@@ -196,7 +208,9 @@ flowchart TD
 
 **Best Used When:**
 - You need hierarchical task processing
+
 - Tasks require multiple levels of oversight
+
 - You want organized task delegation
 
 ### Grid Swarm
@@ -222,7 +236,9 @@ flowchart TD
 
 **Best Used When:**
 - Tasks have spatial relationships
+
 - You need neighbor-based processing
+
 - You want structured parallel processing
 
 ## Communication Patterns
@@ -242,7 +258,9 @@ flowchart LR
 
 **Best Used When:**
 - Direct agent communication is needed
+
 - Tasks require back-and-forth interaction
+
 - You need controlled message exchange
 
 ### Broadcast Communication
@@ -262,7 +280,9 @@ flowchart TD
 
 **Best Used When:**
 - Information needs to reach all agents
+
 - Tasks require global coordination
+
 - You need system-wide updates
 
 ## Best Practices
