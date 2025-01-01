@@ -1,6 +1,313 @@
-## Unique Swarm Examples
 
 In this section, we present a diverse collection of unique swarms, each with its own distinct characteristics and applications. These examples are designed to illustrate the versatility and potential of swarm intelligence in various domains. By exploring these examples, you can gain a deeper understanding of how swarms can be leveraged to solve complex problems and improve decision-making processes.
+
+# Documentation
+
+## Table of Contents
+1. [Common Parameters](#common-parameters)
+2. [Basic Swarm Patterns](#basic-swarm-patterns)
+3. [Mathematical Swarm Patterns](#mathematical-swarm-patterns)
+4. [Advanced Swarm Patterns](#advanced-swarm-patterns)
+5. [Communication Patterns](#communication-patterns)
+6. [Best Practices](#best-practices)
+7. [Common Use Cases](#common-use-cases)
+
+## Common Parameters
+
+All swarm architectures accept these base parameters:
+
+- `agents: AgentListType` - List of Agent objects to participate in the swarm
+- `tasks: List[str]` - List of tasks to be processed by the agents
+- `return_full_history: bool` (optional) - If True, returns conversation history. Defaults to True
+
+Return types are generally `Union[dict, List[str]]`, where:
+- If `return_full_history=True`: Returns a dictionary containing the full conversation history
+- If `return_full_history=False`: Returns a list of agent responses
+
+## Basic Swarm Patterns
+
+### Circular Swarm
+```python
+def circular_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+```
+
+**Information Flow:**
+```mermaid
+flowchart LR
+    subgraph Circular Flow
+    A1((Agent 1)) --> A2((Agent 2))
+    A2 --> A3((Agent 3))
+    A3 --> A4((Agent 4))
+    A4 --> A1
+    end
+    Task1[Task 1] --> A1
+    Task2[Task 2] --> A2
+    Task3[Task 3] --> A3
+```
+
+**Best Used When:**
+- You need continuous processing of tasks
+- Tasks need to be processed by every agent in sequence
+- You want predictable, ordered task distribution
+
+**Key Features:**
+- Tasks move in a circular pattern through all agents
+- Each agent processes each task once
+- Maintains strict ordering of task processing
+
+### Linear Swarm
+```python
+def linear_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+```
+
+**Information Flow:**
+```mermaid
+flowchart LR
+    Input[Task Input] --> A1
+    subgraph Sequential Processing
+    A1((Agent 1)) --> A2((Agent 2))
+    A2 --> A3((Agent 3))
+    A3 --> A4((Agent 4))
+    A4 --> A5((Agent 5))
+    end
+    A5 --> Output[Final Result]
+```
+
+**Best Used When:**
+- Tasks need sequential, pipeline-style processing
+- Each agent performs a specific transformation step
+- Order of processing is critical
+
+### Star Swarm
+```python
+def star_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+```
+
+**Information Flow:**
+```mermaid
+flowchart TD
+    subgraph Star Pattern
+    A1((Central Agent))
+    A2((Agent 2))
+    A3((Agent 3))
+    A4((Agent 4))
+    A5((Agent 5))
+    A1 --> A2
+    A1 --> A3
+    A1 --> A4
+    A1 --> A5
+    end
+    Task[Initial Task] --> A1
+    A2 --> Result2[Result 2]
+    A3 --> Result3[Result 3]
+    A4 --> Result4[Result 4]
+    A5 --> Result5[Result 5]
+```
+
+**Best Used When:**
+- You need centralized control
+- Tasks require coordination or oversight
+- You want to maintain a single point of task distribution
+
+### Mesh Swarm
+```python
+def mesh_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+```
+
+**Information Flow:**
+```mermaid
+flowchart TD
+    subgraph Mesh Network
+    A1((Agent 1)) <--> A2((Agent 2))
+    A2 <--> A3((Agent 3))
+    A1 <--> A4((Agent 4))
+    A2 <--> A5((Agent 5))
+    A3 <--> A6((Agent 6))
+    A4 <--> A5
+    A5 <--> A6
+    end
+    Tasks[Task Pool] --> A1
+    Tasks --> A2
+    Tasks --> A3
+    Tasks --> A4
+    Tasks --> A5
+    Tasks --> A6
+```
+
+**Best Used When:**
+- You need maximum flexibility
+- Task processing order isn't critical
+- You want fault tolerance
+
+## Mathematical Swarm Patterns
+
+### Fibonacci Swarm
+```python
+def fibonacci_swarm(agents: AgentListType, tasks: List[str])
+```
+
+**Information Flow:**
+```mermaid
+flowchart TD
+    subgraph Fibonacci Pattern
+    L1[Level 1: 1 Agent] --> L2[Level 2: 1 Agent]
+    L2 --> L3[Level 3: 2 Agents]
+    L3 --> L4[Level 4: 3 Agents]
+    L4 --> L5[Level 5: 5 Agents]
+    end
+    Task[Initial Task] --> L1
+    L5 --> Results[Processed Results]
+```
+
+**Best Used When:**
+- You need natural scaling patterns
+- Tasks have increasing complexity
+- You want organic growth in processing capacity
+
+### Pyramid Swarm
+```python
+def pyramid_swarm(agents: AgentListType, tasks: List[str], return_full_history: bool = True)
+```
+
+**Information Flow:**
+```mermaid
+flowchart TD
+    subgraph Pyramid Structure
+    A1((Leader Agent))
+    A2((Manager 1))
+    A3((Manager 2))
+    A4((Worker 1))
+    A5((Worker 2))
+    A6((Worker 3))
+    A7((Worker 4))
+    A1 --> A2
+    A1 --> A3
+    A2 --> A4
+    A2 --> A5
+    A3 --> A6
+    A3 --> A7
+    end
+    Task[Complex Task] --> A1
+    A4 --> Result1[Output 1]
+    A5 --> Result2[Output 2]
+    A6 --> Result3[Output 3]
+    A7 --> Result4[Output 4]
+```
+
+**Best Used When:**
+- You need hierarchical task processing
+- Tasks require multiple levels of oversight
+- You want organized task delegation
+
+### Grid Swarm
+```python
+def grid_swarm(agents: AgentListType, tasks: List[str])
+```
+
+**Information Flow:**
+```mermaid
+flowchart TD
+    subgraph Grid Layout
+    A1((1)) <--> A2((2)) <--> A3((3))
+    A4((4)) <--> A5((5)) <--> A6((6))
+    A7((7)) <--> A8((8)) <--> A9((9))
+    A1 <--> A4 <--> A7
+    A2 <--> A5 <--> A8
+    A3 <--> A6 <--> A9
+    end
+    Tasks[Task Queue] --> A1
+    Tasks --> A5
+    Tasks --> A9
+```
+
+**Best Used When:**
+- Tasks have spatial relationships
+- You need neighbor-based processing
+- You want structured parallel processing
+
+## Communication Patterns
+
+### One-to-One Communication
+```python
+def one_to_one(sender: Agent, receiver: Agent, task: str, max_loops: int = 1) -> str
+```
+
+**Information Flow:**
+```mermaid
+flowchart LR
+    Task[Task] --> S((Sender))
+    S --> R((Receiver))
+    R --> Result[Result]
+```
+
+**Best Used When:**
+- Direct agent communication is needed
+- Tasks require back-and-forth interaction
+- You need controlled message exchange
+
+### Broadcast Communication
+```python
+async def broadcast(sender: Agent, agents: AgentListType, task: str) -> None
+```
+
+**Information Flow:**
+```mermaid
+flowchart TD
+    T[Task] --> S((Sender))
+    S --> A1((Agent 1))
+    S --> A2((Agent 2))
+    S --> A3((Agent 3))
+    S --> A4((Agent 4))
+```
+
+**Best Used When:**
+- Information needs to reach all agents
+- Tasks require global coordination
+- You need system-wide updates
+
+## Best Practices
+
+1. **Choose the Right Pattern:**
+   - Consider your task's natural structure
+   - Think about scaling requirements
+   - Consider fault tolerance needs
+
+2. **Performance Considerations:**
+   - More complex patterns have higher overhead
+   - Consider communication costs
+   - Match pattern to available resources
+
+3. **Error Handling:**
+   - All patterns include basic error checking
+   - Consider adding additional error handling for production
+   - Monitor agent performance and task completion
+
+4. **Scaling:**
+   - Different patterns scale differently
+   - Consider future growth needs
+   - Test with expected maximum load
+
+## Common Use Cases
+
+1. **Data Processing Pipelines**
+   - Linear Swarm
+   - Circular Swarm
+
+2. **Distributed Computing**
+   - Mesh Swarm
+   - Grid Swarm
+
+3. **Hierarchical Systems**
+   - Pyramid Swarm
+   - Star Swarm
+
+4. **Dynamic Workloads**
+   - Exponential Swarm
+   - Fibonacci Swarm
+
+5. **Conflict-Free Processing**
+   - Prime Swarm
+   - Harmonic Swarm
 
 
 ```python
