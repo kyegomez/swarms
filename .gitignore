@@ -273,3 +273,6 @@ flycheck_*.el
 # network security
 /network-security.data
 
+swarmsenv/
+
+test_fails.txt

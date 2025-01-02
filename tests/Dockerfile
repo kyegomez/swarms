@@ -23,5 +23,17 @@ RUN poetry config virtualenvs.create false && poetry install --no-interaction --
 # Install additional dependencies outside Poetry (e.g., swarms, pytest)
 RUN pip install swarms pytest
 
+# Ensure pytest is installed and available
+RUN pytest --version
+
+# Ensure the logs directory has correct permissions (in case of permission issues with mounted volumes)
+RUN mkdir -p /usr/src/app/logs && chmod -R 777 /usr/src/app/logs
+
+# Ensure that the PATH includes the directory where pytest is installed
+ENV PATH="/usr/local/bin:$PATH"
+
+# Set the working directory to the tests directory inside the container
+WORKDIR /usr/src/app/tests
+
 # Default command to run tests located in the /tests directory
-CMD pytest /usr/src/app/tests --continue-on-collection-errors --tb=short --disable-warnings | tee /usr/src/app/test_logs.txt
+CMD pytest /usr/src/app/tests --continue-on-collection-errors --tb=short --disable-warnings | tee /usr/src/app/logs/test_logs.txt
