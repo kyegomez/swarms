@@ -501,16 +501,16 @@ class AutoSwarmBuilder:
             raise
 
 
-swarm = AutoSwarmBuilder(
-    name="ChipDesign-Swarm",
-    description="A swarm of specialized AI agents for chip design",
-    swarm_type="ConcurrentWorkflow",
-)
+# swarm = AutoSwarmBuilder(
+#     name="ChipDesign-Swarm",
+#     description="A swarm of specialized AI agents for chip design",
+#     swarm_type="ConcurrentWorkflow",
+# )
 
-try:
-    result = swarm.run(
-        "Design a new AI accelerator chip optimized for transformer model inference..."
-    )
-    print(result)
-except Exception as e:
-    print(f"An error occurred: {e}")
+# try:
+#     result = swarm.run(
+#         "Design a new AI accelerator chip optimized for transformer model inference..."
+#     )
+#     print(result)
+# except Exception as e:
+#     print(f"An error occurred: {e}")

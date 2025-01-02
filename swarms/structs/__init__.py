@@ -80,6 +80,7 @@ from swarms.structs.utils import (
     parse_tasks,
 )
 from swarms.structs.async_workflow import AsyncWorkflow
+from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 
 __all__ = [
     "Agent",
@@ -154,4 +155,5 @@ __all__ = [
     "ChatTurn",
     "AgentResponse",
     "expertise_based",
+    "MultiAgentRouter",
 ]

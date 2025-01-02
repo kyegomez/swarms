@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -14,12 +13,14 @@ try:
     import pyaudio
 except ImportError:
     import subprocess
+
     subprocess.check_call(["pip", "install", "pyaudio"])
     import pyaudio
 try:
     import sounddevice as sd
 except ImportError:
     import subprocess
+
     subprocess.check_call(["pip", "install", "sounddevice"])
     import sounddevice as sd
 from loguru import logger
@@ -33,6 +34,7 @@ try:
     from pydub import AudioSegment
 except ImportError:
     import subprocess
+
     subprocess.check_call(["pip", "install", "pydub"])
     from pydub import AudioSegment
 
@@ -52,9 +54,16 @@ CHANNELS = 1
 def audio_to_pcm16_base64(audio_bytes: bytes) -> bytes:
     # load the audio file from the byte stream
     audio = AudioSegment.from_file(io.BytesIO(audio_bytes))
-    print(f"Loaded audio: {audio.frame_rate=} {audio.channels=} {audio.sample_width=} {audio.frame_width=}")
+    print(
+        f"Loaded audio: {audio.frame_rate=} {audio.channels=} {audio.sample_width=} {audio.frame_width=}"
+    )
     # resample to 24kHz mono pcm16
-    pcm_audio = audio.set_frame_rate(SAMPLE_RATE).set_channels(CHANNELS).set_sample_width(2).raw_data
+    pcm_audio = (
+        audio.set_frame_rate(SAMPLE_RATE)
+        .set_channels(CHANNELS)
+        .set_sample_width(2)
+        .raw_data
+    )
     return pcm_audio
 
 
@@ -88,7 +97,12 @@ class AudioPlayerAsync:
 
             # fill the rest of the frames with zeros if there is no more data
             if len(data) < frames:
-                data = np.concatenate((data, np.zeros(frames - len(data), dtype=np.int16)))
+                data = np.concatenate(
+                    (
+                        data,
+                        np.zeros(frames - len(data), dtype=np.int16),
+                    )
+                )
 
         outdata[:] = data.reshape(-1, 1)
 
@@ -151,14 +165,23 @@ async def send_audio_worker_sounddevice(
                 if not sent_audio and start_send:
                     await start_send()
                 await connection.send(
-                    {"type": "input_audio_buffer.append", "audio": base64.b64encode(data).decode("utf-8")}
+                    {
+                        "type": "input_audio_buffer.append",
+                        "audio": base64.b64encode(data).decode(
+                            "utf-8"
+                        ),
+                    }
                 )
                 sent_audio = True
 
             elif sent_audio:
                 print("Done, triggering inference")
-                await connection.send({"type": "input_audio_buffer.commit"})
-                await connection.send({"type": "response.create", "response": {}})
+                await connection.send(
+                    {"type": "input_audio_buffer.commit"}
+                )
+                await connection.send(
+                    {"type": "response.create", "response": {}}
+                )
                 sent_audio = False
 
             await asyncio.sleep(0)
@@ -168,6 +191,7 @@ async def send_audio_worker_sounddevice(
     finally:
         stream.stop()
         stream.close()
+
 
 class RealtimeApp:
     """
@@ -193,15 +217,21 @@ class RealtimeApp:
     async def initialize_text_prompt(self, text: str) -> None:
         """Initialize and send a text prompt to the OpenAI Realtime API."""
         try:
-            async with self.client.beta.realtime.connect(model="gpt-4o-realtime-preview-2024-10-01") as conn:
+            async with self.client.beta.realtime.connect(
+                model="gpt-4o-realtime-preview-2024-10-01"
+            ) as conn:
                 self.connection = conn
-                await conn.session.update(session={"modalities": ["text"]})
+                await conn.session.update(
+                    session={"modalities": ["text"]}
+                )
 
                 await conn.conversation.item.create(
                     item={
                         "type": "message",
                         "role": "system",
-                        "content": [{"type": "input_text", "text": text}],
+                        "content": [
+                            {"type": "input_text", "text": text}
+                        ],
                     }
                 )
                 await conn.response.create()
@@ -221,12 +251,16 @@ class RealtimeApp:
     async def handle_realtime_connection(self) -> None:
         """Handle the connection to the OpenAI Realtime API."""
         try:
-            async with self.client.beta.realtime.connect(model="gpt-4o-realtime-preview-2024-10-01") as conn:
+            async with self.client.beta.realtime.connect(
+                model="gpt-4o-realtime-preview-2024-10-01"
+            ) as conn:
                 self.connection = conn
                 self.connected.set()
                 logger.info("Connected to OpenAI Realtime API.")
 
-                await conn.session.update(session={"turn_detection": {"type": "server_vad"}})
+                await conn.session.update(
+                    session={"turn_detection": {"type": "server_vad"}}
+                )
 
                 acc_items: dict[str, Any] = {}
 
@@ -234,7 +268,9 @@ class RealtimeApp:
                     if event.type == "session.created":
                         self.session = event.session
                         assert event.session.id is not None
-                        logger.info(f"Session created with ID: {event.session.id}")
+                        logger.info(
+                            f"Session created with ID: {event.session.id}"
+                        )
                         continue
 
                     if event.type == "session.updated":
@@ -251,15 +287,22 @@ class RealtimeApp:
                         self.audio_player.add_data(bytes_data)
                         continue
 
-                    if event.type == "response.audio_transcript.delta":
+                    if (
+                        event.type
+                        == "response.audio_transcript.delta"
+                    ):
                         try:
                             text = acc_items[event.item_id]
                         except KeyError:
                             acc_items[event.item_id] = event.delta
                         else:
-                            acc_items[event.item_id] = text + event.delta
+                            acc_items[event.item_id] = (
+                                text + event.delta
+                            )
 
-                        logger.debug(f"Transcription updated: {acc_items[event.item_id]}")
+                        logger.debug(
+                            f"Transcription updated: {acc_items[event.item_id]}"
+                        )
                         continue
 
                     if event.type == "response.text.delta":
@@ -273,7 +316,9 @@ class RealtimeApp:
                     if event.type == "response.done":
                         break
         except Exception as e:
-            logger.exception(f"Error in realtime connection handler: {e}")
+            logger.exception(
+                f"Error in realtime connection handler: {e}"
+            )
 
     async def _get_connection(self) -> AsyncRealtimeConnection:
         """Wait for and return the realtime connection."""
@@ -286,7 +331,9 @@ class RealtimeApp:
         try:
             connection = await self._get_connection()
             if not self.session:
-                logger.error("Session is not initialized. Cannot send prompt.")
+                logger.error(
+                    "Session is not initialized. Cannot send prompt."
+                )
                 return
 
             logger.info(f"Sending prompt to the model: {text}")
@@ -310,7 +357,9 @@ class RealtimeApp:
         try:
             read_size = int(SAMPLE_RATE * 0.02)
             stream = sd.InputStream(
-                channels=CHANNELS, samplerate=SAMPLE_RATE, dtype="int16"
+                channels=CHANNELS,
+                samplerate=SAMPLE_RATE,
+                dtype="int16",
             )
             stream.start()
 
@@ -325,13 +374,21 @@ class RealtimeApp:
 
                 connection = await self._get_connection()
                 if not sent_audio:
-                    asyncio.create_task(connection.send({"type": "response.cancel"}))
+                    asyncio.create_task(
+                        connection.send({"type": "response.cancel"})
+                    )
                     sent_audio = True
 
-                await connection.input_audio_buffer.append(audio=base64.b64encode(cast(Any, data)).decode("utf-8"))
+                await connection.input_audio_buffer.append(
+                    audio=base64.b64encode(cast(Any, data)).decode(
+                        "utf-8"
+                    )
+                )
                 await asyncio.sleep(0)
         except Exception as e:
-            logger.exception(f"Error in microphone audio streaming: {e}")
+            logger.exception(
+                f"Error in microphone audio streaming: {e}"
+            )
         finally:
             stream.stop()
             stream.close()
@@ -339,15 +396,21 @@ class RealtimeApp:
     async def run(self) -> None:
         """Start the application tasks."""
         logger.info("Starting application tasks.")
-    
+
         await asyncio.gather(
             # self.initialize_text_prompt(self.system_prompt),
             self.handle_realtime_connection(),
-            self.send_mic_audio()
+            self.send_mic_audio(),
         )
 
+
 if __name__ == "__main__":
-    logger.add("realtime_app.log", rotation="10 MB", retention="10 days", level="DEBUG")
+    logger.add(
+        "realtime_app.log",
+        rotation="10 MB",
+        retention="10 days",
+        level="DEBUG",
+    )
     logger.info("Starting RealtimeApp.")
     app = RealtimeApp()
     asyncio.run(app.run())

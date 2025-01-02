@@ -185,6 +185,7 @@ nav:
         - SwarmRouter: "swarms/structs/swarm_router.md"
         - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
         - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
+        - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
