@@ -1636,6 +1636,10 @@ def create_app():
 
                         # Save API key to .env
                         env_path = find_dotenv()
+                        if not env_path:
+                            env_path = os.path.join(os.getcwd(), ".env")
+                            with open(env_path, "w") as f:
+                                f.write("")
                         if provider == "openai":
                             set_key(env_path, "OPENAI_API_KEY", api_key)
                         elif provider == "anthropic":
