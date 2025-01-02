@@ -1,0 +1,46 @@
+name: Docker Build and Run
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the code
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    # Set up Docker Buildx (for multi-platform support, optional)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    # Cache Docker layers to speed up builds
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    # Build the Docker image from the ./tests directory
+    - name: Build Docker image
+      run: |
+        docker build -t test-runner:swarm-testing ./tests
+
+    # Create a logs directory and pass the OpenAI API Key securely
+    - name: Ensure logs directory exists
+      run: |
+        mkdir -p ${{ github.workspace }}/logs
+
+    # Run Docker container and pass OpenAI API Key securely
+    - name: Run Docker container
+      run: |
+        docker run -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} -v ${{ github.workspace }}/logs:/usr/src/app/logs test-runner:swarm-testing
