@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements from api folder
-COPY api/requirements.txt .
+# Copy requirements
+COPY requirements.txt .
 RUN pip install --no-cache-dir wheel && \
     pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
 
@@ -46,7 +46,7 @@ RUN python -m venv /app/venv && \
     /app/venv/bin/pip install --no-cache-dir /app/wheels/*
 
 # Copy application code
-COPY --chown=app:app ./api ./api
+COPY --chown=app:app . /app/api
 
 # Switch to app user
 USER app
@@ -71,4 +71,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:$PORT/health || exit 1
 
 # Start command
-CMD ["sh", "-c", "uvicorn api.api:app --host 0.0.0.0 --port $PORT --workers $WORKERS --log-level $LOG_LEVEL"]
+CMD ["sh", "-c", "uvicorn api:app --host 0.0.0.0 --port $PORT --workers $WORKERS --log-level $LOG_LEVEL"]
