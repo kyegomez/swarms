@@ -9,3 +9,5 @@ opentelemetry-sdk
 opentelemetry-instrumentation-fastapi
 opentelemetry-instrumentation-requests
 opentelemetry-exporter-otlp-proto-grpc
+swarms
+supabase

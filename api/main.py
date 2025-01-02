@@ -1,16 +1,15 @@
 import asyncio
 import os
-import secrets
 import signal
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from fastapi.concurrency import asynccontextmanager
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import (
@@ -20,17 +19,103 @@ from fastapi import (
     Header,
     HTTPException,
     Query,
-    Request,
     status,
 )
+from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import BaseModel, Field
+from supabase import Client, create_client
 
 from swarms.structs.agent import Agent
 
 # Load environment variables
 load_dotenv()
+
+
+class APIKey(BaseModel):
+    """Model matching Supabase api_keys table"""
+    id: UUID
+    created_at: datetime
+    name: str
+    user_id: UUID
+    key: str
+    limit_credit_dollar: Optional[float] = None
+    is_deleted: bool = False
+
+class User(BaseModel):
+    id: UUID
+    name: str
+    is_active: bool = True
+    is_admin: bool = False
+
+@lru_cache()
+def get_supabase() -> Client:
+    """Get cached Supabase client"""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
+    if not supabase_url or not supabase_key:
+        raise ValueError("Supabase configuration is missing")
+    return create_client(supabase_url, supabase_key)
+
+async def get_current_user(
+    api_key: str = Header(..., description="API key for authentication"),
+) -> User:
+    """Validate API key against Supabase and return current user."""
+    if not api_key or not api_key.startswith('sk-'):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key format",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    try:
+        supabase = get_supabase()
+        
+        # Query the api_keys table
+        response = supabase.table('api_keys').select(
+            'id, name, user_id, key, limit_credit_dollar, is_deleted'
+        ).eq('key', api_key).single().execute()
+        
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API key",
+                headers={"WWW-Authenticate": "ApiKey"},
+            )
+
+        key_data = response.data
+        
+        # Check if key is deleted
+        if key_data['is_deleted']:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API key has been deleted",
+                headers={"WWW-Authenticate": "ApiKey"},
+            )
+            
+        # Check credit limit if applicable
+        if key_data['limit_credit_dollar'] is not None and key_data['limit_credit_dollar'] <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key credit limit exceeded"
+            )
+
+        # Create user object
+        return User(
+            id=key_data['user_id'],
+            name=key_data['name'],
+            is_active=not key_data['is_deleted']
+        )
+
+    except Exception as e:
+        logger.error(f"Error validating API key: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key validation failed",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
 
 
 class UvicornServer(uvicorn.Server):
@@ -57,14 +142,6 @@ class AgentStatus(str, Enum):
 
 # Security configurations
 API_KEY_LENGTH = 32  # Length of generated API keys
-
-
-class APIKey(BaseModel):
-    key: str
-    name: str
-    created_at: datetime
-    last_used: datetime
-    is_active: bool = True
 
 
 class APIKeyCreate(BaseModel):
@@ -214,11 +291,7 @@ class AgentStore:
     def __init__(self):
         self.agents: Dict[UUID, Agent] = {}
         self.agent_metadata: Dict[UUID, Dict[str, Any]] = {}
-        self.users: Dict[UUID, User] = {}  # user_id -> User
-        self.api_keys: Dict[str, UUID] = {}  # api_key -> user_id
-        self.user_agents: Dict[UUID, List[UUID]] = (
-            {}
-        )  # user_id -> [agent_ids]
+        self.user_agents: Dict[UUID, List[UUID]] = {}  # user_id -> [agent_ids]
         self.executor = ThreadPoolExecutor(max_workers=4)
         self._ensure_directories()
 
@@ -226,31 +299,6 @@ class AgentStore:
         """Ensure required directories exist."""
         Path("logs").mkdir(exist_ok=True)
         Path("states").mkdir(exist_ok=True)
-
-    def create_api_key(self, user_id: UUID, key_name: str) -> APIKey:
-        """Create a new API key for a user."""
-        if user_id not in self.users:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
-
-        # Generate a secure random API key
-        api_key = secrets.token_urlsafe(API_KEY_LENGTH)
-
-        # Create the API key object
-        key_object = APIKey(
-            key=api_key,
-            name=key_name,
-            created_at=datetime.utcnow(),
-            last_used=datetime.utcnow(),
-        )
-
-        # Store the API key
-        self.users[user_id].api_keys[api_key] = key_object
-        self.api_keys[api_key] = user_id
-
-        return key_object
 
     async def verify_agent_access(
         self, agent_id: UUID, user_id: UUID
@@ -656,94 +704,11 @@ class SwarmsAPI:
         self._setup_routes()
 
     def _setup_routes(self):
-        """Set up API routes."""
-
-        # In your API code
-
-        # Modify the create_user endpoint
-        @self.app.post("/v1/users", response_model=Dict[str, Any])
-        async def create_user(request: Request):
-            """Create a new user and initial API key."""
-            try:
-                body = await request.json()
-                username = body.get("username")
-                if not username or len(username) < 3:
-                    raise HTTPException(
-                        status_code=400, detail="Invalid username"
-                    )
-
-                user_id = uuid4()
-                user = User(id=user_id, username=username)
-                self.store.users[user_id] = user
-
-                # Always create initial API key
-                initial_key = self.store.create_api_key(
-                    user_id, "Initial Key"
-                )
-                if not initial_key:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Failed to create initial API key",
-                    )
-
-                return {
-                    "user_id": user_id,
-                    "api_key": initial_key.key,
-                }
-            except Exception as e:
-                logger.error(f"Error creating user: {str(e)}")
-                raise HTTPException(status_code=400, detail=str(e))
+        """Set up API routes with Supabase authentication."""
 
         @self.app.get(
-            "/v1/users/{user_id}/api-keys",
-            response_model=List[APIKey],
-        )
-        async def list_api_keys(
-            user_id: UUID,
-            current_user: User = Depends(get_current_user),
-        ):
-            """List all API keys for a user."""
-            if (
-                current_user.id != user_id
-                and not current_user.is_admin
-            ):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not authorized to view API keys for this user",
-                )
-
-            return list(self.store.users[user_id].api_keys.values())
-
-        @self.app.delete("/v1/users/{user_id}/api-keys/{key}")
-        async def revoke_api_key(
-            user_id: UUID,
-            key: str,
-            current_user: User = Depends(get_current_user),
-        ):
-            """Revoke an API key."""
-            if (
-                current_user.id != user_id
-                and not current_user.is_admin
-            ):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not authorized to revoke API keys for this user",
-                )
-
-            if key in self.store.users[user_id].api_keys:
-                self.store.users[user_id].api_keys[
-                    key
-                ].is_active = False
-                del self.store.api_keys[key]
-                return {"status": "API key revoked"}
-
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="API key not found",
-            )
-
-        @self.app.get(
-            "/v1/users/me/agents", response_model=List[AgentSummary]
+            "/v1/users/me/agents",
+            response_model=List[AgentSummary]
         )
         async def list_user_agents(
             current_user: User = Depends(get_current_user),
@@ -751,24 +716,20 @@ class SwarmsAPI:
             status: Optional[AgentStatus] = None,
         ):
             """List all agents owned by the current user."""
-            user_agents = self.store.user_agents.get(
-                current_user.id, []
-            )
+            user_agents = self.store.user_agents.get(current_user.id, [])
             return [
                 agent
-                for agent in await self.store.list_agents(
-                    tags, status
-                )
+                for agent in await self.store.list_agents(tags, status)
                 if agent.agent_id in user_agents
             ]
 
-        # Modify existing routes to use API key authentication
         @self.app.post("/v1/agent", response_model=Dict[str, UUID])
         async def create_agent(
             config: AgentConfig,
             current_user: User = Depends(get_current_user),
         ):
             """Create a new agent with the specified configuration."""
+            logger.info(f"User {current_user.id} creating new agent")
             agent_id = await self.store.create_agent(
                 config, current_user.id
             )
@@ -776,51 +737,115 @@ class SwarmsAPI:
 
         @self.app.get("/v1/agents", response_model=List[AgentSummary])
         async def list_agents(
+            current_user: User = Depends(get_current_user),
             tags: Optional[List[str]] = Query(None),
             status: Optional[AgentStatus] = None,
         ):
             """List all agents, optionally filtered by tags and status."""
-            return await self.store.list_agents(tags, status)
+            agents = await self.store.list_agents(tags, status)
+            # Filter agents based on user access
+            return [
+                agent for agent in agents
+                if await self.store.verify_agent_access(agent.agent_id, current_user.id)
+            ]
 
         @self.app.patch(
-            "/v1/agent/{agent_id}", response_model=Dict[str, str]
+            "/v1/agent/{agent_id}",
+            response_model=Dict[str, str]
         )
-        async def update_agent(agent_id: UUID, update: AgentUpdate):
+        async def update_agent(
+            agent_id: UUID,
+            update: AgentUpdate,
+            current_user: User = Depends(get_current_user)
+        ):
             """Update an existing agent's configuration."""
+            if not await self.store.verify_agent_access(agent_id, current_user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to update this agent"
+                )
+            
             await self.store.update_agent(agent_id, update)
             return {"status": "updated"}
 
         @self.app.get(
             "/v1/agent/{agent_id}/metrics",
-            response_model=AgentMetrics,
+            response_model=AgentMetrics
         )
-        async def get_agent_metrics(agent_id: UUID):
+        async def get_agent_metrics(
+            agent_id: UUID,
+            current_user: User = Depends(get_current_user)
+        ):
             """Get performance metrics for a specific agent."""
+            if not await self.store.verify_agent_access(agent_id, current_user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to view this agent's metrics"
+                )
+                
             return await self.store.get_agent_metrics(agent_id)
 
         @self.app.post(
             "/v1/agent/{agent_id}/clone",
-            response_model=Dict[str, UUID],
+            response_model=Dict[str, UUID]
         )
-        async def clone_agent(agent_id: UUID, new_name: str):
+        async def clone_agent(
+            agent_id: UUID,
+            new_name: str,
+            current_user: User = Depends(get_current_user)
+        ):
             """Clone an existing agent with a new name."""
+            if not await self.store.verify_agent_access(agent_id, current_user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to clone this agent"
+                )
+                
             new_id = await self.store.clone_agent(agent_id, new_name)
+            # Add the cloned agent to user's agents
+            if current_user.id not in self.store.user_agents:
+                self.store.user_agents[current_user.id] = []
+            self.store.user_agents[current_user.id].append(new_id)
+            
             return {"agent_id": new_id}
 
         @self.app.delete("/v1/agent/{agent_id}")
-        async def delete_agent(agent_id: UUID):
+        async def delete_agent(
+            agent_id: UUID,
+            current_user: User = Depends(get_current_user)
+        ):
             """Delete an agent."""
+            if not await self.store.verify_agent_access(agent_id, current_user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to delete this agent"
+                )
+                
             await self.store.delete_agent(agent_id)
+            # Remove from user's agents list
+            if current_user.id in self.store.user_agents:
+                self.store.user_agents[current_user.id] = [
+                    aid for aid in self.store.user_agents[current_user.id]
+                    if aid != agent_id
+                ]
             return {"status": "deleted"}
 
         @self.app.post(
-            "/v1/agent/completions", response_model=CompletionResponse
+            "/v1/agent/completions",
+            response_model=CompletionResponse
         )
         async def create_completion(
             request: CompletionRequest,
             background_tasks: BackgroundTasks,
+            current_user: User = Depends(get_current_user)
         ):
             """Process a completion request with the specified agent."""
+            if not await self.store.verify_agent_access(request.agent_id, current_user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to use this agent"
+                )
+                
             try:
                 agent = await self.store.get_agent(request.agent_id)
 
@@ -830,12 +855,13 @@ class SwarmsAPI:
                     request.prompt,
                     request.agent_id,
                     request.max_tokens,
-                    0.5,
+                    request.temperature_override
                 )
 
                 # Schedule background cleanup
                 background_tasks.add_task(
-                    self._cleanup_old_metrics, request.agent_id
+                    self._cleanup_old_metrics,
+                    request.agent_id
                 )
 
                 return response
@@ -844,25 +870,54 @@ class SwarmsAPI:
                 logger.error(f"Error processing completion: {str(e)}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Error processing completion: {str(e)}",
+                    detail=f"Error processing completion: {str(e)}"
                 )
 
         @self.app.get("/v1/agent/{agent_id}/status")
-        async def get_agent_status(agent_id: UUID):
+        async def get_agent_status(
+            agent_id: UUID,
+            current_user: User = Depends(get_current_user)
+        ):
             """Get the current status of an agent."""
+            if not await self.store.verify_agent_access(agent_id, current_user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to view this agent's status"
+                )
+                
             metadata = self.store.agent_metadata.get(agent_id)
             if not metadata:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Agent {agent_id} not found",
+                    detail=f"Agent {agent_id} not found"
                 )
+                
             return {
                 "agent_id": agent_id,
                 "status": metadata["status"],
                 "last_used": metadata["last_used"],
                 "total_completions": metadata["total_completions"],
-                "error_count": metadata["error_count"],
+                "error_count": metadata["error_count"]
             }
+            
+        @self.app.get("/health")
+        async def health_check():
+            """Health check endpoint - no auth required."""
+            try:
+                # Test Supabase connection
+                supabase = get_supabase()
+                supabase.table('api_keys').select('count', count='exact').execute()
+                return {"status": "healthy", "database": "connected"}
+            except Exception as e:
+                logger.error(f"Health check failed: {str(e)}")
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        "status": "unhealthy",
+                        "database": "disconnected",
+                        "error": str(e)
+                    }
+                )
 
     async def _cleanup_old_metrics(self, agent_id: UUID):
         """Clean up old metrics data to prevent memory bloat."""
@@ -888,7 +943,7 @@ class SwarmsAPI:
 
 class APIServer:
     def __init__(
-        self, app: FastAPI, host: str = "0.0.0.0", port: int = 8000
+        self, app: FastAPI, host: str = "0.0.0.0", port: int = 8080
     ):
         self.app = app
         self.host = host
