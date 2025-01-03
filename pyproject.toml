@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "6.7.5"
+version = "6.8.4"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -62,6 +62,7 @@ python = ">=3.10,<4.0"
 asyncio = ">=3.4.3,<4.0"
 toml = "*"
 pypdf = "5.1.0"
+swarm-models = "*"
 loguru = "*"
 pydantic = "*"
 tenacity = "*"
@@ -73,14 +74,10 @@ docstring_parser = "0.16" # TODO:
 tiktoken = "*"
 networkx = "*"
 aiofiles = "*"
+clusterops = "*"
 # chromadb = "*"
-reportlab = "*"
-doc-master = "*"
 rich = "*"
 # sentence-transformers = "*"
-swarm-models = "*"
-termcolor = "*"
-clusterops = "*"
 
 
 # [tool.poetry.extras]
@@ -112,7 +109,7 @@ swarms = "swarms.cli.main:main"
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<25.0"
-ruff = ">=0.5.1,<0.8.4"
+ruff = ">=0.5.1,<0.8.5"
 types-toml = "^0.10.8.1"
 types-pytz = ">=2023.3,<2025.0"
 types-chardet = "^5.0.4.6"
@@ -121,7 +118,6 @@ mypy-protobuf = "^3.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
-pandas = "^2.2.2"
 
 [tool.ruff]
 line-length = 70
@@ -144,4 +140,3 @@ exclude = '''
   | docs
 )/
 '''
-
