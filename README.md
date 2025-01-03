@@ -1922,7 +1922,7 @@ if __name__ == "__main__":
 
 ## MultiAgentRouter
 
-The MultiAgentRouter is a swarm architecture designed to dynamically assign tasks to the most suitable agent. It achieves this through a director or boss entity that utilizes function calls to identify and allocate tasks to the agent best equipped to handle them.
+The MultiAgentRouter is a swarm architecture designed to dynamically assign tasks to the most suitable agent. It achieves this through a director or boss entity that utilizes function calls to identify and allocate tasks to the agent best equipped to handle them. [Check out the documentation](https://docs.swarms.world/en/latest/swarms/structs/multi_agent_router/)
 
 ```python
 from swarms import Agent
