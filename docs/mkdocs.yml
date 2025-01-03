@@ -160,6 +160,7 @@ nav:
       - OpenAI Assistant: "swarms/agents/openai_assistant.md"
       - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
       - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
+      - Creating Custom Agents: "swarms/agents/new_agent.md"
       - Tools:
         - Overview: "swarms/tools/main.md"
         - What are tools?: "swarms/tools/build_tool.md"

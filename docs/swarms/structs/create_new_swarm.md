@@ -8,7 +8,7 @@ A Swarm class enables developers to manage and coordinate multiple agents workin
 
 - Contain a `run(task: str, img: str, *args, **kwargs)` method, which serves as the primary execution method for tasks.
 - Include `name`, `description`, and `agents` parameters.
-- Ensure `agents` is a callable function that adheres to specific requirements for dynamic agent behavior.
+- Ensure `agents` is a list of callables, with each callable adhering to specific requirements for dynamic agent behavior.
 - Follow type-hinting and documentation best practices to maintain code clarity and reliability.
 
 Each Agent within the swarm must:
@@ -16,7 +16,7 @@ Each Agent within the swarm must:
 - Contain `agent_name`, `system_prompt`, and a `run` method.
 - Follow similar type hinting and documentation standards to ensure consistency and readability.
 
-By adhering to these requirements, you can create robust, reusable, and modular swarms that streamline task management and enhance collaborative functionality.
+By adhering to these requirements, you can create robust, reusable, and modular swarms that streamline task management and enhance collaborative functionality. Developers are also encouraged to contribute their swarms back to the open-source community by submitting a pull request to the Swarms repository at [https://github.com/kyegomez/swarms](https://github.com/kyegomez/swarms).
 
 ---
 
@@ -25,7 +25,7 @@ By adhering to these requirements, you can create robust, reusable, and modular 
 Below is a detailed template for creating a Swarm class. Ensure that all elements are documented and clearly defined:
 
 ```python
-from typing import Callable, Any
+from typing import Callable, Any, List
 
 class MySwarm:
     """
@@ -34,17 +34,17 @@ class MySwarm:
     Attributes:
         name (str): The name of the swarm.
         description (str): A brief description of the swarm's purpose.
-        agents (Callable): A callable that returns the list of agents to be utilized.
+        agents (List[Callable]): A list of callables representing the agents to be utilized.
     """
 
-    def __init__(self, name: str, description: str, agents: Callable):
+    def __init__(self, name: str, description: str, agents: List[Callable]):
         """
         Initialize the Swarm with its name, description, and agents.
 
         Args:
             name (str): The name of the swarm.
             description (str): A description of the swarm.
-            agents (Callable): A callable that provides the agents for the swarm.
+            agents (List[Callable]): A list of callables that provide the agents for the swarm.
         """
         self.name = name
         self.description = description
@@ -64,7 +64,7 @@ class MySwarm:
             Any: The result of the task execution, aggregated from all agents.
         """
         results = []
-        for agent in self.agents():
+        for agent in self.agents:
             result = agent.run(task, img, *args, **kwargs)
             results.append(result)
         return results
@@ -140,7 +140,7 @@ Create an instance of your Swarm class, defining its name, description, and asso
 my_swarm = MySwarm(
     name="Image Analysis Swarm",
     description="A swarm designed to analyze images and perform a range of related tasks.",
-    agents=create_agents
+    agents=create_agents()
 )
 ```
 
@@ -184,6 +184,9 @@ To ensure your swarm implementation is efficient and maintainable, follow these 
 8. **Logging and Monitoring:**
    Include comprehensive logging to track task execution and monitor performance, enabling easier debugging and optimization.
 
+9. **Open-Source Contributions:**
+   Consider contributing your swarm to the Swarms repository to benefit the community. Submit a pull request at [https://github.com/kyegomez/swarms](https://github.com/kyegomez/swarms).
+
 ---
 
 ## Example Output
@@ -203,5 +206,5 @@ The modular design ensures that each agent contributes to the overall functional
 
 ## Conclusion
 
-By following these guidelines, you can create swarms that are powerful, flexible, and maintainable. Leveraging the provided templates and best practices enables you to build efficient multi-agent systems capable of handling diverse and complex tasks. Proper structuring, thorough testing, and adherence to best practices will ensure your swarm integrates effectively into any project, delivering robust and reliable performance. Furthermore, maintaining clear documentation and emphasizing modularity will help your implementation adapt to future needs and use cases. Empower your projects with a well-designed swarm architecture today.
+By following these guidelines, you can create swarms that are powerful, flexible, and maintainable. Leveraging the provided templates and best practices enables you to build efficient multi-agent systems capable of handling diverse and complex tasks. Proper structuring, thorough testing, and adherence to best practices will ensure your swarm integrates effectively into any project, delivering robust and reliable performance. Furthermore, maintaining clear documentation and emphasizing modularity will help your implementation adapt to future needs and use cases. Empower your projects with a well-designed swarm architecture today, and consider submitting your swarm to the open-source community to foster collaboration and innovation.
 
