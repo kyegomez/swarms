@@ -1,9 +1,14 @@
 import os
 import uuid
 from loguru import logger
+import watchtower
 
+def initialize_watchtower_logger(log_group: str = "swarms_logs"):
+    handler = watchtower.CloudWatchLogHandler(log_group=log_group)
+    logger.add(handler)
+    return logger
 
-def initialize_logger(log_folder: str = "logs"):
+def initialize_logger(log_folder: str = "logs", use_watchtower: bool = False, log_group: str = "swarms_logs"):
 
     AGENT_WORKSPACE = "agent_workspace"
 
@@ -34,4 +39,8 @@ def initialize_logger(log_folder: str = "logs"):
         retention="10 days",
         # compression="zip",
     )
+
+    if use_watchtower:
+        initialize_watchtower_logger(log_group)
+
     return logger
