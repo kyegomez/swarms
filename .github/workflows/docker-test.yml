@@ -36,7 +36,6 @@ jobs:
     - name: Build Docker image
       id: build_image
       run: |
-        docker build -t test-runner:swarm-testing ./tests
         IMAGE_TAG="test-runner:swarm-testing-${GITHUB_SHA}"
         docker build -t $IMAGE_TAG .
         echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
@@ -47,8 +46,8 @@ jobs:
         mkdir -p ${{ github.workspace }}/logs
         chmod -R 777 ${{ github.workspace }}/logs
 
-    # Run Docker container with OpenAI API Key and capture test logs
-    - name: Run Docker container with OpenAI API Key and tests
+    # Run Docker container with OpenAI API Key securely and capture test logs
+    - name: Run Docker container with OpenAI API Key
       run: |
         docker run -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
           -v ${{ github.workspace }}/logs:/usr/src/app/logs \
