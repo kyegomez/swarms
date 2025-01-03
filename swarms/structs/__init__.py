@@ -12,7 +12,13 @@ from swarms.structs.graph_workflow import (
     Node,
     NodeType,
 )
-from swarms.structs.groupchat import GroupChat, GroupChatState
+from swarms.structs.groupchat import (
+    GroupChat,
+    ChatHistory,
+    ChatTurn,
+    AgentResponse,
+    expertise_based,
+)
 from swarms.structs.majority_voting import (
     MajorityVoting,
     majority_voting,
@@ -74,6 +80,7 @@ from swarms.structs.utils import (
     parse_tasks,
 )
 from swarms.structs.async_workflow import AsyncWorkflow
+from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 
 __all__ = [
     "Agent",
@@ -143,5 +150,10 @@ __all__ = [
     "AsyncWorkflow",
     "run_agents_with_tasks_concurrently",
     "showcase_available_agents",
-    "GroupChatState",
+    "GroupChat",
+    "ChatHistory",
+    "ChatTurn",
+    "AgentResponse",
+    "expertise_based",
+    "MultiAgentRouter",
 ]

@@ -12,6 +12,7 @@ ceo = Agent(llm=llm, name="CEO")
 dev = Agent(llm=llm, name="Developer")
 va = Agent(llm=llm, name="VA")
 hr = Agent(llm=llm, name="HR")
+
 shared_instructions = "Listen to your boss"
 
 

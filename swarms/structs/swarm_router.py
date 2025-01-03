@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Literal, Union
 
-from doc_master import doc_master
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -130,7 +129,7 @@ class SwarmRouter:
         agents: List[Union[Agent, Callable]] = [],
         swarm_type: SwarmType = "SequentialWorkflow",  # "SpreadSheetSwarm" # "auto"
         autosave: bool = False,
-        flow: str = None,
+        rearrange_flow: str = None,
         return_json: bool = False,
         auto_generate_prompts: bool = False,
         shared_memory_system: Any = None,
@@ -147,7 +146,7 @@ class SwarmRouter:
         self.agents = agents
         self.swarm_type = swarm_type
         self.autosave = autosave
-        self.flow = flow
+        self.rearrange_flow = rearrange_flow
         self.return_json = return_json
         self.auto_generate_prompts = auto_generate_prompts
         self.shared_memory_system = shared_memory_system
@@ -175,28 +174,11 @@ class SwarmRouter:
         if self.rules is not None:
             self.handle_rules()
 
-        # if self.documents is not None:
-        #     self.handle_docs()
-
         # let's make a function that checks the agents parameter and disables clusterops
 
     def deactivate_clusterops(self):
         for agent in self.agents:
             agent.do_not_use_cluster_ops = True
-
-    def handle_docs(self):
-        # Process all documents in parallel using list comprehension
-        data = "".join(
-            [doc_master(file_path=doc) for doc in self.documents]
-        )
-
-        # Update all agents' prompts at once
-        doc_prompt = f"##### Documents Available ########## {data}"
-        for agent in self.agents:
-            agent.system_prompt += doc_prompt
-
-        # Add documents to the logs
-        # self.logs.append(Document(file_path=self.documents, data=data))
 
     def activate_shared_memory(self):
         logger.info("Activating shared memory with all agents ")
@@ -296,7 +278,7 @@ class SwarmRouter:
                 description=self.description,
                 agents=self.agents,
                 max_loops=self.max_loops,
-                flow=self.flow,
+                flow=self.rearrange_flow,
                 return_json=self.return_json,
                 output_type=self.output_type,
                 *args,
@@ -323,11 +305,7 @@ class SwarmRouter:
                 *args,
                 **kwargs,
             )
-        elif (
-            self.swarm_type == "SequentialWorkflow"
-            or self.swarm_type == "sequential"
-            or self.swarm_type == "Sequential"
-        ):
+        elif self.swarm_type == "SequentialWorkflow":
             return SequentialWorkflow(
                 name=self.name,
                 description=self.description,
@@ -382,7 +360,7 @@ class SwarmRouter:
         logger.log(level.upper(), message)
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-    def _run(self, task: str, *args, **kwargs) -> Any:
+    def _run(self, task: str, img: str, *args, **kwargs) -> Any:
         """
         Dynamically run the specified task on the selected or matched swarm type.
 
@@ -402,11 +380,9 @@ class SwarmRouter:
         try:
             self._log(
                 "info",
-                f"Running task on {self.swarm_type} swarm",
-                task=task,
-                metadata=kwargs,
+                f"Running task on {self.swarm_type} swarm with task: {task}",
             )
-            result = self.swarm.run(task, *args, **kwargs)
+            result = self.swarm.run(task=task, *args, **kwargs)
 
             self._log(
                 "success",
@@ -427,9 +403,11 @@ class SwarmRouter:
     def run(
         self,
         task: str,
+        img: str = None,
         device: str = "cpu",
         all_cores: bool = True,
         all_gpus: bool = False,
+        no_clusterops: bool = True,
         *args,
         **kwargs,
     ) -> Any:
@@ -450,15 +428,22 @@ class SwarmRouter:
         Raises:
             Exception: If an error occurs during task execution.
         """
-        return exec_callable_with_clusterops(
-            func=self._run,
-            device=device,
-            all_cores=all_cores,
-            all_gpus=all_gpus,
-            task=task,
-            *args,
-            **kwargs,
-        )
+        try:
+            if no_clusterops:
+                return self._run(task=task, img=img, *args, **kwargs)
+            else:
+                return exec_callable_with_clusterops(
+                    func=self._run,
+                    device=device,
+                    all_cores=all_cores,
+                    all_gpus=all_gpus,
+                    task=task,
+                    *args,
+                    **kwargs,
+                )
+        except Exception as e:
+            logger.error(f"Error executing task on swarm: {str(e)}")
+            raise
 
     def __call__(self, task: str, *args, **kwargs) -> Any:
         """

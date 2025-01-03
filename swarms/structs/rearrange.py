@@ -1,5 +1,5 @@
 import asyncio
-import traceback
+import json
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -12,11 +12,11 @@ from swarms.structs.agent import Agent
 from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.output_types import OutputType
-from swarms.utils.add_docs_to_agents import handle_input_docs
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
+from swarms.telemetry.capture_sys_data import log_agent_data
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -89,7 +89,6 @@ class AgentRearrange(BaseSwarm):
         batch_run(): Processes multiple tasks in batches
         abatch_run(): Asynchronously processes multiple tasks in batches
         concurrent_run(): Processes multiple tasks concurrently
-        handle_input_docs(): Adds document content to agent prompts
 
     """
 
@@ -116,6 +115,7 @@ class AgentRearrange(BaseSwarm):
         all_cores: bool = False,
         all_gpus: bool = True,
         no_use_clusterops: bool = True,
+        autosave: bool = True,
         *args,
         **kwargs,
     ):
@@ -143,6 +143,7 @@ class AgentRearrange(BaseSwarm):
         self.all_cores = all_cores
         self.all_gpus = all_gpus
         self.no_use_clusterops = no_use_clusterops
+        self.autosave = autosave
 
         self.output_schema = AgentRearrangeOutput(
             input=AgentRearrangeInput(
@@ -193,13 +194,6 @@ class AgentRearrange(BaseSwarm):
     def set_custom_flow(self, flow: str):
         self.flow = flow
         logger.info(f"Custom flow set: {flow}")
-
-    def handle_input_docs(self):
-        self.agents = handle_input_docs(
-            agents=self.agents,
-            docs=self.docs,
-            doc_folder=self.doc_folder,
-        )
 
     def add_agent(self, agent: Agent):
         """
@@ -487,10 +481,17 @@ class AgentRearrange(BaseSwarm):
             return output
 
         except Exception as e:
-            logger.error(
-                f"An error occurred: {e} \n {traceback.format_exc()}"
-            )
-            return e
+            self._catch_error(e)
+
+    def _catch_error(self, e: Exception):
+        if self.autosave is True:
+            log_agent_data(self.to_dict())
+
+        logger.error(
+            f"An error occurred with your swarm {self.name}: Error: {e} Traceback: {e.__traceback__}"
+        )
+
+        return e
 
     def run(
         self,
@@ -500,7 +501,7 @@ class AgentRearrange(BaseSwarm):
         device_id: int = 2,
         all_cores: bool = True,
         all_gpus: bool = False,
-        no_use_clusterops: bool = False,
+        no_use_clusterops: bool = True,
         *args,
         **kwargs,
     ):
@@ -521,29 +522,32 @@ class AgentRearrange(BaseSwarm):
         Returns:
             The result from executing the task through the cluster operations wrapper.
         """
-        no_use_clusterops = (
-            no_use_clusterops or self.no_use_clusterops
-        )
+        try:
+            no_use_clusterops = (
+                no_use_clusterops or self.no_use_clusterops
+            )
 
-        if no_use_clusterops is True:
-            return self._run(
-                task=task,
-                img=img,
-                *args,
-                **kwargs,
-            )
-        else:
-            return exec_callable_with_clusterops(
-                device=device,
-                device_id=device_id,
-                all_cores=all_cores,
-                all_gpus=all_gpus,
-                func=self._run,
-                task=task,
-                img=img,
-                *args,
-                **kwargs,
-            )
+            if no_use_clusterops is True:
+                return self._run(
+                    task=task,
+                    img=img,
+                    *args,
+                    **kwargs,
+                )
+            else:
+                return exec_callable_with_clusterops(
+                    device=device,
+                    device_id=device_id,
+                    all_cores=all_cores,
+                    all_gpus=all_gpus,
+                    func=self._run,
+                    task=task,
+                    img=img,
+                    *args,
+                    **kwargs,
+                )
+        except Exception as e:
+            self._catch_error(e)
 
     def __call__(self, task: str, *args, **kwargs):
         """
@@ -557,7 +561,11 @@ class AgentRearrange(BaseSwarm):
         Returns:
             The result from executing run().
         """
-        return self.run(task=task, *args, **kwargs)
+        try:
+            return self.run(task=task, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+            return e
 
     def batch_run(
         self,
@@ -586,32 +594,35 @@ class AgentRearrange(BaseSwarm):
         Returns:
             List of results corresponding to input tasks
         """
-        results = []
-        for i in range(0, len(tasks), batch_size):
-            batch_tasks = tasks[i : i + batch_size]
-            batch_imgs = (
-                img[i : i + batch_size]
-                if img
-                else [None] * len(batch_tasks)
-            )
-
-            # Process batch using concurrent execution
-            batch_results = [
-                self.run(
-                    task=task,
-                    img=img_path,
-                    device=device,
-                    device_id=device_id,
-                    all_cores=all_cores,
-                    all_gpus=all_gpus,
-                    *args,
-                    **kwargs,
+        try:
+            results = []
+            for i in range(0, len(tasks), batch_size):
+                batch_tasks = tasks[i : i + batch_size]
+                batch_imgs = (
+                    img[i : i + batch_size]
+                    if img
+                    else [None] * len(batch_tasks)
                 )
-                for task, img_path in zip(batch_tasks, batch_imgs)
-            ]
-            results.extend(batch_results)
 
-        return results
+                # Process batch using concurrent execution
+                batch_results = [
+                    self.run(
+                        task=task,
+                        img=img_path,
+                        device=device,
+                        device_id=device_id,
+                        all_cores=all_cores,
+                        all_gpus=all_gpus,
+                        *args,
+                        **kwargs,
+                    )
+                    for task, img_path in zip(batch_tasks, batch_imgs)
+                ]
+                results.extend(batch_results)
+
+            return results
+        except Exception as e:
+            self._catch_error(e)
 
     async def abatch_run(
         self,
@@ -632,24 +643,29 @@ class AgentRearrange(BaseSwarm):
         Returns:
             List of results corresponding to input tasks
         """
-        results = []
-        for i in range(0, len(tasks), batch_size):
-            batch_tasks = tasks[i : i + batch_size]
-            batch_imgs = (
-                img[i : i + batch_size]
-                if img
-                else [None] * len(batch_tasks)
-            )
+        try:
+            results = []
+            for i in range(0, len(tasks), batch_size):
+                batch_tasks = tasks[i : i + batch_size]
+                batch_imgs = (
+                    img[i : i + batch_size]
+                    if img
+                    else [None] * len(batch_tasks)
+                )
 
-            # Process batch using asyncio.gather
-            batch_coros = [
-                self.astream(task=task, img=img_path, *args, **kwargs)
-                for task, img_path in zip(batch_tasks, batch_imgs)
-            ]
-            batch_results = await asyncio.gather(*batch_coros)
-            results.extend(batch_results)
+                # Process batch using asyncio.gather
+                batch_coros = [
+                    self.astream(
+                        task=task, img=img_path, *args, **kwargs
+                    )
+                    for task, img_path in zip(batch_tasks, batch_imgs)
+                ]
+                batch_results = await asyncio.gather(*batch_coros)
+                results.extend(batch_results)
 
-        return results
+            return results
+        except Exception as e:
+            self._catch_error(e)
 
     def concurrent_run(
         self,
@@ -678,23 +694,86 @@ class AgentRearrange(BaseSwarm):
         Returns:
             List of results corresponding to input tasks
         """
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            imgs = img if img else [None] * len(tasks)
-            futures = [
-                executor.submit(
-                    self.run,
-                    task=task,
-                    img=img_path,
-                    device=device,
-                    device_id=device_id,
-                    all_cores=all_cores,
-                    all_gpus=all_gpus,
-                    *args,
-                    **kwargs,
-                )
-                for task, img_path in zip(tasks, imgs)
-            ]
-            return [future.result() for future in futures]
+        try:
+            with ThreadPoolExecutor(
+                max_workers=max_workers
+            ) as executor:
+                imgs = img if img else [None] * len(tasks)
+                futures = [
+                    executor.submit(
+                        self.run,
+                        task=task,
+                        img=img_path,
+                        device=device,
+                        device_id=device_id,
+                        all_cores=all_cores,
+                        all_gpus=all_gpus,
+                        *args,
+                        **kwargs,
+                    )
+                    for task, img_path in zip(tasks, imgs)
+                ]
+                return [future.result() for future in futures]
+        except Exception as e:
+            self._catch_error(e)
+
+    def _serialize_callable(
+        self, attr_value: Callable
+    ) -> Dict[str, Any]:
+        """
+        Serializes callable attributes by extracting their name and docstring.
+
+        Args:
+            attr_value (Callable): The callable to serialize.
+
+        Returns:
+            Dict[str, Any]: Dictionary with name and docstring of the callable.
+        """
+        return {
+            "name": getattr(
+                attr_value, "__name__", type(attr_value).__name__
+            ),
+            "doc": getattr(attr_value, "__doc__", None),
+        }
+
+    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
+        """
+        Serializes an individual attribute, handling non-serializable objects.
+
+        Args:
+            attr_name (str): The name of the attribute.
+            attr_value (Any): The value of the attribute.
+
+        Returns:
+            Any: The serialized value of the attribute.
+        """
+        try:
+            if callable(attr_value):
+                return self._serialize_callable(attr_value)
+            elif hasattr(attr_value, "to_dict"):
+                return (
+                    attr_value.to_dict()
+                )  # Recursive serialization for nested objects
+            else:
+                json.dumps(
+                    attr_value
+                )  # Attempt to serialize to catch non-serializable objects
+                return attr_value
+        except (TypeError, ValueError):
+            return f"<Non-serializable: {type(attr_value).__name__}>"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Converts all attributes of the class, including callables, into a dictionary.
+        Handles non-serializable attributes by converting them or skipping them.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the class attributes.
+        """
+        return {
+            attr_name: self._serialize_attr(attr_name, attr_value)
+            for attr_name, attr_value in self.__dict__.items()
+        }
 
 
 def rearrange(

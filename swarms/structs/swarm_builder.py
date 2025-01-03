@@ -1,20 +1,122 @@
 import os
+import subprocess
 from typing import List, Optional
-from datetime import datetime
 
+from loguru import logger
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
-from loguru import logger
+from swarm_models import OpenAIChat
 from tenacity import (
     retry,
     stop_after_attempt,
     wait_exponential,
 )
 
-from swarm_models import OpenAIFunctionCaller, OpenAIChat
 from swarms.structs.agent import Agent
-from swarms.structs.swarm_router import SwarmRouter
-from swarms.structs.agents_available import showcase_available_agents
+from swarms.structs.swarm_router import SwarmRouter, SwarmType
+
+logger.add("swarm_builder.log", rotation="10 MB", backtrace=True)
+
+
+class OpenAIFunctionCaller:
+    """
+    A class to interact with the OpenAI API for generating text based on a system prompt and a task.
+
+    Attributes:
+    - system_prompt (str): The system prompt to guide the AI's response.
+    - api_key (str): The API key for the OpenAI service.
+    - temperature (float): The temperature parameter for the AI model, controlling randomness.
+    - base_model (BaseModel): The Pydantic model to parse the response into.
+    - max_tokens (int): The maximum number of tokens in the response.
+    - client (OpenAI): The OpenAI client instance.
+    """
+
+    def __init__(
+        self,
+        system_prompt: str,
+        api_key: str,
+        temperature: float,
+        base_model: BaseModel,
+        max_tokens: int = 5000,
+    ):
+        self.system_prompt = system_prompt
+        self.api_key = api_key
+        self.temperature = temperature
+        self.base_model = base_model
+        self.max_tokens = max_tokens
+
+        try:
+            from openai import OpenAI
+        except ImportError:
+            logger.error(
+                "OpenAI library not found. Please install the OpenAI library by running 'pip install openai'"
+            )
+            subprocess.run(["pip", "install", "openai"])
+            from openai import OpenAI
+
+        self.client = OpenAI(api_key=api_key)
+
+    def run(self, task: str, *args, **kwargs) -> BaseModel:
+        """
+        Run the OpenAI model with the system prompt and task to generate a response.
+
+        Args:
+        - task (str): The task to be completed.
+        - *args: Additional positional arguments for the OpenAI API.
+        - **kwargs: Additional keyword arguments for the OpenAI API.
+
+        Returns:
+        - BaseModel: The parsed response based on the base_model.
+        """
+        completion = self.client.beta.chat.completions.parse(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": task},
+            ],
+            response_format=self.base_model,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            *args,
+            **kwargs,
+        )
+
+        return completion.choices[0].message.parsed
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+    )
+    async def run_async(
+        self, task: str, *args, **kwargs
+    ) -> BaseModel:
+        """
+        Asynchronous version of the run method.
+
+        Args:
+        - task (str): The task to be completed.
+        - *args: Additional positional arguments for the OpenAI API.
+        - **kwargs: Additional keyword arguments for the OpenAI API.
+
+        Returns:
+        - BaseModel: The parsed response based on the base_model.
+        """
+        completion = (
+            await self.client.beta.chat.completions.parse_async(
+                model="gpt-4o-2024-08-06",
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": task},
+                ],
+                response_format=self.base_model,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                *args,
+                **kwargs,
+            )
+        )
+
+        return completion.choices[0].message.parsed
 
 
 BOSS_SYSTEM_PROMPT = """
@@ -59,28 +161,14 @@ class AgentConfig(BaseModel):
     """Configuration for an individual agent in a swarm"""
 
     name: str = Field(
-        description="The name of the agent", example="Research-Agent"
+        description="The name of the agent",
     )
     description: str = Field(
         description="A description of the agent's purpose and capabilities",
-        example="Agent responsible for researching and gathering information",
     )
     system_prompt: str = Field(
         description="The system prompt that defines the agent's behavior",
-        example="You are a research agent. Your role is to gather and analyze information...",
     )
-
-    @validator("name")
-    def validate_name(cls, v):
-        if not v.strip():
-            raise ValueError("Agent name cannot be empty")
-        return v.strip()
-
-    @validator("system_prompt")
-    def validate_system_prompt(cls, v):
-        if not v.strip():
-            raise ValueError("System prompt cannot be empty")
-        return v.strip()
 
 
 class SwarmConfig(BaseModel):
@@ -96,7 +184,9 @@ class SwarmConfig(BaseModel):
     )
     agents: List[AgentConfig] = Field(
         description="The list of agents that make up the swarm",
-        min_items=1,
+    )
+    max_loops: int = Field(
+        description="The maximum number of loops for the swarm to iterate on",
     )
 
     @validator("agents")
@@ -106,23 +196,90 @@ class SwarmConfig(BaseModel):
         return v
 
 
+class AutoSwarmBuilderOutput(BaseModel):
+    """A class that automatically builds and manages swarms of AI agents with enhanced error handling."""
+
+    name: Optional[str] = Field(
+        description="The name of the swarm",
+        example="DefaultSwarm",
+        default=None,
+    )
+    description: Optional[str] = Field(
+        description="The description of the swarm's purpose and capabilities",
+        example="Generic AI Agent Swarm",
+        default=None,
+    )
+    verbose: Optional[bool] = Field(
+        description="Whether to display verbose output",
+        default=None,
+    )
+    model_name: Optional[str] = Field(
+        description="The name of the OpenAI model to use",
+        default=None,
+    )
+    boss_output_schema: Optional[list] = Field(
+        description="The schema for the output of the BOSS system prompt",
+        default=None,
+    )
+    director_agents_created: Optional[SwarmConfig] = Field(
+        description="The agents created by the director",
+        default=None,
+    )
+    swarm_router_outputs: Optional[list] = Field(
+        description="The outputs from the swarm router",
+        default=None,
+    )
+    max_loops: Optional[int] = Field(
+        description="The maximum number of loops for the swarm to iterate on",
+        default=None,
+    )
+    swarm_type: Optional[SwarmType] = Field(
+        description="The type of swarm to build",
+        default=None,
+    )
+
+
 class AutoSwarmBuilder:
     """A class that automatically builds and manages swarms of AI agents with enhanced error handling."""
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: Optional[str] = "autonomous-swarm-builder",
+        description: Optional[
+            str
+        ] = "Given a task, this swarm will automatically create specialized agents and route it to the appropriate agents.",
         verbose: bool = True,
-        api_key: Optional[str] = None,
-        model_name: str = "gpt-4",
+        model_name: str = "gpt-4o",
+        boss_output_schema: list = None,
+        swarm_router_outputs: AutoSwarmBuilderOutput = None,
+        max_loops: int = 1,
+        swarm_type: str = "SequentialWorkflow",
+        auto_generate_prompts_for_agents: bool = False,
+        shared_memory_system: callable = None,
     ):
         self.name = name or "DefaultSwarm"
         self.description = description or "Generic AI Agent Swarm"
         self.verbose = verbose
         self.agents_pool = []
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = os.getenv("OPENAI_API_KEY")
         self.model_name = model_name
+        self.boss_output_schema = boss_output_schema
+        self.max_loops = max_loops
+        self.swarm_type = swarm_type
+        self.auto_generate_prompts_for_agents = (
+            auto_generate_prompts_for_agents
+        )
+        self.shared_memory_system = shared_memory_system
+        self.auto_swarm_builder_output = AutoSwarmBuilderOutput(
+            name=name,
+            description=description,
+            verbose=verbose,
+            model_name=model_name,
+            boss_output_schema=boss_output_schema or [],
+            swarm_router_outputs=swarm_router_outputs or [],
+            max_loops=max_loops,
+            swarm_type=swarm_type,
+        )
 
         if not self.api_key:
             raise ValueError(
@@ -143,7 +300,6 @@ class AutoSwarmBuilder:
             self.chat_model = OpenAIChat(
                 openai_api_key=self.api_key,
                 model_name=self.model_name,
-                temperature=0.1,
             )
         except Exception as e:
             logger.error(
@@ -151,11 +307,13 @@ class AutoSwarmBuilder:
             )
             raise
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-    )
-    def run(self, task: str, image_url: Optional[str] = None) -> str:
+    def run(
+        self,
+        task: str,
+        image_url: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
         """Run the swarm on a given task with error handling and retries."""
         if not task or not task.strip():
             raise ValueError("Task cannot be empty")
@@ -164,7 +322,7 @@ class AutoSwarmBuilder:
 
         try:
             # Create agents for the task
-            agents = self._create_agents(task, image_url)
+            agents = self._create_agents(task)
             if not agents:
                 raise ValueError(
                     "No agents were created for the task"
@@ -175,20 +333,33 @@ class AutoSwarmBuilder:
                 "Routing task through swarm",
                 extra={"num_agents": len(agents)},
             )
-            output = self.swarm_router(agents, task, image_url)
+            output = self.swarm_router(
+                agents=agents,
+                task=task,
+                image_url=image_url,
+                *args,
+                **kwargs,
+            )
+            self.auto_swarm_builder_output.swarm_router_outputs.append(
+                output
+            )
+            print(output)
 
             logger.info("Swarm execution completed successfully")
-            return output
+            # return output
+            return self.auto_swarm_builder_output.model_dump_json(
+                indent=4
+            )
 
         except Exception as e:
             logger.error(
                 f"Error during swarm execution: {str(e)}",
-                exc_info=True,
             )
-            raise
+            raise e
 
     def _create_agents(
-        self, task: str, image_url: Optional[str] = None
+        self,
+        task: str,
     ) -> List[Agent]:
         """Create the necessary agents for a task with enhanced error handling."""
         logger.info("Creating agents for task", extra={"task": task})
@@ -202,7 +373,12 @@ class AutoSwarmBuilder:
             )
 
             agents_config = model.run(task)
-            print(f"{agents_config}")
+            logger.info(
+                f"Director has successfully created agents: {agents_config}"
+            )
+            self.auto_swarm_builder_output.director_agents_created = (
+                agents_config
+            )
 
             if isinstance(agents_config, dict):
                 agents_config = SwarmConfig(**agents_config)
@@ -224,15 +400,19 @@ class AutoSwarmBuilder:
                 )
                 agents.append(agent)
 
-            # Add available agents showcase to system prompts
-            agents_available = showcase_available_agents(
-                name=self.name,
-                description=self.description,
-                agents=agents,
-            )
+                print(
+                    f"Agent created: {agent_config.name}: Description: {agent_config.description}"
+                )
 
-            for agent in agents:
-                agent.system_prompt += "\n" + agents_available
+            # # Add available agents showcase to system prompts
+            # agents_available = showcase_available_agents(
+            #     name=self.name,
+            #     description=self.description,
+            #     agents=agents,
+            # )
+
+            # for agent in agents:
+            #     agent.system_prompt += "\n" + agents_available
 
             logger.info(
                 "Successfully created agents",
@@ -251,6 +431,8 @@ class AutoSwarmBuilder:
         agent_name: str,
         agent_description: str,
         agent_system_prompt: str,
+        *args,
+        **kwargs,
     ) -> Agent:
         """Build a single agent with enhanced error handling."""
         logger.info(
@@ -263,18 +445,11 @@ class AutoSwarmBuilder:
                 description=agent_description,
                 system_prompt=agent_system_prompt,
                 llm=self.chat_model,
-                autosave=True,
-                dashboard=False,
                 verbose=self.verbose,
-                dynamic_temperature_enabled=True,
-                saved_state_path=f"states/{agent_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                user_name="swarms_corp",
-                retry_attempts=3,
-                context_length=200000,
+                dynamic_temperature_enabled=False,
                 return_step_meta=False,
                 output_type="str",
-                streaming_on=False,
-                auto_generate_prompt=True,
+                streaming_on=True,
             )
             return agent
 
@@ -292,7 +467,9 @@ class AutoSwarmBuilder:
         self,
         agents: List[Agent],
         task: str,
-        image_url: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
     ) -> str:
         """Route tasks between agents in the swarm with error handling and retries."""
         logger.info(
@@ -305,11 +482,14 @@ class AutoSwarmBuilder:
                 name=self.name,
                 description=self.description,
                 agents=agents,
-                swarm_type="auto",
+                swarm_type=self.swarm_type,
+                auto_generate_prompts=self.auto_generate_prompts_for_agents,
             )
 
-            formatted_task = f"{self.name} {self.description} {task}"
-            result = swarm_router_instance.run(formatted_task)
+            # formatted_task = f"{self.name} {self.description} {task}"
+            result = swarm_router_instance.run(
+                task=task, *args, **kwargs
+            )
 
             logger.info("Successfully completed swarm routing")
             return result
@@ -321,13 +501,16 @@ class AutoSwarmBuilder:
             raise
 
 
-swarm = AutoSwarmBuilder(
-    name="ChipDesign-Swarm",
-    description="A swarm of specialized AI agents for chip design",
-    api_key="your-api-key",  # Optional if set in environment
-    model_name="gpt-4",  # Optional, defaults to gpt-4
-)
+# swarm = AutoSwarmBuilder(
+#     name="ChipDesign-Swarm",
+#     description="A swarm of specialized AI agents for chip design",
+#     swarm_type="ConcurrentWorkflow",
+# )
 
-result = swarm.run(
-    "Design a new AI accelerator chip optimized for transformer model inference..."
-)
+# try:
+#     result = swarm.run(
+#         "Design a new AI accelerator chip optimized for transformer model inference..."
+#     )
+#     print(result)
+# except Exception as e:
+#     print(f"An error occurred: {e}")

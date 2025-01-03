@@ -102,7 +102,6 @@ agent_system = AgentRearrange(
     return_json=False,
     output_type="final",
     max_loops=1,
-    # docs=["SECURITY.md"],
 )
 
 # Input task for the swarm

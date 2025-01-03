@@ -1,0 +1,48 @@
+{
+    "run_id": "spreadsheet_swarm_run_2024-12-25T14:28:32.568788",
+    "name": "Financial-Analysis-Swarm",
+    "description": "A swarm of agents performing concurrent financial analysis tasks",
+    "agents": [
+        "MarketAnalyst",
+        "RiskManager",
+        "TechnicalTrader",
+        "FundamentalAnalyst",
+        "MacroStrategist"
+    ],
+    "start_time": "2024-12-25T14:28:32.568788",
+    "end_time": "2024-12-25T14:28:32.568788",
+    "tasks_completed": 5,
+    "outputs": [
+        {
+            "agent_name": "MarketAnalyst",
+            "task": "Analyze current market conditions and identify the top 3 performing sectors in the S&P 500 with supporting data and rationale.",
+            "result": "",
+            "timestamp": "2024-12-25T14:28:32.568788"
+        },
+        {
+            "agent_name": "RiskManager",
+            "task": "Perform a comprehensive risk analysis of a diversified portfolio containing 60% stocks",
+            "result": "",
+            "timestamp": "2024-12-25T14:28:32.568788"
+        },
+        {
+            "agent_name": "TechnicalTrader",
+            "task": "Conduct technical analysis of major market indices (S&P 500",
+            "result": "",
+            "timestamp": "2024-12-25T14:28:32.568788"
+        },
+        {
+            "agent_name": "FundamentalAnalyst",
+            "task": "Select and analyze 3 top technology companies using fundamental analysis. Include key metrics like P/E ratio",
+            "result": "",
+            "timestamp": "2024-12-25T14:28:32.568788"
+        },
+        {
+            "agent_name": "MacroStrategist",
+            "task": "Analyze the current macroeconomic environment",
+            "result": "",
+            "timestamp": "2024-12-25T14:28:32.568788"
+        }
+    ],
+    "number_of_agents": 5
+}

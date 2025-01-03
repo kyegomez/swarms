@@ -295,7 +295,7 @@ print(agent.model_dump_json())
 print(agent.model_dump_yaml())
 
 # Ingest documents into the agent's knowledge base
-agent.ingest_docs("your_pdf_path.pdf")
+("your_pdf_path.pdf")
 
 # Receive a message from a user and process it
 agent.receive_message(name="agent_name", message="message")
@@ -1839,6 +1839,134 @@ mixture_router = SwarmRouter(
 result = mixture_router.run("Evaluate the potential acquisition of TechStartup Inc.")
 ```
 
+
+-------
+
+## GroupChat
+
+A production-grade multi-agent system enabling sophisticated group conversations between AI agents with customizable speaking patterns, parallel processing capabilities, and comprehensive conversation tracking.
+
+
+```python
+
+import os
+from dotenv import load_dotenv
+from swarm_models import OpenAIChat
+from swarms import Agent, GroupChat, expertise_based
+
+
+if __name__ == "__main__":
+
+    load_dotenv()
+
+    # Get the OpenAI API key from the environment variable
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    # Create an instance of the OpenAIChat class
+    model = OpenAIChat(
+        openai_api_key=api_key,
+        model_name="gpt-4o-mini",
+        temperature=0.1,
+    )
+
+    # Example agents
+    agent1 = Agent(
+        agent_name="Financial-Analysis-Agent",
+        system_prompt="You are a financial analyst specializing in investment strategies.",
+        llm=model,
+        max_loops=1,
+        autosave=False,
+        dashboard=False,
+        verbose=True,
+        dynamic_temperature_enabled=True,
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        output_type="string",
+        streaming_on=False,
+    )
+
+    agent2 = Agent(
+        agent_name="Tax-Adviser-Agent",
+        system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
+        llm=model,
+        max_loops=1,
+        autosave=False,
+        dashboard=False,
+        verbose=True,
+        dynamic_temperature_enabled=True,
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        output_type="string",
+        streaming_on=False,
+    )
+
+    agents = [agent1, agent2]
+
+    chat = GroupChat(
+        name="Investment Advisory",
+        description="Financial and tax analysis group",
+        agents=agents,
+        speaker_fn=expertise_based,
+    )
+
+    history = chat.run(
+        "How to optimize tax strategy for investments?"
+    )
+    print(history.model_dump_json(indent=2))
+
+```
+
+---
+
+## MultiAgentRouter
+
+The MultiAgentRouter is a swarm architecture designed to dynamically assign tasks to the most suitable agent. It achieves this through a director or boss entity that utilizes function calls to identify and allocate tasks to the agent best equipped to handle them. [Check out the documentation](https://docs.swarms.world/en/latest/swarms/structs/multi_agent_router/)
+
+```python
+from swarms import Agent
+from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
+
+# Example usage:
+if __name__ == "__main__":
+    # Define some example agents
+    agents = [
+        Agent(
+            agent_name="ResearchAgent",
+            description="Specializes in researching topics and providing detailed, factual information",
+            system_prompt="You are a research specialist. Provide detailed, well-researched information about any topic, citing sources when possible.",
+            model_name="openai/gpt-4o",
+        ),
+        Agent(
+            agent_name="CodeExpertAgent",
+            description="Expert in writing, reviewing, and explaining code across multiple programming languages",
+            system_prompt="You are a coding expert. Write, review, and explain code with a focus on best practices and clean code principles.",
+            model_name="openai/gpt-4o",
+        ),
+        Agent(
+            agent_name="WritingAgent",
+            description="Skilled in creative and technical writing, content creation, and editing",
+            system_prompt="You are a writing specialist. Create, edit, and improve written content while maintaining appropriate tone and style.",
+            model_name="openai/gpt-4o",
+        ),
+    ]
+
+    # Initialize routers with different configurations
+    router_execute = MultiAgentRouter(agents=agents, execute_task=True)
+
+    # Example task
+    task = "Write a Python function to calculate fibonacci numbers"
+
+    try:
+        # Process the task with execution
+        print("\nWith task execution:")
+        result_execute = router_execute.route_task(task)
+        print(result_execute)
+
+    except Exception as e:
+        print(f"Error occurred: {str(e)}")
+```
 
 
 ----------

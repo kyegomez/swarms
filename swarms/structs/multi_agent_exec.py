@@ -1,18 +1,18 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import psutil
-from dataclasses import dataclass
-import threading
-from typing import List, Any
-from multiprocessing import cpu_count
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from multiprocessing import cpu_count
+from typing import Any, List
+
+import psutil
 
 from swarms.structs.agent import Agent
+from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-
-from swarms.structs.omni_agent_types import AgentType
 
 
 def run_single_agent(agent: AgentType, task: str) -> Any:

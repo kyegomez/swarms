@@ -160,6 +160,7 @@ nav:
       - OpenAI Assistant: "swarms/agents/openai_assistant.md"
       - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
       - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
+      - Creating Custom Agents: "swarms/agents/new_agent.md"
       - Tools:
         - Overview: "swarms/tools/main.md"
         - What are tools?: "swarms/tools/build_tool.md"
@@ -172,6 +173,7 @@ nav:
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
       - Building Custom Swarms: "swarms/structs/custom_swarm.md"
+      - Create New Swarm Architectures: "swarms/structs/create_new_swarm.md"
       - Architectures Available:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
@@ -184,6 +186,8 @@ nav:
         - ForestSwarm: "swarms/structs/forest_swarm.md"
         - SwarmRouter: "swarms/structs/swarm_router.md"
         - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
+        - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
+        - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
@@ -193,6 +197,8 @@ nav:
           - Conversation: "swarms/structs/conversation.md"
     #   - Task: "swarms/structs/task.md"
     - Full API Reference: "swarms/framework/reference.md"
+  - Examples:
+    - Unique Swarms: "swarms/examples/unique_swarms.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
@@ -215,11 +221,12 @@ nav:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Multi Modal Models Available: "swarms/models/multimodal_models.md"
       - GPT4VisionAPI: "swarms/models/gpt4v.md"
-  # - Swarms Cloud API:
-  #   # - Overview: "swarms_cloud/main.md"
-  #   - Overview: "swarms_cloud/vision.md"
-  #   - Swarms Cloud CLI: "swarms_cloud/cli.md"
-  #   # - Add Agents to Marketplace: "swarms_cloud/add_agent.md"
+  - Swarms Cloud API:
+    # - Overview: "swarms_cloud/main.md"
+    - Overview: "swarms_cloud/vision.md"
+    - MCS API: "swarms_cloud/mcs_api.md"
+    - Swarms Cloud CLI: "swarms_cloud/cli.md"
+    # - Add Agents to Marketplace: "swarms_cloud/add_agent.md"
     # - Available Models: "swarms_cloud/available_models.md"
     # - Agent API: "swarms_cloud/agent_api.md"
     # - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
