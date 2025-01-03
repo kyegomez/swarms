@@ -14,6 +14,7 @@ from swarm_models import OpenAIChat
 
 from swarms.structs.agent import Agent
 
+
 @dataclass
 class SwarmSystemInfo:
     """System information for Swarms issue reports."""
@@ -110,14 +111,7 @@ class SwarmsIssueReporter:
                 gpu_info = torch.cuda.get_device_name(0)
                 return cuda_available, gpu_info
             return False, None
-        except ModuleNotFoundError as e:
-            print(f"Error: {e}")
-            return False, None
-        except RuntimeError as e:
-            print(f"Error: {e}")
-            return False, None
-        except Exception as e:
-            print(f"Unexpected error: {e}")
+        except:
             return False, None
 
     def _get_system_info(self) -> SwarmSystemInfo:
@@ -136,15 +130,23 @@ class SwarmsIssueReporter:
             gpu_info=gpu_info,
         )
 
-    def _categorize_error(self, error: Exception, context: Dict) -> List[str]:
+    def _categorize_error(
+        self, error: Exception, context: Dict
+    ) -> List[str]:
         """Categorize the error and return appropriate labels."""
         error_str = str(error).lower()
+        type(error).__name__
 
         labels = ["bug", "automated"]
 
         # Check error message and context for category keywords
-        for category, category_labels in self.ISSUE_CATEGORIES.items():
-            if any(keyword in error_str for keyword in category_labels):
+        for (
+            category,
+            category_labels,
+        ) in self.ISSUE_CATEGORIES.items():
+            if any(
+                keyword in error_str for keyword in category_labels
+            ):
                 labels.extend(category_labels)
                 break
 
@@ -159,7 +161,10 @@ class SwarmsIssueReporter:
         return list(set(labels))  # Remove duplicates
 
     def _format_swarms_issue_body(
-        self, error: Exception, system_info: SwarmSystemInfo, context: Dict
+        self,
+        error: Exception,
+        system_info: SwarmSystemInfo,
+        context: Dict,
     ) -> str:
         """Format the issue body with Swarms-specific information."""
         return f"""
@@ -202,25 +207,27 @@ class SwarmsIssueReporter:
             for dist in pkg_resources.working_set:
                 deps.append(f"- {dist.key} {dist.version}")
             return "\n".join(deps)
-        except ImportError as e:
-            print(f"Error: {e}")
-            return "Unable to fetch dependency information"
-        except Exception as e:
-            print(f"Unexpected error: {e}")
+        except:
             return "Unable to fetch dependency information"
 
+    # First, add this method to your SwarmsIssueReporter class
     def _check_rate_limit(self) -> bool:
         """Check if we're within rate limits."""
         now = datetime.now()
         time_diff = (now - self.last_issue_time).total_seconds()
 
-        if len(self.issues_created) >= self.rate_limit and time_diff < self.rate_period:
+        if (
+            len(self.issues_created) >= self.rate_limit
+            and time_diff < self.rate_period
+        ):
             logger.warning("Rate limit exceeded for issue creation")
             return False
 
         # Clean up old issues from tracking
         self.issues_created = [
-            time for time in self.issues_created if (now - time).total_seconds() < self.rate_period
+            time
+            for time in self.issues_created
+            if (now - time).total_seconds() < self.rate_period
         ]
 
         return True
@@ -246,7 +253,9 @@ class SwarmsIssueReporter:
         """
         try:
             if not self._check_rate_limit():
-                logger.warning("Skipping issue creation due to rate limit")
+                logger.warning(
+                    "Skipping issue creation due to rate limit"
+                )
                 return None
 
             # Collect system information
@@ -277,19 +286,25 @@ class SwarmsIssueReporter:
             url = f"https://api.github.com/repos/{self.REPO_OWNER}/{self.REPO_NAME}/issues"
             data = {
                 "title": title,
-                "body": self._format_swarms_issue_body(error, system_info, full_context),
+                "body": self._format_swarms_issue_body(
+                    error, system_info, full_context
+                ),
                 "labels": labels,
             }
 
             response = requests.post(
                 url,
-                headers={"Authorization": f"token {self.github_token}"},
+                headers={
+                    "Authorization": f"token {self.github_token}"
+                },
                 json=data,
             )
             response.raise_for_status()
 
             issue_number = response.json()["number"]
-            logger.info(f"Successfully created Swarms issue #{issue_number}")
+            logger.info(
+                f"Successfully created Swarms issue #{issue_number}"
+            )
 
             return issue_number
 
@@ -299,11 +314,15 @@ class SwarmsIssueReporter:
 
 
 # Setup the reporter with your GitHub token
-reporter = SwarmsIssueReporter(github_token=os.getenv("GITHUB_API_KEY"))
+reporter = SwarmsIssueReporter(
+    github_token=os.getenv("GITHUB_API_KEY")
+)
+
 
 # Force an error to test the reporter
 try:
     # This will raise an error since the input isn't valid
+    # Create an agent that might have issues
     model = OpenAIChat(model_name="gpt-4o")
     agent = Agent(agent_name="Test-Agent", max_loops=1)
 

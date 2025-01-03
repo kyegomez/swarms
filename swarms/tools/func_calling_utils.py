@@ -1,3 +1,4 @@
+
 import json
 from typing import List, Union, Dict
 
@@ -122,9 +123,9 @@ def prepare_output_for_output_model(
     """
     if output_type == BaseModel:
         return str_to_pydantic_model(output, output_type)
-    elif output_type is dict:
+    elif output_type == dict:
         return dict_to_json_str(output)
-    elif output_type is str:
+    elif output_type == str:
         return output
     else:
         return output
