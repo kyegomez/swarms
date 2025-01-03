@@ -172,6 +172,7 @@ nav:
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
       - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
       - Building Custom Swarms: "swarms/structs/custom_swarm.md"
+      - Create New Swarm Architectures: "swarms/structs/create_new_swarm.md"
       - Architectures Available:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"

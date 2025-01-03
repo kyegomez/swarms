@@ -26,7 +26,9 @@ if __name__ == "__main__":
     ]
 
     # Initialize routers with different configurations
-    router_execute = MultiAgentRouter(agents=agents, execute_task=True)
+    router_execute = MultiAgentRouter(
+        agents=agents, execute_task=True
+    )
 
     # Example task
     task = "Write a Python function to calculate fibonacci numbers"

@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic
+loguru
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+gunicorn
+prometheus-fastapi-instrumentator
+httpx
