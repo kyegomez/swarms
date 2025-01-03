@@ -270,6 +270,132 @@ func main() {
 }
 ```
 
+
+## C Sharp
+
+
+````cs
+using System;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+namespace MedicalCoderSwarm
+{
+    public class PatientCase
+    {
+        public string PatientId { get; set; }
+        public string CaseDescription { get; set; }
+    }
+
+    public class QueryResponse
+    {
+        public string PatientId { get; set; }
+        public string CaseData { get; set; }
+    }
+
+    public class MCSClient : IDisposable
+    {
+        private readonly HttpClient _httpClient;
+        private readonly string _baseUrl;
+        
+        public MCSClient(string apiKey, string baseUrl = "https://mcs-285321057562.us-central1.run.app")
+        {
+            _baseUrl = baseUrl;
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");
+        }
+
+        public async Task<QueryResponse> RunMedicalCoderAsync(string patientId, string caseDescription)
+        {
+            var payload = new PatientCase
+            {
+                PatientId = patientId,
+                CaseDescription = caseDescription
+            };
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            var response = await _httpClient.PostAsync(
+                $"{_baseUrl}/v1/medical-coder/run",
+                content
+            );
+
+            response.EnsureSuccessStatusCode();
+            
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<QueryResponse>(responseContent);
+        }
+
+        public async Task<QueryResponse> GetPatientDataAsync(string patientId)
+        {
+            var response = await _httpClient.GetAsync(
+                $"{_baseUrl}/v1/medical-coder/patient/{patientId}"
+            );
+
+            response.EnsureSuccessStatusCode();
+            
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<QueryResponse>(responseContent);
+        }
+
+        public async Task<bool> HealthCheckAsync()
+        {
+            var response = await _httpClient.GetAsync($"{_baseUrl}/health");
+            return response.IsSuccessStatusCode;
+        }
+
+        public void Dispose()
+        {
+            _httpClient?.Dispose();
+        }
+    }
+
+    // Example usage
+    public class Program
+    {
+        public static async Task Main()
+        {
+            try
+            {
+                using var client = new MCSClient("your_api_key");
+
+                // Check API health
+                var isHealthy = await client.HealthCheckAsync();
+                Console.WriteLine($"API Health: {(isHealthy ? "Healthy" : "Unhealthy")}");
+
+                // Process a single case
+                var result = await client.RunMedicalCoderAsync(
+                    "P123",
+                    "Patient presents with acute respiratory symptoms..."
+                );
+                Console.WriteLine($"Processed case for patient {result.PatientId}");
+                Console.WriteLine($"Case data: {result.CaseData}");
+
+                // Get patient data
+                var patientData = await client.GetPatientDataAsync("P123");
+                Console.WriteLine($"Retrieved data for patient {patientData.PatientId}");
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"API request failed: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+        }
+    }
+}
+
+```
+
 ## Error Handling
 
 The API uses standard HTTP status codes and returns detailed error messages in JSON format.
