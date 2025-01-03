@@ -20,8 +20,8 @@ RUN pip install poetry
 # Configure Poetry to avoid virtual environments and install dependencies
 RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
 
-# Install additional dependencies (e.g., swarms, pytest)
-RUN pip install swarms pytest
+# Install pytest
+RUN pip install pytest
 
 # Ensure pytest is installed and available
 RUN pytest --version || echo "pytest not found"
