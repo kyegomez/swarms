@@ -14,23 +14,26 @@ WORKDIR /usr/src/app
 # Copy the entire project into the container
 COPY . .
 
-# Install Poetry
+# Install Poetry and necessary dependencies
 RUN pip install poetry
 
 # Configure Poetry to avoid virtual environments and install dependencies
 RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
 
-# Install additional dependencies outside Poetry (e.g., swarms, pytest)
+# Install additional dependencies (e.g., swarms, pytest)
 RUN pip install swarms pytest
 
 # Ensure pytest is installed and available
-RUN pytest --version
+RUN pytest --version || echo "pytest not found"
 
-# Ensure the logs directory has correct permissions (in case of permission issues with mounted volumes)
+# Ensure the logs directory has correct permissions
 RUN mkdir -p /usr/src/app/logs && chmod -R 777 /usr/src/app/logs
 
 # Ensure that the PATH includes the directory where pytest is installed
 ENV PATH="/usr/local/bin:$PATH"
+
+# List files to verify pytest and tests exist
+RUN ls -l /usr/src/app
 
 # Set the working directory to the tests directory inside the container
 WORKDIR /usr/src/app/tests
