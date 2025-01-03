@@ -8,10 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_DEFAULT_TIMEOUT=100
 
-# Set the working directory to the root of the project (relative to pyproject.toml)
+# Set the working directory to the root of the project
 WORKDIR /usr/src/app
 
-# Copy the entire project into the container
+# Copy the entire project into the container (including pyproject.toml)
 COPY . .
 
 # Install Poetry
