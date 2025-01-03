@@ -14,16 +14,16 @@ WORKDIR /usr/src/app
 # Copy the entire project into the container
 COPY . .
 
-# Install system dependencies
+# Install system dependencies and clean up
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry and dependencies
+# Install Poetry and pytest
 RUN pip install --no-cache-dir poetry pytest
 
-# Install project dependencies
+# Configure Poetry and install project dependencies
 RUN poetry config virtualenvs.create false && \
     poetry install --no-interaction --no-ansi
 
@@ -32,8 +32,12 @@ RUN mkdir -p /usr/src/app/logs && chmod -R 777 /usr/src/app/logs
 
 # Add pytest to PATH and verify installation
 ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
+
+# Verify pytest installation
 RUN python -m pytest --version
 
-# Set the default command
-ENTRYPOINT ["pytest"]
-CMD ["/usr/src/app/tests", "--continue-on-collection-errors", "--tb=short", "--disable-warnings"]
+# Set the ENTRYPOINT to use pytest
+ENTRYPOINT ["python", "-m", "pytest"]
+
+# Set default command arguments
+CMD ["--continue-on-collection-errors", "--tb=short", "--disable-warnings"]
