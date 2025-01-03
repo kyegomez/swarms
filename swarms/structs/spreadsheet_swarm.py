@@ -391,7 +391,7 @@ class SpreadSheetSwarm(BaseSwarm):
 
         create_file_in_folder(
             folder_path=f"{self.workspace_dir}/Spreedsheet-Swarm-{self.name}/{self.name}",
-            file_name=f"spreedsheet-swarm-{uuid_hex}_metadata.json",
+            file_name=f"spreedsheet-swarm-{uuid_hex}-metadata.json",
             content=out,
         )
 
