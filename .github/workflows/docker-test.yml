@@ -46,7 +46,14 @@ jobs:
           -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
           -v ${{ github.workspace }}/logs:/usr/src/app/logs \
           ${{ env.IMAGE_TAG }} \
-          /usr/src/app/tests | tee ${{ github.workspace }}/logs/test_logs.txt
+          /usr/src/app/tests --continue-on-collection-errors --tb=short --disable-warnings | tee ${{ github.workspace }}/logs/test_logs.txt
 
     - name: Print test logs
       run: cat ${{ github.workspace }}/logs/test_logs.txt || echo "No test logs found"
+
+    # Optional: Add debug step if needed
+    - name: Debug Docker container
+      if: failure()
+      run: |
+        docker run --rm ${{ env.IMAGE_TAG }} --version
+        docker run --rm -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ${{ env.IMAGE_TAG }} -h
