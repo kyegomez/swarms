@@ -1,0 +1,59 @@
+name: Docker Build and Test
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build Docker image
+      run: |
+        IMAGE_TAG="test-runner:swarm-testing-${GITHUB_SHA}"
+        docker build -t $IMAGE_TAG -f ./tests/Dockerfile .
+        echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+    - name: Create logs directory
+      run: |
+        mkdir -p ${{ github.workspace }}/logs
+        chmod -R 777 ${{ github.workspace }}/logs
+
+    - name: Run tests in Docker
+      run: |
+        docker run --rm \
+          -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+          -v ${{ github.workspace }}/logs:/usr/src/app/logs \
+          ${{ env.IMAGE_TAG }} \
+          /usr/src/app/tests --continue-on-collection-errors --tb=short --disable-warnings | tee ${{ github.workspace }}/logs/test_logs.txt
+
+    - name: Print test logs
+      run: cat ${{ github.workspace }}/logs/test_logs.txt || echo "No test logs found"
+
+    # Optional: Add debug step if needed
+    - name: Debug Docker container
+      if: failure()
+      run: |
+        docker run --rm ${{ env.IMAGE_TAG }} --version
+        docker run --rm -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ${{ env.IMAGE_TAG }} -h

@@ -1,32 +1,51 @@
-# TESTING
-# -==================
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.11-slim-bullseye
 
-# Set environment variables to make Python output unbuffered and disable the PIP cache
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV PIP_NO_CACHE_DIR off
-ENV PIP_DISABLE_PIP_VERSION_CHECK on
-ENV PIP_DEFAULT_TIMEOUT 100
+# Set environment variables for Python behavior
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /usr/src/app
 
-# Copy the current directory contents into the container at /usr/src/app
+# Copy the entire project into the container
 COPY . .
 
-# Install Poetry
-RUN pip install poetry
+# Install system dependencies and clean up
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Disable virtualenv creation by poetry and install dependencies
-RUN poetry config virtualenvs.create false
+# Install Poetry and pytest
+RUN pip install --no-cache-dir poetry pytest
 
-# Install the 'swarms' package if it's not included in the poetry.lock
-RUN pip install swarms
+# Configure Poetry and install project dependencies
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi
 
-# Assuming tests require pytest to run
-RUN pip install pytest
+# Create logs directory with proper permissions
+RUN mkdir -p /usr/src/app/logs && chmod -R 777 /usr/src/app/logs
 
-# Run pytest on all tests in the tests directory
-CMD pytest
+# Add pytest to PATH and verify installation
+ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
+
+# Verify pytest installation
+RUN python -m pytest --version
+
+# Create a shell script to run tests
+COPY <<EOF /usr/local/bin/run-tests.sh
+#!/bin/bash
+python -m pytest "\$@"
+EOF
+
+RUN chmod +x /usr/local/bin/run-tests.sh
+
+# Set the ENTRYPOINT to use the shell script
+ENTRYPOINT ["/usr/local/bin/run-tests.sh"]
+
+# Set default pytest arguments
+CMD ["--continue-on-collection-errors", "--tb=short", "--disable-warnings"]
