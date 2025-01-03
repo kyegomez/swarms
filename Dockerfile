@@ -1,55 +1,39 @@
-# Use Python 3.11 slim-bullseye for smaller base image
-FROM python:3.11-slim-bullseye AS builder
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim-bullseye
 
-# Set environment variables
+# Set environment variables for Python behavior
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100
 
 # Set the working directory
-WORKDIR /build
+WORKDIR /usr/src/app
 
-# Install only essential build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    g++ \
-    gfortran \
+# Copy the entire project into the container
+COPY . .
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install swarms packages
-RUN pip install --no-cache-dir swarm-models swarms
+# Install Poetry and dependencies
+RUN pip install --no-cache-dir poetry pytest
 
-# Production stage
-FROM python:3.11-slim-bullseye
+# Install project dependencies
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi
 
-# Set secure environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    WORKSPACE_DIR="agent_workspace" \
-    PATH="/app:${PATH}" \
-    PYTHONPATH="/app:${PYTHONPATH}" \
-    USER=swarms
+# Create logs directory with proper permissions
+RUN mkdir -p /usr/src/app/logs && chmod -R 777 /usr/src/app/logs
 
-# Create non-root user
-RUN useradd -m -s /bin/bash -U $USER && \
-    mkdir -p /app && \
-    chown -R $USER:$USER /app
+# Add pytest to PATH and verify installation
+ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
+RUN python -m pytest --version
 
-# Set working directory
-WORKDIR /app
-
-# Copy only necessary files from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-
-# Copy application with correct permissions
-COPY --chown=$USER:$USER . .
-
-# Switch to non-root user
-USER $USER
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import swarms; print('Health check passed')" || exit 1
+# Set the default command
+ENTRYPOINT ["pytest"]
+CMD ["/usr/src/app/tests", "--continue-on-collection-errors", "--tb=short", "--disable-warnings"]

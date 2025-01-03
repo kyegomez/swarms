@@ -15,15 +15,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the repository
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    # Set up Docker Buildx (optional, for multi-platform support)
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
-    # Cache Docker layers to speed up builds (optional)
     - name: Cache Docker layers
       uses: actions/cache@v2
       with:
@@ -32,29 +29,24 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
 
-    # Build Docker image from the root directory
     - name: Build Docker image
-      id: build_image
       run: |
         IMAGE_TAG="test-runner:swarm-testing-${GITHUB_SHA}"
-        docker build -t $IMAGE_TAG .
+        docker build -t $IMAGE_TAG -f ./tests/Dockerfile .
         echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
-    # Ensure logs directory exists and has correct permissions
-    - name: Ensure logs directory exists
+    - name: Create logs directory
       run: |
         mkdir -p ${{ github.workspace }}/logs
         chmod -R 777 ${{ github.workspace }}/logs
 
-    # Run Docker container with OpenAI API Key securely and capture test logs
-    - name: Run Docker container with OpenAI API Key
+    - name: Run tests in Docker
       run: |
-        docker run -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+        docker run --rm \
+          -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
           -v ${{ github.workspace }}/logs:/usr/src/app/logs \
           ${{ env.IMAGE_TAG }} \
-          bash -c "pytest /usr/src/app/tests --continue-on-collection-errors --tb=short --disable-warnings | tee /usr/src/app/logs/test_logs.txt"
+          /usr/src/app/tests --continue-on-collection-errors --tb=short --disable-warnings | tee ${{ github.workspace }}/logs/test_logs.txt
 
-    # Print the test logs to the console
     - name: Print test logs
-      run: |
-        cat ${{ github.workspace }}/logs/test_logs.txt || echo "No test logs found"
+      run: cat ${{ github.workspace }}/logs/test_logs.txt || echo "No test logs found"
