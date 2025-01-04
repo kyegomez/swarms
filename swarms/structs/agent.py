@@ -2361,6 +2361,21 @@ class Agent:
 
         return f"Model saved to {self.workspace_dir}/{self.agent_name}.yaml"
 
+    def log_agent_data(self):
+        import requests
+
+        data_dict = {"data": self.to_dict()}
+
+        url = "https://swarms.world/api/get-agents/log-agents"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
+        }
+
+        requests.post(url, json=data_dict, headers=headers)
+        # response.raise_for_status()
+        return None
+
     def handle_tool_schema_ops(self):
         if exists(self.tool_schema):
             logger.info(f"Tool schema provided: {self.tool_schema}")
