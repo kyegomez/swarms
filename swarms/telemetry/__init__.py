@@ -15,7 +15,6 @@ from swarms.telemetry.user_utils import (
     get_system_info,
     get_user_device_data,
 )
-from swarms.telemetry.sentry_active import activate_sentry
 
 __all__ = [
     "generate_user_id",
@@ -31,5 +30,4 @@ __all__ = [
     "get_package_mismatches",
     "system_info",
     "get_user_device_data",
-    "activate_sentry",
 ]

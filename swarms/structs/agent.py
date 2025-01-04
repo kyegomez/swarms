@@ -53,6 +53,7 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
+from swarms.telemetry.capture_sys_data import log_agent_data
 
 
 # Utils
@@ -570,7 +571,9 @@ class Agent:
         )
 
         # Telemetry Processor to log agent data
-        threading.Thread(target=self.log_agent_data).start()
+        threading.Thread(
+            target=log_agent_data(self.to_dict())
+        ).start()
 
         if self.llm is None and self.model_name is not None:
             self.llm = self.llm_handling()
@@ -923,7 +926,7 @@ class Agent:
 
                     except Exception as e:
 
-                        self.log_agent_data()
+                        log_agent_data(self.to_dict())
 
                         if self.autosave is True:
                             self.save()
@@ -936,7 +939,7 @@ class Agent:
 
                 if not success:
 
-                    self.log_agent_data()
+                    log_agent_data(self.to_dict())
 
                     if self.autosave is True:
                         self.save()
@@ -984,7 +987,7 @@ class Agent:
                     time.sleep(self.loop_interval)
 
             if self.autosave is True:
-                self.log_agent_data()
+                log_agent_data(self.to_dict())
 
                 if self.autosave is True:
                     self.save()
@@ -1029,7 +1032,7 @@ class Agent:
                     self.artifacts_file_extension,
                 )
 
-            self.log_agent_data()
+            log_agent_data(self.to_dict())
             if self.autosave is True:
                 self.save()
 
@@ -1075,7 +1078,7 @@ class Agent:
             self._handle_run_error(error)
 
     def _handle_run_error(self, error: any):
-        self.log_agent_data()
+        log_agent_data(self.to_dict())
 
         if self.autosave is True:
             self.save()
@@ -2357,21 +2360,6 @@ class Agent:
         )
 
         return f"Model saved to {self.workspace_dir}/{self.agent_name}.yaml"
-
-    def log_agent_data(self):
-        import requests
-
-        data_dict = {"data": self.to_dict()}
-
-        url = "https://swarms.world/api/get-agents/log-agents"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
-        }
-
-        response = requests.post(url, json=data_dict, headers=headers)
-
-        return response.json()
 
     def handle_tool_schema_ops(self):
         if exists(self.tool_schema):

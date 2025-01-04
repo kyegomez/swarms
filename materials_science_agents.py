@@ -52,7 +52,6 @@ chief_metallurgist = Agent(
     model_name="openai/gpt-4o",
     max_loops=1,
     dynamic_temperature_enabled=True,
-    
 )
 
 # Materials Scientist
@@ -115,7 +114,6 @@ materials_scientist = Agent(
     model_name="openai/gpt-4o",
     max_loops=1,
     dynamic_temperature_enabled=True,
-    
 )
 
 # Process Engineer
@@ -180,7 +178,6 @@ process_engineer = Agent(
     model_name="openai/gpt-4o",
     max_loops=1,
     dynamic_temperature_enabled=True,
-    
 )
 
 # Quality Assurance Specialist
@@ -245,7 +242,6 @@ qa_specialist = Agent(
     model_name="openai/gpt-4o",
     max_loops=1,
     dynamic_temperature_enabled=True,
-    
 )
 
 # Applications Engineer
@@ -310,7 +306,6 @@ applications_engineer = Agent(
     model_name="openai/gpt-4o",
     max_loops=1,
     dynamic_temperature_enabled=True,
-    
 )
 
 # Cost Analyst
@@ -375,7 +370,6 @@ cost_analyst = Agent(
     model_name="openai/gpt-4o",
     max_loops=1,
     dynamic_temperature_enabled=True,
-    
 )
 
 # Create the agent list

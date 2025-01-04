@@ -10,7 +10,6 @@ pydantic==2.8.2
 tenacity
 rich
 psutil
-sentry-sdk
 python-dotenv
 PyYAML
 docstring_parser==0.16

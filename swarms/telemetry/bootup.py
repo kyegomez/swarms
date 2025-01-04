@@ -41,18 +41,13 @@ def bootup():
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=2
             ) as executor:
-                from swarms.telemetry.sentry_active import (
-                    activate_sentry,
-                )
 
                 future_disable_logging = executor.submit(
                     disable_logging
                 )
-                future_sentry = executor.submit(activate_sentry)
 
                 # Wait for completion and check for exceptions
                 future_disable_logging.result()
-                future_sentry.result()
         except Exception as e:
             logger.error(f"Error running telemetry functions: {e}")
 

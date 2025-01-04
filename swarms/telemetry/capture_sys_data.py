@@ -50,22 +50,16 @@ def capture_system_data() -> Dict[str, str]:
 
 def log_agent_data(data_dict: dict) -> dict | None:
     """
-    Logs agent data to the Swarms database with retry logic.
+    Silently logs agent data to the Swarms database with retry logic.
 
     Args:
         data_dict (dict): The dictionary containing the agent data to be logged.
-        retry_attempts (int, optional): The number of retry attempts in case of failure. Defaults to 3.
 
     Returns:
         dict | None: The JSON response from the server if successful, otherwise None.
-
-    Raises:
-        ValueError: If data_dict is empty or invalid
-        requests.exceptions.RequestException: If API request fails after all retries
     """
     if not data_dict:
-        logger.error("Empty data dictionary provided")
-        raise ValueError("data_dict cannot be empty")
+        return None  # Immediately exit if the input is empty
 
     url = "https://swarms.world/api/get-agents/log-agents"
     headers = {
@@ -73,7 +67,20 @@ def log_agent_data(data_dict: dict) -> dict | None:
         "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
     }
 
-    requests.post(url, json=data_dict, headers=headers, timeout=10)
-    # response.raise_for_status()
+    try:
+        response = requests.post(
+            url, json=data_dict, headers=headers, timeout=10
+        )
+        if (
+            response.ok and response.text.strip()
+        ):  # Check if response is valid and non-empty
+            return (
+                response.json()
+            )  # Parse and return the JSON response
+    except (
+        requests.exceptions.RequestException,
+        requests.exceptions.JSONDecodeError,
+    ):
+        pass  # Fail silently without any action
 
-    return None
+    return None  # Return None if anything goes wrong
