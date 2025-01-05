@@ -11,7 +11,7 @@ Todo:
 import os
 import subprocess
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import List, Literal, Optional
 
 from loguru import logger
@@ -241,7 +241,7 @@ class MultiAgentRouter:
             dict: A dictionary containing the routing result, including the selected agent, reasoning, and response.
         """
         try:
-            start_time = datetime.now(UTC)
+            start_time = datetime.now()
 
             # Get boss decision using function calling
             boss_response = self.function_caller.get_completion(task)
@@ -259,7 +259,7 @@ class MultiAgentRouter:
             final_task = boss_response.modified_task or task
 
             # Execute the task with the selected agent if enabled
-            execution_start = datetime.now(UTC)
+            execution_start = datetime.now()
             agent_response = None
             execution_time = 0
 
@@ -267,7 +267,7 @@ class MultiAgentRouter:
                 # Use the agent's run method directly
                 agent_response = selected_agent.run(final_task)
                 execution_time = (
-                    datetime.now(UTC) - execution_start
+                    datetime.now() - execution_start
                 ).total_seconds()
             else:
                 logger.info(
@@ -275,12 +275,12 @@ class MultiAgentRouter:
                 )
 
             total_time = (
-                datetime.now(UTC) - start_time
+                datetime.now() - start_time
             ).total_seconds()
 
             result = {
                 "id": str(uuid.uuid4()),
-                "timestamp": datetime.now(UTC).isoformat(),
+                "timestamp": datetime.now().isoformat(),
                 "task": {
                     "original": task,
                     "modified": (
