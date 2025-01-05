@@ -1,6 +1,5 @@
 import asyncio
 import json
-import secrets
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from contextlib import contextmanager
@@ -11,14 +10,9 @@ import pulsar
 from cryptography.fernet import Fernet
 from loguru import logger
 from prometheus_client import Counter, Histogram, start_http_server
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
+from pydantic.v1 import validator
 from tenacity import retry, stop_after_attempt, wait_exponential
-
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
-from swarms.structs.agent import Agent
-
 
 # Enhanced metrics
 TASK_COUNTER = Counter(
@@ -409,67 +403,67 @@ class SecurePulsarSwarm:
             logger.error(f"Error during cleanup: {str(e)}")
 
 
-if __name__ == "__main__":
-    # Example usage with security configuration
-    security_config = SecurityConfig(
-        encryption_key=secrets.token_urlsafe(32),
-        tls_cert_path="/path/to/cert.pem",
-        tls_key_path="/path/to/key.pem",
-        auth_token="your-auth-token",
-        max_message_size=1048576,
-        rate_limit=100,
-    )
+# if __name__ == "__main__":
+#     # Example usage with security configuration
+#     security_config = SecurityConfig(
+#         encryption_key=secrets.token_urlsafe(32),
+#         tls_cert_path="/path/to/cert.pem",
+#         tls_key_path="/path/to/key.pem",
+#         auth_token="your-auth-token",
+#         max_message_size=1048576,
+#         rate_limit=100,
+#     )
 
-    # Agent factory function
-    def create_financial_agent() -> Agent:
-        """Factory function to create a financial analysis agent."""
-        return Agent(
-            agent_name="Financial-Analysis-Agent",
-            system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-            model_name="gpt-4o-mini",
-            max_loops=1,
-            autosave=True,
-            dashboard=False,
-            verbose=True,
-            dynamic_temperature_enabled=True,
-            saved_state_path="finance_agent.json",
-            user_name="swarms_corp",
-            retry_attempts=1,
-            context_length=200000,
-            return_step_meta=False,
-            output_type="string",
-            streaming_on=False,
-        )
+#     # Agent factory function
+#     def create_financial_agent() -> Agent:
+#         """Factory function to create a financial analysis agent."""
+#         return Agent(
+#             agent_name="Financial-Analysis-Agent",
+#             system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
+#             model_name="gpt-4o-mini",
+#             max_loops=1,
+#             autosave=True,
+#             dashboard=False,
+#             verbose=True,
+#             dynamic_temperature_enabled=True,
+#             saved_state_path="finance_agent.json",
+#             user_name="swarms_corp",
+#             retry_attempts=1,
+#             context_length=200000,
+#             return_step_meta=False,
+#             output_type="string",
+#             streaming_on=False,
+#         )
 
-    # Initialize agents (implementation not shown)
-    agents = [create_financial_agent() for _ in range(3)]
+#     # Initialize agents (implementation not shown)
+#     agents = [create_financial_agent() for _ in range(3)]
 
-    # Initialize the secure swarm
-    with SecurePulsarSwarm(
-        name="Secure Financial Swarm",
-        description="Production-grade financial analysis swarm",
-        agents=agents,
-        pulsar_url="pulsar+ssl://localhost:6651",
-        subscription_name="secure_financial_subscription",
-        topic_name="secure_financial_tasks",
-        security_config=security_config,
-        max_workers=5,
-        retry_attempts=3,
-        task_timeout=300,
-        metrics_port=8000,
-    ) as swarm:
-        # Example task
-        task = Task(
-            task_id=secrets.token_urlsafe(16),
-            description="Analyze Q4 financial reports",
-            output_type="json",
-            priority="high",
-            metadata={
-                "department": "finance",
-                "requester": "john.doe@company.com",
-            },
-        )
+#     # Initialize the secure swarm
+#     with SecurePulsarSwarm(
+#         name="Secure Financial Swarm",
+#         description="Production-grade financial analysis swarm",
+#         agents=agents,
+#         pulsar_url="pulsar+ssl://localhost:6651",
+#         subscription_name="secure_financial_subscription",
+#         topic_name="secure_financial_tasks",
+#         security_config=security_config,
+#         max_workers=5,
+#         retry_attempts=3,
+#         task_timeout=300,
+#         metrics_port=8000,
+#     ) as swarm:
+#         # Example task
+#         task = Task(
+#             task_id=secrets.token_urlsafe(16),
+#             description="Analyze Q4 financial reports",
+#             output_type="json",
+#             priority="high",
+#             metadata={
+#                 "department": "finance",
+#                 "requester": "john.doe@company.com",
+#             },
+#         )
 
-        # Run the swarm
-        swarm.publish_task(task)
-        asyncio.run(swarm.consume_tasks())
+#         # Run the swarm
+#         swarm.publish_task(task)
+#         asyncio.run(swarm.consume_tasks())

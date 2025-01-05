@@ -1,5 +1,4 @@
-from swarms import Agent
-from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
+from swarms import Agent, MultiAgentRouter
 
 # Example usage:
 if __name__ == "__main__":
