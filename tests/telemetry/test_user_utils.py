@@ -85,3 +85,17 @@ def test_generate_unique_identifier_edge_case():
         unique_id = generate_unique_identifier()
         unique_ids.add(unique_id)
     assert len(unique_ids) == 100  # Ensure generated IDs are unique
+
+
+def test_all():
+    test_generate_user_id()
+    test_get_machine_id()
+    test_get_system_info()
+    test_generate_unique_identifier()
+    test_generate_user_id_edge_case()
+    test_get_machine_id_edge_case()
+    test_get_system_info_edge_case()
+    test_generate_unique_identifier_edge_case()
+
+
+test_all()

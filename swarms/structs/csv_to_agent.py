@@ -7,13 +7,8 @@ from typing import (
 from dataclasses import dataclass
 import csv
 from pathlib import Path
-import logging
 from enum import Enum
 from swarms import Agent
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class ModelName(str, Enum):
@@ -141,9 +136,7 @@ class AgentValidator:
                 str(e), str(e.__class__.__name__), str(config)
             )
 
-
-@dataclass
-class AgentCSV:
+class AgentLoader:
     """Class to manage agents through CSV with type safety"""
 
     csv_path: Path
@@ -184,7 +177,7 @@ class AgentCSV:
                 )
                 validated_agents.append(validated_config)
             except AgentValidationError as e:
-                logger.error(
+                print(
                     f"Validation error for agent {agent.get('agent_name', 'unknown')}: {e}"
                 )
                 raise
@@ -194,17 +187,25 @@ class AgentCSV:
             writer.writeheader()
             writer.writerows(validated_agents)
 
-        logger.info(
+        print(
             f"Created CSV with {len(validated_agents)} agents at {self.csv_path}"
         )
 
-    def load_agents(self) -> List[Agent]:
-        """Load and create agents from CSV with validation"""
-        if not self.csv_path.exists():
-            raise FileNotFoundError(
-                f"CSV file not found at {self.csv_path}"
-            )
+    def load_agents(self, file_type: str = "csv") -> List[Agent]:
+        """Load and create agents from CSV or JSON with validation"""
+        if file_type == "csv":
+            if not self.csv_path.exists():
+                raise FileNotFoundError(
+                    f"CSV file not found at {self.csv_path}"
+                )
+            return self._load_agents_from_csv()
+        elif file_type == "json":
+            return self._load_agents_from_json()
+        else:
+            raise ValueError("Unsupported file type. Use 'csv' or 'json'.")
 
+    def _load_agents_from_csv(self) -> List[Agent]:
+        """Load agents from a CSV file"""
         agents: List[Agent] = []
         with open(self.csv_path, "r") as f:
             reader = csv.DictReader(f)
@@ -213,105 +214,61 @@ class AgentCSV:
                     validated_config = AgentValidator.validate_config(
                         row
                     )
-
-                    agent = Agent(
-                        agent_name=validated_config["agent_name"],
-                        system_prompt=validated_config[
-                            "system_prompt"
-                        ],
-                        model_name=validated_config["model_name"],
-                        max_loops=validated_config["max_loops"],
-                        autosave=validated_config["autosave"],
-                        dashboard=validated_config["dashboard"],
-                        verbose=validated_config["verbose"],
-                        dynamic_temperature_enabled=validated_config[
-                            "dynamic_temperature"
-                        ],
-                        saved_state_path=validated_config[
-                            "saved_state_path"
-                        ],
-                        user_name=validated_config["user_name"],
-                        retry_attempts=validated_config[
-                            "retry_attempts"
-                        ],
-                        context_length=validated_config[
-                            "context_length"
-                        ],
-                        return_step_meta=validated_config[
-                            "return_step_meta"
-                        ],
-                        output_type=validated_config["output_type"],
-                        streaming_on=validated_config["streaming"],
-                    )
+                    agent = self._create_agent(validated_config)
                     agents.append(agent)
                 except AgentValidationError as e:
-                    logger.error(
+                    print(
                         f"Skipping invalid agent configuration: {e}"
                     )
                     continue
 
-        logger.info(
-            f"Loaded {len(agents)} agents from {self.csv_path}"
-        )
+        print(f"Loaded {len(agents)} agents from {self.csv_path}")
         return agents
 
-    def add_agent(self, agent_config: Dict[str, Any]) -> None:
-        """Add a new validated agent configuration to CSV"""
-        validated_config = AgentValidator.validate_config(
-            agent_config
-        )
+    def _load_agents_from_json(self) -> List[Agent]:
+        """Load agents from a JSON file"""
+        import json
 
-        with open(self.csv_path, "a", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=self.headers)
-            writer.writerow(validated_config)
-
-        logger.info(
-            f"Added new agent {validated_config['agent_name']} to {self.csv_path}"
-        )
-
-
-# Example usage
-if __name__ == "__main__":
-    # Example agent configurations
-    agent_configs = [
-        {
-            "agent_name": "Financial-Analysis-Agent",
-            "system_prompt": "You are a financial expert...",
-            "model_name": "gpt-4o-mini",  # Updated to correct model name
-            "max_loops": 1,
-            "autosave": True,
-            "dashboard": False,
-            "verbose": True,
-            "dynamic_temperature": True,
-            "saved_state_path": "finance_agent.json",
-            "user_name": "swarms_corp",
-            "retry_attempts": 3,
-            "context_length": 200000,
-            "return_step_meta": False,
-            "output_type": "string",
-            "streaming": False,
-        }
-    ]
-
-    try:
-        # Initialize CSV manager
-        csv_manager = AgentCSV(Path("agents.csv"))
-
-        # Create CSV with initial agents
-        csv_manager.create_agent_csv(agent_configs)
-
-        # Load agents from CSV
-        agents = csv_manager.load_agents()
-
-        # Use an agent
-        if agents:
-            financial_agent = agents[0]
-            response = financial_agent.run(
-                "How can I establish a ROTH IRA to buy stocks and get a tax break?"
+        if not self.csv_path.with_suffix('.json').exists():
+            raise FileNotFoundError(
+                f"JSON file not found at {self.csv_path.with_suffix('.json')}"
             )
-            print(response)
 
-    except AgentValidationError as e:
-        logger.error(f"Validation error: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        agents: List[Agent] = []
+        with open(self.csv_path.with_suffix('.json'), "r") as f:
+            agents_data = json.load(f)
+            for agent in agents_data:
+                try:
+                    validated_config = AgentValidator.validate_config(
+                        agent
+                    )
+                    agent = self._create_agent(validated_config)
+                    agents.append(agent)
+                except AgentValidationError as e:
+                    print(
+                        f"Skipping invalid agent configuration: {e}"
+                    )
+                    continue
+
+        print(f"Loaded {len(agents)} agents from {self.csv_path.with_suffix('.json')}")
+        return agents
+
+    def _create_agent(self, validated_config: AgentConfigDict) -> Agent:
+        """Create an Agent instance from validated configuration"""
+        return Agent(
+            agent_name=validated_config["agent_name"],
+            system_prompt=validated_config["system_prompt"],
+            model_name=validated_config["model_name"],
+            max_loops=validated_config["max_loops"],
+            autosave=validated_config["autosave"],
+            dashboard=validated_config["dashboard"],
+            verbose=validated_config["verbose"],
+            dynamic_temperature_enabled=validated_config["dynamic_temperature"],
+            saved_state_path=validated_config["saved_state_path"],
+            user_name=validated_config["user_name"],
+            retry_attempts=validated_config["retry_attempts"],
+            context_length=validated_config["context_length"],
+            return_step_meta=validated_config["return_step_meta"],
+            output_type=validated_config["output_type"],
+            streaming_on=validated_config["streaming"],
+        )

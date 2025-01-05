@@ -3,15 +3,16 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import networkx as nx
 from loguru import logger
 from pydantic import BaseModel, Field
+
+from swarms.structs.agent import Agent
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
-from swarms.structs.agent import Agent
 
 # Configure logging
 logger.add(
@@ -188,14 +189,20 @@ class GraphSwarm:
 
     def __init__(
         self,
+        name: str = "graph-swarm-01",
+        description: str = "Graph swarm : build your own graph of agents", 
         agents: Union[
-            List[Agent], List[Tuple[Agent, List[str]]], None
+            List[Agent], List[Tuple[Agent, List[str]]], List[Callable]
         ] = None,
         max_workers: Optional[int] = None,
         swarm_name: str = "Collaborative Agent Swarm",
         memory_collection: str = "swarm_memory",
+        *args,
+        **kwargs,
     ):
         """Initialize GraphSwarm."""
+        self.name = name
+        self.description = description
         self.graph = nx.DiGraph()
         self.agents: Dict[str, Agent] = {}
         self.dependencies: Dict[str, List[str]] = {}
