@@ -1,2 +1,0 @@
-agent_name,system_prompt,model_name,max_loops,autosave,dashboard,verbose,dynamic_temperature,saved_state_path,user_name,retry_attempts,context_length,return_step_meta,output_type,streaming
-Financial-Analysis-Agent,You are a financial expert...,gpt-4o-mini,1,True,False,True,True,finance_agent.json,swarms_corp,3,200000,False,string,False

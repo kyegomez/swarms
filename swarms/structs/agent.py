@@ -571,9 +571,7 @@ class Agent:
         )
 
         # Telemetry Processor to log agent data
-        threading.Thread(
-            target=log_agent_data(self.to_dict())
-        ).start()
+        log_agent_data(self.to_dict())
 
         if self.llm is None and self.model_name is not None:
             self.llm = self.llm_handling()
