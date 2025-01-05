@@ -59,5 +59,6 @@ if __name__ == "__main__":
     data = {"key": "value"}
     try:
         result = log_agent_data(data)
+        print(result)
     except Exception as e:
         logger.error(f"Logging failed after retries: {e}")
