@@ -1806,6 +1806,6 @@ def create_app():
 
     return ui.build()
 
-if __name__ == "__main__":
-    app = create_app()
-    app.launch()
+# if __name__ == "__main__":
+#     app = create_app()
+#     app.launch()
