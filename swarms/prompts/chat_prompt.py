@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 
 class Message:
@@ -11,7 +11,7 @@ class Message:
     """
 
     def __init__(
-        self, content: str, role: str, additional_kwargs: dict = None
+        self, content: str, role: str, additional_kwargs: dict | None = None
     ):
         self.content = content
         self.role = role
@@ -33,7 +33,7 @@ class HumanMessage(Message):
         self,
         content: str,
         role: str = "Human",
-        additional_kwargs: dict = None,
+        additional_kwargs: dict | None = None,
         example: bool = False,
     ):
         super().__init__(content, role, additional_kwargs)
@@ -52,7 +52,7 @@ class AIMessage(Message):
         self,
         content: str,
         role: str = "AI",
-        additional_kwargs: dict = None,
+        additional_kwargs: dict | None = None,
         example: bool = False,
     ):
         super().__init__(content, role, additional_kwargs)
@@ -72,7 +72,7 @@ class SystemMessage(Message):
         self,
         content: str,
         role: str = "System",
-        additional_kwargs: dict = None,
+        additional_kwargs: dict | None = None,
     ):
         super().__init__(content, role, additional_kwargs)
 
@@ -89,8 +89,8 @@ class FunctionMessage(Message):
         self,
         content: str,
         role: str = "Function",
-        name: str = None,
-        additional_kwargs: dict = None,
+        name: str | None = None,
+        additional_kwargs: dict | None = None,
     ):
         super().__init__(content, role, additional_kwargs)
         self.name = name
@@ -105,7 +105,7 @@ class ChatMessage(Message):
     """
 
     def __init__(
-        self, content: str, role: str, additional_kwargs: dict = None
+        self, content: str, role: str, additional_kwargs: dict | None = None
     ):
         super().__init__(content, role, additional_kwargs)
 

@@ -1,12 +1,13 @@
-from typing import List, Dict
+import asyncio
+import json
 from dataclasses import dataclass
 from datetime import datetime
-import asyncio
+from pathlib import Path
+
 import aiohttp
 from loguru import logger
+
 from swarms import Agent
-from pathlib import Path
-import json
 
 
 @dataclass
@@ -39,7 +40,7 @@ class DataFetcher:
 
     async def get_market_data(
         self, limit: int = 20
-    ) -> List[CryptoData]:
+    ) -> list[CryptoData]:
         """Fetch market data for top cryptocurrencies"""
         await self._init_session()
 
@@ -91,7 +92,7 @@ class DataFetcher:
                         )
                     except (ValueError, TypeError) as e:
                         logger.error(
-                            f"Error processing coin data: {str(e)}"
+                            f"Error processing coin data: {e!s}"
                         )
                         continue
 
@@ -101,7 +102,7 @@ class DataFetcher:
                 return crypto_data
 
         except Exception as e:
-            logger.error(f"Exception in get_market_data: {str(e)}")
+            logger.error(f"Exception in get_market_data: {e!s}")
             return []
 
 
@@ -111,7 +112,7 @@ class CryptoSwarmSystem:
         self.data_fetcher = DataFetcher()
         logger.info("Crypto Swarm System initialized")
 
-    def _initialize_agents(self) -> Dict[str, Agent]:
+    def _initialize_agents(self) -> dict[str, Agent]:
         """Initialize different specialized agents"""
         base_config = {
             "max_loops": 1,
@@ -160,7 +161,7 @@ class CryptoSwarmSystem:
         }
         return agents
 
-    async def analyze_market(self) -> Dict:
+    async def analyze_market(self) -> dict:
         """Run real-time market analysis using all agents"""
         try:
             # Fetch market data
@@ -198,14 +199,14 @@ class CryptoSwarmSystem:
             }
 
         except Exception as e:
-            logger.error(f"Error in market analysis: {str(e)}")
+            logger.error(f"Error in market analysis: {e!s}")
             return {
                 "error": str(e),
                 "timestamp": datetime.now().isoformat(),
             }
 
     def _run_agent_analysis(
-        self, agent: Agent, crypto_data: List[CryptoData]
+        self, agent: Agent, crypto_data: list[CryptoData]
     ) -> str:
         """Run analysis for a single agent"""
         try:
@@ -230,8 +231,8 @@ class CryptoSwarmSystem:
             return agent.run(prompt)
 
         except Exception as e:
-            logger.error(f"Error in {agent.agent_name}: {str(e)}")
-            return f"Error: {str(e)}"
+            logger.error(f"Error in {agent.agent_name}: {e!s}")
+            return f"Error: {e!s}"
 
 
 async def main():
@@ -261,7 +262,7 @@ async def main():
             await asyncio.sleep(300)  # 5 minutes
 
         except Exception as e:
-            logger.error(f"Error in main loop: {str(e)}")
+            logger.error(f"Error in main loop: {e!s}")
             await asyncio.sleep(60)  # Wait 1 minute before retrying
         finally:
             if swarm.data_fetcher.session:

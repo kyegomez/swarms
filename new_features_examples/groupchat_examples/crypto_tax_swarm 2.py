@@ -1,6 +1,8 @@
 import os
+
 from dotenv import load_dotenv
 from swarm_models import OpenAIChat
+
 from swarms import Agent, GroupChat
 
 if __name__ == "__main__":

@@ -7,9 +7,10 @@ import importlib.util
 import subprocess
 import sys
 from typing import Literal, Optional, Union
-from swarms.utils.loguru_logger import initialize_logger
+
 import pkg_resources
 
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger("autocheckpackages")
 
@@ -105,7 +106,7 @@ def check_and_install_package(
         return False
     except Exception as e:
         logger.error(
-            f"Unexpected error while installing {package_name}: {str(e)}"
+            f"Unexpected error while installing {package_name}: {e!s}"
         )
         return False
 

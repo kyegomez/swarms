@@ -1,16 +1,15 @@
 import subprocess
-from typing import Any, Dict, List
-
-from swarms.utils.loguru_logger import initialize_logger
+from typing import Any
 
 from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="pandas_utils")
 
 
-def display_agents_info(agents: List[Agent]) -> None:
+def display_agents_info(agents: list[Agent]) -> None:
     """
     Displays information about all agents in a list using a DataFrame.
 
@@ -58,7 +57,7 @@ def display_agents_info(agents: List[Agent]) -> None:
         logger.error(f"Failed to print DataFrame: {e}")
 
 
-def dict_to_dataframe(data: Dict[str, Any]):
+def dict_to_dataframe(data: dict[str, Any]):
     """
     Converts a dictionary into a pandas DataFrame.
 

@@ -3,8 +3,8 @@ import os
 from unittest.mock import patch
 
 import pytest
-
 from swarm_models import OpenAIChat
+
 from swarms.structs.agent import Agent
 from swarms.structs.sequential_workflow import (
     SequentialWorkflow,

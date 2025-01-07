@@ -1,16 +1,16 @@
 import datetime
 import json
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import yaml
+
 from swarms.structs.base_structure import BaseStructure
-from typing import TYPE_CHECKING
 from swarms.utils.formatter import formatter
 
 if TYPE_CHECKING:
     from swarms.structs.agent import (
         Agent,
-    )  # Only imported during type checking
+    )
 
 
 class Conversation(BaseStructure):
@@ -69,11 +69,11 @@ class Conversation(BaseStructure):
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         autosave: bool = False,
-        save_filepath: str = None,
+        save_filepath: Optional[str] = None,
         tokenizer: Any = None,
         context_length: int = 8192,
-        rules: str = None,
-        custom_rules_prompt: str = None,
+        rules: Optional[str] = None,
+        custom_rules_prompt: Optional[str] = None,
         user: str = "User:",
         auto_save: bool = True,
         save_as_yaml: bool = True,
@@ -244,7 +244,7 @@ class Conversation(BaseStructure):
     def get_str(self):
         return self.return_history_as_string()
 
-    def save_as_json(self, filename: str = None):
+    def save_as_json(self, filename: Optional[str] = None):
         """Save the conversation history as a JSON file
 
         Args:

@@ -1,13 +1,14 @@
-from typing import List, Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
-from swarms.utils.loguru_logger import initialize_logger
-from swarms.structs.base_swarm import BaseSwarm
-from swarms.structs.agent import Agent
-from swarms.structs.concat import concat_strings
-from swarms.structs.agent_registry import AgentRegistry
 from swarm_models.base_llm import BaseLLM
+
+from swarms.structs.agent import Agent
+from swarms.structs.agent_registry import AgentRegistry
+from swarms.structs.base_swarm import BaseSwarm
+from swarms.structs.concat import concat_strings
 from swarms.structs.conversation import Conversation
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="hiearchical_swarm")
 
@@ -109,7 +110,7 @@ class CallTeam(BaseModel):
         ...,
         description="The plan for the swarm: e.g., First create the agents, then assign tasks, then monitor progress",
     )
-    orders: List[HierarchicalOrderCall]
+    orders: list[HierarchicalOrderCall]
 
 
 class SwarmSpec(BaseModel):
@@ -124,7 +125,7 @@ class SwarmSpec(BaseModel):
         ...,
         description="The name of the swarm: e.g., 'Marketing Swarm' or 'Finance Swarm'",
     )
-    multiple_agents: List[AgentSpec]
+    multiple_agents: list[AgentSpec]
     rules: str = Field(
         ...,
         description="The rules for all the agents in the swarm: e.g., All agents must return code. Be very simple and direct",
@@ -151,13 +152,13 @@ class HierarchicalAgentSwarm(BaseSwarm):
         name: str = "HierarchicalAgentSwarm",
         description: str = "A swarm of agents that can be used to distribute tasks to a team of agents.",
         director: Any = None,
-        agents: List[Agent] = None,
+        agents: Optional[list[Agent]] = None,
         max_loops: int = 1,
         create_agents_on: bool = False,
         template_worker_agent: Agent = None,
-        director_planning_prompt: str = None,
+        director_planning_prompt: Optional[str] = None,
         template_base_worker_llm: BaseLLM = None,
-        swarm_history: str = None,
+        swarm_history: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -222,7 +223,7 @@ class HierarchicalAgentSwarm(BaseSwarm):
         if self.max_loops == 0:
             raise ValueError("The max_loops is not set.")
 
-    def add_agents_into_registry(self, agents: List[Agent]):
+    def add_agents_into_registry(self, agents: list[Agent]):
         """
         add_agents_into_registry: Add agents into the agent registry.
 
@@ -241,7 +242,7 @@ class HierarchicalAgentSwarm(BaseSwarm):
         agent_name: str,
         system_prompt: str,
         agent_description: str,
-        task: str = None,
+        task: Optional[str] = None,
     ) -> str:
         """
         Creates an individual agent.
@@ -280,7 +281,7 @@ class HierarchicalAgentSwarm(BaseSwarm):
 
     def parse_json_for_agents_then_create_agents(
         self, function_call: dict
-    ) -> List[Agent]:
+    ) -> list[Agent]:
         """
         Parses a JSON function call to create a list of agents.
 
@@ -501,7 +502,7 @@ class HierarchicalAgentSwarm(BaseSwarm):
             logger.info(f"Description: {agent['agent_description']}")
 
     def run_worker_agent(
-        self, name: str = None, task: str = None, *args, **kwargs
+        self, name: Optional[str] = None, task: Optional[str] = None, *args, **kwargs
     ):
         """
         Run the worker agent.
@@ -559,7 +560,7 @@ class HierarchicalAgentSwarm(BaseSwarm):
         return prompt
 
     def find_agent_by_name(
-        self, agent_name: str = None, *args, **kwargs
+        self, agent_name: Optional[str] = None, *args, **kwargs
     ):
         """
         Finds an agent in the swarm by name.

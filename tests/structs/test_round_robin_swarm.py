@@ -1,6 +1,7 @@
 import pytest
-from swarms.structs.round_robin import RoundRobinSwarm
+
 from swarms.structs.agent import Agent
+from swarms.structs.round_robin import RoundRobinSwarm
 
 
 @pytest.fixture

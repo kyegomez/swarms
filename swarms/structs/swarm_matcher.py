@@ -1,5 +1,5 @@
 import json
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from pydantic import BaseModel, Field
@@ -17,7 +17,7 @@ logger = initialize_logger(log_folder="swarm_matcher")
 class SwarmType(BaseModel):
     name: str
     description: str
-    embedding: Optional[List[float]] = Field(
+    embedding: Optional[list[float]] = Field(
         default=None, exclude=True
     )
 
@@ -74,10 +74,10 @@ class SwarmMatcher:
             self.model = transformers.AutoModel.from_pretrained(
                 config.model_name
             )
-            self.swarm_types: List[SwarmType] = []
+            self.swarm_types: list[SwarmType] = []
             logger.debug("SwarmMatcher initialized successfully")
         except Exception as e:
-            logger.error(f"Error initializing SwarmMatcher: {str(e)}")
+            logger.error(f"Error initializing SwarmMatcher: {e!s}")
             raise
 
     @retry(
@@ -113,7 +113,7 @@ class SwarmMatcher:
             logger.debug("Embedding generated successfully")
             return embedding
         except Exception as e:
-            logger.error(f"Error generating embedding: {str(e)}")
+            logger.error(f"Error generating embedding: {e!s}")
             raise
 
     def add_swarm_type(self, swarm_type: SwarmType):
@@ -131,11 +131,11 @@ class SwarmMatcher:
             logger.info(f"Added swarm type: {swarm_type.name}")
         except Exception as e:
             logger.error(
-                f"Error adding swarm type {swarm_type.name}: {str(e)}"
+                f"Error adding swarm type {swarm_type.name}: {e!s}"
             )
             raise
 
-    def find_best_match(self, task: str) -> Tuple[str, float]:
+    def find_best_match(self, task: str) -> tuple[str, float]:
         """
         Finds the best match for a given task among the registered swarm types.
 
@@ -163,7 +163,7 @@ class SwarmMatcher:
             return best_match.name, float(best_score)
         except Exception as e:
             logger.error(
-                f"Error finding best match for task: {str(e)}"
+                f"Error finding best match for task: {e!s}"
             )
             raise
 
@@ -184,7 +184,7 @@ class SwarmMatcher:
         logger.info(f"Confidence Score: {score:.2f}")
         return best_match
 
-    def run_multiple(self, tasks: List[str], *args, **kwargs) -> str:
+    def run_multiple(self, tasks: list[str], *args, **kwargs) -> str:
         swarms = []
 
         for task in tasks:
@@ -207,7 +207,7 @@ class SwarmMatcher:
                 json.dump([st.dict() for st in self.swarm_types], f)
             logger.info(f"Saved swarm types to {filename}")
         except Exception as e:
-            logger.error(f"Error saving swarm types: {str(e)}")
+            logger.error(f"Error saving swarm types: {e!s}")
             raise
 
     def load_swarm_types(self, filename: str):
@@ -218,14 +218,14 @@ class SwarmMatcher:
             filename (str): The name of the file from which to load the swarm types.
         """
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 swarm_types_data = json.load(f)
             self.swarm_types = [
                 SwarmType(**st) for st in swarm_types_data
             ]
             logger.info(f"Loaded swarm types from {filename}")
         except Exception as e:
-            logger.error(f"Error loading swarm types: {str(e)}")
+            logger.error(f"Error loading swarm types: {e!s}")
             raise
 
 

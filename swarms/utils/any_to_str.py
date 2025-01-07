@@ -1,7 +1,7 @@
-from typing import Union, Dict, List, Tuple, Any
+from typing import Any, Union
 
 
-def any_to_str(data: Union[str, Dict, List, Tuple, Any]) -> str:
+def any_to_str(data: Union[str, dict, list, tuple, Any]) -> str:
     """Convert any input data type to a nicely formatted string.
 
     This function handles conversion of various Python data types into a clean string representation.
@@ -60,7 +60,7 @@ def any_to_str(data: Union[str, Dict, List, Tuple, Any]) -> str:
             return str(data)
 
     except Exception as e:
-        return f"Error converting data: {str(e)}"
+        return f"Error converting data: {e!s}"
 
 
 # def main():

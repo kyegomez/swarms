@@ -1,7 +1,7 @@
 from loguru import logger
+
 from swarms.structs.agent import Agent
 from swarms.structs.graph_swarm import GraphSwarm
-
 
 if __name__ == "__main__":
     try:

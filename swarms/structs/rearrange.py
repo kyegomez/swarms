@@ -3,7 +3,7 @@ import json
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 from pydantic import BaseModel, Field
 
@@ -12,11 +12,11 @@ from swarms.structs.agent import Agent
 from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.output_types import OutputType
+from swarms.telemetry.capture_sys_data import log_agent_data
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-from swarms.telemetry.capture_sys_data import log_agent_data
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -45,7 +45,7 @@ class AgentRearrangeOutput(BaseModel):
         default=swarm_id(), description="Output-UUID"
     )
     input: Optional[AgentRearrangeInput] = None
-    outputs: Optional[List[ManySteps]] = None
+    outputs: Optional[list[ManySteps]] = None
     time: str = Field(
         default_factory=lambda: datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
@@ -97,8 +97,8 @@ class AgentRearrange(BaseSwarm):
         id: str = swarm_id(),
         name: str = "AgentRearrange",
         description: str = "A swarm of agents for rearranging tasks.",
-        agents: List[Agent] = None,
-        flow: str = None,
+        agents: Optional[list[Agent]] = None,
+        flow: Optional[str] = None,
         max_loops: int = 1,
         verbose: bool = True,
         memory_system: Any = None,
@@ -108,8 +108,8 @@ class AgentRearrange(BaseSwarm):
         ] = None,
         return_json: bool = False,
         output_type: OutputType = "all",
-        docs: List[str] = None,
-        doc_folder: str = None,
+        docs: Optional[list[str]] = None,
+        doc_folder: Optional[str] = None,
         device: str = "cpu",
         device_id: int = 0,
         all_cores: bool = False,
@@ -119,7 +119,7 @@ class AgentRearrange(BaseSwarm):
         *args,
         **kwargs,
     ):
-        super(AgentRearrange, self).__init__(
+        super().__init__(
             name=name,
             description=description,
             agents=agents if agents else [],
@@ -177,16 +177,16 @@ class AgentRearrange(BaseSwarm):
         agents_available = self.showcase_agents()
         prompt = f"""
         ===== Swarm Configuration =====
-        
+
         Name: {self.name}
         Description: {self.description}
-        
+
         ===== Execution Flow =====
         {self.flow}
-        
+
         ===== Participating Agents =====
         {agents_available}
-        
+
         ===========================
         """
         return prompt
@@ -221,7 +221,7 @@ class AgentRearrange(BaseSwarm):
         """
         del self.agents[agent_name]
 
-    def add_agents(self, agents: List[Agent]):
+    def add_agents(self, agents: list[Agent]):
         """
         Adds multiple agents to the swarm.
 
@@ -277,9 +277,9 @@ class AgentRearrange(BaseSwarm):
 
     def _run(
         self,
-        task: str = None,
-        img: str = None,
-        custom_tasks: Dict[str, str] = None,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        custom_tasks: Optional[dict[str, str]] = None,
         *args,
         **kwargs,
     ):
@@ -378,9 +378,9 @@ class AgentRearrange(BaseSwarm):
                                         + "Enter your response: "
                                     )
                                 results.append(current_task)
-                                response_dict[agent_name] = (
-                                    current_task
-                                )
+                                response_dict[
+                                    agent_name
+                                ] = current_task
                             else:
                                 agent = self.agents[agent_name]
                                 task_with_context = (
@@ -495,8 +495,8 @@ class AgentRearrange(BaseSwarm):
 
     def run(
         self,
-        task: str = None,
-        img: str = None,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
         device: str = "cpu",
         device_id: int = 2,
         all_cores: bool = True,
@@ -569,16 +569,16 @@ class AgentRearrange(BaseSwarm):
 
     def batch_run(
         self,
-        tasks: List[str],
-        img: Optional[List[str]] = None,
+        tasks: list[str],
+        img: Optional[list[str]] = None,
         batch_size: int = 10,
         device: str = "cpu",
-        device_id: int = None,
+        device_id: Optional[int] = None,
         all_cores: bool = True,
         all_gpus: bool = False,
         *args,
         **kwargs,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Process multiple tasks in batches.
 
@@ -626,12 +626,12 @@ class AgentRearrange(BaseSwarm):
 
     async def abatch_run(
         self,
-        tasks: List[str],
-        img: Optional[List[str]] = None,
+        tasks: list[str],
+        img: Optional[list[str]] = None,
         batch_size: int = 10,
         *args,
         **kwargs,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Asynchronously process multiple tasks in batches.
 
@@ -669,16 +669,16 @@ class AgentRearrange(BaseSwarm):
 
     def concurrent_run(
         self,
-        tasks: List[str],
-        img: Optional[List[str]] = None,
+        tasks: list[str],
+        img: Optional[list[str]] = None,
         max_workers: Optional[int] = None,
         device: str = "cpu",
-        device_id: int = None,
+        device_id: Optional[int] = None,
         all_cores: bool = True,
         all_gpus: bool = False,
         *args,
         **kwargs,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Process multiple tasks concurrently using ThreadPoolExecutor.
 
@@ -719,7 +719,7 @@ class AgentRearrange(BaseSwarm):
 
     def _serialize_callable(
         self, attr_value: Callable
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Serializes callable attributes by extracting their name and docstring.
 
@@ -762,7 +762,7 @@ class AgentRearrange(BaseSwarm):
         except (TypeError, ValueError):
             return f"<Non-serializable: {type(attr_value).__name__}>"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Converts all attributes of the class, including callables, into a dictionary.
         Handles non-serializable attributes by converting them or skipping them.
@@ -777,10 +777,10 @@ class AgentRearrange(BaseSwarm):
 
 
 def rearrange(
-    agents: List[Agent] = None,
-    flow: str = None,
-    task: str = None,
-    img: str = None,
+    agents: Optional[list[Agent]] = None,
+    flow: Optional[str] = None,
+    task: Optional[str] = None,
+    img: Optional[str] = None,
     *args,
     **kwargs,
 ):

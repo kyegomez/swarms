@@ -1,9 +1,11 @@
-import os
-import logging
-import warnings
 import concurrent.futures
+import logging
+import os
+import warnings
+
 from dotenv import load_dotenv
 from loguru import logger
+
 from swarms.utils.disable_logging import disable_logging
 
 
@@ -52,7 +54,7 @@ def bootup():
             logger.error(f"Error running telemetry functions: {e}")
 
     except Exception as e:
-        logger.error(f"Error during bootup: {str(e)}")
+        logger.error(f"Error during bootup: {e!s}")
         raise
 
 

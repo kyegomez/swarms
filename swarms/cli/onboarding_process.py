@@ -1,15 +1,12 @@
 import json
 import os
 import time
-from typing import Dict
-
-from swarms.utils.loguru_logger import initialize_logger
-
 
 from swarms.telemetry.capture_sys_data import (
     capture_system_data,
     log_agent_data,
 )
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="onboarding_process")
 
@@ -33,8 +30,8 @@ class OnboardingProcess:
             auto_save_path (str): The path where user data is automatically saved.
             cache_save_path (str): The path where user data is cached for reliability.
         """
-        self.user_data: Dict[str, str] = {}
-        self.system_data: Dict[str, str] = capture_system_data()
+        self.user_data: dict[str, str] = {}
+        self.system_data: dict[str, str] = capture_system_data()
         self.auto_save_path = auto_save_path
         self.cache_save_path = cache_save_path
         self.load_existing_data()
@@ -45,7 +42,7 @@ class OnboardingProcess:
         """
         if os.path.exists(self.auto_save_path):
             try:
-                with open(self.auto_save_path, "r") as f:
+                with open(self.auto_save_path) as f:
                     self.user_data = json.load(f)
                     logger.info(
                         "Existing user data loaded from {}",
@@ -60,7 +57,7 @@ class OnboardingProcess:
         # Fallback to cache if main file fails
         if os.path.exists(self.cache_save_path):
             try:
-                with open(self.cache_save_path, "r") as f:
+                with open(self.cache_save_path) as f:
                     self.user_data = json.load(f)
                     logger.info(
                         "User data loaded from cache: {}",

@@ -1,15 +1,17 @@
+import asyncio
+import csv
 import os
-from swarms import Agent
+import time
+from datetime import datetime
+from typing import Any, Optional
+
+import requests
+from dotenv import load_dotenv
+from loguru import logger
 from swarm_models import OpenAIChat
 from web3 import Web3
-from typing import Dict, Optional, Any
-from datetime import datetime
-import asyncio
-from loguru import logger
-from dotenv import load_dotenv
-import csv
-import requests
-import time
+
+from swarms import Agent
 
 BLOCKCHAIN_AGENT_PROMPT = """
 You are an expert blockchain and cryptocurrency analyst with deep knowledge of Ethereum markets and DeFi ecosystems.
@@ -110,7 +112,7 @@ class EthereumAnalyzer:
             )
             return float(response.json()["ethereum"]["usd"])
         except Exception as e:
-            logger.error(f"Error fetching ETH price: {str(e)}")
+            logger.error(f"Error fetching ETH price: {e!s}")
             return 0.0
 
     def update_eth_price(self):
@@ -143,7 +145,7 @@ class EthereumAnalyzer:
 
     async def analyze_transaction(
         self, tx_hash: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Analyze a single transaction."""
         try:
             tx = self.w3.eth.get_transaction(tx_hash)
@@ -191,11 +193,11 @@ class EthereumAnalyzer:
 
         except Exception as e:
             logger.error(
-                f"Error analyzing transaction {tx_hash}: {str(e)}"
+                f"Error analyzing transaction {tx_hash}: {e!s}"
             )
             return None
 
-    def prepare_analysis_prompt(self, tx_data: Dict[str, Any]) -> str:
+    def prepare_analysis_prompt(self, tx_data: dict[str, Any]) -> str:
         """Prepare detailed analysis prompt including price context."""
         value_usd = tx_data["value_usd"]
         eth_price = tx_data["eth_price"]
@@ -220,7 +222,7 @@ Analyze market impact, patterns, risks, and strategic implications."""
 
         return prompt
 
-    def save_to_csv(self, tx_data: Dict[str, Any], ai_analysis: str):
+    def save_to_csv(self, tx_data: dict[str, Any], ai_analysis: str):
         """Save transaction data and analysis to CSV."""
         row = [
             tx_data["timestamp"],
@@ -288,7 +290,7 @@ Analyze market impact, patterns, risks, and strategic implications."""
                 await asyncio.sleep(1)  # Wait for next block
 
             except Exception as e:
-                logger.error(f"Error in monitoring loop: {str(e)}")
+                logger.error(f"Error in monitoring loop: {e!s}")
                 await asyncio.sleep(1)
 
 

@@ -1,8 +1,10 @@
-from pydantic import BaseModel
 from dataclasses import dataclass
+
+from pydantic import BaseModel
+
 from swarms import (
-    create_yaml_schema_from_dict,
     YamlModel,
+    create_yaml_schema_from_dict,
 )
 
 

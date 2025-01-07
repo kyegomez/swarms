@@ -1,21 +1,20 @@
 import asyncio
-from typing import List
 
 from swarm_models import OpenAIChat
 
+from swarms.prompts.finance_agent_sys_prompt import (
+    FINANCIAL_AGENT_SYS_PROMPT,
+)
+from swarms.structs.agent import Agent
 from swarms.structs.async_workflow import (
     SpeakerConfig,
     SpeakerRole,
     create_default_workflow,
     run_workflow_with_retry,
 )
-from swarms.prompts.finance_agent_sys_prompt import (
-    FINANCIAL_AGENT_SYS_PROMPT,
-)
-from swarms.structs.agent import Agent
 
 
-async def create_specialized_agents() -> List[Agent]:
+async def create_specialized_agents() -> list[Agent]:
     """Create a set of specialized agents for financial analysis"""
 
     # Base model configuration
@@ -165,7 +164,7 @@ async def main():
                     print(value)
 
     except Exception as e:
-        print(f"Workflow failed: {str(e)}")
+        print(f"Workflow failed: {e!s}")
 
     finally:
         await workflow.cleanup()

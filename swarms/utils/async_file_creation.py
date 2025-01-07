@@ -1,8 +1,8 @@
 # In order to accelerate the ops of creating files, we use the async file creation method.
-import os
 import asyncio
+import os
+
 from aiofiles import open as aio_open
-from typing import List
 
 
 async def async_create_file(file_path: str, content: str) -> None:
@@ -21,7 +21,7 @@ async def async_create_file(file_path: str, content: str) -> None:
 
 
 async def create_multiple_files(
-    file_paths: List[str], contents: List[str]
+    file_paths: list[str], contents: list[str]
 ) -> None:
     """
     Asynchronously creates multiple files at the specified paths and writes the corresponding content to each file.
@@ -75,7 +75,7 @@ def sync_create_file(file_path: str, content: str) -> None:
 
 
 def sync_create_multiple_files(
-    file_paths: List[str], contents: List[str]
+    file_paths: list[str], contents: list[str]
 ) -> None:
     """
     Synchronously creates multiple files at the specified paths and writes the corresponding content to each file.

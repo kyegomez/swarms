@@ -1,5 +1,5 @@
 import json
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -18,30 +18,30 @@ from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="base_tool")
 
-ToolType = Union[BaseModel, Dict[str, Any], Callable[..., Any]]
+ToolType = Union[BaseModel, dict[str, Any], Callable[..., Any]]
 
 
 class BaseTool(BaseModel):
     verbose: Optional[bool] = None
-    base_models: Optional[List[type[BaseModel]]] = None
+    base_models: Optional[list[type[BaseModel]]] = None
     autocheck: Optional[bool] = None
     auto_execute_tool: Optional[bool] = None
-    tools: Optional[List[Callable[..., Any]]] = None
+    tools: Optional[list[Callable[..., Any]]] = None
     tool_system_prompt: Optional[str] = Field(
         None,
         description="The system prompt for the tool system.",
     )
-    function_map: Optional[Dict[str, Callable]] = None
-    list_of_dicts: Optional[List[Dict[str, Any]]] = None
+    function_map: Optional[dict[str, Callable]] = None
+    list_of_dicts: Optional[list[dict[str, Any]]] = None
 
     def func_to_dict(
         self,
-        function: Callable[..., Any] = None,
+        function: Optional[Callable[..., Any]] = None,
         name: Optional[str] = None,
-        description: str = None,
+        description: Optional[str] = None,
         *args,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         try:
             return get_openai_function_schema_from_func(
                 function=function,

@@ -7,10 +7,10 @@ Todo
 """
 
 import os
+
 from dotenv import load_dotenv
-from swarm_models import OpenAIChat, OpenAIFunctionCaller
 from pydantic import BaseModel
-from typing import List
+from swarm_models import OpenAIChat, OpenAIFunctionCaller
 
 
 class CollegeLog(BaseModel):
@@ -20,7 +20,7 @@ class CollegeLog(BaseModel):
 
 
 class CollegesRecommendation(BaseModel):
-    colleges: List[CollegeLog]
+    colleges: list[CollegeLog]
     reasoning: str
 
 

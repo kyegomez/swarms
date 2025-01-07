@@ -1,6 +1,7 @@
 import os
+from typing import Optional
+
 import requests
-from typing import List, Dict
 
 
 def check_bing_api_key():
@@ -11,7 +12,7 @@ def check_bing_api_key():
         raise None
 
 
-def parse_and_merge_logs(logs: List[Dict[str, str]]) -> str:
+def parse_and_merge_logs(logs: list[dict[str, str]]) -> str:
     """
     Parses logs and merges them into a single string for input to an LLM.
 
@@ -34,8 +35,8 @@ def parse_and_merge_logs(logs: List[Dict[str, str]]) -> str:
 
 
 def fetch_web_articles_bing_api(
-    query: str = None,
-) -> List[Dict[str, str]]:
+    query: Optional[str] = None,
+) -> list[dict[str, str]]:
     """
     Fetches four articles from Bing Web Search API based on the given query.
 

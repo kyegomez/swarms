@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 from loguru import logger
 
@@ -58,10 +58,10 @@ class OpenAIAssistant(Agent):
         description: str = "Standard openai assistant wrapper",
         instructions: Optional[str] = None,
         model: str = "gpt-4o",
-        tools: Optional[List[Dict[str, Any]]] = None,
-        file_ids: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        functions: Optional[List[Dict[str, Any]]] = None,
+        tools: Optional[list[dict[str, Any]]] = None,
+        file_ids: Optional[list[str]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        functions: Optional[list[dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -110,13 +110,13 @@ class OpenAIAssistant(Agent):
         )
 
         # Store available functions
-        self.available_functions: Dict[str, Callable] = {}
+        self.available_functions: dict[str, Callable] = {}
 
     def add_function(
         self,
         func: Callable,
         description: str,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
     ) -> None:
         """Add a function that the assistant can call.
 
@@ -246,7 +246,7 @@ class OpenAIAssistant(Agent):
         self.thread = self.client.beta.threads.create()
 
     def add_message(
-        self, content: str, file_ids: Optional[List[str]] = None
+        self, content: str, file_ids: Optional[list[str]] = None
     ) -> None:
         """Add a message to the thread.
 

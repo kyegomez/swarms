@@ -2,6 +2,7 @@ import argparse
 import os
 import time
 import webbrowser
+from typing import Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -40,15 +41,15 @@ COLORS = {
 }
 
 ASCII_ART = """
-   ▄████████  ▄█     █▄     ▄████████    ▄████████   ▄▄▄▄███▄▄▄▄      ▄████████ 
-  ███    ███ ███     ███   ███    ███   ███    ███ ▄██▀▀▀███▀▀▀██▄   ███    ███ 
-  ███    █▀  ███     ███   ███    ███   ███    ███ ███   ███   ███   ███    █▀  
-  ███        ███     ███   ███    ███  ▄███▄▄▄▄██▀ ███   ███   ███   ███        
-▀███████████ ███     ███ ▀███████████ ▀▀███▀▀▀▀▀   ███   ███   ███ ▀███████████ 
-         ███ ███     ███   ███    ███ ▀███████████ ███   ███   ███          ███ 
-   ▄█    ███ ███ ▄█▄ ███   ███    ███   ███    ███ ███   ███   ███    ▄█    ███ 
- ▄████████▀   ▀███▀███▀    ███    █▀    ███    ███  ▀█   ███   █▀   ▄████████▀  
-                                        ███    ███                                 
+   ▄████████  ▄█     █▄     ▄████████    ▄████████   ▄▄▄▄███▄▄▄▄      ▄████████
+  ███    ███ ███     ███   ███    ███   ███    ███ ▄██▀▀▀███▀▀▀██▄   ███    ███
+  ███    █▀  ███     ███   ███    ███   ███    ███ ███   ███   ███   ███    █▀
+  ███        ███     ███   ███    ███  ▄███▄▄▄▄██▀ ███   ███   ███   ███
+▀███████████ ███     ███ ▀███████████ ▀▀███▀▀▀▀▀   ███   ███   ███ ▀███████████
+         ███ ███     ███   ███    ███ ▀███████████ ███   ███   ███          ███
+   ▄█    ███ ███ ▄█▄ ███   ███    ███   ███    ███ ███   ███   ███    ▄█    ███
+ ▄████████▀   ▀███▀███▀    ███    █▀    ███    ███  ▀█   ███   █▀   ▄████████▀
+                                        ███    ███
 """
 
 
@@ -114,7 +115,7 @@ def show_help():
     )
 
 
-def show_error(message: str, help_text: str = None):
+def show_error(message: str, help_text: Optional[str] = None):
     """Display error message in a formatted panel"""
     error_panel = Panel(
         f"[bold red]{message}[/bold red]",
@@ -153,7 +154,7 @@ def check_login():
     cache_file = "cache.txt"
 
     if os.path.exists(cache_file):
-        with open(cache_file, "r") as f:
+        with open(cache_file) as f:
             if f.read() == "logged_in":
                 console.print(
                     f"[{COLORS['success']}]✓ Authentication verified[/{COLORS['success']}]"
@@ -218,7 +219,7 @@ def run_autoswarm(task: str, model: str):
             )
         else:
             show_error(
-                f"Error during autoswarm execution: {str(e)}",
+                f"Error during autoswarm execution: {e!s}",
                 "For debugging, try:\n"
                 + "1. Check your API keys are set correctly\n"
                 + "2. Verify your network connection\n"
@@ -293,7 +294,7 @@ def main():
                 run_autoswarm(args.task, args.model)
         except Exception as e:
             console.print(
-                f"[{COLORS['error']}]Error: {str(e)}[/{COLORS['error']}]"
+                f"[{COLORS['error']}]Error: {e!s}[/{COLORS['error']}]"
             )
             return
     except Exception as error:

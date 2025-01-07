@@ -1,8 +1,9 @@
-import unittest
-import os
-from unittest.mock import patch, mock_open
-import tempfile
 import json
+import os
+import tempfile
+import unittest
+from unittest.mock import mock_open, patch
+
 from swarms.artifacts.main_artifact import Artifact
 
 
@@ -48,7 +49,7 @@ class TestArtifactSaveAs(unittest.TestCase):
         )
         self.artifact.save_as(".txt")
         self.assertTrue(os.path.exists(output_path))
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             content = f.read()
         self.assertEqual(content, self.test_content)
 
@@ -57,7 +58,7 @@ class TestArtifactSaveAs(unittest.TestCase):
         output_path = os.path.splitext(self.test_file_path)[0] + ".md"
         self.artifact.save_as(".md")
         self.assertTrue(os.path.exists(output_path))
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             content = f.read()
         self.assertIn(self.test_content, content)
         self.assertIn("# test_file.txt", content)
@@ -67,7 +68,7 @@ class TestArtifactSaveAs(unittest.TestCase):
         output_path = os.path.splitext(self.test_file_path)[0] + ".py"
         self.artifact.save_as(".py")
         self.assertTrue(os.path.exists(output_path))
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             content = f.read()
         self.assertIn(self.test_content, content)
         self.assertIn('"""', content)
@@ -94,7 +95,7 @@ class TestArtifactSaveAs(unittest.TestCase):
         self.assertTrue(os.path.exists(json_path))
 
         # Import from JSON and convert timestamp back to string
-        with open(json_path, "r") as f:
+        with open(json_path) as f:
             data = json.loads(f.read())
             # Ensure timestamps are strings
             for version in data.get("versions", []):

@@ -1,6 +1,8 @@
 import os
-from swarms import Agent, AgentRearrange
+
 from swarm_models import OpenAIChat
+
+from swarms import Agent, AgentRearrange
 
 # Initialize OpenAI model
 api_key = os.getenv(
@@ -230,26 +232,26 @@ swarm_prompt = """
             <location>Private medical office</location>
             <context>Routine health assessment with complex patient</context>
         </setting>
-        
+
         <workflow>
             <stage name="initial_contact">
                 <agent>PatientAgent</agent>
                 <role>Present for check-up, holding private information</role>
             </stage>
-            
+
             <stage name="examination">
                 <agent>DoctorAgent</agent>
                 <role>Conduct examination and gather information</role>
                 <agent>NurseAgent</agent>
                 <role>Observe and support interaction</role>
             </stage>
-            
+
             <stage name="analysis">
                 <agent>MedicalRecordsAgent</agent>
                 <role>Process available information and identify gaps</role>
             </stage>
         </workflow>
-        
+
         <objectives>
             <goal>Create realistic medical consultation interaction</goal>
             <goal>Demonstrate information protection dynamics</goal>
@@ -280,9 +282,9 @@ agent_system = AgentRearrange(
 # Example consultation scenario
 task = f"""
     {swarm_prompt}
-    
-    Begin a medical consultation where the patient has a health score of 72 but is reluctant to share full details 
-    about their lifestyle and medication history. The doctor needs to gather accurate information while the nurse 
+
+    Begin a medical consultation where the patient has a health score of 72 but is reluctant to share full details
+    about their lifestyle and medication history. The doctor needs to gather accurate information while the nurse
     observes the interaction. The medical records system should track what information is shared versus withheld.
 """
 

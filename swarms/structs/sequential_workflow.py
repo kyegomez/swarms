@@ -1,8 +1,9 @@
-from typing import List, Optional
-from swarms.structs.agent import Agent
-from swarms.structs.rearrange import AgentRearrange
-from swarms.structs.output_types import OutputType
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional
+
+from swarms.structs.agent import Agent
+from swarms.structs.output_types import OutputType
+from swarms.structs.rearrange import AgentRearrange
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="sequential_workflow")
@@ -28,11 +29,11 @@ class SequentialWorkflow:
         self,
         name: str = "SequentialWorkflow",
         description: str = "Sequential Workflow, where agents are executed in a sequence.",
-        agents: List[Agent] = [],
+        agents: list[Agent] = [],
         max_loops: int = 1,
         output_type: OutputType = "all",
         return_json: bool = False,
-        shared_memory_system: callable = None,
+        shared_memory_system: Optional[callable] = None,
         *args,
         **kwargs,
     ):
@@ -154,7 +155,7 @@ class SequentialWorkflow:
     def __call__(self, task: str, *args, **kwargs) -> str:
         return self.run(task, *args, **kwargs)
 
-    def run_batched(self, tasks: List[str]) -> List[str]:
+    def run_batched(self, tasks: list[str]) -> list[str]:
         """
         Executes a batch of tasks through the agents in the dynamically constructed flow.
 
@@ -208,7 +209,7 @@ class SequentialWorkflow:
             )
             raise
 
-    async def run_concurrent(self, tasks: List[str]) -> List[str]:
+    async def run_concurrent(self, tasks: list[str]) -> list[str]:
         """
         Executes a batch of tasks through the agents in the dynamically constructed flow concurrently.
 

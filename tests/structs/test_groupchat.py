@@ -1,6 +1,8 @@
 import os
+
 from dotenv import load_dotenv
 from swarm_models import OpenAIChat
+
 from swarms.structs.agent import Agent
 from swarms.structs.groupchat import GroupChat, expertise_based
 
@@ -144,4 +146,4 @@ if __name__ == "__main__":
             func()
             print("✓ Passed")
         except Exception as e:
-            print(f"✗ Failed: {str(e)}")
+            print(f"✗ Failed: {e!s}")

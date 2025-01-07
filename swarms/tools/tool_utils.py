@@ -1,8 +1,7 @@
-import json
-from typing import Any, List
-
 import inspect
-from typing import Callable
+import json
+from typing import Any, Callable, Optional
+
 from swarms.utils.formatter import formatter
 
 
@@ -47,7 +46,7 @@ def scrape_tool_func_docs(fn: Callable) -> str:
         raise error
 
 
-def tool_find_by_name(tool_name: str, tools: List[Any]):
+def tool_find_by_name(tool_name: str, tools: list[Any]):
     """Find the tool by name"""
     for tool in tools:
         if tool.name == tool_name:
@@ -56,7 +55,7 @@ def tool_find_by_name(tool_name: str, tools: List[Any]):
 
 
 def is_str_valid_func_output(
-    output: str = None, function_map: callable = None
+    output: Optional[str] = None, function_map: Optional[callable] = None
 ):
     """
     Check if the output is a valid JSON string, and if the function name in the JSON matches any name in the function map.

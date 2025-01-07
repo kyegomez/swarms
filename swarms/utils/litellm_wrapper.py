@@ -1,3 +1,5 @@
+from typing import Optional
+
 try:
     from litellm import completion
 except ImportError:
@@ -20,7 +22,7 @@ class LiteLLM:
     def __init__(
         self,
         model_name: str = "gpt-4o",
-        system_prompt: str = None,
+        system_prompt: Optional[str] = None,
         stream: bool = False,
         temperature: float = 0.5,
         max_tokens: int = 4000,

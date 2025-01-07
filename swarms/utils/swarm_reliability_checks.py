@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional, Union
 
 from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import initialize_logger
@@ -7,7 +7,7 @@ logger = initialize_logger(log_folder="swarm_reliability_checks")
 
 
 def reliability_check(
-    agents: List[Union[Agent, Callable]],
+    agents: list[Union[Agent, Callable]],
     max_loops: int,
     name: Optional[str] = None,
     description: Optional[str] = None,

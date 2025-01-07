@@ -3,7 +3,7 @@ import os
 import subprocess
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
@@ -60,7 +60,7 @@ class Artifact(BaseModel):
     contents: str = Field(
         ..., description="The contents of the file in string format"
     )
-    versions: List[FileVersion] = Field(default_factory=list)
+    versions: list[FileVersion] = Field(default_factory=list)
     edit_count: int = Field(
         ...,
         description="The number of times the file has been edited",
@@ -157,7 +157,7 @@ class Artifact(BaseModel):
         """
         Loads the file contents from the specified file path into the artifact.
         """
-        with open(self.file_path, "r") as f:
+        with open(self.file_path) as f:
             self.contents = f.read()
         self.create(self.contents)
 
@@ -207,7 +207,7 @@ class Artifact(BaseModel):
         Returns:
             Artifact: The imported artifact instance.
         """
-        with open(file_path, "r") as json_file:
+        with open(file_path) as json_file:
             data = json.load(json_file)
         # Convert timestamp strings back to datetime objects
         for version in data["versions"]:
@@ -232,14 +232,14 @@ class Artifact(BaseModel):
         )
         return metrics
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Converts the artifact instance to a dictionary representation.
         """
         return self.dict()
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Artifact":
+    def from_dict(cls, data: dict[str, Any]) -> "Artifact":
         """
         Creates an artifact instance from a dictionary representation.
         """

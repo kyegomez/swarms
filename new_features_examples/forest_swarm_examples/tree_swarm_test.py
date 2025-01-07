@@ -1,6 +1,5 @@
 from swarms.structs.tree_swarm import ForestSwarm, Tree, TreeAgent
 
-
 agents_tree1 = [
     TreeAgent(
         system_prompt="Stock Analysis Agent",

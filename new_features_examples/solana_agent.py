@@ -1,21 +1,22 @@
-from dataclasses import dataclass
-from typing import List, Optional, Dict, Any
-from datetime import datetime
 import asyncio
-from loguru import logger
 import json
-import base58
+from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
+from typing import Any, Optional
 
-# Swarms imports
-from swarms import Agent
+import aiohttp
+import base58
+from anchorpy import Provider, Wallet
+from loguru import logger
+from solders.keypair import Keypair
 
 # Solana imports
 from solders.rpc.responses import GetTransactionResp
 from solders.transaction import Transaction
-from anchorpy import Provider, Wallet
-from solders.keypair import Keypair
-import aiohttp
+
+# Swarms imports
+from swarms import Agent
 
 # Specialized Solana Analysis System Prompt
 SOLANA_ANALYSIS_PROMPT = """You are a specialized Solana blockchain analyst agent. Your role is to:
@@ -74,14 +75,14 @@ class TransactionData:
     to_address: str
     program_id: str
     instruction_data: Optional[str] = None
-    program_logs: List[str] = None
+    program_logs: list[str] = None
 
     @property
     def sol_amount(self) -> Decimal:
         """Convert lamports to SOL"""
         return Decimal(self.lamports) / Decimal(1e9)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert transaction data to dictionary for agent analysis"""
         return {
             "signature": self.signature,
@@ -132,7 +133,7 @@ class SolanaSwarmAgent:
 
     async def analyze_transaction(
         self, tx_data: TransactionData
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze a transaction using the specialized agent"""
         try:
             # Update recent transactions for pattern analysis
@@ -192,7 +193,7 @@ class SolanaSwarmAgent:
             return json.loads(analysis)
 
         except Exception as e:
-            logger.error(f"Error in agent analysis: {str(e)}")
+            logger.error(f"Error in agent analysis: {e!s}")
             return {
                 "analysis_type": "error",
                 "severity": "low",
@@ -258,7 +259,7 @@ class SolanaTransactionMonitor:
                 ),
             )
         except Exception as e:
-            logger.error(f"Failed to parse transaction: {str(e)}")
+            logger.error(f"Failed to parse transaction: {e!s}")
             return None
 
     async def start_monitoring(self):
@@ -323,7 +324,7 @@ class SolanaTransactionMonitor:
 
                         except Exception as e:
                             logger.error(
-                                f"Error processing message: {str(e)}"
+                                f"Error processing message: {e!s}"
                             )
                             continue
 

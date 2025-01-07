@@ -1,6 +1,8 @@
 import os
-from swarms import Agent, AgentRearrange
+
 from swarm_models import OpenAIChat
+
+from swarms import Agent, AgentRearrange
 
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("OPENAI_API_KEY")
@@ -254,9 +256,9 @@ agent_system = AgentRearrange(
 # Example task for the swarm
 task = f"""
     {swarm_prompt}
-    
-    Process the incoming health score data while ensuring patient privacy. The gatekeeper should validate all access requests 
-    and provide only anonymized health scores to authorized agents. Generate a comprehensive analysis and report 
+
+    Process the incoming health score data while ensuring patient privacy. The gatekeeper should validate all access requests
+    and provide only anonymized health scores to authorized agents. Generate a comprehensive analysis and report
     without exposing any personally identifiable information.
 """
 

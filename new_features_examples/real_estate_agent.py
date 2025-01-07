@@ -3,17 +3,19 @@ Zoe - Real Estate Agent
 
 """
 
-from typing import Optional, Dict, Any, List
+import json
+import os
 from dataclasses import dataclass
 from datetime import datetime
-import os
-import json
-import requests
-from loguru import logger
-from swarms import Agent
-from swarm_models import OpenAIChat
-from dotenv import load_dotenv
 from enum import Enum
+from typing import Any, Optional
+
+import requests
+from dotenv import load_dotenv
+from loguru import logger
+from swarm_models import OpenAIChat
+
+from swarms import Agent
 
 # Configure loguru logger
 logger.add(
@@ -52,8 +54,8 @@ class PropertyListing:
     lat: float
     lng: float
     description: Optional[str] = None
-    features: Optional[List[str]] = None
-    images: Optional[List[str]] = None
+    features: Optional[list[str]] = None
+    images: Optional[list[str]] = None
 
 
 class PropertyRadarAPI:
@@ -78,13 +80,13 @@ class PropertyRadarAPI:
     def search_properties(
         self,
         max_price: float = 10_000_000,
-        property_types: List[PropertyType] = None,
-        location: Dict[str, Any] = None,
+        property_types: Optional[list[PropertyType]] = None,
+        location: Optional[dict[str, Any]] = None,
         min_sqft: Optional[float] = None,
         max_sqft: Optional[float] = None,
         page: int = 1,
         limit: int = 20,
-    ) -> List[PropertyListing]:
+    ) -> list[PropertyListing]:
         """
         Search for commercial properties using PropertyRadar API
 
@@ -163,7 +165,7 @@ class PropertyRadarAPI:
             ]
 
         except requests.RequestException as e:
-            logger.error(f"Error fetching properties: {str(e)}")
+            logger.error(f"Error fetching properties: {e!s}")
             raise
 
 
@@ -223,7 +225,7 @@ class CommercialRealEstateAgent:
         3. Provide detailed analysis of property features, location benefits, and potential ROI
         4. Consider local market conditions and growth potential
         5. Verify zoning compliance and restrictions
-        
+
         When analyzing properties, consider:
         - Current market valuations
         - Local business development plans
@@ -234,11 +236,11 @@ class CommercialRealEstateAgent:
     def search_properties(
         self,
         max_price: float = 10_000_000,
-        property_types: List[PropertyType] = None,
-        location: Dict[str, Any] = None,
+        property_types: Optional[list[PropertyType]] = None,
+        location: Optional[dict[str, Any]] = None,
         min_sqft: Optional[float] = None,
         max_sqft: Optional[float] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search for properties and provide analysis
 
@@ -286,7 +288,7 @@ class CommercialRealEstateAgent:
 
         except Exception as e:
             logger.error(
-                f"Error in property search and analysis: {str(e)}"
+                f"Error in property search and analysis: {e!s}"
             )
             raise
 

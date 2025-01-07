@@ -1,7 +1,7 @@
 import concurrent.futures
 import re
 from collections import Counter
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -65,7 +65,7 @@ def parse_code_completion(agent_response, question):
 
 def most_frequent(
     clist: list,
-    cmp_func: callable = None,
+    cmp_func: Optional[callable] = None,
 ):
     """
     Finds the most frequent element in a list based on a comparison function.
@@ -90,7 +90,7 @@ def most_frequent(
     return num, counter
 
 
-def majority_voting(answers: List[str]):
+def majority_voting(answers: list[str]):
     """
     Performs majority voting on a list of answers and returns the most common answer.
 
@@ -137,7 +137,7 @@ class MajorityVoting:
         self,
         name: str = "MajorityVoting",
         description: str = "A majority voting system for agents",
-        agents: List[Agent] = [],
+        agents: list[Agent] = [],
         output_parser: Optional[Callable] = majority_voting,
         autosave: bool = False,
         verbose: bool = False,
@@ -168,7 +168,7 @@ class MajorityVoting:
             f" {', '.join(agent.agent_name for agent in self.agents)}"
         )
 
-    def run(self, task: str, *args, **kwargs) -> List[Any]:
+    def run(self, task: str, *args, **kwargs) -> list[Any]:
         """
         Runs the majority voting system and returns the majority vote.
 

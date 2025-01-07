@@ -1,5 +1,5 @@
+
 from pydantic import BaseModel, Field
-from typing import Dict
 
 
 class ParameterDefinition(BaseModel):
@@ -13,6 +13,6 @@ class ParameterDefinition(BaseModel):
 class CohereFuncSchema(BaseModel):
     name: str = Field(..., title="Name of the tool")
     description: str = Field(..., title="Description of the tool")
-    parameter_definitions: Dict[str, ParameterDefinition] = Field(
+    parameter_definitions: dict[str, ParameterDefinition] = Field(
         ..., title="Parameter definitions for the tool"
     )

@@ -1,11 +1,12 @@
+from typing import Optional
+
 from swarms.structs.agent import Agent
-from typing import List
 
 
 def showcase_available_agents(
-    agents: List[Agent],
-    name: str = None,
-    description: str = None,
+    agents: list[Agent],
+    name: Optional[str] = None,
+    description: Optional[str] = None,
     format: str = "XML",
 ) -> str:
     """

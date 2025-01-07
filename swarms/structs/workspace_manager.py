@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 from typing import Optional
-from swarms.utils.loguru_logger import initialize_logger
 
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger("workspace-manager")
 

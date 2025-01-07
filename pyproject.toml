@@ -121,6 +121,17 @@ pytest = "^8.1.1"
 
 [tool.ruff]
 line-length = 70
+fix = true
+format.preview = true
+lint.select = [
+  # pyflakes
+  "F",
+  # isort
+  "I",
+  # pyupgrade
+  "UP",
+  "W"
+]
 
 [tool.black]
 target-version = ["py38"]

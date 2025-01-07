@@ -2,11 +2,11 @@ import asyncio
 import multiprocessing as mp
 import time
 from functools import partial
-from typing import Any, Dict, Union
+from typing import Any, Optional, Union
 
 
 class HighSpeedExecutor:
-    def __init__(self, num_processes: int = None):
+    def __init__(self, num_processes: Optional[int] = None):
         """
         Initialize the executor with configurable number of processes.
         If num_processes is None, it uses CPU count.
@@ -45,7 +45,7 @@ class HighSpeedExecutor:
         num_executions: int,
         *args: Any,
         **kwargs: Any,
-    ) -> Dict[str, Union[int, float]]:
+    ) -> dict[str, Union[int, float]]:
         """
         Execute the given function multiple times concurrently.
 

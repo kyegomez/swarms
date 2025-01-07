@@ -1,16 +1,16 @@
 import uuid
 from collections import Counter
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
+
 from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import initialize_logger
+from swarms.structs.conversation import Conversation
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
-from swarms.structs.conversation import Conversation
-
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="tree_swarm")
 
@@ -45,7 +45,7 @@ class TreeLog(BaseModel):
     result: Any
 
 
-def extract_keywords(prompt: str, top_n: int = 5) -> List[str]:
+def extract_keywords(prompt: str, top_n: int = 5) -> list[str]:
     """
     A simplified keyword extraction function using basic word splitting instead of NLTK tokenization.
     """
@@ -63,9 +63,9 @@ class TreeAgent(Agent):
 
     def __init__(
         self,
-        name: str = None,
-        description: str = None,
-        system_prompt: str = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        system_prompt: Optional[str] = None,
         model_name: str = "gpt-4o",
         agent_name: Optional[str] = None,
         *args,
@@ -128,7 +128,7 @@ class TreeAgent(Agent):
         return distance
 
     def run_task(
-        self, task: str, img: str = None, *args, **kwargs
+        self, task: str, img: Optional[str] = None, *args, **kwargs
     ) -> Any:
         input_log = AgentLogInput(
             agent_name=self.agent_name,
@@ -188,7 +188,7 @@ class TreeAgent(Agent):
 
 
 class Tree:
-    def __init__(self, tree_name: str, agents: List[TreeAgent]):
+    def __init__(self, tree_name: str, agents: list[TreeAgent]):
         """
         Initializes a tree of agents.
 
@@ -264,9 +264,9 @@ class ForestSwarm:
         self,
         name: str = "default-forest-swarm",
         description: str = "Standard forest swarm",
-        trees: List[Tree] = [],
+        trees: list[Tree] = [],
         shared_memory: Any = None,
-        rules: str = None,
+        rules: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -307,7 +307,7 @@ class ForestSwarm:
         logger.warning(f"No relevant tree found for task: {task}")
         return None
 
-    def run(self, task: str, img: str = None, *args, **kwargs) -> Any:
+    def run(self, task: str, img: Optional[str] = None, *args, **kwargs) -> Any:
         """
         Executes the given task by finding the most relevant tree and agent within that tree.
 

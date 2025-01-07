@@ -39,4 +39,4 @@ if __name__ == "__main__":
         print(result_execute)
 
     except Exception as e:
-        print(f"Error occurred: {str(e)}")
+        print(f"Error occurred: {e!s}")

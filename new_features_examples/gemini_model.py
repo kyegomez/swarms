@@ -1,4 +1,5 @@
 import os
+
 import google.generativeai as genai
 from loguru import logger
 

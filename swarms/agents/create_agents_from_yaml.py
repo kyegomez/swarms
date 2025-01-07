@@ -1,22 +1,23 @@
 import os
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import yaml
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
 from pydantic import (
     BaseModel,
     Field,
     field_validator,
 )
-from swarms.utils.loguru_logger import initialize_logger
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="create_agents_from_yaml")
 
@@ -57,7 +58,7 @@ class SwarmConfig(BaseModel):
     max_loops: int = Field(default=1, ge=1)
     swarm_type: str
     task: Optional[str] = None
-    flow: Optional[Dict] = None
+    flow: Optional[dict] = None
     autosave: bool = True
     return_json: bool = False
     rules: str = ""
@@ -80,7 +81,7 @@ class SwarmConfig(BaseModel):
 
 
 class YAMLConfig(BaseModel):
-    agents: List[AgentConfig] = Field(..., min_length=1)
+    agents: list[AgentConfig] = Field(..., min_length=1)
     swarm_architecture: Optional[SwarmConfig] = None
 
     model_config = {
@@ -89,8 +90,8 @@ class YAMLConfig(BaseModel):
 
 
 def load_yaml_safely(
-    yaml_file: str = None, yaml_string: str = None
-) -> Dict:
+    yaml_file: Optional[str] = None, yaml_string: Optional[str] = None
+) -> dict:
     """Safely load and validate YAML configuration using Pydantic."""
     try:
         if yaml_string:
@@ -100,7 +101,7 @@ def load_yaml_safely(
                 raise FileNotFoundError(
                     f"YAML file {yaml_file} not found."
                 )
-            with open(yaml_file, "r") as file:
+            with open(yaml_file) as file:
                 config_dict = yaml.safe_load(file)
         else:
             raise ValueError(
@@ -111,9 +112,9 @@ def load_yaml_safely(
         YAMLConfig(**config_dict)
         return config_dict
     except yaml.YAMLError as e:
-        raise ValueError(f"Error parsing YAML: {str(e)}")
+        raise ValueError(f"Error parsing YAML: {e!s}")
     except Exception as e:
-        raise ValueError(f"Error validating configuration: {str(e)}")
+        raise ValueError(f"Error validating configuration: {e!s}")
 
 
 @retry(
@@ -125,7 +126,7 @@ def load_yaml_safely(
     ),
 )
 def create_agent_with_retry(
-    agent_config: Dict, model: LiteLLM
+    agent_config: dict, model: LiteLLM
 ) -> Agent:
     """Create an agent with retry logic for handling transient failures."""
     try:
@@ -153,22 +154,22 @@ def create_agent_with_retry(
         return agent
     except Exception as e:
         logger.error(
-            f"Error creating agent {agent_config.get('agent_name', 'unknown')}: {str(e)}"
+            f"Error creating agent {agent_config.get('agent_name', 'unknown')}: {e!s}"
         )
         raise
 
 
 def create_agents_from_yaml(
-    model: Callable = None,
+    model: Optional[Callable] = None,
     yaml_file: str = "agents.yaml",
-    yaml_string: str = None,
+    yaml_string: Optional[str] = None,
     return_type: str = "auto",
 ) -> Union[
     SwarmRouter,
     Agent,
-    List[Agent],
-    Tuple[Union[SwarmRouter, Agent], List[Agent]],
-    List[Dict[str, Any]],
+    list[Agent],
+    tuple[Union[SwarmRouter, Agent], list[Agent]],
+    list[dict[str, Any]],
 ]:
     """
     Create agents and/or SwarmRouter based on configurations defined in a YAML file or string.
@@ -225,9 +226,9 @@ def create_agents_from_yaml(
                     f"SwarmRouter '{swarm_config.name}' created successfully."
                 )
             except Exception as e:
-                logger.error(f"Error creating SwarmRouter: {str(e)}")
+                logger.error(f"Error creating SwarmRouter: {e!s}")
                 raise ValueError(
-                    f"Failed to create SwarmRouter: {str(e)}"
+                    f"Failed to create SwarmRouter: {e!s}"
                 )
 
         # Handle return types with improved error checking
@@ -254,7 +255,7 @@ def create_agents_from_yaml(
                     config["swarm_architecture"]["task"]
                 )
             except Exception as e:
-                logger.error(f"Error running SwarmRouter: {str(e)}")
+                logger.error(f"Error running SwarmRouter: {e!s}")
                 raise
 
         # Return appropriate type based on configuration
@@ -276,13 +277,15 @@ def create_agents_from_yaml(
             return (
                 swarm_router
                 if swarm_router
-                else agents[0] if len(agents) == 1 else agents
+                else agents[0]
+                if len(agents) == 1
+                else agents
             ), agents
         elif return_type == "tasks":
             return task_results
 
     except Exception as e:
         logger.error(
-            f"Critical error in create_agents_from_yaml: {str(e)}"
+            f"Critical error in create_agents_from_yaml: {e!s}"
         )
         raise

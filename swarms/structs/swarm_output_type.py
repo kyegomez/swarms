@@ -1,6 +1,6 @@
 import time
-from typing import List
 import uuid
+
 from pydantic import BaseModel, Field
 
 
@@ -18,6 +18,6 @@ class SwarmOutput(BaseModel):
     name: str = Field(description="Swarm name")
     description: str = Field(description="Swarm description")
     swarm_type: str = Field(description="Swarm type")
-    agent_outputs: List[AgentResponde] = Field(
+    agent_outputs: list[AgentResponde] = Field(
         description="List of agent responses"
     )

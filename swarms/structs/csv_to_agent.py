@@ -1,13 +1,12 @@
-from typing import (
-    List,
-    Dict,
-    TypedDict,
-    Any,
-)
-from dataclasses import dataclass
 import csv
-from pathlib import Path
+from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import (
+    Any,
+    TypedDict,
+)
+
 from swarms import Agent
 
 
@@ -22,7 +21,7 @@ class ModelName(str, Enum):
     CLAUDE2 = "claude-2"
 
     @classmethod
-    def get_model_names(cls) -> List[str]:
+    def get_model_names(cls) -> list[str]:
         """Get list of valid model names"""
         return [model.value for model in cls]
 
@@ -68,7 +67,7 @@ class AgentValidator:
     """Validates agent configuration data"""
 
     @staticmethod
-    def validate_config(config: Dict[str, Any]) -> AgentConfigDict:
+    def validate_config(config: dict[str, Any]) -> AgentConfigDict:
         """Validate and convert agent configuration"""
         try:
             # Validate model name
@@ -136,6 +135,7 @@ class AgentValidator:
                 str(e), str(e.__class__.__name__), str(config)
             )
 
+
 class AgentLoader:
     """Class to manage agents through CSV with type safety"""
 
@@ -147,7 +147,7 @@ class AgentLoader:
             self.csv_path = Path(self.csv_path)
 
     @property
-    def headers(self) -> List[str]:
+    def headers(self) -> list[str]:
         """CSV headers for agent configuration"""
         return [
             "agent_name",
@@ -167,7 +167,7 @@ class AgentLoader:
             "streaming",
         ]
 
-    def create_agent_csv(self, agents: List[Dict[str, Any]]) -> None:
+    def create_agent_csv(self, agents: list[dict[str, Any]]) -> None:
         """Create a CSV file with validated agent configurations"""
         validated_agents = []
         for agent in agents:
@@ -191,7 +191,7 @@ class AgentLoader:
             f"Created CSV with {len(validated_agents)} agents at {self.csv_path}"
         )
 
-    def load_agents(self, file_type: str = "csv") -> List[Agent]:
+    def load_agents(self, file_type: str = "csv") -> list[Agent]:
         """Load and create agents from CSV or JSON with validation"""
         if file_type == "csv":
             if not self.csv_path.exists():
@@ -202,12 +202,14 @@ class AgentLoader:
         elif file_type == "json":
             return self._load_agents_from_json()
         else:
-            raise ValueError("Unsupported file type. Use 'csv' or 'json'.")
+            raise ValueError(
+                "Unsupported file type. Use 'csv' or 'json'."
+            )
 
-    def _load_agents_from_csv(self) -> List[Agent]:
+    def _load_agents_from_csv(self) -> list[Agent]:
         """Load agents from a CSV file"""
-        agents: List[Agent] = []
-        with open(self.csv_path, "r") as f:
+        agents: list[Agent] = []
+        with open(self.csv_path) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 try:
@@ -225,17 +227,17 @@ class AgentLoader:
         print(f"Loaded {len(agents)} agents from {self.csv_path}")
         return agents
 
-    def _load_agents_from_json(self) -> List[Agent]:
+    def _load_agents_from_json(self) -> list[Agent]:
         """Load agents from a JSON file"""
         import json
 
-        if not self.csv_path.with_suffix('.json').exists():
+        if not self.csv_path.with_suffix(".json").exists():
             raise FileNotFoundError(
                 f"JSON file not found at {self.csv_path.with_suffix('.json')}"
             )
 
-        agents: List[Agent] = []
-        with open(self.csv_path.with_suffix('.json'), "r") as f:
+        agents: list[Agent] = []
+        with open(self.csv_path.with_suffix(".json")) as f:
             agents_data = json.load(f)
             for agent in agents_data:
                 try:
@@ -250,10 +252,14 @@ class AgentLoader:
                     )
                     continue
 
-        print(f"Loaded {len(agents)} agents from {self.csv_path.with_suffix('.json')}")
+        print(
+            f"Loaded {len(agents)} agents from {self.csv_path.with_suffix('.json')}"
+        )
         return agents
 
-    def _create_agent(self, validated_config: AgentConfigDict) -> Agent:
+    def _create_agent(
+        self, validated_config: AgentConfigDict
+    ) -> Agent:
         """Create an Agent instance from validated configuration"""
         return Agent(
             agent_name=validated_config["agent_name"],
@@ -263,7 +269,9 @@ class AgentLoader:
             autosave=validated_config["autosave"],
             dashboard=validated_config["dashboard"],
             verbose=validated_config["verbose"],
-            dynamic_temperature_enabled=validated_config["dynamic_temperature"],
+            dynamic_temperature_enabled=validated_config[
+                "dynamic_temperature"
+            ],
             saved_state_path=validated_config["saved_state_path"],
             user_name=validated_config["user_name"],
             retry_attempts=validated_config["retry_attempts"],

@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 import pytest
 from dotenv import load_dotenv
-
 from swarm_models.gpt4_vision_api import GPT4VisionAPI
+
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )

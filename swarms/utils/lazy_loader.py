@@ -12,25 +12,23 @@ Features:
 - Comprehensive test coverage
 """
 
+import functools
+import importlib
+import threading
+from importlib.util import find_spec
 from types import ModuleType
 from typing import (
-    Optional,
-    Dict,
     Any,
     Callable,
-    Type,
+    Optional,
     TypeVar,
     Union,
     cast,
 )
-import importlib
-import functools
-import threading
-from importlib.util import find_spec
+
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
-
 
 T = TypeVar("T")
 C = TypeVar("C")
@@ -102,7 +100,7 @@ class LazyLoader:
                         )
                     except Exception as e:
                         raise ImportError(
-                            f"Failed to import '{self._module_name}': {str(e)}"
+                            f"Failed to import '{self._module_name}': {e!s}"
                         )
         return cast(ModuleType, self._module)
 
@@ -162,15 +160,15 @@ class LazyClassLoader:
     """
 
     def __init__(
-        self, class_name: str, bases: tuple, namespace: Dict[str, Any]
+        self, class_name: str, bases: tuple, namespace: dict[str, Any]
     ):
         self.class_name = class_name
         self.bases = bases
         self.namespace = namespace
-        self._real_class: Optional[Type] = None
+        self._real_class: Optional[type] = None
         self._lock = threading.Lock()
 
-    def _create_class(self) -> Type:
+    def _create_class(self) -> type:
         """Creates the actual class if it hasn't been created yet."""
         if self._real_class is None:
             with self._lock:
@@ -188,7 +186,7 @@ class LazyClassLoader:
                     new_class._lazy_loader = self
                     self._real_class = new_class
 
-        return cast(Type, self._real_class)
+        return cast(type, self._real_class)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Creates an instance of the lazy loaded class."""
@@ -201,13 +199,13 @@ class LazyClassLoader:
         real_class = self._create_class()
         return isinstance(instance, real_class)
 
-    def __subclasscheck__(self, subclass: Type) -> bool:
+    def __subclasscheck__(self, subclass: type) -> bool:
         """Support for issubclass() checks"""
         real_class = self._create_class()
         return issubclass(subclass, real_class)
 
 
-def lazy_import(*names: str) -> Dict[str, LazyLoader]:
+def lazy_import(*names: str) -> dict[str, LazyLoader]:
     """
     Create multiple lazy loaders at once.
 
@@ -227,8 +225,8 @@ def lazy_import(*names: str) -> Dict[str, LazyLoader]:
 
 
 def lazy_import_decorator(
-    target: Union[Callable[..., T], Type[C]]
-) -> Union[Callable[..., T], Type[C], LazyClassLoader]:
+    target: Union[Callable[..., T], type[C]]
+) -> Union[Callable[..., T], type[C], LazyClassLoader]:
     """
     Enhanced decorator that supports both lazy imports and lazy class loading.
     """

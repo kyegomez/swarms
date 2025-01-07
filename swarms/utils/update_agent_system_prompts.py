@@ -1,12 +1,13 @@
 import concurrent.futures
-from typing import List, Union
+from typing import Union
+
 from swarms.structs.agent import Agent
 
 
 def update_system_prompts(
-    agents: List[Union[Agent, str]],
+    agents: list[Union[Agent, str]],
     prompt: str,
-) -> List[Agent]:
+) -> list[Agent]:
     """
     Update system prompts for a list of agents concurrently.
 

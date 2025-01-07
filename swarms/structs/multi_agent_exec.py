@@ -4,7 +4,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from multiprocessing import cpu_count
-from typing import Any, List
+from typing import Any, Optional
 
 import psutil
 
@@ -41,8 +41,8 @@ async def run_agent_async(
 
 
 async def run_agents_concurrently_async(
-    agents: List[AgentType], task: str, executor: ThreadPoolExecutor
-) -> List[Any]:
+    agents: list[AgentType], task: str, executor: ThreadPoolExecutor
+) -> list[Any]:
     """
     Run multiple agents concurrently using asyncio and thread executor.
 
@@ -61,11 +61,11 @@ async def run_agents_concurrently_async(
 
 
 def run_agents_concurrently(
-    agents: List[AgentType],
+    agents: list[AgentType],
     task: str,
-    batch_size: int = None,
-    max_workers: int = None,
-) -> List[Any]:
+    batch_size: Optional[int] = None,
+    max_workers: Optional[int] = None,
+) -> list[Any]:
     """
     Optimized concurrent agent runner using both uvloop and ThreadPoolExecutor.
 
@@ -106,8 +106,8 @@ def run_agents_concurrently(
 
 
 def run_agents_concurrently_multiprocess(
-    agents: List[Agent], task: str, batch_size: int = cpu_count()
-) -> List[Any]:
+    agents: list[Agent], task: str, batch_size: int = cpu_count()
+) -> list[Any]:
     """
     Manage and run multiple agents concurrently in batches, with optimized performance.
 
@@ -135,8 +135,8 @@ def run_agents_concurrently_multiprocess(
 
 
 def run_agents_sequentially(
-    agents: List[AgentType], task: str
-) -> List[Any]:
+    agents: list[AgentType], task: str
+) -> list[Any]:
     """
     Run multiple agents sequentially for baseline comparison.
 
@@ -151,10 +151,10 @@ def run_agents_sequentially(
 
 
 def run_agents_with_different_tasks(
-    agent_task_pairs: List[tuple[AgentType, str]],
-    batch_size: int = None,
-    max_workers: int = None,
-) -> List[Any]:
+    agent_task_pairs: list[tuple[AgentType, str]],
+    batch_size: Optional[int] = None,
+    max_workers: Optional[int] = None,
+) -> list[Any]:
     """
     Run multiple agents with different tasks concurrently.
 
@@ -227,12 +227,12 @@ async def run_agent_with_timeout(
 
 
 def run_agents_with_timeout(
-    agents: List[AgentType],
+    agents: list[AgentType],
     task: str,
     timeout: float,
-    batch_size: int = None,
-    max_workers: int = None,
-) -> List[Any]:
+    batch_size: Optional[int] = None,
+    max_workers: Optional[int] = None,
+) -> list[Any]:
     """
     Run multiple agents concurrently with a timeout for each agent.
 
@@ -292,12 +292,12 @@ def get_system_metrics() -> ResourceMetrics:
 
 
 def run_agents_with_resource_monitoring(
-    agents: List[AgentType],
+    agents: list[AgentType],
     task: str,
     cpu_threshold: float = 90.0,
     memory_threshold: float = 90.0,
     check_interval: float = 1.0,
-) -> List[Any]:
+) -> list[Any]:
     """
     Run agents with system resource monitoring and adaptive batch sizing.
 
@@ -327,11 +327,11 @@ def run_agents_with_resource_monitoring(
 
 
 def _run_agents_with_tasks_concurrently(
-    agents: List[AgentType],
-    tasks: List[str] = [],
-    batch_size: int = None,
-    max_workers: int = None,
-) -> List[Any]:
+    agents: list[AgentType],
+    tasks: list[str] = [],
+    batch_size: Optional[int] = None,
+    max_workers: Optional[int] = None,
+) -> list[Any]:
     """
     Run multiple agents with corresponding tasks concurrently.
 
@@ -385,15 +385,15 @@ def _run_agents_with_tasks_concurrently(
 
 
 def run_agents_with_tasks_concurrently(
-    agents: List[AgentType],
-    tasks: List[str] = [],
-    batch_size: int = None,
-    max_workers: int = None,
+    agents: list[AgentType],
+    tasks: list[str] = [],
+    batch_size: Optional[int] = None,
+    max_workers: Optional[int] = None,
     device: str = "cpu",
     device_id: int = 1,
     all_cores: bool = True,
     no_clusterops: bool = False,
-) -> List[Any]:
+) -> list[Any]:
     """
     Executes a list of agents with their corresponding tasks concurrently on a specified device.
 

@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 
 def extract_code_blocks_with_language(markdown_text: str):
@@ -33,7 +34,7 @@ def extract_code_blocks_with_language(markdown_text: str):
 
 
 def extract_code_from_markdown(
-    markdown_text: str, language: str = None
+    markdown_text: str, language: Optional[str] = None
 ):
     """
     Extracts content of code blocks for a specific language or all blocks if no language specified.

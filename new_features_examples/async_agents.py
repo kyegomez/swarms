@@ -3,11 +3,11 @@ import os
 from dotenv import load_dotenv
 from swarm_models import OpenAIChat
 
+from new_features_examples.async_executor import HighSpeedExecutor
 from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from new_features_examples.async_executor import HighSpeedExecutor
 
 load_dotenv()
 

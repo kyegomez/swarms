@@ -4,10 +4,10 @@ import re
 import threading
 
 from dotenv import load_dotenv
+from swarm_models import OpenAIChat
 from swarms_memory import DictInternalMemory, DictSharedMemory
 
 from scripts.auto_tests_docs.docs import TEST_WRITER_SOP_PROMPT
-from swarm_models import OpenAIChat
 
 load_dotenv()
 

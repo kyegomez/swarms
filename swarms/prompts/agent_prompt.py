@@ -1,5 +1,4 @@
 import json
-from typing import List
 
 
 class PromptGenerator:
@@ -7,10 +6,10 @@ class PromptGenerator:
 
     def __init__(self) -> None:
         """Initialize the PromptGenerator object."""
-        self.constraints: List[str] = []
-        self.commands: List[str] = []
-        self.resources: List[str] = []
-        self.performance_evaluation: List[str] = []
+        self.constraints: list[str] = []
+        self.commands: list[str] = []
+        self.resources: list[str] = []
+        self.performance_evaluation: list[str] = []
         self.response_format = {
             "thoughts": {
                 "text": "thought",

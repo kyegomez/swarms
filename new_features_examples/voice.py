@@ -4,8 +4,9 @@ import asyncio
 import base64
 import io
 import threading
+from collections.abc import Awaitable
 from os import getenv
-from typing import Any, Awaitable, Callable, cast
+from typing import Any, Callable, cast
 
 import numpy as np
 
@@ -81,7 +82,7 @@ class AudioPlayerAsync:
         self.playing = False
         self._frame_count = 0
 
-    def callback(self, outdata, frames, time, status):  # noqa
+    def callback(self, outdata, frames, time, status):
         with self.lock:
             data = np.empty(0, dtype=np.int16)
 
@@ -204,7 +205,7 @@ class RealtimeApp:
         - Sends text prompts to the GPT-4 Realtime API.
     """
 
-    def __init__(self, system_prompt: str = None) -> None:
+    def __init__(self, system_prompt: str | None = None) -> None:
         self.connection: AsyncRealtimeConnection | None = None
         self.session: Session | None = None
         self.client = AsyncOpenAI(api_key=getenv("OPENAI_API_KEY"))

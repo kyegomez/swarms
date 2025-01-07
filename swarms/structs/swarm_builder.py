@@ -1,6 +1,6 @@
 import os
 import subprocess
-from typing import List, Optional
+from typing import Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -182,7 +182,7 @@ class SwarmConfig(BaseModel):
         description="The description of the swarm's purpose and capabilities",
         example="A swarm of agents that work together to research topics and write articles",
     )
-    agents: List[AgentConfig] = Field(
+    agents: list[AgentConfig] = Field(
         description="The list of agents that make up the swarm",
     )
     max_loops: int = Field(
@@ -250,12 +250,12 @@ class AutoSwarmBuilder:
         ] = "Given a task, this swarm will automatically create specialized agents and route it to the appropriate agents.",
         verbose: bool = True,
         model_name: str = "gpt-4o",
-        boss_output_schema: list = None,
+        boss_output_schema: Optional[list] = None,
         swarm_router_outputs: AutoSwarmBuilderOutput = None,
         max_loops: int = 1,
         swarm_type: str = "SequentialWorkflow",
         auto_generate_prompts_for_agents: bool = False,
-        shared_memory_system: callable = None,
+        shared_memory_system: Optional[callable] = None,
     ):
         self.name = name or "DefaultSwarm"
         self.description = description or "Generic AI Agent Swarm"
@@ -303,7 +303,7 @@ class AutoSwarmBuilder:
             )
         except Exception as e:
             logger.error(
-                f"Failed to initialize OpenAI chat model: {str(e)}"
+                f"Failed to initialize OpenAI chat model: {e!s}"
             )
             raise
 
@@ -353,14 +353,14 @@ class AutoSwarmBuilder:
 
         except Exception as e:
             logger.error(
-                f"Error during swarm execution: {str(e)}",
+                f"Error during swarm execution: {e!s}",
             )
             raise e
 
     def _create_agents(
         self,
         task: str,
-    ) -> List[Agent]:
+    ) -> list[Agent]:
         """Create the necessary agents for a task with enhanced error handling."""
         logger.info("Creating agents for task", extra={"task": task})
 
@@ -422,7 +422,7 @@ class AutoSwarmBuilder:
 
         except Exception as e:
             logger.error(
-                f"Error creating agents: {str(e)}", exc_info=True
+                f"Error creating agents: {e!s}", exc_info=True
             )
             raise
 
@@ -455,7 +455,7 @@ class AutoSwarmBuilder:
 
         except Exception as e:
             logger.error(
-                f"Error building agent: {str(e)}", exc_info=True
+                f"Error building agent: {e!s}", exc_info=True
             )
             raise
 
@@ -465,7 +465,7 @@ class AutoSwarmBuilder:
     )
     def swarm_router(
         self,
-        agents: List[Agent],
+        agents: list[Agent],
         task: str,
         img: Optional[str] = None,
         *args,
@@ -496,7 +496,7 @@ class AutoSwarmBuilder:
 
         except Exception as e:
             logger.error(
-                f"Error in swarm router: {str(e)}", exc_info=True
+                f"Error in swarm router: {e!s}", exc_info=True
             )
             raise
 

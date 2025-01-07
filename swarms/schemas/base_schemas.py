@@ -1,6 +1,6 @@
-import uuid
 import time
-from typing import List, Literal, Optional, Union
+import uuid
+from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -22,7 +22,7 @@ class ModelCard(BaseModel):
 
 class ModelList(BaseModel):
     object: str = "list"
-    data: List[ModelCard] = []
+    data: list[ModelCard] = []
 
 
 class ImageUrl(BaseModel):
@@ -47,7 +47,7 @@ class ChatMessageInput(BaseModel):
         ...,
         description="The role of the message sender. Could be 'user', 'assistant', or 'system'.",
     )
-    content: Union[str, List[ContentItem]]
+    content: Union[str, list[ContentItem]]
 
 
 class ChatMessageResponse(BaseModel):
@@ -65,7 +65,7 @@ class DeltaMessage(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     model: str = "gpt-4o"
-    messages: List[ChatMessageInput]
+    messages: list[ChatMessageInput]
     temperature: Optional[float] = 0.8
     top_p: Optional[float] = 0.8
     max_tokens: Optional[int] = 4000
@@ -96,7 +96,7 @@ class UsageInfo(BaseModel):
 class ChatCompletionResponse(BaseModel):
     model: str
     object: Literal["chat.completion", "chat.completion.chunk"]
-    choices: List[
+    choices: list[
         Union[
             ChatCompletionResponseChoice,
             ChatCompletionResponseStreamChoice,

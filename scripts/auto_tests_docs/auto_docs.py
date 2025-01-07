@@ -4,9 +4,9 @@ import os
 import threading
 
 from dotenv import load_dotenv
+from swarm_models import OpenAIChat
 
 from scripts.auto_tests_docs.docs import DOCUMENTATION_WRITER_SOP
-from swarm_models import OpenAIChat
 from swarms.structs.majority_voting import MajorityVoting
 from swarms.structs.stackoverflow_swarm import StackOverflowSwarm
 from swarms.structs.task_queue_base import TaskQueueBase

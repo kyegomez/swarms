@@ -4,7 +4,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal, Optional
 
 import pulsar
 from cryptography.fernet import Fernet
@@ -80,7 +80,7 @@ class Task(BaseModel):
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     retry_count: int = Field(default=0)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @validator("task_id")
     def validate_task_id(cls, v):
@@ -123,7 +123,7 @@ class SecurePulsarSwarm:
         self,
         name: str,
         description: str,
-        agents: List[Any],
+        agents: list[Any],
         pulsar_url: str,
         subscription_name: str,
         topic_name: str,
@@ -250,7 +250,7 @@ class SecurePulsarSwarm:
         except Exception as e:
             TASK_FAILURES.inc()
             logger.error(
-                f"Error publishing task {task.task_id}: {str(e)}"
+                f"Error publishing task {task.task_id}: {e!s}"
             )
             raise
 
@@ -312,7 +312,7 @@ class SecurePulsarSwarm:
                 TASK_FAILURES.inc()
                 AGENT_ERRORS.inc()
                 error_msg = (
-                    f"Error processing task {task.task_id}: {str(e)}"
+                    f"Error processing task {task.task_id}: {e!s}"
                 )
                 logger.error(error_msg)
                 task.status = "failed"
@@ -377,13 +377,13 @@ class SecurePulsarSwarm:
 
                 except Exception as e:
                     logger.error(
-                        f"Error processing message: {str(e)}"
+                        f"Error processing message: {e!s}"
                     )
                     await self.consumer.negative_acknowledge(message)
                     consecutive_failures += 1
 
             except Exception as e:
-                logger.error(f"Error in consume_tasks: {str(e)}")
+                logger.error(f"Error in consume_tasks: {e!s}")
                 consecutive_failures += 1
                 await asyncio.sleep(1)
 
@@ -400,7 +400,7 @@ class SecurePulsarSwarm:
             self.client.close()
             self.executor.shutdown(wait=True)
         except Exception as e:
-            logger.error(f"Error during cleanup: {str(e)}")
+            logger.error(f"Error during cleanup: {e!s}")
 
 
 # if __name__ == "__main__":

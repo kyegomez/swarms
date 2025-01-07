@@ -1,7 +1,7 @@
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -20,13 +20,13 @@ class AgentConfigSchema(BaseModel):
         time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
         description="Time when the agent was added to the registry.",
     )
-    config: Dict[Any, Any] = None
+    config: dict[Any, Any] = None
 
 
 class AgentRegistrySchema(BaseModel):
     name: str
     description: str
-    agents: List[AgentConfigSchema]
+    agents: list[AgentConfigSchema]
     time_registry_creatd: str = Field(
         time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
         description="Time when the registry was created.",
@@ -55,7 +55,7 @@ class AgentRegistry:
         self,
         name: str = "Agent Registry",
         description: str = "A registry for managing agents.",
-        agents: Optional[List[Agent]] = None,
+        agents: Optional[list[Agent]] = None,
         return_json: bool = True,
         auto_save: bool = False,
         *args,
@@ -75,7 +75,7 @@ class AgentRegistry:
         self.description = description
         self.return_json = return_json
         self.auto_save = auto_save
-        self.agents: Dict[str, Agent] = {}
+        self.agents: dict[str, Agent] = {}
         self.lock = Lock()
 
         # Initialize the agent registry
@@ -119,7 +119,7 @@ class AgentRegistry:
                 logger.error(f"Validation error: {e}")
                 raise
 
-    def add_many(self, agents: List[Agent]) -> None:
+    def add_many(self, agents: list[Agent]) -> None:
         """
         Adds multiple agents to the registry.
 
@@ -215,7 +215,7 @@ class AgentRegistry:
                 logger.error(f"Error: {e}")
                 raise
 
-    def list_agents(self) -> List[str]:
+    def list_agents(self) -> list[str]:
         """
         Lists all agent names in the registry.
 
@@ -231,7 +231,7 @@ class AgentRegistry:
             logger.error(f"Error: {e}")
             raise e
 
-    def return_all_agents(self) -> List[Agent]:
+    def return_all_agents(self) -> list[Agent]:
         """
         Returns all agents from the registry.
 
@@ -249,7 +249,7 @@ class AgentRegistry:
 
     def query(
         self, condition: Optional[Callable[[Agent], bool]] = None
-    ) -> List[Agent]:
+    ) -> list[Agent]:
         """
         Queries agents based on a condition.
 

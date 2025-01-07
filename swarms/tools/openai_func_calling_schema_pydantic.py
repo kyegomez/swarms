@@ -1,5 +1,5 @@
+
 from pydantic import BaseModel, Field
-from typing import List
 
 
 class FunctionSchema(BaseModel):
@@ -34,7 +34,7 @@ class OpenAIFunctionCallSchema(BaseModel):
         title="Type",
         description="The type of the function.",
     )
-    function: List[FunctionSchema] = Field(
+    function: list[FunctionSchema] = Field(
         ...,
         title="Function",
         description="The function to call.",

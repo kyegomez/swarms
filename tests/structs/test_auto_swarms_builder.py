@@ -1,5 +1,6 @@
-from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from dotenv import load_dotenv
+
+from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 
 load_dotenv()
 
@@ -28,7 +29,7 @@ def test_initialization():
         print("✓ Initialization test passed")
         return swarm
     except Exception as e:
-        print(f"✗ Initialization test failed: {str(e)}")
+        print(f"✗ Initialization test failed: {e!s}")
         raise
 
 
@@ -52,7 +53,7 @@ def test_agent_building():
         print("✓ Agent building test passed")
         return agent
     except Exception as e:
-        print(f"✗ Agent building test failed: {str(e)}")
+        print(f"✗ Agent building test failed: {e!s}")
         raise
 
 
@@ -76,7 +77,7 @@ def test_agent_creation():
         print(f"✓ Created {len(agents)} agents successfully")
         return agents
     except Exception as e:
-        print(f"✗ Agent creation test failed: {str(e)}")
+        print(f"✗ Agent creation test failed: {e!s}")
         raise
 
 
@@ -104,7 +105,7 @@ def test_swarm_routing():
         print("✓ Swarm routing test passed")
         return result
     except Exception as e:
-        print(f"✗ Swarm routing test failed: {str(e)}")
+        print(f"✗ Swarm routing test failed: {e!s}")
         raise
 
 
@@ -133,7 +134,7 @@ def test_full_swarm_execution():
         print("✓ Full swarm execution test passed")
         return result
     except Exception as e:
-        print(f"✗ Full swarm execution test failed: {str(e)}")
+        print(f"✗ Full swarm execution test failed: {e!s}")
         raise
 
 
@@ -168,7 +169,7 @@ def test_error_handling():
 
         print("✓ Error handling test passed")
     except Exception as e:
-        print(f"✗ Error handling test failed: {str(e)}")
+        print(f"✗ Error handling test failed: {e!s}")
         raise
 
 
@@ -190,7 +191,7 @@ def run_all_tests():
 
     except Exception as e:
         print_separator()
-        print(f"❌ Test suite failed: {str(e)}")
+        print(f"❌ Test suite failed: {e!s}")
         raise
 
 

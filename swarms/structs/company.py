@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import initialize_logger
-
 
 logger = initialize_logger("company-swarm")
 
@@ -15,11 +14,11 @@ class Company(BaseSwarm):
     Represents a company with a hierarchical organizational structure.
     """
 
-    org_chart: List[List[Agent]]
+    org_chart: list[list[Agent]]
     shared_instructions: str = None
     ceo: Optional[Agent] = None
-    agents: List[Agent] = field(default_factory=list)
-    agent_interactions: Dict[str, List[str]] = field(
+    agents: list[Agent] = field(default_factory=list)
+    agent_interactions: dict[str, list[str]] = field(
         default_factory=dict
     )
 
@@ -96,7 +95,7 @@ class Company(BaseSwarm):
             raise error
 
     def _parse_org_chart(
-        self, org_chart: Union[List[Agent], List[List[Agent]]]
+        self, org_chart: Union[list[Agent], list[list[Agent]]]
     ) -> None:
         """
         Parses the organization chart and adds agents to the company.

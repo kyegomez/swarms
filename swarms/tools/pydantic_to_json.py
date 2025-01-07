@@ -1,7 +1,8 @@
-from typing import Any, List
+from typing import Any, Optional
 
 from docstring_parser import parse
 from pydantic import BaseModel
+
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger("pydantic_to_json")
@@ -117,7 +118,7 @@ def base_model_to_openai_function(
 
 
 def multi_base_model_to_openai_function(
-    pydantic_types: List[BaseModel] = None,
+    pydantic_types: Optional[list[BaseModel]] = None,
     output_str: bool = False,
 ) -> dict[str, Any]:
     """

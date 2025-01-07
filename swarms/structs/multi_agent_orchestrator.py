@@ -12,7 +12,7 @@ import os
 import subprocess
 import uuid
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -67,7 +67,7 @@ class OpenAIFunctionCaller:
             self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         except Exception as e:
             logger.error(
-                f"Error initializing OpenAI client: {str(e)}"
+                f"Error initializing OpenAI client: {e!s}"
             )
             raise
 
@@ -93,7 +93,7 @@ class OpenAIFunctionCaller:
                 response.choices[0].message.content
             )
         except Exception as e:
-            logger.error(f"Error getting completion: {str(e)}")
+            logger.error(f"Error getting completion: {e!s}")
             raise
 
     def get_agent_response(
@@ -113,7 +113,7 @@ class OpenAIFunctionCaller:
 
             return response.choices[0].message.content
         except Exception as e:
-            logger.error(f"Error getting agent response: {str(e)}")
+            logger.error(f"Error getting agent response: {e!s}")
             raise
 
 
@@ -138,10 +138,10 @@ class MultiAgentRouter:
         self,
         name: str = "swarm-router",
         description: str = "Routes tasks to specialized agents based on their capabilities",
-        agents: List[Agent] = [],
+        agents: list[Agent] = [],
         model: str = "gpt-4o-mini",
         temperature: float = 0.1,
-        shared_memory_system: callable = None,
+        shared_memory_system: Optional[callable] = None,
         output_type: Literal["json", "string"] = "json",
         execute_task: bool = True,
     ):
@@ -311,10 +311,10 @@ class MultiAgentRouter:
             return result
 
         except Exception as e:
-            logger.error(f"Error routing task: {str(e)}")
+            logger.error(f"Error routing task: {e!s}")
             raise
 
-    def batch_route(self, tasks: List[str] = []):
+    def batch_route(self, tasks: list[str] = []):
         """Batch route tasks to the appropriate agents"""
         results = []
         for task in tasks:
@@ -322,10 +322,10 @@ class MultiAgentRouter:
                 result = self.route_task(task)
                 results.append(result)
             except Exception as e:
-                logger.error(f"Error routing task: {str(e)}")
+                logger.error(f"Error routing task: {e!s}")
         return results
 
-    def concurrent_batch_route(self, tasks: List[str] = []):
+    def concurrent_batch_route(self, tasks: list[str] = []):
         """Concurrently route tasks to the appropriate agents"""
         import concurrent.futures
         from concurrent.futures import ThreadPoolExecutor
@@ -341,7 +341,7 @@ class MultiAgentRouter:
                     result = future.result()
                     results.append(result)
                 except Exception as e:
-                    logger.error(f"Error routing task: {str(e)}")
+                    logger.error(f"Error routing task: {e!s}")
         return results
 
 

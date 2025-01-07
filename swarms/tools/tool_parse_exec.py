@@ -1,14 +1,14 @@
 import json
-from typing import List, Any, Callable
+from typing import Any, Callable
 
-from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.parse_code import extract_code_from_markdown
 
 logger = initialize_logger(log_folder="tool_parse_exec")
 
 
 def parse_and_execute_json(
-    functions: List[Callable[..., Any]],
+    functions: list[Callable[..., Any]],
     json_string: str,
     parse_md: bool = False,
     verbose: bool = False,
@@ -92,9 +92,9 @@ def parse_and_execute_json(
                     )
             except Exception as e:
                 logger.error(
-                    f"Error executing {function_name}: {str(e)}"
+                    f"Error executing {function_name}: {e!s}"
                 )
-                results[function_name] = f"Error: {str(e)}"
+                results[function_name] = f"Error: {e!s}"
 
         # Format final results
         if len(results) == 1:
@@ -115,10 +115,10 @@ def parse_and_execute_json(
             return data
 
     except json.JSONDecodeError as e:
-        error = f"Invalid JSON format: {str(e)}"
+        error = f"Invalid JSON format: {e!s}"
         logger.error(error)
         return {"error": error}
     except Exception as e:
-        error = f"Error parsing and executing JSON: {str(e)}"
+        error = f"Error parsing and executing JSON: {e!s}"
         logger.error(error)
         return {"error": error}

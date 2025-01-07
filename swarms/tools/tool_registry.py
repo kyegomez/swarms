@@ -1,8 +1,10 @@
 import os
-from typing import Any, Callable, Dict, List, Optional
 import time
-from pydantic import BaseModel, Field
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Callable, Optional
+
+from pydantic import BaseModel, Field
+
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="tool_registry")
@@ -20,7 +22,7 @@ class ToolMetadata(BaseModel):
 class ToolStorageSchema(BaseModel):
     name: str
     description: str
-    tools: List[ToolMetadata]
+    tools: list[ToolMetadata]
     time_created: str = Field(
         time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
         description="Time when the registry was created.",
@@ -40,10 +42,10 @@ class ToolStorage:
 
     def __init__(
         self,
-        name: str = None,
-        description: str = None,
-        verbose: bool = None,
-        tools: List[Callable] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        verbose: Optional[bool] = None,
+        tools: Optional[list[Callable]] = None,
         *args,
         **kwargs,
     ) -> None:
@@ -52,8 +54,8 @@ class ToolStorage:
         self.verbose = verbose
         self.tools = tools
         # self.tool_storage_schema = tool_storage_schema
-        self._tools: Dict[str, Callable] = {}
-        self._settings: Dict[str, Any] = {}
+        self._tools: dict[str, Callable] = {}
+        self._settings: dict[str, Any] = {}
         self.tool_storage_schema = ToolStorageSchema(
             name=name,
             description=description,
@@ -90,7 +92,7 @@ class ToolStorage:
             logger.error(e)
             raise
 
-    def add_many_tools(self, funcs: List[Callable]) -> None:
+    def add_many_tools(self, funcs: list[Callable]) -> None:
         """
         Adds multiple tools to the storage.
 
@@ -162,7 +164,7 @@ class ToolStorage:
             logger.error(f"Setting {key} not found error: {e}")
             raise
 
-    def list_tools(self) -> List[str]:
+    def list_tools(self) -> list[str]:
         """
         Lists all registered tools.
 
@@ -182,8 +184,8 @@ class ToolStorage:
 
     def add_multiple_tools_to_log(
         self,
-        names: List[str],
-        docs: List[str],
+        names: list[str],
+        docs: list[str],
         *args,
         **kwargs,
     ):

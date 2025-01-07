@@ -1,6 +1,8 @@
-import os
 import asyncio
+import os
+
 from loguru import logger
+
 from swarms.structs.agent import Agent
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
@@ -21,7 +23,7 @@ test_agent_2,Test Agent 2,System prompt 2,Task 2"""
         print(f"CSV file created at: {file_path}")
         return file_path
     except Exception as e:
-        logger.error(f"Failed to create test CSV: {str(e)}")
+        logger.error(f"Failed to create test CSV: {e!s}")
         raise
 
 
@@ -40,7 +42,7 @@ def create_test_agent(name: str) -> Agent:
         print(f"Created agent: {name}")
         return agent
     except Exception as e:
-        logger.error(f"Failed to create agent {name}: {str(e)}")
+        logger.error(f"Failed to create agent {name}: {e!s}")
         raise
 
 
@@ -70,7 +72,7 @@ def test_swarm_initialization() -> None:
 
         print("✅ Swarm initialization test PASSED")
     except Exception as e:
-        logger.error(f"❌ Swarm initialization test FAILED: {str(e)}")
+        logger.error(f"❌ Swarm initialization test FAILED: {e!s}")
         raise
 
 
@@ -96,7 +98,7 @@ async def test_load_from_csv() -> None:
 
         print("✅ CSV loading test PASSED")
     except Exception as e:
-        logger.error(f"❌ CSV loading test FAILED: {str(e)}")
+        logger.error(f"❌ CSV loading test FAILED: {e!s}")
         raise
 
 
@@ -121,7 +123,7 @@ async def test_run_tasks() -> None:
 
         print("✅ Task execution test PASSED")
     except Exception as e:
-        logger.error(f"❌ Task execution test FAILED: {str(e)}")
+        logger.error(f"❌ Task execution test FAILED: {e!s}")
         raise
 
 
@@ -142,7 +144,7 @@ def test_output_tracking() -> None:
 
         print("✅ Output tracking test PASSED")
     except Exception as e:
-        logger.error(f"❌ Output tracking test FAILED: {str(e)}")
+        logger.error(f"❌ Output tracking test FAILED: {e!s}")
         raise
 
 
@@ -168,7 +170,7 @@ async def test_save_to_csv() -> None:
 
         print("✅ CSV saving test PASSED")
     except Exception as e:
-        logger.error(f"❌ CSV saving test FAILED: {str(e)}")
+        logger.error(f"❌ CSV saving test FAILED: {e!s}")
         raise
 
 
@@ -190,7 +192,7 @@ def test_json_export() -> None:
 
         print("✅ JSON export test PASSED")
     except Exception as e:
-        logger.error(f"❌ JSON export test FAILED: {str(e)}")
+        logger.error(f"❌ JSON export test FAILED: {e!s}")
         raise
 
 
@@ -216,7 +218,7 @@ async def run_all_tests() -> None:
         print("\n🎉 All tests completed successfully!")
         print("=" * 50)
     except Exception as e:
-        logger.error(f"\n❌ Test suite failed: {str(e)}")
+        logger.error(f"\n❌ Test suite failed: {e!s}")
         print("=" * 50)
         raise
 

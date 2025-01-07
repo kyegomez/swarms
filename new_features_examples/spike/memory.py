@@ -1,7 +1,8 @@
-from typing import Optional
 from pathlib import Path
+from typing import Optional
+
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
 from loguru import logger
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 
 
 class LlamaIndexDB:
@@ -65,7 +66,7 @@ class LlamaIndexDB:
                 f"Successfully indexed documents from {self.data_dir}"
             )
         except Exception as e:
-            logger.error(f"Error indexing documents: {str(e)}")
+            logger.error(f"Error indexing documents: {e!s}")
             raise
 
     def query(self, query: str, **kwargs) -> str:
@@ -96,7 +97,7 @@ class LlamaIndexDB:
             logger.info(f"Successfully queried: {query}")
             return str(response)
         except Exception as e:
-            logger.error(f"Error during query: {str(e)}")
+            logger.error(f"Error during query: {e!s}")
             raise
 
 

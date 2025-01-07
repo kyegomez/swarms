@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
 from logging.handlers import RotatingFileHandler
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -42,8 +42,8 @@ class WorkflowOutput(BaseModel):
     total_agents: int
     successful_tasks: int
     failed_tasks: int
-    agent_outputs: List[AgentOutput]
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    agent_outputs: list[AgentOutput]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class SpeakerRole(str, Enum):
@@ -59,7 +59,7 @@ class SpeakerMessage(BaseModel):
     content: Any
     timestamp: datetime
     agent_name: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class GroupChatConfig(BaseModel):
@@ -76,7 +76,7 @@ class SharedMemoryItem:
     value: Any
     timestamp: datetime
     author: str
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 
 
 @dataclass
@@ -103,7 +103,7 @@ class SharedMemory:
         key: str,
         value: Any,
         author: str,
-        metadata: Dict[str, Any] = None,
+        metadata: Optional[dict[str, Any]] = None,
     ) -> None:
         with self._lock:
             item = SharedMemoryItem(
@@ -138,7 +138,7 @@ class SharedMemory:
         if self._persistence_path and os.path.exists(
             self._persistence_path
         ):
-            with open(self._persistence_path, "r") as f:
+            with open(self._persistence_path) as f:
                 data = json.load(f)
                 self._memory = {
                     k: SharedMemoryItem(**v) for k, v in data.items()
@@ -149,8 +149,8 @@ class SpeakerSystem:
     """Manages speaker interactions and group chat functionality"""
 
     def __init__(self, default_timeout: float = 30.0):
-        self.speakers: Dict[SpeakerRole, SpeakerConfig] = {}
-        self.message_history: List[SpeakerMessage] = []
+        self.speakers: dict[SpeakerRole, SpeakerConfig] = {}
+        self.message_history: list[SpeakerMessage] = []
         self.default_timeout = default_timeout
         self._lock = threading.Lock()
 
@@ -166,7 +166,7 @@ class SpeakerSystem:
         self,
         config: SpeakerConfig,
         input_data: Any,
-        context: Dict[str, Any] = None,
+        context: Optional[dict[str, Any]] = None,
     ) -> SpeakerMessage:
         try:
             result = await asyncio.wait_for(
@@ -204,7 +204,7 @@ class AsyncWorkflow(BaseWorkflow):
     def __init__(
         self,
         name: str = "AsyncWorkflow",
-        agents: List[Agent] = None,
+        agents: Optional[list[Agent]] = None,
         max_workers: int = 5,
         dashboard: bool = False,
         autosave: bool = False,
@@ -265,8 +265,8 @@ class AsyncWorkflow(BaseWorkflow):
             self.speaker_system.add_speaker(config)
 
     async def run_concurrent_speakers(
-        self, task: str, context: Dict[str, Any] = None
-    ) -> List[SpeakerMessage]:
+        self, task: str, context: Optional[dict[str, Any]] = None
+    ) -> list[SpeakerMessage]:
         """Run all concurrent speakers in parallel"""
         concurrent_tasks = [
             self.speaker_system._execute_speaker(
@@ -282,8 +282,8 @@ class AsyncWorkflow(BaseWorkflow):
         return [r for r in results if isinstance(r, SpeakerMessage)]
 
     async def run_sequential_speakers(
-        self, task: str, context: Dict[str, Any] = None
-    ) -> List[SpeakerMessage]:
+        self, task: str, context: Optional[dict[str, Any]] = None
+    ) -> list[SpeakerMessage]:
         """Run non-concurrent speakers in sequence"""
         results = []
         for config in sorted(
@@ -298,15 +298,15 @@ class AsyncWorkflow(BaseWorkflow):
         return results
 
     async def run_group_chat(
-        self, initial_message: str, context: Dict[str, Any] = None
-    ) -> List[SpeakerMessage]:
+        self, initial_message: str, context: Optional[dict[str, Any]] = None
+    ) -> list[SpeakerMessage]:
         """Run a group chat discussion among speakers"""
         if not self.enable_group_chat:
             raise ValueError(
                 "Group chat is not enabled for this workflow"
             )
 
-        messages: List[SpeakerMessage] = []
+        messages: list[SpeakerMessage] = []
         current_turn = 0
 
         while current_turn < self.group_chat_config.max_loops:
@@ -349,7 +349,7 @@ class AsyncWorkflow(BaseWorkflow):
         return messages
 
     def _should_end_group_chat(
-        self, messages: List[SpeakerMessage]
+        self, messages: list[SpeakerMessage]
     ) -> bool:
         """Determine if group chat should end based on messages"""
         if not messages:
@@ -412,7 +412,7 @@ class AsyncWorkflow(BaseWorkflow):
         except Exception as e:
             end_time = datetime.utcnow()
             self.logger.error(
-                f"Error in agent {agent.agent_name} task {task_id}: {str(e)}",
+                f"Error in agent {agent.agent_name} task {task_id}: {e!s}",
                 exc_info=True,
             )
 
@@ -511,7 +511,7 @@ class AsyncWorkflow(BaseWorkflow):
 
             except Exception as e:
                 self.logger.error(
-                    f"Critical workflow error: {str(e)}",
+                    f"Critical workflow error: {e!s}",
                     exc_info=True,
                 )
                 raise
@@ -561,7 +561,7 @@ class AsyncWorkflow(BaseWorkflow):
             self.logger.info(f"Workflow results saved to {filename}")
         except Exception as e:
             self.logger.error(
-                f"Error saving workflow results: {str(e)}"
+                f"Error saving workflow results: {e!s}"
             )
 
     def _validate_config(self) -> None:
@@ -607,13 +607,13 @@ class AsyncWorkflow(BaseWorkflow):
             self.shared_memory._memory.clear()
 
         except Exception as e:
-            self.logger.error(f"Error during cleanup: {str(e)}")
+            self.logger.error(f"Error during cleanup: {e!s}")
             raise
 
 
 # Utility functions for the workflow
 def create_default_workflow(
-    agents: List[Agent],
+    agents: list[Agent],
     name: str = "DefaultWorkflow",
     enable_group_chat: bool = False,
 ) -> AsyncWorkflow:
@@ -651,7 +651,7 @@ async def run_workflow_with_retry(
             if attempt == max_retries - 1:
                 raise
             workflow.logger.warning(
-                f"Attempt {attempt + 1} failed, retrying in {retry_delay} seconds: {str(e)}"
+                f"Attempt {attempt + 1} failed, retrying in {retry_delay} seconds: {e!s}"
             )
             await asyncio.sleep(retry_delay)
             retry_delay *= 2  # Exponential backoff

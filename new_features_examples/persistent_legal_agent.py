@@ -1,10 +1,12 @@
 import os
-from swarms import Agent
-from swarm_models import OpenAIChat
+
 from dotenv import load_dotenv
+from swarm_models import OpenAIChat
+
+from swarms import Agent
 
 # Custom system prompt for VC legal document generation
-VC_LEGAL_AGENT_PROMPT = """You are a specialized legal document assistant focusing on venture capital documentation. 
+VC_LEGAL_AGENT_PROMPT = """You are a specialized legal document assistant focusing on venture capital documentation.
 Your role is to help draft preliminary versions of common VC legal documents while adhering to these guidelines:
 
 1. Always include standard legal disclaimers
@@ -71,14 +73,14 @@ def generate_legal_document(agent, document_type, parameters):
     prompt = f"""
     Generate a {document_type} with the following parameters:
     {parameters}
-    
+
     Please follow these steps:
     1. Create initial draft
     2. Review for completeness
     3. Add necessary legal disclaimers
     4. Verify all required sections
     5. Output <DONE> when complete
-    
+
     Include [REQUIRES LEGAL REVIEW] tags for sections needing attorney attention.
     """
 

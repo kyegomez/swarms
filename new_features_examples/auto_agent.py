@@ -1,7 +1,7 @@
 import json
 import os
 from contextlib import suppress
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Optional, Union
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError, create_model
@@ -10,7 +10,7 @@ from swarm_models.openai_function_caller import OpenAIFunctionCaller
 
 class DynamicParser:
     @staticmethod
-    def extract_fields(model: Type[BaseModel]) -> Dict[str, Any]:
+    def extract_fields(model: type[BaseModel]) -> dict[str, Any]:
         return {
             field_name: (
                 field.annotation,
@@ -21,8 +21,8 @@ class DynamicParser:
 
     @staticmethod
     def create_partial_model(
-        model: Type[BaseModel], data: Dict[str, Any]
-    ) -> Type[BaseModel]:
+        model: type[BaseModel], data: dict[str, Any]
+    ) -> type[BaseModel]:
         fields = {
             field_name: (
                 field.annotation,
@@ -35,7 +35,7 @@ class DynamicParser:
 
     @classmethod
     def parse(
-        cls, data: Union[str, Dict[str, Any]], model: Type[BaseModel]
+        cls, data: Union[str, dict[str, Any]], model: type[BaseModel]
     ) -> Optional[BaseModel]:
         if isinstance(data, str):
             try:
@@ -88,7 +88,7 @@ class Command(BaseModel):
         ...,
         description="Command name to execute from the provided list of commands.",
     )
-    args: Dict[str, Any] = Field(
+    args: dict[str, Any] = Field(
         ..., description="Arguments required to execute the command."
     )
 
@@ -134,9 +134,9 @@ def task_complete_command(reason: str):
 
 
 # Dynamic command execution
-def execute_command(name: str, args: Dict[str, Any]):
+def execute_command(name: str, args: dict[str, Any]):
     """Dynamically execute a command based on its name and arguments."""
-    command_map: Dict[str, Callable] = {
+    command_map: dict[str, Callable] = {
         "fluid_api": lambda **kwargs: fluid_api_command(
             task=kwargs.get("task")
         ),
@@ -157,8 +157,8 @@ def execute_command(name: str, args: Dict[str, Any]):
 
 
 def parse_and_execute_command(
-    response: Union[str, Dict[str, Any]],
-    base_model: Type[BaseModel] = AgentResponse,
+    response: Union[str, dict[str, Any]],
+    base_model: type[BaseModel] = AgentResponse,
 ) -> Any:
     """Enhanced command parser with flexible input handling"""
     parsed = DynamicParser.parse(response, base_model)
@@ -197,7 +197,7 @@ Your role is to make decisions and complete tasks independently without seeking 
 ### COMMANDS:
 1. Fluid API: "fluid_api", args: "method": "<GET/POST/...>", "url": "<url>", "headers": "<headers>", "body": "<payload>"
 18. Send Tweet: "send_tweet", args: "text": "<text>"
-19. Do Nothing: "do_nothing", args: 
+19. Do Nothing: "do_nothing", args:
 20. Task Complete (Shutdown): "task_complete", args: "reason": "<reason>"
 
 ### RESOURCES:

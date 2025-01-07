@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -18,7 +18,7 @@ logger = initialize_logger(log_folder="ape_agent")
     wait=wait_exponential(multiplier=1, min=4, max=10),
 )
 def auto_generate_prompt(
-    task: str = None,
+    task: Optional[str] = None,
     model: Any = None,
     max_tokens: int = 4000,
     use_second_sys_prompt: bool = True,
@@ -49,5 +49,5 @@ def auto_generate_prompt(
         print(output)
         return output
     except Exception as e:
-        logger.error(f"Error generating prompt: {str(e)}")
+        logger.error(f"Error generating prompt: {e!s}")
         raise

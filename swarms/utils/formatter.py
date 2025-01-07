@@ -1,5 +1,5 @@
 import time
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 from rich.console import Console
 from rich.live import Live
@@ -49,7 +49,7 @@ class Formatter:
         self.console.print(panel)
 
     def print_table(
-        self, title: str, data: Dict[str, List[str]]
+        self, title: str, data: dict[str, list[str]]
     ) -> None:
         """
         Prints a rich table to the console.

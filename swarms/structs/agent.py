@@ -11,11 +11,8 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Literal,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -44,6 +41,7 @@ from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
+from swarms.telemetry.capture_sys_data import log_agent_data
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.data_to_text import data_to_text
@@ -53,7 +51,6 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-from swarms.telemetry.capture_sys_data import log_agent_data
 
 
 # Utils
@@ -84,7 +81,7 @@ def exists(val):
 agent_output_type = Literal[
     "string", "str", "list", "json", "dict", "yaml", "json_schema"
 ]
-ToolUsageType = Union[BaseModel, Dict[str, Any]]
+ToolUsageType = Union[BaseModel, dict[str, Any]]
 
 
 # [FEAT][AGENT]
@@ -243,10 +240,10 @@ class Agent:
         agent_description: Optional[str] = None,
         system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
         # TODO: Change to callable, then parse the callable to a string
-        tools: List[Callable] = None,
+        tools: Optional[list[Callable]] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
-        sop_list: Optional[List[str]] = None,
+        sop_list: Optional[list[str]] = None,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = 8192,
@@ -262,14 +259,14 @@ class Agent:
         traceback: Optional[Any] = None,
         traceback_handlers: Optional[Any] = None,
         streaming_on: Optional[bool] = False,
-        docs: List[str] = None,
+        docs: Optional[list[str]] = None,
         docs_folder: Optional[str] = None,
         verbose: Optional[bool] = False,
         parser: Optional[Callable] = None,
         best_of_n: Optional[int] = None,
         callback: Optional[Callable] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        callbacks: Optional[List[Callable]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        callbacks: Optional[list[Callable]] = None,
         search_algorithm: Optional[Callable] = None,
         logs_to_filename: Optional[str] = None,
         evaluator: Optional[Callable] = None,  # Custom LLM or agent
@@ -288,20 +285,20 @@ class Agent:
         function_calling_type: str = "json",
         output_cleaner: Optional[Callable] = None,
         function_calling_format_type: Optional[str] = "OpenAI",
-        list_base_models: Optional[List[BaseModel]] = None,
+        list_base_models: Optional[list[BaseModel]] = None,
         metadata_output_type: str = "json",
         state_save_file_type: str = "json",
         chain_of_thoughts: bool = False,
         algorithm_of_thoughts: bool = False,
         tree_of_thoughts: bool = False,
         tool_choice: str = "auto",
-        rules: str = None,  # type: ignore
+        rules: Optional[str] = None,  # type: ignore
         planning: Optional[str] = False,
         planning_prompt: Optional[str] = None,
-        custom_planning_prompt: str = None,
+        custom_planning_prompt: Optional[str] = None,
         memory_chunk_size: int = 2000,
         agent_ops_on: bool = False,
-        log_directory: str = None,
+        log_directory: Optional[str] = None,
         tool_system_prompt: str = tool_sop_prompt(),
         max_tokens: int = 4096,
         frequency_penalty: float = 0.0,
@@ -312,9 +309,9 @@ class Agent:
         # short_memory: Optional[str] = None,
         created_at: float = time.time(),
         return_step_meta: Optional[bool] = False,
-        tags: Optional[List[str]] = None,
-        use_cases: Optional[List[Dict[str, str]]] = None,
-        step_pool: List[Step] = [],
+        tags: Optional[list[str]] = None,
+        use_cases: Optional[list[dict[str, str]]] = None,
+        step_pool: list[Step] = [],
         print_every_step: Optional[bool] = False,
         time_created: Optional[str] = time.strftime(
             "%Y-%m-%d %H:%M:%S", time.localtime()
@@ -322,22 +319,22 @@ class Agent:
         agent_output: ManySteps = None,
         executor_workers: int = os.cpu_count(),
         data_memory: Optional[Callable] = None,
-        load_yaml_path: str = None,
+        load_yaml_path: Optional[str] = None,
         auto_generate_prompt: bool = False,
         rag_every_loop: bool = False,
         plan_enabled: bool = False,
         artifacts_on: bool = False,
-        artifacts_output_path: str = None,
-        artifacts_file_extension: str = None,
+        artifacts_output_path: Optional[str] = None,
+        artifacts_file_extension: Optional[str] = None,
         device: str = "cpu",
         all_cores: bool = True,
         device_id: int = 0,
         scheduled_run_date: Optional[datetime] = None,
         do_not_use_cluster_ops: bool = True,
         all_gpus: bool = False,
-        model_name: str = None,
-        llm_args: dict = None,
-        load_state_path: str = None,
+        model_name: Optional[str] = None,
+        llm_args: Optional[dict] = None,
+        load_state_path: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -591,7 +588,7 @@ class Agent:
 
         return llm
 
-    def check_if_no_prompt_then_autogenerate(self, task: str = None):
+    def check_if_no_prompt_then_autogenerate(self, task: Optional[str] = None):
         """
         Checks if auto_generate_prompt is enabled and generates a prompt by combining agent name, description and system prompt if available.
         Falls back to task if all other fields are missing.
@@ -1294,7 +1291,7 @@ class Agent:
                 f"Error running agent: {error} while running concurrently"
             )
 
-    def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
+    def run_concurrent_tasks(self, tasks: list[str], *args, **kwargs):
         """
         Run multiple tasks concurrently.
 
@@ -1315,7 +1312,7 @@ class Agent:
         except Exception as error:
             logger.error(f"Error running concurrent tasks: {error}")
 
-    def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
+    def bulk_run(self, inputs: list[dict[str, Any]]) -> list[str]:
         """
         Generate responses for multiple input sets.
 
@@ -1336,7 +1333,7 @@ class Agent:
 
     async def arun_batched(
         self,
-        tasks: List[str],
+        tasks: list[str],
         *args,
         **kwargs,
     ):
@@ -1354,7 +1351,7 @@ class Agent:
             logger.error(f"Error running batched tasks: {error}")
             raise
 
-    def save(self, file_path: str = None) -> None:
+    def save(self, file_path: Optional[str] = None) -> None:
         """
         Save the agent state to a file using SafeStateManager with atomic writing
         and backup functionality. Automatically handles complex objects and class instances.
@@ -1523,7 +1520,7 @@ class Agent:
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
 
-    def load(self, file_path: str = None) -> None:
+    def load(self, file_path: Optional[str] = None) -> None:
         """
         Load agent state from a file using SafeStateManager.
         Automatically preserves class instances and complex objects.
@@ -1654,7 +1651,7 @@ class Agent:
         except Exception as e:
             logger.error(f"Error logging state info: {e}")
 
-    def get_saveable_state(self) -> Dict[str, Any]:
+    def get_saveable_state(self) -> dict[str, Any]:
         """
         Get a dictionary of all saveable state values.
         Useful for debugging or manual state inspection.
@@ -1664,7 +1661,7 @@ class Agent:
         """
         return SafeLoaderUtils.create_state_dict(self)
 
-    def get_preserved_instances(self) -> Dict[str, Any]:
+    def get_preserved_instances(self) -> dict[str, Any]:
         """
         Get a dictionary of all preserved class instances.
         Useful for debugging or manual state inspection.
@@ -1689,7 +1686,7 @@ class Agent:
                 feedback_counts[feedback] = 1
         print(f"Feedback counts: {feedback_counts}")
 
-    def undo_last(self) -> Tuple[str, str]:
+    def undo_last(self) -> tuple[str, str]:
         """
         Response the last response and return the previous state
 
@@ -1790,7 +1787,7 @@ class Agent:
         """Reset the agent"""
         self.short_memory = None
 
-    def ingest_docs(self, docs: List[str], *args, **kwargs):
+    def ingest_docs(self, docs: list[str], *args, **kwargs):
         """Ingest the docs into the memory
 
         Args:
@@ -1857,7 +1854,7 @@ class Agent:
         logger.info(f"Adding tool: {tool.__name__}")
         return self.tools.append(tool)
 
-    def add_tools(self, tools: List[Callable]):
+    def add_tools(self, tools: list[Callable]):
         """Add multiple tools to the agent's tools list.
 
         Args:
@@ -1881,7 +1878,7 @@ class Agent:
         logger.info(f"Removing tool: {tool.__name__}")
         return self.tools.remove(tool)
 
-    def remove_tools(self, tools: List[Callable]):
+    def remove_tools(self, tools: list[Callable]):
         """Remove multiple tools from the agent's tools list.
 
         Args:
@@ -1930,7 +1927,7 @@ class Agent:
                     "Could not import agentops, try installing agentops: $ pip3 install agentops"
                 )
 
-    def memory_query(self, task: str = None, *args, **kwargs) -> None:
+    def memory_query(self, task: Optional[str] = None, *args, **kwargs) -> None:
         try:
             # Query the long term memory
             if self.long_term_memory is not None:
@@ -1941,7 +1938,7 @@ class Agent:
                 )
 
                 memory_retrieval = (
-                    f"Documents Available: {str(memory_retrieval)}"
+                    f"Documents Available: {memory_retrieval!s}"
                 )
 
                 # # Count the tokens
@@ -1964,7 +1961,7 @@ class Agent:
             logger.error(f"An error occurred: {e}")
             raise e
 
-    def sentiment_analysis_handler(self, response: str = None):
+    def sentiment_analysis_handler(self, response: Optional[str] = None):
         """
         Performs sentiment analysis on the given response and stores the result in the short-term memory.
 
@@ -2264,7 +2261,7 @@ class Agent:
 
     def _serialize_callable(
         self, attr_value: Callable
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Serializes callable attributes by extracting their name and docstring.
 
@@ -2307,7 +2304,7 @@ class Agent:
         except (TypeError, ValueError):
             return f"<Non-serializable: {type(attr_value).__name__}>"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Converts all attributes of the class, including callables, into a dictionary.
         Handles non-serializable attributes by converting them or skipping them.
@@ -2562,15 +2559,15 @@ class Agent:
 
         except ValueError as e:
             logger.error(
-                f"Invalid input values for artifact: {str(e)}"
+                f"Invalid input values for artifact: {e!s}"
             )
             raise
-        except IOError as e:
-            logger.error(f"Error saving artifact to file: {str(e)}")
+        except OSError as e:
+            logger.error(f"Error saving artifact to file: {e!s}")
             raise
         except Exception as e:
             logger.error(
-                f"Unexpected error handling artifact: {str(e)}"
+                f"Unexpected error handling artifact: {e!s}"
             )
             raise
 

@@ -3,7 +3,7 @@ import logging
 import time
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import yaml
 from pydantic import BaseModel
@@ -64,8 +64,8 @@ class MemoryManager:
         self.long_term_memory = long_term_memory
 
         # Initialize memories
-        self.short_term_memory: List[MemoryEntry] = []
-        self.system_messages: List[MemoryEntry] = []
+        self.short_term_memory: list[MemoryEntry] = []
+        self.system_messages: list[MemoryEntry] = []
 
         # Memory statistics
         self.total_tokens_processed: int = 0
@@ -253,7 +253,7 @@ class MemoryManager:
             else ""
         )
 
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """Get detailed memory statistics"""
         return {
             "short_term_messages": len(self.short_term_memory),
@@ -306,7 +306,7 @@ class MemoryManager:
     def load_memory_snapshot(self, file_path: str) -> None:
         """Load memory state from file"""
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 if file_path.endswith(".yaml"):
                     data = yaml.safe_load(f)
                 else:
@@ -330,7 +330,7 @@ class MemoryManager:
 
     def search_memories(
         self, query: str, memory_type: str = "all"
-    ) -> List[MemoryEntry]:
+    ) -> list[MemoryEntry]:
         """
         Search through memories of specified type
 
@@ -390,7 +390,7 @@ class MemoryManager:
 
     def get_memory_by_timeframe(
         self, start_time: float, end_time: float
-    ) -> List[MemoryEntry]:
+    ) -> list[MemoryEntry]:
         """Get memories within a specific timeframe"""
         return [
             entry

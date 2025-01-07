@@ -1,4 +1,5 @@
 import os
+
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 
@@ -30,7 +31,7 @@ def test_boss_router_initialization():
         assert len(router.agents) == 2, "Should have 2 agents"
         print("✓ Basic initialization successful")
     except Exception as e:
-        print(f"✗ Basic initialization failed: {str(e)}")
+        print(f"✗ Basic initialization failed: {e!s}")
 
     # Test initialization without API key
     try:
@@ -47,7 +48,7 @@ def test_boss_router_initialization():
         ), "Should raise ValueError when API key is missing"
         print("✓ API key validation successful")
     except Exception as e:
-        print(f"✗ API key validation failed: {str(e)}")
+        print(f"✗ API key validation failed: {e!s}")
 
 
 def test_boss_system_prompt():
@@ -74,7 +75,7 @@ def test_boss_system_prompt():
         ), "Prompt should contain boss agent description"
         print("✓ System prompt generation successful")
     except Exception as e:
-        print(f"✗ System prompt generation failed: {str(e)}")
+        print(f"✗ System prompt generation failed: {e!s}")
 
 
 def test_find_agent_in_list():
@@ -93,7 +94,7 @@ def test_find_agent_in_list():
         ), "Should not find nonexistent agent"
         print("✓ Agent finding successful")
     except Exception as e:
-        print(f"✗ Agent finding failed: {str(e)}")
+        print(f"✗ Agent finding failed: {e!s}")
 
 
 def test_task_routing():
@@ -124,7 +125,7 @@ def test_task_routing():
         ), "Result should contain timing information"
         print("✓ Task routing successful")
     except Exception as e:
-        print(f"✗ Task routing failed: {str(e)}")
+        print(f"✗ Task routing failed: {e!s}")
 
 
 def test_batch_routing():
@@ -151,7 +152,7 @@ def test_batch_routing():
         ), "Should return result for each task"
         print("✓ Concurrent batch routing successful")
     except Exception as e:
-        print(f"✗ Batch routing failed: {str(e)}")
+        print(f"✗ Batch routing failed: {e!s}")
 
 
 def test_error_handling():
@@ -182,7 +183,7 @@ def test_error_handling():
         assert success, "Should handle empty task"
         print("✓ Invalid task handling successful")
     except Exception as e:
-        print(f"✗ Error handling failed: {str(e)}")
+        print(f"✗ Error handling failed: {e!s}")
 
 
 def run_all_tests():
@@ -207,7 +208,7 @@ def run_all_tests():
             passed_tests += 1
         except Exception as e:
             print(
-                f"Test {test_func.__name__} failed with error: {str(e)}"
+                f"Test {test_func.__name__} failed with error: {e!s}"
             )
 
     print(

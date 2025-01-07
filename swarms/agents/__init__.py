@@ -1,3 +1,7 @@
+from swarms.agents.create_agents_from_yaml import (
+    create_agents_from_yaml,
+)
+from swarms.agents.tool_agent import ToolAgent
 from swarms.structs.stopping_conditions import (
     check_cancelled,
     check_complete,
@@ -9,10 +13,6 @@ from swarms.structs.stopping_conditions import (
     check_finished,
     check_stopped,
     check_success,
-)
-from swarms.agents.tool_agent import ToolAgent
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
 )
 
 __all__ = [

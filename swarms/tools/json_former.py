@@ -1,17 +1,18 @@
 import json
-from typing import Any, Dict, List, Union
+from typing import Any, Optional, Union
 
-from swarms.utils.lazy_loader import lazy_import_decorator
 from pydantic import BaseModel
+from swarm_models.base_llm import BaseLLM
+
 from swarms.tools.logits_processor import (
     NumberStoppingCriteria,
     OutputNumbersTokens,
     StringStoppingCriteria,
 )
-from swarm_models.base_llm import BaseLLM
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
+from swarms.utils.lazy_loader import lazy_import_decorator
 
 try:
     import transformers
@@ -44,15 +45,15 @@ class Jsonformer:
         max_string_token_length (int, optional): The maximum length of a string token. Defaults to 10.
     """
 
-    value: Dict[str, Any] = {}
+    value: dict[str, Any] = {}
 
     def __init__(
         self,
         model: transformers.PreTrainedModel = None,  # type: ignore
         tokenizer: transformers.PreTrainedTokenizer = None,  # type: ignore
-        json_schema: Union[Dict[str, Any], BaseModel] = None,
-        schemas: List[Union[Dict[str, Any], BaseModel]] = [],
-        prompt: str = None,
+        json_schema: Union[dict[str, Any], BaseModel] = None,
+        schemas: list[Union[dict[str, Any], BaseModel]] = [],
+        prompt: Optional[str] = None,
         *,
         debug: bool = False,
         max_array_length: int = 10,
@@ -279,8 +280,8 @@ class Jsonformer:
             raise ValueError("Both LLM and model cannot be None")
 
     def generate_object(
-        self, properties: Dict[str, Any], obj: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, properties: dict[str, Any], obj: dict[str, Any]
+    ) -> dict[str, Any]:
         for key, schema in properties.items():
             self.debug("[generate_object] generating value for", key)
             obj[key] = self.generate_value(schema, obj, key)
@@ -288,8 +289,8 @@ class Jsonformer:
 
     def generate_value(
         self,
-        schema: Dict[str, Any],
-        obj: Union[Dict[str, Any], List[Any]],
+        schema: dict[str, Any],
+        obj: Union[dict[str, Any], list[Any]],
         key: Union[str, None] = None,
     ) -> Any:
         schema_type = schema["type"]
@@ -328,7 +329,7 @@ class Jsonformer:
             )
 
     def generate_array(
-        self, item_schema: Dict[str, Any], obj: Dict[str, Any]
+        self, item_schema: dict[str, Any], obj: dict[str, Any]
     ) -> list:
         if self.model:
             for _ in range(self.max_array_length):
@@ -416,7 +417,7 @@ class Jsonformer:
 
         return prompt
 
-    def __call__(self) -> Dict[str, Any]:
+    def __call__(self) -> dict[str, Any]:
         self.value = {}
         generated_data = self.generate_object(
             self.json_schema["properties"], self.value

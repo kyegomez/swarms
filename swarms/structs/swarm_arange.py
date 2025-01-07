@@ -1,7 +1,7 @@
 import threading
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.loguru_logger import initialize_logger
@@ -18,7 +18,7 @@ class SwarmArrangeInput:
     time_stamp: str = time.strftime("%Y-%m-%d %H:%M:%S")
     name: str
     description: str
-    swarms: List[Callable] = []
+    swarms: list[Callable] = []
     output_type: str
     flow: str = ""
 
@@ -60,8 +60,8 @@ class SwarmRearrange:
         id: str = swarm_id(),
         name: str = "SwarmRearrange",
         description: str = "A swarm of swarms for rearranging tasks.",
-        swarms: List[Any] = [],
-        flow: str = None,
+        swarms: list[Any] = [],
+        flow: Optional[str] = None,
         max_loops: int = 1,
         verbose: bool = True,
         human_in_the_loop: bool = False,
@@ -120,9 +120,7 @@ class SwarmRearrange:
             raise ValueError("Max loops must be a positive integer.")
 
         logger.info(
-            "SwarmRearrange initialized with swarms: {}".format(
-                list(self.swarms.keys())
-            )
+            f"SwarmRearrange initialized with swarms: {list(self.swarms.keys())}"
         )
 
     def set_custom_flow(self, flow: str):
@@ -155,7 +153,7 @@ class SwarmRearrange:
         """
         del self.swarms[swarm_name]
 
-    def add_swarms(self, swarms: List[Any]):
+    def add_swarms(self, swarms: list[Any]):
         """
         Adds multiple swarms to the swarm.
 
@@ -211,9 +209,9 @@ class SwarmRearrange:
 
     def run(
         self,
-        task: str = None,
-        img: str = None,
-        custom_tasks: Optional[Dict[str, str]] = None,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        custom_tasks: Optional[dict[str, str]] = None,
         *args,
         **kwargs,
     ):
@@ -356,10 +354,10 @@ class SwarmRearrange:
 def swarm_arrange(
     name: str = "SwarmArrange-01",
     description: str = "Combine multiple swarms and execute them sequentially",
-    swarms: List[Callable] = None,
+    swarms: Optional[list[Callable]] = None,
     output_type: str = "json",
-    flow: str = None,
-    task: str = None,
+    flow: Optional[str] = None,
+    task: Optional[str] = None,
     *args,
     **kwargs,
 ):

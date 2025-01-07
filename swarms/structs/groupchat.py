@@ -1,6 +1,6 @@
 import concurrent.futures
 from datetime import datetime
-from typing import Callable, List
+from typing import Callable
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -14,28 +14,28 @@ class AgentResponse(BaseModel):
     message: str
     timestamp: datetime = Field(default_factory=datetime.now)
     turn_number: int
-    preceding_context: List[str] = Field(default_factory=list)
+    preceding_context: list[str] = Field(default_factory=list)
 
 
 class ChatTurn(BaseModel):
     turn_number: int
-    responses: List[AgentResponse]
+    responses: list[AgentResponse]
     task: str
     timestamp: datetime = Field(default_factory=datetime.now)
 
 
 class ChatHistory(BaseModel):
-    turns: List[ChatTurn]
+    turns: list[ChatTurn]
     total_messages: int
     name: str
     description: str
     start_time: datetime = Field(default_factory=datetime.now)
 
 
-SpeakerFunction = Callable[[List[str], "Agent"], bool]
+SpeakerFunction = Callable[[list[str], "Agent"], bool]
 
 
-def round_robin(history: List[str], agent: Agent) -> bool:
+def round_robin(history: list[str], agent: Agent) -> bool:
     """
     Round robin speaker function.
     Each agent speaks in turn, in a circular order.
@@ -43,7 +43,7 @@ def round_robin(history: List[str], agent: Agent) -> bool:
     return True
 
 
-def expertise_based(history: List[str], agent: Agent) -> bool:
+def expertise_based(history: list[str], agent: Agent) -> bool:
     """
     Expertise based speaker function.
     An agent speaks if their system prompt is in the last message.
@@ -55,7 +55,7 @@ def expertise_based(history: List[str], agent: Agent) -> bool:
     )
 
 
-def random_selection(history: List[str], agent: Agent) -> bool:
+def random_selection(history: list[str], agent: Agent) -> bool:
     """
     Random selection speaker function.
     An agent speaks randomly.
@@ -65,7 +65,7 @@ def random_selection(history: List[str], agent: Agent) -> bool:
     return random.choice([True, False])
 
 
-def custom_speaker(history: List[str], agent: Agent) -> bool:
+def custom_speaker(history: list[str], agent: Agent) -> bool:
     """
     Custom speaker function with complex logic.
 
@@ -99,7 +99,7 @@ def custom_speaker(history: List[str], agent: Agent) -> bool:
     return expertise_relevant or mentioned or not_recent_speaker
 
 
-def most_recent(history: List[str], agent: Agent) -> bool:
+def most_recent(history: list[str], agent: Agent) -> bool:
     """
     Most recent speaker function.
     An agent speaks if they are the last speaker.
@@ -121,7 +121,7 @@ class GroupChat:
         self,
         name: str = "GroupChat",
         description: str = "A group chat for multiple agents",
-        agents: List[Agent] = [],
+        agents: list[Agent] = [],
         speaker_fn: SpeakerFunction = round_robin,
         max_loops: int = 10,
     ):
@@ -164,8 +164,8 @@ class GroupChat:
         try:
             # Provide the agent with information about the chat and other agents
             chat_info = f"Chat Name: {self.name}\nChat Description: {self.description}\nAgents in Chat: {[a.agent_name for a in self.agents]}"
-            context = f"""You are {agent.agent_name} 
-                        Conversation History: 
+            context = f"""You are {agent.agent_name}
+                        Conversation History:
                         \n{chat_info}
                         Other agents: {[a.agent_name for a in self.agents if a != agent]}
                         Previous messages: {self.get_full_chat_history()}
@@ -184,7 +184,7 @@ class GroupChat:
             return AgentResponse(
                 agent_name=agent.name,
                 role=agent.system_prompt,
-                message=f"Error generating response: {str(e)}",
+                message=f"Error generating response: {e!s}",
                 turn_number=turn_number,
                 preceding_context=[],
             )
@@ -204,7 +204,7 @@ class GroupChat:
                 )
         return "\n".join(messages)
 
-    def get_recent_messages(self, n: int = 3) -> List[str]:
+    def get_recent_messages(self, n: int = 3) -> list[str]:
         """
         Get the most recent messages in the chat.
 
@@ -262,7 +262,7 @@ class GroupChat:
             logger.error(f"Error in chat: {e}")
             raise e
 
-    def batched_run(self, tasks: List[str], *args, **kwargs):
+    def batched_run(self, tasks: list[str], *args, **kwargs):
         """
         Run the group chat with a batch of tasks.
 
@@ -274,7 +274,7 @@ class GroupChat:
         """
         return [self.run(task, *args, **kwargs) for task in tasks]
 
-    def concurrent_run(self, tasks: List[str], *args, **kwargs):
+    def concurrent_run(self, tasks: list[str], *args, **kwargs):
         """
         Run the group chat with a batch of tasks concurrently using a thread pool.
 

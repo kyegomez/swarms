@@ -1,8 +1,8 @@
 import platform
 import socket
-import psutil
 import uuid
-from typing import Dict
+
+import psutil
 import requests
 
 from swarms.utils.loguru_logger import initialize_logger
@@ -10,7 +10,7 @@ from swarms.utils.loguru_logger import initialize_logger
 logger = initialize_logger(log_folder="capture_sys_data")
 
 
-def capture_system_data() -> Dict[str, str]:
+def capture_system_data() -> dict[str, str]:
     """
     Captures extensive system data including platform information, user ID, IP address, CPU count,
     memory information, and other system details.

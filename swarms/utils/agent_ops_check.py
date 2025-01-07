@@ -1,5 +1,6 @@
-from swarms.utils.loguru_logger import logger
 import os
+
+from swarms.utils.loguru_logger import logger
 
 
 def try_import_agentops(*args, **kwargs):

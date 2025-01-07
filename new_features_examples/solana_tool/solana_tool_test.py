@@ -1,12 +1,11 @@
-from typing import List
-from datetime import datetime
 import json
+import random
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+
 import requests
 from loguru import logger
-from dataclasses import dataclass
-from datetime import timezone
-import time
-import random
 
 # Configure loguru logger
 logger.add(
@@ -43,7 +42,7 @@ class SolanaAPIException(Exception):
 class RPCEndpointManager:
     """Manages RPC endpoints and handles switching between them"""
 
-    def __init__(self, endpoints: List[str]):
+    def __init__(self, endpoints: list[str]):
         self.endpoints = endpoints.copy()
         self.current_endpoint = self.endpoints[0]
         self.last_request_time = 0
@@ -132,20 +131,20 @@ def make_request(
             requests.exceptions.ConnectionError,
         ) as e:
             logger.warning(
-                f"Connection error with {endpoint}: {str(e)}"
+                f"Connection error with {endpoint}: {e!s}"
             )
             endpoint_manager.switch_endpoint()
             continue
 
         except Exception as e:
             last_error = e
-            logger.warning(f"Request failed: {str(e)}")
+            logger.warning(f"Request failed: {e!s}")
             endpoint_manager.switch_endpoint()
             time.sleep(1)
             continue
 
     raise SolanaAPIException(
-        f"All retry attempts failed. Last error: {str(last_error)}"
+        f"All retry attempts failed. Last error: {last_error!s}"
     )
 
 
@@ -231,7 +230,7 @@ def fetch_wallet_transactions(
 
                 tx_data = make_request(endpoint_manager, tx_payload)
 
-                if "result" in tx_data and tx_data["result"]:
+                if tx_data.get("result"):
                     result = tx_data["result"]
                     enriched_tx = {
                         "signature": tx["signature"],
@@ -257,7 +256,7 @@ def fetch_wallet_transactions(
 
             except Exception as e:
                 logger.warning(
-                    f"Failed to process transaction {tx['signature']}: {str(e)}"
+                    f"Failed to process transaction {tx['signature']}: {e!s}"
                 )
                 continue
 
@@ -299,4 +298,4 @@ if __name__ == "__main__":
         result = fetch_wallet_transactions(wallet)
         print(result)
     except Exception as e:
-        logger.error(f"Failed to fetch transactions: {str(e)}")
+        logger.error(f"Failed to fetch transactions: {e!s}")

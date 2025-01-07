@@ -1,7 +1,7 @@
 import random
 from threading import Lock
 from time import sleep
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
@@ -44,7 +44,7 @@ class AgentLoadBalancer(BaseSwarm):
 
     def __init__(
         self,
-        agents: List[Agent],
+        agents: list[Agent],
         max_retries: int = 3,
         max_loops: int = 5,
         cooldown_time: float = 0,
@@ -188,7 +188,7 @@ class AgentLoadBalancer(BaseSwarm):
             )
             raise RuntimeError(f"Task failed: {e}")
 
-    def run_multiple_tasks(self, tasks: List[str]) -> List[str]:
+    def run_multiple_tasks(self, tasks: list[str]) -> list[str]:
         """
         Run multiple tasks using available agents.
 
@@ -205,7 +205,7 @@ class AgentLoadBalancer(BaseSwarm):
             results.append(result)
         return results
 
-    def run_task_with_loops(self, task: str) -> List[str]:
+    def run_task_with_loops(self, task: str) -> list[str]:
         """
         Run a task multiple times using an available agent.
 

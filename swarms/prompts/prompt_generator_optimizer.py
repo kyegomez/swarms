@@ -1,6 +1,5 @@
 from swarms.prompts.prompt import Prompt
 
-
 OPENAI_PROMPT_GENERATOR_SYS_PROMPT = """
 
 Given a task description or existing prompt, produce a detailed system prompt to guide a language model in completing the task effectively.

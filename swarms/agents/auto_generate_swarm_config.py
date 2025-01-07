@@ -96,8 +96,8 @@ GUIDELINES:
 4. When a swarm is needed, include a `swarm_architecture` section with:
    Mandatory fields:
    - name (string)
-   - swarm_type (string: "ConcurrentWorkflow" or "SequentialWorkflow") [AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]	
-   
+   - swarm_type (string: "ConcurrentWorkflow" or "SequentialWorkflow") [AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow]
+
    Optional fields:
    - description (string)
    - max_loops (integer)
@@ -173,7 +173,7 @@ swarm_architecture:
   swarm_type: "SequentialWorkflow"
   max_loops: 5
   task: "Research and analyze recent developments in quantum computing"
-  
+
 ```
 """
 
@@ -245,7 +245,7 @@ def generate_swarm_config(
 
         except Exception as e:
             formatter.print_panel(
-                f"Error generating swarm configuration: {str(e)}",
+                f"Error generating swarm configuration: {e!s}",
                 "Error",
             )
             raise

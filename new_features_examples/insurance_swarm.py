@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 from swarms import Agent
 
@@ -22,11 +22,11 @@ class InsuranceProduct:
     name: str
     type: InsuranceType
     description: str
-    coverage: List[str]
+    coverage: list[str]
     price_range: str
     min_coverage: float
     max_coverage: float
-    payment_options: List[str]
+    payment_options: list[str]
     waiting_period: str
     available: bool
 
@@ -137,7 +137,7 @@ class InsuranceBot:
         self.agent = Agent(
             agent_name="LATAM-Insurance-Agent",
             system_prompt="""You are a specialized insurance assistant for Latin America's leading insurance provider.
-            
+
 Key Responsibilities:
 1. Product Information:
    - Explain our comprehensive insurance portfolio
@@ -150,7 +150,7 @@ Key Responsibilities:
    - Handle claims information
    - Assist with payment options
    - Locate nearest offices
-   
+
 3. Cultural Considerations:
    - Communicate in Spanish and Portuguese
    - Understand LATAM insurance regulations
@@ -179,7 +179,7 @@ When discussing products, always reference accurate prices, coverage amounts, an
                     # Use agent to provide personalized product recommendations
                     return await self.agent.run(
                         """Por favor ayude al cliente a elegir un producto:
-                    
+
 Productos disponibles:
 - AUTO001: Seguro Auto Total
 - LIFE001: Vida Protegida Plus
@@ -290,7 +290,7 @@ Explique brevemente cada uno y solicite información sobre sus necesidades espec
         Estado: {'Disponible' if product.available else 'No disponible'}
         """
 
-    def handle_main_menu(self) -> List[str]:
+    def handle_main_menu(self) -> list[str]:
         """Return main menu options"""
         return [
             "1. Consultar productos de seguro",

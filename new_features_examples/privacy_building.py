@@ -1,6 +1,8 @@
 import os
-from swarms import Agent, AgentRearrange
+
 from swarm_models import OpenAIChat
+
+from swarms import Agent, AgentRearrange
 
 # Get the OpenAI API key from the environment variable
 api_key = os.getenv("OPENAI_API_KEY")
@@ -27,7 +29,7 @@ matchmaker_agent = Agent(
             - Personal identification numbers
             - Workplace specifics
         </restricted_information>
-        
+
         <shareable_information>
             - First name only
             - Age range (not exact birth date)
@@ -97,7 +99,7 @@ profile_analyzer = Agent(
                 - Access logs must be maintained
                 - Data retention policies must be followed
             </storage>
-            
+
             <processing>
                 - Use anonymized IDs for internal processing
                 - Apply privacy-preserving analysis techniques
@@ -113,7 +115,7 @@ profile_analyzer = Agent(
                 - Lifestyle compatibility
                 - Communication style matching
             </compatibility_metrics>
-            
+
             <red_flags>
                 - Inconsistent information
                 - Suspicious behavior patterns
@@ -220,9 +222,9 @@ connection_facilitator = Agent(
 
 # Swarm-Level Prompt (Collaboration Prompt)
 swarm_prompt = """
-    As a dating platform swarm, your collective goal is to facilitate meaningful connections while maintaining 
-    the highest standards of privacy and safety. The MatchmakerAgent oversees the entire matching process, 
-    coordinating between the ProfileAnalyzer who deeply understands user compatibility, and the ConnectionFacilitator 
+    As a dating platform swarm, your collective goal is to facilitate meaningful connections while maintaining
+    the highest standards of privacy and safety. The MatchmakerAgent oversees the entire matching process,
+    coordinating between the ProfileAnalyzer who deeply understands user compatibility, and the ConnectionFacilitator
     who manages the development of connections. Together, you must ensure that:
 
     1. User privacy is maintained at all times
@@ -252,9 +254,9 @@ agent_system = AgentRearrange(
 # Example task for the swarm
 task = f"""
     {swarm_prompt}
-    
-    Process a new batch of user profiles and identify potential matches while ensuring all privacy protocols 
-    are followed. For each potential match, provide compatibility reasoning and suggested conversation 
+
+    Process a new batch of user profiles and identify potential matches while ensuring all privacy protocols
+    are followed. For each potential match, provide compatibility reasoning and suggested conversation
     starters without revealing any restricted information.
 """
 

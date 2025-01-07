@@ -1,5 +1,5 @@
 import math
-from typing import List, Union
+from typing import Union
 
 from pydantic import BaseModel
 
@@ -18,7 +18,7 @@ class AgentLog(BaseModel):
 
 
 class Conversation(BaseModel):
-    logs: List[AgentLog] = []
+    logs: list[AgentLog] = []
 
     def add_log(
         self, agent_name: str, task: str, response: str
@@ -46,9 +46,9 @@ class Conversation(BaseModel):
 
 def circular_swarm(
     agents: AgentListType,
-    tasks: List[str],
+    tasks: list[str],
     return_full_history: bool = True,
-) -> Union[dict, List[str]]:
+) -> Union[dict, list[str]]:
     """
     Implements a circular swarm where agents pass tasks in a circular manner.
 
@@ -89,7 +89,7 @@ def circular_swarm(
         return responses
 
 
-def grid_swarm(agents: AgentListType, tasks: List[str]):
+def grid_swarm(agents: AgentListType, tasks: list[str]):
     grid_size = int(
         len(agents) ** 0.5
     )  # Assuming agents can form a perfect square grid
@@ -103,9 +103,9 @@ def grid_swarm(agents: AgentListType, tasks: List[str]):
 # Linear Swarm: Agents process tasks in a sequential linear manner
 def linear_swarm(
     agents: AgentListType,
-    tasks: List[str],
+    tasks: list[str],
     return_full_history: bool = True,
-) -> Union[str, List[str]]:
+) -> Union[str, list[str]]:
     if not agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
@@ -133,9 +133,9 @@ def linear_swarm(
 # Star Swarm: A central agent first processes all tasks, followed by others
 def star_swarm(
     agents: AgentListType,
-    tasks: List[str],
+    tasks: list[str],
     return_full_history: bool = True,
-) -> Union[str, List[str]]:
+) -> Union[str, list[str]]:
     if not agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
@@ -173,9 +173,9 @@ def star_swarm(
 # Mesh Swarm: Agents work on tasks randomly from a task queue until all tasks are processed
 def mesh_swarm(
     agents: AgentListType,
-    tasks: List[str],
+    tasks: list[str],
     return_full_history: bool = True,
-) -> Union[str, List[str]]:
+) -> Union[str, list[str]]:
     if not agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
@@ -205,9 +205,9 @@ def mesh_swarm(
 # Pyramid Swarm: Agents are arranged in a pyramid structure
 def pyramid_swarm(
     agents: AgentListType,
-    tasks: List[str],
+    tasks: list[str],
     return_full_history: bool = True,
-) -> Union[str, List[str]]:
+) -> Union[str, list[str]]:
     if not agents or not tasks:
         raise ValueError("Agents and tasks lists cannot be empty.")
 
@@ -238,7 +238,7 @@ def pyramid_swarm(
     )
 
 
-def fibonacci_swarm(agents: AgentListType, tasks: List[str]):
+def fibonacci_swarm(agents: AgentListType, tasks: list[str]):
     fib = [1, 1]
     while len(fib) < len(agents):
         fib.append(fib[-1] + fib[-2])
@@ -249,7 +249,7 @@ def fibonacci_swarm(agents: AgentListType, tasks: List[str]):
                 agents[int(sum(fib[:i]) + j)].run(task)
 
 
-def prime_swarm(agents: AgentListType, tasks: List[str]):
+def prime_swarm(agents: AgentListType, tasks: list[str]):
     primes = [
         2,
         3,
@@ -283,7 +283,7 @@ def prime_swarm(agents: AgentListType, tasks: List[str]):
             agents[prime].run(task)
 
 
-def power_swarm(agents: List[str], tasks: List[str]):
+def power_swarm(agents: list[str], tasks: list[str]):
     powers = [2**i for i in range(int(len(agents) ** 0.5))]
     for power in powers:
         if power < len(agents) and tasks:
@@ -291,14 +291,14 @@ def power_swarm(agents: List[str], tasks: List[str]):
             agents[power].run(task)
 
 
-def log_swarm(agents: AgentListType, tasks: List[str]):
+def log_swarm(agents: AgentListType, tasks: list[str]):
     for i in range(len(agents)):
         if 2**i < len(agents) and tasks:
             task = tasks.pop(0)
             agents[2**i].run(task)
 
 
-def exponential_swarm(agents: AgentListType, tasks: List[str]):
+def exponential_swarm(agents: AgentListType, tasks: list[str]):
     for i in range(len(agents)):
         index = min(int(2**i), len(agents) - 1)
         if tasks:
@@ -315,7 +315,7 @@ def geometric_swarm(agents, tasks):
             agents[index].run(task)
 
 
-def harmonic_swarm(agents: AgentListType, tasks: List[str]):
+def harmonic_swarm(agents: AgentListType, tasks: list[str]):
     for i in range(1, len(agents) + 1):
         index = min(int(len(agents) / i), len(agents) - 1)
         if tasks:

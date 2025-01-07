@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Literal, Union
+from typing import Any, Callable, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -13,10 +13,10 @@ from swarms.structs.rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
+from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -46,8 +46,8 @@ class SwarmLog(BaseModel):
     message: str
     swarm_type: SwarmType
     task: str = ""
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    documents: List[Document] = []
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    documents: list[Document] = []
 
 
 class SwarmRouter:
@@ -126,15 +126,15 @@ class SwarmRouter:
         name: str = "swarm-router",
         description: str = "Routes your task to the desired swarm",
         max_loops: int = 1,
-        agents: List[Union[Agent, Callable]] = [],
+        agents: list[Union[Agent, Callable]] = [],
         swarm_type: SwarmType = "SequentialWorkflow",  # "SpreadSheetSwarm" # "auto"
         autosave: bool = False,
-        rearrange_flow: str = None,
+        rearrange_flow: Optional[str] = None,
         return_json: bool = False,
         auto_generate_prompts: bool = False,
         shared_memory_system: Any = None,
-        rules: str = None,
-        documents: List[str] = [],  # A list of docs file paths
+        rules: Optional[str] = None,
+        documents: list[str] = [],  # A list of docs file paths
         output_type: str = "string",  # Md, PDF, Txt, csv
         no_cluster_ops: bool = False,
         *args,
@@ -220,7 +220,7 @@ class SwarmRouter:
             )
 
         except Exception as e:
-            error_msg = f"Error activating automatic prompt engineering: {str(e)}"
+            error_msg = f"Error activating automatic prompt engineering: {e!s}"
             logger.error(error_msg)
             self._log("error", error_msg)
             raise RuntimeError(error_msg) from e
@@ -241,7 +241,7 @@ class SwarmRouter:
         )
 
     def _create_swarm(
-        self, task: str = None, *args, **kwargs
+        self, task: Optional[str] = None, *args, **kwargs
     ) -> Union[
         AgentRearrange,
         MixtureOfAgents,
@@ -338,7 +338,7 @@ class SwarmRouter:
         level: str,
         message: str,
         task: str = "",
-        metadata: Dict[str, Any] = None,
+        metadata: Optional[dict[str, Any]] = None,
     ):
         """
         Create a log entry and add it to the logs list.
@@ -394,7 +394,7 @@ class SwarmRouter:
         except Exception as e:
             self._log(
                 "error",
-                f"Error occurred while running task on {self.swarm_type} swarm: {str(e)}",
+                f"Error occurred while running task on {self.swarm_type} swarm: {e!s}",
                 task=task,
                 metadata={"error": str(e)},
             )
@@ -403,7 +403,7 @@ class SwarmRouter:
     def run(
         self,
         task: str,
-        img: str = None,
+        img: Optional[str] = None,
         device: str = "cpu",
         all_cores: bool = True,
         all_gpus: bool = False,
@@ -442,7 +442,7 @@ class SwarmRouter:
                     **kwargs,
                 )
         except Exception as e:
-            logger.error(f"Error executing task on swarm: {str(e)}")
+            logger.error(f"Error executing task on swarm: {e!s}")
             raise
 
     def __call__(self, task: str, *args, **kwargs) -> Any:
@@ -460,8 +460,8 @@ class SwarmRouter:
         return self.run(task=task, *args, **kwargs)
 
     def batch_run(
-        self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
+        self, tasks: list[str], *args, **kwargs
+    ) -> list[Any]:
         """
         Execute a batch of tasks on the selected or matched swarm type.
 
@@ -484,7 +484,7 @@ class SwarmRouter:
             except Exception as e:
                 self._log(
                     "error",
-                    f"Error occurred while running batch task on {self.swarm_type} swarm: {str(e)}",
+                    f"Error occurred while running batch task on {self.swarm_type} swarm: {e!s}",
                     task=task,
                     metadata={"error": str(e)},
                 )
@@ -515,7 +515,7 @@ class SwarmRouter:
             except Exception as e:
                 self._log(
                     "error",
-                    f"Error occurred while running task in thread on {self.swarm_type} swarm: {str(e)}",
+                    f"Error occurred while running task in thread on {self.swarm_type} swarm: {e!s}",
                     task=task,
                     metadata={"error": str(e)},
                 )
@@ -552,7 +552,7 @@ class SwarmRouter:
             except Exception as e:
                 self._log(
                     "error",
-                    f"Error occurred while running task asynchronously on {self.swarm_type} swarm: {str(e)}",
+                    f"Error occurred while running task asynchronously on {self.swarm_type} swarm: {e!s}",
                     task=task,
                     metadata={"error": str(e)},
                 )
@@ -560,7 +560,7 @@ class SwarmRouter:
 
         return asyncio.run(run_async())
 
-    def get_logs(self) -> List[SwarmLog]:
+    def get_logs(self) -> list[SwarmLog]:
         """
         Retrieve all logged entries.
 
@@ -592,8 +592,8 @@ class SwarmRouter:
             return result
 
     def concurrent_batch_run(
-        self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
+        self, tasks: list[str], *args, **kwargs
+    ) -> list[Any]:
         """
         Execute a batch of tasks on the selected or matched swarm type concurrently.
 
@@ -627,7 +627,7 @@ class SwarmRouter:
                     result = future.result()
                     results.append(result)
                 except Exception as e:
-                    logger.error(f"Task execution failed: {str(e)}")
+                    logger.error(f"Task execution failed: {e!s}")
                     results.append(None)
 
         return results
@@ -637,14 +637,14 @@ def swarm_router(
     name: str = "swarm-router",
     description: str = "Routes your task to the desired swarm",
     max_loops: int = 1,
-    agents: List[Union[Agent, Callable]] = [],
+    agents: list[Union[Agent, Callable]] = [],
     swarm_type: SwarmType = "SequentialWorkflow",  # "SpreadSheetSwarm" # "auto"
     autosave: bool = False,
-    flow: str = None,
+    flow: Optional[str] = None,
     return_json: bool = True,
     auto_generate_prompts: bool = False,
-    task: str = None,
-    rules: str = None,
+    task: Optional[str] = None,
+    rules: Optional[str] = None,
     *args,
     **kwargs,
 ) -> SwarmRouter:
@@ -707,9 +707,9 @@ def swarm_router(
 
     except ValueError as e:
         logger.error(
-            f"Invalid arguments provided to swarm_router: {str(e)}"
+            f"Invalid arguments provided to swarm_router: {e!s}"
         )
         raise
     except Exception as e:
-        logger.error(f"Error in swarm_router execution: {str(e)}")
+        logger.error(f"Error in swarm_router execution: {e!s}")
         raise

@@ -1,6 +1,7 @@
-from multiprocessing import Manager, Pool, cpu_count
-from typing import Sequence, Union, Callable, List
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Manager, Pool, cpu_count
+from typing import Callable, Optional, Union
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_workflow import BaseWorkflow
@@ -52,7 +53,7 @@ class MultiProcessWorkflow(BaseWorkflow):
         self,
         max_workers: int = 5,
         autosave: bool = True,
-        agents: Sequence[Union[Agent, Callable]] = None,
+        agents: Optional[Sequence[Union[Agent, Callable]]] = None,
         *args,
         **kwargs,
     ):
@@ -101,7 +102,7 @@ class MultiProcessWorkflow(BaseWorkflow):
             logger.error(
                 (
                     "An error occurred during execution of task"
-                    f" {task}: {str(e)}"
+                    f" {task}: {e!s}"
                 ),
             )
             return None
@@ -129,8 +130,7 @@ class MultiProcessWorkflow(BaseWorkflow):
                     jobs = [
                         pool.apply_async(
                             self.execute_task,  # Pass the function, not the function call
-                            args=(task,)
-                            + args,  # Pass the arguments as a tuple
+                            args=(task, *args),  # Pass the arguments as a tuple
                             kwds=kwargs,  # Pass the keyword arguments as a dictionary
                             callback=results_list.append,
                             timeout=task.timeout,
@@ -182,7 +182,7 @@ class MultiProcessWorkflow(BaseWorkflow):
             return None
 
     def batched_run(
-        self, tasks: List[str], batch_size: int = 5, *args, **kwargs
+        self, tasks: list[str], batch_size: int = 5, *args, **kwargs
     ):
         """Run tasks in batches.
 
@@ -211,7 +211,7 @@ class MultiProcessWorkflow(BaseWorkflow):
             logger.error(f"Error in batched_run: {error}")
             return None
 
-    def concurrent_run(self, tasks: List[str], *args, **kwargs):
+    def concurrent_run(self, tasks: list[str], *args, **kwargs):
         """Run tasks concurrently.
 
         Args:

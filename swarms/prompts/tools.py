@@ -63,17 +63,17 @@ def tool_sop_prompt() -> str:
     return """
 
 
-    You've been granted tools to assist users by always providing outputs in JSON format for tool usage. 
-    Whenever a tool usage is required, you must output the JSON wrapped inside markdown for clarity. 
+    You've been granted tools to assist users by always providing outputs in JSON format for tool usage.
+    Whenever a tool usage is required, you must output the JSON wrapped inside markdown for clarity.
     Provide a commentary on the tool usage and the user's request and ensure that the JSON output adheres to the tool's schema.
-    
+
     Here are some rules:
     Do not ever use tools that do not have JSON schemas attached to them.
     Do not use tools that you have not been granted access to.
     Do not use tools that are not relevant to the task at hand.
     Do not use tools that are not relevant to the user's request.
-    
-    
+
+
     Here are the guidelines you must follow:
 
     1. **Output Format**:

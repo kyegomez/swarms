@@ -1,14 +1,13 @@
-from typing import List, Optional
+from typing import Any, Callable, Optional, Union
 
 from tenacity import retry, stop_after_attempt, wait_exponential
-from typing import Union, Callable, Any
+
 from swarms import Agent
-from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.lazy_loader import lazy_import_decorator
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
-
+from swarms.utils.lazy_loader import lazy_import_decorator
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="agent_router")
 
@@ -49,7 +48,7 @@ class AgentRouter:
         self.collection = self.client.create_collection(
             collection_name
         )
-        self.agents: List[Agent] = []
+        self.agents: list[Agent] = []
 
     @retry(
         stop=stop_after_attempt(3),
@@ -78,12 +77,12 @@ class AgentRouter:
             )
         except Exception as e:
             logger.error(
-                f"Error adding agent {agent.name} to the vector database: {str(e)}"
+                f"Error adding agent {agent.name} to the vector database: {e!s}"
             )
             raise
 
     def add_agents(
-        self, agents: List[Union[Agent, Callable, Any]]
+        self, agents: list[Union[Agent, Callable, Any]]
     ) -> None:
         """
         Add multiple agents to the vector database.
@@ -177,7 +176,7 @@ class AgentRouter:
 
             return None
         except Exception as e:
-            logger.error(f"Error finding best agent: {str(e)}")
+            logger.error(f"Error finding best agent: {e!s}")
             raise
 
 

@@ -1,6 +1,5 @@
 from swarms import Agent
 
-
 # Claims Processing Agent system prompt
 CLAIMS_PROCESSING_AGENT_SYS_PROMPT = """
 Here's an extended and detailed system prompt for the **Claims Processing Agent**, incorporating reasoning steps, output format, and examples for structured responses:

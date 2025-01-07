@@ -1,12 +1,13 @@
+import os
 import queue
 import threading
-from typing import List
-from swarms.structs.agent import Agent
-from pydantic import BaseModel
-import os
-from swarms.utils.loguru_logger import logger
-from swarms.structs.base_swarm import BaseSwarm
 import time
+
+from pydantic import BaseModel
+
+from swarms.structs.agent import Agent
+from swarms.structs.base_swarm import BaseSwarm
+from swarms.utils.loguru_logger import logger
 
 
 class AgentOutput(BaseModel):
@@ -20,11 +21,11 @@ class SwarmRunMetadata(BaseModel):
     run_id: str
     name: str
     description: str
-    agents: List[str]
+    agents: list[str]
     start_time: str
     end_time: str
     tasks_completed: int
-    outputs: List[AgentOutput]
+    outputs: list[AgentOutput]
 
 
 class TaskQueueSwarm(BaseSwarm):
@@ -55,7 +56,7 @@ class TaskQueueSwarm(BaseSwarm):
 
     def __init__(
         self,
-        agents: List[Agent],
+        agents: list[Agent],
         name: str = "Task-Queue-Swarm",
         description: str = "A swarm that processes tasks from a queue using multiple agents on different threads.",
         autosave_on: bool = True,

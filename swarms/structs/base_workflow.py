@@ -1,10 +1,10 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
-from swarms.utils.formatter import formatter
 from swarms.structs.agent import Agent
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.task import Task
+from swarms.utils.formatter import formatter
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger("base-workflow")
@@ -42,9 +42,9 @@ class BaseWorkflow(BaseStructure):
 
     def __init__(
         self,
-        agents: List[Agent] = None,
-        task_pool: List[Task] = None,
-        models: List[Any] = None,
+        agents: Optional[list[Agent]] = None,
+        task_pool: Optional[list[Task]] = None,
+        models: Optional[list[Any]] = None,
         *args,
         **kwargs,
     ):
@@ -70,7 +70,7 @@ class BaseWorkflow(BaseStructure):
     def add_task(
         self,
         task: Task = None,
-        tasks: List[Task] = None,
+        tasks: Optional[list[Task]] = None,
         *args,
         **kwargs,
     ):
@@ -136,7 +136,7 @@ class BaseWorkflow(BaseStructure):
             )
             raise error
 
-    def get_task_results(self) -> Dict[str, Any]:
+    def get_task_results(self) -> dict[str, Any]:
         """
         Returns the results of each task in the workflow.
 
@@ -307,7 +307,7 @@ class BaseWorkflow(BaseStructure):
             raise error
 
     def load_workflow_state(
-        self, filepath: str = None, **kwargs
+        self, filepath: Optional[str] = None, **kwargs
     ) -> None:
         """
         Loads the workflow state from a json file and restores the workflow state.

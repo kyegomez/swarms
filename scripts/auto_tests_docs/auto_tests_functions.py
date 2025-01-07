@@ -4,9 +4,9 @@ import sys
 import threading
 
 from dotenv import load_dotenv
+from swarm_models import OpenAIChat
 
 from scripts.auto_tests_docs.docs import TEST_WRITER_SOP_PROMPT
-from swarm_models import OpenAIChat
 from swarms.utils.parse_code import extract_code_from_markdown
 
 load_dotenv()

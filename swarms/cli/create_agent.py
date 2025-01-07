@@ -39,5 +39,5 @@ def run_agent_by_name(
 
         return output
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        print(f"An error occurred: {e!s}")
         return None

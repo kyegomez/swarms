@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import Mock, patch
-from swarms.structs.mixture_of_agents import MixtureOfAgents
-from swarms.structs.agent import Agent
+
+import pytest
 from swarms_memory import BaseVectorDatabase
+
+from swarms.structs.agent import Agent
+from swarms.structs.mixture_of_agents import MixtureOfAgents
 
 
 def test_init():

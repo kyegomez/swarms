@@ -1,7 +1,9 @@
-from unittest.mock import MagicMock
 import unittest
+from unittest.mock import MagicMock
+
 from swarms.structs.agent import Agent
-from swarms.tools.tool_parse_exec import parse_and_execute_json
+
+# from swarms.tools.tool_parse_exec import parse_and_execute_json
 
 # Mock parse_and_execute_json for testing
 parse_and_execute_json = MagicMock()

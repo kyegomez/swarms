@@ -2,7 +2,7 @@ import json
 import os
 import time
 import uuid
-from typing import Any, Callable, List
+from typing import Any, Callable
 
 from pydantic import (
     BaseModel,
@@ -64,7 +64,7 @@ class Prompt(BaseModel):
         default=0,
         description="The number of times the prompt has been edited",
     )
-    edit_history: List[str] = Field(
+    edit_history: list[str] = Field(
         default_factory=list,
         description="The history of edits, storing all prompt versions",
     )
@@ -227,7 +227,7 @@ class Prompt(BaseModel):
             "Persistent storage integration is required."
         )
 
-    def add_tools(self, tools: List[Callable]) -> str:
+    def add_tools(self, tools: list[Callable]) -> str:
         tools_prompt = BaseTool(
             tools=tools, tool_system_prompt=None
         ).convert_tool_into_openai_schema()

@@ -1,10 +1,10 @@
 import os
 
-from swarm_models import OpenAIChat
-from swarms import Agent
-from fluid_api_agent.main import fluid_api_request
 from dotenv import load_dotenv
+from fluid_api_agent.main import fluid_api_request
+from swarm_models import OpenAIChat
 
+from swarms import Agent
 
 load_dotenv()
 
@@ -82,9 +82,9 @@ def omni_api(task: str) -> str:
 
 # Define the system prompt tailored for the API expert
 API_AGENT_SYS_PROMPT = """
-You are a highly specialized financial API expert. 
-Your expertise lies in analyzing financial data, making investment recommendations, and 
-interacting with APIs to retrieve, process, and present data effectively. 
+You are a highly specialized financial API expert.
+Your expertise lies in analyzing financial data, making investment recommendations, and
+interacting with APIs to retrieve, process, and present data effectively.
 You use tools like 'omni_api' to fetch data dynamically, ensuring accuracy and up-to-date results.
 
 Instructions:

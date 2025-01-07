@@ -1,9 +1,10 @@
-import requests
 import datetime
-from typing import List, Dict, Tuple
+
+import requests
 from loguru import logger
-from swarms import Agent
 from swarm_models import OpenAIChat
+
+from swarms import Agent
 
 # GitHub API Configurations
 GITHUB_REPO = "kyegomez/swarms"  # Swarms GitHub repository
@@ -22,7 +23,7 @@ logger.add(
 # Step 1: Fetch the latest commits from GitHub
 def fetch_latest_commits(
     repo_url: str, limit: int = 5
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Fetch the latest commits from a public GitHub repository.
     """
@@ -57,8 +58,8 @@ def fetch_latest_commits(
 
 # Step 2: Format commits and fetch current time
 def format_commits_with_time(
-    commits: List[Dict[str, str]]
-) -> Tuple[str, str]:
+    commits: list[dict[str, str]]
+) -> tuple[str, str]:
     """
     Format commit data into a readable string and return current time.
     """
@@ -94,7 +95,7 @@ The current time is **{current_time}**.
 Here are the latest commits:
 {commit_summary}
 
-**Your task**: 
+**Your task**:
 1. Summarize the changes into a clear and concise table in **markdown format**.
 2. Highlight the key improvements and fixes.
 3. End your output with the token `<DONE>`.

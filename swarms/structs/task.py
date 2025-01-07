@@ -2,14 +2,19 @@ import json
 import sched
 import time
 from datetime import datetime
-from typing import Any, Callable, ClassVar, Dict, List, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Optional,
+    Union,
+)
 
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
-from typing import Optional
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="task")
@@ -58,15 +63,15 @@ class Task(BaseModel):
     """
 
     name: Optional[str] = "Task"
-    description: Optional[str] = (
-        "A task is a unit of work that needs to be completed for a workflow to progress."
-    )
+    description: Optional[
+        str
+    ] = "A task is a unit of work that needs to be completed for a workflow to progress."
     agent: Optional[Union[Callable, Agent, AgentType]] = Field(
         None,
         description="Agent or callable object to run the task",
     )
     result: Optional[Any] = None
-    history: List[Any] = Field(default_factory=list)
+    history: list[Any] = Field(default_factory=list)
     schedule_time: Optional[datetime] = Field(
         None,
         description="Time to schedule the task",
@@ -90,16 +95,16 @@ class Task(BaseModel):
         0.4,
         description="Priority of the task",
     )
-    dependencies: List["Task"] = Field(default_factory=list)
-    args: List[Any] = Field(default_factory=list)
-    kwargs: Dict[str, Any] = Field(default_factory=dict)
+    dependencies: list["Task"] = Field(default_factory=list)
+    args: list[Any] = Field(default_factory=list)
+    kwargs: dict[str, Any] = Field(default_factory=dict)
 
     class Config:
         arbitrary_types_allowed = True
 
         # We need to check that the agent exists
 
-    def step(self, task: str = None, *args, **kwargs):
+    def step(self, task: Optional[str] = None, *args, **kwargs):
         """
         Execute the task by calling the agent or model with the arguments and
         keyword arguments. You can add images to the agent by passing the
@@ -171,7 +176,7 @@ class Task(BaseModel):
         else:
             logger.info(f"Task {task} is not triggered")
 
-    def run(self, task: str = None, *args, **kwargs):
+    def run(self, task: Optional[str] = None, *args, **kwargs):
         now = datetime.now()
 
         # If the task is scheduled for the future, schedule it
@@ -290,7 +295,7 @@ class Task(BaseModel):
     def context(
         self,
         task: "Task" = None,
-        context: List["Task"] = None,
+        context: Optional[list["Task"]] = None,
         *args,
         **kwargs,
     ):
@@ -366,7 +371,7 @@ class Task(BaseModel):
         Returns:
             Task: The task loaded from the file.
         """
-        with open(file_path, "r") as file:
+        with open(file_path) as file:
             task_dict = json.load(file)
             return Task(**task_dict)
 

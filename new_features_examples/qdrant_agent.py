@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -59,8 +59,8 @@ class QdrantMemory:
     def add(
         self,
         text: str,
-        embedding: List[float],
-        metadata: Optional[Dict] = None,
+        embedding: list[float],
+        metadata: Optional[dict] = None,
     ) -> str:
         """Add a memory to the store.
 
@@ -95,10 +95,10 @@ class QdrantMemory:
 
     def query(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         limit: int = 5,
         score_threshold: float = 0.7,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Query memories based on vector similarity.
 
         Args:

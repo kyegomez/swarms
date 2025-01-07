@@ -1,4 +1,6 @@
 from functools import wraps
+from typing import Optional
+
 from swarms.tools.py_func_to_openai_func_str import (
     get_openai_function_schema_from_func,
 )
@@ -6,8 +8,8 @@ from swarms.utils.loguru_logger import logger
 
 
 def tool(
-    name: str = None,
-    description: str = None,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
     return_dict: bool = True,
     verbose: bool = True,
     return_string: bool = False,
@@ -68,12 +70,12 @@ def tool(
 
             except AssertionError as e:
                 # Log the assertion error
-                logger.error(f"Assertion error: {str(e)}")
+                logger.error(f"Assertion error: {e!s}")
                 raise
 
             except Exception as e:
                 # Log the exception
-                logger.error(f"Exception occurred: {str(e)}")
+                logger.error(f"Exception occurred: {e!s}")
                 raise
 
         return wrapper

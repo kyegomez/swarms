@@ -1,12 +1,14 @@
+from typing import Callable
+
 from pydantic.v1 import BaseModel
-from typing import List, Callable
+
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="swarm_registry")
 
 
 class SwarmRegistry(BaseModel):
-    swarm_pool: List[Callable] = []
+    swarm_pool: list[Callable] = []
 
     def add(self, swarm: Callable, *args, **kwargs):
         """
@@ -67,7 +69,7 @@ class SwarmRegistry(BaseModel):
             f"Swarm '{swarm_name}' not found in registry."
         )
 
-    def list_swarms(self) -> List[str]:
+    def list_swarms(self) -> list[str]:
         """
         Lists the names of all swarms in the registry.
 
@@ -106,7 +108,7 @@ class SwarmRegistry(BaseModel):
         swarm = self.query(swarm_name)
         return swarm(*args, **kwargs)
 
-    def add_list_of_swarms(self, swarms: List[Callable]):
+    def add_list_of_swarms(self, swarms: list[Callable]):
         """
         Adds a list of swarms to the registry.
 
@@ -119,8 +121,8 @@ class SwarmRegistry(BaseModel):
         return self.swarm_pool
 
     def query_multiple_of_swarms(
-        self, swarm_names: List[str]
-    ) -> List[Callable]:
+        self, swarm_names: list[str]
+    ) -> list[Callable]:
         """
         Queries the registry for multiple swarms by name.
 
@@ -132,7 +134,7 @@ class SwarmRegistry(BaseModel):
         """
         return [self.query(swarm_name) for swarm_name in swarm_names]
 
-    def remove_list_of_swarms(self, swarm_names: List[str]):
+    def remove_list_of_swarms(self, swarm_names: list[str]):
         """
         Removes a list of swarms from the registry by name.
 
@@ -145,7 +147,7 @@ class SwarmRegistry(BaseModel):
         return self.swarm_pool
 
     def run_multiple_of_swarms(
-        self, swarm_names: List[str], *args, **kwargs
+        self, swarm_names: list[str], *args, **kwargs
     ):
         """
         Runs a list of swarms by name with the given arguments.

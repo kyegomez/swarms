@@ -1,6 +1,6 @@
 import pytest
-
 from swarm_models import OpenAIChat
+
 from swarms.structs.agent import Agent
 from swarms.structs.company import Company
 

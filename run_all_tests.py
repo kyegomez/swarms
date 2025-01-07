@@ -1,7 +1,8 @@
+import logging
 import os
 import subprocess
-import logging
 import time
+
 import psutil
 
 # Configure logging

@@ -9,7 +9,7 @@ portfolio_analyzer = Agent(
     - Assessment of fund composition and strategy alignment
     - Risk-adjusted return analysis
     - Tax efficiency considerations
-    
+
     For each portfolio analysis:
     1. Evaluate fund characteristics and performance metrics
     2. Analyze expense ratios and fee structures
@@ -17,7 +17,7 @@ portfolio_analyzer = Agent(
     4. Compare funds within same category
     5. Consider tax implications
     6. Review fund manager track record and strategy consistency
-    
+
     Maintain focus on cost-efficiency and alignment with investment objectives.""",
     model_name="gpt-4o",
     max_loops=1,
@@ -37,7 +37,7 @@ allocation_strategist = Agent(
     - Geographic and sector diversification
     - Rebalancing strategy development
     - Portfolio optimization using modern portfolio theory
-    
+
     For each allocation:
     1. Analyze investor risk tolerance and objectives
     2. Develop appropriate asset class weights
@@ -45,7 +45,7 @@ allocation_strategist = Agent(
     4. Design rebalancing triggers and schedules
     5. Consider tax-efficient fund placement
     6. Account for correlation between assets
-    
+
     Focus on creating well-diversified portfolios aligned with client goals and risk tolerance.""",
     model_name="gpt-4o",
     max_loops=1,
@@ -65,7 +65,7 @@ risk_manager = Agent(
     - Correlation analysis between funds
     - Stress testing and scenario analysis
     - Market condition impact assessment
-    
+
     For each portfolio:
     1. Calculate key risk metrics (Beta, Standard Deviation, etc.)
     2. Analyze correlation matrices
@@ -73,7 +73,7 @@ risk_manager = Agent(
     4. Evaluate liquidity risks
     5. Assess concentration risks
     6. Monitor factor exposures
-    
+
     Focus on maintaining appropriate risk levels while maximizing risk-adjusted returns.""",
     model_name="gpt-4o",
     max_loops=1,
@@ -93,7 +93,7 @@ implementation_specialist = Agent(
     - Portfolio rebalancing execution
     - Trading cost analysis
     - Cash flow management
-    
+
     For each implementation:
     1. Select most efficient funds for desired exposure
     2. Plan tax-efficient transitions
@@ -101,7 +101,7 @@ implementation_specialist = Agent(
     4. Optimize trade execution
     5. Manage cash positions
     6. Monitor tracking error
-    
+
     Maintain focus on minimizing costs and maximizing tax efficiency during implementation.""",
     model_name="gpt-4o",
     max_loops=1,
@@ -121,7 +121,7 @@ monitoring_specialist = Agent(
     - Fund changes and replacements
     - Tax loss harvesting opportunities
     - Performance attribution analysis
-    
+
     For each review:
     1. Track portfolio drift from targets
     2. Monitor fund performance and changes
@@ -129,7 +129,7 @@ monitoring_specialist = Agent(
     4. Analyze tracking error and expenses
     5. Review risk metrics evolution
     6. Generate performance attribution reports
-    
+
     Ensure continuous alignment with investment objectives while maintaining optimal portfolio efficiency.""",
     model_name="gpt-4o",
     max_loops=1,

@@ -1,10 +1,10 @@
-from datetime import datetime
 import json
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+
 import requests
 from loguru import logger
-from dataclasses import dataclass
-from datetime import timezone
-import time
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -86,7 +86,7 @@ def get_working_endpoint(session: requests.Session) -> str:
                 return endpoint
         except Exception as e:
             logger.warning(
-                f"Endpoint {endpoint} failed health check: {str(e)}"
+                f"Endpoint {endpoint} failed health check: {e!s}"
             )
             continue
 
@@ -189,7 +189,7 @@ def fetch_wallet_transactions(wallet_address: str) -> str:
 
             except Exception as e:
                 logger.error(
-                    f"Error during transaction fetch: {str(e)}"
+                    f"Error during transaction fetch: {e!s}"
                 )
                 # Try to get a new endpoint if the current one fails
                 api_endpoint = get_working_endpoint(session)
@@ -217,7 +217,7 @@ def fetch_wallet_transactions(wallet_address: str) -> str:
                 )
                 tx_data = response.json()
 
-                if "result" in tx_data and tx_data["result"]:
+                if tx_data.get("result"):
                     enriched_transactions.append(
                         {
                             "signature": tx["signature"],
@@ -240,7 +240,7 @@ def fetch_wallet_transactions(wallet_address: str) -> str:
 
             except Exception as e:
                 logger.warning(
-                    f"Failed to fetch details for transaction {tx['signature']}: {str(e)}"
+                    f"Failed to fetch details for transaction {tx['signature']}: {e!s}"
                 )
                 continue
 
@@ -272,7 +272,7 @@ def fetch_wallet_transactions(wallet_address: str) -> str:
     except Exception as e:
         error = TransactionError(
             error_type="UNKNOWN_ERROR",
-            message=f"An unexpected error occurred: {str(e)}",
+            message=f"An unexpected error occurred: {e!s}",
         )
         logger.error(f"Unexpected error: {error.message}")
         return json.dumps(
@@ -292,4 +292,4 @@ if __name__ == "__main__":
         result = fetch_wallet_transactions(wallet)
         print(json.dumps(json.loads(result), indent=2))
     except Exception as e:
-        logger.error(f"Failed to fetch transactions: {str(e)}")
+        logger.error(f"Failed to fetch transactions: {e!s}")

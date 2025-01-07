@@ -1,12 +1,13 @@
 import random
-from swarms.structs.base_swarm import BaseSwarm
-from typing import List
-from swarms.structs.agent import Agent
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
-from swarms.schemas.agent_step_schemas import ManySteps
+from typing import Optional
+
 import tenacity
+from pydantic import BaseModel, Field
+
+from swarms.schemas.agent_step_schemas import ManySteps
+from swarms.structs.agent import Agent
+from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger("round-robin")
@@ -28,7 +29,7 @@ class MetadataSchema(BaseModel):
         "Concurrent execution of multiple agents",
         description="Description of the workflow",
     )
-    agent_outputs: Optional[List[ManySteps]] = Field(
+    agent_outputs: Optional[list[ManySteps]] = Field(
         ..., description="List of agent outputs and metadata"
     )
     timestamp: Optional[str] = Field(
@@ -68,10 +69,10 @@ class RoundRobinSwarm(BaseSwarm):
         self,
         name: str = "RoundRobinSwarm",
         description: str = "A swarm implementation that executes tasks in a round-robin fashion.",
-        agents: List[Agent] = None,
+        agents: Optional[list[Agent]] = None,
         verbose: bool = False,
         max_loops: int = 1,
-        callback: callable = None,
+        callback: Optional[callable] = None,
         return_json_on: bool = False,
         max_retries: int = 3,
         *args,
@@ -117,7 +118,7 @@ class RoundRobinSwarm(BaseSwarm):
 
         except Exception as e:
             logger.error(
-                f"Failed to initialize {self.name}: {str(e)}"
+                f"Failed to initialize {self.name}: {e!s}"
             )
             raise
 
@@ -144,7 +145,7 @@ class RoundRobinSwarm(BaseSwarm):
             return result
         except Exception as e:
             logger.error(
-                f"Error executing agent {agent.agent_name}: {str(e)}"
+                f"Error executing agent {agent.agent_name}: {e!s}"
             )
             raise
 
@@ -198,7 +199,7 @@ class RoundRobinSwarm(BaseSwarm):
                         self.callback(loop, result)
                     except Exception as e:
                         logger.error(
-                            f"Callback execution failed: {str(e)}"
+                            f"Callback execution failed: {e!s}"
                         )
 
             logger.success(
@@ -210,7 +211,7 @@ class RoundRobinSwarm(BaseSwarm):
             return result
 
         except Exception as e:
-            logger.error(f"Round-robin execution failed: {str(e)}")
+            logger.error(f"Round-robin execution failed: {e!s}")
             raise
 
     def export_metadata(self):
@@ -218,5 +219,5 @@ class RoundRobinSwarm(BaseSwarm):
         try:
             return self.output_schema.model_dump_json(indent=4)
         except Exception as e:
-            logger.error(f"Failed to export metadata: {str(e)}")
+            logger.error(f"Failed to export metadata: {e!s}")
             raise

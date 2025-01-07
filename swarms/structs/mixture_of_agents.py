@@ -1,13 +1,13 @@
 import asyncio
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from swarms.prompts.ag_prompt import aggregator_system_prompt
+from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.structs.agent import Agent
 from swarms.telemetry.capture_sys_data import log_agent_data
-from swarms.schemas.agent_step_schemas import ManySteps
-from swarms.prompts.ag_prompt import aggregator_system_prompt
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="mixture_of_agents")
@@ -17,10 +17,8 @@ time_stamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
 class MixtureOfAgentsInput(BaseModel):
     name: str = "MixtureOfAgents"
-    description: str = (
-        "A class to run a mixture of agents and aggregate their responses."
-    )
-    agents: List[Dict[str, Any]]
+    description: str = "A class to run a mixture of agents and aggregate their responses."
+    agents: list[dict[str, Any]]
     aggregator_agent: Any = Field(
         ...,
         description="An aggregator agent to be used in the mixture.",
@@ -43,7 +41,7 @@ class MixtureOfAgentsOutput(BaseModel):
     task: str = Field(..., description="None")
     InputConfig: MixtureOfAgentsInput
     # output: List[ManySteps]
-    normal_agent_outputs: List[ManySteps]
+    normal_agent_outputs: list[ManySteps]
     aggregator_agent_summary: str
     time_completed: str = Field(
         time_stamp,
@@ -60,7 +58,7 @@ class MixtureOfAgents:
         self,
         name: str = "MixtureOfAgents",
         description: str = "A class to run a mixture of agents and aggregate their responses.",
-        agents: List[Agent] = [],
+        agents: list[Agent] = [],
         aggregator_agent: Agent = None,
         aggregator_system_prompt: str = "",
         layers: int = 3,
@@ -78,7 +76,7 @@ class MixtureOfAgents:
         """
         self.name = name
         self.description = description
-        self.agents: List[Agent] = agents
+        self.agents: list[Agent] = agents
         self.aggregator_agent: Agent = aggregator_agent
         self.aggregator_system_prompt: str = aggregator_system_prompt
         self.layers: int = layers
@@ -130,7 +128,7 @@ class MixtureOfAgents:
         logger.info("Mixture of Agents class is ready for use.")
 
     def _get_final_system_prompt(
-        self, system_prompt: str, results: List[str]
+        self, system_prompt: str, results: list[str]
     ) -> str:
         """
         Constructs a system prompt for subsequent layers that includes previous responses.
@@ -147,7 +145,7 @@ class MixtureOfAgents:
             + "\n"
             + "\n".join(
                 [
-                    f"{i+1}. {str(element)}"
+                    f"{i+1}. {element!s}"
                     for i, element in enumerate(results)
                 ]
             )
@@ -157,7 +155,7 @@ class MixtureOfAgents:
         self,
         agent: Agent,
         task: str,
-        prev_responses: Optional[List[str]] = None,
+        prev_responses: Optional[list[str]] = None,
     ) -> str:
         """
         Asynchronous method to run a single agent.
@@ -200,7 +198,7 @@ class MixtureOfAgents:
             task (str): The task for the mixture of agents.
         """
         # Gather initial responses from reference agents
-        results: List[str] = await asyncio.gather(
+        results: list[str] = await asyncio.gather(
             *[
                 self._run_agent_async(agent, task)
                 for agent in self.agents

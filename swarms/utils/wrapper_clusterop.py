@@ -1,13 +1,13 @@
-from typing import Any
-
+from typing import Any, Optional
 
 from clusterops import (
+    execute_on_cpu,
     execute_on_gpu,
     execute_on_multiple_gpus,
-    list_available_gpus,
     execute_with_all_cpu_cores,
-    execute_on_cpu,
+    list_available_gpus,
 )
+
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="clusterops_wrapper")
@@ -18,7 +18,7 @@ def exec_callable_with_clusterops(
     device_id: int = 1,
     all_cores: bool = True,
     all_gpus: bool = False,
-    func: callable = None,
+    func: Optional[callable] = None,
     enable_logging: bool = True,
     *args,
     **kwargs,

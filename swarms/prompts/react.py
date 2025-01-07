@@ -1,4 +1,7 @@
-def react_prompt(task: str = None):
+from typing import Optional
+
+
+def react_prompt(task: Optional[str] = None):
     PROMPT = f"""
         Task Description:
         Accomplish the following {task} using the reasoning guidelines below.
@@ -6,7 +9,7 @@ def react_prompt(task: str = None):
 
         ######### REASONING GUIDELINES #########
         You're an autonomous agent that has been tasked with {task}. You have been given a set of guidelines to follow to accomplish this task. You must follow the guidelines exactly.
-        
+
         Step 1: Observation
 
         Begin by carefully observing the situation or problem at hand. Describe what you see, identify key elements, and note any relevant details.

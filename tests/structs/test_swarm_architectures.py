@@ -1,6 +1,5 @@
 import asyncio
 import time
-from typing import List
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarming_architectures import (
@@ -34,7 +33,7 @@ def create_test_agent(name: str) -> Agent:
     )
 
 
-def create_test_agents(num_agents: int) -> List[Agent]:
+def create_test_agents(num_agents: int) -> list[Agent]:
     """Create specified number of test agents"""
     return [
         create_test_agent(f"Agent{i+1}") for i in range(num_agents)
@@ -67,7 +66,7 @@ def test_circular_swarm():
             print(f"Task: {log['task']}")
             print(f"Response: {log['response']}")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 def test_grid_swarm():
@@ -86,7 +85,7 @@ def test_grid_swarm():
             "Grid Swarm completed - each agent processed tasks in its grid position"
         )
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 def test_linear_swarm():
@@ -107,7 +106,7 @@ def test_linear_swarm():
             print(f"Task: {log['task']}")
             print(f"Response: {log['response']}")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 def test_star_swarm():
@@ -132,7 +131,7 @@ def test_star_swarm():
             print(f"Task: {log['task']}")
             print(f"Response: {log['response']}")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 def test_mesh_swarm():
@@ -157,7 +156,7 @@ def test_mesh_swarm():
             print(f"Task: {log['task']}")
             print(f"Response: {log['response']}")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 def test_pyramid_swarm():
@@ -185,7 +184,7 @@ def test_pyramid_swarm():
             print(f"Task: {log['task']}")
             print(f"Response: {log['response']}")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 async def test_communication_patterns():
@@ -214,7 +213,7 @@ async def test_communication_patterns():
         await broadcast(sender, broadcast_receivers, task)
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 def test_mathematical_swarms():
@@ -239,7 +238,7 @@ def test_mathematical_swarms():
             swarm_func(agents, tasks.copy())
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 def test_pattern_swarms():
@@ -260,7 +259,7 @@ def test_pattern_swarms():
             swarm_func(agents, task)
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
 
 
 def run_all_tests():
@@ -293,7 +292,7 @@ def run_all_tests():
 
     except Exception as e:
         print("\n=== Test Suite Failed ===")
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
         raise
 
 

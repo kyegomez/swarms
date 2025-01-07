@@ -1,7 +1,7 @@
+from swarms.agents.openai_assistant import OpenAIAssistant
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from swarms.agents.openai_assistant import OpenAIAssistant
 
 agent = OpenAIAssistant(
     name="test", instructions=FINANCIAL_AGENT_SYS_PROMPT

@@ -1,25 +1,32 @@
-import os
-from typing import List, Dict, Any, Optional, Callable, get_type_hints
-from dataclasses import dataclass, field
-import json
-from datetime import datetime
 import inspect
+import json
+import os
 import typing
-from typing import Union
-from swarms import Agent
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    Union,
+    get_type_hints,
+)
+
 from swarm_models import OpenAIChat
+
+from swarms import Agent
 
 
 @dataclass
 class ToolDefinition:
     name: str
     description: str
-    parameters: Dict[str, Any]
-    required_params: List[str]
+    parameters: dict[str, Any]
+    required_params: list[str]
     callable: Optional[Callable] = None
 
 
-def extract_type_hints(func: Callable) -> Dict[str, Any]:
+def extract_type_hints(func: Callable) -> dict[str, Any]:
     """Extract parameter types from function type hints."""
     return typing.get_type_hints(func)
 
@@ -81,7 +88,7 @@ class FunctionSpec:
 
     name: str
     description: str
-    parameters: Dict[
+    parameters: dict[
         str, dict
     ]  # Contains type and description for each parameter
     return_type: str
@@ -94,7 +101,7 @@ class ExecutionStep:
 
     step_id: int
     function_name: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     expected_output: str
     completed: bool = False
     result: Any = None
@@ -105,10 +112,10 @@ class ExecutionContext:
     """Maintains state during execution."""
 
     task: str
-    steps: List[ExecutionStep] = field(default_factory=list)
-    results: Dict[int, Any] = field(default_factory=dict)
+    steps: list[ExecutionStep] = field(default_factory=list)
+    results: dict[int, Any] = field(default_factory=dict)
     current_step: int = 0
-    history: List[Dict[str, Any]] = field(default_factory=list)
+    history: list[dict[str, Any]] = field(default_factory=list)
 
 
 def func():
@@ -121,7 +128,7 @@ hints = get_type_hints(func)
 class ToolAgent:
     def __init__(
         self,
-        functions: List[Callable],
+        functions: list[Callable],
         openai_api_key: str,
         model_name: str = "gpt-4",
         temperature: float = 0.1,
@@ -145,8 +152,8 @@ class ToolAgent:
         )
 
     def _analyze_functions(
-        self, functions: List[Callable]
-    ) -> Dict[str, FunctionSpec]:
+        self, functions: list[Callable]
+    ) -> dict[str, FunctionSpec]:
         """Analyze functions to create detailed specifications."""
         specs = {}
         for func in functions:
@@ -254,7 +261,7 @@ Always:
 """
 
     def _execute_function(
-        self, spec: FunctionSpec, parameters: Dict[str, Any]
+        self, spec: FunctionSpec, parameters: dict[str, Any]
     ) -> Any:
         """Execute a function with type checking."""
         converted_params = {}
@@ -269,12 +276,12 @@ Always:
                     converted_params[name] = value
             except (ValueError, TypeError) as e:
                 raise ValueError(
-                    f"Parameter '{name}' conversion failed: {str(e)}"
+                    f"Parameter '{name}' conversion failed: {e!s}"
                 )
 
         return self.functions[spec.name](**converted_params)
 
-    def run(self, task: str) -> Dict[str, Any]:
+    def run(self, task: str) -> dict[str, Any]:
         """Execute task with planning and step-by-step execution."""
         context = ExecutionContext(task=task)
         execution_log = {
@@ -326,7 +333,7 @@ Always:
                     Function: {step.function_name}
                     Result: {json.dumps(result)}
                     Remaining steps: {len(context.steps) - context.current_step - 1}
-                    
+
                     Analyze the result and decide next action.
                     """
 
@@ -363,7 +370,7 @@ Always:
                     context.current_step += 1
 
                 except Exception as e:
-                    print(f"Error in step {step.step_id}: {str(e)}")
+                    print(f"Error in step {step.step_id}: {e!s}")
                     execution_log["steps"].append(
                         {
                             "step_id": step.step_id,
@@ -378,7 +385,7 @@ Always:
             final_prompt = f"""
             Task completed. Results:
             {json.dumps(context.results, indent=2)}
-            
+
             Provide final analysis and recommendations.
             """
 

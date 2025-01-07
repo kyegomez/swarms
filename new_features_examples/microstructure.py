@@ -5,7 +5,7 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import ccxt
 import numpy as np
@@ -25,9 +25,9 @@ class MarketSignal:
     timestamp: datetime
     signal_type: str
     source: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
     confidence: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class MarketDataBuffer:
@@ -40,7 +40,7 @@ class MarketDataBuffer:
         with self.lock:
             self.data.append(item)
 
-    def get_latest(self, n: int = None) -> List[Any]:
+    def get_latest(self, n: Optional[int] = None) -> list[Any]:
         with self.lock:
             if n is None:
                 return list(self.data)
@@ -208,7 +208,7 @@ class ExchangeManager:
             raise RuntimeError("No exchanges available")
         return next(iter(self.active_exchanges.values()))
 
-    def get_all_active_exchanges(self) -> Dict[str, ccxt.Exchange]:
+    def get_all_active_exchanges(self) -> dict[str, ccxt.Exchange]:
         """Get all active exchanges"""
         return self.active_exchanges
 
@@ -269,8 +269,8 @@ class OrderBookAgent(BaseMarketAgent):
         self.vwap_window = 20
 
     def calculate_order_book_metrics(
-        self, order_book: Dict
-    ) -> Dict[str, float]:
+        self, order_book: dict
+    ) -> dict[str, float]:
         bids = np.array(order_book["bids"])
         asks = np.array(order_book["asks"])
 
@@ -321,7 +321,7 @@ class OrderBookAgent(BaseMarketAgent):
         }
 
     def detect_large_orders(
-        self, metrics: Dict[str, float], threshold: float = 2.0
+        self, metrics: dict[str, float], threshold: float = 2.0
     ) -> bool:
         historical_books = self.order_book_buffer.get_latest(20)
         if not historical_books:
@@ -361,7 +361,7 @@ class OrderBookAgent(BaseMarketAgent):
             Mid Price: {metrics['mid_price']}
             Spread: {metrics['spread']}
             Depth Imbalance: {metrics['depth_imbalance']}
-            
+
             What patterns do you see? Is there evidence of institutional activity?
             Are there any significant imbalances that could lead to price movement?
             """
@@ -402,7 +402,7 @@ class OrderBookAgent(BaseMarketAgent):
                 },
             )
         except Exception as e:
-            logger.error(f"Error in order book analysis: {str(e)}")
+            logger.error(f"Error in order book analysis: {e!s}")
             return None
 
 
@@ -417,42 +417,6 @@ class TickDataAgent(BaseMarketAgent):
         self.tick_buffer = MarketDataBuffer(max_size=5000)
         exchange_manager = ExchangeManager()
         self.exchange = exchange_manager.get_primary_exchange()
-
-    def calculate_tick_metrics(
-        self, ticks: List[Dict]
-    ) -> Dict[str, float]:
-        df = pd.DataFrame(ticks)
-        df["price"] = pd.to_numeric(df["price"])
-        df["volume"] = pd.to_numeric(df["amount"])
-
-        # Calculate key metrics
-        metrics = {}
-
-        # Volume-weighted average price (VWAP)
-        metrics["vwap"] = (df["price"] * df["volume"]).sum() / df[
-            "volume"
-        ].sum()
-
-        # Price momentum
-        metrics["price_momentum"] = df["price"].diff().mean()
-
-        # Volume profile
-        metrics["volume_mean"] = df["volume"].mean()
-        metrics["volume_std"] = df["volume"].std()
-
-        # Trade intensity
-        time_diff = (
-            df["timestamp"].max() - df["timestamp"].min()
-        ) / 1000  # Convert to seconds
-        metrics["trade_intensity"] = (
-            len(df) / time_diff if time_diff > 0 else 0
-        )
-
-        # Microstructure indicators
-        metrics["kyle_lambda"] = self.calculate_kyle_lambda(df)
-        metrics["roll_spread"] = self.calculate_roll_spread(df)
-
-        return metrics
 
     def calculate_kyle_lambda(self, df: pd.DataFrame) -> float:
         """Calculate Kyle's Lambda (price impact coefficient)"""
@@ -483,8 +447,8 @@ class TickDataAgent(BaseMarketAgent):
         return 0.0
 
     def calculate_tick_metrics(
-        self, ticks: List[Dict]
-    ) -> Dict[str, float]:
+        self, ticks: list[dict]
+    ) -> dict[str, float]:
         try:
             # Debug the incoming data structure
             logger.info(
@@ -557,7 +521,7 @@ class TickDataAgent(BaseMarketAgent):
 
         except Exception as e:
             logger.error(
-                f"Error in calculate_tick_metrics: {str(e)}",
+                f"Error in calculate_tick_metrics: {e!s}",
                 exc_info=True,
             )
             # Return default metrics on error
@@ -596,7 +560,7 @@ class TickDataAgent(BaseMarketAgent):
                 Price Momentum: {metrics['price_momentum']:.2f}
                 Trade Intensity: {metrics['trade_intensity']:.2f}
                 Kyle's Lambda: {metrics['kyle_lambda']:.2f}
-                
+
                 What does this tell us about:
                 1. Current market sentiment
                 2. Potential price direction
@@ -629,7 +593,7 @@ class TickDataAgent(BaseMarketAgent):
 
         except Exception as e:
             logger.error(
-                f"Error in tick analysis: {str(e)}", exc_info=True
+                f"Error in tick analysis: {e!s}", exc_info=True
             )
             return None
 
@@ -659,8 +623,8 @@ class LatencyArbitrageAgent(BaseMarketAgent):
         }
 
     def calculate_effective_prices(
-        self, ticker: Dict, venue: str
-    ) -> Tuple[float, float]:
+        self, ticker: dict, venue: str
+    ) -> tuple[float, float]:
         """Calculate effective prices including fees"""
         fee = self.fee_structure[venue]
         return (
@@ -669,8 +633,8 @@ class LatencyArbitrageAgent(BaseMarketAgent):
         )
 
     def calculate_arbitrage_metrics(
-        self, prices: Dict[str, Dict]
-    ) -> Dict:
+        self, prices: dict[str, dict]
+    ) -> dict:
         opportunities = []
 
         for venue1 in prices:
@@ -818,7 +782,7 @@ class LatencyArbitrageAgent(BaseMarketAgent):
             )
 
         except Exception as e:
-            logger.error(f"Error in arbitrage analysis: {str(e)}")
+            logger.error(f"Error in arbitrage analysis: {e!s}")
             return None
 
 
@@ -841,7 +805,7 @@ class SwarmCoordinator:
         with self.lock:
             self.signal_processors.append(processor)
 
-    def process_signals(self, signals: List[MarketSignal]):
+    def process_signals(self, signals: list[MarketSignal]):
         """Process signals through all registered processors"""
         if not signals:
             return
@@ -855,8 +819,8 @@ class SwarmCoordinator:
             logger.error(f"Error in signal processing: {e}")
 
     def aggregate_signals(
-        self, signals: List[MarketSignal]
-    ) -> Dict[str, Any]:
+        self, signals: list[MarketSignal]
+    ) -> dict[str, Any]:
         """Aggregate multiple signals into a combined market view"""
         if not signals:
             return {}
@@ -925,7 +889,7 @@ class SwarmCoordinator:
 
         return aggregated
 
-    def start(self, symbols: List[str], interval: float = 1.0):
+    def start(self, symbols: list[str], interval: float = 1.0):
         """Start the swarm monitoring system"""
         if self.running:
             logger.warning("Swarm is already running")
@@ -1010,7 +974,7 @@ class SwarmCoordinator:
         logger.info("Swarm stopped")
 
 
-def market_making_processor(signals: List[MarketSignal]):
+def market_making_processor(signals: list[MarketSignal]):
     """Enhanced signal processor with LLM analysis integration"""
     for signal in signals:
         if signal.confidence > 0.8:

@@ -1,5 +1,4 @@
 import asyncio
-from typing import List
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarming_architectures import (
@@ -19,7 +18,7 @@ from swarms.structs.swarming_architectures import (
 )
 
 
-def create_finance_agents() -> List[Agent]:
+def create_finance_agents() -> list[Agent]:
     """Create specialized finance agents"""
     return [
         Agent(
@@ -45,7 +44,7 @@ def create_finance_agents() -> List[Agent]:
     ]
 
 
-def create_healthcare_agents() -> List[Agent]:
+def create_healthcare_agents() -> list[Agent]:
     """Create specialized healthcare agents"""
     return [
         Agent(

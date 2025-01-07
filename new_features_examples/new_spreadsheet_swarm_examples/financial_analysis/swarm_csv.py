@@ -31,4 +31,4 @@ try:
     print(results)
 
 except Exception as e:
-    print(f"An error occurred: {str(e)}")
+    print(f"An error occurred: {e!s}")

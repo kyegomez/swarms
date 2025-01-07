@@ -1,7 +1,6 @@
-from typing import List
 
 
-def concat_strings(string_list: List[str]) -> str:
+def concat_strings(string_list: list[str]) -> str:
     """
     Concatenates a list of strings into a single string.
 

@@ -1,11 +1,11 @@
+import os
 import unittest
 from unittest.mock import patch
+
 from swarms import create_agents_from_yaml
-import os
 
 
 class TestCreateAgentsFromYaml(unittest.TestCase):
-
     def setUp(self):
         # Mock the environment variable for API key
         os.environ["OPENAI_API_KEY"] = "fake-api-key"

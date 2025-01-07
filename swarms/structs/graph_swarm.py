@@ -3,7 +3,7 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import networkx as nx
 from loguru import logger
@@ -32,18 +32,18 @@ class AgentOutput(BaseModel):
     output: Any
     execution_time: float
     error: Optional[str] = None
-    metadata: Dict = Field(default_factory=dict)
+    metadata: dict = Field(default_factory=dict)
 
 
 class SwarmOutput(BaseModel):
     """Structured output from the entire swarm."""
 
     timestamp: float = Field(default_factory=time.time)
-    outputs: Dict[str, AgentOutput]
+    outputs: dict[str, AgentOutput]
     execution_time: float
     success: bool
     error: Optional[str] = None
-    metadata: Dict = Field(default_factory=dict)
+    metadata: dict = Field(default_factory=dict)
 
 
 class SwarmMemory:
@@ -110,7 +110,7 @@ class SwarmMemory:
 
         except Exception as e:
             logger.error(
-                f"Failed to store execution in memory: {str(e)}"
+                f"Failed to store execution in memory: {e!s}"
             )
 
     def get_similar_executions(self, task: str, limit: int = 5):
@@ -151,11 +151,11 @@ class SwarmMemory:
 
         except Exception as e:
             logger.error(
-                f"Failed to retrieve similar executions: {str(e)}"
+                f"Failed to retrieve similar executions: {e!s}"
             )
             return []
 
-    def get_optimal_sequence(self, task: str) -> Optional[List[str]]:
+    def get_optimal_sequence(self, task: str) -> Optional[list[str]]:
         """Get the most successful agent sequence for similar tasks."""
         similar_executions = self.get_similar_executions(task)
         print(f"similar_executions {similar_executions}")
@@ -190,10 +190,8 @@ class GraphSwarm:
     def __init__(
         self,
         name: str = "graph-swarm-01",
-        description: str = "Graph swarm : build your own graph of agents", 
-        agents: Union[
-            List[Agent], List[Tuple[Agent, List[str]]], List[Callable]
-        ] = None,
+        description: str = "Graph swarm : build your own graph of agents",
+        agents: Optional[Union[list[Agent], list[tuple[Agent, list[str]]], list[Callable]]] = None,
         max_workers: Optional[int] = None,
         swarm_name: str = "Collaborative Agent Swarm",
         memory_collection: str = "swarm_memory",
@@ -204,8 +202,8 @@ class GraphSwarm:
         self.name = name
         self.description = description
         self.graph = nx.DiGraph()
-        self.agents: Dict[str, Agent] = {}
-        self.dependencies: Dict[str, List[str]] = {}
+        self.agents: dict[str, Agent] = {}
+        self.dependencies: dict[str, list[str]] = {}
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.swarm_name = swarm_name
         self.memory_collection = memory_collection
@@ -218,7 +216,7 @@ class GraphSwarm:
 
     def initialize_agents(
         self,
-        agents: Union[List[Agent], List[Tuple[Agent, List[str]]]],
+        agents: Union[list[Agent], list[tuple[Agent, list[str]]]],
     ):
         """Initialize agents and their dependencies."""
         try:
@@ -249,7 +247,7 @@ class GraphSwarm:
             self._validate_graph()
 
         except Exception as e:
-            logger.error(f"Failed to initialize agents: {str(e)}")
+            logger.error(f"Failed to initialize agents: {e!s}")
             raise
 
     def _validate_graph(self):
@@ -316,7 +314,7 @@ class GraphSwarm:
         return workflow
 
     def _build_agent_prompt(
-        self, agent_name: str, task: str, context: Dict = None
+        self, agent_name: str, task: str, context: Optional[dict] = None
     ) -> str:
         """Build a comprehensive prompt for the agent including role and context."""
         prompt_parts = [
@@ -350,7 +348,7 @@ class GraphSwarm:
         return "\n".join(prompt_parts)
 
     async def _execute_agent(
-        self, agent_name: str, task: str, context: Dict = None
+        self, agent_name: str, task: str, context: Optional[dict] = None
     ) -> AgentOutput:
         """Execute a single agent."""
         start_time = time.time()
@@ -381,7 +379,7 @@ class GraphSwarm:
 
         except Exception as e:
             logger.error(
-                f"Error executing agent {agent_name}: {str(e)}"
+                f"Error executing agent {agent_name}: {e!s}"
             )
             return AgentOutput(
                 agent_name=agent_name,
@@ -496,10 +494,10 @@ class GraphSwarm:
 
                 except Exception as agent_error:
                     logger.error(
-                        f"Error executing agent {agent_name}: {str(agent_error)}"
+                        f"Error executing agent {agent_name}: {agent_error!s}"
                     )
                     success = False
-                    error = f"Agent {agent_name} failed: {str(agent_error)}"
+                    error = f"Agent {agent_name} failed: {agent_error!s}"
                     break
 
             # Create result
@@ -528,7 +526,7 @@ class GraphSwarm:
             return result
 
         except Exception as e:
-            logger.error(f"Swarm execution failed: {str(e)}")
+            logger.error(f"Swarm execution failed: {e!s}")
             return SwarmOutput(
                 outputs=outputs,
                 execution_time=time.time() - start_time,
@@ -542,8 +540,8 @@ class GraphSwarm:
         return asyncio.run(self.execute(task))
 
     def _extract_success_patterns(
-        self, similar_executions: List[Dict]
-    ) -> Dict:
+        self, similar_executions: list[dict]
+    ) -> dict:
         """Extract success patterns from similar executions."""
         patterns = {}
         successful_execs = [
@@ -570,7 +568,7 @@ class GraphSwarm:
         self,
         failed_agent: str,
         task: str,
-        similar_executions: List[Dict],
+        similar_executions: list[dict],
     ) -> Optional[AgentOutput]:
         """Attempt to recover from failure using memory."""
         for execution in similar_executions:
@@ -603,10 +601,10 @@ class GraphSwarm:
             )
         except Exception as e:
             logger.error(
-                f"Failed to store execution in memory: {str(e)}"
+                f"Failed to store execution in memory: {e!s}"
             )
 
-    def add_agent(self, agent: Agent, dependencies: List[str] = None):
+    def add_agent(self, agent: Agent, dependencies: Optional[list[str]] = None):
         """Add a new agent to the swarm."""
         dependencies = dependencies or []
         self.agents[agent.agent_name] = agent

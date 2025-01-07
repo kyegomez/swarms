@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, Set
+from typing import Any
 from uuid import UUID
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ class SafeLoaderUtils:
             return False
 
     @staticmethod
-    def get_class_attributes(obj: Any) -> Set[str]:
+    def get_class_attributes(obj: Any) -> set[str]:
         """
         Get all attributes of a class, including inherited ones.
 
@@ -106,7 +106,7 @@ class SafeLoaderUtils:
         return attributes
 
     @staticmethod
-    def create_state_dict(obj: Any) -> Dict[str, Any]:
+    def create_state_dict(obj: Any) -> dict[str, Any]:
         """
         Create a dictionary of safe values from an object's state.
 
@@ -133,7 +133,7 @@ class SafeLoaderUtils:
         return state_dict
 
     @staticmethod
-    def preserve_instances(obj: Any) -> Dict[str, Any]:
+    def preserve_instances(obj: Any) -> dict[str, Any]:
         """
         Automatically detect and preserve all class instances in an object.
 
@@ -211,7 +211,7 @@ class SafeStateManager:
             preserved = SafeLoaderUtils.preserve_instances(obj)
 
             # Load state
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 state_dict = json.load(f)
 
             # Set safe values

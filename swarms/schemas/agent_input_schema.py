@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
+
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
 
@@ -28,10 +29,10 @@ class AgentSchema(BaseModel):
     interactive: Optional[bool] = Field(default=False)
     dashboard: Optional[bool] = Field(default=False)
     agent_description: Optional[str] = Field(default=None)
-    tools: Optional[List[Callable]] = Field(default=None)
+    tools: Optional[list[Callable]] = Field(default=None)
     dynamic_temperature_enabled: Optional[bool] = Field(default=False)
     sop: Optional[str] = Field(default=None)
-    sop_list: Optional[List[str]] = Field(default=None)
+    sop_list: Optional[list[str]] = Field(default=None)
     saved_state_path: Optional[str] = Field(default=None)
     autosave: Optional[bool] = Field(default=False)
     self_healing_enabled: Optional[bool] = Field(default=False)
@@ -45,14 +46,14 @@ class AgentSchema(BaseModel):
     traceback: Optional[Any] = Field(default=None)
     traceback_handlers: Optional[Any] = Field(default=None)
     streaming_on: Optional[bool] = Field(default=False)
-    docs: Optional[List[str]] = Field(default=None)
+    docs: Optional[list[str]] = Field(default=None)
     docs_folder: Optional[str] = Field(default=None)
     verbose: Optional[bool] = Field(default=False)
     parser: Optional[Callable] = Field(default=None)
     best_of_n: Optional[int] = Field(default=None)
     callback: Optional[Callable] = Field(default=None)
-    metadata: Optional[Dict[str, Any]] = Field(default=None)
-    callbacks: Optional[List[Callable]] = Field(default=None)
+    metadata: Optional[dict[str, Any]] = Field(default=None)
+    callbacks: Optional[list[Callable]] = Field(default=None)
     logger_handler: Optional[Any] = Field(default=None)
     search_algorithm: Optional[Callable] = Field(default=None)
     logs_to_filename: Optional[str] = Field(default=None)
@@ -72,7 +73,7 @@ class AgentSchema(BaseModel):
     function_calling_format_type: Optional[str] = Field(
         default="OpenAI"
     )
-    list_base_models: Optional[List[Any]] = Field(default=None)
+    list_base_models: Optional[list[Any]] = Field(default=None)
     metadata_output_type: Optional[str] = Field(default="json")
     state_save_file_type: Optional[str] = Field(default="json")
     chain_of_thoughts: Optional[bool] = Field(default=False)

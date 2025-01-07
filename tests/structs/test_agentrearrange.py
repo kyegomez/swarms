@@ -1,7 +1,7 @@
 import os
 import traceback
 from datetime import datetime
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Optional
 
 from loguru import logger
 from swarm_models import OpenAIChat
@@ -67,7 +67,7 @@ def run_test(test_func: Callable) -> TestResult:
         except Exception as e:
             result.complete(success=False, error=e)
             logger.error(
-                f"❌ Test {test_func.__name__} failed with error: {str(e)}"
+                f"❌ Test {test_func.__name__} failed with error: {e!s}"
             )
             logger.error(f"Traceback: {traceback.format_exc()}")
 
@@ -79,7 +79,7 @@ def run_test(test_func: Callable) -> TestResult:
     return wrapper
 
 
-def create_functional_agents() -> List[Agent]:
+def create_functional_agents() -> list[Agent]:
     """
     Create a list of functional agents with real LLM integration for testing.
     Using OpenAI's GPT model for realistic agent behavior testing.
@@ -161,7 +161,7 @@ def create_functional_agents() -> List[Agent]:
         return [boss_agent, analysis_agent, summary_agent]
 
     except Exception as e:
-        logger.error(f"Failed to create functional agents: {str(e)}")
+        logger.error(f"Failed to create functional agents: {e!s}")
         logger.warning("Falling back to mock agents")
         return [
             create_mock_agent("TestAgent1"),
@@ -223,7 +223,7 @@ def test_validate_flow():
         assert False, "Should have raised ValueError"
     except ValueError as e:
         logger.info(
-            f"Successfully caught invalid flow error: {str(e)}"
+            f"Successfully caught invalid flow error: {e!s}"
         )
         assert True
 
@@ -274,11 +274,11 @@ def test_basic_run():
         )
         return True
     except Exception as e:
-        logger.error(f"Task execution failed: {str(e)}")
+        logger.error(f"Task execution failed: {e!s}")
         raise
 
 
-def run_all_tests() -> Dict[str, TestResult]:
+def run_all_tests() -> dict[str, TestResult]:
     """
     Run all test cases and collect results
 

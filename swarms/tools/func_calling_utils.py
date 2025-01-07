@@ -1,5 +1,5 @@
 import json
-from typing import List, Union, Dict
+from typing import Optional, Union
 
 from pydantic import BaseModel
 
@@ -77,7 +77,7 @@ def tool_schema_to_str(
 
 
 def tool_schemas_to_str(
-    tool_schemas: List[BaseModel] = None, *args, **kwargs
+    tool_schemas: Optional[list[BaseModel]] = None, *args, **kwargs
 ) -> str:
     """Convert a list of tool schemas to a string"""
     out = multi_base_model_to_openai_function(tool_schemas)
@@ -90,7 +90,7 @@ def str_to_pydantic_model(string: str, model: BaseModel) -> BaseModel:
 
 
 def list_str_to_pydantic_model(
-    list_str: List[str], model: BaseModel
+    list_str: list[str], model: BaseModel
 ) -> BaseModel:
     """Convert a list of strings to a Pydantic model.
 
@@ -107,8 +107,8 @@ def list_str_to_pydantic_model(
 
 
 def prepare_output_for_output_model(
-    output_type: Union[str, Dict, BaseModel],
-    output: Union[str, Dict, BaseModel] = None,
+    output_type: Union[str, dict, BaseModel],
+    output: Union[str, dict, BaseModel] = None,
 ) -> Union[BaseModel, str]:
     """Prepare the output for the output model.
 

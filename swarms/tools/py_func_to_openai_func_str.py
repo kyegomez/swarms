@@ -3,15 +3,11 @@ import inspect
 import json
 from logging import getLogger
 from typing import (
+    Annotated,
     Any,
     Callable,
-    Dict,
     ForwardRef,
-    List,
     Optional,
-    Set,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     get_args,
@@ -19,7 +15,7 @@ from typing import (
 
 from pydantic import BaseModel, Field
 from pydantic.version import VERSION as PYDANTIC_VERSION
-from typing_extensions import Annotated, Literal, get_args, get_origin
+from typing_extensions import Literal, get_origin
 
 T = TypeVar("T")
 
@@ -54,7 +50,7 @@ if not PYDANTIC_V1:
         """
         return TypeAdapter(t).json_schema()
 
-    def model_dump(model: BaseModel) -> Dict[str, Any]:
+    def model_dump(model: BaseModel) -> dict[str, Any]:
         """Convert a pydantic model to a dict
 
         Args:
@@ -85,7 +81,7 @@ else:  # pragma: no cover
         evaluate_forwardref as evaluate_forwardref,  # type: ignore[no-redef]
     )
 
-    JsonSchemaValue = Dict[str, Any]  # type: ignore[misc]
+    JsonSchemaValue = dict[str, Any]  # type: ignore[misc]
 
     def type2schema(t: Any) -> JsonSchemaValue:
         """Convert a type to a JSON schema
@@ -103,7 +99,7 @@ else:  # pragma: no cover
                 return {
                     "anyOf": [type2schema(tt) for tt in get_args(t)]
                 }
-            elif get_origin(t) in [Tuple, tuple]:
+            elif get_origin(t) in [tuple, tuple]:
                 prefixItems = [type2schema(tt) for tt in get_args(t)]
                 return {
                     "maxItems": len(prefixItems),
@@ -120,7 +116,7 @@ else:  # pragma: no cover
 
         return d
 
-    def model_dump(model: BaseModel) -> Dict[str, Any]:
+    def model_dump(model: BaseModel) -> dict[str, Any]:
         """Convert a pydantic model to a dict
 
         Args:
@@ -145,7 +141,7 @@ else:  # pragma: no cover
 
 
 def get_typed_annotation(
-    annotation: Any, globalns: Dict[str, Any]
+    annotation: Any, globalns: dict[str, Any]
 ) -> Any:
     """Get the type annotation of a parameter.
 
@@ -213,7 +209,7 @@ def get_typed_return_annotation(call: Callable[..., Any]) -> Any:
 
 def get_param_annotations(
     typed_signature: inspect.Signature,
-) -> Dict[str, Union[Annotated[Type[Any], str], Type[Any]]]:
+) -> dict[str, Union[Annotated[type[Any], str], type[Any]]]:
     """Get the type annotations of the parameters of a function
 
     Args:
@@ -233,8 +229,8 @@ class Parameters(BaseModel):
     """Parameters of a function as defined by the OpenAI API"""
 
     type: Literal["object"] = "object"
-    properties: Dict[str, JsonSchemaValue]
-    required: List[str]
+    properties: dict[str, JsonSchemaValue]
+    required: list[str]
 
 
 class Function(BaseModel):
@@ -259,7 +255,7 @@ class ToolFunction(BaseModel):
 
 
 def get_parameter_json_schema(
-    k: str, v: Any, default_values: Dict[str, Any]
+    k: str, v: Any, default_values: dict[str, Any]
 ) -> JsonSchemaValue:
     """Get a JSON schema for a parameter as defined by the OpenAI API
 
@@ -273,7 +269,7 @@ def get_parameter_json_schema(
     """
 
     def type2description(
-        k: str, v: Union[Annotated[Type[Any], str], Type[Any]]
+        k: str, v: Union[Annotated[type[Any], str], type[Any]]
     ) -> str:
         # handles Annotated
         if hasattr(v, "__metadata__"):
@@ -299,7 +295,7 @@ def get_parameter_json_schema(
 
 def get_required_params(
     typed_signature: inspect.Signature,
-) -> List[str]:
+) -> list[str]:
     """Get the required parameters of a function
 
     Args:
@@ -317,7 +313,7 @@ def get_required_params(
 
 def get_default_values(
     typed_signature: inspect.Signature,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get default values of parameters of a function
 
     Args:
@@ -334,11 +330,11 @@ def get_default_values(
 
 
 def get_parameters(
-    required: List[str],
-    param_annotations: Dict[
-        str, Union[Annotated[Type[Any], str], Type[Any]]
+    required: list[str],
+    param_annotations: dict[
+        str, Union[Annotated[type[Any], str], type[Any]]
     ],
-    default_values: Dict[str, Any],
+    default_values: dict[str, Any],
 ) -> Parameters:
     """Get the parameters of a function as defined by the OpenAI API
 
@@ -360,8 +356,8 @@ def get_parameters(
 
 
 def get_missing_annotations(
-    typed_signature: inspect.Signature, required: List[str]
-) -> Tuple[Set[str], Set[str]]:
+    typed_signature: inspect.Signature, required: list[str]
+) -> tuple[set[str], set[str]]:
     """Get the missing annotations of a function
 
     Ignores the parameters with default values as they are not required to be annotated, but logs a warning.
@@ -386,8 +382,8 @@ def get_openai_function_schema_from_func(
     function: Callable[..., Any],
     *,
     name: Optional[str] = None,
-    description: str = None,
-) -> Dict[str, Any]:
+    description: Optional[str] = None,
+) -> dict[str, Any]:
     """Get a JSON schema for a function as defined by the OpenAI API
 
     Args:
@@ -471,7 +467,7 @@ def get_openai_function_schema_from_func(
 #
 def get_load_param_if_needed_function(
     t: Any,
-) -> Optional[Callable[[Dict[str, Any], Type[BaseModel]], BaseModel]]:
+) -> Optional[Callable[[dict[str, Any], type[BaseModel]], BaseModel]]:
     """Get a function to load a parameter if it is a Pydantic model
 
     Args:
@@ -485,7 +481,7 @@ def get_load_param_if_needed_function(
         return get_load_param_if_needed_function(get_args(t)[0])
 
     def load_base_model(
-        v: Dict[str, Any], t: Type[BaseModel]
+        v: dict[str, Any], t: type[BaseModel]
     ) -> BaseModel:
         return t(**v)
 

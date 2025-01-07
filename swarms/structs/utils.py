@@ -1,14 +1,14 @@
 import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from swarms.structs.agent import Agent
 
 
 # Helper functions for manager/corporate agents
 def parse_tasks(
-    task: str = None,
-) -> Dict[str, Any]:
+    task: Optional[str] = None,
+) -> dict[str, Any]:
     """Parse tasks
 
     Args:
@@ -28,9 +28,9 @@ def parse_tasks(
 
 
 def find_agent_by_id(
-    agent_id: str = None,
-    agents: List[Agent] = None,
-    task: str = None,
+    agent_id: Optional[str] = None,
+    agents: Optional[list[Agent]] = None,
+    task: Optional[str] = None,
     *args,
     **kwargs,
 ) -> Agent:
@@ -54,7 +54,7 @@ def find_agent_by_id(
 
 
 def distribute_tasks(
-    task: str = None, agents: List[Agent] = None, *args, **kwargs
+    task: Optional[str] = None, agents: Optional[list[Agent]] = None, *args, **kwargs
 ):
     """Distribute tasks to agents
 
@@ -115,8 +115,8 @@ def extract_key_from_json(
 
 
 def extract_tokens_from_text(
-    text: str, tokens: List[str]
-) -> List[str]:
+    text: str, tokens: list[str]
+) -> list[str]:
     """
     Extract a list of tokens from a text response.
 

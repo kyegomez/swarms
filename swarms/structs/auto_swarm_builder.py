@@ -1,13 +1,13 @@
 import os
-from typing import List
+from typing import Optional
 
 from pydantic import BaseModel, Field
-from swarm_models import OpenAIFunctionCaller, OpenAIChat
+from swarm_models import OpenAIChat, OpenAIFunctionCaller
 
 from swarms.structs.agent import Agent
+from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.structs.agents_available import showcase_available_agents
 
 logger = initialize_logger(log_folder="auto_swarm_builder")
 
@@ -43,7 +43,7 @@ class SwarmConfig(BaseModel):
         description="The description of the swarm's purpose and capabilities",
         example="A swarm of agents that work together to research topics and write articles",
     )
-    agents: List[AgentConfig] = Field(
+    agents: list[AgentConfig] = Field(
         description="The list of agents that make up the swarm",
         example=[
             AgentConfig(
@@ -127,8 +127,8 @@ class AutoSwarmBuilder:
 
     def __init__(
         self,
-        name: str = None,
-        description: str = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
         verbose: bool = True,
         max_loops: int = 1,
     ):
@@ -142,7 +142,7 @@ class AutoSwarmBuilder:
         )
 
     # @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-    def run(self, task: str, image_url: str = None, *args, **kwargs):
+    def run(self, task: str, image_url: Optional[str] = None, *args, **kwargs):
         """Run the swarm on a given task.
 
         Args:
@@ -269,9 +269,9 @@ class AutoSwarmBuilder:
     # @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     def swarm_router(
         self,
-        agents: List[Agent],
+        agents: list[Agent],
         task: str,
-        image_url: str = None,
+        image_url: Optional[str] = None,
         *args,
         **kwargs,
     ):

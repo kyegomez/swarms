@@ -45,7 +45,7 @@ and thorough, use the guide below to create the tests, make the tests as thoroug
 9. **Grouping and Marking Tests**:
    - Use `@pytest.mark` decorator to mark tests (e.g., `@pytest.mark.slow`).
    - This allows for selectively running certain groups of tests.
-   
+
 12. **Logging and Reporting**:
    - Use `pytest`'s inbuilt logging.
    - Integrate with tools like `Allure` for more comprehensive reporting.
@@ -79,12 +79,12 @@ By following this guide, your tests will be thorough, maintainable, and producti
 
 DOCUMENTATION_SOP = """
 
-Create multi-page long and explicit professional pytorch-like documentation for the <MODULE> code below follow the outline for the <MODULE> library, 
-provide many examples and teach the user about the code, provide examples for every function, make the documentation 10,000 words, 
+Create multi-page long and explicit professional pytorch-like documentation for the <MODULE> code below follow the outline for the <MODULE> library,
+provide many examples and teach the user about the code, provide examples for every function, make the documentation 10,000 words,
 provide many usage examples and note this is markdown docs, create the documentation for the code to document,
 put the arguments and methods in a table in markdown to make it visually seamless
 
-Now make the professional documentation for this code, provide the architecture and how the class works and why it works that way, 
+Now make the professional documentation for this code, provide the architecture and how the class works and why it works that way,
 it's purpose, provide args, their types, 3 ways of usage examples, in examples show all the code like imports main example etc
 
 BE VERY EXPLICIT AND THOROUGH, MAKE IT DEEP AND USEFUL
@@ -124,7 +124,7 @@ Example Template for the given documentation:
 
 class torch.nn.MultiheadAttention(embed_dim, num_heads, dropout=0.0, bias=True, add_bias_kv=False, add_zero_attn=False, kdim=None, vdim=None, batch_first=False, device=None, dtype=None):
     Creates a multi-head attention module for joint information representation from the different subspaces.
-    
+
     Parameters:
     - embed_dim (int): Total dimension of the model.
     - num_heads (int): Number of parallel attention heads. The embed_dim will be split across num_heads.
@@ -137,7 +137,7 @@ class torch.nn.MultiheadAttention(embed_dim, num_heads, dropout=0.0, bias=True, 
     - batch_first (bool): If True, the input and output tensors are provided as (batch, seq, feature). Default: False.
     - device (torch.device): If specified, the tensors will be moved to the specified device.
     - dtype (torch.dtype): If specified, the tensors will have the specified dtype.
-    
+
     def forward(query, key, value, key_padding_mask=None, need_weights=True, attn_mask=None, average_attn_weights=True, is_causal=False):
         Forward pass of the multi-head attention module.
 
@@ -147,7 +147,7 @@ class torch.nn.MultiheadAttention(embed_dim, num_heads, dropout=0.0, bias=True, 
         - value (Tensor): Value embeddings of shape (S, E_v) for unbatched input, (S, N, E_v) when batch_first=False, or (N, S, E_v) when batch_first=True.
         - key_padding_mask (Optional[Tensor]): If specified, a mask indicating elements to be ignored in key for attention computation.
         - need_weights (bool): If specified, returns attention weights in addition to attention outputs. Default: True.
-        - attn_mask (Optional[Tensor]): If specified, a mask preventing attention to certain positions. 
+        - attn_mask (Optional[Tensor]): If specified, a mask preventing attention to certain positions.
         - average_attn_weights (bool): If true, returns averaged attention weights per head. Otherwise, returns attention weights separately per head. Note that this flag only has an effect when need_weights=True. Default: True.
         - is_causal (bool): If specified, applies a causal mask as the attention mask. Default: False.
 

@@ -1,31 +1,29 @@
-import os
 import asyncio
 import json
+import os
 import uuid
-from swarms.utils.file_processing import create_file_in_folder
 from abc import ABC
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Sequence,
 )
 
 import yaml
+from pydantic import BaseModel
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
-from pydantic import BaseModel
+from swarms.utils.file_processing import create_file_in_folder
+from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.pandas_utils import (
     dict_to_dataframe,
     display_agents_info,
     pydantic_model_to_dataframe,
 )
-from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="base_swarm")
 
@@ -81,8 +79,8 @@ class BaseSwarm(ABC):
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        agents: Optional[List[Agent]] = None,
-        models: Optional[List[Any]] = None,
+        agents: Optional[list[Agent]] = None,
+        models: Optional[list[Any]] = None,
         max_loops: Optional[int] = 200,
         callbacks: Optional[Sequence[callable]] = None,
         autosave: Optional[bool] = False,
@@ -93,7 +91,7 @@ class BaseSwarm(ABC):
         ] = "multiagent_structure_metadata.json",
         stopping_function: Optional[Callable] = None,
         stopping_condition: Optional[str] = "stop",
-        stopping_condition_args: Optional[Dict] = None,
+        stopping_condition_args: Optional[dict] = None,
         agentops_on: Optional[bool] = False,
         speaker_selection_func: Optional[Callable] = None,
         rules: Optional[str] = None,
@@ -230,7 +228,7 @@ class BaseSwarm(ABC):
         """Add a agent to the swarm"""
         self.agents.append(agent)
 
-    def add_agents(self, agents: List[AgentType]):
+    def add_agents(self, agents: list[AgentType]):
         """Add a list of agents to the swarm"""
         self.agents.extend(agents)
 
@@ -315,22 +313,22 @@ class BaseSwarm(ABC):
     ):
         """Send a direct message to a agent"""
 
-    def autoscaler(self, num_agents: int, agent: List[AgentType]):
+    def autoscaler(self, num_agents: int, agent: list[AgentType]):
         """Autoscaler that acts like kubernetes for autonomous agents"""
 
     def get_agent_by_id(self, id: str) -> AgentType:
         """Locate a agent by id"""
 
-    def assign_task(self, agent: AgentType, task: Any) -> Dict:
+    def assign_task(self, agent: AgentType, task: Any) -> dict:
         """Assign a task to a agent"""
 
     def get_all_tasks(self, agent: AgentType, task: Any):
         """Get all tasks"""
 
-    def get_finished_tasks(self) -> List[Dict]:
+    def get_finished_tasks(self) -> list[dict]:
         """Get all finished tasks"""
 
-    def get_pending_tasks(self) -> List[Dict]:
+    def get_pending_tasks(self) -> list[dict]:
         """Get all pending tasks"""
 
     def pause_agent(self, agent: AgentType, agent_id: str):
@@ -354,21 +352,21 @@ class BaseSwarm(ABC):
     def scale_to(self, num_agent: int):
         """Scale to a specific number of agents"""
 
-    def get_all_agents(self) -> List[AgentType]:
+    def get_all_agents(self) -> list[AgentType]:
         """Get all agents"""
 
     def get_swarm_size(self) -> int:
         """Get the size of the swarm"""
 
     # #@abstractmethod
-    def get_swarm_status(self) -> Dict:
+    def get_swarm_status(self) -> dict:
         """Get the status of the swarm"""
 
     # #@abstractmethod
     def save_swarm_state(self):
         """Save the swarm state"""
 
-    def batched_run(self, tasks: List[Any], *args, **kwargs):
+    def batched_run(self, tasks: list[Any], *args, **kwargs):
         """_summary_
 
         Args:
@@ -377,7 +375,7 @@ class BaseSwarm(ABC):
         # Implement batched run
         return [self.run(task, *args, **kwargs) for task in tasks]
 
-    async def abatch_run(self, tasks: List[str], *args, **kwargs):
+    async def abatch_run(self, tasks: list[str], *args, **kwargs):
         """Asynchronous batch run with language model
 
         Args:
@@ -447,7 +445,7 @@ class BaseSwarm(ABC):
         )
         return result
 
-    def run_batch_async(self, tasks: List[str], *args, **kwargs):
+    def run_batch_async(self, tasks: list[str], *args, **kwargs):
         """Run the swarm asynchronously
 
         Args:
@@ -459,7 +457,7 @@ class BaseSwarm(ABC):
         )
         return result
 
-    def run_batch(self, tasks: List[str], *args, **kwargs):
+    def run_batch(self, tasks: list[str], *args, **kwargs):
         """Run the swarm asynchronously
 
         Args:
@@ -496,7 +494,7 @@ class BaseSwarm(ABC):
         agent = self.select_agent_by_name(agent_name)
         return agent.run(task, *args, **kwargs)
 
-    def concurrent_run(self, task: str) -> List[str]:
+    def concurrent_run(self, task: str) -> list[str]:
         """Synchronously run the task on all llms and collect responses"""
         with ThreadPoolExecutor() as executor:
             future_to_llm = {
@@ -524,7 +522,7 @@ class BaseSwarm(ABC):
         """Remove an llm from the god mode"""
         self.agents.remove(agent)
 
-    def run_all(self, task: str = None, *args, **kwargs):
+    def run_all(self, task: Optional[str] = None, *args, **kwargs):
         """Run all agents
 
         Args:
@@ -538,7 +536,7 @@ class BaseSwarm(ABC):
             responses.append(agent(task, *args, **kwargs))
         return responses
 
-    def run_on_all_agents(self, task: str = None, *args, **kwargs):
+    def run_on_all_agents(self, task: Optional[str] = None, *args, **kwargs):
         """Run on all agents
 
         Args:
@@ -587,7 +585,7 @@ class BaseSwarm(ABC):
             SwarmManagerBase: Instance of SwarmManagerBase representing the retrieved Swarm, or None if not found.
         """
 
-    def retrieve_joined_agents(self, agent_id: str) -> List[Agent]:
+    def retrieve_joined_agents(self, agent_id: str) -> list[Agent]:
         """
         Retrieve the information the Agents which have joined the registry.
 

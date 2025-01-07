@@ -580,14 +580,14 @@ def run_all_tests():
             test()
             passed_tests += 1
         except Exception as e:
-            print(f"✗ Test {test.__name__} failed: {str(e)}")
+            print(f"✗ Test {test.__name__} failed: {e!s}")
 
     # Run async test
     try:
         asyncio.run(test_async_operations())
         passed_tests += 1
     except Exception as e:
-        print(f"✗ Async operations test failed: {str(e)}")
+        print(f"✗ Async operations test failed: {e!s}")
 
     print("\nExtended Test Summary:")
     print(f"Total Tests: {total_tests}")

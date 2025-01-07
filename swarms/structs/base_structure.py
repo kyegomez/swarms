@@ -1,15 +1,14 @@
-import toml
-import yaml
 import asyncio
 import concurrent.futures
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Callable
-
+from typing import Any, Callable, Optional
 
 import psutil
+import toml
+import yaml
 
 try:
     import gzip
@@ -111,7 +110,7 @@ class BaseStructure:
         with open(file_path) as file:
             return json.load(file)
 
-    def save_metadata(self, metadata: Dict[str, Any]):
+    def save_metadata(self, metadata: dict[str, Any]):
         """Save metadata to file.
 
         Args:
@@ -123,7 +122,7 @@ class BaseStructure:
             )
             self.save_to_file(metadata, file_path)
 
-    def load_metadata(self) -> Dict[str, Any]:
+    def load_metadata(self) -> dict[str, Any]:
         """Load metadata from file.
 
         Returns:
@@ -206,7 +205,7 @@ class BaseStructure:
             None, self.run, *args, **kwargs
         )
 
-    async def save_metadata_async(self, metadata: Dict[str, Any]):
+    async def save_metadata_async(self, metadata: dict[str, Any]):
         """Save metadata to file asynchronously.
 
         Args:
@@ -217,7 +216,7 @@ class BaseStructure:
             None, self.save_metadata, metadata
         )
 
-    async def load_metadata_async(self) -> Dict[str, Any]:
+    async def load_metadata_async(self) -> dict[str, Any]:
         """Load metadata from file asynchronously.
 
         Returns:
@@ -316,7 +315,7 @@ class BaseStructure:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             return executor.submit(self.run, *args, **kwargs)
 
-    def save_metadata_in_thread(self, metadata: Dict[str, Any]):
+    def save_metadata_in_thread(self, metadata: dict[str, Any]):
         """Save metadata to file in a thread.
 
         Args:
@@ -356,7 +355,7 @@ class BaseStructure:
 
     def run_batched(
         self,
-        batched_data: List[Any],
+        batched_data: list[Any],
         batch_size: int = 10,
         *args,
         **kwargs,
@@ -378,8 +377,8 @@ class BaseStructure:
             return [future.result() for future in futures]
 
     def load_config(
-        self, config: str = None, *args, **kwargs
-    ) -> Dict[str, Any]:
+        self, config: Optional[str] = None, *args, **kwargs
+    ) -> dict[str, Any]:
         """Load config from file.
 
         Args:
@@ -391,7 +390,7 @@ class BaseStructure:
         return self.load_from_file(config)
 
     def backup_data(
-        self, data: Any, backup_path: str = None, *args, **kwargs
+        self, data: Any, backup_path: Optional[str] = None, *args, **kwargs
     ):
         """Backup data to file.
 
@@ -418,7 +417,7 @@ class BaseStructure:
 
     def run_with_resources_batched(
         self,
-        batched_data: List[Any],
+        batched_data: list[Any],
         batch_size: int = 10,
         *args,
         **kwargs,
@@ -439,7 +438,7 @@ class BaseStructure:
 
     def _serialize_callable(
         self, attr_value: Callable
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Serializes callable attributes by extracting their name and docstring.
 
@@ -482,7 +481,7 @@ class BaseStructure:
         except (TypeError, ValueError):
             return f"<Non-serializable: {type(attr_value).__name__}>"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Converts all attributes of the class, including callables, into a dictionary.
         Handles non-serializable attributes by converting them or skipping them.

@@ -1,5 +1,6 @@
 import asyncio
 import time
+
 from swarms.structs.agent import Agent
 from swarms.structs.multi_process_workflow import MultiProcessWorkflow
 
@@ -27,7 +28,7 @@ def test_initialization():
         print(f"  - Autosave: {workflow.autosave}")
         print("✓ Initialization test passed")
     except Exception as e:
-        print(f"✗ Initialization test failed: {str(e)}")
+        print(f"✗ Initialization test failed: {e!s}")
         raise
 
 
@@ -46,7 +47,7 @@ def test_execute_task():
         print(f"  - Result: {result}")
         print("✓ Task execution test passed")
     except Exception as e:
-        print(f"✗ Task execution test failed: {str(e)}")
+        print(f"✗ Task execution test failed: {e!s}")
         raise
 
 
@@ -65,7 +66,7 @@ def test_parallel_run():
         print(f"  - Results: {results}")
         print("✓ Parallel run test passed")
     except Exception as e:
-        print(f"✗ Parallel run test failed: {str(e)}")
+        print(f"✗ Parallel run test failed: {e!s}")
         raise
 
 
@@ -84,7 +85,7 @@ async def test_async_run():
         print(f"  - Results: {results}")
         print("✓ Async run test passed")
     except Exception as e:
-        print(f"✗ Async run test failed: {str(e)}")
+        print(f"✗ Async run test failed: {e!s}")
         raise
 
 
@@ -104,7 +105,7 @@ def test_batched_run():
         print(f"  - Results: {results}")
         print("✓ Batched run test passed")
     except Exception as e:
-        print(f"✗ Batched run test failed: {str(e)}")
+        print(f"✗ Batched run test failed: {e!s}")
         raise
 
 
@@ -123,7 +124,7 @@ def test_concurrent_run():
         print(f"  - Results: {results}")
         print("✓ Concurrent run test passed")
     except Exception as e:
-        print(f"✗ Concurrent run test failed: {str(e)}")
+        print(f"✗ Concurrent run test failed: {e!s}")
         raise
 
 
@@ -141,7 +142,7 @@ def test_error_handling():
         print(f"  - Result when no agents: {result}")
         print("✓ Error handling test passed")
     except Exception as e:
-        print(f"✗ Error handling test failed: {str(e)}")
+        print(f"✗ Error handling test failed: {e!s}")
         raise
 
 
@@ -169,7 +170,7 @@ async def run_all_tests():
 
     except Exception as e:
         print("\n=== Test Suite Failed ===")
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
         raise
 
 

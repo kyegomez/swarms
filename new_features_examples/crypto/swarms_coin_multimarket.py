@@ -1,8 +1,9 @@
 import asyncio
-import aiohttp
-from typing import Dict, List, Optional
 from datetime import datetime
 from statistics import mean, median
+from typing import Optional
+
+import aiohttp
 
 from swarms.structs.agent import Agent
 
@@ -121,7 +122,7 @@ class MultiExchangeDataFetcher:
             "birdeye": "https://public-api.birdeye.so/public",  # Using Birdeye instead of Jupiter
         }
 
-    async def fetch_data(self, url: str) -> Optional[Dict]:
+    async def fetch_data(self, url: str) -> Optional[dict]:
         """Generic async function to fetch data from APIs with error handling"""
         async with aiohttp.ClientSession() as session:
             try:
@@ -136,10 +137,10 @@ class MultiExchangeDataFetcher:
                 print(f"Timeout while fetching from {url}")
                 return None
             except Exception as e:
-                print(f"Error fetching from {url}: {str(e)}")
+                print(f"Error fetching from {url}: {e!s}")
                 return None
 
-    async def get_coingecko_data(self) -> Optional[Dict]:
+    async def get_coingecko_data(self) -> Optional[dict]:
         """Fetch $Swarms data from CoinGecko"""
         try:
             url = f"{self.base_urls['coingecko']}/simple/price"
@@ -160,10 +161,10 @@ class MultiExchangeDataFetcher:
                 }
             return None
         except Exception as e:
-            print(f"Error processing CoinGecko data: {str(e)}")
+            print(f"Error processing CoinGecko data: {e!s}")
             return None
 
-    async def get_dexscreener_data(self) -> Optional[Dict]:
+    async def get_dexscreener_data(self) -> Optional[dict]:
         """Fetch $Swarms data from DexScreener"""
         try:
             url = (
@@ -179,10 +180,10 @@ class MultiExchangeDataFetcher:
                 }
             return None
         except Exception as e:
-            print(f"Error processing DexScreener data: {str(e)}")
+            print(f"Error processing DexScreener data: {e!s}")
             return None
 
-    async def get_birdeye_data(self) -> Optional[Dict]:
+    async def get_birdeye_data(self) -> Optional[dict]:
         """Fetch $Swarms data from Birdeye"""
         try:
             # Example Birdeye endpoint - replace ADDRESS with actual Swarms token address
@@ -201,12 +202,12 @@ class MultiExchangeDataFetcher:
                 }
             return None
         except Exception as e:
-            print(f"Error processing Birdeye data: {str(e)}")
+            print(f"Error processing Birdeye data: {e!s}")
             return None
 
     def aggregate_data(
-        self, data_points: List[Optional[Dict]]
-    ) -> Dict:
+        self, data_points: list[Optional[dict]]
+    ) -> dict:
         """Aggregate data from multiple sources with null checking"""
         prices = []
         volumes = []
@@ -297,9 +298,9 @@ async def answer_swarms_query(query: str) -> str:
         )
         return swarms_agent.run(full_query)
     except Exception as e:
-        print(f"Error in answer_swarms_query: {str(e)}")
+        print(f"Error in answer_swarms_query: {e!s}")
         return (
-            f"An error occurred while processing your query: {str(e)}"
+            f"An error occurred while processing your query: {e!s}"
         )
 
 

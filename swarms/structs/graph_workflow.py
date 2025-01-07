@@ -1,10 +1,10 @@
 from enum import Enum
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Optional
 
 import networkx as nx
 from pydantic.v1 import BaseModel, Field, validator
 
-from swarms.structs.agent import Agent  # noqa: F401
+from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="graph_workflow")
@@ -64,10 +64,10 @@ class GraphWorkflow(BaseModel):
         graph (nx.DiGraph): A directed graph object from the NetworkX library representing the workflow graph.
     """
 
-    nodes: Dict[str, Node] = Field(default_factory=dict)
-    edges: List[Edge] = Field(default_factory=list)
-    entry_points: List[str] = Field(default_factory=list)
-    end_points: List[str] = Field(default_factory=list)
+    nodes: dict[str, Node] = Field(default_factory=dict)
+    edges: list[Edge] = Field(default_factory=list)
+    entry_points: list[str] = Field(default_factory=list)
+    end_points: list[str] = Field(default_factory=list)
     graph: nx.DiGraph = Field(
         default_factory=nx.DiGraph, exclude=True
     )
@@ -122,7 +122,7 @@ class GraphWorkflow(BaseModel):
         self.edges.append(edge)
         self.graph.add_edge(edge.source, edge.target)
 
-    def set_entry_points(self, entry_points: List[str]):
+    def set_entry_points(self, entry_points: list[str]):
         """
         Sets the entry points of the workflow graph.
 
@@ -139,7 +139,7 @@ class GraphWorkflow(BaseModel):
                 )
         self.entry_points = entry_points
 
-    def set_end_points(self, end_points: List[str]):
+    def set_end_points(self, end_points: list[str]):
         """
         Sets the end points of the workflow graph.
 
@@ -171,8 +171,8 @@ class GraphWorkflow(BaseModel):
         return mermaid_str
 
     def run(
-        self, task: str = None, *args, **kwargs
-    ) -> Dict[str, Any]:
+        self, task: Optional[str] = None, *args, **kwargs
+    ) -> dict[str, Any]:
         """
         Function to run the workflow graph.
 

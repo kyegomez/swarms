@@ -1,10 +1,9 @@
-from typing import List, Callable
+from typing import Callable, Optional
 
 from swarms.structs.agent import Agent
-from swarms.utils.loguru_logger import logger
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
-
+from swarms.utils.loguru_logger import logger
 
 # def select_next_speaker_bid(
 #     step: int,
@@ -22,14 +21,14 @@ from swarms.structs.conversation import Conversation
 
 
 def select_next_speaker_roundtable(
-    step: int, agents: List[Agent]
+    step: int, agents: list[Agent]
 ) -> int:
     """Selects the next speaker."""
     return step % len(agents)
 
 
 def select_next_speaker_director(
-    step: int, agents: List[Agent], director: Agent
+    step: int, agents: list[Agent], director: Agent
 ) -> int:
     # if the step if even => director
     # => director selects next speaker
@@ -120,8 +119,8 @@ class MultiAgentCollaboration(BaseSwarm):
         name: str = "MultiAgentCollaboration",
         description: str = "A multi-agent collaboration.",
         director: Agent = None,
-        agents: List[Agent] = None,
-        select_next_speaker: Callable = None,
+        agents: Optional[list[Agent]] = None,
+        select_next_speaker: Optional[Callable] = None,
         max_loops: int = 10,
         autosave: bool = True,
         saved_file_path_name: str = "multi_agent_collab.json",
@@ -157,7 +156,7 @@ class MultiAgentCollaboration(BaseSwarm):
         )
 
     def default_select_next_speaker(
-        self, step: int, agents: List[Agent]
+        self, step: int, agents: list[Agent]
     ) -> int:
         """Default speaker selection function."""
         return step % len(agents)

@@ -1,25 +1,25 @@
 import asyncio
+import concurrent
 import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
+from clusterops import (
+    execute_on_gpu,
+    execute_on_multiple_gpus,
+    execute_with_cpu_cores,
+    list_available_gpus,
+)
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.utils.file_processing import create_file_in_folder
-import concurrent
-from clusterops import (
-    execute_on_gpu,
-    execute_with_cpu_cores,
-    execute_on_multiple_gpus,
-    list_available_gpus,
-)
-from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.swarm_id_generator import generate_swarm_id
+from swarms.utils.file_processing import create_file_in_folder
+from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -60,7 +60,7 @@ class MetadataSchema(BaseModel):
         "Concurrent execution of multiple agents",
         description="Description of the workflow",
     )
-    agents: Optional[List[AgentOutputSchema]] = Field(
+    agents: Optional[list[AgentOutputSchema]] = Field(
         ..., description="List of agent outputs and metadata"
     )
     timestamp: Optional[datetime] = Field(
@@ -107,7 +107,7 @@ class ConcurrentWorkflow(BaseSwarm):
         self,
         name: str = "ConcurrentWorkflow",
         description: str = "Execution of multiple agents concurrently",
-        agents: List[Agent] = [],
+        agents: list[Agent] = [],
         metadata_output_path: str = "agent_metadata.json",
         auto_save: bool = True,
         output_schema: BaseModel = MetadataSchema,
@@ -115,7 +115,7 @@ class ConcurrentWorkflow(BaseSwarm):
         return_str_on: bool = False,
         agent_responses: list = [],
         auto_generate_prompts: bool = False,
-        max_workers: int = None,
+        max_workers: Optional[int] = None,
         *args,
         **kwargs,
     ):
@@ -324,7 +324,7 @@ class ConcurrentWorkflow(BaseSwarm):
 
     def _run(
         self, task: str, img: str, *args, **kwargs
-    ) -> Union[Dict[str, Any], str]:
+    ) -> Union[dict[str, Any], str]:
         """
         Runs the workflow for the given task, executes agents concurrently, and saves metadata in a production-grade manner.
 
@@ -442,8 +442,8 @@ class ConcurrentWorkflow(BaseSwarm):
             raise e
 
     def run_batched(
-        self, tasks: List[str]
-    ) -> List[Union[Dict[str, Any], str]]:
+        self, tasks: list[str]
+    ) -> list[Union[dict[str, Any], str]]:
         """
         Runs the workflow for a batch of tasks, executes agents concurrently for each task, and saves metadata in a production-grade manner.
 
@@ -486,8 +486,8 @@ class ConcurrentWorkflow(BaseSwarm):
         return asyncio.ensure_future(self.run(task))
 
     def run_batched_async(
-        self, tasks: List[str]
-    ) -> List[asyncio.Future]:
+        self, tasks: list[str]
+    ) -> list[asyncio.Future]:
         """
         Runs the workflow asynchronously for a batch of tasks, executes agents concurrently for each task, and saves metadata in a production-grade manner.
 
@@ -510,8 +510,8 @@ class ConcurrentWorkflow(BaseSwarm):
         return futures
 
     def run_parallel(
-        self, tasks: List[str]
-    ) -> List[Union[Dict[str, Any], str]]:
+        self, tasks: list[str]
+    ) -> list[Union[dict[str, Any], str]]:
         """
         Runs the workflow in parallel for a batch of tasks, executes agents concurrently for each task, and saves metadata in a production-grade manner.
 
@@ -540,8 +540,8 @@ class ConcurrentWorkflow(BaseSwarm):
         return results
 
     def run_parallel_async(
-        self, tasks: List[str]
-    ) -> List[asyncio.Future]:
+        self, tasks: list[str]
+    ) -> list[asyncio.Future]:
         """
         Runs the workflow in parallel asynchronously for a batch of tasks, executes agents concurrently for each task, and saves metadata in a production-grade manner.
 

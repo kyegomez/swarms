@@ -7,11 +7,12 @@ Todo
 """
 
 import os
+
 from dotenv import load_dotenv
-from swarms import Agent, SequentialWorkflow
-from swarm_models import OpenAIChat, OpenAIFunctionCaller
 from pydantic import BaseModel
-from typing import List
+from swarm_models import OpenAIChat, OpenAIFunctionCaller
+
+from swarms import Agent, SequentialWorkflow
 
 
 class CollegeLog(BaseModel):
@@ -21,7 +22,7 @@ class CollegeLog(BaseModel):
 
 
 class CollegesRecommendation(BaseModel):
-    colleges: List[CollegeLog]
+    colleges: list[CollegeLog]
     reasoning: str
 
 
@@ -46,10 +47,10 @@ You are a college selection final decision maker. Your role is to:
     4. Provide clear rationale for each recommendation
     5. Include specific action items for each selected school
     6. Outline next steps in the application process
-    
-    Focus on creating actionable, well-reasoned final recommendations that 
+
+    Focus on creating actionable, well-reasoned final recommendations that
     balance all relevant factors and stakeholder input.
-    
+
 """
 
 function_caller = OpenAIFunctionCaller(
@@ -69,8 +70,8 @@ profile_analyzer_agent = Agent(
     4. Assess leadership experiences and community involvement
     5. Determine student's preferences for college environment, location, and programs
     6. Create a comprehensive student profile summary
-    
-    Always consider both quantitative metrics (GPA, test scores) and qualitative aspects 
+
+    Always consider both quantitative metrics (GPA, test scores) and qualitative aspects
     (personal growth, challenges overcome, unique perspectives).""",
     llm=model,
     max_loops=1,
@@ -92,7 +93,7 @@ college_research_agent = Agent(
     4. Evaluate college-specific opportunities and resources
     5. Consider financial aid availability and scholarship opportunities
     6. Track historical admission data and acceptance rates
-    
+
     Focus on providing accurate, comprehensive information about each institution
     while considering both academic and cultural fit factors.""",
     llm=model,
@@ -115,8 +116,8 @@ college_match_agent = Agent(
     4. Assess financial fit and aid opportunities
     5. Create tiered lists of reach, target, and safety schools
     6. Explain the reasoning behind each match
-    
-    Always provide a balanced list with realistic expectations while 
+
+    Always provide a balanced list with realistic expectations while
     considering both student preferences and admission probability.""",
     llm=model,
     max_loops=1,
@@ -138,7 +139,7 @@ debate_moderator_agent = Agent(
     4. Synthesize different viewpoints
     5. Guide the group toward consensus
     6. Document key points of agreement and disagreement
-    
+
     Maintain objectivity while ensuring all important factors are thoroughly discussed
     and evaluated.""",
     llm=model,
@@ -161,7 +162,7 @@ critique_agent = Agent(
     4. Assess risks and potential drawbacks
     5. Provide constructive feedback on selections
     6. Suggest alternative options when appropriate
-    
+
     Focus on constructive criticism that helps improve the final college list
     while maintaining realistic expectations.""",
     llm=model,
@@ -185,8 +186,8 @@ final_decision_agent = Agent(
     4. Provide clear rationale for each recommendation
     5. Include specific action items for each selected school
     6. Outline next steps in the application process
-    
-    Focus on creating actionable, well-reasoned final recommendations that 
+
+    Focus on creating actionable, well-reasoned final recommendations that
     balance all relevant factors and stakeholder input.
     """,
     llm=model,

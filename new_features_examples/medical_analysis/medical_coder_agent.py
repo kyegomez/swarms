@@ -1,22 +1,22 @@
 """
-- For each diagnosis, pull lab results, 
-- egfr 
-- for each diagnosis, pull lab ranges, 
+- For each diagnosis, pull lab results,
+- egfr
+- for each diagnosis, pull lab ranges,
 - pull ranges for diagnosis
 
 - if the diagnosis is x, then the lab ranges should be a to b
-- train the agents, increase the load of input 
+- train the agents, increase the load of input
 - medical history sent to the agent
 - setup rag for the agents
-- run the first agent -> kidney disease -> don't know the stage -> stage 2 -> lab results -> indicative of stage 3 -> the case got elavated -> 
+- run the first agent -> kidney disease -> don't know the stage -> stage 2 -> lab results -> indicative of stage 3 -> the case got elavated ->
 - how to manage diseases and by looking at correlating lab, docs, diagnoses
-- put docs in rag -> 
+- put docs in rag ->
 - monitoring, evaluation, and treatment
 - can we confirm for every diagnosis -> monitoring, evaluation, and treatment, specialized for these things
 - find diagnosis -> or have diagnosis, -> for each diagnosis are there evidence of those 3 things
-- swarm of those 4 agents, -> 
+- swarm of those 4 agents, ->
 - fda api for healthcare for commerically available papers
-- 
+-
 
 """
 
@@ -36,14 +36,14 @@ chief_medical_officer = Agent(
     - Suggesting treatment plans based on team input
     - Identifying when additional specialists need to be consulted
     - For each diferrential diagnosis provide minimum lab ranges to meet that diagnosis or be indicative of that diagnosis minimum and maximum
-    
+
     Format all responses with clear sections for:
     - Initial Assessment (include preliminary ICD-10 codes for symptoms)
     - Differential Diagnoses (with corresponding ICD-10 codes)
     - Specialist Consultations Needed
     - Recommended Next Steps
-    
-    
+
+
     """,
     model_name="gpt-4o",
     max_loops=1,
@@ -52,12 +52,12 @@ chief_medical_officer = Agent(
 virologist = Agent(
     agent_name="Virologist",
     system_prompt="""You are a specialist in viral diseases. For each case, provide:
-    
+
     Clinical Analysis:
     - Detailed viral symptom analysis
     - Disease progression timeline
     - Risk factors and complications
-    
+
     Coding Requirements:
     - List relevant ICD-10 codes for:
         * Confirmed viral conditions
@@ -67,7 +67,7 @@ virologist = Agent(
     - Include both:
         * Primary diagnostic codes
         * Secondary condition codes
-    
+
     Document all findings using proper medical coding standards and include rationale for code selection.""",
     model_name="gpt-4o",
     max_loops=1,
@@ -76,14 +76,14 @@ virologist = Agent(
 internist = Agent(
     agent_name="Internist",
     system_prompt="""You are an Internal Medicine specialist responsible for comprehensive evaluation.
-    
+
     For each case, provide:
-    
+
     Clinical Assessment:
     - System-by-system review
     - Vital signs analysis
     - Comorbidity evaluation
-    
+
     Medical Coding:
     - ICD-10 codes for:
         * Primary conditions
@@ -92,7 +92,7 @@ internist = Agent(
         * Chronic conditions
         * Signs and symptoms
     - Include hierarchical condition category (HCC) codes where applicable
-    
+
     Document supporting evidence for each code selected.""",
     model_name="gpt-4o",
     max_loops=1,
@@ -101,20 +101,20 @@ internist = Agent(
 medical_coder = Agent(
     agent_name="Medical Coder",
     system_prompt="""You are a certified medical coder responsible for:
-    
+
     Primary Tasks:
     1. Reviewing all clinical documentation
     2. Assigning accurate ICD-10 codes
     3. Ensuring coding compliance
     4. Documenting code justification
-    
+
     Coding Process:
     - Review all specialist inputs
     - Identify primary and secondary diagnoses
     - Assign appropriate ICD-10 codes
     - Document supporting evidence
     - Note any coding queries
-    
+
     Output Format:
     1. Primary Diagnosis Codes
         - ICD-10 code
@@ -132,12 +132,12 @@ medical_coder = Agent(
 synthesizer = Agent(
     agent_name="Diagnostic Synthesizer",
     system_prompt="""You are responsible for creating the final diagnostic and coding assessment.
-    
+
     Synthesis Requirements:
     1. Integrate all specialist findings
     2. Reconcile any conflicting diagnoses
     3. Verify coding accuracy and completeness
-    
+
     Final Report Sections:
     1. Clinical Summary
         - Primary diagnosis with ICD-10
@@ -151,7 +151,7 @@ synthesizer = Agent(
         - Additional testing needed
         - Follow-up care
         - Documentation improvements needed
-    
+
     Include confidence levels and evidence quality for all diagnoses and codes.""",
     model_name="gpt-4o",
     max_loops=1,
@@ -224,10 +224,10 @@ if __name__ == "__main__":
     Patient: 45-year-old White Male
 
     Lab Results:
-    - egfr 
+    - egfr
     - 59 ml / min / 1.73
     - non african-american
-    
+
     """
 
     # Add timestamp to the patient case

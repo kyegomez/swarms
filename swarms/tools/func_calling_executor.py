@@ -1,5 +1,6 @@
 import concurrent.futures
-from typing import Callable, Any, Dict, List
+from typing import Any, Callable
+
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="func_calling_executor")
@@ -112,8 +113,8 @@ logger = initialize_logger(log_folder="func_calling_executor")
 
 
 def openai_tool_executor(
-    tools: List[Dict[str, Any]],
-    function_map: Dict[str, Callable],
+    tools: list[dict[str, Any]],
+    function_map: dict[str, Callable],
     verbose: bool = True,
     return_as_string: bool = False,
     *args,

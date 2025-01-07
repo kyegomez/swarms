@@ -3,7 +3,7 @@ import csv
 import datetime
 import os
 import uuid
-from typing import Dict, List, Union
+from typing import Optional, Union
 
 import aiofiles
 from pydantic import BaseModel, Field
@@ -47,14 +47,14 @@ class SwarmRunMetadata(BaseModel):
     )
     name: str
     description: str
-    agents: List[str]
+    agents: list[str]
     start_time: str = Field(
         default_factory=lambda: time,
         description="The start time of the swarm run.",
     )
     end_time: str
     tasks_completed: int
-    outputs: List[AgentOutput]
+    outputs: list[AgentOutput]
     number_of_agents: int = Field(
         ...,
         description="The number of agents participating in the swarm.",
@@ -81,12 +81,12 @@ class SpreadSheetSwarm(BaseSwarm):
         self,
         name: str = "Spreadsheet-Swarm",
         description: str = "A swarm that that processes tasks concurrently using multiple agents and saves the metadata to a CSV file.",
-        agents: Union[Agent, List[Agent]] = [],
+        agents: Union[Agent, list[Agent]] = [],
         autosave_on: bool = True,
-        save_file_path: str = None,
+        save_file_path: Optional[str] = None,
         max_loops: int = 1,
         workspace_dir: str = os.getenv("WORKSPACE_DIR"),
-        load_path: str = None,
+        load_path: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -104,7 +104,7 @@ class SpreadSheetSwarm(BaseSwarm):
         self.max_loops = max_loops
         self.workspace_dir = workspace_dir
         self.load_path = load_path
-        self.agent_configs: Dict[str, AgentConfig] = {}
+        self.agent_configs: dict[str, AgentConfig] = {}
 
         # --------------- NEW CHANGE START ---------------
         # The save_file_path now uses the formatted_time and uuid_hex
@@ -160,7 +160,7 @@ class SpreadSheetSwarm(BaseSwarm):
                 f"Loading agent configurations from {csv_path}"
             )
 
-            async with aiofiles.open(csv_path, mode="r") as file:
+            async with aiofiles.open(csv_path) as file:
                 content = await file.read()
                 csv_reader = csv.DictReader(content.splitlines())
 
@@ -257,7 +257,7 @@ class SpreadSheetSwarm(BaseSwarm):
         log_agent_data(self.metadata.model_dump())
         return self.metadata.model_dump_json(indent=4)
 
-    async def _run(self, task: str = None, *args, **kwargs):
+    async def _run(self, task: Optional[str] = None, *args, **kwargs):
         """
         Run the swarm either with a specific task or using configured tasks.
 
@@ -283,7 +283,7 @@ class SpreadSheetSwarm(BaseSwarm):
             print(log_agent_data(self.metadata.model_dump()))
             return self.metadata.model_dump_json(indent=4)
 
-    def run(self, task: str = None, *args, **kwargs):
+    def run(self, task: Optional[str] = None, *args, **kwargs):
         """
         Run the swarm with the specified task.
 

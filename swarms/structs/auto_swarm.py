@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, Callable, Optional
 
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import logger
@@ -33,8 +34,8 @@ class AutoSwarmRouter(BaseSwarm):
         name: Optional[str] = None,
         description: Optional[str] = None,
         verbose: bool = False,
-        custom_params: Optional[Dict[str, Any]] = None,
-        swarms: Sequence[BaseSwarm] = None,
+        custom_params: Optional[dict[str, Any]] = None,
+        swarms: Optional[Sequence[BaseSwarm]] = None,
         custom_preprocess: Optional[Callable] = None,
         custom_postprocess: Optional[Callable] = None,
         custom_router: Optional[Callable] = None,
@@ -60,7 +61,7 @@ class AutoSwarmRouter(BaseSwarm):
             f"AutoSwarmRouter has been initialized with {self.len_of_swarms()} swarms."
         )
 
-    def run(self, task: str = None, *args, **kwargs):
+    def run(self, task: Optional[str] = None, *args, **kwargs):
         try:
             """Run the swarm simulation and route the task to the appropriate swarm."""
 
@@ -137,7 +138,7 @@ class AutoSwarm(BaseSwarm):
         name: Optional[str] = None,
         description: Optional[str] = None,
         verbose: bool = False,
-        custom_params: Optional[Dict[str, Any]] = None,
+        custom_params: Optional[dict[str, Any]] = None,
         custom_preprocess: Optional[Callable] = None,
         custom_postprocess: Optional[Callable] = None,
         custom_router: Optional[Callable] = None,
@@ -179,7 +180,7 @@ class AutoSwarm(BaseSwarm):
 
     # def name_swarm_check(self, name: str = None):
 
-    def run(self, task: str = None, *args, **kwargs):
+    def run(self, task: Optional[str] = None, *args, **kwargs):
         """Run the swarm simulation."""
         try:
             loop = 0

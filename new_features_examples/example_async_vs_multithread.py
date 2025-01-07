@@ -1,14 +1,15 @@
-import os
 import asyncio
-from swarms import Agent
-from swarm_models import OpenAIChat
+import os
 import time
-import psutil
 
+import psutil
+from dotenv import load_dotenv
+from swarm_models import OpenAIChat
+
+from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
-from dotenv import load_dotenv
 
 load_dotenv()
 

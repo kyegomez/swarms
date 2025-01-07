@@ -5,7 +5,7 @@ import sys
 import traceback
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import psutil
 import requests
@@ -101,7 +101,7 @@ class SwarmsIssueReporter:
         except:
             return "Unknown"
 
-    def _get_gpu_info(self) -> Tuple[bool, Optional[str]]:
+    def _get_gpu_info(self) -> tuple[bool, Optional[str]]:
         """Get GPU information and CUDA availability."""
         try:
             import torch
@@ -131,8 +131,8 @@ class SwarmsIssueReporter:
         )
 
     def _categorize_error(
-        self, error: Exception, context: Dict
-    ) -> List[str]:
+        self, error: Exception, context: dict
+    ) -> list[str]:
         """Categorize the error and return appropriate labels."""
         error_str = str(error).lower()
         type(error).__name__
@@ -164,13 +164,13 @@ class SwarmsIssueReporter:
         self,
         error: Exception,
         system_info: SwarmSystemInfo,
-        context: Dict,
+        context: dict,
     ) -> str:
         """Format the issue body with Swarms-specific information."""
         return f"""
         ## Swarms Error Report
         - **Error Type**: {type(error).__name__}
-        - **Error Message**: {str(error)}
+        - **Error Message**: {error!s}
         - **Swarms Version**: {system_info.swarms_version}
 
         ## Environment Information
@@ -236,7 +236,7 @@ class SwarmsIssueReporter:
         self,
         error: Exception,
         agent: Optional[Agent] = None,
-        context: Dict[str, Any] = None,
+        context: Optional[dict[str, Any]] = None,
         priority: str = "normal",
     ) -> Optional[int]:
         """
@@ -309,7 +309,7 @@ class SwarmsIssueReporter:
             return issue_number
 
         except Exception as e:
-            logger.error(f"Error creating Swarms issue: {str(e)}")
+            logger.error(f"Error creating Swarms issue: {e!s}")
             return None
 
 
