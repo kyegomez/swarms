@@ -23,3 +23,5 @@ pytest>=8.1.1
 networkx
 aiofiles
 clusterops
+litellm
+gradio
