@@ -1,0 +1,27 @@
+/* * Further customization as needed */ */
+
+.md-typeset__table {
+    min-width: 100%;
+}
+
+.md-typeset table:not([class]) {
+    display: table;
+}
+
+/* Dark mode
+[data-md-color-scheme="slate"] {
+    --md-default-bg-color: black;
+}
+
+.header__ellipsis {
+    color: black;
+}
+
+.md-copyright__highlight {
+    color: black;
+}
+
+
+.md-header.md-header--shadow {
+    color: black;
+} */

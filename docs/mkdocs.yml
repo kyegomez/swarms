@@ -1,0 +1,282 @@
+docs_dir: '.'  # replace with the correct path if your documentation files are not in the same directory as mkdocs.yml
+site_name: Swarms
+site_url: https://docs.swarms.world
+site_author: Swarms
+site_description: The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework
+repo_name: kyegomez/swarms
+repo_url: https://github.com/kyegomez/swarms
+edit_uri: https://github.com/kyegomez/swarms/tree/main/docs
+copyright: TGSC Corp 2024. All rights reserved.
+
+plugins:
+  # - glightbox
+  - search
+  - git-authors
+  - mkdocs-jupyter:
+        kernel_name: python3
+        execute: false
+        include_source: True
+        include_requirejs: true
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            parameter_headings: true
+            paths: [supervision]
+            load_external_modules: true
+            allow_inspection: true
+            show_bases: true
+            group_by_category: true
+            docstring_style: google
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            show_category_heading: true
+          domains: [std, py]
+  - git-committers:
+      repository: kyegomez/swarms
+      branch: master
+      # token: !ENV ["GITHUB_TOKEN"]
+  - git-revision-date-localized:
+      enable_creation_date: true
+extra_css:
+  - assets/css/extra.css
+extra:
+  social:
+    - icon: fontawesome/brands/twitter
+      link: https://x.com/KyeGomezB
+    - icon: fontawesome/brands/github
+      link: https://github.com/kyegomez/swarms
+    - icon: fontawesome/brands/twitter
+      link: https://x.com/swarms_corp
+    - icon: fontawesome/brands/discord
+      link: https://discord.com/servers/agora-999382051935506503
+
+  analytics:
+    provider: google
+    property: G-MPE9C65596
+
+theme:
+  name: material
+  custom_dir: overrides
+  logo: assets/img/swarms-logo.png
+  palette:
+    - scheme: default
+      primary: white      # White background
+      accent: white       # Black accents for interactive elements
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate       # Optional: lighter shades for accessibility
+      primary: black
+      accent: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - announce.dismiss
+  font:
+    text: "Fira Sans"      # Clean and readable text
+    code: "Fira Code"      # Modern look for code snippets
+
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: squidfunk
+      repo: mkdocs-material
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/mkdocs.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+nav:
+  - Home:
+    - Overview: "index.md"
+    # - The Vision: "swarms/framework/vision.md"
+    # - Docker Setup: "swarms/install/docker_setup.md"
+    - Our Goal; The Ultimate Multi-Agent LLM Framework for Developers: "swarms/concept/vision.md"
+    - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
+    - Onboarding: 
+      - Installation: "swarms/install/install.md"
+      - Environment Configuration: "swarms/install/workspace_manager.md"
+      - Quickstart: "swarms/install/quickstart.md"
+      - Swarms CLI: "swarms/cli/main.md"
+      # - Swarms + Docker: 
+      - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
+    # - Prelimary:
+      # - 80/20 Rule For Agents: "swarms/prompting/8020.md"
+      - Managing Prompts in Production: "swarms/prompts/main.md"
+    - Agents:
+      # - Overview: "swarms/structs/index.md"
+      # - Build Custom Agents: "swarms/structs/diy_your_own_agent.md"
+      - Agent Architecture: "swarms/framework/agents_explained.md"
+      - Complete Agent API: "swarms/structs/agent.md"
+      - OpenAI Assistant: "swarms/agents/openai_assistant.md"
+      - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
+      - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
+      - Creating Custom Agents: "swarms/agents/new_agent.md"
+      - Tools:
+        - Overview: "swarms/tools/main.md"
+        - What are tools?: "swarms/tools/build_tool.md"
+        - ToolAgent: "swarms/agents/tool_agent.md"
+        - Tool Storage & tool_registry decorator: "swarms/tools/tool_storage.md"
+      - RAG || Long Term Memory:
+        - Integrating RAG with Agents: "swarms/memory/diy_memory.md"
+    - Swarm Architectures:
+      - Why MultiAgent Collaboration is Necessary: "swarms/concept/why.md"
+      - Swarm Architectures: "swarms/concept/swarm_architectures.md"
+      - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
+      - Building Custom Swarms: "swarms/structs/custom_swarm.md"
+      - Create New Swarm Architectures: "swarms/structs/create_new_swarm.md"
+      - Architectures Available:
+        - MajorityVoting: "swarms/structs/majorityvoting.md"
+        - AgentRearrange: "swarms/structs/agent_rearrange.md"
+        - RoundRobin: "swarms/structs/round_robin_swarm.md"
+        - Mixture of Agents: "swarms/structs/moa.md"
+        - GraphWorkflow: "swarms/structs/graph_workflow.md"
+        - GroupChat: "swarms/structs/group_chat.md"
+        - AgentRegistry: "swarms/structs/agent_registry.md"
+        - SpreadSheetSwarm: "swarms/structs/spreadsheet_swarm.md"
+        - ForestSwarm: "swarms/structs/forest_swarm.md"
+        - SwarmRouter: "swarms/structs/swarm_router.md"
+        - TaskQueueSwarm: "swarms/structs/taskqueue_swarm.md"
+        - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
+        - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
+        - Various Execution Methods: "swarms/structs/various_execution_methods.md"
+        - Workflows:
+            - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
+            - AsyncWorkflow: "swarms/structs/async_workflow.md"
+            - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
+        - Structs:
+          - Conversation: "swarms/structs/conversation.md"
+          - AgentLoader: "swarms/structs/agent_loader.md"
+    #   - Task: "swarms/structs/task.md"
+    - Full API Reference: "swarms/framework/reference.md"
+  - Examples:
+    - Unique Swarms: "swarms/examples/unique_swarms.md"
+  - Swarm Models:
+    - Overview: "swarms/models/index.md"
+    # - Models Available: "swarms/models/index.md"
+    # - Available Models from OpenAI, Huggingface, TogetherAI, and more: "swarms/models/models_available_overview.md"
+    # - Model Router
+    - Quickstart: "swarms/models/models_available_overview.md"
+    - How to Create A Custom Language Model: "swarms/models/custom_model.md"
+    - Language Models:
+      - BaseLLM: "swarms/models/base_llm.md"
+      - HuggingFaceLLM: "swarms/models/huggingface.md"
+      - Anthropic: "swarms/models/anthropic.md"
+      - OpenAIChat: "swarms/models/openai.md"
+      - OpenAIFunctionCaller: "swarms/models/openai_function_caller.md"
+      - Groq: "swarms/models/groq.md"
+      # - Ollama: 
+      # - Fireworks
+      # - Octo
+      # - Liquid AI
+    - MultiModal Models:
+      - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
+      - Multi Modal Models Available: "swarms/models/multimodal_models.md"
+      - GPT4VisionAPI: "swarms/models/gpt4v.md"
+  - Swarms Cloud API:
+    # - Overview: "swarms_cloud/main.md"
+    - Overview: "swarms_cloud/vision.md"
+    - MCS API: "swarms_cloud/mcs_api.md"
+    - Swarms Cloud CLI: "swarms_cloud/cli.md"
+    # - Add Agents to Marketplace: "swarms_cloud/add_agent.md"
+    # - Available Models: "swarms_cloud/available_models.md"
+    # - Agent API: "swarms_cloud/agent_api.md"
+    # - Migrate from OpenAI to Swarms in 3 lines of code: "swarms_cloud/migrate_openai.md"
+    # - Getting Started with SOTA Vision Language Models VLM: "swarms_cloud/getting_started.md"
+  - Swarms Memory:
+    - Overview: "swarms_memory/index.md"
+    - Memory Systems:
+      - ChromaDB: "swarms_memory/chromadb.md"
+      - Pinecone: "swarms_memory/pinecone.md"
+      - Faiss: "swarms_memory/faiss.md"
+  - Swarms Marketplace:
+    - Overview: "swarms_platform/index.md"
+    - Share & Discover Prompts, Agents, Tools, and more: "swarms_platform/share_discover.md"
+    - Prompts API: 
+      - Add Prompts: "swarms_platform/prompts/add_prompt.md"
+      - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"
+      - Query Prompts: "swarms_platform/prompts/fetch_prompts.md"
+    - Agents API:
+      - Add Agents: "swarms_platform/agents/agents_api.md"
+      - Query Agents: "swarms_platform/agents/fetch_agents.md"
+      - Edit Agents: "swarms_platform/agents/edit_agent.md"
+    - Telemetry API:
+      - PUT: "swarms_platform/telemetry/index.md"
+    # - Tools API:
+    #   - Overview: "swarms_platform/tools_api.md"
+    #   - Add Tools: "swarms_platform/fetch_tools.md"
+  # - Guides:
+  #   - Unlocking Efficiency and Cost Savings in Healthcare; How Swarms of LLM Agents Can Revolutionize Medical Operations and Save Millions: "guides/healthcare_blog.md"
+  #   - Understanding Agent Evaluation Mechanisms: "guides/agent_evals.md"
+  #   - Agent Glossary: "swarms/glossary.md"
+  #   - The Ultimate Technical Guide to the Swarms CLI; A Step-by-Step Developers Guide: "swarms/cli/cli_guide.md"
+  # - Prompting Guide:
+  #   - The Essence of Enterprise-Grade Prompting: "swarms/prompts/essence.md"
+  #   - An Analysis on Prompting Strategies: "swarms/prompts/overview.md"
+  #   - Managing Prompts in Production: "swarms/prompts/main.md"
+  - Community:
+    - Bounty Program: "corporate/bounty_program.md"
+    - Contributing: 
+      - Contributing: "swarms/contributing.md"
+      - Tests: "swarms/framework/test.md"
+      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
+      - Philosophy: "swarms/concept/philosophy.md"
+    - Changelog:
+      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
+      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
+      - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
+  - Corporate:
+    - Culture: "corporate/culture.md"
+    - Hiring: "corporate/hiring.md"
+    - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
+  # - Clusterops:
+  #   - Overview: "clusterops/reference.md"

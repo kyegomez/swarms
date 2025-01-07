@@ -1,0 +1,34 @@
+---
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ["docs/**", "*.md"]
+tests:
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
+agents:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/agents/**"
+artifacts:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/artifacts/**"
+memory:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/memory/**"
+models:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/models/**"
+prompts:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/prompts/**"
+structs:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/structs/**"
+telemetry:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/telemetry/**"
+tools:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/tools/**"
+utils:
+  - changed-files:
+      - any-glob-to-any-file: "swarms/utils/**"

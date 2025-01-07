@@ -1,0 +1,60 @@
+name: Tests
+on:
+  push:
+  schedule:
+    - cron: "0 0 * * *"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - name: Setup a local virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - uses: actions/cache@v4
+        name: Define a cache for the virtual environment
+          file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install the project dependencies
+        run: poetry install
+      - name: Install OpenCV
+        run: sudo apt-get install python3-opencv
+      - name: Enter the virtual environment
+        run: source $VENV
+      - name: Run the tests
+        run: poetry run pytest --verbose
+  run-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - name: Setup a local virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - uses: actions/cache@v4
+        name: Define a cache for the virtual environment
+          file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install the project dependencies
+        run: poetry install
+      - name: Install OpenCV
+        run: sudo apt-get install python3-opencv
+      - name: Enter the virtual environment
+        run: source $VENV
+      - name: Make Script Executable and Run
+        run: |-
+          chmod +x ./scripts/run_examples.sh
+          ./scripts/run_examples.sh
