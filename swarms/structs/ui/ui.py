@@ -14,13 +14,13 @@ from swarms.utils.litellm_wrapper import LiteLLM
 from litellm import models_by_provider
 from dotenv import set_key, find_dotenv
 import logging  # Import the logging module
+import litellm # Import litellm exception
 
 # Initialize logger
 load_dotenv()
 
 # Initialize logger
 logger = initialize_logger(log_folder="swarm_ui")
-
 
 # Define the path to agent_prompts.json
 PROMPT_JSON_PATH = os.path.join(
@@ -86,9 +86,9 @@ def load_prompts_from_json() -> Dict[str, str]:
             "Agent-Onboarding_Agent": "You are an onboarding agent...",
         }
 
-
 AGENT_PROMPTS = load_prompts_from_json()
 
+api_keys = {}
 
 def initialize_agents(
     dynamic_temp: float,
@@ -103,49 +103,66 @@ def initialize_agents(
     agents = []
     seen_names = set()
     try:
-      for agent_key in agent_keys:
-          if agent_key not in AGENT_PROMPTS:
-              raise ValueError(f"Invalid agent key: {agent_key}")
+        for agent_key in agent_keys:
+            if agent_key not in AGENT_PROMPTS:
+                raise ValueError(f"Invalid agent key: {agent_key}")
 
-          agent_prompt = AGENT_PROMPTS[agent_key]
-          agent_name = agent_key
+            agent_prompt = AGENT_PROMPTS[agent_key]
+            agent_name = agent_key
 
-          # Ensure unique agent names
-          base_name = agent_name
-          counter = 1
-          while agent_name in seen_names:
-              agent_name = f"{base_name}_{counter}"
-              counter += 1
-          seen_names.add(agent_name)
+            # Ensure unique agent names
+            base_name = agent_name
+            counter = 1
+            while agent_name in seen_names:
+                agent_name = f"{base_name}_{counter}"
+                counter += 1
+            seen_names.add(agent_name)
 
-          llm = LiteLLM(
-              model_name=model_name,
-              system_prompt=agent_prompt,
-              temperature=temperature,
-              max_tokens=max_tokens,
-          )
+            # Set API key using os.environ temporarily
+            if provider == "openai":
+                os.environ["OPENAI_API_KEY"] = api_key
+            elif provider == "anthropic":
+                os.environ["ANTHROPIC_API_KEY"] = api_key
+            elif provider == "cohere":
+                os.environ["COHERE_API_KEY"] = api_key
+            elif provider == "gemini":
+                os.environ["GEMINI_API_KEY"] = api_key
+            elif provider == "mistral":
+                os.environ["MISTRAL_API_KEY"] = api_key
+            elif provider == "groq":
+                os.environ["GROQ_API_KEY"] = api_key
+            elif provider == "perplexity":
+                os.environ["PERPLEXITY_API_KEY"] = api_key
+            # Add other providers and their environment variable names as needed
 
-          agent = Agent(
-              agent_name=agent_name,
-              system_prompt=agent_prompt,
-              llm=llm,
-              max_loops=1,
-              autosave=True,
-              verbose=True,
-              dynamic_temperature_enabled=True,
-              saved_state_path=f"agent_{agent_name}.json",
-              user_name="pe_firm",
-              retry_attempts=1,
-              context_length=200000,
-              output_type="string",  # here is the output type which is string
-              temperature=dynamic_temp,
-          )
-          print(
-              f"Agent created: {agent.agent_name}"
-          )  # Debug: Print agent name
-          agents.append(agent)
-      logger.info(f"Agents initialized successfully: {[agent.agent_name for agent in agents]}")
-      return agents
+            # Create LiteLLM instance (Now it will read from os.environ)
+            llm = LiteLLM(
+                model_name=model_name,
+                system_prompt=agent_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+
+            agent = Agent(
+                agent_name=agent_name,
+                system_prompt=agent_prompt,
+                llm=llm,
+                max_loops=1,
+                autosave=True,
+                verbose=True,
+                dynamic_temperature_enabled=True,
+                saved_state_path=f"agent_{agent_name}.json",
+                user_name="pe_firm",
+                retry_attempts=1,
+                context_length=200000,
+                output_type="string",  # here is the output type which is string
+                temperature=dynamic_temp,
+            )
+            print(f"Agent created: {agent.agent_name}")
+            agents.append(agent)
+
+        logger.info(f"Agents initialized successfully: {[agent.agent_name for agent in agents]}")
+        return agents
     except Exception as e:
         logger.error(f"Error initializing agents: {e}", exc_info=True)
         raise
@@ -245,7 +262,6 @@ async def execute_task(
                 yield "Flow configuration is required for AgentRearrange", gr.update(visible=True), ""
                 return
 
-
             # Generate unique agent names in the flow
             flow_agents = []
             used_agent_names = set()
@@ -264,7 +280,6 @@ async def execute_task(
             logger.info(f"Updated Flow string: {flow}")
             router_kwargs["flow"] = flow
             router_kwargs["output_type"] = "string"  # Changed output type here
-
 
         if swarm_type == "MixtureOfAgents":
             if len(agents) < 2:
@@ -403,6 +418,14 @@ async def execute_task(
              logger.error(f"Task execution timed out after {timeout} seconds", exc_info=True)
              yield f"Task execution timed out after {timeout} seconds", gr.update(visible=True), ""
              return
+        except litellm.exceptions.APIError as e: # Catch litellm APIError
+            logger.error(f"LiteLLM API Error: {e}", exc_info=True)
+            yield f"LiteLLM API Error: {e}", gr.update(visible=True), ""
+            return
+        except litellm.exceptions.AuthenticationError as e: # Catch litellm AuthenticationError
+            logger.error(f"LiteLLM Authentication Error: {e}", exc_info=True)
+            yield f"LiteLLM Authentication Error: {e}", gr.update(visible=True), ""
+            return
         except Exception as e:
             logger.error(f"Error executing task: {e}", exc_info=True)
             yield f"Error executing task: {e}",  gr.update(visible=True), ""
@@ -419,7 +442,6 @@ async def execute_task(
     finally:
         logger.info(f"Task execution finished for: {task} with swarm type: {swarm_type}")
 
-
 def format_output(data:Optional[str], swarm_type:str, error_display=None) -> str:
     if data is None:
        return "Error : No output from the swarm."
@@ -433,7 +455,7 @@ def format_output(data:Optional[str], swarm_type:str, error_display=None) -> str
          if os.path.exists(data):
             return parse_spreadsheet_swarm_output(data, error_display)
          else:
-              return parse_json_output(data, error_display)
+              return data # Directly return JSON response
     elif swarm_type == "auto":
         return parse_auto_swarm_output(data, error_display)
     else:
@@ -552,65 +574,68 @@ def parse_auto_swarm_output(data: Optional[str], error_display=None) -> str:
         output += f"Agent Flow: `{agent_flow}`\n\n---\n"
         output += f"Agent Task Execution\n\n"
 
-        # Handle nested MixtureOfAgents data
+        # Handle nested MixtureOfAgents data or other swarm type data
         if (
             "outputs" in parsed_data
             and isinstance(parsed_data["outputs"], list)
             and parsed_data["outputs"]
             and isinstance(parsed_data["outputs"][0], dict)
-            and parsed_data["outputs"][0].get("agent_name") == "auto"
         ):
-            mixture_data = parsed_data["outputs"][0].get("steps", [])
-            if mixture_data and isinstance(mixture_data[0], dict) and "content" in mixture_data[0]:
-                try:
-                   mixture_content = json.loads(mixture_data[0]["content"])
-                   output += parse_mixture_of_agents_data(mixture_content)
-                except json.JSONDecodeError as e:
-                     logger.error(f"Error decoding nested MixtureOfAgents data: {e}", exc_info=True)
-                     return f"Error decoding nested MixtureOfAgents data: {e}"
-        else :
-             for i, agent_output in enumerate(parsed_data["outputs"], start=3):
-                if not isinstance(agent_output, dict):
-                    errors.append(f"Error: Agent output at index {i} is not a dictionary")
-                    continue
-                if "agent_name" not in agent_output:
-                    errors.append(f"Error: 'agent_name' key is missing at index {i}")
-                    continue
-                if "steps" not in agent_output:
-                    errors.append(f"Error: 'steps' key is missing at index {i}")
-                    continue
-                if agent_output["steps"] is None:
-                    errors.append(f"Error: 'steps' data is None at index {i}")
-                    continue
-                if not isinstance(agent_output["steps"], list):
-                    errors.append(f"Error: 'steps' data is not a list at index {i}")
-                    continue
-
-                
-                agent_name = agent_output["agent_name"]
-                output += f"Run {(3-i)} (Agent: `{agent_name}`)\n\n"
-
-                # Iterate over steps
-                for j, step in enumerate(agent_output["steps"], start=3):
-                    if not isinstance(step, dict):
-                        errors.append(f"Error: step at index {j} is not a dictionary at {i} agent output.")
+            if parsed_data["outputs"][0].get("agent_name") == "auto":
+                mixture_data = parsed_data["outputs"][0].get("steps", [])
+                if mixture_data and isinstance(mixture_data[0], dict) and "content" in mixture_data[0]:
+                    try:
+                        mixture_content = json.loads(mixture_data[0]["content"])
+                        output += parse_mixture_of_agents_data(mixture_content)
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Error decoding nested MixtureOfAgents data: {e}", exc_info=True)
+                        return f"Error decoding nested MixtureOfAgents data: {e}"
+            else:
+                for i, agent_output in enumerate(parsed_data["outputs"], start=3):
+                    if not isinstance(agent_output, dict):
+                        errors.append(f"Error: Agent output at index {i} is not a dictionary")
                         continue
-                    if step is None:
-                        errors.append(f"Error: step at index {j} is None at {i} agent output")
+                    if "agent_name" not in agent_output:
+                        errors.append(f"Error: 'agent_name' key is missing at index {i}")
+                        continue
+                    if "steps" not in agent_output:
+                        errors.append(f"Error: 'steps' key is missing at index {i}")
+                        continue
+                    if agent_output["steps"] is None:
+                        errors.append(f"Error: 'steps' data is None at index {i}")
+                        continue
+                    if not isinstance(agent_output["steps"], list):
+                        errors.append(f"Error: 'steps' data is not a list at index {i}")
                         continue
 
-                    if "role" not in step:
-                        errors.append(f"Error: 'role' key missing at step {j} at {i} agent output.")
-                        continue
                     
-                    if "content" not in step:
-                        errors.append(f"Error: 'content' key missing at step {j} at {i} agent output.")
-                        continue
-                    
-                    if step["role"].strip() != "System:":  # Filter out system prompts
-                        content = step["content"]
-                        output += f"Step {(3-j)}:\n"
-                        output += f"Response : {content}\n\n"
+                    agent_name = agent_output["agent_name"]
+                    output += f"Run {(3-i)} (Agent: `{agent_name}`)\n\n"
+
+                    # Iterate over steps
+                    for j, step in enumerate(agent_output["steps"], start=3):
+                        if not isinstance(step, dict):
+                            errors.append(f"Error: step at index {j} is not a dictionary at {i} agent output.")
+                            continue
+                        if step is None:
+                            errors.append(f"Error: step at index {j} is None at {i} agent output")
+                            continue
+
+                        if "role" not in step:
+                            errors.append(f"Error: 'role' key missing at step {j} at {i} agent output.")
+                            continue
+                        
+                        if "content" not in step:
+                            errors.append(f"Error: 'content' key missing at step {j} at {i} agent output.")
+                            continue
+                        
+                        if step["role"].strip() != "System:":  # Filter out system prompts
+                            content = step["content"]
+                            output += f"Step {(3-j)}:\n"
+                            output += f"Response : {content}\n\n"
+        else:
+            logger.error("Error: 'outputs' data is not in the expected format.")
+            return "Error: 'outputs' data is not in the expected format."
 
         output += f"Overall Completion Time: `{overall_time}`"
 
@@ -805,7 +830,6 @@ def parse_agent_rearrange_output(data: Optional[str], error_display=None) -> str
         logger.error(f"Error during parsing AgentRearrange output: {e}", exc_info=True)
         return f"Error during parsing: {str(e)}"
 
-
 def parse_mixture_of_agents_output(data: Optional[str], error_display=None) -> str:
     """Parses the MixtureOfAgents output string and formats it for display."""
     logger.info("Parsing MixtureOfAgents output...")
@@ -921,7 +945,6 @@ def parse_mixture_of_agents_output(data: Optional[str], error_display=None) -> s
     except Exception as e:
         logger.error(f"Error during parsing MixtureOfAgents output: {e}", exc_info=True)
         return f"Error during parsing: {str(e)}"
-
 
 def parse_sequential_workflow_output(data: Optional[str], error_display=None) -> str:
    """Parses the SequentialWorkflow output string and formats it for display."""
@@ -1259,6 +1282,9 @@ class UI:
             - MixtureOfAgents: Combines multiple agents with an aggregator
             - SpreadSheetSwarm: Specialized for spreadsheet operations
             - Auto: Automatically determines optimal workflow
+
+            **Note:**
+            Spreasheet swarm saves data in csv, will work in local setup !
             """
             )
             return gr.Column()
@@ -1596,6 +1622,8 @@ def create_app():
                     except Exception as e:
                         return f"Error saving agent prompt {str(e)}"
 
+                # In the run_task_wrapper function, modify the API key handling
+
                 async def run_task_wrapper(
                     task,
                     max_loops,
@@ -1613,7 +1641,6 @@ def create_app():
                     try:
                         # Update status
                         yield "Processing...", "Running task...", "", gr.update(visible=False), gr.update(visible=False)
-
 
                         # Prepare flow for AgentRearrange
                         flow = None
@@ -1634,8 +1661,62 @@ def create_app():
                             f"Flow string: {flow}"
                         )  # Debug: Print flow string
 
-                        # Save API key to .env
+                        # save api keys in memory
+                        api_keys[provider] = api_key
+
+                        agents = initialize_agents(
+                            dynamic_temp,
+                            agent_prompt_selector,
+                            model_name,
+                            provider,
+                            api_keys.get(provider),  # Access API key from the dictionary
+                            temperature,
+                            max_tokens,
+                        )
+                        print(
+                            "Agents passed to SwarmRouter:"
+                            f" {[agent.agent_name for agent in agents]}"
+                        )  # Debug: Print agent list
+
+                        # Convert agent list to dictionary
+                        agents_dict = {
+                            agent.agent_name: agent for agent in agents
+                        }
+
+                        # Execute task
+                        async for result, router, error in execute_task(
+                            task=task,
+                            max_loops=max_loops,
+                            dynamic_temp=dynamic_temp,
+                            swarm_type=swarm_type,
+                            agent_keys=agent_prompt_selector,
+                            flow=flow,
+                            model_name=model_name,
+                            provider=provider,
+                            api_key=api_keys.get(provider), # Pass the api key from memory
+                            temperature=temperature,
+                            max_tokens=max_tokens,
+                            agents=agents_dict,  # Changed here
+                            log_display=log_display,
+                            error_display = error_display
+                        ):
+                            if error:
+                                yield f"Error: {error}", f"Error: {error}", "", gr.update(visible=True), gr.update(visible=True)
+                                return
+                            if result is not None:
+                                formatted_output = format_output(result, swarm_type, error_display)
+                                yield formatted_output, "Completed", api_key, gr.update(visible=False), gr.update(visible=False)
+                                return
+                    except Exception as e:
+                        yield f"Error: {str(e)}", f"Error: {str(e)}", "", gr.update(visible=True), gr.update(visible=True)
+                        return
+
+                # Save API key to .env
                         env_path = find_dotenv()
+                        if not env_path:
+                            env_path = os.path.join(os.getcwd(), ".env")
+                            with open(env_path, "w") as f:
+                                f.write("")
                         if not env_path:
                             env_path = os.path.join(os.getcwd(), ".env")
                             with open(env_path, "w") as f:
@@ -1668,54 +1749,7 @@ def create_app():
                                 gr.update(visible=False)
                             )
                             return
-
-                        agents = initialize_agents(
-                            dynamic_temp,
-                            agent_prompt_selector,
-                            model_name,
-                            provider,
-                            api_key,
-                            temperature,
-                            max_tokens,
-                        )
-                        print(
-                            "Agents passed to SwarmRouter:"
-                            f" {[agent.agent_name for agent in agents]}"
-                        )  # Debug: Print agent list
-
-                        # Convert agent list to dictionary
-                        agents_dict = {
-                            agent.agent_name: agent for agent in agents
-                        }
-
-                        # Execute task
-                        async for result, router, error in execute_task(
-                            task=task,
-                            max_loops=max_loops,
-                            dynamic_temp=dynamic_temp,
-                            swarm_type=swarm_type,
-                            agent_keys=agent_prompt_selector,
-                            flow=flow,
-                            model_name=model_name,
-                            provider=provider,
-                            api_key=api_key,
-                            temperature=temperature,
-                            max_tokens=max_tokens,
-                            agents=agents_dict,  # Changed here
-                            log_display=log_display,
-                            error_display = error_display
-                        ):
-                            if error:
-                                yield f"Error: {error}", f"Error: {error}", "", gr.update(visible=True), gr.update(visible=True)
-                                return
-                            if result is not None:
-                                formatted_output = format_output(result, swarm_type, error_display)
-                                yield formatted_output, "Completed", api_key, gr.update(visible=False), gr.update(visible=False)
-                                return
-                    except Exception as e:
-                        yield f"Error: {str(e)}", f"Error: {str(e)}", "", gr.update(visible=True), gr.update(visible=True)
-                        return
-
+                            
                 # Connect the update functions
                 agent_selector.change(
                     fn=update_ui_for_swarm_type,
