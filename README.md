@@ -496,7 +496,7 @@ task = (
 # Create an instance of the ToolAgent class
 agent = ToolAgent(
     name="dolly-function-agent",
-    description="Ana gent to create a child data",
+    description="An agent to create a child's data",
     model=model,
     tokenizer=tokenizer,
     json_schema=tool_schema,
