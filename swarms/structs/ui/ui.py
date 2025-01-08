@@ -1249,21 +1249,33 @@ class UI:
             outputs=[component],
         )
 
+
     @staticmethod
     def create_ui_theme(primary_color="red"):
+        import darkdetect  # First install: pip install darkdetect
+        
+        # Detect system theme
+        is_dark = darkdetect.isDark()
+        
+        # Set text colors based on system theme
+        text_color = "#f0f0f0" if is_dark else "#000000"
+        bg_color = "#20252c" if is_dark else "#ffffff"
+        
+        # Enforce theme settings
         return gr.themes.Ocean(
             primary_hue=primary_color,
             secondary_hue=primary_color,
             neutral_hue="gray",
         ).set(
-            body_background_fill="#20252c",
-            body_text_color="#f0f0f0",
+            body_background_fill=bg_color,
+            body_text_color=text_color,
             button_primary_background_fill=primary_color,
-            button_primary_text_color="#ffffff",
+            button_primary_text_color=text_color,
             button_secondary_background_fill=primary_color,
-            button_secondary_text_color="#ffffff",
+            button_secondary_text_color=text_color,
             shadow_drop="0px 2px 4px rgba(0, 0, 0, 0.3)",
         )
+
 
     def create_agent_details_tab(self):
         """Create the agent details tab content."""
@@ -1339,7 +1351,7 @@ def create_app():
     with ui.blocks:
         with gr.Row():
             with gr.Column(scale=4):  # Left column (80% width)
-                ui.create_markdown("Swarms", is_header=True)
+                ui.create_markdown("<b>Swarms</b>")
                 ui.create_markdown(
                     "<b>The Enterprise-Grade Production-Ready Multi-Agent"
                     " Orchestration Framework</b>"
@@ -1712,44 +1724,44 @@ def create_app():
                         return
 
                 # Save API key to .env
-                        env_path = find_dotenv()
-                        if not env_path:
-                            env_path = os.path.join(os.getcwd(), ".env")
-                            with open(env_path, "w") as f:
-                                f.write("")
-                        if not env_path:
-                            env_path = os.path.join(os.getcwd(), ".env")
-                            with open(env_path, "w") as f:
-                                f.write("")
-                        if provider == "openai":
-                            set_key(env_path, "OPENAI_API_KEY", api_key)
-                        elif provider == "anthropic":
-                            set_key(
-                                env_path, "ANTHROPIC_API_KEY", api_key
-                            )
-                        elif provider == "cohere":
-                            set_key(env_path, "COHERE_API_KEY", api_key)
-                        elif provider == "gemini":
-                            set_key(env_path, "GEMINI_API_KEY", api_key)
-                        elif provider == "mistral":
-                            set_key(env_path, "MISTRAL_API_KEY", api_key)
-                        elif provider == "groq":
-                            set_key(env_path, "GROQ_API_KEY", api_key)
-                        elif provider == "perplexity":
-                            set_key(
-                                env_path, "PERPLEXITY_API_KEY", api_key
-                            )
-                        else:
-                            yield (
-                                f"Error: {provider} this provider is not"
-                                " present",
-                                f"Error: {provider} not supported",
-                                "",
-                                gr.update(visible=True),
-                                gr.update(visible=False)
-                            )
-                            return
-                            
+                    env_path = find_dotenv()
+                    if not env_path:
+                        env_path = os.path.join(os.getcwd(), ".env")
+                        with open(env_path, "w") as f:
+                            f.write("")
+                    if not env_path:
+                        env_path = os.path.join(os.getcwd(), ".env")
+                        with open(env_path, "w") as f:
+                            f.write("")
+                    if provider == "openai":
+                        set_key(env_path, "OPENAI_API_KEY", api_key)
+                    elif provider == "anthropic":
+                        set_key(
+                            env_path, "ANTHROPIC_API_KEY", api_key
+                        )
+                    elif provider == "cohere":
+                        set_key(env_path, "COHERE_API_KEY", api_key)
+                    elif provider == "gemini":
+                        set_key(env_path, "GEMINI_API_KEY", api_key)
+                    elif provider == "mistral":
+                        set_key(env_path, "MISTRAL_API_KEY", api_key)
+                    elif provider == "groq":
+                        set_key(env_path, "GROQ_API_KEY", api_key)
+                    elif provider == "perplexity":
+                        set_key(
+                            env_path, "PERPLEXITY_API_KEY", api_key
+                        )
+                    else:
+                        yield (
+                            f"Error: {provider} this provider is not"
+                            " present",
+                            f"Error: {provider} not supported",
+                            "",
+                            gr.update(visible=True),
+                            gr.update(visible=False)
+                        )
+                        return
+                    
                 # Connect the update functions
                 agent_selector.change(
                     fn=update_ui_for_swarm_type,
