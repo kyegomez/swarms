@@ -21,4 +21,5 @@ jobs:
       - run: pip install --upgrade lxml_html_clean
       - run: pip install mkdocs-git-committers-plugin
       - run: pip3 install mkdocs-git-revision-date-localized-plugin
+      - run: pip3 install mkdocs-static-i18n
       - run: mkdocs gh-deploy --force -f docs/mkdocs.yml
