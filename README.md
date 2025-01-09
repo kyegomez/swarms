@@ -454,7 +454,7 @@ agent.run(task, img)
 
 
 ### Local Agent `ToolAgent`
-ToolAgent is an fully local agent that can use tools through JSON function calling. It intakes any open source model from huggingface and is extremely modular and plug in and play. We need help adding general support to all models soon.
+ToolAgent is a fully local agent that can use tools through JSON function calling. It intakes any open source model from huggingface and is extremely modular and plug in and play. We need help adding general support to all models soon.
 
 
 ```python
@@ -496,7 +496,7 @@ task = (
 # Create an instance of the ToolAgent class
 agent = ToolAgent(
     name="dolly-function-agent",
-    description="Ana gent to create a child data",
+    description="An agent to create a child's data",
     model=model,
     tokenizer=tokenizer,
     json_schema=tool_schema,
@@ -2022,7 +2022,7 @@ Accelerate Bugs, Features, and Demos to implement by supporting us here:
 Join our growing community around the world, for real-time support, ideas, and discussions on Swarms 😊 
 
 - View our official [Blog](https://docs.swarms.world)
-- Chat live with us on [Discord](https://discord.gg/kS3rwKs3ZC)
+- Chat live with us on [Discord](https://discord.gg/jM3Z6M9uMq)
 - Follow us on [Twitter](https://twitter.com/kyegomez)
 - Connect with us on [LinkedIn](https://www.linkedin.com/company/the-swarm-corporation)
 - Visit us on [YouTube](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ)
