@@ -9,7 +9,9 @@ def install_and_import_packages():
         'gradio': 'gradio',
         'litellm': 'litellm',
         'python-dotenv': 'dotenv',
-        'swarms': 'swarms'
+        'swarms': 'swarms',
+        'cryptography': 'cryptography',
+        'darkdetect': 'darkdetect'
     }
     
     for package, import_name in required_packages.items():
