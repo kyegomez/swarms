@@ -1,3 +1,32 @@
+import subprocess
+import sys
+import importlib
+
+# Package installation function
+def install_and_import_packages():
+    """Auto-install and import required packages."""
+    required_packages = {
+        'gradio': 'gradio',
+        'litellm': 'litellm',
+        'python-dotenv': 'dotenv',
+        'swarms': 'swarms'
+    }
+    
+    for package, import_name in required_packages.items():
+        try:
+            importlib.import_module(import_name)
+            print(f"✓ {package} already installed")
+        except ImportError:
+            print(f"Installing {package}...")
+            try:
+                subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+                print(f"✓ {package} installed successfully")
+            except subprocess.CalledProcessError:
+                print(f"✗ Failed to install {package}")
+
+# Run the installation function first
+install_and_import_packages()
+
 import os
 from dotenv import load_dotenv
 from typing import AsyncGenerator, List, Dict, Any, Tuple, Optional
@@ -15,6 +44,7 @@ from litellm import models_by_provider
 from dotenv import set_key, find_dotenv
 import logging  # Import the logging module
 import litellm # Import litellm exception
+
 
 # Initialize logger
 load_dotenv()
@@ -1852,6 +1882,6 @@ def create_app():
 
     return ui.build()
 
-if __name__ == "__main__":
-    app = create_app()
-    app.launch()
+# if __name__ == "__main__":
+#     app = create_app()
+#     app.launch()
