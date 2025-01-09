@@ -54,7 +54,3 @@ def bootup():
     except Exception as e:
         logger.error(f"Error during bootup: {str(e)}")
         raise
-
-
-# Run bootup
-bootup()
