@@ -199,6 +199,15 @@ nav:
     - Full API Reference: "swarms/framework/reference.md"
   - Examples:
     - Unique Swarms: "swarms/examples/unique_swarms.md"
+    - Various Model Providers:
+      - OpenAI: "swarms/examples/openai_example.md"
+      - Anthropic: "swarms/examples/claude.md"
+      - Groq: "swarms/examples/groq.md"
+      - Cohere: "swarms/examples/cohere.md"
+      - DeepSeek: "swarms/examples/deepseek.md"
+      - Ollama: "swarms/examples/ollama.md"
+      - OpenRouter: "swarms/examples/openrouter.md"
+      - XAI: "swarms/examples/xai.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
