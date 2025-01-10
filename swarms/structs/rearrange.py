@@ -775,6 +775,67 @@ class AgentRearrange(BaseSwarm):
             for attr_name, attr_value in self.__dict__.items()
         }
 
+    def generate_flow(self, task_type: str = "sequential", agent_groups: Dict[str, List[str]] = None) -> str:
+        """
+        Automatically generates a flow pattern based on task type and agent groupings.
+        
+        Args:
+            task_type (str): Type of flow pattern ('sequential', 'parallel', or 'hybrid')
+            agent_groups (Dict[str, List[str]], optional): Groups of agents that should work together
+                Format: {"group1": ["agent1", "agent2"], "group2": ["agent3", "agent4"]}
+        
+        Returns:
+            str: Generated flow pattern
+        """
+        if not self.agents:
+            raise ValueError("No agents available to generate flow.")
+        
+        agent_names = list(self.agents.keys())
+        
+        if task_type == "sequential":
+            # Simple sequential flow: a -> b -> c
+            return " -> ".join(agent_names)
+        
+        elif task_type == "parallel":
+            # All agents work in parallel: a, b, c
+            return ", ".join(agent_names)
+        
+        elif task_type == "hybrid" and agent_groups:
+            # Hybrid flow using agent groups: (a, b) -> (c, d) -> e
+            flow_parts = []
+            for group in agent_groups.values():
+                valid_agents = [a for a in group if a in agent_names]
+                if valid_agents:
+                    flow_parts.append(", ".join(valid_agents))
+            return " -> ".join(flow_parts)
+        
+        else:
+            raise ValueError("Invalid task_type or missing agent_groups for hybrid flow")
+
+    def set_flow_from_task(self, task: str):
+        """
+        Analyzes the task description and automatically sets an appropriate flow pattern.
+        
+        Args:
+            task (str): Task description to analyze
+        """
+        # Keywords indicating parallel processing needs
+        parallel_keywords = ["compare", "analyze multiple", "parallel", "simultaneously"]
+        # Keywords indicating sequential processing needs
+        sequential_keywords = ["step by step", "in sequence", "following", "then"]
+        
+        task_lower = task.lower()
+        
+        if any(keyword in task_lower for keyword in parallel_keywords):
+            self.flow = self.generate_flow("parallel")
+        elif any(keyword in task_lower for keyword in sequential_keywords):
+            self.flow = self.generate_flow("sequential")
+        else:
+            # Default to sequential flow if no clear indicators
+            self.flow = self.generate_flow("sequential")
+        
+        logger.info(f"Automatically set flow pattern: {self.flow}")
+
 
 def rearrange(
     agents: List[Agent] = None,
