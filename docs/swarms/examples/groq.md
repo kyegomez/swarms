@@ -1,5 +1,6 @@
 # Agent with Groq
 
+- Add your `GROQ_API_KEY`
 
 ```python
 import os

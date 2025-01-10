@@ -1,5 +1,8 @@
 # Agent with GPT-4o-Mini
 
+- Add `OPENAI_API_KEY="your_key"` to your `.env` file
+- Select your model like `gpt-4o-mini` or `gpt-4o`
+
 ```python
 from swarms import Agent
 

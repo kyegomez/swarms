@@ -1,6 +1,7 @@
 # Agent with Cohere
 
 - Add your `COHERE_API_KEY` in the `.env` file
+
 - Select your model_name like `command-r` follows LiteLLM conventions
 
 

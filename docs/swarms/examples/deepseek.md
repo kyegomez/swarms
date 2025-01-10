@@ -1,7 +1,9 @@
 # Agent with DeepSeek
 
 - Add your `DEEPSEEK_API_KEY` in the `.env` file
+
 - Select your model_name like `deepseek/deepseek-chat` follows [LiteLLM conventions](https://docs.litellm.ai/docs/providers/deepseek)
+
 - Execute your agent!
 
 

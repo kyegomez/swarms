@@ -1,8 +1,7 @@
-# Agent with Anthropic/Claude
+# Agent with Ollama
 
-- Get their api keys and put it in the `.env`
-
-- Select your model_name like `claude-3-sonnet-20240229` follows LiteLLM conventions
+- No API key needed
+- Select your model_name like `ollama/llama2` follows [LiteLLM conventions](https://docs.litellm.ai/docs/providers/ollama)
 
 
 ```python
@@ -15,7 +14,7 @@ load_dotenv()
 # Initialize the agent with ChromaDB memory
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
-    model_name="claude-3-sonnet-20240229",
+    model_name="ollama/llama2",
     system_prompt="Agent system prompt here",
     agent_description="Agent performs financial analysis.",
 )
