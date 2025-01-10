@@ -1579,10 +1579,7 @@ class Agent:
         """
         try:
             # Reinitialize conversation if needed
-            if (
-                not hasattr(self, "short_memory")
-                or self.short_memory is None
-            ):
+            if not hasattr(self, "short_memory") or self.short_memory is None:
                 self.short_memory = Conversation(
                     system_prompt=self.system_prompt,
                     time_enabled=True,
@@ -1590,11 +1587,8 @@ class Agent:
                     rules=self.rules,
                 )
 
-            # Reinitialize executor if needed
-            if not hasattr(self, "executor") or self.executor is None:
-                self.executor = ThreadPoolExecutor(
-                    max_workers=os.cpu_count()
-                )
+            # Always create a new executor, ignoring any saved state
+            self.executor = ThreadPoolExecutor(max_workers=os.cpu_count())
 
             # # Reinitialize tool structure if needed
             # if hasattr(self, 'tools') and (self.tools or getattr(self, 'list_base_models', None)):
