@@ -10,6 +10,36 @@ copyright: TGSC Corp 2024. All rights reserved.
 
 plugins:
   # - glightbox
+  - i18n:
+      docs_structure: folder
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+          site_name: "Swarms"
+        - locale: zh
+          name: 简体中文
+          build: true
+          site_name: "Swarms"  
+          # theme:
+          #   palette:
+          #     primary: red
+          nav_translations:
+            Home: 首页
+            Examples: 示例
+            Swarm Models: Swarm 模型
+            Swarms Cloud API: Swarms 云 API
+            Swarms Memory: Swarms 内存
+            Swarms Marketplace: Swarms 市场
+            Community: 社区
+            Corporate: 企业
+          # nav:
+          #   - 主页:
+          #       - 概述: "index.md"
   - search
   - git-authors
   - mkdocs-jupyter:

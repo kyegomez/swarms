@@ -20,6 +20,7 @@ mkdocs-enumerate-headings-plugin
 mkdocs-autolinks-plugin
 mkdocs-minify-html-plugin
 mkdocs-autolinks-plugin
+mkdocs-static-i18n
 
 # Requirements for core
 jinja2~=3.1
