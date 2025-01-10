@@ -1,4 +1,4 @@
-# Agent with XAI
+# Agent with OpenRouter
 
 - Add your `OPENROUTER_API_KEY` in the `.env` file
 
