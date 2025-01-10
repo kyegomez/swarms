@@ -2,7 +2,13 @@ from typing import Any, Optional, Callable
 from swarms.tools.json_former import Jsonformer
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.lazy_loader import lazy_import_decorator
-
+from swarms.agents.exceptions import (
+    ToolAgentError,
+    ValidationError,
+    ModelNotProvidedError,
+    ConfigurationError,
+    ErrorSeverity
+)
 logger = initialize_logger(log_folder="tool_agent")
 
 
@@ -102,57 +108,116 @@ class ToolAgent:
             The output of the tool agent.
 
         Raises:
-            Exception: If an error occurs during the execution of the tool agent.
+            ValidationError: If input validation fails
+            ModelNotProvidedError: If neither model nor llm is provided
+            ToolAgentError: For general execution errors
+            SchemaValidationError: If JSON schema validation fails
         """
         try:
+            # Input validation
+            if not isinstance(task, str):
+                raise ValidationError(
+                    "Task must be a string",
+                    severity=ErrorSeverity.HIGH
+                )
+            
+            if not task.strip():
+                raise ValidationError(
+                    "Task cannot be empty",
+                    severity=ErrorSeverity.HIGH
+                )
+
             if self.model:
                 logger.info(f"Running {self.name} for task: {task}")
-                self.toolagent = Jsonformer(
-                    model=self.model,
-                    tokenizer=self.tokenizer,
-                    json_schema=self.json_schema,
-                    llm=self.llm,
-                    prompt=task,
-                    max_number_tokens=self.max_number_tokens,
-                    *args,
-                    **kwargs,
-                )
+                try:
+                    self.toolagent = Jsonformer(
+                        model=self.model,
+                        tokenizer=self.tokenizer,
+                        json_schema=self.json_schema,
+                        llm=self.llm,
+                        prompt=task,
+                        max_number_tokens=self.max_number_tokens,
+                        *args,
+                        **kwargs,
+                    )
+                except Exception as e:
+                    raise ConfigurationError(
+                        "Failed to initialize Jsonformer",
+                        severity=ErrorSeverity.HIGH,
+                        details={"original_error": str(e)}
+                    )
 
-                if self.parsing_function:
-                    out = self.parsing_function(self.toolagent())
-                else:
-                    out = self.toolagent()
+                try:
+                    if self.parsing_function:
+                        out = self.parsing_function(self.toolagent())
+                    else:
+                        out = self.toolagent()
+                    return out
+                except Exception as e:
+                    raise ToolAgentError(
+                        "Error during task execution",
+                        severity=ErrorSeverity.HIGH,
+                        details={"original_error": str(e)}
+                    )
 
-                return out
             elif self.llm:
                 logger.info(f"Running {self.name} for task: {task}")
-                self.toolagent = Jsonformer(
-                    json_schema=self.json_schema,
-                    llm=self.llm,
-                    prompt=task,
-                    max_number_tokens=self.max_number_tokens,
-                    *args,
-                    **kwargs,
-                )
+                try:
+                    self.toolagent = Jsonformer(
+                        json_schema=self.json_schema,
+                        llm=self.llm,
+                        prompt=task,
+                        max_number_tokens=self.max_number_tokens,
+                        *args,
+                        **kwargs,
+                    )
+                except Exception as e:
+                    raise ConfigurationError(
+                        "Failed to initialize Jsonformer with LLM",
+                        severity=ErrorSeverity.HIGH,
+                        details={"original_error": str(e)}
+                    )
 
-                if self.parsing_function:
-                    out = self.parsing_function(self.toolagent())
-                else:
-                    out = self.toolagent()
-
-                return out
+                try:
+                    if self.parsing_function:
+                        out = self.parsing_function(self.toolagent())
+                    else:
+                        out = self.toolagent()
+                    return out
+                except Exception as e:
+                    raise ToolAgentError(
+                        "Error during LLM task execution",
+                        severity=ErrorSeverity.HIGH,
+                        details={"original_error": str(e)}
+                    )
 
             else:
-                raise Exception(
-                    "Either model or llm should be provided to the"
-                    " ToolAgent"
+                raise ModelNotProvidedError(
+                    "Either model or llm should be provided to the ToolAgent",
+                    severity=ErrorSeverity.CRITICAL
                 )
 
-        except Exception as error:
+        except (ValidationError, ModelNotProvidedError, ConfigurationError) as e:
+            # Re-raise these specific exceptions without wrapping
             logger.error(
-                f"Error running {self.name} for task: {task}"
+                f"Error running {self.name} for task: {task}",
+                error_type=type(e).__name__,
+                severity=e.severity,
+                details=e.details
             )
-            raise error
+            raise
+
+        except Exception as error:
+            # Wrap unexpected exceptions
+            logger.error(
+                f"Unexpected error running {self.name} for task: {task}",
+                error=str(error)
+            )
+            raise ToolAgentError(
+                f"Unexpected error in ToolAgent: {str(error)}",
+                severity=ErrorSeverity.CRITICAL,
+                details={"original_error": str(error)}
+            )
 
     def __call__(self, task: str, *args, **kwargs):
         return self.run(task, *args, **kwargs)
