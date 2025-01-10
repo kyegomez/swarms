@@ -17,7 +17,6 @@ agent = Agent(
     model_name="command-r",
     system_prompt="Agent system prompt here",
     agent_description="Agent performs financial analysis.",
-    llm=model,
 )
 
 # Run a query
