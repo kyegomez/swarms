@@ -1,6 +1,9 @@
 # Example usage
 from pathlib import Path
-from swarms.structs.csv_to_agent import AgentLoader, AgentValidationError
+from swarms.structs.csv_to_agent import (
+    AgentLoader,
+    AgentValidationError,
+)
 
 
 if __name__ == "__main__":

@@ -136,6 +136,7 @@ class AgentValidator:
                 str(e), str(e.__class__.__name__), str(config)
             )
 
+
 class AgentLoader:
     """Class to manage agents through CSV with type safety"""
 
@@ -202,7 +203,9 @@ class AgentLoader:
         elif file_type == "json":
             return self._load_agents_from_json()
         else:
-            raise ValueError("Unsupported file type. Use 'csv' or 'json'.")
+            raise ValueError(
+                "Unsupported file type. Use 'csv' or 'json'."
+            )
 
     def _load_agents_from_csv(self) -> List[Agent]:
         """Load agents from a CSV file"""
@@ -229,13 +232,13 @@ class AgentLoader:
         """Load agents from a JSON file"""
         import json
 
-        if not self.csv_path.with_suffix('.json').exists():
+        if not self.csv_path.with_suffix(".json").exists():
             raise FileNotFoundError(
                 f"JSON file not found at {self.csv_path.with_suffix('.json')}"
             )
 
         agents: List[Agent] = []
-        with open(self.csv_path.with_suffix('.json'), "r") as f:
+        with open(self.csv_path.with_suffix(".json"), "r") as f:
             agents_data = json.load(f)
             for agent in agents_data:
                 try:
@@ -250,10 +253,14 @@ class AgentLoader:
                     )
                     continue
 
-        print(f"Loaded {len(agents)} agents from {self.csv_path.with_suffix('.json')}")
+        print(
+            f"Loaded {len(agents)} agents from {self.csv_path.with_suffix('.json')}"
+        )
         return agents
 
-    def _create_agent(self, validated_config: AgentConfigDict) -> Agent:
+    def _create_agent(
+        self, validated_config: AgentConfigDict
+    ) -> Agent:
         """Create an Agent instance from validated configuration"""
         return Agent(
             agent_name=validated_config["agent_name"],
@@ -263,7 +270,9 @@ class AgentLoader:
             autosave=validated_config["autosave"],
             dashboard=validated_config["dashboard"],
             verbose=validated_config["verbose"],
-            dynamic_temperature_enabled=validated_config["dynamic_temperature"],
+            dynamic_temperature_enabled=validated_config[
+                "dynamic_temperature"
+            ],
             saved_state_path=validated_config["saved_state_path"],
             user_name=validated_config["user_name"],
             retry_attempts=validated_config["retry_attempts"],

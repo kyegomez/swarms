@@ -190,7 +190,7 @@ class GraphSwarm:
     def __init__(
         self,
         name: str = "graph-swarm-01",
-        description: str = "Graph swarm : build your own graph of agents", 
+        description: str = "Graph swarm : build your own graph of agents",
         agents: Union[
             List[Agent], List[Tuple[Agent, List[str]]], List[Callable]
         ] = None,
