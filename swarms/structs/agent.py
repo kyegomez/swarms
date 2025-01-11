@@ -1578,6 +1578,12 @@ class Agent:
         Called automatically after load() to ensure all components are properly set up.
         """
         try:
+            # Always create a new executor
+            self.executor = ThreadPoolExecutor(max_workers=os.cpu_count())
+
+            # Reinitialize tokenizer
+            self.tokenizer = TikTokenizer()
+
             # Reinitialize conversation if needed
             if not hasattr(self, "short_memory") or self.short_memory is None:
                 self.short_memory = Conversation(
@@ -1587,16 +1593,17 @@ class Agent:
                     rules=self.rules,
                 )
 
-            # Always create a new executor, ignoring any saved state
-            self.executor = ThreadPoolExecutor(max_workers=os.cpu_count())
+            # Reinitialize tool structure if needed
+            if hasattr(self, 'tools') and (self.tools or getattr(self, 'list_base_models', None)):
+                self.tool_struct = BaseTool(
+                    tools=self.tools,
+                    base_models=getattr(self, 'list_base_models', None),
+                    tool_system_prompt=self.tool_system_prompt
+                )
 
-            # # Reinitialize tool structure if needed
-            # if hasattr(self, 'tools') and (self.tools or getattr(self, 'list_base_models', None)):
-            #     self.tool_struct = BaseTool(
-            #         tools=self.tools,
-            #         base_models=getattr(self, 'list_base_models', None),
-            #         tool_system_prompt=self.tool_system_prompt
-            #     )
+            # Restart autosave if it was enabled
+            if getattr(self, 'autosave', False):
+                self.enable_autosave()
 
         except Exception as e:
             logger.error(f"Error reinitializing components: {e}")
@@ -2278,40 +2285,66 @@ class Agent:
     def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
         """
         Serializes an individual attribute, handling non-serializable objects.
+        Excludes certain attributes that should be recreated on load rather than serialized.
 
         Args:
             attr_name (str): The name of the attribute.
             attr_value (Any): The value of the attribute.
 
         Returns:
-            Any: The serialized value of the attribute.
+            Any: The serialized value of the attribute, or None if it should be excluded.
         """
+        # List of attributes that should not be serialized
+        non_serializable_attrs = {
+            'executor',  # ThreadPoolExecutor
+            'autosave_thread',  # Thread object
+            'llm',  # LLM instance that should be passed in constructor
+            'tokenizer',  # Should be recreated
+            'tool_struct',  # Should be recreated from tools and base_models
+            'long_term_memory',  # Should be handled separately
+            'memory_manager',  # Should be handled separately
+            'sentiment_analyzer',  # Function/callable
+            'stopping_condition',  # Function/callable
+            'stopping_func',  # Function/callable
+            'custom_loop_condition',  # Function/callable
+            'limit_tokens_from_string',  # Function/callable
+            'output_cleaner',  # Function/callable
+            'parser',  # Function/callable
+            'callback',  # Function/callable
+            'callbacks',  # List of functions/callables
+            'search_algorithm',  # Function/callable
+            'evaluator',  # Function/callable
+        }
+
+        # Skip serialization for non-serializable attributes
+        if attr_name in non_serializable_attrs:
+            return None
+
         try:
             if callable(attr_value):
                 return self._serialize_callable(attr_value)
             elif hasattr(attr_value, "to_dict"):
-                return (
-                    attr_value.to_dict()
-                )  # Recursive serialization for nested objects
+                return attr_value.to_dict()
             else:
-                json.dumps(
-                    attr_value
-                )  # Attempt to serialize to catch non-serializable objects
+                # Test if it can be serialized
+                json.dumps(attr_value)
                 return attr_value
-        except (TypeError, ValueError):
-            return f"<Non-serializable: {type(attr_value).__name__}>"
+        except (TypeError, ValueError, AttributeError):
+            logger.warning(f"Attribute {attr_name} could not be serialized, excluding from save state")
+            return None
 
     def to_dict(self) -> Dict[str, Any]:
         """
-        Converts all attributes of the class, including callables, into a dictionary.
-        Handles non-serializable attributes by converting them or skipping them.
+        Converts serializable attributes of the class into a dictionary.
+        Excludes non-serializable attributes that should be recreated on load.
 
         Returns:
-            Dict[str, Any]: A dictionary representation of the class attributes.
+            Dict[str, Any]: A dictionary representation of the serializable class attributes.
         """
         return {
             attr_name: self._serialize_attr(attr_name, attr_value)
             for attr_name, attr_value in self.__dict__.items()
+            if self._serialize_attr(attr_name, attr_value) is not None
         }
 
     def to_json(self, indent: int = 4, *args, **kwargs):
