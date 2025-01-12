@@ -29,7 +29,7 @@ servers/
 
 ```
 
--   **SkyServe Deployment Tool:** This is the workhorse responsible for deploying models within sky clusters clusters. Each model's folder contains a `sky-serve.yaml` file that dictates the deployment configuration.
+-   **SkyServe Deployment Tool:** This is the workhorse responsible for deploying models within sky clusters. Each model's folder contains a `sky-serve.yaml` file that dictates the deployment configuration.
 
 ### Infrastructure Engineer's Toolkit: Commands for Model Deployment
 
