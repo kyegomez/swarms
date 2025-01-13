@@ -16,7 +16,7 @@
 <p align="center">
 <a href="https://twitter.com/swarms_corp/">🐦 Twitter</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://discord.gg/agora-999382051935506503">📢 Discord</a>
+<a href="https://discord.gg/jHnrkH5y">📢 Discord</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://swarms.world">Swarms Platform</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
@@ -26,7 +26,7 @@
 
 
 
-[![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/agora-999382051935506503) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@kyegomez3242) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kye-g-38759a207/) [![Follow on X.com](https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/kyegomezb)
+[![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/jHnrkH5y) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@kyegomez3242) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kye-g-38759a207/) [![Follow on X.com](https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/kyegomezb)
 
 
 
@@ -122,6 +122,16 @@ Here are some example scripts to get you started. For more comprehensive documen
 ## `Agent` Class
 The `Agent` class is a fundamental component of the Swarms framework, designed to execute tasks autonomously. It fuses llms, tools and long-term memory capabilities to create a full stack agent. The `Agent` class is highly customizable, allowing for fine-grained control over its behavior and interactions.
 
+```mermaid
+graph TD
+    A[Agent] --> B[Initialize]
+    B --> C[Process Task]
+    C --> D[Execute Tools]
+    D --> E[Generate Response]
+    E --> F[Return Output]
+    C --> G[Long-term Memory]
+    G --> C
+```
 
 ### `run` Method
 The `run` method is the primary entry point for executing tasks with an `Agent` instance. It accepts a task string as the main input task and processes it according to the agent's configuration. And, it can also accept an `img` parameter such as `img="image_filepath.png` to process images if you have a VLM attached such as `GPT4VisionAPI`
@@ -515,6 +525,18 @@ print(f"Generated data: {generated_data}")
 
 A swarm refers to a group of more than two agents working collaboratively to achieve a common goal. These agents can be software entities, such as llms that interact with each other to perform complex tasks. The concept of a swarm is inspired by natural systems like ant colonies or bird flocks, where simple individual behaviors lead to complex group dynamics and problem-solving capabilities.
 
+```mermaid
+graph TD
+    A[Swarm] --> B[Agent 1]
+    A --> C[Agent 2]
+    A --> D[Agent N]
+    B --> E[Task Processing]
+    C --> E
+    D --> E
+    E --> F[Result Aggregation]
+    F --> G[Final Output]
+```
+
 ### How Swarm Architectures Facilitate Communication
 
 Swarm architectures are designed to establish and manage communication between agents within a swarm. These architectures define how agents interact, share information, and coordinate their actions to achieve the desired outcomes. Here are some key aspects of swarm architectures:
@@ -525,6 +547,15 @@ Swarm architectures are designed to establish and manage communication between a
 
 3. **Sequential Communication**: Sequential swarms process tasks in a linear order, where each agent's output becomes the input for the next agent. This ensures that tasks with dependencies are handled in the correct sequence, maintaining the integrity of the workflow.
 
+```mermaid
+graph LR
+    A[Hierarchical] --> D[Task Distribution]
+    B[Parallel] --> E[Concurrent Processing]
+    C[Sequential] --> F[Linear Processing]
+    D --> G[Results]
+    E --> G
+    F --> G
+```
 
 Swarm architectures leverage these communication patterns to ensure that agents work together efficiently, adapting to the specific requirements of the task at hand. By defining clear communication protocols and interaction models, swarm architectures enable the seamless orchestration of multiple agents, leading to enhanced performance and problem-solving capabilities.
 
@@ -1983,7 +2014,7 @@ Documentation is located here at: [docs.swarms.world](https://docs.swarms.world)
 -----
 
 ## Folder Structure
-The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
+The swarms package has been meticlously crafted for extreme use-ability and understanding, the swarms package is split up into various modules such as `swarms.agents` that holds pre-built agents, `swarms.structs` that holds a vast array of structures like `Agent` and multi agent structures. The 3 most important are `structs`, `models`, and `agents`.
 
 ```sh
 ├── __init__.py
