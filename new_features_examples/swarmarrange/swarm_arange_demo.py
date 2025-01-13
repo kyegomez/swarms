@@ -171,49 +171,41 @@ agents = [
     regulatory_specialist,
 ]
 
-# Define multiple flow patterns
-flows = [
-    "Industry-Analyst -> Tech-Expert -> Market-Researcher -> Regulatory-Specialist -> Managing-Director -> VP-Finance",
-    "Managing-Director -> VP-Finance -> Industry-Analyst -> Tech-Expert -> Market-Researcher -> Regulatory-Specialist",
-    "Tech-Expert -> Market-Researcher -> Regulatory-Specialist -> Industry-Analyst -> Managing-Director -> VP-Finance",
-]
-
-# Create instances of AgentRearrange for each flow pattern
-blackstone_acquisition_analysis = AgentRearrange(
-    name="Blackstone-Acquisition-Analysis",
+# Example 1: Automatic sequential flow
+acquisition_analysis = AgentRearrange(
+    name="Acquisition-Analysis",
     description="A system for analyzing potential acquisitions",
-    agents=agents,
-    flow=flows[0],
+    agents=agents
 )
+acquisition_analysis.set_flow_from_task("Analyze this acquisition step by step, starting with industry analysis and ending with financial recommendations")
 
-blackstone_investment_strategy = AgentRearrange(
-    name="Blackstone-Investment-Strategy",
-    description="A system for evaluating investment opportunities",
-    agents=agents,
-    flow=flows[1],
+# Example 2: Automatic parallel flow
+market_research = AgentRearrange(
+    name="Market-Research",
+    description="A system for parallel market research",
+    agents=agents
 )
+market_research.set_flow_from_task("Analyze multiple market segments simultaneously to identify opportunities")
 
-blackstone_market_analysis = AgentRearrange(
-    name="Blackstone-Market-Analysis",
-    description="A system for analyzing market trends and opportunities",
-    agents=agents,
-    flow=flows[2],
-)
+# Example 3: Hybrid flow with agent groups
+agent_groups = {
+    "research": ["Industry-Analyst", "Tech-Expert", "Market-Researcher"],
+    "compliance": ["Regulatory-Specialist"],
+    "management": ["Managing-Director", "VP-Finance"]
+}
 
-swarm_arrange = SwarmRearrange(
-    name="Blackstone-Swarm",
-    description="A swarm that processes tasks concurrently using multiple agents and rearranges the flow based on the task requirements.",
-    swarms=[
-        blackstone_acquisition_analysis,
-        blackstone_investment_strategy,
-        blackstone_market_analysis,
-    ],
-    flow=f"{blackstone_acquisition_analysis.name} -> {blackstone_investment_strategy.name} -> {blackstone_market_analysis.name}",
-    max_loops=1,
+investment_strategy = AgentRearrange(
+    name="Investment-Strategy",
+    description="A system for comprehensive investment analysis",
+    agents=agents
 )
+investment_strategy.flow = investment_strategy.generate_flow("hybrid", agent_groups)
 
-print(
-    swarm_arrange.run(
-        "Analyze NVIDIA's performance, market trends, and potential for growth in the AI industry"
-    )
-)
+# Run examples
+print("Acquisition Analysis Flow:", acquisition_analysis.flow)
+print("Market Research Flow:", market_research.flow)
+print("Investment Strategy Flow:", investment_strategy.flow)
+
+# Example task execution
+result = acquisition_analysis.run("Analyze potential acquisition of a tech startup valued at $50M")
+print("\nAcquisition Analysis Result:", result)
