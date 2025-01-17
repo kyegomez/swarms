@@ -295,3 +295,16 @@ Before you begin, ensure you have the following installed:
     ```bash
     npm install swarms-js
     ```
+
+## Rust 
+
+=== "Cargo install (Work in Progress)"
+
+    Get started with the cargo crate implementation of Swarms:
+
+    ```bash
+    git clone git@github.com:georgesheth/swarms-rust.git
+    # cargo new your project and update Cargo.toml
+    cargo build
+    cargo run
+    ```
