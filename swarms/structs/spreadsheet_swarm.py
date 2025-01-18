@@ -24,7 +24,6 @@ uuid_hex = uuid.uuid4().hex
 formatted_time = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 # --------------- NEW CHANGE END ---------------
 
-
 class AgentConfig(BaseModel):
     """Configuration for an agent loaded from CSV"""
 
@@ -33,13 +32,11 @@ class AgentConfig(BaseModel):
     system_prompt: str
     task: str
 
-
 class AgentOutput(BaseModel):
     agent_name: str
     task: str
     result: str
     timestamp: str
-
 
 class SwarmRunMetadata(BaseModel):
     run_id: str = Field(
@@ -59,7 +56,6 @@ class SwarmRunMetadata(BaseModel):
         ...,
         description="The number of agents participating in the swarm.",
     )
-
 
 class SpreadSheetSwarm(BaseSwarm):
     """
@@ -109,12 +105,12 @@ class SpreadSheetSwarm(BaseSwarm):
         # --------------- NEW CHANGE START ---------------
         # The save_file_path now uses the formatted_time and uuid_hex
         self.save_file_path = (
-            f"spreadsheet_swarm_run_id_{uuid_hex}.csv"
+            f"spreadsheet_swarm_run_id_{formatted_time}.csv"
         )
         # --------------- NEW CHANGE END ---------------
 
         self.metadata = SwarmRunMetadata(
-            run_id=f"spreadsheet_swarm_run_{time}",
+            run_id=f"spreadsheet_swarm_run_{formatted_time}",
             name=name,
             description=description,
             agents=[agent.name for agent in agents],
