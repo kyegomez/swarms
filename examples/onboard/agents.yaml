@@ -1,0 +1,52 @@
+agents:
+  - agent_name: "Financial-Analysis-Agent"
+    model:
+      model_name: "gpt-4"
+      temperature: 0.1
+      max_tokens: 2000
+    system_prompt: "financial_agent_sys_prompt"
+    max_loops: 1
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: true
+    saved_state_path: "finance_agent.json"
+    user_name: "swarms_corp"
+    retry_attempts: 1
+    context_length: 4000
+    return_step_meta: false
+    output_type: "str"
+    task: "How can I establish a ROTH IRA to buy stocks and get a tax break?"
+
+  - agent_name: "Stock-Analysis-Agent"
+    model:
+      model_name: "gpt-4"
+      temperature: 0.2
+      max_tokens: 1500
+    system_prompt: "stock_agent_sys_prompt"
+    max_loops: 2
+    autosave: true
+    dashboard: false
+    verbose: true
+    dynamic_temperature_enabled: false
+    saved_state_path: "stock_agent.json"
+    user_name: "stock_user"
+    retry_attempts: 3
+    context_length: 4000
+    return_step_meta: true
+    output_type: "json"
+    task: "What is the best strategy for long-term stock investment?"
+
+swarm_architecture:
+  name: "Financial-Advisory-Swarm"
+  description: "A swarm of agents working together to provide comprehensive financial advice"
+  swarm_type: "SequentialWorkflow"
+  max_loops: 2
+  task: "Analyze ROTH IRA setup requirements and provide a comprehensive long-term investment strategy"
+  autosave: true
+  return_json: false
+  rules: |
+    1. Financial-Analysis-Agent first explains ROTH IRA setup process and requirements
+    2. Stock-Analysis-Agent then provides specific investment strategies suitable for ROTH IRA
+    3. Both agents should ensure advice is tax-aware and compliant with retirement account regulations
+    4. Focus on practical, actionable steps the user can take
