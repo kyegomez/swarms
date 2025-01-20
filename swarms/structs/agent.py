@@ -38,6 +38,14 @@ from swarms.schemas.base_schemas import (
     ChatCompletionResponseChoice,
     ChatMessageResponse,
 )
+from swarms.schemas.swarm_output_schemas import (
+    SwarmOutput,
+    SwarmInput,
+    AgentOutput,
+    AgentStep,
+    MixtureOfAgentsOutput,
+    SpreadsheetSwarmOutput
+)
 from swarms.structs.concat import concat_strings
 from swarms.structs.conversation import Conversation
 from swarms.structs.safe_loading import (
@@ -210,6 +218,7 @@ class Agent:
         run_async_concurrent: Run the agent asynchronously and concurrently
         construct_dynamic_prompt: Construct the dynamic prompt
         handle_artifacts: Handle artifacts
+        create_swarm_output: Create standardized swarm output
 
 
     Examples:
@@ -2596,3 +2605,64 @@ class Agent:
         return formatter.print_table(
             f"Agent: {self.agent_name} Configuration", config_dict
         )
+
+    def create_swarm_output(
+        self,
+        swarm_type: str,
+        swarm_id: str,
+        agent_outputs: List[Dict[str, Any]],
+        flow: Optional[str] = None,
+        execution_time: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> SwarmOutput:
+        """Create standardized swarm output"""
+        
+        # Create input config
+        input_config = SwarmInput(
+            swarm_id=swarm_id,
+            name=swarm_type,
+            flow=flow or "->".join([out["agent_name"] for out in agent_outputs]),
+        )
+        
+        # Create agent outputs
+        formatted_outputs = []
+        for agent_out in agent_outputs:
+            steps = [
+                AgentStep(role=step["role"], content=step["content"]) 
+                for step in agent_out.get("steps", [])
+            ]
+            formatted_outputs.append(
+                AgentOutput(
+                    agent_name=agent_out["agent_name"],
+                    steps=steps,
+                    metadata=agent_out.get("metadata")
+                )
+            )
+
+        # Create appropriate output type based on swarm_type
+        if swarm_type == "MixtureOfAgents":
+            return MixtureOfAgentsOutput(
+                input=input_config,
+                outputs=formatted_outputs,
+                time=time.time(),
+                execution_time=execution_time,
+                metadata=metadata,
+                aggregator_summary=metadata.get("aggregator_summary") if metadata else None
+            )
+        elif swarm_type == "SpreadSheetSwarm":
+            return SpreadsheetSwarmOutput(
+                input=input_config,
+                outputs=formatted_outputs, 
+                time=time.time(),
+                execution_time=execution_time,
+                metadata=metadata,
+                csv_data=metadata.get("csv_data", []) if metadata else []
+            )
+        else:
+            return SwarmOutput(
+                input=input_config,
+                outputs=formatted_outputs,
+                time=time.time(),
+                execution_time=execution_time,
+                metadata=metadata
+            )
