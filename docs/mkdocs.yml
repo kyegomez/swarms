@@ -229,8 +229,10 @@ nav:
   - Swarms Cloud API:
     # - Overview: "swarms_cloud/main.md"
     - Overview: "swarms_cloud/vision.md"
-    - MCS API: "swarms_cloud/mcs_api.md"
-    - Swarms Cloud CLI: "swarms_cloud/cli.md"
+    # - Swarms Cloud CLI: "swarms_cloud/cli.md"
+    - Swarm APIs:
+      - MCS API: "swarms_cloud/mcs_api.md"
+      - CreateNow API: "swarms_cloud/create_api.md"
     # - Add Agents to Marketplace: "swarms_cloud/add_agent.md"
     # - Available Models: "swarms_cloud/available_models.md"
     # - Agent API: "swarms_cloud/agent_api.md"
