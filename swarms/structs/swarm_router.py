@@ -12,6 +12,8 @@ from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
+from swarms.structs.groupchat import GroupChat
+from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
@@ -26,6 +28,8 @@ SwarmType = Literal[
     "SpreadSheetSwarm",
     "SequentialWorkflow",
     "ConcurrentWorkflow",
+    "GroupChat",
+    "MultiAgentRouter",
     "auto",
 ]
 
@@ -137,6 +141,7 @@ class SwarmRouter:
         documents: List[str] = [],  # A list of docs file paths
         output_type: str = "string",  # Md, PDF, Txt, csv
         no_cluster_ops: bool = False,
+        speaker_fn: callable = None,
         *args,
         **kwargs,
     ):
@@ -154,6 +159,7 @@ class SwarmRouter:
         self.documents = documents
         self.output_type = output_type
         self.no_cluster_ops = no_cluster_ops
+        self.speaker_fn = speaker_fn
         self.logs = []
 
         self.reliability_check()
@@ -173,8 +179,6 @@ class SwarmRouter:
         # Handle rules
         if self.rules is not None:
             self.handle_rules()
-
-        # let's make a function that checks the agents parameter and disables clusterops
 
     def deactivate_clusterops(self):
         for agent in self.agents:
@@ -294,6 +298,26 @@ class SwarmRouter:
                 layers=self.max_loops,
                 *args,
                 **kwargs,
+            )
+
+        elif self.swarm_type == "GroupChat":
+            return GroupChat(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                max_loops=self.max_loops,
+                speaker_fn=self.speaker_fn,
+                *args,
+                **kwargs,
+            )
+
+        elif self.swarm_type == "MultiAgentRouter":
+            return MultiAgentRouter(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                shared_memory_system=self.shared_memory_system,
+                output_type=self.output_type,
             )
         elif self.swarm_type == "SpreadSheetSwarm":
             return SpreadSheetSwarm(

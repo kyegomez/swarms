@@ -54,6 +54,7 @@ from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
 from swarms.telemetry.capture_sys_data import log_agent_data
+from swarms.agents.agent_print import agent_print
 
 
 # Utils
@@ -889,7 +890,33 @@ class Agent:
 
                         # Check and execute tools
                         if self.tools is not None:
-                            self.parse_and_execute_tools(response)
+                            out = self.parse_and_execute_tools(
+                                response
+                            )
+
+                            self.short_memory.add(
+                                role="Tool Executor", content=out
+                            )
+
+                            agent_print(
+                                f"{self.agent_name} - Tool Executor",
+                                out,
+                                loop_count,
+                                self.streaming_on,
+                            )
+
+                            out = self.llm.run(out)
+
+                            agent_print(
+                                f"{self.agent_name} - Agent Analysis",
+                                out,
+                                loop_count,
+                                self.streaming_on,
+                            )
+
+                            self.short_memory.add(
+                                role=self.agent_name, content=out
+                            )
 
                         # Add the response to the memory
                         self.short_memory.add(
@@ -1209,31 +1236,35 @@ class Agent:
         return output.getvalue()
 
     def parse_and_execute_tools(self, response: str, *args, **kwargs):
-        try:
-            logger.info("Executing tool...")
+        max_retries = 3  # Maximum number of retries
+        retries = 0
+        while retries < max_retries:
+            try:
+                logger.info("Executing tool...")
 
-            # try to Execute the tool and return a string
-            out = parse_and_execute_json(
-                functions=self.tools,
-                json_string=response,
-                parse_md=True,
-                *args,
-                **kwargs,
-            )
-
-            out = str(out)
-
-            logger.info(f"Tool Output: {out}")
-
-            # Add the output to the memory
-            self.short_memory.add(
-                role="Tool Executor",
-                content=out,
-            )
-
-        except Exception as error:
-            logger.error(f"Error executing tool: {error}")
-            raise error
+                # try to Execute the tool and return a string
+                out = parse_and_execute_json(
+                    functions=self.tools,
+                    json_string=response,
+                    parse_md=True,
+                    *args,
+                    **kwargs,
+                )
+                logger.info(f"Tool Output: {out}")
+                # Add the output to the memory
+                # self.short_memory.add(
+                #     role="Tool Executor",
+                #     content=out,
+                # )
+                return out
+            except Exception as error:
+                retries += 1
+                logger.error(
+                    f"Attempt {retries}: Error executing tool: {error}"
+                )
+                if retries == max_retries:
+                    raise error
+                time.sleep(1)  # Wait for a bit before retrying
 
     def add_memory(self, message: str):
         """Add a memory to the agent
@@ -2055,45 +2086,6 @@ class Agent:
         )
 
         return out
-
-    def parse_function_call_and_execute(self, response: str):
-        """
-        Parses a function call from the given response and executes it.
-
-        Args:
-            response (str): The response containing the function call.
-
-        Returns:
-            None
-
-        Raises:
-            Exception: If there is an error parsing and executing the function call.
-        """
-        try:
-            if self.tools is not None:
-                tool_call_output = parse_and_execute_json(
-                    self.tools, response, parse_md=True
-                )
-
-                if tool_call_output is not str:
-                    tool_call_output = str(tool_call_output)
-
-                logger.info(f"Tool Call Output: {tool_call_output}")
-                self.short_memory.add(
-                    role=self.agent_name,
-                    content=tool_call_output,
-                )
-
-                return tool_call_output
-        except Exception as error:
-            logger.error(
-                f"Error parsing and executing function call: {error}"
-            )
-
-            # Raise a custom exception with the error message
-            raise Exception(
-                "Error parsing and executing function call"
-            ) from error
 
     def activate_agentops(self):
         if self.agent_ops_on is True:

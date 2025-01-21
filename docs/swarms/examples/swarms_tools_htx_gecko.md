@@ -1,3 +1,14 @@
+# Swarms Tools Example with HTX + CoinGecko
+
+- `pip3 install swarms swarms-tools`
+- Add `OPENAI_API_KEY` to your `.env` file
+- Run `swarms_tools_htx_gecko.py`
+- Agent will make a function call to the desired tool
+- The tool will be executed and the result will be returned to the agent
+- The agent will then analyze the result and return the final output
+
+
+```python
 from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
@@ -29,3 +40,4 @@ agent = Agent(
 )
 
 agent.run("Analyze the $swarms token on htx")
+```

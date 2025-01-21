@@ -210,6 +210,7 @@ nav:
       - XAI: "swarms/examples/xai.md"
     - Swarms Tools: 
       - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
+      - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
