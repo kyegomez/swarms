@@ -208,6 +208,8 @@ nav:
       - Ollama: "swarms/examples/ollama.md"
       - OpenRouter: "swarms/examples/openrouter.md"
       - XAI: "swarms/examples/xai.md"
+    - Swarms Tools: 
+      - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
@@ -226,6 +228,8 @@ nav:
       - BaseMultiModalModel: "swarms/models/base_multimodal_model.md"
       - Multi Modal Models Available: "swarms/models/multimodal_models.md"
       - GPT4VisionAPI: "swarms/models/gpt4v.md"
+  - Swarms Tools:
+    - Overview: "swarms_tools/overview.md"
   - Swarms Cloud API:
     # - Overview: "swarms_cloud/main.md"
     - Overview: "swarms_cloud/vision.md"
