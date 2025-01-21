@@ -161,7 +161,7 @@ nav:
         - Overview: "swarms/tools/main.md"
         - What are tools?: "swarms/tools/build_tool.md"
         - ToolAgent: "swarms/agents/tool_agent.md"
-        - Tool Storage & tool_registry decorator: "swarms/tools/tool_storage.md"
+        - Tool Storage: "swarms/tools/tool_storage.md"
       - RAG || Long Term Memory:
         - Integrating RAG with Agents: "swarms/memory/diy_memory.md"
       - Third-Party Agent Integrations:
