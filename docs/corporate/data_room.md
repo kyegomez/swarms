@@ -49,7 +49,7 @@
 - Case Studies and Use Cases
 
 
-## **Introdution**
+## **Introduction**
 Swarms provides automation-as-a-service through swarms of autonomous agents that work together as a team. We enable our customers to build, deploy, and scale production-grade multi-agent applications to automate real-world tasks.
 
 ### **Vision**

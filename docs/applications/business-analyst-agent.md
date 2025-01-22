@@ -307,7 +307,7 @@ Essentially, we can spawn parallel agents to gather the data. Each agent will ha
 - Internet access
 - Financial data retrieval
 
-As they run parallely, they will add their knowledge into a common long-term memory. We will then spawn a separate report writing agent with access to this memory to generate our business case report.
+As they run parallelly, they will add their knowledge into a common long-term memory. We will then spawn a separate report writing agent with access to this memory to generate our business case report.
 
 #### Step 4. Defining Tools for Worker Agents
 
@@ -359,7 +359,7 @@ def kay_retriever(query: str) -> str:
 
 #### Step 5. Defining Long-Term Memory
 
-As mentioned previously, the worker agents running parallely, will pool their knowledge into a common memory. Let us define that.
+As mentioned previously, the worker agents running parallelly, will pool their knowledge into a common memory. Let us define that.
 
 ```python
 import logging
