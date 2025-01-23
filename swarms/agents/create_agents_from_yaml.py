@@ -179,37 +179,43 @@ def create_agents_from_yaml(
 
     try:
         logger.info("Starting agent creation process...")
-        
+
         # Load and validate configuration
         if yaml_file:
             logger.info(f"Loading configuration from {yaml_file}")
         config = load_yaml_safely(yaml_file, yaml_string)
-        
+
         if not config.get("agents"):
             raise ValueError(
                 "No agents defined in the YAML configuration. "
                 "Please add at least one agent under the 'agents' section."
             )
-            
-        logger.info(f"Found {len(config['agents'])} agent(s) to create")
+
+        logger.info(
+            f"Found {len(config['agents'])} agent(s) to create"
+        )
 
         # Create agents with retry logic
         for idx, agent_config in enumerate(config["agents"], 1):
             if not agent_config.get("agent_name"):
                 agent_config["agent_name"] = f"Agent_{idx}"
-                
+
             logger.info(
                 f"Creating agent {idx}/{len(config['agents'])}: {agent_config['agent_name']}"
             )
 
             if "model_name" in agent_config:
-                logger.info(f"Using specified model: {agent_config['model_name']}")
+                logger.info(
+                    f"Using specified model: {agent_config['model_name']}"
+                )
                 model_instance = LiteLLM(
                     model_name=agent_config["model_name"]
                 )
             else:
                 model_name = "gpt-4"
-                logger.info(f"No model specified, using default: {model_name}")
+                logger.info(
+                    f"No model specified, using default: {model_name}"
+                )
                 model_instance = LiteLLM(model_name=model_name)
 
             agent = create_agent_with_retry(
@@ -230,9 +236,15 @@ def create_agents_from_yaml(
                     raise ValueError(
                         "swarm_architecture must be a dictionary containing swarm configuration"
                     )
-                
-                required_fields = {"name", "description", "swarm_type"}
-                missing_fields = required_fields - set(config["swarm_architecture"].keys())
+
+                required_fields = {
+                    "name",
+                    "description",
+                    "swarm_type",
+                }
+                missing_fields = required_fields - set(
+                    config["swarm_architecture"].keys()
+                )
                 if missing_fields:
                     raise ValueError(
                         f"SwarmRouter creation failed: Missing required fields in swarm_architecture: {', '.join(missing_fields)}"
@@ -241,8 +253,10 @@ def create_agents_from_yaml(
                 swarm_config = SwarmConfig(
                     **config["swarm_architecture"]
                 )
-                
-                logger.info(f"Creating SwarmRouter with type: {swarm_config.swarm_type}")
+
+                logger.info(
+                    f"Creating SwarmRouter with type: {swarm_config.swarm_type}"
+                )
                 swarm_router = SwarmRouter(
                     name=swarm_config.name,
                     description=swarm_config.description,
@@ -306,7 +320,9 @@ def create_agents_from_yaml(
                         "No task specified in swarm_architecture. Please add a 'task' field "
                         "to define what the swarm should do."
                     )
-                logger.info(f"Running swarm with task: {config['swarm_architecture']['task']}")
+                logger.info(
+                    f"Running swarm with task: {config['swarm_architecture']['task']}"
+                )
                 return swarm_router.run(
                     config["swarm_architecture"]["task"]
                 )
@@ -331,8 +347,12 @@ def create_agents_from_yaml(
             result = agents[0] if len(agents) == 1 else agents
         elif return_type == "both":
             result = (
-                (swarm_router if swarm_router else agents[0] if len(agents) == 1 else agents),
-                agents
+                (
+                    swarm_router
+                    if swarm_router
+                    else agents[0] if len(agents) == 1 else agents
+                ),
+                agents,
             )
         elif return_type == "tasks":
             result = task_results

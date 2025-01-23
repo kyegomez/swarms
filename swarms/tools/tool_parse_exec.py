@@ -12,17 +12,19 @@ def parse_and_execute_json(
     json_string: str,
     parse_md: bool = False,
     verbose: bool = False,
-    return_str: bool = True,
-) -> dict:
+    max_retries: int = 3,
+) -> str:
     """
     Parses and executes a JSON string containing function names and parameters.
 
     Args:
-        functions (List[callable]): A list of callable functions.
+        functions (List[Callable[..., Any]]): A list of callable functions.
         json_string (str): The JSON string to parse and execute.
         parse_md (bool): Flag indicating whether to extract code from Markdown.
         verbose (bool): Flag indicating whether to enable verbose logging.
         return_str (bool): Flag indicating whether to return a JSON string.
+        max_retries (int): Maximum number of retries for executing functions.
+
     Returns:
         dict: A dictionary containing the results of executing the functions with the parsed parameters.
     """
@@ -30,10 +32,20 @@ def parse_and_execute_json(
         raise ValueError("Functions and JSON string are required")
 
     if parse_md:
-        json_string = extract_code_from_markdown(json_string)
+        try:
+            json_string = extract_code_from_markdown(json_string)
+        except Exception as e:
+            logger.error(f"Error extracting code from Markdown: {e}")
+            return {"error": f"Markdown parsing failed: {str(e)}"}
 
     try:
-        # Create function name to function mapping
+        # Ensure JSON string is stripped of extraneous whitespace
+        json_string = json_string.strip()
+        if not json_string:
+            raise ValueError(
+                "JSON string is empty after stripping whitespace"
+            )
+
         function_dict = {func.__name__: func for func in functions}
 
         if verbose:
@@ -42,83 +54,80 @@ def parse_and_execute_json(
             )
             logger.info(f"Processing JSON: {json_string}")
 
-        # Parse JSON data
-        data = json.loads(json_string)
+        try:
+            data = json.loads(json_string)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON format: {e}")
+            return {"error": f"Invalid JSON format: {str(e)}"}
 
-        # Handle both single function and function list formats
         function_list = []
         if "functions" in data:
             function_list = data["functions"]
         elif "function" in data:
             function_list = [data["function"]]
         else:
-            function_list = [
-                data
-            ]  # Assume entire object is single function
+            function_list = [data]
 
-        # Ensure function_list is a list and filter None values
         if isinstance(function_list, dict):
             function_list = [function_list]
+
         function_list = [f for f in function_list if f]
 
         if verbose:
             logger.info(f"Processing {len(function_list)} functions")
 
         results = {}
+
         for function_data in function_list:
             function_name = function_data.get("name")
             parameters = function_data.get("parameters", {})
 
             if not function_name:
-                logger.warning("Function data missing name field")
+                logger.warning("Function data missing 'name' field")
                 continue
 
             if verbose:
                 logger.info(
-                    f"Executing {function_name} with params: {parameters}"
+                    f"Executing {function_name} with parameters: {parameters}"
                 )
 
             if function_name not in function_dict:
-                logger.warning(f"Function {function_name} not found")
-                results[function_name] = None
+                logger.warning(
+                    f"Function '{function_name}' not found"
+                )
+                results[function_name] = "Error: Function not found"
                 continue
 
-            try:
-                result = function_dict[function_name](**parameters)
-                results[function_name] = str(result)
-                if verbose:
-                    logger.info(
-                        f"Result for {function_name}: {result}"
+            for attempt in range(max_retries):
+                try:
+                    result = function_dict[function_name](
+                        **parameters
                     )
-            except Exception as e:
-                logger.error(
-                    f"Error executing {function_name}: {str(e)}"
-                )
-                results[function_name] = f"Error: {str(e)}"
+                    results[function_name] = str(result)
+                    if verbose:
+                        logger.info(
+                            f"Result for {function_name}: {result}"
+                        )
+                    break
+                except Exception as e:
+                    logger.error(
+                        f"Attempt {attempt + 1} failed for {function_name}: {e}"
+                    )
+                    if attempt == max_retries - 1:
+                        results[function_name] = (
+                            f"Error after {max_retries} attempts: {str(e)}"
+                        )
 
-        # Format final results
-        if len(results) == 1:
-            # Return single result directly
-            data = {"result": next(iter(results.values()))}
-        else:
-            # Return all results
-            data = {
-                "results": results,
-                "summary": "\n".join(
-                    f"{k}: {v}" for k, v in results.items()
-                ),
-            }
+        data = {
+            "results": results,
+            "summary": "\n".join(
+                f"{k}: {v}" for k, v in results.items()
+            ),
+        }
 
-        if return_str:
-            return json.dumps(data)
-        else:
-            return data
+        return json.dumps(data, indent=4)
 
-    except json.JSONDecodeError as e:
-        error = f"Invalid JSON format: {str(e)}"
-        logger.error(error)
-        return {"error": error}
     except Exception as e:
-        error = f"Error parsing and executing JSON: {str(e)}"
+        error = f"Unexpected error during execution: {str(e)}"
         logger.error(error)
         return {"error": error}

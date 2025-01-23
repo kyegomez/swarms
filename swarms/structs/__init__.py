@@ -1,5 +1,6 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agents_available import showcase_available_agents
+from swarms.structs.async_workflow import AsyncWorkflow
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -13,10 +14,10 @@ from swarms.structs.graph_workflow import (
     NodeType,
 )
 from swarms.structs.groupchat import (
-    GroupChat,
+    AgentResponse,
     ChatHistory,
     ChatTurn,
-    AgentResponse,
+    GroupChat,
     expertise_based,
 )
 from swarms.structs.majority_voting import (
@@ -38,6 +39,7 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_tasks_concurrently,
     run_single_agent,
 )
+from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 from swarms.structs.queue_swarm import TaskQueueSwarm
 from swarms.structs.rearrange import AgentRearrange, rearrange
 from swarms.structs.round_robin import RoundRobinSwarm
@@ -79,8 +81,9 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
-from swarms.structs.async_workflow import AsyncWorkflow
-from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
+from swarms.structs.meme_agent_persona_generator import (
+    MemeAgentGenerator,
+)
 
 __all__ = [
     "Agent",
@@ -156,4 +159,5 @@ __all__ = [
     "AgentResponse",
     "expertise_based",
     "MultiAgentRouter",
+    "MemeAgentGenerator",
 ]
