@@ -81,6 +81,9 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
+from swarms.structs.meme_agent_persona_generator import (
+    MemeAgentGenerator,
+)
 
 __all__ = [
     "Agent",
@@ -156,4 +159,5 @@ __all__ = [
     "AgentResponse",
     "expertise_based",
     "MultiAgentRouter",
+    "MemeAgentGenerator",
 ]

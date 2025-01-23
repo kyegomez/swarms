@@ -213,6 +213,9 @@ nav:
       - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
       - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
       - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
+    - Meme Agents:
+      - Bob The Builder: "swarms/examples/bob_the_builder.md"
+      - Meme Agent Builder: "swarms/examples/meme_agent_builder.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
@@ -264,6 +267,8 @@ nav:
       - Edit Agents: "swarms_platform/agents/edit_agent.md"
     - Telemetry API:
       - PUT: "swarms_platform/telemetry/index.md"
+    - Swarms Wallet API:
+      - Overview: "swarms_platform/wallet/api.md"
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
     #   - Add Tools: "swarms_platform/fetch_tools.md"
