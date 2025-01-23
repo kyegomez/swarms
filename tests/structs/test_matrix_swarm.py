@@ -1,40 +1,39 @@
-from swarms.structs.matrix_swarm import MatrixSwarm, AgentOutput
+from swarms.structs.matrix_swarm import AgentMatrix, AgentOutput
 from swarms import Agent
 
 
-def create_test_matrix(rows: int, cols: int) -> MatrixSwarm:
+def create_test_matrix(rows: int, cols: int) -> AgentMatrix:
     """Helper function to create a test agent matrix"""
     agents = [
         [
             Agent(
                 agent_name=f"TestAgent-{i}-{j}",
-                model_name="gpt-4o",
                 system_prompt="Test prompt",
             )
             for j in range(cols)
         ]
         for i in range(rows)
     ]
-    return MatrixSwarm(agents)
+    return AgentMatrix(agents)
 
 
 def test_init():
-    """Test MatrixSwarm initialization"""
+    """Test AgentMatrix initialization"""
     # Test valid initialization
     matrix = create_test_matrix(2, 2)
-    assert isinstance(matrix, MatrixSwarm)
+    assert isinstance(matrix, AgentMatrix)
     assert len(matrix.agents) == 2
     assert len(matrix.agents[0]) == 2
 
     # Test invalid initialization
     try:
-        MatrixSwarm([[1, 2], [3, 4]])  # Non-agent elements
+        AgentMatrix([[1, 2], [3, 4]])  # Non-agent elements
         assert False, "Should raise ValueError"
     except ValueError:
         pass
 
     try:
-        MatrixSwarm([])  # Empty matrix
+        AgentMatrix([])  # Empty matrix
         assert False, "Should raise ValueError"
     except ValueError:
         pass
