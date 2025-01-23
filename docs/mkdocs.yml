@@ -215,7 +215,7 @@ nav:
       - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
     - Meme Agents:
       - Bob The Builder: "swarms/examples/bob_the_builder.md"
-      - Meme Agent Builder: "swarms/examples/meme_agent_builder.md"
+      - Meme Agent Builder: "swarms/examples/meme_agents.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"

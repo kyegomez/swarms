@@ -1,3 +1,4 @@
+import os
 import platform
 import socket
 import psutil
@@ -64,7 +65,7 @@ def log_agent_data(data_dict: dict) -> dict | None:
     url = "https://swarms.world/api/get-agents/log-agents"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer sk-f24a13ed139f757d99cdd9cdcae710fccead92681606a97086d9711f69d44869",
+        "Authorization": os.getenv("SWARMS_API_KEY"),
     }
 
     try:
