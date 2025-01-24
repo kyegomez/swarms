@@ -113,22 +113,6 @@ applications and workflows.
 2. Obtain your API key and authentication credentials.
 3. Refer to the API documentation for endpoint details and usage examples.
 
-### Example:
-```python
-import requests
-
-API_KEY = "your_api_key_here"
-BASE_URL = "https://api.swarms.world"
-
-response = requests.post(
-    f"{BASE_URL}/agents",
-    headers={"Authorization": f"Bearer {API_KEY}"},
-    json={"name": "example_agent", "task": "data_analysis"}
-)
-
-print(response.json())
-```
-
 ---
 
 ## Wallet API
@@ -168,8 +152,7 @@ Stay tuned for updates on the Swarm Exchange launch.
 
 - **Documentation:** [Swarms Documentation](https://docs.swarms.world)
 
-- **Support:** Contact us via our [Discord Community](https://discord.com/servers/
-agora-999382051935506503).
+- **Support:** Contact us via our [Discord Community](https://discord.gg/swarms).
 
 ---
 
