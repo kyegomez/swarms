@@ -25,6 +25,8 @@ class LiteLLM:
         temperature: float = 0.5,
         max_tokens: int = 4000,
         ssl_verify: bool = False,
+        *args,
+        **kwargs,
     ):
         """
         Initialize the LiteLLM with the given parameters.
@@ -64,7 +66,7 @@ class LiteLLM:
 
         return messages
 
-    def run(self, task: str, *args, **kwargs):
+    def run(self, task: str, tools: any = [], *args, **kwargs):
         """
         Run the LLM model for the given task.
 
@@ -86,6 +88,7 @@ class LiteLLM:
                 stream=self.stream,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
+                tools=tools,
                 *args,
                 **kwargs,
             )
