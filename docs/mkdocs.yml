@@ -213,6 +213,7 @@ nav:
       - Agent with HTX + CoinGecko: "swarms/examples/swarms_tools_htx.md"
       - Agent with HTX + CoinGecko Function Calling: "swarms/examples/swarms_tools_htx_gecko.md"
       - Agent with Yahoo Finance: "swarms/examples/yahoo_finance.md"
+      - Twitter Agents: "swarms_tools/twitter.md"
     - Meme Agents:
       - Bob The Builder: "swarms/examples/bob_the_builder.md"
       - Meme Agent Builder: "swarms/examples/meme_agents.md"
