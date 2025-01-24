@@ -12,6 +12,9 @@ pip install swarms-tools
 The Twitter Tool requires Twitter API credentials for authentication. These should be stored as environment variables:
 
 ```python
+TWITTER_ID=your_twitter_id
+TWITTER_NAME=your_twitter_name
+TWITTER_DESCRIPTION=your_twitter_description
 TWITTER_API_KEY=your_api_key
 TWITTER_API_SECRET_KEY=your_api_secret_key
 TWITTER_ACCESS_TOKEN=your_access_token
