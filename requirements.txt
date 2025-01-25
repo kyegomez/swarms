@@ -23,3 +23,11 @@ pytest>=8.1.1
 networkx
 aiofiles
 clusterops
+aiohttp
+beautifulsoup4
+python-dotenv
+google-generativeai
+rich
+html2text
+playwright
+tenacity
