@@ -298,5 +298,5 @@ nav:
     - Hiring: "corporate/hiring.md"
     - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
   - Financial Infrastructure:
-    - Overview: "finance/index.md"
+    # - Overview: "finance/index.md"
     - Swarms Wallet: "finance/wallet.md"
