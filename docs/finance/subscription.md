@@ -623,6 +623,7 @@ class SubscriptionOptimizer {
         await this.cacheBlockchainState();
     }
 }
+```
 
 ## Webhook Integration
 
@@ -1016,11 +1017,6 @@ flowchart TB
 ```
 
 ## Support and Resources
-
-### Documentation
-- [Smart Contract Specification](docs/contract-spec.md)
-- [API Documentation](docs/api-docs.md)
-- [Integration Guide](docs/integration-guide.md)
 
 ### Support Channels
 - Technical Support: support@swarms.world
