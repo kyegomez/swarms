@@ -300,3 +300,4 @@ nav:
   - Financial Infrastructure:
     # - Overview: "finance/index.md"
     - Swarms Wallet: "finance/wallet.md"
+    - Swarms Subscription: "finance/subscription.md"
