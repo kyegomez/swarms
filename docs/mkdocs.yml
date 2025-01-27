@@ -219,6 +219,8 @@ nav:
     - Meme Agents:
       - Bob The Builder: "swarms/examples/bob_the_builder.md"
       - Meme Agent Builder: "swarms/examples/meme_agents.md"
+    - Multi-Agent Collaboration:
+      - Swarms DAO: "swarms/examples/swarms_dao.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
@@ -242,6 +244,7 @@ nav:
   - Swarms Cloud API:
     # - Overview: "swarms_cloud/main.md"
     - Overview: "swarms_cloud/vision.md"
+    - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
     # - Swarms Cloud CLI: "swarms_cloud/cli.md"
     - Swarm APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
