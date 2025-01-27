@@ -23,7 +23,6 @@ import toml
 import yaml
 from loguru import logger
 from pydantic import BaseModel
-from swarm_models.tiktoken_wrapper import TikTokenizer
 
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.artifacts.main_artifact import Artifact
@@ -55,6 +54,7 @@ from swarms.utils.wrapper_clusterop import (
 )
 from swarms.telemetry.capture_sys_data import log_agent_data
 from swarms.agents.agent_print import agent_print
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 # Utils
@@ -439,7 +439,7 @@ class Agent:
         self.time_created = time_created
         self.data_memory = data_memory
         self.load_yaml_path = load_yaml_path
-        self.tokenizer = TikTokenizer()
+        self.tokenizer = tokenizer
         self.auto_generate_prompt = auto_generate_prompt
         self.rag_every_loop = rag_every_loop
         self.plan_enabled = plan_enabled
@@ -563,9 +563,7 @@ class Agent:
             max_loops=self.max_loops,
             steps=self.short_memory.to_dict(),
             full_history=self.short_memory.get_str(),
-            total_tokens=self.tokenizer.count_tokens(
-                self.short_memory.get_str()
-            ),
+            total_tokens=count_tokens(self.short_memory.get_str()),
             stopping_token=self.stopping_token,
             interactive=self.interactive,
             dynamic_temperature_enabled=self.dynamic_temperature_enabled,
@@ -1043,10 +1041,8 @@ class Agent:
             self.agent_output.full_history = (
                 self.short_memory.get_str()
             )
-            self.agent_output.total_tokens = (
-                self.tokenizer.count_tokens(
-                    self.short_memory.get_str()
-                )
+            self.agent_output.total_tokens = count_tokens(
+                self.short_memory.get_str()
             )
 
             # Handle artifacts
@@ -1976,7 +1972,7 @@ class Agent:
                 )
 
                 # # Count the tokens
-                # memory_token_count = self.tokenizer.count_tokens(
+                # memory_token_count = count_tokens(
                 #     memory_retrieval
                 # )
                 # if memory_token_count > self.memory_chunk_size:
@@ -2065,7 +2061,7 @@ class Agent:
     def check_available_tokens(self):
         # Log the amount of tokens left in the memory and in the task
         if self.tokenizer is not None:
-            tokens_used = self.tokenizer.count_tokens(
+            tokens_used = count_tokens(
                 self.short_memory.return_history_as_string()
             )
             logger.info(
@@ -2076,7 +2072,7 @@ class Agent:
 
     def tokens_checks(self):
         # Check the tokens available
-        tokens_used = self.tokenizer.count_tokens(
+        tokens_used = count_tokens(
             self.short_memory.return_history_as_string()
         )
         out = self.check_available_tokens()
@@ -2140,13 +2136,10 @@ class Agent:
 
         # Calculate token usage
         # full_memory = self.short_memory.return_history_as_string()
-        # prompt_tokens = self.tokenizer.count_tokens(full_memory)
-        # completion_tokens = self.tokenizer.count_tokens(response)
+        # prompt_tokens = count_tokens(full_memory)
+        # completion_tokens = count_tokens(response)
         # total_tokens = prompt_tokens + completion_tokens
-        total_tokens = (
-            self.tokenizer.count_tokens(task)
-            + self.tokenizer.count_tokens(response),
-        )
+        total_tokens = (count_tokens(task) + count_tokens(response),)
 
         # # Get memory responses
         # memory_responses = {

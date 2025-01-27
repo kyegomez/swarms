@@ -20,11 +20,6 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
 from pydantic import BaseModel
-from swarms.utils.pandas_utils import (
-    dict_to_dataframe,
-    display_agents_info,
-    pydantic_model_to_dataframe,
-)
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="base_swarm")
@@ -795,17 +790,10 @@ class BaseSwarm(ABC):
         Returns:
             None
         """
-        display_agents_info(self.agents)
+        ...
 
     def agents_to_dataframe(self):
         """
         Convert agents to a pandas DataFrame.
         """
-        data = [agent.agent_output.dict() for agent in self.agents]
-        return dict_to_dataframe(data)
-
-    def model_to_dataframe(self):
-        """
-        Convert the Pydantic model to a pandas DataFrame.
-        """
-        return pydantic_model_to_dataframe(self.output_schema)
+        ...

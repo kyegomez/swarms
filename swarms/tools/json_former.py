@@ -8,7 +8,6 @@ from swarms.tools.logits_processor import (
     OutputNumbersTokens,
     StringStoppingCriteria,
 )
-from swarm_models.base_llm import BaseLLM
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
@@ -59,7 +58,7 @@ class Jsonformer:
         max_number_tokens: int = 6,
         temperature: float = 1.0,
         max_string_token_length: int = 10,
-        llm: BaseLLM = None,
+        llm: Any = None,
     ):
         self.model = model
         self.tokenizer = tokenizer

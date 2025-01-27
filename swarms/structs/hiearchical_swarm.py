@@ -6,7 +6,6 @@ from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.agent import Agent
 from swarms.structs.concat import concat_strings
 from swarms.structs.agent_registry import AgentRegistry
-from swarm_models.base_llm import BaseLLM
 from swarms.structs.conversation import Conversation
 
 logger = initialize_logger(log_folder="hiearchical_swarm")
@@ -156,7 +155,7 @@ class HierarchicalAgentSwarm(BaseSwarm):
         create_agents_on: bool = False,
         template_worker_agent: Agent = None,
         director_planning_prompt: str = None,
-        template_base_worker_llm: BaseLLM = None,
+        template_base_worker_llm: Any = None,
         swarm_history: str = None,
         *args,
         **kwargs,

@@ -5,7 +5,6 @@ from typing import List, Optional
 from loguru import logger
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
-from swarm_models import OpenAIChat
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -295,18 +294,6 @@ class AutoSwarmBuilder:
             },
         )
 
-        # Initialize OpenAI chat model
-        try:
-            self.chat_model = OpenAIChat(
-                openai_api_key=self.api_key,
-                model_name=self.model_name,
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to initialize OpenAI chat model: {str(e)}"
-            )
-            raise
-
     def run(
         self,
         task: str,
@@ -444,7 +431,7 @@ class AutoSwarmBuilder:
                 agent_name=agent_name,
                 description=agent_description,
                 system_prompt=agent_system_prompt,
-                llm=self.chat_model,
+                model_name="gpt-4o",
                 verbose=self.verbose,
                 dynamic_temperature_enabled=False,
                 return_step_meta=False,

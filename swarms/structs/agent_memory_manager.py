@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel
-from swarm_models.tiktoken_wrapper import TikTokenizer
+from swarms.utils.litellm_tokenizer import count_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class MemoryManager:
         long_term_memory: Optional[Any] = None,
     ):
         self.config = config
-        self.tokenizer = tokenizer or TikTokenizer()
+        self.tokenizer = tokenizer
         self.long_term_memory = long_term_memory
 
         # Initialize memories
@@ -86,7 +86,7 @@ class MemoryManager:
             agent_name=agent_name,
             session_id=session_id,
             memory_type=memory_type,
-            token_count=self.tokenizer.count_tokens(content),
+            token_count=count_tokens(content),
         )
         return MemoryEntry(content=content, metadata=metadata)
 
@@ -219,7 +219,7 @@ class MemoryManager:
         self, text: str, max_tokens: int
     ) -> str:
         """Truncate text to fit within token limit"""
-        current_tokens = self.tokenizer.count_tokens(text)
+        current_tokens = count_tokens(text)
 
         if current_tokens <= max_tokens:
             return text
@@ -230,7 +230,7 @@ class MemoryManager:
         current_count = 0
 
         for sentence in sentences:
-            sentence_tokens = self.tokenizer.count_tokens(sentence)
+            sentence_tokens = count_tokens(sentence)
             if current_count + sentence_tokens <= max_tokens:
                 result.append(sentence)
                 current_count += sentence_tokens
@@ -376,9 +376,7 @@ class MemoryManager:
                         agent_name="system",
                         session_id="long_term",
                         memory_type="long_term",
-                        token_count=self.tokenizer.count_tokens(
-                            content
-                        ),
+                        token_count=count_tokens(content),
                     )
                     results.append(
                         MemoryEntry(
