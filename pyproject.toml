@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "6.9.8"
+version = "7.0.0"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -78,25 +78,11 @@ rich = "*"
 # sentence-transformers = "*"
 
 
-# [tool.poetry.extras]
-# # Extra for NLP-related functionalities
-# nlp = [
-#     "torch>=2.1.1,<3.0",
-#     "transformers>=4.39.0,<5.0.0",
-#     "sentence-transformers",
-#     "swarm-models",
-# ]
-
-# # Extra for database-related functionalities
-# db = ["chromadb"]
-
 # # All optional dependencies for convenience
 # all = [
-#     "torch>=2.1.1,<3.0",
-#     "transformers>=4.39.0,<5.0.0",
-#     "sentence-transformers",
-#     "chromadb",
-#     "swarm-models"
+#     "torch",
+#     "transformers",
+#     "litellm"
 # ]
 
 

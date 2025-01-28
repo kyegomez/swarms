@@ -1,3 +1,4 @@
+import platform
 from typing import Any
 
 
@@ -52,6 +53,14 @@ def exec_callable_with_clusterops(
         if enable_logging:
             logger.info(f"Attempting to run on device: {device}")
         device = device.lower()
+
+        # Check if the platform is Windows and do nothing if true
+        if platform.system() == "Windows":
+            if enable_logging:
+                logger.info(
+                    "Platform is Windows, not executing on device."
+                )
+            return None
 
         if device == "cpu":
             if enable_logging:

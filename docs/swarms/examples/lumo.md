@@ -54,7 +54,7 @@ class Lumo:
 
 Agent(
     agent_name="Solana-Analysis-Agent",
-    model_name=Lumo(),
+    llm=Lumo(),
     max_loops="auto",
     interactive=True,
     streaming_on=True,
