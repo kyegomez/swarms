@@ -50,7 +50,7 @@ extra:
     - icon: fontawesome/brands/twitter
       link: https://x.com/swarms_corp
     - icon: fontawesome/brands/discord
-      link: https://discord.com/servers/agora-999382051935506503
+      link: https://discord.gg/swarms
 
   analytics:
     provider: google

@@ -39,7 +39,7 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 ## Community
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
-| Community            | [Discord](https://discord.com/servers/agora-999382051935506503)                            |
+| Community            | [Discord](https://discord.gg/swarms)                            |
 | Blog                 | [Blog](https://medium.com/@kyeg)                                                           |
 | Event Calendar       | [LUMA](https://lu.ma/swarms_calendar)                                                       |
 | Twitter     | [Twitter](https://x.com/swarms_corp)                                                       |
