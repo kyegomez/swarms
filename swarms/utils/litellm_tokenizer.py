@@ -1,5 +1,6 @@
 import subprocess
 
+
 def count_tokens(text: str, model: str = "gpt-4o") -> int:
     """Count the number of tokens in the given text."""
     try:
@@ -8,9 +9,7 @@ def count_tokens(text: str, model: str = "gpt-4o") -> int:
         subprocess.run(["pip", "install", "litellm"])
         from litellm import encode
 
-    
     return len(encode(model=model, text=text))
-
 
 
 # if __name__ == "__main__":
