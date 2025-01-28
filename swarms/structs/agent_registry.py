@@ -97,10 +97,15 @@ class AgentRegistry:
             agent (Agent): The agent to add.
 
         Raises:
-            ValueError: If the agent_name already exists in the registry.
+            ValueError: If the agent_name already exists in the registry or is invalid.
             ValidationError: If the input data is invalid.
         """
         name = agent.agent_name
+
+        # Input validation for agent_name
+        if not name or not isinstance(name, str):
+            logger.error("Invalid agent name provided.")
+            raise ValueError("Invalid agent name provided.")
 
         self.agent_to_py_model(agent)
 
@@ -242,7 +247,7 @@ class AgentRegistry:
             with self.lock:
                 agents = list(self.agents.values())
                 logger.info("Returning all agents.")
-                return agents
+                returnagents
         except Exception as e:
             logger.error(f"Error: {e}")
             raise e
