@@ -1,7 +1,6 @@
 import json
 from typing import Any, Dict, List, Union
 
-from swarms.utils.lazy_loader import lazy_import_decorator
 from pydantic import BaseModel
 from swarms.tools.logits_processor import (
     NumberStoppingCriteria,
@@ -24,7 +23,6 @@ except ImportError:
 GENERATION_MARKER = "|GENERATION|"
 
 
-@lazy_import_decorator
 class Jsonformer:
     """
     Initializes the FormatTools class.

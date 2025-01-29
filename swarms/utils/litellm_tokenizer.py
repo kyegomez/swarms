@@ -6,7 +6,8 @@ def count_tokens(text: str, model: str = "gpt-4o") -> int:
     try:
         from litellm import encode
     except ImportError:
-        subprocess.run(["pip", "install", "litellm"])
+        import sys
+        subprocess.run([sys.executable, "-m", "pip", "install", "litellm"])
         from litellm import encode
 
     return len(encode(model=model, text=text))

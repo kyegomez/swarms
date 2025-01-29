@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install swarms packages
 RUN pip install --no-cache-dir swarm-models swarms
+RUN pip install transformers torch litellm tiktoken openai pandas numpy pypdf
+
 
 # Production stage
 FROM python:3.11-slim-bullseye
