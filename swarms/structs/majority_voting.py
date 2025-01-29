@@ -45,6 +45,11 @@ def parse_code_completion(agent_response, question):
     Returns:
         tuple: A tuple containing the parsed Python code and a boolean indicating success.
     """
+    # Input validation
+    if not isinstance(agent_response, str) or not isinstance(question, str):
+        logger.error("Invalid inputs provided to parse_code_completion.")
+        return "", False
+
     python_code = extract_last_python_code_block(agent_response)
     if python_code is None:
         if agent_response.count("impl]") == 0:
@@ -117,7 +122,7 @@ class MajorityVoting:
         agents (list): A list of agents to be used in the majority voting system.
         output_parser (function, optional): A function used to parse the output of the agents.
             If not provided, the default majority voting function is used.
-        autosave (bool, optional): A boolean indicating whether to autosave the conversation to a file.
+        autosave (bool, optional ): A boolean indicating whether to autosave the conversation to a file.
         verbose (bool, optional): A boolean indicating whether to enable verbose logging.
     Examples:
         >>> from swarms.structs.agent import Agent
@@ -181,6 +186,11 @@ class MajorityVoting:
             List[Any]: The majority vote.
 
         """
+        # Input validation
+        if not isinstance(task, str) or not task.strip():
+            logger.error("Invalid task provided to run.")
+            return []
+
         # Route to each agent
         with concurrent.futures.ThreadPoolExecutor() as executor:
             logger.info("Running agents concurrently")
