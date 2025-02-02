@@ -146,10 +146,10 @@ nav:
     - Onboarding: 
       - Installation: "swarms/install/install.md"
       - Environment Configuration: "swarms/install/workspace_manager.md"
+      - Environment Variables: "swarms/install/env.md"
       - Quickstart: "swarms/install/quickstart.md"
       - Swarms CLI: "swarms/cli/main.md"
       - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
-      - Environment Variables: "swarms/install/env.md"
     # - Prelimary:
       # - 80/20 Rule For Agents: "swarms/prompting/8020.md"
     - Agents:
