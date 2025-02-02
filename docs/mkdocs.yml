@@ -149,6 +149,7 @@ nav:
       - Quickstart: "swarms/install/quickstart.md"
       - Swarms CLI: "swarms/cli/main.md"
       - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
+      - Environment Variables: "swarms/install/env.md"
     # - Prelimary:
       # - 80/20 Rule For Agents: "swarms/prompting/8020.md"
     - Agents:
@@ -189,6 +190,7 @@ nav:
         - SwarmRearrange: "swarms/structs/swarm_rearrange.md"
         - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
         - MatrixSwarm: "swarms/structs/matrix_swarm.md"
+        - ModelRouter: "swarms/structs/model_router.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
@@ -196,7 +198,6 @@ nav:
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         - Structs:
           - Conversation: "swarms/structs/conversation.md"
-    #   - Task: "swarms/structs/task.md"
     - Full API Reference: "swarms/framework/reference.md"
   - Examples:
     - Unique Swarms: "swarms/examples/unique_swarms.md"

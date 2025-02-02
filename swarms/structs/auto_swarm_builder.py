@@ -4,9 +4,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
-from swarms.structs.meme_agent_persona_generator import (
-    OpenAIFunctionCaller,
-)
+from swarms.utils.function_caller_model import OpenAIFunctionCaller
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.agents_available import showcase_available_agents

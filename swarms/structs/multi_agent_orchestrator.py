@@ -9,15 +9,13 @@ Todo:
 """
 
 import os
-import subprocess
 import uuid
 from datetime import datetime
 from typing import List, Literal, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt, wait_exponential
-
+from swarms.utils.function_caller_model import OpenAIFunctionCaller
 from swarms.structs.agent import Agent
 
 
@@ -33,88 +31,6 @@ class AgentResponse(BaseModel):
     modified_task: Optional[str] = Field(
         None, description="Optional modified version of the task"
     )
-
-
-class OpenAIFunctionCaller:
-    """
-    A class to interact with the OpenAI API for generating text based on a system prompt and a task.
-    """
-
-    def __init__(
-        self,
-        system_prompt: str,
-        api_key: str,
-        temperature: float,
-        max_tokens: int = 4000,
-        model_name: str = "gpt-4-0125-preview",
-    ):
-        self.system_prompt = system_prompt
-        self.api_key = api_key
-        self.temperature = temperature
-        self.max_tokens = max_tokens
-        self.model_name = model_name
-
-        try:
-            from openai import OpenAI
-        except ImportError:
-            logger.error(
-                "OpenAI library not found. Please install it using 'pip install openai'"
-            )
-            subprocess.run(["pip", "install", "openai"])
-            raise
-
-        try:
-            self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        except Exception as e:
-            logger.error(
-                f"Error initializing OpenAI client: {str(e)}"
-            )
-            raise
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-    )
-    def get_completion(self, task: str) -> AgentResponse:
-        """Get completion from OpenAI with retries"""
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": task},
-                ],
-                response_format={"type": "json_object"},
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-            )
-
-            return AgentResponse.model_validate_json(
-                response.choices[0].message.content
-            )
-        except Exception as e:
-            logger.error(f"Error getting completion: {str(e)}")
-            raise
-
-    def get_agent_response(
-        self, system_prompt: str, task: str
-    ) -> str:
-        """Get agent response without function calling"""
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": task},
-                ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-            )
-
-            return response.choices[0].message.content
-        except Exception as e:
-            logger.error(f"Error getting agent response: {str(e)}")
-            raise
 
 
 class MultiAgentRouter:

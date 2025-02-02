@@ -563,7 +563,9 @@ class Agent:
             max_loops=self.max_loops,
             steps=self.short_memory.to_dict(),
             full_history=self.short_memory.get_str(),
-            total_tokens=count_tokens(text=self.short_memory.get_str()),
+            total_tokens=count_tokens(
+                text=self.short_memory.get_str()
+            ),
             stopping_token=self.stopping_token,
             interactive=self.interactive,
             dynamic_temperature_enabled=self.dynamic_temperature_enabled,

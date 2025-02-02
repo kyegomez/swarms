@@ -84,6 +84,7 @@ from swarms.structs.utils import (
 from swarms.structs.meme_agent_persona_generator import (
     MemeAgentGenerator,
 )
+from swarms.structs.model_router import ModelRouter
 
 __all__ = [
     "Agent",
@@ -160,4 +161,5 @@ __all__ = [
     "expertise_based",
     "MultiAgentRouter",
     "MemeAgentGenerator",
+    "ModelRouter",
 ]

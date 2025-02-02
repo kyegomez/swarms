@@ -2,9 +2,16 @@ try:
     from litellm import completion
 except ImportError:
     import subprocess
-
-    subprocess.check_call(["pip", "install", "litellm"])
+    import sys
     import litellm
+
+    print("Installing litellm")
+
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "-U", "litellm"]
+    )
+    print("litellm installed")
+
     from litellm import completion
 
     litellm.set_verbose = True
@@ -25,6 +32,7 @@ class LiteLLM:
         temperature: float = 0.5,
         max_tokens: int = 4000,
         ssl_verify: bool = False,
+        max_completion_tokens: int = 4000,
         *args,
         **kwargs,
     ):
@@ -44,6 +52,9 @@ class LiteLLM:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.ssl_verify = ssl_verify
+        self.max_completion_tokens = max_completion_tokens
+
+        self.max_completion_tokens = max_tokens
 
     def _prepare_messages(self, task: str) -> list:
         """
