@@ -222,6 +222,17 @@ nav:
       - Meme Agent Builder: "swarms/examples/meme_agents.md"
     - Multi-Agent Collaboration:
       - Swarms DAO: "swarms/examples/swarms_dao.md"
+  - Contributors and Community:
+    - Bounty Program: "corporate/bounty_program.md"
+    - Contributing: 
+      - Contributing: "swarms/contributing.md"
+      - Tests: "swarms/framework/test.md"
+      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
+      - Philosophy: "swarms/concept/philosophy.md"
+    - Changelog:
+      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
+      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
+      - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
   - Swarm Models:
     - Overview: "swarms/models/index.md"
     # - Models Available: "swarms/models/index.md"
@@ -242,6 +253,11 @@ nav:
       - GPT4VisionAPI: "swarms/models/gpt4v.md"
   - Swarms Tools:
     - Overview: "swarms_tools/overview.md"
+    - Finance: "swarms_tools/finance.md"
+    - Search: "swarms_tools/search.md"
+    - Social Media:
+      - Overview: "swarms_tools/social_media.md"
+      - Twitter: "swarms_tools/twitter.md"
   - Swarms Cloud API:
     # - Overview: "swarms_cloud/main.md"
     - Overview: "swarms_cloud/vision.md"
@@ -288,17 +304,6 @@ nav:
   #   - The Essence of Enterprise-Grade Prompting: "swarms/prompts/essence.md"
   #   - An Analysis on Prompting Strategies: "swarms/prompts/overview.md"
   #   - Managing Prompts in Production: "swarms/prompts/main.md"
-  - Community:
-    - Bounty Program: "corporate/bounty_program.md"
-    - Contributing: 
-      - Contributing: "swarms/contributing.md"
-      - Tests: "swarms/framework/test.md"
-      - Code Cleanliness: "swarms/framework/code_cleanliness.md"
-      - Philosophy: "swarms/concept/philosophy.md"
-    - Changelog:
-      - Swarms 5.6.8: "swarms/changelog/5_6_8.md"
-      - Swarms 5.8.1: "swarms/changelog/5_8_1.md"
-      - Swarms 5.9.2: "swarms/changelog/changelog_new.md"
   - Corporate:
     - Culture: "corporate/culture.md"
     - Hiring: "corporate/hiring.md"
