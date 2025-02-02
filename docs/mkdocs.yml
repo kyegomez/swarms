@@ -222,7 +222,7 @@ nav:
       - Meme Agent Builder: "swarms/examples/meme_agents.md"
     - Multi-Agent Collaboration:
       - Swarms DAO: "swarms/examples/swarms_dao.md"
-  - Contributors and Community:
+  - Contributors:
     - Bounty Program: "corporate/bounty_program.md"
     - Contributing: 
       - Contributing: "swarms/contributing.md"
@@ -308,7 +308,7 @@ nav:
     - Culture: "corporate/culture.md"
     - Hiring: "corporate/hiring.md"
     - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
-  - Financial Infrastructure:
+  - Web3:
     # - Overview: "finance/index.md"
     - Swarms Wallet: "finance/wallet.md"
     - Swarms Subscription: "finance/subscription.md"
