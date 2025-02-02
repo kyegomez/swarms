@@ -24,7 +24,7 @@ def bootup():
         ):
             logger.disable("")
             logging.disable(logging.CRITICAL)
-            
+
         else:
             logger.enable("")
 

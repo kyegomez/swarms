@@ -13,7 +13,6 @@ from swarms.utils.file_processing import (
     zip_folders,
 )
 from swarms.utils.markdown_message import display_markdown_message
-from swarms.tools.prebuilt.math_eval import math_eval
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.try_except_wrapper import try_except_wrapper
@@ -32,7 +31,6 @@ __all__ = [
     "create_file_in_folder",
     "zip_folders",
     "display_markdown_message",
-    "math_eval",
     "extract_code_from_markdown",
     "pdf_to_text",
     "try_except_wrapper",
