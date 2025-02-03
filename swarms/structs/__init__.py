@@ -26,7 +26,11 @@ from swarms.structs.majority_voting import (
     most_frequent,
     parse_code_completion,
 )
+from swarms.structs.meme_agent_persona_generator import (
+    MemeAgentGenerator,
+)
 from swarms.structs.mixture_of_agents import MixtureOfAgents
+from swarms.structs.model_router import ModelRouter
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 from swarms.structs.multi_agent_exec import (
     run_agent_with_timeout,
@@ -81,10 +85,6 @@ from swarms.structs.utils import (
     find_token_in_text,
     parse_tasks,
 )
-from swarms.structs.meme_agent_persona_generator import (
-    MemeAgentGenerator,
-)
-from swarms.structs.model_router import ModelRouter
 
 __all__ = [
     "Agent",

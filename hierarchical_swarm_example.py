@@ -93,14 +93,13 @@ def main():
     # - max_loops: Maximum number of feedback loops between director & agents
     # --------------------------------------------------------------------------
     swarm = HierarchicalSwarm(
-        name="HierarchicalAgentSwarm",
         description=(
             "A specialized swarm in which the Director delegates tasks to a Stock "
             "Analysis Agent for thorough market evaluation."
         ),
         director=llm,
         agents=[analysis_agent],
-        max_loops=2,  # Limit on feedback iterations
+        max_loops=1,  # Limit on feedback iterations
     )
 
     # --------------------------------------------------------------------------
@@ -123,7 +122,7 @@ def main():
     )
 
     # Run the swarm with the user_request
-    print(swarm.run(user_request))
+    swarm.run(user_request)
 
 
 if __name__ == "__main__":

@@ -279,7 +279,9 @@ nav:
       - Faiss: "swarms_memory/faiss.md"
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
-    - Share & Discover Prompts, Agents, Tools, and more: "swarms_platform/share_discover.md"
+    - Agent Marketplace: "swarms_platform/share_discover.md"
+    - Swarm Platform API Keys: "swarms_platform/apikeys.md"
+    - Account Management: "swarms_platform/account_management.md"
     - Prompts API: 
       - Add Prompts: "swarms_platform/prompts/add_prompt.md"
       - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"

@@ -56,7 +56,7 @@ class OpenAIFunctionCaller:
         api_key: str = check_api_key(),
         temperature: float = 0.1,
         max_tokens: int = 5000,
-        model_name: str = "o1-2024-12-17",
+        model_name: str = "gpt-4o-2024-08-06",
     ):
         self.system_prompt = system_prompt
         self.api_key = api_key

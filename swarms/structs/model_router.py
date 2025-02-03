@@ -214,7 +214,6 @@ class ModelRouter:
                 base_model=ModelOutput,
                 temperature=self.temperature,
                 system_prompt=self.system_prompt,
-                max_tokens=self.max_tokens,
                 api_key=api_key,
             )
         except Exception as e:
@@ -246,7 +245,13 @@ class ModelRouter:
         system_prompt = model_router_output.system_prompt
 
         formatter.print_panel(
-            f"Model: {selected_model}\nProvider: {selected_provider}\nTask: {routed_task}\nRationale: {rationale}\nMax Tokens: {max_tokens}\nTemperature: {temperature}\nSystem Prompt: {system_prompt}",
+            f"Model: {selected_model}\n\n"
+            f"Provider: {selected_provider}\n\n"
+            f"Task: {routed_task}\n\n"
+            f"Rationale: {rationale}\n\n"
+            f"Max Tokens: {max_tokens}\n\n"
+            f"Temperature: {temperature}\n\n"
+            f"System Prompt: {system_prompt}",
             title="Model Router Output",
         )
 
@@ -261,7 +266,7 @@ class ModelRouter:
 
         formatter.print_panel(
             f"Output: {final_output} from {selected_provider}/{selected_model}",
-            title="Model Output",
+            title=f"Model: {selected_model} Provider: {selected_provider}",
         )
 
         return final_output

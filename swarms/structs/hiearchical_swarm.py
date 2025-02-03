@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, List, Optional, Union
 
 from pydantic import BaseModel, Field
@@ -10,6 +11,7 @@ from swarms.utils.formatter import formatter
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="hierarchical_swarm")
+
 
 
 class HierarchicalOrder(BaseModel):
@@ -83,7 +85,7 @@ class HierarchicalSwarm(BaseSwarm):
 
         self.check_agents()
 
-        formatter.print_panel(self.list_all_agents())
+        self.list_all_agents()
 
     def check_agents(self):
         """
@@ -91,10 +93,14 @@ class HierarchicalSwarm(BaseSwarm):
         Raises ValueError if either condition is not met.
         """
         if not self.agents:
-            raise ValueError("No agents found")
+            raise ValueError(
+                "No agents found in the swarm. At least one agent must be provided to create a hierarchical swarm."
+            )
 
         if not self.director:
-            raise ValueError("Director not set")
+            raise ValueError(
+                "Director not set for the swarm. A director agent is required to coordinate and orchestrate tasks among the agents."
+            )
 
     def run_director(
         self, task: str, img: str = None, *args, **kwargs
@@ -106,9 +112,6 @@ class HierarchicalSwarm(BaseSwarm):
         :param img: Optional image to be used with the task.
         :return: The output of the director's task execution.
         """
-        logger.info(f"Running director task: {task}")
-
-        self.conversation.add(role="User", content=f"Task: {task}")
 
         function_call = self.director.run(
             task=f"History: {self.conversation.get_str()} Your Task: {task}",
@@ -128,21 +131,16 @@ class HierarchicalSwarm(BaseSwarm):
         """
         self.conversation.add(role="User", content=f"Task: {task}")
 
-        try:
-            task = self.conversation.get_str()
+        function_call = self.run_director(
+            task=self.conversation.get_str()
+        )
 
-            for i in range(self.max_loops):
-                function_call = self.run_director(task=task)
+        self.parse_orders(function_call)
 
-                self.parse_orders(function_call)
-
-            if self.return_all_history:
-                return self.conversation.get_str()
-            else:
-                return self.conversation.get_str()
-        except Exception as e:
-            logger.error(f"Error running hierarchical swarm: {e}")
-            return "Error running hierarchical swarm"
+        if self.return_all_history:
+            return self.conversation.get_str()
+        else:
+            return self.conversation.get_str()
 
     def add_name_and_description(self):
         """
@@ -153,14 +151,25 @@ class HierarchicalSwarm(BaseSwarm):
             content=f"\n Swarm Name: {self.name} \n Swarm Description: {self.description}",
         )
 
+        formatter.print_panel(
+            f"⚡ INITIALIZING HIERARCHICAL SWARM UNIT: {self.name}\n"
+            f"🔒 CLASSIFIED DIRECTIVE: {self.description}\n"
+            f"📡 STATUS: ACTIVATING SWARM PROTOCOLS\n"
+            f"🌐 ESTABLISHING SECURE AGENT MESH NETWORK\n"
+            f"⚠️ CYBERSECURITY MEASURES ENGAGED\n",
+            title="SWARM CORPORATION - HIERARCHICAL SWARMS ACTIVATING...",
+        )
+
     def list_all_agents(self) -> str:
         """
         Lists all agents available in the swarm.
 
         :return: A string representation of all agents in the swarm.
         """
+
+        # need to fetch name and description of all agents
         all_agents = "\n".join(
-            f"Agent: {agent.agent_name}, Description: {agent.system_prompt} "
+            f"Agent: {agent.agent_name} || Description: {agent.description or agent.system_prompt} \n"
             for agent in self.agents
         )
 
@@ -169,7 +178,9 @@ class HierarchicalSwarm(BaseSwarm):
             content=f"All Agents Available in the Swarm {self.name}: \n {all_agents}",
         )
 
-        return all_agents
+        formatter.print_panel(
+            all_agents, title="All Agents Available in the Swarm"
+        )
 
     def find_agent(self, name: str) -> Optional[Agent]:
         """
@@ -248,8 +259,6 @@ class HierarchicalSwarm(BaseSwarm):
         """
         orders_list = swarm_spec.orders
 
-        print(orders_list)
-
         # return the orders_list
         return orders_list
 
@@ -290,3 +299,16 @@ class HierarchicalSwarm(BaseSwarm):
             role="Director",
             content=f"Goals: {goals}\nPlan: {plan}\nRules: {rules}",
         )
+
+    def batch_run(self, tasks: List[str]) -> List[str]:
+        """
+        Batch run the swarm with the given tasks.
+        """
+        return [self.run(task) for task in tasks]
+
+    def concurrent_run(self, tasks: List[str]) -> List[str]:
+        """
+        Concurrent run the swarm with the given tasks.
+        """
+        with ThreadPoolExecutor(max_workers=len(tasks)) as executor:
+            return list(executor.map(self.run, tasks))
