@@ -260,7 +260,8 @@ nav:
       - Twitter: "swarms_tools/twitter.md"
   - Swarms Cloud API:
     # - Overview: "swarms_cloud/main.md"
-    - Overview: "swarms_cloud/vision.md"
+    # - Overview: "swarms_cloud/vision.md"
+    - Overview: "swarms_cloud/launch.md"
     - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
     # - Swarms Cloud CLI: "swarms_cloud/cli.md"
     - Swarm APIs:
