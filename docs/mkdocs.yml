@@ -289,8 +289,8 @@ nav:
       - Edit Agents: "swarms_platform/agents/edit_agent.md"
     - Telemetry API:
       - PUT: "swarms_platform/telemetry/index.md"
-    # - Swarms Wallet API:
-    #   - Overview: "swarms_platform/wallet/api.md"
+    - Swarms Wallet API:
+      - Overview: "swarms_platform/wallet/api.md"
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
     #   - Add Tools: "swarms_platform/fetch_tools.md"
