@@ -39,12 +39,11 @@ plugins:
       # token: !ENV ["GITHUB_TOKEN"]
   - git-revision-date-localized:
       enable_creation_date: true
-
   - mkdocs-jupyter:
-    kernel_name: python3
-    execute: false
-    include_source: True
-    include_requirejs: true
+      kernel_name: python3
+      execute: false
+      include_source: True
+      include_requirejs: true
 extra_css:
   - assets/css/extra.css
 extra:
