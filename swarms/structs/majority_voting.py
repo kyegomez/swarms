@@ -1,11 +1,16 @@
+import asyncio
 import concurrent.futures
+import multiprocessing
+import os
 import re
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.utils.file_processing import create_file
+from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.utils.formatter import formatter
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="majority_voting")
@@ -139,13 +144,17 @@ class MajorityVoting:
         description: str = "A majority voting system for agents",
         agents: List[Agent] = [],
         output_parser: Optional[Callable] = majority_voting,
+        consensus_agent: Optional[Agent] = None,
         autosave: bool = False,
         verbose: bool = False,
         *args,
         **kwargs,
     ):
+        self.name = name
+        self.description = description
         self.agents = agents
         self.output_parser = output_parser
+        self.consensus_agent = consensus_agent
         self.autosave = autosave
         self.verbose = verbose
 
@@ -153,19 +162,17 @@ class MajorityVoting:
             time_enabled=True, *args, **kwargs
         )
 
-        # If autosave is enabled, save the conversation to a file
-        if self.autosave:
-            create_file(
-                str(self.conversation), "majority_voting.json"
-            )
+        self.initialize_majority_voting()
+
+    def initialize_majority_voting(self):
+
+        if self.agents is None:
+            raise ValueError("Agents list is empty")
 
         # Log the agents
-        logger.info("Initializing majority voting system")
-        # Length of agents
-        logger.info(f"Number of agents: {len(self.agents)}")
-        logger.info(
-            "Agents:"
-            f" {', '.join(agent.agent_name for agent in self.agents)}"
+        formatter.print_panel(
+            f"Initializing majority voting system\nNumber of agents: {len(self.agents)}\nAgents: {', '.join(agent.agent_name for agent in self.agents)}",
+            title="Majority Voting",
         )
 
     def run(self, task: str, *args, **kwargs) -> List[Any]:
@@ -181,29 +188,17 @@ class MajorityVoting:
             List[Any]: The majority vote.
 
         """
-        # Route to each agent
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            logger.info("Running agents concurrently")
-
-            futures = [
-                executor.submit(agent.run, task, *args)
-                for agent in self.agents
-            ]
-            results = [
-                future.result()
-                for future in concurrent.futures.as_completed(futures)
-            ]
+        results = run_agents_concurrently(
+            self.agents, task, max_workers=os.cpu_count()
+        )
 
         # Add responses to conversation and log them
         for agent, response in zip(self.agents, results):
+
             response = (
                 response if isinstance(response, list) else [response]
             )
             self.conversation.add(agent.agent_name, response)
-            logger.info(
-                f"[Agent][Name: {agent.agent_name}][Response:"
-                f" {response}]"
-            )
 
         # Perform majority voting on the conversation
         responses = [
@@ -217,8 +212,87 @@ class MajorityVoting:
             majority_vote = self.output_parser(
                 responses, *args, **kwargs
             )
+        elif self.consensus_agent is not None:
+            majority_vote = self.consensus_agent.run(responses)
         else:
             majority_vote = majority_voting(responses)
 
         # Return the majority vote
         return majority_vote
+
+    def batch_run(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Any]:
+        """
+        Runs the majority voting system in batch mode.
+
+        Args:
+            tasks (List[str]): List of tasks to be performed by the agents.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[Any]: List of majority votes for each task.
+        """
+        return [self.run(task, *args, **kwargs) for task in tasks]
+
+    def run_concurrently(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Any]:
+        """
+        Runs the majority voting system concurrently.
+
+        Args:
+            tasks (List[str]): List of tasks to be performed by the agents.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[Any]: List of majority votes for each task.
+        """
+        with ThreadPoolExecutor(
+            max_workers=os.cpu_count()
+        ) as executor:
+            futures = [
+                executor.submit(self.run, task, *args, **kwargs)
+                for task in tasks
+            ]
+            return [
+                future.result()
+                for future in concurrent.futures.as_completed(futures)
+            ]
+
+    def run_concurrently_multiprocess(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Any]:
+        """
+        Runs the majority voting system concurrently using multiprocessing.
+
+        Args:
+            tasks (List[str]): List of tasks to be performed by the agents.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[Any]: List of majority votes for each task.
+        """
+        with multiprocessing.Pool(processes=os.cpu_count()) as pool:
+            return pool.map(self.run, tasks)
+
+    async def run_async(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Any]:
+        """
+        Runs the majority voting system concurrently using asyncio.
+
+        Args:
+            tasks (List[str]): List of tasks to be performed by the agents.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[Any]: List of majority votes for each task.
+        """
+        return await asyncio.gather(
+            *[self.run(task, *args, **kwargs) for task in tasks]
+        )

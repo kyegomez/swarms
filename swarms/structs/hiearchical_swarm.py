@@ -13,7 +13,6 @@ from swarms.utils.loguru_logger import initialize_logger
 logger = initialize_logger(log_folder="hierarchical_swarm")
 
 
-
 class HierarchicalOrder(BaseModel):
     agent_name: str = Field(
         ...,

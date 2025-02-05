@@ -1,4 +1,3 @@
-from swarms.utils.class_args_wrapper import print_class_parameters
 from swarms.utils.data_to_text import (
     csv_to_text,
     data_to_text,
@@ -20,7 +19,6 @@ from swarms.utils.calculate_func_metrics import profile_func
 
 
 __all__ = [
-    "print_class_parameters",
     "csv_to_text",
     "data_to_text",
     "json_to_text",

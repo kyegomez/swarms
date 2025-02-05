@@ -52,7 +52,7 @@ from swarms.utils.pdf_to_text import pdf_to_text
 from swarms.utils.wrapper_clusterop import (
     exec_callable_with_clusterops,
 )
-from swarms.telemetry.capture_sys_data import log_agent_data
+from swarms.telemetry.main import log_agent_data
 from swarms.agents.agent_print import agent_print
 from swarms.utils.litellm_tokenizer import count_tokens
 

@@ -1,6 +1,6 @@
 import uuid
 
-from swarms.telemetry.user_utils import (
+from swarms.telemetry.main import (
     generate_unique_identifier,
     generate_user_id,
     get_machine_id,

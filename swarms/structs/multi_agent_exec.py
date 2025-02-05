@@ -15,6 +15,13 @@ from swarms.utils.wrapper_clusterop import (
 )
 
 
+@dataclass
+class ResourceMetrics:
+    cpu_percent: float
+    memory_percent: float
+    active_threads: int
+
+
 def run_single_agent(agent: AgentType, task: str) -> Any:
     """Run a single agent synchronously"""
     return agent.run(task)
@@ -79,7 +86,7 @@ def run_agents_concurrently(
         List of outputs from each agent
     """
     # Optimize defaults based on system resources
-    cpu_cores = cpu_count()
+    cpu_cores = os.cpu_count()
     batch_size = batch_size or cpu_cores
     max_workers = max_workers or cpu_cores * 2
 
@@ -273,13 +280,6 @@ def run_agents_with_timeout(
             results.extend(batch_results)
 
     return results
-
-
-@dataclass
-class ResourceMetrics:
-    cpu_percent: float
-    memory_percent: float
-    active_threads: int
 
 
 def get_system_metrics() -> ResourceMetrics:

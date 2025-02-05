@@ -1,19 +1,17 @@
-from swarms.telemetry.sys_info import (
+from swarms.telemetry.main import (
+    generate_unique_identifier,
+    generate_user_id,
     get_cpu_info,
+    get_machine_id,
     get_os_version,
     get_package_mismatches,
     get_pip_version,
     get_python_version,
     get_ram_info,
     get_swarms_verison,
-    system_info,
-)
-from swarms.telemetry.user_utils import (
-    generate_unique_identifier,
-    generate_user_id,
-    get_machine_id,
     get_system_info,
     get_user_device_data,
+    system_info,
 )
 
 __all__ = [

@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.telemetry.capture_sys_data import log_agent_data
+from swarms.telemetry.main import log_agent_data
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.loguru_logger import initialize_logger
 

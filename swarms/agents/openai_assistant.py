@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 import subprocess
@@ -316,3 +317,20 @@ class OpenAIAssistant(Agent):
     def call(self, task: str, *args, **kwargs) -> str:
         """Alias for run() to maintain compatibility with different agent interfaces."""
         return self.run(task, *args, **kwargs)
+
+    def batch_run(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Any]:
+        """Run a batch of tasks using the OpenAI Assistant."""
+        return [self.run(task, *args, **kwargs) for task in tasks]
+
+    def run_concurrently(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Any]:
+        """Run a batch of tasks concurrently using the OpenAI Assistant."""
+        with ThreadPoolExecutor(
+            max_workers=os.cpu_count()
+        ) as executor:
+            return list(
+                executor.map(self.run, tasks, *args, **kwargs)
+            )
