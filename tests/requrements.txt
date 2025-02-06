@@ -1,6 +1,0 @@
-pytest
-swarms
-loguru
-pydantic
-swarm-models
-loguru
