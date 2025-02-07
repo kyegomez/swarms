@@ -3,6 +3,7 @@ import time
 from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 class ModelCard(BaseModel):
@@ -49,6 +50,18 @@ class ChatMessageInput(BaseModel):
     )
     content: Union[str, List[ContentItem]]
 
+    def count_tokens(self, model: str = "gpt-4o") -> int:
+        """Count tokens in the message content"""
+        if isinstance(self.content, str):
+            return count_tokens(self.content, model)
+        elif isinstance(self.content, list):
+            total = 0
+            for item in self.content:
+                if isinstance(item, TextContent):
+                    total += count_tokens(item.text, model)
+            return total
+        return 0
+
 
 class ChatMessageResponse(BaseModel):
     role: str = Field(
@@ -91,6 +104,22 @@ class UsageInfo(BaseModel):
     prompt_tokens: int = 0
     total_tokens: int = 0
     completion_tokens: Optional[int] = 0
+
+    @classmethod
+    def calculate_usage(
+        cls,
+        messages: List[ChatMessageInput],
+        completion: Optional[str] = None,
+        model: str = "gpt-4o"
+    ) -> "UsageInfo":
+        """Calculate token usage for messages and completion"""
+        prompt_tokens = sum(msg.count_tokens(model) for msg in messages)
+        completion_tokens = count_tokens(completion, model) if completion else 0
+        return cls(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=prompt_tokens + completion_tokens
+        )
 
 
 class ChatCompletionResponse(BaseModel):
