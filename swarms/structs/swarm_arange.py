@@ -104,10 +104,6 @@ class SwarmRearrange:
         # Run the reliability checks
         self.reliability_checks()
 
-        # Logging configuration
-        if self.verbose:
-            logger.add("swarm_rearrange.log", rotation="10 MB")
-
     def reliability_checks(self):
         logger.info("Running reliability checks.")
         if not self.swarms:

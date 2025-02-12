@@ -113,3 +113,15 @@ def exec_callable_with_clusterops(
         if enable_logging:
             logger.error(f"An error occurred during execution: {e}")
         raise
+
+
+# def test_clusterops(x):
+#     return x + 1
+
+# example = exec_callable_with_clusterops(
+#     device="cpu",
+#     all_cores=True,
+#     func = test_clusterops,
+# )
+
+# print(example)

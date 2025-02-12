@@ -1,6 +1,5 @@
 import asyncio
 import concurrent.futures
-import multiprocessing
 import os
 import re
 from collections import Counter
@@ -147,6 +146,7 @@ class MajorityVoting:
         consensus_agent: Optional[Agent] = None,
         autosave: bool = False,
         verbose: bool = False,
+        max_loops: int = 1,
         *args,
         **kwargs,
     ):
@@ -157,6 +157,7 @@ class MajorityVoting:
         self.consensus_agent = consensus_agent
         self.autosave = autosave
         self.verbose = verbose
+        self.max_loops = max_loops
 
         self.conversation = Conversation(
             time_enabled=True, *args, **kwargs
@@ -175,7 +176,9 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
-    def run(self, task: str, *args, **kwargs) -> List[Any]:
+    def run(
+        self, task: str, correct_answer: str, *args, **kwargs
+    ) -> List[Any]:
         """
         Runs the majority voting system and returns the majority vote.
 
@@ -200,25 +203,44 @@ class MajorityVoting:
             )
             self.conversation.add(agent.agent_name, response)
 
-        # Perform majority voting on the conversation
-        responses = [
-            message["content"]
-            for message in self.conversation.conversation_history
-            if message["role"] == "agent"
-        ]
+        responses = self.conversation.return_history_as_string()
+        print(responses)
+        
+        prompt = f"""Conduct a detailed majority voting analysis on the following conversation:
+        {responses}
+
+        Between the following agents: {[agent.agent_name for agent in self.agents]}
+
+        Please:
+        1. Identify the most common answer/recommendation across all agents
+        2. Analyze any major disparities or contrasting viewpoints between agents
+        3. Highlight key areas of consensus and disagreement
+        4. Evaluate the strength of the majority opinion
+        5. Note any unique insights from minority viewpoints
+        6. Provide a final synthesized recommendation based on the majority consensus
+
+        Focus on finding clear patterns while being mindful of important nuances in the responses.
+        """
 
         # If an output parser is provided, parse the responses
-        if self.output_parser is not None:
-            majority_vote = self.output_parser(
-                responses, *args, **kwargs
+        if self.consensus_agent is not None:
+            majority_vote = self.consensus_agent.run(
+                prompt
             )
-        elif self.consensus_agent is not None:
-            majority_vote = self.consensus_agent.run(responses)
+
+            self.conversation.add(
+                self.consensus_agent.agent_name, majority_vote
+            )
         else:
-            majority_vote = majority_voting(responses)
+            # fetch the last agent
+            majority_vote = self.agents[-1].run(prompt)
+
+            self.conversation.add(
+                self.agents[-1].agent_name, majority_vote
+            )
 
         # Return the majority vote
-        return majority_vote
+        return self.conversation.return_history_as_string()
 
     def batch_run(
         self, tasks: List[str], *args, **kwargs
@@ -261,23 +283,6 @@ class MajorityVoting:
                 future.result()
                 for future in concurrent.futures.as_completed(futures)
             ]
-
-    def run_concurrently_multiprocess(
-        self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
-        """
-        Runs the majority voting system concurrently using multiprocessing.
-
-        Args:
-            tasks (List[str]): List of tasks to be performed by the agents.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            List[Any]: List of majority votes for each task.
-        """
-        with multiprocessing.Pool(processes=os.cpu_count()) as pool:
-            return pool.map(self.run, tasks)
 
     async def run_async(
         self, tasks: List[str], *args, **kwargs

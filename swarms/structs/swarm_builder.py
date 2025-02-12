@@ -14,8 +14,6 @@ from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
 from swarms.utils.function_caller_model import OpenAIFunctionCaller
 
-logger.add("swarm_builder.log", rotation="10 MB", backtrace=True)
-
 
 BOSS_SYSTEM_PROMPT = """
 Manage a swarm of worker agents to efficiently serve the user by deciding whether to create new agents or delegate tasks. Ensure operations are efficient and effective.

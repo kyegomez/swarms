@@ -42,8 +42,6 @@ class SwarmMatcher:
         Args:
             config (SwarmMatcherConfig): The configuration for the SwarmMatcher.
         """
-        logger.add("swarm_matcher_debug.log", level="DEBUG")
-        logger.debug("Initializing SwarmMatcher")
 
         try:
             import torch

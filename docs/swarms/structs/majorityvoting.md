@@ -2,216 +2,216 @@
 
 The `MajorityVoting` module provides a mechanism for performing majority voting among a group of agents. Majority voting is a decision rule that selects the option which has the majority of votes. This is particularly useful in systems where multiple agents provide responses to a query, and the most common response needs to be identified as the final output.
 
+## Architecture
+
+```mermaid
+graph TD
+    A[MajorityVoting System] --> B[Initialize Agents]
+    B --> C[Process Task]
+    C --> D{Execution Mode}
+    D --> E[Single Task]
+    D --> F[Batch Tasks]
+    D --> G[Concurrent Tasks]
+    D --> H[Async Tasks]
+    E --> I[Run Agents]
+    F --> I
+    G --> I
+    H --> I
+    I --> J[Collect Responses]
+    J --> K[Consensus Analysis]
+    K --> L{Consensus Agent?}
+    L -->|Yes| M[Use Consensus Agent]
+    L -->|No| N[Use Last Agent]
+    M --> O[Final Output]
+    N --> O
+    O --> P[Save Conversation]
+```
+
 ### Key Concepts
 
 - **Majority Voting**: A method to determine the most common response from a set of answers.
 - **Agents**: Entities (e.g., models, algorithms) that provide responses to tasks or queries.
 - **Output Parser**: A function that processes the responses from the agents before performing the majority voting.
+- **Consensus Agent**: An optional agent that analyzes the responses from all agents to determine the final consensus.
+- **Conversation History**: A record of all agent interactions and responses during the voting process.
 
-## Function Definitions
+## Class Definition: `MajorityVoting`
 
-### Function: `majority_voting`
+### Parameters
 
-Performs majority voting on a list of answers and returns the most common answer.
-
-#### Parameters
-
-| Parameter | Type     | Description                  |
-|-----------|----------|------------------------------|
-| `answers` | `List[str]` | A list of answers from different agents. |
-
-#### Returns
-
-| Return Value | Type  | Description                            |
-|--------------|-------|----------------------------------------|
-| `answer`     | `str` | The most common answer in the list. If the list is empty, returns "I don't know". |
-
-## Class Definitions
-
-### Class: `MajorityVoting`
-
-Class representing a majority voting system for agents.
-
-#### Parameters
-
-| Parameter        | Type         | Description                                                                 |
-|------------------|--------------|-----------------------------------------------------------------------------|
-| `agents`         | `List[Agent]`| A list of agents to be used in the majority voting system.                  |
-| `output_parser`  | `Callable`   | A function used to parse the output of the agents. If not provided, the default `majority_voting` function is used. |
-| `autosave`       | `bool`       | A boolean indicating whether to autosave the conversation to a file. Default is `False`. |
-| `verbose`        | `bool`       | A boolean indicating whether to enable verbose logging. Default is `False`. |
-
-### Method: `__init__`
-
-Initializes the `MajorityVoting` system.
-
-#### Parameters
-
-| Parameter        | Type           | Description                                                                 |
+| Parameter         | Type           | Description                                                                 |
 |------------------|----------------|-----------------------------------------------------------------------------|
+| `name`           | `str`          | Name of the majority voting system. Default is "MajorityVoting".            |
+| `description`    | `str`          | Description of the system. Default is "A majority voting system for agents". |
 | `agents`         | `List[Agent]`  | A list of agents to be used in the majority voting system.                  |
-| `output_parser`  | `Callable`     | A function used to parse the output of the agents. Default is the `majority_voting` function. |
-| `autosave`       | `bool`         | A boolean indicating whether to autosave the conversation to a file. Default is `False`. |
-| `verbose`        | `bool`         | A boolean indicating whether to enable verbose logging. Default is `False`. |
-| `args`           | `tuple`        | Additional positional arguments.                                            |
-| `kwargs`         | `dict`         | Additional keyword arguments.                                               |
+| `output_parser`  | `Callable`     | Function to parse agent outputs. Default is `majority_voting` function.      |
+| `consensus_agent`| `Agent`        | Optional agent for analyzing consensus among responses.                      |
+| `autosave`       | `bool`         | Whether to autosave conversations. Default is `False`.                      |
+| `verbose`        | `bool`         | Whether to enable verbose logging. Default is `False`.                      |
+| `max_loops`      | `int`          | Maximum number of voting loops. Default is 1.                               |
 
-### Method: `run`
+### Methods
 
-Runs the majority voting system and returns the majority vote.
+#### `run(task: str, correct_answer: str, *args, **kwargs) -> List[Any]`
 
-#### Parameters
+Runs the majority voting system for a single task.
 
-| Parameter | Type       | Description                              |
-|-----------|------------|------------------------------------------|
-| `task`    | `str`      | The task to be performed by the agents.  |
-| `args`    | `tuple`    | Variable length argument list.           |
-| `kwargs`  | `dict`     | Arbitrary keyword arguments.             |
+**Parameters:**
+- `task` (str): The task to be performed by the agents
+- `correct_answer` (str): The correct answer for evaluation
+- `*args`, `**kwargs`: Additional arguments
 
-#### Returns
+**Returns:**
+- List[Any]: The conversation history as a string, including the majority vote
 
-| Return Value | Type      | Description                          |
-|--------------|-----------|--------------------------------------|
-| `results`    | `List[Any]` | The majority vote.                    |
+#### `batch_run(tasks: List[str], *args, **kwargs) -> List[Any]`
+
+Runs multiple tasks in sequence.
+
+**Parameters:**
+- `tasks` (List[str]): List of tasks to be performed
+- `*args`, `**kwargs`: Additional arguments
+
+**Returns:**
+- List[Any]: List of majority votes for each task
+
+#### `run_concurrently(tasks: List[str], *args, **kwargs) -> List[Any]`
+
+Runs multiple tasks concurrently using thread pooling.
+
+**Parameters:**
+- `tasks` (List[str]): List of tasks to be performed
+- `*args`, `**kwargs`: Additional arguments
+
+**Returns:**
+- List[Any]: List of majority votes for each task
+
+#### `run_async(tasks: List[str], *args, **kwargs) -> List[Any]`
+
+Runs multiple tasks asynchronously using asyncio.
+
+**Parameters:**
+- `tasks` (List[str]): List of tasks to be performed
+- `*args`, `**kwargs`: Additional arguments
+
+**Returns:**
+- List[Any]: List of majority votes for each task
 
 ## Usage Examples
 
-### Example 1: Basic Majority Voting
+### Example 1: Basic Single Task Execution with Modern LLMs
 
 ```python
-from swarms.structs.agent import Agent
-from swarms.structs.majority_voting import MajorityVoting
+from swarms import Agent, MajorityVoting
 
-# Initialize agents
+# Initialize multiple agents with different specialties
 agents = [
     Agent(
-        agent_name="Devin",
-        system_prompt=(
-            "Autonomous agent that can interact with humans and other"
-            " agents. Be Helpful and Kind. Use the tools provided to"
-            " assist the user. Return all code in markdown format."
-        ),
-        llm=llm,
-        max_loops="auto",
-        autosave=True,
-        dashboard=False,
-        streaming_on=True,
-        verbose=True,
-        stopping_token="<DONE>",
-        interactive=True,
-        tools=[terminal, browser, file_editor, create_file],
-        code_interpreter=True,
+        agent_name="Financial-Analysis-Agent",
+        agent_description="Personal finance advisor focused on market analysis",
+        system_prompt="You are a financial advisor specializing in market analysis and investment opportunities.",
+        max_loops=1,
+        model_name="gpt-4o"
     ),
     Agent(
-        agent_name="Codex",
-        system_prompt=(
-            "An AI coding assistant capable of writing and understanding"
-            " code snippets in various programming languages."
-        ),
-        llm=llm,
-        max_loops="auto",
-        autosave=True,
-        dashboard=False,
-        streaming_on=True,
-        verbose=True,
-        stopping_token="<DONE>",
-        interactive=True,
-        tools=[terminal, browser, file_editor, create_file],
-        code_interpreter=True,
+        agent_name="Risk-Assessment-Agent", 
+        agent_description="Risk analysis and portfolio management expert",
+        system_prompt="You are a risk assessment expert focused on evaluating investment risks and portfolio diversification.",
+        max_loops=1,
+        model_name="gpt-4o"
     ),
     Agent(
-        agent_name="Tabnine",
-        system_prompt=(
-            "A code completion AI that provides suggestions for code"
-            " completion and code improvements."
-        ),
-        llm=llm,
-        max_loops="auto",
-        autosave=True,
-        dashboard=False,
-        streaming_on=True,
-        verbose=True,
-        stopping_token="<DONE>",
-        interactive=True,
-        tools=[terminal, browser, file_editor, create_file],
-        code_interpreter=True,
-    ),
+        agent_name="Tech-Investment-Agent",
+        agent_description="Technology sector investment specialist",
+        system_prompt="You are a technology investment specialist focused on AI, emerging tech, and growth opportunities.",
+        max_loops=1,
+        model_name="gpt-4o"
+    )
 ]
 
-# Create MajorityVoting instance
-majority_voting = MajorityVoting(agents)
 
-# Run the majority voting system
-result = majority_voting.run("What is the capital of France?")
-print(result)  # Output: 'Paris'
+consensus_agent = Agent(
+    agent_name="Consensus-Agent",
+    agent_description="Consensus agent focused on analyzing investment advice",
+    system_prompt="You are a consensus agent focused on analyzing investment advice and providing a final answer.",
+    max_loops=1,
+    model_name="gpt-4o"
+)
+
+# Create majority voting system
+majority_voting = MajorityVoting(
+    name="Investment-Advisory-System",
+    description="Multi-agent system for investment advice",
+    agents=agents,
+    verbose=True,
+    consensus_agent=consensus_agent
+)
+
+# Run the analysis with majority voting
+result = majority_voting.run(
+    task="Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
+    correct_answer=""  # Optional evaluation metric
+)
+
+print(result)
+
 ```
 
-### Example 2: Running a Task with Detailed Outputs
+## Batch Execution
 
 ```python
-from swarms.structs.agent import Agent
-from swarms.structs.majority_voting import MajorityVoting
+from swarms import Agent, MajorityVoting
 
-# Initialize agents
+# Initialize multiple agents with different specialties
 agents = [
     Agent(
-        agent_name="Devin",
-        system_prompt=(
-            "Autonomous agent that can interact with humans and other"
-            " agents. Be Helpful and Kind. Use the tools provided to"
-            " assist the user. Return all code in markdown format."
-        ),
-        llm=llm,
-        max_loops="auto",
-        autosave=True,
-        dashboard=False,
-        streaming_on=True,
-        verbose=True,
-        stopping_token="<DONE>",
-        interactive=True,
-        tools=[terminal, browser, file_editor, create_file],
-        code_interpreter=True,
+        agent_name="Financial-Analysis-Agent",
+        agent_description="Personal finance advisor focused on market analysis",
+        system_prompt="You are a financial advisor specializing in market analysis and investment opportunities.",
+        max_loops=1,
+        model_name="gpt-4o"
     ),
     Agent(
-        agent_name="Codex",
-        system_prompt=(
-            "An AI coding assistant capable of writing and understanding"
-            " code snippets in various programming languages."
-        ),
-        llm=llm,
-        max_loops="auto",
-        autosave=True,
-        dashboard=False,
-        streaming_on=True,
-        verbose=True,
-        stopping_token="<DONE>",
-        interactive=True,
-        tools=[terminal, browser, file_editor, create_file],
-        code_interpreter=True,
+        agent_name="Risk-Assessment-Agent", 
+        agent_description="Risk analysis and portfolio management expert",
+        system_prompt="You are a risk assessment expert focused on evaluating investment risks and portfolio diversification.",
+        max_loops=1,
+        model_name="gpt-4o"
     ),
     Agent(
-        agent_name="Tabnine",
-        system_prompt=(
-            "A code completion AI that provides suggestions for code"
-            " completion and code improvements."
-        ),
-        llm=llm,
-        max_loops="auto",
-        autosave=True,
-        dashboard=False,
-        streaming_on=True,
-        verbose=True,
-        stopping_token="<DONE>",
-        interactive=True,
-        tools=[terminal, browser, file_editor, create_file],
-        code_interpreter=True,
-    ),
+        agent_name="Tech-Investment-Agent",
+        agent_description="Technology sector investment specialist",
+        system_prompt="You are a technology investment specialist focused on AI, emerging tech, and growth opportunities.",
+        max_loops=1,
+        model_name="gpt-4o"
+    )
 ]
 
-# Create MajorityVoting instance
-majority_voting = MajorityVoting(agents)
 
-# Run the majority voting system with a different task
-result = majority_voting.run("Create a new file for a plan to take over the world.")
+consensus_agent = Agent(
+    agent_name="Consensus-Agent",
+    agent_description="Consensus agent focused on analyzing investment advice",
+    system_prompt="You are a consensus agent focused on analyzing investment advice and providing a final answer.",
+    max_loops=1,
+    model_name="gpt-4o"
+)
+
+# Create majority voting system
+majority_voting = MajorityVoting(
+    name="Investment-Advisory-System",
+    description="Multi-agent system for investment advice",
+    agents=agents,
+    verbose=True,
+    consensus_agent=consensus_agent
+)
+
+# Run the analysis with majority voting
+result = majority_voting.batch_run(
+    task="Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
+    correct_answer=""  # Optional evaluation metric
+)
+
 print(result)
+
+
 ```

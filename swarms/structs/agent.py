@@ -49,9 +49,6 @@ from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.utils.wrapper_clusterop import (
-    exec_callable_with_clusterops,
-)
 from swarms.telemetry.main import log_agent_data
 from swarms.agents.agent_print import agent_print
 from swarms.utils.litellm_tokenizer import count_tokens
@@ -760,6 +757,7 @@ class Agent:
         is_last: Optional[bool] = False,
         print_task: Optional[bool] = False,
         generate_speech: Optional[bool] = False,
+        correct_answer: Optional[str] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -857,6 +855,11 @@ class Agent:
 
                         # Convert to a str if the response is not a str
                         response = self.llm_output_parser(response)
+
+                        # if correct_answer is not None:
+                        #     if correct_answer not in response:
+                        #         logger.info("Correct answer found in response")
+                        #         # break
 
                         # Print
                         if self.streaming_on is True:
@@ -2465,14 +2468,6 @@ class Agent:
             ValueError: If an invalid device is specified.
             Exception: If any other error occurs during execution.
         """
-        device = device or self.device
-        device_id = device_id or self.device_id
-        all_cores = all_cores or self.all_cores
-        all_gpus = all_gpus or self.all_gpus
-
-        do_not_use_cluster_ops = (
-            do_not_use_cluster_ops or self.do_not_use_cluster_ops
-        )
 
         if scheduled_run_date:
             while datetime.now() < scheduled_run_date:
@@ -2482,32 +2477,14 @@ class Agent:
 
         try:
             # If cluster ops disabled, run directly
-            if do_not_use_cluster_ops is True:
-                logger.info("Running without cluster operations")
-                return self._run(
-                    task=task,
-                    img=img,
-                    *args,
-                    **kwargs,
-                )
-
-            else:
-                return exec_callable_with_clusterops(
-                    device=device,
-                    device_id=device_id,
-                    all_cores=all_cores,
-                    all_gpus=all_gpus,
-                    func=self._run,
-                    task=task,
-                    img=img,
-                    *args,
-                    **kwargs,
-                )
+            return self._run(
+                task=task,
+                img=img,
+                *args,
+                **kwargs,
+            )
 
         except ValueError as e:
-            self._handle_run_error(e)
-
-        except Exception as e:
             self._handle_run_error(e)
 
     def handle_artifacts(

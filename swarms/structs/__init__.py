@@ -75,7 +75,6 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.task import Task
 
 
 __all__ = [
@@ -98,7 +97,6 @@ __all__ = [
     "rearrange",
     "RoundRobinSwarm",
     "SequentialWorkflow",
-    "Task",
     "MixtureOfAgents",
     "GraphWorkflow",
     "Node",

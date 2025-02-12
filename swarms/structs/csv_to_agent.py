@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import csv
 from pathlib import Path
 from enum import Enum
-from swarms import Agent
+from swarms.structs.agent import Agent
 
 
 class ModelName(str, Enum):

@@ -278,8 +278,6 @@ Use logging to monitor the behavior and performance of your models. The `loguru`
 ```python
 from loguru import logger
 
-logger.add("file.log", rotation="10 MB")
-
 # Log model interactions
 logger.info("Running task on Anthropic model")
 response = model(task)

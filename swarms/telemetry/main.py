@@ -299,6 +299,7 @@ def log_agent_data(data_dict: dict) -> dict | None:
         requests.exceptions.RequestException,
         requests.exceptions.JSONDecodeError,
     ):
-        pass  # Fail silently without any action
+        return None  # Return None if anything goes wrong
 
-    return None  # Return None if anything goes wrong
+
+# print(log_agent_data(get_user_device_data()))

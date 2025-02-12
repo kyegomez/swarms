@@ -28,5 +28,4 @@ agent = Agent(
 
 agent.run(
     "Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
-    all_cores=True,
 )
