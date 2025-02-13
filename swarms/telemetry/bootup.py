@@ -25,6 +25,9 @@ def bootup():
             logger.disable("")
             logging.disable(logging.CRITICAL)
 
+        else:
+            logger.enable("")
+
         # Silent wandb
         os.environ["WANDB_SILENT"] = "true"
 

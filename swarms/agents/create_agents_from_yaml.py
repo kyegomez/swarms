@@ -178,21 +178,44 @@ def create_agents_from_yaml(
     swarm_router = None
 
     try:
+        logger.info("Starting agent creation process...")
+
         # Load and validate configuration
+        if yaml_file:
+            logger.info(f"Loading configuration from {yaml_file}")
         config = load_yaml_safely(yaml_file, yaml_string)
 
+        if not config.get("agents"):
+            raise ValueError(
+                "No agents defined in the YAML configuration. "
+                "Please add at least one agent under the 'agents' section."
+            )
+
+        logger.info(
+            f"Found {len(config['agents'])} agent(s) to create"
+        )
+
         # Create agents with retry logic
-        for agent_config in config["agents"]:
+        for idx, agent_config in enumerate(config["agents"], 1):
+            if not agent_config.get("agent_name"):
+                agent_config["agent_name"] = f"Agent_{idx}"
+
             logger.info(
-                f"Creating agent: {agent_config['agent_name']}"
+                f"Creating agent {idx}/{len(config['agents'])}: {agent_config['agent_name']}"
             )
 
             if "model_name" in agent_config:
+                logger.info(
+                    f"Using specified model: {agent_config['model_name']}"
+                )
                 model_instance = LiteLLM(
                     model_name=agent_config["model_name"]
                 )
             else:
-                model_name = "gpt-4o"
+                model_name = "gpt-4"
+                logger.info(
+                    f"No model specified, using default: {model_name}"
+                )
                 model_instance = LiteLLM(model_name=model_name)
 
             agent = create_agent_with_retry(
@@ -203,11 +226,36 @@ def create_agents_from_yaml(
             )
             agents.append(agent)
 
+        logger.info(f"Successfully created {len(agents)} agent(s)")
+
         # Create SwarmRouter if specified
         if "swarm_architecture" in config:
+            logger.info("Setting up swarm architecture...")
             try:
+                if not isinstance(config["swarm_architecture"], dict):
+                    raise ValueError(
+                        "swarm_architecture must be a dictionary containing swarm configuration"
+                    )
+
+                required_fields = {
+                    "name",
+                    "description",
+                    "swarm_type",
+                }
+                missing_fields = required_fields - set(
+                    config["swarm_architecture"].keys()
+                )
+                if missing_fields:
+                    raise ValueError(
+                        f"SwarmRouter creation failed: Missing required fields in swarm_architecture: {', '.join(missing_fields)}"
+                    )
+
                 swarm_config = SwarmConfig(
                     **config["swarm_architecture"]
+                )
+
+                logger.info(
+                    f"Creating SwarmRouter with type: {swarm_config.swarm_type}"
                 )
                 swarm_router = SwarmRouter(
                     name=swarm_config.name,
@@ -226,8 +274,14 @@ def create_agents_from_yaml(
                 )
             except Exception as e:
                 logger.error(f"Error creating SwarmRouter: {str(e)}")
+                if "swarm_type" in str(e) and "valid_types" in str(e):
+                    raise ValueError(
+                        "Invalid swarm_type. Must be one of: SequentialWorkflow, ConcurrentWorkflow, "
+                        "AgentRearrange, MixtureOfAgents, or auto"
+                    )
                 raise ValueError(
-                    f"Failed to create SwarmRouter: {str(e)}"
+                    f"Failed to create SwarmRouter: {str(e)}. Make sure your YAML file "
+                    "has a valid swarm_architecture section with required fields."
                 )
 
         # Handle return types with improved error checking
@@ -244,12 +298,31 @@ def create_agents_from_yaml(
                 f"Invalid return_type. Must be one of: {valid_return_types}"
             )
 
-        if return_type == "run_swarm" or "swarm":
+        logger.info(f"Processing with return type: {return_type}")
+
+        if return_type in ("run_swarm", "swarm"):
             if not swarm_router:
+                if "swarm_architecture" not in config:
+                    raise ValueError(
+                        "Cannot run swarm: No swarm_architecture section found in YAML configuration.\n"
+                        "Please add a swarm_architecture section with:\n"
+                        "  - name: your_swarm_name\n"
+                        "  - description: your_swarm_description\n"
+                        "  - swarm_type: one of [SequentialWorkflow, ConcurrentWorkflow, AgentRearrange, MixtureOfAgents, auto]\n"
+                        "  - task: your_task_description"
+                    )
                 raise ValueError(
-                    "Cannot run swarm: SwarmRouter not created."
+                    "Cannot run swarm: SwarmRouter creation failed. Check the previous error messages."
                 )
             try:
+                if not config["swarm_architecture"].get("task"):
+                    raise ValueError(
+                        "No task specified in swarm_architecture. Please add a 'task' field "
+                        "to define what the swarm should do."
+                    )
+                logger.info(
+                    f"Running swarm with task: {config['swarm_architecture']['task']}"
+                )
                 return swarm_router.run(
                     config["swarm_architecture"]["task"]
                 )
@@ -259,30 +332,37 @@ def create_agents_from_yaml(
 
         # Return appropriate type based on configuration
         if return_type == "auto":
-            return (
+            result = (
                 swarm_router
                 if swarm_router
                 else (agents[0] if len(agents) == 1 else agents)
             )
         elif return_type == "swarm":
-            return (
+            result = (
                 swarm_router
                 if swarm_router
                 else (agents[0] if len(agents) == 1 else agents)
             )
         elif return_type == "agents":
-            return agents[0] if len(agents) == 1 else agents
+            result = agents[0] if len(agents) == 1 else agents
         elif return_type == "both":
-            return (
-                swarm_router
-                if swarm_router
-                else agents[0] if len(agents) == 1 else agents
-            ), agents
+            result = (
+                (
+                    swarm_router
+                    if swarm_router
+                    else agents[0] if len(agents) == 1 else agents
+                ),
+                agents,
+            )
         elif return_type == "tasks":
-            return task_results
+            result = task_results
+
+        logger.info("Process completed successfully")
+        return result
 
     except Exception as e:
         logger.error(
-            f"Critical error in create_agents_from_yaml: {str(e)}"
+            f"Critical error in create_agents_from_yaml: {str(e)}\n"
+            "Please check your YAML configuration and try again."
         )
         raise

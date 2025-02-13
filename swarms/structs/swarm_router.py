@@ -1,3 +1,4 @@
+import os
 import uuid
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Literal, Union
@@ -8,14 +9,14 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 from swarms.prompts.ag_prompt import aggregator_system_prompt
 from swarms.structs.agent import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
+from swarms.structs.csv_to_agent import AgentLoader
+from swarms.structs.groupchat import GroupChat
 from swarms.structs.mixture_of_agents import MixtureOfAgents
+from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 from swarms.structs.rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
-from swarms.utils.wrapper_clusterop import (
-    exec_callable_with_clusterops,
-)
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="swarm_router")
@@ -26,6 +27,8 @@ SwarmType = Literal[
     "SpreadSheetSwarm",
     "SequentialWorkflow",
     "ConcurrentWorkflow",
+    "GroupChat",
+    "MultiAgentRouter",
     "auto",
 ]
 
@@ -137,6 +140,9 @@ class SwarmRouter:
         documents: List[str] = [],  # A list of docs file paths
         output_type: str = "string",  # Md, PDF, Txt, csv
         no_cluster_ops: bool = False,
+        speaker_fn: callable = None,
+        load_agents_from_csv: bool = False,
+        csv_file_path: str = None,
         *args,
         **kwargs,
     ):
@@ -154,7 +160,15 @@ class SwarmRouter:
         self.documents = documents
         self.output_type = output_type
         self.no_cluster_ops = no_cluster_ops
+        self.speaker_fn = speaker_fn
         self.logs = []
+        self.load_agents_from_csv = load_agents_from_csv
+        self.csv_file_path = csv_file_path
+
+        if self.load_agents_from_csv:
+            self.agents = AgentLoader(
+                csv_path=self.csv_file_path
+            ).load_agents()
 
         self.reliability_check()
 
@@ -173,12 +187,6 @@ class SwarmRouter:
         # Handle rules
         if self.rules is not None:
             self.handle_rules()
-
-        # let's make a function that checks the agents parameter and disables clusterops
-
-    def deactivate_clusterops(self):
-        for agent in self.agents:
-            agent.do_not_use_cluster_ops = True
 
     def activate_shared_memory(self):
         logger.info("Activating shared memory with all agents ")
@@ -269,9 +277,6 @@ class SwarmRouter:
 
             self._create_swarm(self.swarm_type)
 
-        if self.no_cluster_ops:
-            self.deactivate_clusterops()
-
         elif self.swarm_type == "AgentRearrange":
             return AgentRearrange(
                 name=self.name,
@@ -294,6 +299,26 @@ class SwarmRouter:
                 layers=self.max_loops,
                 *args,
                 **kwargs,
+            )
+
+        elif self.swarm_type == "GroupChat":
+            return GroupChat(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                max_loops=self.max_loops,
+                speaker_fn=self.speaker_fn,
+                *args,
+                **kwargs,
+            )
+
+        elif self.swarm_type == "MultiAgentRouter":
+            return MultiAgentRouter(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                shared_memory_system=self.shared_memory_system,
+                output_type=self.output_type,
             )
         elif self.swarm_type == "SpreadSheetSwarm":
             return SpreadSheetSwarm(
@@ -404,10 +429,6 @@ class SwarmRouter:
         self,
         task: str,
         img: str = None,
-        device: str = "cpu",
-        all_cores: bool = True,
-        all_gpus: bool = False,
-        no_clusterops: bool = True,
         *args,
         **kwargs,
     ) -> Any:
@@ -429,18 +450,7 @@ class SwarmRouter:
             Exception: If an error occurs during task execution.
         """
         try:
-            if no_clusterops:
-                return self._run(task=task, img=img, *args, **kwargs)
-            else:
-                return exec_callable_with_clusterops(
-                    func=self._run,
-                    device=device,
-                    all_cores=all_cores,
-                    all_gpus=all_gpus,
-                    task=task,
-                    *args,
-                    **kwargs,
-                )
+            return self._run(task=task, img=img, *args, **kwargs)
         except Exception as e:
             logger.error(f"Error executing task on swarm: {str(e)}")
             raise
@@ -490,41 +500,6 @@ class SwarmRouter:
                 )
                 raise
         return results
-
-    def threaded_run(self, task: str, *args, **kwargs) -> Any:
-        """
-        Execute a task on the selected or matched swarm type using threading.
-
-        Args:
-            task (str): The task to be executed by the swarm.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            Any: The result of the swarm's execution.
-
-        Raises:
-            Exception: If an error occurs during task execution.
-        """
-        from threading import Thread
-
-        def run_in_thread():
-            try:
-                result = self.run(task, *args, **kwargs)
-                return result
-            except Exception as e:
-                self._log(
-                    "error",
-                    f"Error occurred while running task in thread on {self.swarm_type} swarm: {str(e)}",
-                    task=task,
-                    metadata={"error": str(e)},
-                )
-                raise
-
-        thread = Thread(target=run_in_thread)
-        thread.start()
-        thread.join()
-        return thread.result
 
     def async_run(self, task: str, *args, **kwargs) -> Any:
         """
@@ -586,7 +561,9 @@ class SwarmRouter:
         """
         from concurrent.futures import ThreadPoolExecutor
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            max_workers=os.cpu_count()
+        ) as executor:
             future = executor.submit(self.run, task, *args, **kwargs)
             result = future.result()
             return result

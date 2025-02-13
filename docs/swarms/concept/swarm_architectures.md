@@ -172,10 +172,6 @@ graph TD
     H --> I{Autosave Enabled?}
     I --> |Yes| J[Export Metadata to JSON]
     I --> |No| K[End Swarm Run]
-    
-    %% Style adjustments
-    classDef blackBox fill:#000,stroke:#f00,color:#fff;
-    class A,B,C,D,E1,E2,E3,F1,F2,F3,G1,G2,G3,H,I,J,K blackBox;
 ```
 
 
@@ -198,8 +194,6 @@ graph TD
     F & G & H --> I[Layer 2: Aggregator Agent]
     I --> J[Aggregate All Responses]
     J --> K[Final Output]
-
-
 ```
 
 

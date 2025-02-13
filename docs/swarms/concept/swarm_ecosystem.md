@@ -60,17 +60,6 @@ graph TD;
     SP --> Sell[Sell Agents]
 ```
 
-#### 6. **IoTAgents**
-
-[IoTAgents](https://github.com/The-Swarm-Corporation/swarm-ecosystem) enables seamless integration between IoT data and AI agents, allowing the real-time processing of IoT data streams and driving smart automation in industries such as logistics, healthcare, and smart cities.
-
-```mermaid
-graph TD;
-    IA[IoTAgents] --> Parse[Parse IoT Data]
-    IA --> Process[Process IoT Data]
-    IA --> Utilize[Utilize IoT Data Streams]
-```
-
 #### Extending the Ecosystem: **Swarms Core**, **JS**, and More
 
 In addition to the core components, the Swarms Ecosystem offers several other powerful packages:

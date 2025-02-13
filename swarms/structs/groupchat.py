@@ -1,9 +1,12 @@
 import concurrent.futures
 from datetime import datetime
+import os
 from typing import Callable, List
 
+from dotenv import load_dotenv
 from loguru import logger
 from pydantic import BaseModel, Field
+from swarm_models import OpenAIChat
 
 from swarms.structs.agent import Agent
 
@@ -123,7 +126,7 @@ class GroupChat:
         description: str = "A group chat for multiple agents",
         agents: List[Agent] = [],
         speaker_fn: SpeakerFunction = round_robin,
-        max_loops: int = 10,
+        max_loops: int = 1,
     ):
         """
         Initialize the GroupChat.
@@ -171,7 +174,9 @@ class GroupChat:
                         Previous messages: {self.get_full_chat_history()}
             """  # Updated line
 
-            message = agent.run(context + prompt)
+            message = agent.run(
+                task=f"From {agent.agent_name}: {context} \n {prompt}"
+            )
             return AgentResponse(
                 agent_name=agent.name,
                 role=agent.system_prompt,
@@ -224,7 +229,7 @@ class GroupChat:
 
     def run(self, task: str) -> ChatHistory:
         """
-        Run the group chat.
+        Run the group chat, feeding the context of previous turns into each new turn.
 
         Args:
             task (str): The initial message to start the chat.
@@ -242,12 +247,22 @@ class GroupChat:
                     turn_number=turn, responses=[], task=task
                 )
 
+                # Get context from previous turns
+                context = self.get_full_chat_history()
+
+                # Combine task with context for agents
+                contextualized_task = (
+                    f"{task}\n\nPrevious conversation:\n{context}"
+                    if context
+                    else task
+                )
+
                 for agent in self.agents:
                     if self.speaker_fn(
                         self.get_recent_messages(), agent
                     ):
                         response = self._get_response_sync(
-                            agent, task, turn
+                            agent, contextualized_task, turn
                         )
                         current_turn.responses.append(response)
                         self.chat_history.total_messages += 1
@@ -293,63 +308,63 @@ class GroupChat:
             )
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     load_dotenv()
+    load_dotenv()
 
-#     # Get the OpenAI API key from the environment variable
-#     api_key = os.getenv("OPENAI_API_KEY")
+    # Get the OpenAI API key from the environment variable
+    api_key = os.getenv("OPENAI_API_KEY")
 
-#     # Create an instance of the OpenAIChat class
-#     model = OpenAIChat(
-#         openai_api_key=api_key,
-#         model_name="gpt-4o-mini",
-#         temperature=0.1,
-#     )
+    # Create an instance of the OpenAIChat class
+    model = OpenAIChat(
+        openai_api_key=api_key,
+        model_name="gpt-4o-mini",
+        temperature=0.1,
+    )
 
-#     # Example agents
-#     agent1 = Agent(
-#         agent_name="Financial-Analysis-Agent",
-#         system_prompt="You are a financial analyst specializing in investment strategies.",
-#         llm=model,
-#         max_loops=1,
-#         autosave=False,
-#         dashboard=False,
-#         verbose=True,
-#         dynamic_temperature_enabled=True,
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         output_type="string",
-#         streaming_on=False,
-#     )
+    # Example agents
+    agent1 = Agent(
+        agent_name="Financial-Analysis-Agent",
+        system_prompt="You are a financial analyst specializing in investment strategies.",
+        llm=model,
+        max_loops=1,
+        autosave=False,
+        dashboard=False,
+        verbose=True,
+        dynamic_temperature_enabled=True,
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        output_type="string",
+        streaming_on=False,
+    )
 
-#     agent2 = Agent(
-#         agent_name="Tax-Adviser-Agent",
-#         system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
-#         llm=model,
-#         max_loops=1,
-#         autosave=False,
-#         dashboard=False,
-#         verbose=True,
-#         dynamic_temperature_enabled=True,
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         output_type="string",
-#         streaming_on=False,
-#     )
+    agent2 = Agent(
+        agent_name="Tax-Adviser-Agent",
+        system_prompt="You are a tax adviser who provides clear and concise guidance on tax-related queries.",
+        llm=model,
+        max_loops=1,
+        autosave=False,
+        dashboard=False,
+        verbose=True,
+        dynamic_temperature_enabled=True,
+        user_name="swarms_corp",
+        retry_attempts=1,
+        context_length=200000,
+        output_type="string",
+        streaming_on=False,
+    )
 
-#     agents = [agent1, agent2]
+    agents = [agent1, agent2]
 
-#     chat = GroupChat(
-#         name="Investment Advisory",
-#         description="Financial and tax analysis group",
-#         agents=agents,
-#         speaker_fn=expertise_based,
-#     )
+    chat = GroupChat(
+        name="Investment Advisory",
+        description="Financial and tax analysis group",
+        agents=agents,
+        speaker_fn=expertise_based,
+    )
 
-#     history = chat.run(
-#         "How to optimize tax strategy for investments?"
-#     )
-#     print(history.model_dump_json(indent=2))
+    history = chat.run(
+        "How to optimize tax strategy for investments?"
+    )
+    print(history.model_dump_json(indent=2))

@@ -1,5 +1,6 @@
 from swarms.structs.agent import Agent
 from swarms.structs.agents_available import showcase_available_agents
+from swarms.structs.async_workflow import AsyncWorkflow
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
 from swarms.structs.base_structure import BaseStructure
 from swarms.structs.base_swarm import BaseSwarm
@@ -13,10 +14,10 @@ from swarms.structs.graph_workflow import (
     NodeType,
 )
 from swarms.structs.groupchat import (
-    GroupChat,
+    AgentResponse,
     ChatHistory,
     ChatTurn,
-    AgentResponse,
+    GroupChat,
     expertise_based,
 )
 from swarms.structs.majority_voting import (
@@ -25,7 +26,11 @@ from swarms.structs.majority_voting import (
     most_frequent,
     parse_code_completion,
 )
+from swarms.structs.meme_agent_persona_generator import (
+    MemeAgentGenerator,
+)
 from swarms.structs.mixture_of_agents import MixtureOfAgents
+from swarms.structs.model_router import ModelRouter
 from swarms.structs.multi_agent_collab import MultiAgentCollaboration
 from swarms.structs.multi_agent_exec import (
     run_agent_with_timeout,
@@ -38,6 +43,7 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_tasks_concurrently,
     run_single_agent,
 )
+from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 from swarms.structs.queue_swarm import TaskQueueSwarm
 from swarms.structs.rearrange import AgentRearrange, rearrange
 from swarms.structs.round_robin import RoundRobinSwarm
@@ -69,18 +75,7 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-from swarms.structs.task import Task
-from swarms.structs.utils import (
-    detect_markdown,
-    distribute_tasks,
-    extract_key_from_json,
-    extract_tokens_from_text,
-    find_agent_by_id,
-    find_token_in_text,
-    parse_tasks,
-)
-from swarms.structs.async_workflow import AsyncWorkflow
-from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
+
 
 __all__ = [
     "Agent",
@@ -102,14 +97,6 @@ __all__ = [
     "rearrange",
     "RoundRobinSwarm",
     "SequentialWorkflow",
-    "Task",
-    "detect_markdown",
-    "distribute_tasks",
-    "extract_key_from_json",
-    "extract_tokens_from_text",
-    "find_agent_by_id",
-    "find_token_in_text",
-    "parse_tasks",
     "MixtureOfAgents",
     "GraphWorkflow",
     "Node",
@@ -156,4 +143,6 @@ __all__ = [
     "AgentResponse",
     "expertise_based",
     "MultiAgentRouter",
+    "MemeAgentGenerator",
+    "ModelRouter",
 ]

@@ -9,15 +9,6 @@ from swarm_models import OpenAIChat
 GITHUB_REPO = "kyegomez/swarms"  # Swarms GitHub repository
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/commits"
 
-# Initialize Loguru
-logger.add(
-    "commit_summary.log",
-    rotation="1 MB",
-    level="INFO",
-    backtrace=True,
-    diagnose=True,
-)
-
 
 # Step 1: Fetch the latest commits from GitHub
 def fetch_latest_commits(

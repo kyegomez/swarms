@@ -155,5 +155,5 @@ By understanding the purpose and role of each folder in the Swarms framework, us
 
 
 - **Community Support**
-  - URL: [Submit issue](https://discord.gg/agora-999382051935506503)
+  - URL: [Submit issue](https://discord.gg/jM3Z6M9uMq)
   - Ask the community for support in real-time and or admin support

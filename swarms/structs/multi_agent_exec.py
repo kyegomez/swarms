@@ -3,16 +3,19 @@ import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from multiprocessing import cpu_count
 from typing import Any, List
 
 import psutil
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
-from swarms.utils.wrapper_clusterop import (
-    exec_callable_with_clusterops,
-)
+
+
+@dataclass
+class ResourceMetrics:
+    cpu_percent: float
+    memory_percent: float
+    active_threads: int
 
 
 def run_single_agent(agent: AgentType, task: str) -> Any:
@@ -79,7 +82,7 @@ def run_agents_concurrently(
         List of outputs from each agent
     """
     # Optimize defaults based on system resources
-    cpu_cores = cpu_count()
+    cpu_cores = os.cpu_count()
     batch_size = batch_size or cpu_cores
     max_workers = max_workers or cpu_cores * 2
 
@@ -106,7 +109,7 @@ def run_agents_concurrently(
 
 
 def run_agents_concurrently_multiprocess(
-    agents: List[Agent], task: str, batch_size: int = cpu_count()
+    agents: List[Agent], task: str, batch_size: int = os.cpu_count()
 ) -> List[Any]:
     """
     Manage and run multiple agents concurrently in batches, with optimized performance.
@@ -173,7 +176,7 @@ def run_agents_with_different_tasks(
         agent, task = pair
         return await run_agent_async(agent, task, executor)
 
-    cpu_cores = cpu_count()
+    cpu_cores = os.cpu_count()
     batch_size = batch_size or cpu_cores
     max_workers = max_workers or cpu_cores * 2
     results = []
@@ -246,7 +249,7 @@ def run_agents_with_timeout(
     Returns:
         List of outputs (None for timed out agents)
     """
-    cpu_cores = cpu_count()
+    cpu_cores = os.cpu_count()
     batch_size = batch_size or cpu_cores
     max_workers = max_workers or cpu_cores * 2
     results = []
@@ -273,13 +276,6 @@ def run_agents_with_timeout(
             results.extend(batch_results)
 
     return results
-
-
-@dataclass
-class ResourceMetrics:
-    cpu_percent: float
-    memory_percent: float
-    active_threads: int
 
 
 def get_system_metrics() -> ResourceMetrics:
@@ -412,22 +408,9 @@ def run_agents_with_tasks_concurrently(
         List[Any]: A list of outputs from each agent execution.
     """
     # Make the first agent not use the ifrs
-
-    if no_clusterops:
-        return _run_agents_with_tasks_concurrently(
-            agents, tasks, batch_size, max_workers
-        )
-    else:
-        return exec_callable_with_clusterops(
-            device,
-            device_id,
-            all_cores,
-            _run_agents_with_tasks_concurrently,
-            agents,
-            tasks,
-            batch_size,
-            max_workers,
-        )
+    return _run_agents_with_tasks_concurrently(
+        agents, tasks, batch_size, max_workers
+    )
 
 
 # # Example usage:

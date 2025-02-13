@@ -1,6 +1,3 @@
-import os
-
-from swarm_models import OpenAIChat
 from swarms import Agent
 from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
@@ -9,16 +6,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
 
 # Initialize the agent
 agent = Agent(
@@ -26,7 +13,7 @@ agent = Agent(
     agent_description="Personal finance advisor agent",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
-    llm=model,
+    model_name="gpt-4o",
     dynamic_temperature_enabled=True,
     user_name="swarms_corp",
     retry_attempts=3,
@@ -41,5 +28,4 @@ agent = Agent(
 
 agent.run(
     "Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
-    all_cores=True,
 )

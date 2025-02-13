@@ -276,9 +276,120 @@ def main():
             elif args.command == "check-login":
                 check_login()
             elif args.command == "run-agents":
-                create_agents_from_yaml(
-                    yaml_file=args.yaml_file, return_type="tasks"
-                )
+                try:
+                    console.print(
+                        f"[yellow]Loading agents from {args.yaml_file}...[/yellow]"
+                    )
+
+                    if not os.path.exists(args.yaml_file):
+                        raise FileNotFoundError(
+                            f"YAML file not found: {args.yaml_file}\n"
+                            "Please make sure the file exists and you're in the correct directory."
+                        )
+
+                    # Create progress display
+                    progress = Progress(
+                        SpinnerColumn(),
+                        TextColumn(
+                            "[progress.description]{task.description}"
+                        ),
+                        console=console,
+                    )
+
+                    with progress:
+                        # Add initial task
+                        init_task = progress.add_task(
+                            "Initializing...", total=None
+                        )
+
+                        # Load and validate YAML
+                        progress.update(
+                            init_task,
+                            description="Loading YAML configuration...",
+                        )
+
+                        # Create agents
+                        progress.update(
+                            init_task,
+                            description="Creating agents...",
+                        )
+                        result = create_agents_from_yaml(
+                            yaml_file=args.yaml_file,
+                            return_type="run_swarm",
+                        )
+
+                        # Update progress on completion
+                        progress.update(
+                            init_task,
+                            description="Processing complete!",
+                            completed=True,
+                        )
+
+                    if result:
+                        # Format and display the results
+                        if isinstance(result, str):
+                            console.print(
+                                "\n[bold green]Results:[/bold green]"
+                            )
+                            console.print(
+                                Panel(
+                                    result,
+                                    title="Agent Output",
+                                    border_style="green",
+                                )
+                            )
+                        elif isinstance(result, dict):
+                            console.print(
+                                "\n[bold green]Results:[/bold green]"
+                            )
+                            for key, value in result.items():
+                                console.print(
+                                    f"[cyan]{key}:[/cyan] {value}"
+                                )
+                        else:
+                            console.print(
+                                "[green]✓ Agents completed their tasks successfully![/green]"
+                            )
+                    else:
+                        console.print(
+                            "[yellow]⚠ Agents completed but returned no results.[/yellow]"
+                        )
+
+                except FileNotFoundError as e:
+                    show_error("File Error", str(e))
+                except ValueError as e:
+                    show_error(
+                        "Configuration Error",
+                        str(e)
+                        + "\n\nPlease check your agents.yaml file format.",
+                    )
+                except Exception as e:
+                    # Enhanced error handling
+                    error_msg = str(e)
+                    if "context_length_exceeded" in error_msg:
+                        show_error(
+                            "Context Length Error",
+                            "The model's context length was exceeded. Try:\n"
+                            "1. Reducing max_tokens in your YAML config\n"
+                            "2. Reducing context_length in your YAML config\n"
+                            "3. Using a model with larger context window",
+                        )
+                    elif "api_key" in error_msg.lower():
+                        show_error(
+                            "API Key Error",
+                            "There seems to be an issue with the API key. Please:\n"
+                            "1. Check if your API key is set correctly\n"
+                            "2. Verify the API key is valid\n"
+                            "3. Run 'swarms get-api-key' to get a new key",
+                        )
+                    else:
+                        show_error(
+                            "Execution Error",
+                            f"An unexpected error occurred: {error_msg}\n"
+                            "1. Check your YAML configuration\n"
+                            "2. Verify your API keys are set\n"
+                            "3. Check network connectivity",
+                        )
             elif args.command == "book-call":
                 webbrowser.open(
                     "https://cal.com/swarms/swarms-strategy-session"

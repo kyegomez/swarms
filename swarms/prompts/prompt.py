@@ -11,7 +11,7 @@ from pydantic import (
 )
 from pydantic.v1 import validator
 
-from swarms.telemetry.capture_sys_data import (
+from swarms.telemetry.main import (
     capture_system_data,
     log_agent_data,
 )

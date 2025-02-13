@@ -14,15 +14,6 @@ from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
 
-# Configure logging
-logger.add(
-    "graphswarm.log",
-    rotation="500 MB",
-    retention="10 days",
-    level="INFO",
-    format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
-)
-
 
 class AgentOutput(BaseModel):
     """Structured output from an agent."""

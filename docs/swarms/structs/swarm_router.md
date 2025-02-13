@@ -33,7 +33,7 @@ Main class for routing tasks to different swarm types.
 | `flow` | str | The flow of the swarm. |
 | `return_json` | bool | Flag to enable/disable returning the result in JSON format. |
 | `auto_generate_prompts` | bool | Flag to enable/disable auto generation of prompts. |
-| `swarm` | Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow] | Instantiated swarm object. |
+| `swarm` | Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow, GroupChat, MultiAgentRouter] | Instantiated swarm object. |
 | `logs` | List[SwarmLog] | List of log entries captured during operations. |
 
 #### Methods:
@@ -268,6 +268,39 @@ concurrent_router = SwarmRouter(
 )
 
 result = concurrent_router.run("Conduct a comprehensive market analysis for Product X")
+```
+
+
+### GroupChat
+
+Use Case: Simulating a group chat with multiple agents.
+
+```python
+group_chat_router = SwarmRouter(
+    name="GroupChat",
+    description="Simulate a group chat with multiple agents",
+    max_loops=1,
+    agents=[financial_analyst, market_researcher, competitor_analyst],
+    swarm_type="GroupChat"
+)
+
+result = group_chat_router.run("Conduct a comprehensive market analysis for Product X")
+```
+
+### MultiAgentRouter
+
+Use Case: Simulating a group chat with multiple agents.
+
+```python
+multi_agent_router = SwarmRouter(
+    name="MultiAgentRouter",
+    description="Simulate a group chat with multiple agents",
+    max_loops=1,
+    agents=[financial_analyst, market_researcher, competitor_analyst],
+    swarm_type="MultiAgentRouter"
+)
+
+result = multi_agent_router.run("Conduct a comprehensive market analysis for Product X")
 ```
 
 

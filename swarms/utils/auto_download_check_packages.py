@@ -144,3 +144,7 @@ def auto_check_and_download_package(
                 success = False
 
     return success
+
+
+if __name__ == "__main__":
+    print(auto_check_and_download_package("torch"))

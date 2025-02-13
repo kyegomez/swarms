@@ -8,7 +8,6 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
-from swarms.utils.lazy_loader import lazy_import_decorator
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="swarm_matcher")
@@ -29,7 +28,6 @@ class SwarmMatcherConfig(BaseModel):
     )
 
 
-@lazy_import_decorator
 class SwarmMatcher:
     """
     A class for matching tasks to swarm types based on their descriptions.
@@ -44,8 +42,6 @@ class SwarmMatcher:
         Args:
             config (SwarmMatcherConfig): The configuration for the SwarmMatcher.
         """
-        logger.add("swarm_matcher_debug.log", level="DEBUG")
-        logger.debug("Initializing SwarmMatcher")
 
         try:
             import torch
@@ -271,7 +267,6 @@ def initialize_swarm_types(matcher: SwarmMatcher):
     logger.debug("Swarm types initialized")
 
 
-@lazy_import_decorator
 def swarm_matcher(task: str, *args, **kwargs):
     """
     Runs the SwarmMatcher example with predefined tasks and swarm types.

@@ -2,9 +2,9 @@ import os
 from typing import List
 
 from pydantic import BaseModel, Field
-from swarm_models import OpenAIFunctionCaller, OpenAIChat
 
 from swarms.structs.agent import Agent
+from swarms.utils.function_caller_model import OpenAIFunctionCaller
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.agents_available import showcase_available_agents
@@ -62,15 +62,6 @@ class SwarmConfig(BaseModel):
         description="The maximum number of loops to run the swarm",
         example=1,
     )
-
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    openai_api_key=api_key, model_name="gpt-4o-mini", temperature=0.1
-)
 
 
 BOSS_SYSTEM_PROMPT = """
@@ -248,7 +239,7 @@ class AutoSwarmBuilder:
             agent_name=agent_name,
             description=agent_description,
             system_prompt=agent_system_prompt,
-            llm=model,
+            model_name="gpt-4o",
             max_loops=max_loops,
             autosave=True,
             dashboard=False,

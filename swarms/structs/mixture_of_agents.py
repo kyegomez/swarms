@@ -1,14 +1,17 @@
 import asyncio
+import os
 import time
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
-from swarms.telemetry.capture_sys_data import log_agent_data
+from swarms.telemetry.main import log_agent_data
 from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.prompts.ag_prompt import aggregator_system_prompt
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.any_to_str import any_to_str
+import concurrent.futures
 
 logger = initialize_logger(log_folder="mixture_of_agents")
 
@@ -64,6 +67,8 @@ class MixtureOfAgents:
         aggregator_agent: Agent = None,
         aggregator_system_prompt: str = "",
         layers: int = 3,
+        max_loops: int = 1,
+        return_str_on: bool = False,
     ) -> None:
         """
         Initialize the Mixture of Agents class with agents and configuration.
@@ -82,6 +87,8 @@ class MixtureOfAgents:
         self.aggregator_agent: Agent = aggregator_agent
         self.aggregator_system_prompt: str = aggregator_system_prompt
         self.layers: int = layers
+        self.max_loops: int = max_loops
+        self.return_str_on: bool = return_str_on
 
         self.input_schema = MixtureOfAgentsInput(
             name=name,
@@ -233,10 +240,61 @@ class MixtureOfAgents:
         Args:
             task (str): The task for the mixture of agents.
         """
-        asyncio.run(self._run_async(task))
+        try:
+            prev_context = None
 
-        self.output_schema.task = task
+            for _ in range(self.max_loops):
+                # Add previous context to task if available
+                current_task = (
+                    f"{task}\n\nPrevious context:\n{prev_context}"
+                    if prev_context
+                    else task
+                )
 
-        log_agent_data(self.output_schema.model_dump())
+                # Run async process
+                asyncio.run(self._run_async(current_task))
 
-        return self.output_schema.model_dump_json(indent=4)
+                # Store current results as context for next loop
+                prev_context = (
+                    self.output_schema.aggregator_agent_summary
+                )
+
+            self.output_schema.task = task
+
+            log_agent_data(self.output_schema.model_dump())
+
+            if self.return_str_on:
+                return any_to_str(self.output_schema.model_dump())
+            else:
+                return self.output_schema.model_dump_json(indent=4)
+
+        except Exception as e:
+            logger.error(f"Error running mixture of agents: {str(e)}")
+            raise e
+
+    def run_batched(self, tasks: List[str]) -> List[str]:
+        """
+        Run the mixture of agents for a batch of tasks.
+
+        Args:
+            tasks (List[str]): A list of tasks for the mixture of agents.
+
+        Returns:
+            List[str]: A list of responses from the mixture of agents.
+        """
+        return [self.run(task) for task in tasks]
+
+    def run_concurrently(self, tasks: List[str]) -> List[str]:
+        """
+        Run the mixture of agents for a batch of tasks concurrently.
+        """
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=os.cpu_count()
+        ) as executor:
+            futures = [
+                executor.submit(self.run, task) for task in tasks
+            ]
+            return [
+                future.result()
+                for future in concurrent.futures.as_completed(futures)
+            ]

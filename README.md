@@ -2062,4 +2062,4 @@ Join our growing community around the world, for real-time support, ideas, and d
 
 # License
 
-GNU AFFERO GENERAL PUBLIC LICENSE
+APACHE 

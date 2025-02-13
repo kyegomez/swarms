@@ -81,12 +81,6 @@ class SwarmsIssueReporter:
         # Initialize logging
         log_path = os.path.join(os.getcwd(), "logs", log_file)
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
-        logger.add(
-            log_path,
-            rotation="1 day",
-            retention="1 month",
-            compression="zip",
-        )
 
         # Issue tracking
         self.issues_created = []

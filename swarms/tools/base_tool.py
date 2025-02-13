@@ -3,7 +3,6 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from swarms.tools.func_calling_executor import openai_tool_executor
 from swarms.tools.func_to_str import function_to_str, functions_to_str
 from swarms.tools.function_util import process_tool_docs
 from swarms.tools.py_func_to_openai_func_str import (
@@ -15,6 +14,7 @@ from swarms.tools.pydantic_to_json import (
     multi_base_model_to_openai_function,
 )
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.tools.tool_parse_exec import parse_and_execute_json
 
 logger = initialize_logger(log_folder="base_tool")
 
@@ -178,16 +178,14 @@ class BaseTool(BaseModel):
 
     def execute_tool(
         self,
+        response: str,
         *args: Any,
         **kwargs: Any,
     ) -> Callable:
         try:
-            return openai_tool_executor(
-                self.list_of_dicts,
-                self.function_map,
-                self.verbose,
-                *args,
-                **kwargs,
+            return parse_and_execute_json(
+                self.tools,
+                response,
             )
         except Exception as e:
             logger.error(f"An error occurred in execute_tool: {e}")
@@ -253,6 +251,7 @@ class BaseTool(BaseModel):
     def execute_tool_by_name(
         self,
         tool_name: str,
+        response: str,
     ) -> Any:
         """
         Search for a tool by name and execute it.
@@ -268,31 +267,16 @@ class BaseTool(BaseModel):
             ValueError: If the tool with the specified name is not found.
             TypeError: If the tool name is not mapped to a function in the function map.
         """
-        # Search for the tool by name
-        tool = next(
-            (
-                tool
-                for tool in self.tools
-                if tool.get("name") == tool_name
-            ),
-            None,
-        )
-
-        # If the tool is not found, raise an error
-        if tool is None:
-            raise ValueError(f"Tool '{tool_name}' not found")
-
-        # Get the function associated with the tool
+        # Step 1. find the function in the function map
         func = self.function_map.get(tool_name)
 
-        # If the function is not found, raise an error
-        if func is None:
-            raise TypeError(
-                f"Tool '{tool_name}' is not mapped to a function"
-            )
+        execution = parse_and_execute_json(
+            functions=[func],
+            json_string=response,
+            verbose=self.verbose,
+        )
 
-        # Execute the tool
-        return func(**tool.get("parameters", {}))
+        return execution
 
     def execute_tool_from_text(self, text: str) -> Any:
         """
@@ -415,16 +399,14 @@ class BaseTool(BaseModel):
                 )
 
         # Combine all tool schemas into a single schema
-        if tool_schemas:
-            combined_schema = {
-                "type": "function",
-                "functions": [
-                    schema["function"] for schema in tool_schemas
-                ],
-            }
-            return json.dumps(combined_schema, indent=4)
+        combined_schema = {
+            "type": "function",
+            "functions": [
+                schema["function"] for schema in tool_schemas
+            ],
+        }
 
-        return None
+        return combined_schema
 
     def check_func_if_have_docs(self, func: callable):
         if func.__doc__ is not None:

@@ -1,11 +1,9 @@
 import os
-import subprocess
 from typing import List, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
-from swarm_models import OpenAIChat
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -14,109 +12,7 @@ from tenacity import (
 
 from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
-
-logger.add("swarm_builder.log", rotation="10 MB", backtrace=True)
-
-
-class OpenAIFunctionCaller:
-    """
-    A class to interact with the OpenAI API for generating text based on a system prompt and a task.
-
-    Attributes:
-    - system_prompt (str): The system prompt to guide the AI's response.
-    - api_key (str): The API key for the OpenAI service.
-    - temperature (float): The temperature parameter for the AI model, controlling randomness.
-    - base_model (BaseModel): The Pydantic model to parse the response into.
-    - max_tokens (int): The maximum number of tokens in the response.
-    - client (OpenAI): The OpenAI client instance.
-    """
-
-    def __init__(
-        self,
-        system_prompt: str,
-        api_key: str,
-        temperature: float,
-        base_model: BaseModel,
-        max_tokens: int = 5000,
-    ):
-        self.system_prompt = system_prompt
-        self.api_key = api_key
-        self.temperature = temperature
-        self.base_model = base_model
-        self.max_tokens = max_tokens
-
-        try:
-            from openai import OpenAI
-        except ImportError:
-            logger.error(
-                "OpenAI library not found. Please install the OpenAI library by running 'pip install openai'"
-            )
-            subprocess.run(["pip", "install", "openai"])
-            from openai import OpenAI
-
-        self.client = OpenAI(api_key=api_key)
-
-    def run(self, task: str, *args, **kwargs) -> BaseModel:
-        """
-        Run the OpenAI model with the system prompt and task to generate a response.
-
-        Args:
-        - task (str): The task to be completed.
-        - *args: Additional positional arguments for the OpenAI API.
-        - **kwargs: Additional keyword arguments for the OpenAI API.
-
-        Returns:
-        - BaseModel: The parsed response based on the base_model.
-        """
-        completion = self.client.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
-            messages=[
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": task},
-            ],
-            response_format=self.base_model,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-            *args,
-            **kwargs,
-        )
-
-        return completion.choices[0].message.parsed
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-    )
-    async def run_async(
-        self, task: str, *args, **kwargs
-    ) -> BaseModel:
-        """
-        Asynchronous version of the run method.
-
-        Args:
-        - task (str): The task to be completed.
-        - *args: Additional positional arguments for the OpenAI API.
-        - **kwargs: Additional keyword arguments for the OpenAI API.
-
-        Returns:
-        - BaseModel: The parsed response based on the base_model.
-        """
-        completion = (
-            await self.client.beta.chat.completions.parse_async(
-                model="gpt-4o-2024-08-06",
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": task},
-                ],
-                response_format=self.base_model,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                *args,
-                **kwargs,
-            )
-        )
-
-        return completion.choices[0].message.parsed
+from swarms.utils.function_caller_model import OpenAIFunctionCaller
 
 
 BOSS_SYSTEM_PROMPT = """
@@ -295,18 +191,6 @@ class AutoSwarmBuilder:
             },
         )
 
-        # Initialize OpenAI chat model
-        try:
-            self.chat_model = OpenAIChat(
-                openai_api_key=self.api_key,
-                model_name=self.model_name,
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to initialize OpenAI chat model: {str(e)}"
-            )
-            raise
-
     def run(
         self,
         task: str,
@@ -444,7 +328,7 @@ class AutoSwarmBuilder:
                 agent_name=agent_name,
                 description=agent_description,
                 system_prompt=agent_system_prompt,
-                llm=self.chat_model,
+                model_name="gpt-4o",
                 verbose=self.verbose,
                 dynamic_temperature_enabled=False,
                 return_step_meta=False,

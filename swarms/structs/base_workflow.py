@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 from swarms.utils.formatter import formatter
 from swarms.structs.agent import Agent
 from swarms.structs.base_structure import BaseStructure
-from swarms.structs.task import Task
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger("base-workflow")
@@ -43,7 +42,7 @@ class BaseWorkflow(BaseStructure):
     def __init__(
         self,
         agents: List[Agent] = None,
-        task_pool: List[Task] = None,
+        task_pool: List[str] = None,
         models: List[Any] = None,
         *args,
         **kwargs,
@@ -69,8 +68,8 @@ class BaseWorkflow(BaseStructure):
 
     def add_task(
         self,
-        task: Task = None,
-        tasks: List[Task] = None,
+        task: str = None,
+        tasks: List[str] = None,
         *args,
         **kwargs,
     ):
@@ -293,60 +292,12 @@ class BaseWorkflow(BaseStructure):
                 "green",
             )
 
-            task = Task(
-                description=task,
-                agent=kwargs["agent"],
-                args=list(kwargs["args"]),
-                kwargs=kwargs["kwargs"],
-            )
             self.tasks.append(task)
         except Exception as error:
             formatter.print_panel(
                 f"Error adding objective to workflow: {error}",
             )
             raise error
-
-    def load_workflow_state(
-        self, filepath: str = None, **kwargs
-    ) -> None:
-        """
-        Loads the workflow state from a json file and restores the workflow state.
-
-        Args:
-            filepath (str): The path to load the workflow state from.
-
-        Examples:
-        >>> from swarm_models import OpenAIChat
-        >>> from swarms.structs import SequentialWorkflow
-        >>> llm = OpenAIChat(openai_api_key="")
-        >>> workflow = SequentialWorkflow(max_loops=1)
-        >>> workflow.add("What's the weather in miami", llm)
-        >>> workflow.add("Create a report on these metrics", llm)
-        >>> workflow.save_workflow_state("sequential_workflow_state.json")
-        >>> workflow.load_workflow_state("sequential_workflow_state.json")
-
-        """
-        try:
-            filepath = filepath or self.restore_state_filepath
-
-            with open(filepath) as f:
-                state = json.load(f)
-                self.max_loops = state["max_loops"]
-                self.tasks = []
-                for task_state in state["tasks"]:
-                    task = Task(
-                        description=task_state["description"],
-                        agent=task_state["agent"],
-                        args=task_state["args"],
-                        kwargs=task_state["kwargs"],
-                        result=task_state["result"],
-                        history=task_state["history"],
-                    )
-                    self.tasks.append(task)
-        except Exception as error:
-            formatter.print_panel(
-                f"Error loading workflow state: {error}",
-            )
 
     def workflow_dashboard(self, **kwargs) -> None:
         """

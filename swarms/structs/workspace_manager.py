@@ -41,7 +41,7 @@ class WorkspaceManager:
             env_file_path (Path): The path to the .env file.
         """
         with env_file_path.open("w") as file:
-            file.write("WORKSPACE_DIR=agent_workspace\n")
+            file.write(f"WORKSPACE_DIR={self.workspace_dir}\n")
         logger.info(
             "Created a new .env file with default WORKSPACE_DIR."
         )
@@ -57,7 +57,7 @@ class WorkspaceManager:
             content = file.read()
             if "WORKSPACE_DIR" not in content:
                 file.seek(0, os.SEEK_END)
-                file.write("WORKSPACE_DIR=agent_workspace\n")
+                file.write(f"WORKSPACE_DIR={self.workspace_dir}\n")
                 logger.info("Appended WORKSPACE_DIR to .env file.")
 
     def _get_workspace_dir(
@@ -150,6 +150,8 @@ class WorkspaceManager:
         try:
             # Check if .env file exists and create it if it doesn't
             env_file_path = Path(".env")
+
+            # If the .env file doesn't exist, create it
             if not env_file_path.exists():
                 self._create_env_file(env_file_path)
             else:

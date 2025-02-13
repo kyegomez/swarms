@@ -13,10 +13,7 @@ from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.output_types import OutputType
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.wrapper_clusterop import (
-    exec_callable_with_clusterops,
-)
-from swarms.telemetry.capture_sys_data import log_agent_data
+from swarms.telemetry.main import log_agent_data
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -523,29 +520,13 @@ class AgentRearrange(BaseSwarm):
             The result from executing the task through the cluster operations wrapper.
         """
         try:
-            no_use_clusterops = (
-                no_use_clusterops or self.no_use_clusterops
+            return self._run(
+                task=task,
+                img=img,
+                *args,
+                **kwargs,
             )
 
-            if no_use_clusterops is True:
-                return self._run(
-                    task=task,
-                    img=img,
-                    *args,
-                    **kwargs,
-                )
-            else:
-                return exec_callable_with_clusterops(
-                    device=device,
-                    device_id=device_id,
-                    all_cores=all_cores,
-                    all_gpus=all_gpus,
-                    func=self._run,
-                    task=task,
-                    img=img,
-                    *args,
-                    **kwargs,
-                )
         except Exception as e:
             self._catch_error(e)
 

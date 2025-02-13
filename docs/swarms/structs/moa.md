@@ -1,5 +1,31 @@
 # MixtureOfAgents Class Documentation
 
+## Architecture Overview
+
+```mermaid
+graph TD
+    A[Input Task] --> B[Initialize MixtureOfAgents]
+    B --> C[Reliability Check]
+    C --> D[Layer 1: Parallel Agent Execution]
+    D --> E[Layer 2: Sequential Processing]
+    E --> F[Layer 3: Parallel Agent Execution]
+    F --> G[Final Aggregator Agent]
+    G --> H[Output Response]
+    
+    subgraph "Agent Layer Details"
+        I[Agent 1] --> J[Agent Results]
+        K[Agent 2] --> J
+        L[Agent N] --> J
+    end
+    
+    subgraph "Processing Flow"
+        M[Previous Context] --> N[Current Task]
+        N --> O[Agent Processing]
+        O --> P[Aggregation]
+        P --> M
+    end
+```
+
 ## Overview
 
 The `MixtureOfAgents` class represents a mixture of agents operating within a swarm. The workflow of the swarm follows a parallel → sequential → parallel → final output agent process. This implementation is inspired by concepts discussed in the paper: [https://arxiv.org/pdf/2406.04692](https://arxiv.org/pdf/2406.04692).
@@ -129,6 +155,89 @@ moe_swarm = MixtureOfAgents(agents=[agent1, agent2], final_agent=final_agent)
 history = moe_swarm.run(task="Solve this problem.")
 print(history)
 ```
+
+### `reliability_check`
+
+```python
+def reliability_check(self) -> None:
+```
+
+#### Description
+
+Performs validation checks on the Mixture of Agents class to ensure all required components are properly configured. Raises ValueError if any checks fail.
+
+#### Validation Checks:
+- Verifies reference agents are provided
+- Validates aggregator agent exists
+- Checks aggregator system prompt is set
+- Ensures layers count is valid (> 0)
+
+### `_get_final_system_prompt`
+
+```python
+def _get_final_system_prompt(self, system_prompt: str, results: List[str]) -> str:
+```
+
+#### Description
+
+Internal method that constructs a system prompt for subsequent layers by incorporating previous responses.
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `system_prompt` | `str` | The initial system prompt |
+| `results` | `List[str]` | List of previous responses |
+
+#### Returns
+
+| Type | Description |
+|------|-------------|
+| `str` | Combined system prompt with previous responses |
+
+### `run_batched`
+
+```python
+def run_batched(self, tasks: List[str]) -> List[str]:
+```
+
+#### Description
+
+Processes multiple tasks sequentially, returning a list of responses.
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tasks` | `List[str]` | List of tasks to process |
+
+#### Returns
+
+| Type | Description |
+|------|-------------|
+| `List[str]` | List of responses for each task |
+
+### `run_concurrently`
+
+```python
+def run_concurrently(self, tasks: List[str]) -> List[str]:
+```
+
+#### Description
+
+Processes multiple tasks concurrently using a ThreadPoolExecutor, optimizing for parallel execution.
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tasks` | `List[str]` | List of tasks to process concurrently |
+
+#### Returns
+
+| Type | Description |
+|------|-------------|
+| `List[str]` | List of responses for each task |
 
 ## Detailed Explanation
 
@@ -383,3 +492,112 @@ The `MixtureOfAgents` framework provides a solid foundation for further extensio
 - **Integration with Other Frameworks**: Seamlessly integrating with other machine learning or data processing frameworks to leverage their capabilities within the swarm architecture.
 
 In conclusion, the `MixtureOfAgents` class represents a versatile and efficient solution for orchestrating multi-agent systems, facilitating complex task execution through its structured and layered approach. By harnessing the power of parallel and sequential processing, it opens up new possibilities for tackling intricate problems across various domains.
+
+## Additional Examples
+
+### Example 4: Batch Processing
+
+```python
+from swarms import MixtureOfAgents, Agent
+from swarm_models import OpenAIChat
+
+# Initialize agents as in previous examples
+director = Agent(
+    agent_name="Director",
+    system_prompt="Directs the tasks for the accountants",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="director.json",
+)
+
+accountant1 = Agent(
+    agent_name="Accountant1",
+    system_prompt="Prepares financial statements",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="accountant1.json",
+)
+
+accountant2 = Agent(
+    agent_name="Accountant2",
+    system_prompt="Audits financial records",
+    llm=OpenAIChat(),
+    max_loops=1,
+    dashboard=False,
+    streaming_on=True,
+    verbose=True,
+    stopping_token="<DONE>",
+    state_save_file_type="json",
+    saved_state_path="accountant2.json",
+)
+
+# Initialize MixtureOfAgents
+moe_swarm = MixtureOfAgents(
+    agents=[director, accountant1, accountant2],
+    final_agent=director
+)
+
+# Process multiple tasks in batch
+tasks = [
+    "Analyze Q1 financial statements",
+    "Review tax compliance",
+    "Prepare budget forecast"
+]
+results = moe_swarm.run_batched(tasks)
+for task, result in zip(tasks, results):
+    print(f"Task: {task}\nResult: {result}\n")
+```
+
+### Example 5: Concurrent Processing
+
+```python
+from swarms import MixtureOfAgents, Agent
+from swarm_models import OpenAIChat
+
+# Initialize agents as before
+# ... agent initialization code ...
+
+# Initialize MixtureOfAgents
+moe_swarm = MixtureOfAgents(
+    agents=[director, accountant1, accountant2],
+    final_agent=director
+)
+
+# Process multiple tasks concurrently
+tasks = [
+    "Generate monthly report",
+    "Audit expense claims",
+    "Update financial projections",
+    "Review investment portfolio"
+]
+results = moe_swarm.run_concurrently(tasks)
+for task, result in zip(tasks, results):
+    print(f"Task: {task}\nResult: {result}\n")
+```
+
+## Advanced Features
+
+### Context Preservation
+
+The `MixtureOfAgents` class maintains context between iterations when running multiple loops. Each subsequent iteration receives the context from previous runs, allowing for more sophisticated and context-aware processing.
+
+### Asynchronous Processing
+
+The class implements asynchronous processing internally using Python's `asyncio`, enabling efficient handling of concurrent operations and improved performance for complex workflows.
+
+### Telemetry and Logging
+
+Built-in telemetry and logging capabilities help track agent performance and maintain detailed execution records:
+- Automatic logging of agent outputs
+- Structured data capture using Pydantic models
+- JSON-formatted output options

@@ -6,7 +6,7 @@ from typing import Dict
 from swarms.utils.loguru_logger import initialize_logger
 
 
-from swarms.telemetry.capture_sys_data import (
+from swarms.telemetry.main import (
     capture_system_data,
     log_agent_data,
 )

@@ -18,6 +18,7 @@ mkdocs-mermaid2-plugin
 mkdocs-include-markdown-plugin
 mkdocs-enumerate-headings-plugin
 mkdocs-autolinks-plugin
+mkdocstrings-python
 mkdocs-minify-html-plugin
 mkdocs-autolinks-plugin
 
