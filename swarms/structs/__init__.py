@@ -14,9 +14,6 @@ from swarms.structs.graph_workflow import (
     NodeType,
 )
 from swarms.structs.groupchat import (
-    AgentResponse,
-    ChatHistory,
-    ChatTurn,
     GroupChat,
     expertise_based,
 )
@@ -138,9 +135,6 @@ __all__ = [
     "run_agents_with_tasks_concurrently",
     "showcase_available_agents",
     "GroupChat",
-    "ChatHistory",
-    "ChatTurn",
-    "AgentResponse",
     "expertise_based",
     "MultiAgentRouter",
     "MemeAgentGenerator",

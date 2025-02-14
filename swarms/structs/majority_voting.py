@@ -176,9 +176,7 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
-    def run(
-        self, task: str, correct_answer: str, *args, **kwargs
-    ) -> List[Any]:
+    def run(self, task: str, *args, **kwargs) -> List[Any]:
         """
         Runs the majority voting system and returns the majority vote.
 
@@ -205,7 +203,7 @@ class MajorityVoting:
 
         responses = self.conversation.return_history_as_string()
         print(responses)
-        
+
         prompt = f"""Conduct a detailed majority voting analysis on the following conversation:
         {responses}
 
@@ -224,9 +222,7 @@ class MajorityVoting:
 
         # If an output parser is provided, parse the responses
         if self.consensus_agent is not None:
-            majority_vote = self.consensus_agent.run(
-                prompt
-            )
+            majority_vote = self.consensus_agent.run(prompt)
 
             self.conversation.add(
                 self.consensus_agent.agent_name, majority_vote

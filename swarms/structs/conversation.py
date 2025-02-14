@@ -405,10 +405,23 @@ class Conversation(BaseStructure):
                 visible_messages.append(message)
         return visible_messages
 
+    def get_last_message_as_string(self):
+        # fetch the last message from the conversation history with the agent name and the message of the agent
+        return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
 
-# # Example usage
-# conversation = Conversation()
-# conversation.add("user", "Hello, how are you?")
+    def return_messages_as_list(self):
+        # we must concat the role and the content of the message
+        return [
+            f"{message['role']}: {message['content']}"
+            for message in self.conversation_history
+        ]
+
+
+# Example usage
+conversation = Conversation()
+conversation.add("user", "Hello, how are you?")
+# print(conversation.get_last_message_as_string())
+# print(conversation.return_messages_as_list())
 # conversation.add("assistant", "I am doing well, thanks.")
 # # print(conversation.to_json())
 # print(type(conversation.to_dict()))

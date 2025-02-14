@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "7.1.7"
+version = "7.1.9"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -73,21 +73,9 @@ docstring_parser = "0.16" # TODO:
 tiktoken = "*"
 networkx = "*"
 aiofiles = "*"
-# chromadb = "*"
 rich = "*"
 numpy = "*"
 litellm = "*"
-# sentence-transformers = "*"
-
-
-# # All optional dependencies for convenience
-# all = [
-#     "torch",
-#     "transformers",
-#     "litellm"
-# ]
-
-
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
