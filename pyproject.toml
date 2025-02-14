@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "7.2.0"
+version = "7.2.2"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -70,7 +70,6 @@ psutil = "*"
 python-dotenv = "*"
 PyYAML = "*"
 docstring_parser = "0.16" # TODO:
-tiktoken = "*"
 networkx = "*"
 aiofiles = "*"
 rich = "*"
