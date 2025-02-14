@@ -11,13 +11,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.file_processing import create_file_in_folder
-import concurrent
-from clusterops import (
-    execute_on_gpu,
-    execute_with_cpu_cores,
-    execute_on_multiple_gpus,
-    list_available_gpus,
-)
+import concurrent.futures
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.swarm_id_generator import generate_swarm_id
 
@@ -364,11 +358,6 @@ class ConcurrentWorkflow(BaseSwarm):
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        is_last: bool = False,
-        device: str = "cpu",  # gpu
-        device_id: int = 0,
-        all_cores: bool = True,  # Defaults to using all available cores
-        all_gpus: bool = False,
         *args,
         **kwargs,
     ) -> Any:
@@ -399,41 +388,7 @@ class ConcurrentWorkflow(BaseSwarm):
             self.tasks.append(task)
 
         try:
-            logger.info(f"Attempting to run on device: {device}")
-            if device == "cpu":
-                logger.info("Device set to CPU")
-                if all_cores is True:
-                    count = os.cpu_count()
-                    logger.info(
-                        f"Using all available CPU cores: {count}"
-                    )
-                else:
-                    count = device_id
-                    logger.info(f"Using specific CPU core: {count}")
-
-                return execute_with_cpu_cores(
-                    count, self._run, task, img, *args, **kwargs
-                )
-
-            elif device == "gpu":
-                logger.info("Device set to GPU")
-                return execute_on_gpu(
-                    device_id, self._run, task, img, *args, **kwargs
-                )
-
-            elif all_gpus is True:
-                return execute_on_multiple_gpus(
-                    [int(gpu) for gpu in list_available_gpus()],
-                    self._run,
-                    task,
-                    img,
-                    *args,
-                    **kwargs,
-                )
-            else:
-                raise ValueError(
-                    f"Invalid device specified: {device}. Supported devices are 'cpu' and 'gpu'."
-                )
+            return self._run(task, img, *args, **kwargs)
         except ValueError as e:
             logger.error(f"Invalid device specified: {e}")
             raise e

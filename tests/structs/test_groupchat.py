@@ -131,7 +131,7 @@ def test_basic_groupchat(report):
             max_loops=2,
         )
 
-        result = chat.run("Say hello!")
+        chat.run("Say hello!")
         report.add_result(
             "Basic GroupChat Test",
             True,
@@ -194,7 +194,7 @@ def test_speaker_functions(report):
                 rules="1. Be unique in your responses\n2. Build on others' points\n3. Stay relevant to your expertise",
             )
 
-            result = chat.run(prompt)
+            chat.run(prompt)
             report.add_result(
                 f"Speaker Function - {name}",
                 True,
@@ -222,7 +222,7 @@ def test_varying_agent_counts(report):
                 name=f"{count}-Agent Test", agents=agents, max_loops=2
             )
 
-            result = chat.run("Introduce yourselves briefly.")
+            chat.run("Introduce yourselves briefly.")
             report.add_result(
                 f"Agent Count Test - {count} agents",
                 True,
@@ -352,7 +352,7 @@ def test_conversation_rules(report):
             """,
         )
 
-        result = chat.run(
+        chat.run(
             "How can we ensure ethical AI development across different sectors?"
         )
         report.add_result(
