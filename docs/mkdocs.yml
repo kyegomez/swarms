@@ -227,6 +227,11 @@ nav:
       - Meme Agent Builder: "swarms/examples/meme_agents.md"
     - Multi-Agent Collaboration:
       - Swarms DAO: "swarms/examples/swarms_dao.md"
+      
+  - Swarms UI:
+    - Overview: "swarms/ui/main.md"
+
+
   - Contributors:
     - Bounty Program: "corporate/bounty_program.md"
     - Contributing: 

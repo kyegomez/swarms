@@ -24,6 +24,7 @@ import yaml
 from loguru import logger
 from pydantic import BaseModel
 
+from swarms.agents.agent_print import agent_print
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.artifacts.main_artifact import Artifact
 from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
@@ -39,19 +40,20 @@ from swarms.schemas.base_schemas import (
 )
 from swarms.structs.concat import concat_strings
 from swarms.structs.conversation import Conversation
+
+# from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
+from swarms.telemetry.main import log_agent_data
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 from swarms.utils.data_to_text import data_to_text
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
-from swarms.utils.pdf_to_text import pdf_to_text
-from swarms.telemetry.main import log_agent_data
-from swarms.agents.agent_print import agent_print
 from swarms.utils.litellm_tokenizer import count_tokens
+from swarms.utils.pdf_to_text import pdf_to_text
 
 
 # Utils
@@ -2560,3 +2562,38 @@ class Agent:
         return formatter.print_table(
             f"Agent: {self.agent_name} Configuration", config_dict
         )
+
+    def talk_to(
+        self, agent: Any, task: str, img: str = None, *args, **kwargs
+    ) -> Any:
+        """
+        Talk to another agent.
+        """
+        # return agent.run(f"{agent.agent_name}: {task}", img, *args, **kwargs)
+        output = self.run(
+            f"{self.agent_name}: {task}", img, *args, **kwargs
+        )
+
+        return agent.run(
+            task=f"From {self.agent_name}: {output}",
+            img=img,
+            *args,
+            **kwargs,
+        )
+
+    def talk_to_multiple_agents(
+        self,
+        agents: List[Union[Any, Callable]],
+        task: str,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Talk to multiple agents.
+        """
+        outputs = []
+        for agent in agents:
+            output = self.talk_to(agent, task, *args, **kwargs)
+            outputs.append(output)
+
+        return outputs

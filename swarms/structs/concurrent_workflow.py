@@ -3,10 +3,9 @@ import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
@@ -101,7 +100,7 @@ class ConcurrentWorkflow(BaseSwarm):
         self,
         name: str = "ConcurrentWorkflow",
         description: str = "Execution of multiple agents concurrently",
-        agents: List[Agent] = [],
+        agents: List[Union[Agent, Callable]] = [],
         metadata_output_path: str = "agent_metadata.json",
         auto_save: bool = True,
         output_schema: BaseModel = MetadataSchema,
@@ -176,15 +175,12 @@ class ConcurrentWorkflow(BaseSwarm):
             for agent in self.agents:
                 agent.auto_generate_prompt = True
 
-    @retry(wait=wait_exponential(min=2), stop=stop_after_attempt(3))
+    # @retry(wait=wait_exponential(min=2), stop=stop_after_attempt(3))
     async def _run_agent(
         self,
         agent: Agent,
         task: str,
-        img: str,
         executor: ThreadPoolExecutor,
-        *args,
-        **kwargs,
     ) -> AgentOutputSchema:
         """
         Runs a single agent with the given task and tracks its output and metadata with retry logic.
@@ -208,7 +204,9 @@ class ConcurrentWorkflow(BaseSwarm):
         try:
             loop = asyncio.get_running_loop()
             output = await loop.run_in_executor(
-                executor, agent.run, task, img, *args, **kwargs
+                executor,
+                agent.run,
+                task,
             )
         except Exception as e:
             logger.error(
@@ -260,9 +258,9 @@ class ConcurrentWorkflow(BaseSwarm):
         # Return the agent responses as a string
         return "\n".join(self.agent_responses)
 
-    @retry(wait=wait_exponential(min=2), stop=stop_after_attempt(3))
+    # @retry(wait=wait_exponential(min=2), stop=stop_after_attempt(3))
     async def _execute_agents_concurrently(
-        self, task: str, img: str, *args, **kwargs
+        self, task: str, img: str = None, *args, **kwargs
     ) -> MetadataSchema:
         """
         Executes multiple agents concurrently with the same task, incorporating retry logic for failed executions.
@@ -284,7 +282,11 @@ class ConcurrentWorkflow(BaseSwarm):
         ) as executor:
             tasks_to_run = [
                 self._run_agent(
-                    agent, task, img, executor, *args, **kwargs
+                    agent=agent,
+                    task=task,
+                    executor=executor,
+                    *args,
+                    **kwargs,
                 )
                 for agent in self.agents
             ]
@@ -317,7 +319,7 @@ class ConcurrentWorkflow(BaseSwarm):
             )
 
     def _run(
-        self, task: str, img: str, *args, **kwargs
+        self, task: str, img: str = None, *args, **kwargs
     ) -> Union[Dict[str, Any], str]:
         """
         Runs the workflow for the given task, executes agents concurrently, and saves metadata in a production-grade manner.

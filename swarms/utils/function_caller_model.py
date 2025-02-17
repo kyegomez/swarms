@@ -53,7 +53,7 @@ class OpenAIFunctionCaller:
         self,
         system_prompt: str,
         base_model: BaseModel,
-        api_key: str = check_api_key(),
+        api_key: str = os.getenv("OPENAI_API_KEY"),
         temperature: float = 0.1,
         max_tokens: int = 5000,
         model_name: str = "gpt-4o-2024-08-06",
@@ -95,14 +95,6 @@ class OpenAIFunctionCaller:
 
         except Exception as e:
             print(f"There was an error: {e}")
-
-    def check_api_key(self):
-        self.api_key = os.getenv("OPENAI_API_KEY")
-
-        if self.api_key is None:
-            raise ValueError(
-                "API key is not set. Please set the API key using the api_key parameter."
-            )
 
     def check_model_support(self):
         # need to print the supported models
