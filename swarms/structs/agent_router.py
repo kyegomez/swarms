@@ -4,7 +4,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from typing import Union, Callable, Any
 from swarms import Agent
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.lazy_loader import lazy_import_decorator
+
+# from swarms.utils.lazy_loader import lazy_import_decorator
 from swarms.utils.auto_download_check_packages import (
     auto_check_and_download_package,
 )
@@ -13,7 +14,6 @@ from swarms.utils.auto_download_check_packages import (
 logger = initialize_logger(log_folder="agent_router")
 
 
-@lazy_import_decorator
 class AgentRouter:
     """
     Initialize the AgentRouter.

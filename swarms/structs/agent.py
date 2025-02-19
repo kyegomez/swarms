@@ -54,6 +54,7 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.pdf_to_text import pdf_to_text
+from swarms.structs.agent_roles import agent_roles
 
 
 # Utils
@@ -338,6 +339,7 @@ class Agent:
         model_name: str = None,
         llm_args: dict = None,
         load_state_path: str = None,
+        role: agent_roles = "worker",
         *args,
         **kwargs,
     ):
@@ -454,6 +456,7 @@ class Agent:
         self.model_name = model_name
         self.llm_args = llm_args
         self.load_state_path = load_state_path
+        self.role = role
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -2597,3 +2600,9 @@ class Agent:
             outputs.append(output)
 
         return outputs
+
+    def get_agent_role(self) -> str:
+        """
+        Get the role of the agent.
+        """
+        return self.role
