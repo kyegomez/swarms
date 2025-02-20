@@ -249,7 +249,9 @@ class GroupChat:
             ValueError: If any required components are missing or invalid
         """
         if len(self.agents) < 2:
-            raise ValueError("At least two agents are required for a group chat")
+            raise ValueError(
+                "At least two agents are required for a group chat"
+            )
         if self.speaker_fn is None:
             raise ValueError("No speaker function provided")
         if self.max_loops <= 0:

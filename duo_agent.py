@@ -20,11 +20,11 @@ equity_analyst_1 = Agent(
     max_tokens=4000,
     saved_state_path="equity_analyst_1.json",
     interactive=False,
-    roles="analyst"
+    roles="analyst",
 )
 
 equity_analyst_2 = Agent(
-    agent_name="Equity-Analyst-2", 
+    agent_name="Equity-Analyst-2",
     agent_description="Equity research analyst focused on technical analysis",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
@@ -39,11 +39,11 @@ equity_analyst_2 = Agent(
     max_tokens=4000,
     saved_state_path="equity_analyst_2.json",
     interactive=False,
-    roles="analyst"
+    roles="analyst",
 )
 
 # Run analysis with both analysts
 equity_analyst_1.talk_to(
     equity_analyst_2,
-    "Analyze high growth tech stocks focusing on fundamentals like revenue growth, margins, and market position. Create a detailed analysis table in markdown."
+    "Analyze high growth tech stocks focusing on fundamentals like revenue growth, margins, and market position. Create a detailed analysis table in markdown.",
 )
