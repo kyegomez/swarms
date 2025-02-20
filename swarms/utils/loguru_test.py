@@ -1,23 +1,23 @@
-from typing import Callable, Any
-import psutil
 import asyncio
+from dataclasses import dataclass
+from datetime import datetime
+from queue import Queue
+from typing import Any, Callable, Dict, List, Optional
+
+import psutil
 from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
 from rich.layout import Layout
-from rich.tree import Tree
+from rich.live import Live
+from rich.panel import Panel
 from rich.progress import (
     Progress,
-    TimeElapsedColumn,
-    TextColumn,
     SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
 )
-from rich.live import Live
+from rich.table import Table
 from rich.text import Text
-from typing import Dict, Optional, List
-from dataclasses import dataclass
-from queue import Queue
-from datetime import datetime
+from rich.tree import Tree
 
 try:
     import pynvml
@@ -400,107 +400,107 @@ class SwarmVisualizationRich:
                 await asyncio.sleep(self.refresh_rate)
 
 
-# Example usage
-if __name__ == "__main__":
-    # Create swarm metadata
-    swarm_metadata = SwarmMetadata(
-        name="Financial Advisory Swarm",
-        description="Intelligent swarm for financial analysis and advisory",
-        version="1.0.0",
-        type="hierarchical",
-        created_at=datetime.now(),
-        author="AI Research Team",
-        # tags=["finance", "analysis", "advisory"],
-        primary_objective="Provide comprehensive financial analysis and recommendations",
-        secondary_objectives=[
-            "Monitor market trends",
-            "Analyze competitor behavior",
-            "Generate investment strategies",
-        ],
-    )
+# # Example usage
+# if __name__ == "__main__":
+#     # Create swarm metadata
+#     swarm_metadata = SwarmMetadata(
+#         name="Financial Advisory Swarm",
+#         description="Intelligent swarm for financial analysis and advisory",
+#         version="1.0.0",
+#         type="hierarchical",
+#         created_at=datetime.now(),
+#         author="AI Research Team",
+#         # tags=["finance", "analysis", "advisory"],
+#         primary_objective="Provide comprehensive financial analysis and recommendations",
+#         secondary_objectives=[
+#             "Monitor market trends",
+#             "Analyze competitor behavior",
+#             "Generate investment strategies",
+#         ],
+#     )
 
-    # Create agent hierarchy with detailed parameters
-    analyst = Agent(
-        name="Financial Analyst",
-        role="Analysis",
-        description="Analyzes financial data and market trends",
-        agent_type="LLM",
-        capabilities=[
-            "data analysis",
-            "trend detection",
-            "risk assessment",
-        ],
-        parameters={"model": "gpt-4", "temperature": 0.7},
-        metadata={
-            "specialty": "Market Analysis",
-            "confidence_threshold": "0.85",
-        },
-    )
+#     # Create agent hierarchy with detailed parameters
+#     analyst = Agent(
+#         name="Financial Analyst",
+#         role="Analysis",
+#         description="Analyzes financial data and market trends",
+#         agent_type="LLM",
+#         capabilities=[
+#             "data analysis",
+#             "trend detection",
+#             "risk assessment",
+#         ],
+#         parameters={"model": "gpt-4", "temperature": 0.7},
+#         metadata={
+#             "specialty": "Market Analysis",
+#             "confidence_threshold": "0.85",
+#         },
+#     )
 
-    researcher = Agent(
-        name="Market Researcher",
-        role="Research",
-        description="Conducts market research and competitor analysis",
-        agent_type="Neural",
-        capabilities=[
-            "competitor analysis",
-            "market sentiment",
-            "trend forecasting",
-        ],
-        parameters={"batch_size": 32, "learning_rate": 0.001},
-        metadata={
-            "data_sources": "Bloomberg, Reuters",
-            "update_frequency": "1h",
-        },
-    )
+#     researcher = Agent(
+#         name="Market Researcher",
+#         role="Research",
+#         description="Conducts market research and competitor analysis",
+#         agent_type="Neural",
+#         capabilities=[
+#             "competitor analysis",
+#             "market sentiment",
+#             "trend forecasting",
+#         ],
+#         parameters={"batch_size": 32, "learning_rate": 0.001},
+#         metadata={
+#             "data_sources": "Bloomberg, Reuters",
+#             "update_frequency": "1h",
+#         },
+#     )
 
-    advisor = Agent(
-        name="Investment Advisor",
-        role="Advisory",
-        description="Provides investment recommendations",
-        agent_type="Hybrid",
-        capabilities=[
-            "portfolio optimization",
-            "risk management",
-            "strategy generation",
-        ],
-        parameters={
-            "risk_tolerance": "moderate",
-            "time_horizon": "long",
-        },
-        metadata={
-            "certification": "CFA Level 3",
-            "specialization": "Equity",
-        },
-        children=[analyst, researcher],
-    )
+#     advisor = Agent(
+#         name="Investment Advisor",
+#         role="Advisory",
+#         description="Provides investment recommendations",
+#         agent_type="Hybrid",
+#         capabilities=[
+#             "portfolio optimization",
+#             "risk management",
+#             "strategy generation",
+#         ],
+#         parameters={
+#             "risk_tolerance": "moderate",
+#             "time_horizon": "long",
+#         },
+#         metadata={
+#             "certification": "CFA Level 3",
+#             "specialization": "Equity",
+#         },
+#         children=[analyst, researcher],
+#     )
 
-    # Create visualization
-    viz = SwarmVisualizationRich(
-        swarm_metadata=swarm_metadata,
-        root_agent=advisor,
-        refresh_rate=0.1,
-    )
+#     # Create visualization
+#     viz = SwarmVisualizationRich(
+#         swarm_metadata=swarm_metadata,
+#         root_agent=advisor,
+#         refresh_rate=0.1,
+#     )
 
-    # Example of streaming output simulation
-    async def simulate_outputs():
-        await viz.stream_output(
-            advisor,
-            "Analyzing market conditions...\nGenerating investment advice...",
-        )
-        await viz.stream_output(
-            analyst,
-            "Processing financial data...\nIdentifying trends...",
-        )
-        await viz.stream_output(
-            researcher,
-            "Researching competitor movements...\nAnalyzing market share...",
-        )
+#     # Example of streaming output simulation
+#     async def simulate_outputs():
+#         await viz.stream_output(
+#             advisor,
+#             "Analyzing market conditions...\nGenerating investment advice...",
+#         )
+#         await viz.stream_output(
+#             analyst,
+#             "Processing financial data...\nIdentifying trends...",
+#         )
+#         await viz.stream_output(
+#             researcher,
+#             "Researching competitor movements...\nAnalyzing market share...",
+#         )
 
-    # Run the visualization
-    async def main():
-        viz_task = asyncio.create_task(viz.start())
-        await simulate_outputs()
-        await viz_task
+#     # Run the visualization
+#     async def main():
+#         viz_task = asyncio.create_task(viz.start())
+#         await simulate_outputs()
+#         await viz_task
 
-    asyncio.run(main())
+#     asyncio.run(main())
