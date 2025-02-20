@@ -1,7 +1,3 @@
-Below is a revised version of the Swarms Chat UI documentation. It improves the flow, adds detailed examples for every use case, and clarifies the installation and usage instructions for a more reliable experience.
-
----
-
 # Swarms Chat UI Documentation
 
 The Swarms Chat interface provides a customizable, multi-agent chat experience using Gradio. It supports various specialized AI agents—from finance to healthcare and news analysis—by leveraging Swarms models.

@@ -1,5 +1,6 @@
 import json
 from typing import List, Any, Callable
+import re
 
 from swarms.utils.parse_code import extract_code_from_markdown
 from swarms.utils.loguru_logger import initialize_logger
@@ -33,9 +34,100 @@ def parse_and_execute_json(
 
     if parse_md:
         try:
-            json_string = extract_code_from_markdown(json_string)
+            code_blocks = re.findall(
+                r"```(?:json)?\s*([\s\S]*?)```", json_string
+            )
+            if code_blocks and len(code_blocks) > 1:
+                function_dict = {
+                    func.__name__: func for func in functions
+                }
+
+                def process_json_block(json_block: str) -> dict:
+                    try:
+                        json_block = json_block.strip()
+                        if not json_block:
+                            raise ValueError("JSON block is empty")
+                        data = json.loads(json_block)
+                        function_list = []
+                        if "functions" in data:
+                            function_list = data["functions"]
+                        elif "function" in data:
+                            function_list = [data["function"]]
+                        else:
+                            function_list = [data]
+                        if isinstance(function_list, dict):
+                            function_list = [function_list]
+                        function_list = [
+                            f for f in function_list if f
+                        ]
+
+                        block_results = {}
+                        for function_data in function_list:
+                            function_name = function_data.get("name")
+                            parameters = function_data.get(
+                                "parameters", {}
+                            )
+
+                            if not function_name:
+                                logger.warning(
+                                    "Function data missing 'name' field"
+                                )
+                                continue
+
+                            if function_name not in function_dict:
+                                logger.warning(
+                                    f"Function '{function_name}' not found"
+                                )
+                                block_results[function_name] = (
+                                    "Error: Function not found"
+                                )
+                                continue
+
+                            for attempt in range(max_retries):
+                                try:
+                                    result = function_dict[
+                                        function_name
+                                    ](**parameters)
+                                    block_results[function_name] = (
+                                        str(result)
+                                    )
+                                    logger.info(
+                                        f"Result for {function_name}: {result}"
+                                    )
+                                    break
+                                except Exception as e:
+                                    logger.error(
+                                        f"Attempt {attempt + 1} failed for {function_name}: {e}"
+                                    )
+                                    if attempt == max_retries - 1:
+                                        block_results[
+                                            function_name
+                                        ] = f"Error after {max_retries} attempts: {str(e)}"
+                        return block_results
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to process JSON block: {e}"
+                        )
+                        return {
+                            "error": f"Failed to process block: {str(e)}"
+                        }
+
+                combined_results = {}
+                for idx, block in enumerate(code_blocks, start=1):
+                    combined_results[f"block_{idx}"] = (
+                        process_json_block(block)
+                    )
+                return json.dumps(
+                    {"results": combined_results}, indent=4
+                )
+            elif code_blocks:
+                json_string = code_blocks[0]
+            else:
+                json_string = extract_code_from_markdown(json_string)
         except Exception as e:
-            logger.error(f"Error extracting code from Markdown: {e}")
+            logger.error(
+                f"Error extracting code blocks from Markdown: {e}"
+            )
             return {"error": f"Markdown parsing failed: {str(e)}"}
 
     try:

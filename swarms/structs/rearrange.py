@@ -263,11 +263,11 @@ class AgentRearrange(BaseSwarm):
                     )
                 agents_in_flow.append(agent_name)
 
-        # If the length of the agents does not equal the length of the agents in flow
-        if len(set(agents_in_flow)) != len(agents_in_flow):
-            raise ValueError(
-                "Duplicate agent names in the flow are not allowed."
-            )
+        # # If the length of the agents does not equal the length of the agents in flow
+        # if len(set(agents_in_flow)) != len(agents_in_flow):
+        #     raise ValueError(
+        #         "Duplicate agent names in the flow are not allowed."
+        #     )
 
         logger.info(f"Flow: {self.flow} is valid.")
         return True
