@@ -320,7 +320,7 @@ agent = Agent(
 
 # Run the agent with a sample task
 agent.run(
-    "What are the components of a startups stock incentive equity plan"
+    "What are the components of a startup's stock incentive equity plan"
 )
 ```
 
@@ -499,7 +499,7 @@ llm = GPT4VisionAPI(
 task = (
     "Analyze this image of an assembly line and identify any issues such as"
     " misaligned parts, defects, or deviations from the standard assembly"
-    " process. IF there is anything unsafe in the image, explain why it is"
+    " process. If there is anything unsafe in the image, explain why it is"
     " unsafe and how it could be improved."
 )
 img = "assembly_line.jpg"
