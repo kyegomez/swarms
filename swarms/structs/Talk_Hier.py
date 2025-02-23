@@ -31,7 +31,8 @@ class AgentRole(Enum):
 @dataclass
 class CommunicationEvent:
     """Represents a structured communication event between agents."""
-    message: str 
+
+    message: str
     background: Optional[str] = None
     intermediate_output: Optional[Dict[str, Any]] = None
     sender: str = ""
@@ -96,7 +97,7 @@ class TalkHier:
                 import re
 
                 json_match = re.search(r"\{.*\}", json_str, re.DOTALL)
-                if (json_match):
+                if json_match:
                     return json.loads(json_match.group())
                 # Try extracting from markdown code blocks
                 code_block_match = re.search(
@@ -104,7 +105,7 @@ class TalkHier:
                     json_str,
                     re.DOTALL,
                 )
-                if (code_block_match):
+                if code_block_match:
                     return json.loads(code_block_match.group(1))
             except Exception as e:
                 logger.warning(f"Failed to extract JSON: {str(e)}")
@@ -173,7 +174,9 @@ Output all responses in strict JSON format:
             system_prompt=self._get_criteria_generator_prompt(),
             model_name=self.model_name,
             max_loops=1,
-            saved_state_path=str(self.base_path / "criteria_generator.json"),
+            saved_state_path=str(
+                self.base_path / "criteria_generator.json"
+            ),
             verbose=True,
         )
 
@@ -350,77 +353,97 @@ Output all responses in strict JSON format:
     }
 }"""
 
-    def _generate_criteria_for_task(self, task: str) -> Dict[str, Any]:
+    def _generate_criteria_for_task(
+        self, task: str
+    ) -> Dict[str, Any]:
         """Generate evaluation criteria for the given task."""
         try:
             criteria_input = {
                 "task": task,
-                "instruction": "Generate specific evaluation criteria for this task."
+                "instruction": "Generate specific evaluation criteria for this task.",
             }
-            
-            criteria_response = self.criteria_generator.run(json.dumps(criteria_input))
-            self.conversation.add(
-                role="Criteria-Generator",
-                content=criteria_response
+
+            criteria_response = self.criteria_generator.run(
+                json.dumps(criteria_input)
             )
-            
+            self.conversation.add(
+                role="Criteria-Generator", content=criteria_response
+            )
+
             return self._safely_parse_json(criteria_response)
         except Exception as e:
             logger.error(f"Error generating criteria: {str(e)}")
             return {"criteria": {}}
 
-    def _create_comm_event(self, sender: Agent, receiver: Agent, response: Dict) -> CommunicationEvent:
+    def _create_comm_event(
+        self, sender: Agent, receiver: Agent, response: Dict
+    ) -> CommunicationEvent:
         """Create a structured communication event between agents."""
         return CommunicationEvent(
             message=response.get("message", ""),
             background=response.get("background", ""),
-            intermediate_output=response.get("intermediate_output", {}),
+            intermediate_output=response.get(
+                "intermediate_output", {}
+            ),
             sender=sender.agent_name,
             receiver=receiver.agent_name,
         )
 
-    def _evaluate_content(self, content: Union[str, Dict], task: str) -> Dict[str, Any]:
+    def _evaluate_content(
+        self, content: Union[str, Dict], task: str
+    ) -> Dict[str, Any]:
         """Coordinate evaluation process with parallel evaluator execution."""
         try:
-            content_dict = self._safely_parse_json(content) if isinstance(content, str) else content
+            content_dict = (
+                self._safely_parse_json(content)
+                if isinstance(content, str)
+                else content
+            )
             criteria_data = self._generate_criteria_for_task(task)
 
             def run_evaluator(evaluator, eval_input):
                 response = evaluator.run(json.dumps(eval_input))
                 return {
-                    "evaluator_id": evaluator.agent_name, 
-                    "evaluation": self._safely_parse_json(response)
+                    "evaluator_id": evaluator.agent_name,
+                    "evaluation": self._safely_parse_json(response),
                 }
 
-            eval_inputs = [{
-                "task": task,
-                "content": content_dict,
-                "criteria": criteria_data.get("criteria", {})
-            } for _ in self.evaluators]
+            eval_inputs = [
+                {
+                    "task": task,
+                    "content": content_dict,
+                    "criteria": criteria_data.get("criteria", {}),
+                }
+                for _ in self.evaluators
+            ]
 
             with ThreadPoolExecutor() as executor:
-                evaluations = list(executor.map(
-                    lambda x: run_evaluator(*x), 
-                    zip(self.evaluators, eval_inputs)
-                ))
+                evaluations = list(
+                    executor.map(
+                        lambda x: run_evaluator(*x),
+                        zip(self.evaluators, eval_inputs),
+                    )
+                )
 
             supervisor_input = {
                 "evaluations": evaluations,
                 "task": task,
-                "instruction": "Synthesize feedback"
+                "instruction": "Synthesize feedback",
             }
-            supervisor_response = self.main_supervisor.run(json.dumps(supervisor_input))
-            aggregated_eval = self._safely_parse_json(supervisor_response)
+            supervisor_response = self.main_supervisor.run(
+                json.dumps(supervisor_input)
+            )
+            aggregated_eval = self._safely_parse_json(
+                supervisor_response
+            )
 
             # Track communication
             comm_event = self._create_comm_event(
-                self.main_supervisor, 
-                self.revisor, 
-                aggregated_eval
+                self.main_supervisor, self.revisor, aggregated_eval
             )
             self.conversation.add(
                 role="Communication",
-                content=json.dumps(asdict(comm_event))
+                content=json.dumps(asdict(comm_event)),
             )
 
             return aggregated_eval
@@ -455,11 +478,15 @@ Output all responses in strict JSON format:
             # Collect all unique criteria from evaluators
             all_criteria = set()
             for eval_data in evaluations:
-                categories = eval_data.get("scores", {}).get("categories", {})
+                categories = eval_data.get("scores", {}).get(
+                    "categories", {}
+                )
                 all_criteria.update(categories.keys())
 
             # Initialize score aggregation
-            aggregated_scores = {criterion: [] for criterion in all_criteria}
+            aggregated_scores = {
+                criterion: [] for criterion in all_criteria
+            }
             overall_scores = []
             all_feedback = []
 
@@ -467,7 +494,7 @@ Output all responses in strict JSON format:
             for eval_data in evaluations:
                 scores = eval_data.get("scores", {})
                 overall_scores.append(scores.get("overall", 0.5))
-                
+
                 categories = scores.get("categories", {})
                 for criterion in all_criteria:
                     if criterion in categories:
@@ -508,32 +535,40 @@ Output all responses in strict JSON format:
         try:
             # Get evaluations and supervisor selection
             evaluation_result = self._evaluate_content(content, task)
-            
+
             # Extract selected evaluation and supervisor reasoning
-            selected_evaluation = evaluation_result.get("selected_evaluation", {})
-            supervisor_reasoning = evaluation_result.get("supervisor_reasoning", {})
-            
+            selected_evaluation = evaluation_result.get(
+                "selected_evaluation", {}
+            )
+            supervisor_reasoning = evaluation_result.get(
+                "supervisor_reasoning", {}
+            )
+
             # Prepare revision input with selected evaluation
             revision_input = {
                 "content": content,
                 "evaluation": selected_evaluation,
                 "supervisor_feedback": supervisor_reasoning,
-                "instruction": "Revise the content based on the selected evaluation feedback"
+                "instruction": "Revise the content based on the selected evaluation feedback",
             }
 
             # Get revision from content generator
-            revision_response = self.generator.run(json.dumps(revision_input))
-            revised_content = self._safely_parse_json(revision_response)
+            revision_response = self.generator.run(
+                json.dumps(revision_input)
+            )
+            revised_content = self._safely_parse_json(
+                revision_response
+            )
 
             return {
                 "content": revised_content,
-                "evaluation": evaluation_result
+                "evaluation": evaluation_result,
             }
         except Exception as e:
             logger.error(f"Evaluation and revision error: {str(e)}")
             return {
                 "content": content,
-                "evaluation": self._get_fallback_evaluation()
+                "evaluation": self._get_fallback_evaluation(),
             }
 
     def run(self, task: str) -> Dict[str, Any]:
@@ -579,22 +614,34 @@ Output all responses in strict JSON format:
                 logger.info(f"Starting iteration {iteration + 1}")
 
                 # Evaluate and revise content
-                result = self._evaluate_and_revise(current_content, task)
+                result = self._evaluate_and_revise(
+                    current_content, task
+                )
                 evaluation = result["evaluation"]
                 current_content = result["content"]
 
                 # Check if quality threshold is met
-                selected_eval = evaluation.get("selected_evaluation", {})
-                overall_score = selected_eval.get("scores", {}).get("overall", 0.0)
-                
+                selected_eval = evaluation.get(
+                    "selected_evaluation", {}
+                )
+                overall_score = selected_eval.get("scores", {}).get(
+                    "overall", 0.0
+                )
+
                 if overall_score >= self.quality_threshold:
-                    logger.info("Quality threshold met, returning content")
+                    logger.info(
+                        "Quality threshold met, returning content"
+                    )
                     return {
-                        "content": current_content.get("content", {}).get("main_body", ""),
+                        "content": current_content.get(
+                            "content", {}
+                        ).get("main_body", ""),
                         "final_score": overall_score,
                         "iterations": iteration + 1,
                         "metadata": {
-                            "content_metadata": current_content.get("content", {}).get("metadata", {}),
+                            "content_metadata": current_content.get(
+                                "content", {}
+                            ).get("metadata", {}),
                             "evaluation": evaluation,
                         },
                     }
@@ -665,18 +712,18 @@ Output all responses in strict JSON format:
                 )
 
 
-if __name__ == "__main__":
-    try:
-        talkhier = TalkHier(
-            max_iterations=1,
-            quality_threshold=0.8,
-            model_name="gpt-4o",
-            return_string=False,
-        )
+# if __name__ == "__main__":
+#     try:
+#         talkhier = TalkHier(
+#             max_iterations=1,
+#             quality_threshold=0.8,
+#             model_name="gpt-4o",
+#             return_string=False,
+#         )
 
-        # Ask for user input
-        task = input("Enter the content generation task description: ")
-        result = talkhier.run(task)
+#         # Ask for user input
+#         task = input("Enter the content generation task description: ")
+#         result = talkhier.run(task)
 
-    except Exception as e:
-        logger.error(f"Error in main execution: {str(e)}")
+#     except Exception as e:
+#         logger.error(f"Error in main execution: {str(e)}")

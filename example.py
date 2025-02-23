@@ -24,7 +24,7 @@ agent = Agent(
     max_tokens=4000,  # max output tokens
     saved_state_path="agent_00.json",
     interactive=False,
-    roles="director",
+    role="director",
 )
 
 agent.run(

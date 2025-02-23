@@ -109,6 +109,7 @@ class ConcurrentWorkflow(BaseSwarm):
         agent_responses: list = [],
         auto_generate_prompts: bool = False,
         max_workers: int = None,
+        user_interface: bool = True,
         *args,
         **kwargs,
     ):
@@ -130,9 +131,14 @@ class ConcurrentWorkflow(BaseSwarm):
         self.agent_responses = agent_responses
         self.auto_generate_prompts = auto_generate_prompts
         self.max_workers = max_workers or os.cpu_count()
+        self.user_interface = user_interface
         self.tasks = []  # Initialize tasks list
 
         self.reliability_check()
+
+    def disable_agent_prints(self):
+        for agent in self.agents:
+            agent.no_print = False
 
     def reliability_check(self):
         try:
@@ -176,62 +182,6 @@ class ConcurrentWorkflow(BaseSwarm):
                 agent.auto_generate_prompt = True
 
     # @retry(wait=wait_exponential(min=2), stop=stop_after_attempt(3))
-    async def _run_agent(
-        self,
-        agent: Agent,
-        task: str,
-        executor: ThreadPoolExecutor,
-    ) -> AgentOutputSchema:
-        """
-        Runs a single agent with the given task and tracks its output and metadata with retry logic.
-
-        Args:
-            agent (Agent): The agent instance to run.
-            task (str): The task or query to give to the agent.
-            img (str): The image to be processed by the agent.
-            executor (ThreadPoolExecutor): The thread pool executor to use for running the agent task.
-
-        Returns:
-            AgentOutputSchema: The metadata and output from the agent's execution.
-
-        Example:
-            >>> async def run_agent_example():
-            >>>     executor = ThreadPoolExecutor()
-            >>>     agent_output = await workflow._run_agent(agent=Agent(), task="Example task", img="example.jpg", executor=executor)
-            >>>     print(agent_output)
-        """
-        start_time = datetime.now()
-        try:
-            loop = asyncio.get_running_loop()
-            output = await loop.run_in_executor(
-                executor,
-                agent.run,
-                task,
-            )
-        except Exception as e:
-            logger.error(
-                f"Error running agent {agent.agent_name}: {e}"
-            )
-            raise
-
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-
-        agent_output = AgentOutputSchema(
-            run_id=uuid.uuid4().hex,
-            agent_name=agent.agent_name,
-            task=task,
-            output=output,
-            start_time=start_time,
-            end_time=end_time,
-            duration=duration,
-        )
-
-        logger.info(
-            f"Agent {agent.agent_name} completed task: {task} in {duration:.2f} seconds."
-        )
-
-        return agent_output
 
     def transform_metadata_schema_to_str(
         self, schema: MetadataSchema
@@ -258,47 +208,6 @@ class ConcurrentWorkflow(BaseSwarm):
         # Return the agent responses as a string
         return "\n".join(self.agent_responses)
 
-    # @retry(wait=wait_exponential(min=2), stop=stop_after_attempt(3))
-    async def _execute_agents_concurrently(
-        self, task: str, img: str = None, *args, **kwargs
-    ) -> MetadataSchema:
-        """
-        Executes multiple agents concurrently with the same task, incorporating retry logic for failed executions.
-
-        Args:
-            task (str): The task or query to give to all agents.
-            img (str): The image to be processed by the agents.
-
-        Returns:
-            MetadataSchema: The aggregated metadata and outputs from all agents.
-
-        Example:
-            >>> async def execute_agents_example():
-            >>>     metadata_schema = await workflow._execute_agents_concurrently(task="Example task", img="example.jpg")
-            >>>     print(metadata_schema)
-        """
-        with ThreadPoolExecutor(
-            max_workers=os.cpu_count()
-        ) as executor:
-            tasks_to_run = [
-                self._run_agent(
-                    agent=agent,
-                    task=task,
-                    executor=executor,
-                    *args,
-                    **kwargs,
-                )
-                for agent in self.agents
-            ]
-
-            agent_outputs = await asyncio.gather(*tasks_to_run)
-        return MetadataSchema(
-            swarm_id=uuid.uuid4().hex,
-            task=task,
-            description=self.description,
-            agents=agent_outputs,
-        )
-
     def save_metadata(self):
         """
         Saves the metadata to a JSON file based on the auto_save flag.
@@ -322,7 +231,7 @@ class ConcurrentWorkflow(BaseSwarm):
         self, task: str, img: str = None, *args, **kwargs
     ) -> Union[Dict[str, Any], str]:
         """
-        Runs the workflow for the given task, executes agents concurrently, and saves metadata in a production-grade manner.
+        Runs the workflow for the given task, executes agents concurrently using ThreadPoolExecutor, and saves metadata.
 
         Args:
             task (str): The task or query to give to all agents.
@@ -339,10 +248,50 @@ class ConcurrentWorkflow(BaseSwarm):
         logger.info(
             f"Running concurrent workflow with {len(self.agents)} agents."
         )
-        self.output_schema = asyncio.run(
-            self._execute_agents_concurrently(
-                task, img, *args, **kwargs
+
+        def run_agent(agent: Agent, task: str) -> AgentOutputSchema:
+            start_time = datetime.now()
+            try:
+                output = agent.run(task)
+            except Exception as e:
+                logger.error(
+                    f"Error running agent {agent.agent_name}: {e}"
+                )
+                raise
+
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+
+            agent_output = AgentOutputSchema(
+                run_id=uuid.uuid4().hex,
+                agent_name=agent.agent_name,
+                task=task,
+                output=output,
+                start_time=start_time,
+                end_time=end_time,
+                duration=duration,
             )
+
+            logger.info(
+                f"Agent {agent.agent_name} completed task: {task} in {duration:.2f} seconds."
+            )
+
+            return agent_output
+
+        with ThreadPoolExecutor(
+            max_workers=os.cpu_count()
+        ) as executor:
+            agent_outputs = list(
+                executor.map(
+                    lambda agent: run_agent(agent, task), self.agents
+                )
+            )
+
+        self.output_schema = MetadataSchema(
+            swarm_id=uuid.uuid4().hex,
+            task=task,
+            description=self.description,
+            agents=agent_outputs,
         )
 
         self.save_metadata()
@@ -351,9 +300,7 @@ class ConcurrentWorkflow(BaseSwarm):
             return self.transform_metadata_schema_to_str(
                 self.output_schema
             )
-
         else:
-            # Return metadata as a dictionary
             return self.output_schema.model_dump_json(indent=4)
 
     def run(
@@ -390,7 +337,8 @@ class ConcurrentWorkflow(BaseSwarm):
             self.tasks.append(task)
 
         try:
-            return self._run(task, img, *args, **kwargs)
+            outputs = self._run(task, img, *args, **kwargs)
+            return outputs
         except ValueError as e:
             logger.error(f"Invalid device specified: {e}")
             raise e
@@ -523,26 +471,12 @@ class ConcurrentWorkflow(BaseSwarm):
 
 # if __name__ == "__main__":
 #     # Assuming you've already initialized some agents outside of this class
-#     model = OpenAIChat(
-#         api_key=os.getenv("OPENAI_API_KEY"),
-#         model_name="gpt-4o-mini",
-#         temperature=0.1,
-#     )
 #     agents = [
 #         Agent(
 #             agent_name=f"Financial-Analysis-Agent-{i}",
 #             system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#             llm=model,
+#             model_name="gpt-4o",
 #             max_loops=1,
-#             autosave=True,
-#             dashboard=False,
-#             verbose=True,
-#             dynamic_temperature_enabled=True,
-#             saved_state_path=f"finance_agent_{i}.json",
-#             user_name="swarms_corp",
-#             retry_attempts=1,
-#             context_length=200000,
-#             return_step_meta=False,
 #         )
 #         for i in range(3)  # Adjust number of agents as needed
 #     ]

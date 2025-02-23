@@ -11,10 +11,6 @@ import psutil
 import requests
 import toml
 
-from swarms.utils.loguru_logger import initialize_logger
-
-logger = initialize_logger(log_folder="capture_sys_data")
-
 
 # Helper functions
 def generate_user_id():
@@ -262,7 +258,8 @@ def capture_system_data() -> Dict[str, str]:
 
         return system_data
     except Exception as e:
-        logger.error("Failed to capture system data: {}", e)
+        # logger.error("Failed to capture system data: {}", e)
+        print(f"Failed to capture system data: {e}")
         return {}
 
 

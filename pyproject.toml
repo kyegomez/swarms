@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "7.2.7"
+version = "7.4.0"
 description = "Swarms - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -75,6 +75,7 @@ aiofiles = "*"
 rich = "*"
 numpy = "*"
 litellm = "*"
+torch = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
@@ -114,3 +115,10 @@ exclude = '''
 )/
 '''
 
+
+
+[tool.maturin]
+module-name = "swarms_rust"
+
+[tool.maturin.build]
+features = ["extension-module"]

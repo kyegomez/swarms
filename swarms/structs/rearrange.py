@@ -113,6 +113,7 @@ class AgentRearrange(BaseSwarm):
         all_gpus: bool = True,
         no_use_clusterops: bool = True,
         autosave: bool = True,
+        return_entire_history: bool = False,
         *args,
         **kwargs,
     ):
@@ -141,7 +142,7 @@ class AgentRearrange(BaseSwarm):
         self.all_gpus = all_gpus
         self.no_use_clusterops = no_use_clusterops
         self.autosave = autosave
-
+        self.return_entire_history = return_entire_history
         self.output_schema = AgentRearrangeOutput(
             input=AgentRearrangeInput(
                 swarm_id=id,
@@ -463,6 +464,9 @@ class AgentRearrange(BaseSwarm):
             logger.info("Task execution completed")
 
             if self.return_json:
+                return self.output_schema.model_dump_json(indent=4)
+
+            if self.return_entire_history:
                 return self.output_schema.model_dump_json(indent=4)
 
             # Handle different output types

@@ -1,3 +1,4 @@
+import json
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
@@ -5,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
-from swarms import Agent
+from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import logger
 
 
@@ -302,6 +303,25 @@ class AgentRegistry:
             logger.error(f"Error: {e}")
             raise e
 
+    def find_agent_by_id(self, agent_id: str) -> Optional[Agent]:
+        """
+        Find an agent by its ID.
+        """
+        return self.agents.get(agent_id)
+
+    def agents_to_json(self) -> str:
+        """
+        Converts all agents in the registry to a JSON string.
+
+        Returns:
+            str: A JSON string representation of all agents, keyed by their names.
+        """
+        agents_dict = {
+            name: agent.to_dict()
+            for name, agent in self.agents.items()
+        }
+        return json.dumps(agents_dict, indent=4)
+
     def agent_to_py_model(self, agent: Agent):
         """
         Converts an agent to a Pydantic model.
@@ -328,3 +348,30 @@ class AgentRegistry:
         )
 
         self.agent_registry.agents.append(schema)
+
+
+# if __name__ == "__main__":
+#     from swarms import Agent
+
+#     agent1 = Agent(agent_name="test_agent_1")
+#     agent2 = Agent(agent_name="test_agent_2")
+#     agent3 = Agent(agent_name="test_agent_3")
+#     print(f"Created agents: {agent1}, {agent2}, {agent3}")
+
+#     registry = AgentRegistry()
+#     print(f"Created agent registry: {registry}")
+
+#     registry.add(agent1)
+#     registry.add(agent2)
+#     registry.add(agent3)
+#     print(f"Added agents to registry: {agent1}, {agent2}, {agent3}")
+
+#     all_agents = registry.return_all_agents()
+#     print(f"All agents in registry: {all_agents}")
+
+#     found_agent1 = registry.find_agent_by_name("test_agent_1")
+#     found_agent2 = registry.find_agent_by_name("test_agent_2")
+#     found_agent3 = registry.find_agent_by_name("test_agent_3")
+#     print(f"Found agents by name: {found_agent1}, {found_agent2}, {found_agent3}")
+
+#     print(registry.agents_to_json())

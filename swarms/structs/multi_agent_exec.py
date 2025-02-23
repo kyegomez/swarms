@@ -1,7 +1,9 @@
 import asyncio
 import os
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import (
+    ThreadPoolExecutor,
+)
 from dataclasses import dataclass
 from typing import Any, List
 
@@ -413,29 +415,141 @@ def run_agents_with_tasks_concurrently(
     )
 
 
+# from joblib import Parallel, delayed
+
+
+# def run_agents_joblib(
+#     agents: List[Any],
+#     tasks: List[str] = [],
+#     img: List[str] = None,
+#     max_workers: int = None,
+#     max_loops: int = 1,
+#     prefer: str = "threads",
+# ) -> List[Any]:
+#     """
+#     Executes a list of agents with their corresponding tasks concurrently using joblib.
+
+#     Each agent is expected to have a .run() method that accepts at least:
+#         - task: A string indicating the task to execute.
+#         - img: (Optional) A string representing image input.
+
+#     Args:
+#         agents (List[Any]): A list of agent instances.
+#         tasks (List[str], optional): A list of task strings. If provided, each agent gets a task.
+#                                      If fewer tasks than agents, the first task is reused.
+#         img (List[str], optional): A list of image strings. If provided, each agent gets an image.
+#                                    If fewer images than agents, the first image is reused.
+#         max_workers (int, optional): The maximum number of processes to use.
+#                                      Defaults to all available CPU cores.
+#         max_loops (int, optional): Number of times to execute the whole batch.
+
+#     Returns:
+#         List[Any]: The list of results returned by each agent’s run() method.
+#     """
+#     max_workers = max_workers or os.cpu_count()
+#     results = []
+
+#     for _ in range(max_loops):
+#         results.extend(
+#             Parallel(n_jobs=max_workers, prefer=prefer)(
+#                 delayed(lambda a, t, i: a.run(task=t, img=i))(
+#                     agent,
+#                     (
+#                         tasks[idx]
+#                         if tasks and idx < len(tasks)
+#                         else (tasks[0] if tasks else "")
+#                     ),
+#                     (
+#                         img[idx]
+#                         if img and idx < len(img)
+#                         else (img[0] if img else None)
+#                     ),
+#                 )
+#                 for idx, agent in enumerate(agents)
+#             )
+#         )
+
+#     return results
+
+
 # # Example usage:
-# # Initialize your agents with the same model to avoid re-creating it
-# agents = [
-#     Agent(
-#         agent_name=f"Financial-Analysis-Agent_parallel_swarm{i}",
-#         system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
-#         llm=model,
-#         max_loops=1,
-#         autosave=True,
-#         dashboard=False,
-#         verbose=False,
-#         dynamic_temperature_enabled=False,
-#         saved_state_path=f"finance_agent_{i}.json",
-#         user_name="swarms_corp",
-#         retry_attempts=1,
-#         context_length=200000,
-#         return_step_meta=False,
+# if __name__ == '__main__':
+#     # Dummy Agent class for demonstration.
+#     class Agent:
+#         def __init__(self, agent_name, max_loops, model_name):
+#             self.agent_name = agent_name
+#             self.max_loops = max_loops
+#             self.model_name = model_name
+
+#         def run(self, task: str, img: str = None) -> str:
+#             img_info = f" with image '{img}'" if img else ""
+#             return (f"{self.agent_name} using model '{self.model_name}' processed task: '{task}'{img_info}")
+
+#     # Create a few Agent instances.
+#     agents = [
+#         Agent(
+#             agent_name=f"Financial-Analysis-Agent_parallel_swarm{i}",
+#             max_loops=1,
+#             model_name="gpt-4o-mini",
+#         )
+#         for i in range(3)
+#     ]
+
+#     task = "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
+#     outputs = run_agents_process_pool(agents, tasks=[task])
+
+#     for i, output in enumerate(outputs):
+#         print(f"Output from agent {i+1}:\n{output}")
+
+# # Example usage:
+# if __name__ == '__main__':
+#     # A sample agent class with a run method.
+#     class SampleAgent:
+#         def __init__(self, name):
+#             self.name = name
+
+#         def run(self, task, device, device_id, no_clusterops):
+#             # Simulate some processing.
+#             return (f"Agent {self.name} processed task '{task}' on {device} "
+#                     f"(device_id={device_id}), no_clusterops={no_clusterops}")
+
+#     # Create a list of sample agents.
+#     agents = [SampleAgent(f"Agent_{i}") for i in range(5)]
+#     # Define tasks; if fewer tasks than agents, the first task will be reused.
+#     tasks = ["task1", "task2", "task3"]
+
+#     outputs = run_agents_with_tasks_concurrently(
+#         agents=agents,
+#         tasks=tasks,
+#         max_workers=4,
+#         device="cpu",
+#         device_id=1,
+#         all_cores=True,
+#         no_clusterops=False
 #     )
-#     for i in range(5)  # Assuming you want 10 agents
-# ]
 
-# task = "How can I establish a ROTH IRA to buy stocks and get a tax break? What are the criteria"
-# outputs = run_agents_concurrently(agents, task)
+#     for output in outputs:
+#         print(output)
 
-# for i, output in enumerate(outputs):
-#     print(f"Output from agent {i+1}:\n{output}")
+
+# # Example usage:
+# if __name__ == "__main__":
+#     # Initialize your agents (for example, 3 agents)
+#     agents = [
+#         Agent(
+#             agent_name=f"Financial-Analysis-Agent_parallel_swarm{i}",
+#             max_loops=1,
+#             model_name="gpt-4o-mini",
+#         )
+#         for i in range(3)
+#     ]
+
+#     # Generate a list of tasks.
+#     tasks = [
+#         "How can I establish a ROTH IRA to buy stocks and get a tax break?",
+#         "What are the criteria for establishing a ROTH IRA?",
+#         "What are the tax benefits of a ROTH IRA?",
+#         "How to buy stocks using a ROTH IRA?",
+#         "What are the limitations of a ROTH IRA?",
+#     ]
+#     outputs = run_agents_joblib(agents, tasks)

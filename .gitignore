@@ -9,6 +9,8 @@ video/
 artifacts_three
 dataframe/
 .ruff_cache
+target/
+Cargo.lock
 .pytest_cache
 static/generated
 runs

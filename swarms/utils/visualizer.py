@@ -1,7 +1,6 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from queue import Queue
 from typing import Any, Callable, Dict, List, Optional
 
 import psutil
@@ -19,6 +18,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
+from swarms.structs.agent import Agent
+
 try:
     import pynvml
 
@@ -30,59 +31,47 @@ except ImportError:
 
 @dataclass
 class SwarmMetadata:
-    name: str
-    description: str
-    version: str
-    type: str  # hierarchical, parallel, sequential
-    created_at: datetime
-    author: str
-    tags: List[str]
-    primary_objective: str
-    secondary_objectives: List[str]
-
-
-@dataclass
-class Agent:
-    name: str
-    role: str
-    description: str
-    agent_type: str  # e.g., "LLM", "Neural", "Rule-based"
-    capabilities: List[str]
-    parameters: Dict[str, any]
-    metadata: Dict[str, str]
-    children: List["Agent"] = None
-    parent: Optional["Agent"] = None
-    output_stream: Queue = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    type: Optional[str] = None  # hierarchical, parallel, sequential
+    created_at: Optional[datetime] = None
+    author: Optional[str] = None
+    tags: Optional[List[str]] = None
+    primary_objective: Optional[str] = None
+    secondary_objectives: Optional[List[str]] = None
 
     def __post_init__(self):
-        self.children = self.children or []
-        self.output_stream = Queue()
-
-    @property
-    def hierarchy_level(self) -> int:
-        level = 0
-        current = self
-        while current.parent:
-            level += 1
-            current = current.parent
-        return level
+        self.tags = self.tags or []
+        self.secondary_objectives = self.secondary_objectives or []
+        self.created_at = self.created_at or datetime.now()
 
 
 class SwarmVisualizationRich:
     def __init__(
         self,
         swarm_metadata: SwarmMetadata,
-        root_agent: Agent,
+        agents: List[Agent],
         update_resources: bool = True,
         refresh_rate: float = 0.1,
     ):
+        """
+        Initializes the visualizer with a list of agents.
+
+        Args:
+            swarm_metadata (SwarmMetadata): Metadata for the swarm.
+            agents (List[Agent]): List of root agents.
+            update_resources (bool): Whether to update system resource stats.
+            refresh_rate (float): Refresh rate for the live visualization.
+        """
         self.swarm_metadata = swarm_metadata
-        self.root_agent = root_agent
+        self.agents = agents
         self.update_resources = update_resources
         self.refresh_rate = refresh_rate
         self.console = Console()
         self.live = None
-        self.output_history = {}
+        # A dictionary mapping agent names to list of output messages
+        self.output_history: Dict[str, List[Dict[str, Any]]] = {}
 
         # System monitoring
         self.cores_available = 0
@@ -100,96 +89,112 @@ class SwarmVisualizationRich:
         minutes, seconds = divmod(remainder, 60)
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-    def _build_agent_tree(
-        self, agent: Agent, tree: Optional[Tree] = None
-    ) -> Tree:
-        """Builds a detailed tree visualization of the agent hierarchy."""
+    def _build_agent_tree(self, agents: List[Agent]) -> Tree:
+        """
+        Builds a detailed tree visualization for a list of agents.
+
+        Args:
+            agents (List[Agent]): The list of root agents.
+
+        Returns:
+            Tree: A rich Tree object displaying agent metadata.
+        """
+        tree = Tree("[bold underline]Agents[/bold underline]")
+        for agent in agents:
+            self._add_agent_to_tree(agent, tree)
+        return tree
+
+    def _add_agent_to_tree(self, agent: Agent, tree: Tree) -> None:
+        """
+        Recursively adds an agent and its children to the given tree.
+
+        Args:
+            agent (Agent): The agent to add.
+            tree (Tree): The tree to update.
+        """
         agent_info = [
             f"[bold cyan]{agent.name}[/bold cyan]",
             f"[yellow]Role:[/yellow] {agent.role}",
-            f"[green]Type:[/green] {agent.agent_type}",
-            f"[blue]Level:[/blue] {agent.hierarchy_level}",
-            f"[magenta]Capabilities:[/magenta] {', '.join(agent.capabilities)}",
         ]
 
-        # Add any custom metadata
-        for key, value in agent.metadata.items():
-            agent_info.append(f"[white]{key}:[/white] {value}")
+        # # Add any custom metadata from the agent (if available)
+        # for key, value in getattr(agent, "metadata", {}).items():
+        #     agent_info.append(f"[white]{key}:[/white] {value}")
 
-        # Parameters summary
-        param_summary = ", ".join(
-            f"{k}: {v}" for k, v in agent.parameters.items()
-        )
-        agent_info.append(
-            f"[white]Parameters:[/white] {param_summary}"
-        )
+        # # Parameters summary if available
+        # parameters = getattr(agent, "parameters", {})
+        # if parameters:
+        #     param_summary = ", ".join(f"{k}: {v}" for k, v in parameters.items())
+        #     agent_info.append(f"[white]Parameters:[/white] {param_summary}")
 
         node_text = "\n".join(agent_info)
+        branch = tree.add(node_text)
+        for child in getattr(agent, "children", []):
+            self._add_agent_to_tree(child, branch)
 
-        if tree is None:
-            tree = Tree(node_text)
-        else:
-            branch = tree.add(node_text)
-            tree = branch
+    def _count_agents(self, agents: List[Agent]) -> int:
+        """
+        Recursively counts total number of agents from a list of root agents.
 
-        for child in agent.children:
-            self._build_agent_tree(child, tree)
+        Args:
+            agents (List[Agent]): List of agents.
 
-        return tree
-
-    def _count_agents(self, agent: Agent) -> int:
-        """Recursively counts total number of agents in the swarm."""
-        count = 1  # Count current agent
-        for child in agent.children or []:
-            count += self._count_agents(child)
-        return count
+        Returns:
+            int: Total count of agents including children.
+        """
+        return len(agents)
 
     def _create_unified_info_panel(self) -> Panel:
-        """Creates a unified panel showing both swarm metadata and architecture."""
-        # Create the main container
+        """
+        Creates a unified panel showing swarm metadata and agents' metadata.
+        """
         info_layout = Layout()
         info_layout.split_column(
-            Layout(name="metadata", size=13),
+            Layout(name="metadata", size=15),
             Layout(name="architecture"),
         )
 
-        # Calculate total agents
-        total_agents = self._count_agents(self.root_agent)
+        total_agents = self._count_agents(self.agents)
 
         # Metadata section
         metadata_table = Table.grid(padding=1, expand=True)
         metadata_table.add_column("Label", style="bold cyan")
         metadata_table.add_column("Value", style="white")
 
-        # System resources
+        # Update system resources if needed
         if self.update_resources:
             self._update_resource_stats()
 
-        # Add description with proper wrapping
+        # Wrap the description text properly
         description_text = Text(
-            self.swarm_metadata.description, style="italic"
+            self.swarm_metadata.description or "", style="italic"
         )
         description_text.wrap(self.console, width=60, overflow="fold")
 
-        metadata_table.add_row("Swarm Name", self.swarm_metadata.name)
+        metadata_table.add_row(
+            "Swarm Name", self.swarm_metadata.name or "N/A"
+        )
         metadata_table.add_row("Description", description_text)
-        metadata_table.add_row("Version", self.swarm_metadata.version)
+        metadata_table.add_row(
+            "Version", self.swarm_metadata.version or "N/A"
+        )
         metadata_table.add_row("Total Agents", str(total_agents))
-        metadata_table.add_row("Author", self.swarm_metadata.author)
+        metadata_table.add_row(
+            "Author", self.swarm_metadata.author or "N/A"
+        )
         metadata_table.add_row(
             "System",
             f"CPU: {self.cores_available} cores | Memory: {self.memory_usage}",
         )
         metadata_table.add_row(
-            "Primary Objective", self.swarm_metadata.primary_objective
+            "Primary Objective",
+            self.swarm_metadata.primary_objective or "N/A",
         )
 
         info_layout["metadata"].update(metadata_table)
 
-        info_layout["metadata"].update(metadata_table)
-
-        # Architecture section with tree visualization
-        architecture_tree = self._build_agent_tree(self.root_agent)
+        # Architecture section with the agent tree
+        architecture_tree = self._build_agent_tree(self.agents)
         info_layout["architecture"].update(architecture_tree)
 
         return Panel(
@@ -198,12 +203,13 @@ class SwarmVisualizationRich:
         )
 
     def _create_outputs_panel(self) -> Panel:
-        """Creates a panel that displays stacked message history for all agents."""
-        # Create a container for all messages across all agents
+        """
+        Creates a panel that displays stacked message history for all agents.
+        """
         all_messages = []
 
         def collect_agent_messages(agent: Agent):
-            """Recursively collect messages from all agents."""
+            """Recursively collect messages from an agent and its children."""
             messages = self.output_history.get(agent.name, [])
             for msg in messages:
                 all_messages.append(
@@ -214,37 +220,31 @@ class SwarmVisualizationRich:
                         "style": msg["style"],
                     }
                 )
-            for child in agent.children:
+            for child in getattr(agent, "children", []):
                 collect_agent_messages(child)
 
-        # Collect all messages
-        collect_agent_messages(self.root_agent)
+        # Collect messages from every root agent
+        for agent in self.agents:
+            collect_agent_messages(agent)
 
         # Sort messages by timestamp
         all_messages.sort(key=lambda x: x["time"])
 
-        # Create the stacked message display
-        Layout()
         messages_container = []
-
         for msg in all_messages:
-            # Create a panel for each message
             message_text = Text()
             message_text.append(f"[{msg['time']}] ", style="dim")
             message_text.append(
                 f"{msg['agent']}: ", style="bold cyan"
             )
             message_text.append(msg["content"], style=msg["style"])
-
             messages_container.append(message_text)
 
-        # Join all messages with line breaks
         if messages_container:
             final_text = Text("\n").join(messages_container)
         else:
             final_text = Text("No messages yet...", style="dim")
 
-        # Create scrollable panel for all messages
         return Panel(
             final_text,
             title="[bold]Agent Communication Log[/bold]",
@@ -286,36 +286,30 @@ class SwarmVisualizationRich:
         by_word: bool = False,
     ):
         """
-        Streams output for a specific agent with sophisticated token-by-token animation.
+        Streams output for a specific agent with token-by-token animation.
 
         Args:
-            agent (Agent): The agent whose output is being streamed
-            text (str): The text to stream
-            title (Optional[str]): Custom title for the output panel
-            style (str): Style for the output text
-            delay (float): Delay between tokens
-            by_word (bool): If True, streams word by word instead of character by character
+            agent (Agent): The agent whose output is being streamed.
+            text (str): The text to stream.
+            title (Optional[str]): Custom title for the output panel.
+            style (str): Style for the output text.
+            delay (float): Delay between tokens.
+            by_word (bool): If True, stream word by word instead of character by character.
         """
         display_text = Text(style=style)
         current_output = ""
 
-        # Split into words or characters
         tokens = text.split() if by_word else text
-
-        # Create a panel for this agent's output
         title = title or f"{agent.name} Output"
 
         for token in tokens:
-            # Add appropriate spacing
             token_with_space = token + (" " if by_word else "")
             current_output += token_with_space
             display_text.append(token_with_space)
 
-            # Initialize history list if it doesn't exist
             if agent.name not in self.output_history:
                 self.output_history[agent.name] = []
 
-            # Store the complete message when finished
             if token == tokens[-1]:
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 self.output_history[agent.name].append(
@@ -326,10 +320,18 @@ class SwarmVisualizationRich:
                     }
                 )
 
-            # Update live display if active
             if self.live:
                 self.live.update(self._create_layout())
             await asyncio.sleep(delay)
+
+    def log_agent_output(self, agent: Agent, text: str):
+        asyncio.create_task(
+            self.stream_output(
+                agent=agent,
+                text=text,
+                title=f"{agent.name} Output {agent.max_loops}",
+            )
+        )
 
     async def print_progress(
         self,
@@ -342,13 +344,13 @@ class SwarmVisualizationRich:
         Displays a progress spinner while executing a task.
 
         Args:
-            description (str): Task description
-            task_fn (Callable): Function to execute
-            *args (Any): Arguments for task_fn
-            **kwargs (Any): Keyword arguments for task_fn
+            description (str): Task description.
+            task_fn (Callable): Function to execute.
+            *args (Any): Arguments for task_fn.
+            **kwargs (Any): Keyword arguments for task_fn.
 
         Returns:
-            Any: Result of task_fn
+            Any: The result of task_fn.
         """
         progress = Progress(
             SpinnerColumn(),
@@ -393,10 +395,12 @@ class SwarmVisualizationRich:
                         asyncio.create_task(
                             self.stream_output(agent, new_output)
                         )
-                    for child in agent.children:
+                    for child in getattr(agent, "children", []):
                         process_agent_streams(child)
 
-                process_agent_streams(self.root_agent)
+                # Process streams for each root agent
+                for agent in self.agents:
+                    process_agent_streams(agent)
                 await asyncio.sleep(self.refresh_rate)
 
 

@@ -275,6 +275,7 @@ nav:
     - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
     # - Swarms Cloud CLI: "swarms_cloud/cli.md"
     - Swarm APIs:
+      - Swarms API: "swarms_cloud/swarms_api.md"
       - MCS API: "swarms_cloud/mcs_api.md"
       - CreateNow API: "swarms_cloud/create_api.md"
   - Swarms Memory:

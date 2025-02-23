@@ -340,6 +340,7 @@ class Agent:
         llm_args: dict = None,
         load_state_path: str = None,
         role: agent_roles = "worker",
+        no_print: bool = False,
         *args,
         **kwargs,
     ):
@@ -457,6 +458,7 @@ class Agent:
         self.llm_args = llm_args
         self.load_state_path = load_state_path
         self.role = role
+        self.no_print = no_print
 
         # Initialize the short term memory
         self.short_memory = Conversation(
@@ -867,18 +869,19 @@ class Agent:
                         #         # break
 
                         # Print
-                        if self.streaming_on is True:
-                            # self.stream_response(response)
-                            formatter.print_panel_token_by_token(
-                                f"{self.agent_name}: {response}",
-                                title=f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
-                            )
-                        else:
-                            # logger.info(f"Response: {response}")
-                            formatter.print_panel(
-                                f"{self.agent_name}: {response}",
-                                f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
-                            )
+                        if self.no_print is False:
+                            if self.streaming_on is True:
+                                # self.stream_response(response)
+                                formatter.print_panel_token_by_token(
+                                    f"{self.agent_name}: {response}",
+                                    title=f"Agent Name: {self.agent_name} [Max Loops: {loop_count}]",
+                                )
+                            else:
+                                # logger.info(f"Response: {response}")
+                                formatter.print_panel(
+                                    f"{self.agent_name}: {response}",
+                                    f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+                                )
 
                         # Check if response is a dictionary and has 'choices' key
                         if (
@@ -2606,3 +2609,10 @@ class Agent:
         Get the role of the agent.
         """
         return self.role
+
+    # def __getstate__(self):
+    #     state = self.__dict__.copy()
+    #     # Remove or replace unpicklable attributes.
+    #     if '_queue' in state:
+    #         del state['_queue']
+    #     return state

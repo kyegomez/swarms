@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Literal, Union
 
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt, wait_fixed
 
 from swarms.prompts.ag_prompt import aggregator_system_prompt
 from swarms.structs.agent import Agent
@@ -138,11 +137,12 @@ class SwarmRouter:
         shared_memory_system: Any = None,
         rules: str = None,
         documents: List[str] = [],  # A list of docs file paths
-        output_type: str = "string",  # Md, PDF, Txt, csv
+        output_type: str = "all",
         no_cluster_ops: bool = False,
         speaker_fn: callable = None,
         load_agents_from_csv: bool = False,
         csv_file_path: str = None,
+        return_entire_history: bool = False,
         *args,
         **kwargs,
     ):
@@ -164,6 +164,7 @@ class SwarmRouter:
         self.logs = []
         self.load_agents_from_csv = load_agents_from_csv
         self.csv_file_path = csv_file_path
+        self.return_entire_history = return_entire_history
 
         if self.load_agents_from_csv:
             self.agents = AgentLoader(
@@ -233,7 +234,6 @@ class SwarmRouter:
             self._log("error", error_msg)
             raise RuntimeError(error_msg) from e
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def reliability_check(self):
         logger.info("Initializing reliability checks")
 
@@ -256,6 +256,8 @@ class SwarmRouter:
         SpreadSheetSwarm,
         SequentialWorkflow,
         ConcurrentWorkflow,
+        GroupChat,
+        MultiAgentRouter,
     ]:
         """
         Dynamically create and return the specified swarm type or automatically match the best swarm type for a given task.
@@ -286,6 +288,7 @@ class SwarmRouter:
                 flow=self.rearrange_flow,
                 return_json=self.return_json,
                 output_type=self.output_type,
+                return_entire_history=self.return_entire_history,
                 *args,
                 **kwargs,
             )
@@ -339,6 +342,7 @@ class SwarmRouter:
                 shared_memory_system=self.shared_memory_system,
                 output_type=self.output_type,
                 return_json=self.return_json,
+                return_entire_history=self.return_entire_history,
                 *args,
                 **kwargs,
             )
@@ -384,7 +388,6 @@ class SwarmRouter:
         self.logs.append(log_entry)
         logger.log(level.upper(), message)
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def _run(self, task: str, img: str, *args, **kwargs) -> Any:
         """
         Dynamically run the specified task on the selected or matched swarm type.

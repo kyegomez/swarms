@@ -33,6 +33,7 @@ class SequentialWorkflow:
         output_type: OutputType = "all",
         return_json: bool = False,
         shared_memory_system: callable = None,
+        return_entire_history: bool = False,
         *args,
         **kwargs,
     ):
@@ -43,6 +44,7 @@ class SequentialWorkflow:
         self.output_type = output_type
         self.return_json = return_json
         self.shared_memory_system = shared_memory_system
+        self.return_entire_history = return_entire_history
 
         self.reliability_check()
         self.flow = self.sequential_flow()
