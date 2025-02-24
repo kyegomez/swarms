@@ -73,6 +73,15 @@ from swarms.structs.swarming_architectures import (
     star_swarm,
 )
 
+from swarms.structs.swarms_api import (
+    SwarmsAPIClient,
+    SwarmResponse,
+    SwarmRequest,
+    SwarmAuthenticationError,
+    SwarmAPIError,
+    SwarmValidationError,
+    AgentInput,
+)
 
 __all__ = [
     "Agent",
@@ -139,4 +148,11 @@ __all__ = [
     "MultiAgentRouter",
     "MemeAgentGenerator",
     "ModelRouter",
+    "SwarmsAPIClient",
+    "SwarmResponse",
+    "SwarmRequest",
+    "SwarmAuthenticationError",
+    "SwarmAPIError",
+    "SwarmValidationError",
+    "AgentInput",
 ]

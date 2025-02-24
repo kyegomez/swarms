@@ -22,3 +22,4 @@ mypy-protobuf>=3.0.0
 pytest>=8.1.1
 networkx
 aiofiles
+httpx

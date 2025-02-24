@@ -52,6 +52,11 @@ Run a single swarm with specified agents and tasks.
 | swarm_type | string | Optional | Type of swarm workflow (e.g., "AgentRearrange", "MixtureOfAgents", "SpreadSheetSwarm", "SequentialWorkflow", "ConcurrentWorkflow", "GroupChat", "MultiAgentRouter", "AutoSwarmBuilder", "HiearchicalSwarm", "auto", "MajorityVoting") |
 | task | string | Required | The task to be performed |
 | img | string | Optional | Image URL if relevant |
+| output_type | string | Optional | "str" | Output format ("str", "json", "dict", "yaml", "list") |
+| rules | string | Optional | - | Rules for the agent |
+| return_history | boolean | Optional | true | Whether to return the full conversation history |
+| rearrange_flow | string | Optional | - | Flow for the agents |
+
 
 #### Agent Configuration Parameters
 
@@ -144,7 +149,23 @@ Array of swarm configurations, each following the same format as single swarm co
     }
 ]
 ```
-# Swarms API Implementation Examples
+
+### Get Logs
+Get the logs of a swarm.
+
+**Endpoint:** `GET /v1/swarm/logs`  
+**Authentication Required:** Yes
+
+
+#### Example Request
+```bash
+curl -X GET "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/logs" \
+  -H "x-api-key: your_api_key_here"
+```
+
+----
+
+# Examples
 
 ## Python
 ### Using requests
@@ -602,8 +623,9 @@ class Program
 
 ## Shell (cURL)
 
+### Single Swarm Execution
+
 ```bash
-# Single swarm execution
 curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/completions" \
   -H "x-api-key: your_api_key_here" \
   -H "Content-Type: application/json" \
@@ -625,6 +647,11 @@ curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/completi
     "task": "Analyze current market trends"
   }'
 
+```
+
+### Batch Swarm Execution
+
+```bash
 # Batch swarm execution
 curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/batch/completions" \
   -H "x-api-key: your_api_key_here" \

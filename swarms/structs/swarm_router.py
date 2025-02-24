@@ -300,7 +300,7 @@ class SwarmRouter:
                 *args,
                 **kwargs,
             )
-            
+
         elif self.swarm_type == "HiearchicalSwarm":
             return HierarchicalSwarm(
                 name=self.name,
@@ -323,7 +323,7 @@ class SwarmRouter:
                 *args,
                 **kwargs,
             )
-            
+
         elif self.swarm_type == "MajorityVoting":
             return MajorityVoting(
                 name=self.name,
