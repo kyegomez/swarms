@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Literal, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -10,6 +10,8 @@ from swarms.structs.agent import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.csv_to_agent import AgentLoader
 from swarms.structs.groupchat import GroupChat
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.majority_voting import MajorityVoting
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.multi_agent_orchestrator import MultiAgentRouter
 from swarms.structs.rearrange import AgentRearrange
@@ -17,9 +19,6 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
-from swarms.structs.majority_voting import MajorityVoting
-
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -48,13 +47,17 @@ class SwarmLog(BaseModel):
     A Pydantic model to capture log entries.
     """
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    level: str
-    message: str
-    swarm_type: SwarmType
-    task: str = ""
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    id: Optional[str] = Field(
+        default_factory=lambda: str(uuid.uuid4())
+    )
+    timestamp: Optional[datetime] = Field(
+        default_factory=datetime.utcnow
+    )
+    level: Optional[str] = None
+    message: Optional[str] = None
+    swarm_type: Optional[SwarmType] = None
+    task: Optional[str] = ""
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
     documents: List[Document] = []
 
 
@@ -148,7 +151,7 @@ class SwarmRouter:
         speaker_fn: callable = None,
         load_agents_from_csv: bool = False,
         csv_file_path: str = None,
-        return_entire_history: bool = False,
+        return_entire_history: bool = True,
         *args,
         **kwargs,
     ):
@@ -382,7 +385,7 @@ class SwarmRouter:
                 agents=self.agents,
                 max_loops=self.max_loops,
                 auto_save=self.autosave,
-                return_str_on=self.return_json,
+                return_str_on=self.return_entire_history,
                 *args,
                 **kwargs,
             )
@@ -435,18 +438,18 @@ class SwarmRouter:
         self.swarm = self._create_swarm(task, *args, **kwargs)
 
         try:
-            self._log(
-                "info",
-                f"Running task on {self.swarm_type} swarm with task: {task}",
-            )
+            # self._log(
+            #     "info",
+            #     f"Running task on {self.swarm_type} swarm with task: {task}",
+            # )
             result = self.swarm.run(task=task, *args, **kwargs)
 
-            self._log(
-                "success",
-                f"Task completed successfully on {self.swarm_type} swarm",
-                task=task,
-                metadata={"result": str(result)},
-            )
+            # self._log(
+            #     "success",
+            #     f"Task completed successfully on {self.swarm_type} swarm",
+            #     task=task,
+            #     metadata={"result": str(result)},
+            # )
             return result
         except Exception as e:
             self._log(

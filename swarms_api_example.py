@@ -49,6 +49,8 @@ def run_single_swarm():
         "max_loops": 1,
         "swarm_type": "ConcurrentWorkflow",
         "task": "Analyze current market trends in tech sector",
+        "output_type": "str",
+        "return_history": True,
     }
 
     response = requests.post(
@@ -63,6 +65,19 @@ def run_single_swarm():
     return json.dumps(output, indent=4)
 
 
+def get_logs():
+    response = requests.get(
+        f"{BASE_URL}/v1/swarm/logs", headers=headers
+    )
+    output = response.json()
+    return json.dumps(output, indent=4)
+
+
 if __name__ == "__main__":
     result = run_single_swarm()
+    print("Swarm Result:")
     print(result)
+
+    # print("Swarm Logs:")
+    # logs = get_logs()
+    # print(logs)

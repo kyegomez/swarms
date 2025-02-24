@@ -12,6 +12,7 @@ from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.file_processing import create_file_in_folder
 import concurrent.futures
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id_generator import generate_swarm_id
 
 logger = initialize_logger(log_folder="concurrent_workflow")
@@ -109,7 +110,6 @@ class ConcurrentWorkflow(BaseSwarm):
         agent_responses: list = [],
         auto_generate_prompts: bool = False,
         max_workers: int = None,
-        user_interface: bool = True,
         *args,
         **kwargs,
     ):
@@ -131,10 +131,11 @@ class ConcurrentWorkflow(BaseSwarm):
         self.agent_responses = agent_responses
         self.auto_generate_prompts = auto_generate_prompts
         self.max_workers = max_workers or os.cpu_count()
-        self.user_interface = user_interface
         self.tasks = []  # Initialize tasks list
 
         self.reliability_check()
+
+        self.conversation = Conversation()
 
     def disable_agent_prints(self):
         for agent in self.agents:
@@ -249,10 +250,22 @@ class ConcurrentWorkflow(BaseSwarm):
             f"Running concurrent workflow with {len(self.agents)} agents."
         )
 
-        def run_agent(agent: Agent, task: str) -> AgentOutputSchema:
+        self.conversation.add(
+            "user",
+            task,
+        )
+
+        def run_agent(
+            agent: Agent, task: str, img: str = None
+        ) -> AgentOutputSchema:
             start_time = datetime.now()
             try:
-                output = agent.run(task)
+                output = agent.run(task=task, img=img)
+
+                self.conversation.add(
+                    agent.agent_name,
+                    output,
+                )
             except Exception as e:
                 logger.error(
                     f"Error running agent {agent.agent_name}: {e}"
@@ -300,6 +313,9 @@ class ConcurrentWorkflow(BaseSwarm):
             return self.transform_metadata_schema_to_str(
                 self.output_schema
             )
+
+        elif self.return_entire_history:
+            return self.conversation.return_history_as_string()
         else:
             return self.output_schema.model_dump_json(indent=4)
 

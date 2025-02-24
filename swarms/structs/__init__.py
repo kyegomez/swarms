@@ -75,7 +75,6 @@ from swarms.structs.swarming_architectures import (
 
 from swarms.structs.swarms_api import (
     SwarmsAPIClient,
-    SwarmResponse,
     SwarmRequest,
     SwarmAuthenticationError,
     SwarmAPIError,
@@ -149,7 +148,6 @@ __all__ = [
     "MemeAgentGenerator",
     "ModelRouter",
     "SwarmsAPIClient",
-    "SwarmResponse",
     "SwarmRequest",
     "SwarmAuthenticationError",
     "SwarmAPIError",
