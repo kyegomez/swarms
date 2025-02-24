@@ -141,11 +141,11 @@ Refer to our documentation for production grade implementation details.
 Install the following packages with copy and paste
 
 ```bash
-$ pip3 install -U swarms swarm-models swarms-memory
+$ pip3 install -U swarms swarms-memory
 ```
 
 
-## Onboarding
+## [Optional] Onboarding
 
 Now that you have downloaded swarms with `pip3 install -U swarms`, we get access to the `CLI`. Get Onboarded with CLI Now with:
 
