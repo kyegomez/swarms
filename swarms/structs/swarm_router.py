@@ -17,6 +17,9 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.majority_voting import MajorityVoting
+
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -28,7 +31,10 @@ SwarmType = Literal[
     "ConcurrentWorkflow",
     "GroupChat",
     "MultiAgentRouter",
+    "AutoSwarmBuilder",
+    "HiearchicalSwarm",
     "auto",
+    "MajorityVoting",
 ]
 
 
@@ -258,6 +264,8 @@ class SwarmRouter:
         ConcurrentWorkflow,
         GroupChat,
         MultiAgentRouter,
+        MajorityVoting,
+        HierarchicalSwarm,
     ]:
         """
         Dynamically create and return the specified swarm type or automatically match the best swarm type for a given task.
@@ -292,6 +300,18 @@ class SwarmRouter:
                 *args,
                 **kwargs,
             )
+            
+        elif self.swarm_type == "HiearchicalSwarm":
+            return HierarchicalSwarm(
+                name=self.name,
+                description=self.description,
+                director=self.agents[0],
+                agents=self.agents,
+                max_loops=self.max_loops,
+                return_all_history=self.return_entire_history,
+                *args,
+                **kwargs,
+            )
         elif self.swarm_type == "MixtureOfAgents":
             return MixtureOfAgents(
                 name=self.name,
@@ -303,7 +323,16 @@ class SwarmRouter:
                 *args,
                 **kwargs,
             )
-
+            
+        elif self.swarm_type == "MajorityVoting":
+            return MajorityVoting(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                consensus_agent=self.agents[-1],
+                *args,
+                **kwargs,
+            )
         elif self.swarm_type == "GroupChat":
             return GroupChat(
                 name=self.name,

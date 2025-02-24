@@ -49,7 +49,7 @@ Run a single swarm with specified agents and tasks.
 | description | string | Optional | Description of the swarm (max 500 chars) |
 | agents | array | Required | Array of agent configurations |
 | max_loops | integer | Optional | Maximum number of iterations |
-| swarm_type | string | Optional | Type of swarm workflow |
+| swarm_type | string | Optional | Type of swarm workflow (e.g., "AgentRearrange", "MixtureOfAgents", "SpreadSheetSwarm", "SequentialWorkflow", "ConcurrentWorkflow", "GroupChat", "MultiAgentRouter", "AutoSwarmBuilder", "HiearchicalSwarm", "auto", "MajorityVoting") |
 | task | string | Required | The task to be performed |
 | img | string | Optional | Image URL if relevant |
 
@@ -66,6 +66,25 @@ Run a single swarm with specified agents and tasks.
 | temperature | float | Optional | 0.5 | Temperature for response generation |
 | role | string | Optional | "worker" | Role of the agent |
 | max_loops | integer | Optional | 1 | Maximum iterations for this agent |
+
+
+## Available Swarm Types
+
+---
+| Swarm Type           | Description                                                                 |
+|----------------------|-----------------------------------------------------------------------------|
+| AgentRearrange       | Rearranges agents dynamically to optimize task execution.                   |
+| MixtureOfAgents      | Combines different agents to leverage their unique capabilities.            |
+| SpreadSheetSwarm     | Utilizes spreadsheet-like operations for data manipulation and analysis.    |
+| SequentialWorkflow   | Executes tasks in a predefined sequential order.                            |
+| ConcurrentWorkflow   | Runs tasks concurrently to improve efficiency and reduce execution time.    |
+| GroupChat            | Facilitates communication and collaboration among agents in a chat format.  |
+| MultiAgentRouter     | Routes tasks to multiple agents based on their expertise and availability.  |
+| AutoSwarmBuilder     | Automatically constructs a swarm based on task requirements and agent skills.|
+| HiearchicalSwarm     | Organizes agents in a hierarchy to manage complex task dependencies.        |
+| auto                 | Automatically selects the most suitable swarm type for the task.            |
+| MajorityVoting       | Uses majority voting among agents to reach a consensus on task outcomes.    |
+
 
 #### Example Request
 ```json
