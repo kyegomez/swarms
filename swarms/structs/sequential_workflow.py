@@ -1,7 +1,7 @@
 from typing import List, Optional
 from swarms.structs.agent import Agent
 from swarms.structs.rearrange import AgentRearrange
-from swarms.structs.output_types import OutputType
+from swarms.structs.output_type import OutputType
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -30,7 +30,7 @@ class SequentialWorkflow:
         description: str = "Sequential Workflow, where agents are executed in a sequence.",
         agents: List[Agent] = [],
         max_loops: int = 1,
-        output_type: OutputType = "all",
+        output_type: OutputType = "dict",
         return_json: bool = False,
         shared_memory_system: callable = None,
         return_entire_history: bool = False,
@@ -136,7 +136,7 @@ class SequentialWorkflow:
         """
 
         try:
-            return self.agent_rearrange.run(
+            result = self.agent_rearrange.run(
                 task=task,
                 img=img,
                 device=device,
@@ -144,9 +144,20 @@ class SequentialWorkflow:
                 device_id=device_id,
                 all_gpus=all_gpus,
                 no_use_clusterops=no_use_clusterops,
+                output_type=self.output_type,
                 *args,
                 **kwargs,
             )
+            
+            
+            if self.output_type == "dict":
+                result = self.agent_rearrange.conversation.return_messages_as_dictionary()
+            elif self.output_type == "list":
+                result = self.agent_rearrange.conversation.return_messages_as_list()
+            elif self.output_type == "str" or self.return_json:
+                result = self.agent_rearrange.conversation.get_str()
+            else:
+                return result
         except Exception as e:
             logger.error(
                 f"An error occurred while executing the task: {e}"

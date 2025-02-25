@@ -65,7 +65,7 @@ Run a single swarm with specified agents and tasks.
 | agent_name | string | Required | - | Name of the agent (max 100 chars) |
 | description | string | Optional | - | Description of the agent (max 500 chars) |
 | system_prompt | string | Optional | - | System prompt for the agent (max 500 chars) |
-| model_name | string | Optional | "gpt-4o" | Model to be used by the agent |
+| model_name | string | Optional | "gpt-4o" | Model to be used by the agent (follows litellm conventions) |
 | auto_generate_prompt | boolean | Optional | false | Whether to auto-generate prompts |
 | max_tokens | integer | Optional | - | Maximum tokens for response |
 | temperature | float | Optional | 0.5 | Temperature for response generation |

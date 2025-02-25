@@ -1,3 +1,5 @@
+# tools - search, code executor, create api
+
 import os
 import requests
 from dotenv import load_dotenv
@@ -25,30 +27,33 @@ def run_single_swarm():
                 "agent_name": "Market Analyst",
                 "description": "Analyzes market trends",
                 "system_prompt": "You are a financial analyst expert.",
-                "model_name": "gpt-4o",
+                "model_name": "groq/deepseek-r1-distill-qwen-32b",
                 "role": "worker",
                 "max_loops": 1,
+                "max_tokens": 8192,
             },
             {
                 "agent_name": "Economic Forecaster",
                 "description": "Predicts economic trends",
                 "system_prompt": "You are an expert in economic forecasting.",
-                "model_name": "gpt-4o",
+                "model_name": "groq/deepseek-r1-distill-qwen-32b",
                 "role": "worker",
                 "max_loops": 1,
+                "max_tokens": 8192,
             },
             {
                 "agent_name": "Data Scientist",
                 "description": "Performs data analysis",
                 "system_prompt": "You are a data science expert.",
-                "model_name": "gpt-4o",
+                "model_name": "groq/deepseek-r1-distill-qwen-32b",
                 "role": "worker",
                 "max_loops": 1,
+                "max_tokens": 8192,
             },
         ],
         "max_loops": 1,
         "swarm_type": "ConcurrentWorkflow",
-        "task": "Analyze current market trends in tech sector",
+        "task": "What are the best etfs and index funds for ai and tech?",
         "output_type": "str",
         "return_history": True,
     }
@@ -77,7 +82,3 @@ if __name__ == "__main__":
     result = run_single_swarm()
     print("Swarm Result:")
     print(result)
-
-    # print("Swarm Logs:")
-    # logs = get_logs()
-    # print(logs)

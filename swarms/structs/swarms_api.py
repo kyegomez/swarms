@@ -53,6 +53,10 @@ class AgentInput(BaseModel):
         1,
         description="The maximum number of iterations the agent is allowed to perform.",
     )
+    dynamic_temperature_enabled: Optional[bool] = Field(
+        True,
+        description="Indicates whether the agent should use dynamic temperature.",
+    )
 
 
 class SwarmRequest(BaseModel):

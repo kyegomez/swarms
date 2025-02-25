@@ -12,6 +12,8 @@ from swarms.prompts.ag_prompt import aggregator_system_prompt
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.any_to_str import any_to_str
 import concurrent.futures
+from swarms.structs.output_type import OutputType
+from swarms.structs.conversation import Conversation
 
 logger = initialize_logger(log_folder="mixture_of_agents")
 
@@ -69,6 +71,7 @@ class MixtureOfAgents:
         layers: int = 3,
         max_loops: int = 1,
         return_str_on: bool = False,
+        output_type: OutputType = "dict",
     ) -> None:
         """
         Initialize the Mixture of Agents class with agents and configuration.
@@ -89,6 +92,7 @@ class MixtureOfAgents:
         self.layers: int = layers
         self.max_loops: int = max_loops
         self.return_str_on: bool = return_str_on
+        self.output_type: OutputType = output_type
 
         self.input_schema = MixtureOfAgentsInput(
             name=name,
@@ -109,6 +113,8 @@ class MixtureOfAgents:
         )
 
         self.reliability_check()
+        
+        self.conversation = Conversation()
 
     def reliability_check(self) -> None:
         """
@@ -191,6 +197,7 @@ class MixtureOfAgents:
 
         # Run the agent asynchronously
         response = await asyncio.to_thread(agent.run, task)
+        
         self.output_schema.normal_agent_outputs.append(
             agent.agent_output
         )
@@ -241,6 +248,7 @@ class MixtureOfAgents:
             task (str): The task for the mixture of agents.
         """
         try:
+            self.conversation.add("user", task)
             prev_context = None
 
             for _ in range(self.max_loops):
@@ -263,8 +271,12 @@ class MixtureOfAgents:
 
             log_agent_data(self.output_schema.model_dump())
 
-            if self.return_str_on:
-                return any_to_str(self.output_schema.model_dump())
+            if self.return_str_on or self.output_type == "str":
+                return self.conversation.get_str()
+            elif self.output_type == "dict":
+                return self.conversation.return_messages_as_dictionary()
+            elif self.output_type == "list":
+                return self.conversation.return_messages_as_list()
             else:
                 return self.output_schema.model_dump_json(indent=4)
 

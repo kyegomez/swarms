@@ -9,6 +9,7 @@ from typing import Any, Callable, List, Optional
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.structs.output_type import OutputType
 from swarms.utils.formatter import formatter
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -147,6 +148,7 @@ class MajorityVoting:
         autosave: bool = False,
         verbose: bool = False,
         max_loops: int = 1,
+        output_type: OutputType = "dict",
         *args,
         **kwargs,
     ):
@@ -158,6 +160,7 @@ class MajorityVoting:
         self.autosave = autosave
         self.verbose = verbose
         self.max_loops = max_loops
+        self.output_type = output_type
 
         self.conversation = Conversation(
             time_enabled=True, *args, **kwargs
@@ -202,7 +205,7 @@ class MajorityVoting:
             self.conversation.add(agent.agent_name, response)
 
         responses = self.conversation.return_history_as_string()
-        print(responses)
+        # print(responses)
 
         prompt = f"""Conduct a detailed majority voting analysis on the following conversation:
         {responses}
@@ -236,8 +239,17 @@ class MajorityVoting:
             )
 
         # Return the majority vote
-        return self.conversation.return_history_as_string()
-
+        # return self.conversation.return_history_as_string()
+        if self.output_type == "str":
+            return self.conversation.get_str()
+        elif self.output_type == "dict":
+            return self.conversation.return_messages_as_dictionary()
+        elif self.output_type == "list":
+            return self.conversation.return_messages_as_list()
+        else:
+            return self.conversation.return_history_as_string()
+        
+        
     def batch_run(
         self, tasks: List[str], *args, **kwargs
     ) -> List[Any]:

@@ -59,7 +59,8 @@ task = """
 # Run agents with tasks concurrently
 swarm = ConcurrentWorkflow(
     agents=agents,
-    return_str_on=True,
+    return_str_on=False,
+    output_type="list",
 )
 
 print(

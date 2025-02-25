@@ -18,6 +18,7 @@ from swarms.structs.rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
+from swarms.structs.output_type import OutputType
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="swarm_router")
@@ -146,7 +147,7 @@ class SwarmRouter:
         shared_memory_system: Any = None,
         rules: str = None,
         documents: List[str] = [],  # A list of docs file paths
-        output_type: str = "all",
+        output_type: OutputType = "dict",
         no_cluster_ops: bool = False,
         speaker_fn: callable = None,
         load_agents_from_csv: bool = False,
@@ -323,6 +324,7 @@ class SwarmRouter:
                 aggregator_system_prompt=aggregator_system_prompt.get_prompt(),
                 aggregator_agent=self.agents[-1],
                 layers=self.max_loops,
+                output_type=self.output_type,
                 *args,
                 **kwargs,
             )
@@ -386,6 +388,7 @@ class SwarmRouter:
                 max_loops=self.max_loops,
                 auto_save=self.autosave,
                 return_str_on=self.return_entire_history,
+                output_type=self.output_type,
                 *args,
                 **kwargs,
             )

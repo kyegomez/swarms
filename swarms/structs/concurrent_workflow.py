@@ -14,6 +14,7 @@ import concurrent.futures
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id_generator import generate_swarm_id
+from swarms.structs.output_type import OutputType
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -109,7 +110,8 @@ class ConcurrentWorkflow(BaseSwarm):
         return_str_on: bool = False,
         agent_responses: list = [],
         auto_generate_prompts: bool = False,
-        max_workers: int = None,
+        output_type: OutputType = "dict",
+        return_entire_history: bool = False,
         *args,
         **kwargs,
     ):
@@ -130,7 +132,9 @@ class ConcurrentWorkflow(BaseSwarm):
         self.return_str_on = return_str_on
         self.agent_responses = agent_responses
         self.auto_generate_prompts = auto_generate_prompts
-        self.max_workers = max_workers or os.cpu_count()
+        self.max_workers = os.cpu_count()
+        self.output_type = output_type
+        self.return_entire_history = return_entire_history
         self.tasks = []  # Initialize tasks list
 
         self.reliability_check()
@@ -316,6 +320,10 @@ class ConcurrentWorkflow(BaseSwarm):
 
         elif self.return_entire_history:
             return self.conversation.return_history_as_string()
+        elif self.output_type == "list":
+            return self.conversation.return_messages_as_list()
+        elif self.output_type == "dict":
+            return self.conversation.return_messages_as_dictionary()
         else:
             return self.output_schema.model_dump_json(indent=4)
 

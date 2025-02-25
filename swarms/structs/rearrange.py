@@ -11,9 +11,11 @@ from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.structs.agent import Agent
 from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.base_swarm import BaseSwarm
-from swarms.structs.output_types import OutputType
+
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.main import log_agent_data
+from swarms.structs.conversation import Conversation
+from swarms.structs.output_type import OutputType
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -114,6 +116,7 @@ class AgentRearrange(BaseSwarm):
         no_use_clusterops: bool = True,
         autosave: bool = True,
         return_entire_history: bool = False,
+        rules: str = None,
         *args,
         **kwargs,
     ):
@@ -153,6 +156,11 @@ class AgentRearrange(BaseSwarm):
             ),
             outputs=[],
         )
+
+        self.conversation = Conversation()
+        
+        if rules:
+            self.conversation.add("user", rules)
 
     def showcase_agents(self):
         # Get formatted agent info once
@@ -305,6 +313,8 @@ class AgentRearrange(BaseSwarm):
             Exception: For any other errors during execution
         """
         try:
+            self.conversation.add("user", task)
+
             if not self.validate_flow():
                 logger.error("Flow validation failed")
                 return "Invalid flow configuration."
@@ -394,6 +404,9 @@ class AgentRearrange(BaseSwarm):
                                     **kwargs,
                                 )
                                 result = str(result)
+                                self.conversation.add(
+                                    agent.agent_name, result
+                                )
                                 results.append(result)
                                 response_dict[agent_name] = result
                                 self.output_schema.outputs.append(
@@ -446,6 +459,9 @@ class AgentRearrange(BaseSwarm):
                                 **kwargs,
                             )
                             current_task = str(current_task)
+                            self.conversation.add(
+                                agent.agent_name, current_task
+                            )
                             response_dict[agent_name] = current_task
                             self.output_schema.outputs.append(
                                 agent.agent_output
@@ -475,7 +491,7 @@ class AgentRearrange(BaseSwarm):
             elif self.output_type == "list":
                 output = all_responses
             elif self.output_type == "dict":
-                output = response_dict
+                output = self.conversation.return_messages_as_dictionary()
             else:  # "final"
                 output = current_task
 
