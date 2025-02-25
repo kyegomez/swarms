@@ -139,12 +139,6 @@ class SequentialWorkflow:
             result = self.agent_rearrange.run(
                 task=task,
                 img=img,
-                device=device,
-                all_cores=all_cores,
-                device_id=device_id,
-                all_gpus=all_gpus,
-                no_use_clusterops=no_use_clusterops,
-                output_type=self.output_type,
                 *args,
                 **kwargs,
             )
@@ -156,8 +150,9 @@ class SequentialWorkflow:
                 result = self.agent_rearrange.conversation.return_messages_as_list()
             elif self.output_type == "str" or self.return_json:
                 result = self.agent_rearrange.conversation.get_str()
-            else:
-                return result
+                
+            
+            return result
         except Exception as e:
             logger.error(
                 f"An error occurred while executing the task: {e}"

@@ -22,6 +22,10 @@ agents = [
     ),
 ]
 
-router = SwarmRouter(agents=agents, swarm_type="SequentialWorkflow")
+router = SwarmRouter(agents=agents, swarm_type="SequentialWorkflow", output_type="dict", return_entire_history=False)
 
-print(router.run("How are you doing?"))
+output = router.run("How are you doing?")
+
+print(output)
+
+print(type(output))
