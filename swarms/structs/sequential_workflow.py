@@ -142,16 +142,18 @@ class SequentialWorkflow:
                 *args,
                 **kwargs,
             )
-            
-            
+
             if self.output_type == "dict":
-                result = self.agent_rearrange.conversation.return_messages_as_dictionary()
+                result = (
+                    self.agent_rearrange.conversation.return_messages_as_dictionary()
+                )
             elif self.output_type == "list":
-                result = self.agent_rearrange.conversation.return_messages_as_list()
+                result = (
+                    self.agent_rearrange.conversation.return_messages_as_list()
+                )
             elif self.output_type == "str" or self.return_json:
                 result = self.agent_rearrange.conversation.get_str()
-                
-            
+
             return result
         except Exception as e:
             logger.error(

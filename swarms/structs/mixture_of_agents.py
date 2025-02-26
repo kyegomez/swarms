@@ -10,7 +10,6 @@ from swarms.telemetry.main import log_agent_data
 from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.prompts.ag_prompt import aggregator_system_prompt
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.any_to_str import any_to_str
 import concurrent.futures
 from swarms.structs.output_type import OutputType
 from swarms.structs.conversation import Conversation
@@ -113,7 +112,7 @@ class MixtureOfAgents:
         )
 
         self.reliability_check()
-        
+
         self.conversation = Conversation()
 
     def reliability_check(self) -> None:
@@ -197,7 +196,7 @@ class MixtureOfAgents:
 
         # Run the agent asynchronously
         response = await asyncio.to_thread(agent.run, task)
-        
+
         self.output_schema.normal_agent_outputs.append(
             agent.agent_output
         )
@@ -274,7 +273,9 @@ class MixtureOfAgents:
             if self.return_str_on or self.output_type == "str":
                 return self.conversation.get_str()
             elif self.output_type == "dict":
-                return self.conversation.return_messages_as_dictionary()
+                return (
+                    self.conversation.return_messages_as_dictionary()
+                )
             elif self.output_type == "list":
                 return self.conversation.return_messages_as_list()
             else:

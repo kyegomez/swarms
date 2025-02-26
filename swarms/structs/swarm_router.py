@@ -309,10 +309,11 @@ class SwarmRouter:
             return HierarchicalSwarm(
                 name=self.name,
                 description=self.description,
-                director=self.agents[0],
+                # director=self.agents[0],
                 agents=self.agents,
                 max_loops=self.max_loops,
                 return_all_history=self.return_entire_history,
+                output_type=self.output_type,
                 *args,
                 **kwargs,
             )

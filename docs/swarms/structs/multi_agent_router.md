@@ -39,8 +39,8 @@ pip install swarms
 | Method | Arguments | Returns | Description |
 |--------|-----------|---------|-------------|
 | route_task | task: str | dict | Routes a single task to appropriate agent |
-| batch_route | tasks: List[str] | List[dict] | Sequentially routes multiple tasks |
-| concurrent_batch_route | tasks: List[str] | List[dict] | Concurrently routes multiple tasks |
+| batch_run | tasks: List[str] | List[dict] | Sequentially routes multiple tasks |
+| concurrent_batch_run | tasks: List[str] | List[dict] | Concurrently routes multiple tasks |
 | query_ragent | task: str | str | Queries the research agent |
 | find_agent_in_list | agent_name: str | Optional[Agent] | Finds agent by name |
 
@@ -111,7 +111,7 @@ try:
         "Case 2: Patient symptoms...",
         "Case 3: Patient symptoms..."
     ]
-    concurrent_results = healthcare_router.concurrent_batch_route(cases)
+    concurrent_results = healthcare_router.concurrent_batch_run(cases)
     
 except Exception as e:
     logger.error(f"Error in healthcare processing: {str(e)}")
@@ -176,7 +176,7 @@ tasks = [
 ]
 
 # Process tasks concurrently
-results = finance_router.concurrent_batch_route(tasks)
+results = finance_router.concurrent_batch_run(tasks)
 ```
 
 ### Legal Example
@@ -248,7 +248,7 @@ if result["execution"]["execution_time"] > 5.0:
 ```python
 from concurrent.futures import ThreadPoolExecutor
 with ThreadPoolExecutor(max_workers=5) as executor:
-    results = router.concurrent_batch_route(tasks)
+    results = router.concurrent_batch_run(tasks)
 ```
 
 4. Regular agent validation:
@@ -264,7 +264,7 @@ for agent in router.agents.values():
 
 - Group similar tasks together
 
-- Use concurrent_batch_route for independent tasks
+- Use concurrent_batch_run for independent tasks
 
 - Monitor memory usage with large batches
 

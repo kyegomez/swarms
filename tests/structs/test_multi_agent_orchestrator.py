@@ -138,14 +138,14 @@ def test_batch_routing():
         tasks = ["Task 1", "Task 2", "Task 3"]
 
         # Test sequential batch routing
-        results = router.batch_route(tasks)
+        results = router.batch_run(tasks)
         assert len(results) == len(
             tasks
         ), "Should return result for each task"
         print("✓ Sequential batch routing successful")
 
         # Test concurrent batch routing
-        concurrent_results = router.concurrent_batch_route(tasks)
+        concurrent_results = router.concurrent_batch_run(tasks)
         assert len(concurrent_results) == len(
             tasks
         ), "Should return result for each task"

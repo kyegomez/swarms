@@ -27,7 +27,7 @@ def run_single_swarm():
                 "agent_name": "Market Analyst",
                 "description": "Analyzes market trends",
                 "system_prompt": "You are a financial analyst expert.",
-                "model_name": "groq/deepseek-r1-distill-qwen-32b",
+                "model_name": "gpt-4o",
                 "role": "worker",
                 "max_loops": 1,
                 "max_tokens": 8192,
@@ -36,26 +36,17 @@ def run_single_swarm():
                 "agent_name": "Economic Forecaster",
                 "description": "Predicts economic trends",
                 "system_prompt": "You are an expert in economic forecasting.",
-                "model_name": "groq/deepseek-r1-distill-qwen-32b",
-                "role": "worker",
-                "max_loops": 1,
-                "max_tokens": 8192,
-            },
-            {
-                "agent_name": "Data Scientist",
-                "description": "Performs data analysis",
-                "system_prompt": "You are a data science expert.",
-                "model_name": "groq/deepseek-r1-distill-qwen-32b",
+                "model_name": "gpt-4o",
                 "role": "worker",
                 "max_loops": 1,
                 "max_tokens": 8192,
             },
         ],
         "max_loops": 1,
-        "swarm_type": "ConcurrentWorkflow",
+        "swarm_type": "HiearchicalSwarm",
         "task": "What are the best etfs and index funds for ai and tech?",
-        "output_type": "str",
-        "return_history": True,
+        "output_type": "dict",
+        # "return_history": True,
     }
 
     response = requests.post(
@@ -75,10 +66,16 @@ def get_logs():
         f"{BASE_URL}/v1/swarm/logs", headers=headers
     )
     output = response.json()
-    return json.dumps(output, indent=4)
+    # return json.dumps(output, indent=4)
+    return output
 
 
 if __name__ == "__main__":
-    result = run_single_swarm()
-    print("Swarm Result:")
-    print(result)
+    # result = run_single_swarm()
+    # print("Swarm Result:")
+    # print(result)
+
+    logs = get_logs()
+    logs = json.dumps(logs, indent=4)
+    print("Logs:")
+    print(logs)

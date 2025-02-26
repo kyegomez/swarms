@@ -248,8 +248,7 @@ class MajorityVoting:
             return self.conversation.return_messages_as_list()
         else:
             return self.conversation.return_history_as_string()
-        
-        
+
     def batch_run(
         self, tasks: List[str], *args, **kwargs
     ) -> List[Any]:

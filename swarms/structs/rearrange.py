@@ -158,7 +158,7 @@ class AgentRearrange(BaseSwarm):
         )
 
         self.conversation = Conversation()
-        
+
         if rules:
             self.conversation.add("user", rules)
 
@@ -491,7 +491,9 @@ class AgentRearrange(BaseSwarm):
             elif self.output_type == "list":
                 output = all_responses
             elif self.output_type == "dict":
-                output = self.conversation.return_messages_as_dictionary()
+                output = (
+                    self.conversation.return_messages_as_dictionary()
+                )
             else:  # "final"
                 output = current_task
 

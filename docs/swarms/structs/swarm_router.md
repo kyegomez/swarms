@@ -1,8 +1,17 @@
 # SwarmRouter Documentation
 
-The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, `ConcurrentWorkflow`, and finally `auto` which will dynamically select the most appropriate swarm for you by analyzing your name, description, and input task. We will be continuously adding more swarm architectures as we progress with new developments.
+The `SwarmRouter` class is a flexible routing system designed to manage different types of swarms for task execution. It provides a unified interface to interact with various swarm types, including `AgentRearrange`, `MixtureOfAgents`, `SpreadSheetSwarm`, `SequentialWorkflow`, `ConcurrentWorkflow`, `GroupChat`, `MultiAgentRouter`, `HierarchicalSwarm`, `MajorityVoting`, and `auto` which will dynamically select the most appropriate swarm for you by analyzing your task, name, and description. We will be continuously adding more swarm architectures as we progress with new developments.
 
 ## Classes
+
+### Document
+
+A Pydantic model for representing document data.
+
+| Attribute | Type | Description |
+| --- | --- | --- |
+| `file_path` | str | Path to the document file. |
+| `data` | str | Content of the document. |
 
 ### SwarmLog
 
@@ -17,6 +26,7 @@ A Pydantic model for capturing log entries.
 | `swarm_type` | SwarmType | Type of swarm associated with the log. |
 | `task` | str | Task being performed (optional). |
 | `metadata` | Dict[str, Any] | Additional metadata (optional). |
+| `documents` | List[Document] | List of documents associated with the log. |
 
 ### SwarmRouter
 
@@ -30,27 +40,60 @@ Main class for routing tasks to different swarm types.
 | `agents` | List[Union[Agent, Callable]] | List of Agent objects or callable functions to be used in the swarm. |
 | `swarm_type` | SwarmType | Type of swarm to be used. |
 | `autosave` | bool | Flag to enable/disable autosave. |
-| `flow` | str | The flow of the swarm. |
+| `rearrange_flow` | str | The flow for the AgentRearrange swarm type. |
 | `return_json` | bool | Flag to enable/disable returning the result in JSON format. |
 | `auto_generate_prompts` | bool | Flag to enable/disable auto generation of prompts. |
-| `swarm` | Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow, GroupChat, MultiAgentRouter] | Instantiated swarm object. |
+| `shared_memory_system` | Any | Shared memory system for agents. |
+| `rules` | str | Rules to inject into every agent. |
+| `documents` | List[str] | List of document file paths. |
+| `output_type` | OutputType | Output format type (e.g., "string", "dict"). |
+| `no_cluster_ops` | bool | Flag to disable cluster operations. |
+| `speaker_fn` | callable | Speaker function for GroupChat swarm type. |
+| `load_agents_from_csv` | bool | Flag to enable/disable loading agents from CSV. |
+| `csv_file_path` | str | Path to the CSV file for loading agents. |
+| `return_entire_history` | bool | Flag to enable/disable returning the entire conversation history. |
+| `swarm` | Union[AgentRearrange, MixtureOfAgents, SpreadSheetSwarm, SequentialWorkflow, ConcurrentWorkflow, GroupChat, MultiAgentRouter, HierarchicalSwarm, MajorityVoting] | Instantiated swarm object. |
 | `logs` | List[SwarmLog] | List of log entries captured during operations. |
 
 #### Methods:
 
 | Method | Parameters | Description |
 | --- | --- | --- |
-| `__init__` | `self, name: str, description: str, max_loops: int, agents: List[Union[Agent, Callable]], swarm_type: SwarmType, autosave: bool, flow: str, return_json: bool, auto_generate_prompts: bool, *args, **kwargs` | Initialize the SwarmRouter. |
+| `__init__` | `self, name: str = "swarm-router", description: str = "Routes your task to the desired swarm", max_loops: int = 1, agents: List[Union[Agent, Callable]] = [], swarm_type: SwarmType = "SequentialWorkflow", autosave: bool = False, rearrange_flow: str = None, return_json: bool = False, auto_generate_prompts: bool = False, shared_memory_system: Any = None, rules: str = None, documents: List[str] = [], output_type: OutputType = "dict", no_cluster_ops: bool = False, speaker_fn: callable = None, load_agents_from_csv: bool = False, csv_file_path: str = None, return_entire_history: bool = True, *args, **kwargs` | Initialize the SwarmRouter. |
+| `activate_shared_memory` | `self` | Activate shared memory with all agents. |
+| `handle_rules` | `self` | Inject rules to every agent. |
+| `activate_ape` | `self` | Activate automatic prompt engineering for agents that support it. |
 | `reliability_check` | `self` | Perform reliability checks on the SwarmRouter configuration. |
 | `_create_swarm` | `self, task: str = None, *args, **kwargs` | Create and return the specified swarm type or automatically match the best swarm type for a given task. |
 | `_log` | `self, level: str, message: str, task: str = "", metadata: Dict[str, Any] = None` | Create a log entry and add it to the logs list. |
-| `run` | `self, task: str, *args, **kwargs` | Run the specified task on the selected or matched swarm. |
+| `_run` | `self, task: str, img: str, *args, **kwargs` | Dynamically run the specified task on the selected or matched swarm type. |
+| `run` | `self, task: str, img: str = None, *args, **kwargs` | Execute a task on the selected swarm type. |
+| `__call__` | `self, task: str, *args, **kwargs` | Make the SwarmRouter instance callable. |
 | `batch_run` | `self, tasks: List[str], *args, **kwargs` | Execute a batch of tasks on the selected or matched swarm type. |
-| `threaded_run` | `self, task: str, *args, **kwargs` | Execute a task on the selected or matched swarm type using threading. |
 | `async_run` | `self, task: str, *args, **kwargs` | Execute a task on the selected or matched swarm type asynchronously. |
 | `get_logs` | `self` | Retrieve all logged entries. |
 | `concurrent_run` | `self, task: str, *args, **kwargs` | Execute a task on the selected or matched swarm type concurrently. |
 | `concurrent_batch_run` | `self, tasks: List[str], *args, **kwargs` | Execute a batch of tasks on the selected or matched swarm type concurrently. |
+
+## Function: swarm_router
+
+A convenience function to create and run a SwarmRouter instance.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | str | "swarm-router" | Name of the swarm router. |
+| `description` | str | "Routes your task to the desired swarm" | Description of the router. |
+| `max_loops` | int | 1 | Maximum number of execution loops. |
+| `agents` | List[Union[Agent, Callable]] | [] | List of agents or callables. |
+| `swarm_type` | SwarmType | "SequentialWorkflow" | Type of swarm to use. |
+| `autosave` | bool | False | Whether to autosave results. |
+| `flow` | str | None | Flow configuration. |
+| `return_json` | bool | True | Whether to return results as JSON. |
+| `auto_generate_prompts` | bool | False | Whether to auto-generate prompts. |
+| `task` | str | None | Task to execute. |
+| `rules` | str | None | Rules to inject into every agent. |
+| `*args` | | | Additional positional arguments passed to SwarmRouter.run() |
+| `**kwargs` | | | Additional keyword arguments passed to SwarmRouter.run() |
 
 ## Installation
 
@@ -187,6 +230,62 @@ auto_router = SwarmRouter(
 result = auto_router.run("Analyze and summarize the quarterly financial report")
 ```
 
+### Loading Agents from CSV
+
+To load agents from a CSV file:
+
+```python
+csv_router = SwarmRouter(
+    name="CSVAgentRouter",
+    load_agents_from_csv=True,
+    csv_file_path="agents.csv",
+    swarm_type="SequentialWorkflow"
+)
+
+result = csv_router.run("Process the client data")
+```
+
+### Using Shared Memory System
+
+To enable shared memory across agents:
+
+```python
+from swarms.memory import SemanticMemory
+
+memory_system = SemanticMemory()
+
+memory_router = SwarmRouter(
+    name="MemoryRouter",
+    agents=[agent1, agent2],
+    shared_memory_system=memory_system,
+    swarm_type="SequentialWorkflow"
+)
+
+result = memory_router.run("Analyze historical data and make predictions")
+```
+
+### Injecting Rules to All Agents
+
+To inject common rules into all agents:
+
+```python
+rules = """
+1. Always provide sources for your information
+2. Check your calculations twice
+3. Explain your reasoning clearly
+4. Highlight uncertainties and assumptions
+"""
+
+rules_router = SwarmRouter(
+    name="RulesRouter",
+    agents=[agent1, agent2],
+    rules=rules,
+    swarm_type="SequentialWorkflow"
+)
+
+result = rules_router.run("Analyze the investment opportunity")
+```
+
 ## Use Cases
 
 ### AgentRearrange
@@ -200,7 +299,7 @@ rearrange_router = SwarmRouter(
     max_loops=3,
     agents=[data_extractor, analyzer, summarizer],
     swarm_type="AgentRearrange",
-    flow=f"{data_extractor.name} -> {analyzer.name} -> {summarizer.name}"
+    rearrange_flow=f"{data_extractor.name} -> {analyzer.name} -> {summarizer.name}"
 )
 
 result = rearrange_router.run("Analyze and summarize the quarterly financial report")
@@ -215,7 +314,7 @@ mixture_router = SwarmRouter(
     name="ExpertPanel",
     description="Combine insights from various expert agents",
     max_loops=1,
-    agents=[financial_expert, market_analyst, tech_specialist],
+    agents=[financial_expert, market_analyst, tech_specialist, aggregator],
     swarm_type="MixtureOfAgents"
 )
 
@@ -248,7 +347,8 @@ sequential_router = SwarmRouter(
     description="Generate comprehensive reports sequentially",
     max_loops=1,
     agents=[data_extractor, analyzer, writer, reviewer],
-    swarm_type="SequentialWorkflow"
+    swarm_type="SequentialWorkflow",
+    return_entire_history=True
 )
 
 result = sequential_router.run("Create a due diligence report for Project Alpha")
@@ -264,51 +364,85 @@ concurrent_router = SwarmRouter(
     description="Analyze multiple data sources concurrently",
     max_loops=1,
     agents=[financial_analyst, market_researcher, competitor_analyst],
-    swarm_type="ConcurrentWorkflow"
+    swarm_type="ConcurrentWorkflow",
+    output_type="string"
 )
 
 result = concurrent_router.run("Conduct a comprehensive market analysis for Product X")
 ```
 
-
 ### GroupChat
 
-Use Case: Simulating a group chat with multiple agents.
+Use Case: Simulating a group discussion with multiple agents.
 
 ```python
 group_chat_router = SwarmRouter(
     name="GroupChat",
-    description="Simulate a group chat with multiple agents",
-    max_loops=1,
+    description="Simulate a group discussion with multiple agents",
+    max_loops=10,
     agents=[financial_analyst, market_researcher, competitor_analyst],
-    swarm_type="GroupChat"
+    swarm_type="GroupChat",
+    speaker_fn=custom_speaker_function
 )
 
-result = group_chat_router.run("Conduct a comprehensive market analysis for Product X")
+result = group_chat_router.run("Discuss the pros and cons of expanding into the Asian market")
 ```
 
 ### MultiAgentRouter
 
-Use Case: Simulating a group chat with multiple agents.
+Use Case: Routing tasks to the most appropriate agent.
 
 ```python
 multi_agent_router = SwarmRouter(
     name="MultiAgentRouter",
-    description="Simulate a group chat with multiple agents",
+    description="Route tasks to specialized agents",
     max_loops=1,
     agents=[financial_analyst, market_researcher, competitor_analyst],
-    swarm_type="MultiAgentRouter"
+    swarm_type="MultiAgentRouter",
+    shared_memory_system=memory_system
 )
 
-result = multi_agent_router.run("Conduct a comprehensive market analysis for Product X")
+result = multi_agent_router.run("Analyze the competitive landscape for our new product")
 ```
 
+### HierarchicalSwarm
+
+Use Case: Creating a hierarchical structure of agents with a director.
+
+```python
+hierarchical_router = SwarmRouter(
+    name="HierarchicalSwarm",
+    description="Hierarchical organization of agents with a director",
+    max_loops=3,
+    agents=[director, analyst1, analyst2, researcher],
+    swarm_type="HiearchicalSwarm",
+    return_all_history=True
+)
+
+result = hierarchical_router.run("Develop a comprehensive market entry strategy")
+```
+
+### MajorityVoting
+
+Use Case: Using consensus among multiple agents for decision-making.
+
+```python
+voting_router = SwarmRouter(
+    name="MajorityVoting",
+    description="Make decisions using consensus among agents",
+    max_loops=1,
+    agents=[analyst1, analyst2, analyst3, consensus_agent],
+    swarm_type="MajorityVoting"
+)
+
+result = voting_router.run("Should we invest in Company X based on the available data?")
+```
 
 ### Auto Select (Experimental)
 Autonomously selects the right swarm by conducting vector search on your input task or name or description or all 3.
 
 ```python
-concurrent_router = SwarmRouter(
+auto_router = SwarmRouter(
     name="MultiSourceAnalyzer",
     description="Analyze multiple data sources concurrently",
     max_loops=1,
@@ -316,10 +450,25 @@ concurrent_router = SwarmRouter(
     swarm_type="auto" # Set this to 'auto' for it to auto select your swarm. It's match words like concurrently multiple -> "ConcurrentWorkflow"
 )
 
-result = concurrent_router.run("Conduct a comprehensive market analysis for Product X")
+result = auto_router.run("Conduct a comprehensive market analysis for Product X")
 ```
 
 ## Advanced Features
+
+### Processing Documents
+
+To process documents with the SwarmRouter:
+
+```python
+document_router = SwarmRouter(
+    name="DocumentProcessor",
+    agents=[document_analyzer, summarizer],
+    documents=["report.pdf", "contract.docx", "data.csv"],
+    swarm_type="SequentialWorkflow"
+)
+
+result = document_router.run("Extract key information from the provided documents")
+```
 
 ### Batch Processing
 
@@ -328,14 +477,6 @@ To process multiple tasks in a batch:
 ```python
 tasks = ["Analyze Q1 report", "Summarize competitor landscape", "Evaluate market trends"]
 results = router.batch_run(tasks)
-```
-
-### Threaded Execution
-
-For non-blocking execution of a task:
-
-```python
-result = router.threaded_run("Perform complex analysis")
 ```
 
 ### Asynchronous Execution
@@ -363,15 +504,63 @@ tasks = ["Task 1", "Task 2", "Task 3"]
 results = router.concurrent_batch_run(tasks)
 ```
 
+### Using the SwarmRouter as a Callable
+
+You can use the SwarmRouter instance directly as a callable:
+
+```python
+router = SwarmRouter(
+    name="CallableRouter",
+    agents=[agent1, agent2],
+    swarm_type="SequentialWorkflow"
+)
+
+result = router("Analyze the market data")  # Equivalent to router.run("Analyze the market data")
+```
+
+### Using the swarm_router Function
+
+For quick one-off tasks, you can use the swarm_router function:
+
+```python
+from swarms import swarm_router
+
+result = swarm_router(
+    name="QuickRouter",
+    agents=[agent1, agent2],
+    swarm_type="ConcurrentWorkflow",
+    task="Analyze the quarterly report"
+)
+```
+
 ## Best Practices
 
 1. Choose the appropriate swarm type based on your task requirements.
+
 2. Provide clear and specific tasks to the swarm for optimal results.
+
 3. Regularly review logs to monitor performance and identify potential issues.
+
 4. Use descriptive names and descriptions for your SwarmRouter and agents.
+
 5. Implement proper error handling in your application code.
+
 6. Consider the nature of your tasks when choosing a swarm type (e.g., use ConcurrentWorkflow for tasks that can be parallelized).
+
 7. Optimize your agents' prompts and configurations for best performance within the swarm.
+
 8. Utilize the automatic swarm type selection feature for tasks where the optimal swarm type is not immediately clear.
+
 9. Take advantage of batch processing and concurrent execution for handling multiple tasks efficiently.
+
 10. Use the reliability check feature to ensure your SwarmRouter is properly configured before running tasks.
+
+11. Consider using shared memory systems when agents need to share context or knowledge.
+
+12. Inject common rules when you want consistent behavior across all agents.
+
+13. Use the appropriate output type (string, dict, etc.) based on how you plan to process the results.
+
+14. When working with large documents, provide file paths instead of loading content into memory.
+
+15. For complex agent interactions, use the GroupChat or HierarchicalSwarm types to facilitate structured communication.

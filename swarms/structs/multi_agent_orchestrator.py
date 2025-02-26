@@ -11,12 +11,15 @@ Todo:
 import os
 import uuid
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
 from swarms.utils.function_caller_model import OpenAIFunctionCaller
 from swarms.structs.agent import Agent
+from swarms.structs.conversation import Conversation
+from swarms.structs.output_type import OutputType
+from swarms.utils.any_to_str import any_to_str
 
 
 class AgentResponse(BaseModel):
@@ -58,7 +61,7 @@ class MultiAgentRouter:
         model: str = "gpt-4o-mini",
         temperature: float = 0.1,
         shared_memory_system: callable = None,
-        output_type: Literal["json", "string"] = "json",
+        output_type: OutputType = "dict",
         execute_task: bool = True,
     ):
         """
@@ -76,13 +79,19 @@ class MultiAgentRouter:
         self.name = name
         self.description = description
         self.shared_memory_system = shared_memory_system
+        self.output_type = output_type
+        self.execute_task = execute_task
+        self.model = model
+        self.temperature = temperature
+
+        # Initialize Agents
         self.agents = {agent.name: agent for agent in agents}
+        self.conversation = Conversation()
+
         self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OpenAI API key must be provided")
 
-        self.output_type = output_type
-        self.execute_task = execute_task
         self.boss_system_prompt = self._create_boss_system_prompt()
 
         # Initialize the function caller
@@ -157,10 +166,17 @@ class MultiAgentRouter:
             dict: A dictionary containing the routing result, including the selected agent, reasoning, and response.
         """
         try:
+            self.conversation.add(role="user", content=task)
             start_time = datetime.now()
 
             # Get boss decision using function calling
             boss_response = self.function_caller.get_completion(task)
+
+            boss_response_str = any_to_str(boss_response)
+
+            self.conversation.add(
+                role="assistant", content=boss_response_str
+            )
 
             # Validate that the selected agent exists
             if boss_response.selected_agent not in self.agents:
@@ -182,6 +198,9 @@ class MultiAgentRouter:
             if self.execute_task:
                 # Use the agent's run method directly
                 agent_response = selected_agent.run(final_task)
+                self.conversation.add(
+                    role=selected_agent.name, content=agent_response
+                )
                 execution_time = (
                     datetime.now() - execution_start
                 ).total_seconds()
@@ -230,7 +249,15 @@ class MultiAgentRouter:
             logger.error(f"Error routing task: {str(e)}")
             raise
 
-    def batch_route(self, tasks: List[str] = []):
+    def run(self, task: str):
+        """Route a task to the appropriate agent and return the result"""
+        return self.route_task(task)
+
+    def __call__(self, task: str):
+        """Route a task to the appropriate agent and return the result"""
+        return self.route_task(task)
+
+    def batch_run(self, tasks: List[str] = []):
         """Batch route tasks to the appropriate agents"""
         results = []
         for task in tasks:
@@ -241,7 +268,7 @@ class MultiAgentRouter:
                 logger.error(f"Error routing task: {str(e)}")
         return results
 
-    def concurrent_batch_route(self, tasks: List[str] = []):
+    def concurrent_batch_run(self, tasks: List[str] = []):
         """Concurrently route tasks to the appropriate agents"""
         import concurrent.futures
         from concurrent.futures import ThreadPoolExecutor
