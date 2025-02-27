@@ -43,7 +43,7 @@ def run_single_swarm():
             },
         ],
         "max_loops": 1,
-        "swarm_type": "HiearchicalSwarm",
+        "swarm_type": "SequentialWorkflow",
         "task": "What are the best etfs and index funds for ai and tech?",
         "output_type": "dict",
         # "return_history": True,
@@ -71,11 +71,11 @@ def get_logs():
 
 
 if __name__ == "__main__":
-    # result = run_single_swarm()
-    # print("Swarm Result:")
-    # print(result)
+    result = run_single_swarm()
+    print("Swarm Result:")
+    print(result)
 
-    logs = get_logs()
-    logs = json.dumps(logs, indent=4)
-    print("Logs:")
-    print(logs)
+    # logs = get_logs()
+    # logs = json.dumps(logs, indent=4)
+    # print("Logs:")
+    # print(logs)
