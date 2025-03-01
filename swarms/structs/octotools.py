@@ -639,67 +639,87 @@ def python_calculator_execute(expression: str, **kwargs) -> str:
         return f"Error: {e}"
 
 
-# Create Tool instances
-image_captioner = Tool(
-    name="Image_Captioner_Tool",
-    description="Generates a caption for an image.",
-    metadata={
-        "input_types": {"image": "str", "prompt": "str"},
-        "output_type": "str",
-        "limitations": "May struggle with complex scenes or ambiguous objects.",
-        "best_practices": "Use with clear, well-lit images. Provide specific prompts for better results.",
-    },
-    execute_func=image_captioner_execute,
-)
+# Create utility function to get default tools
+def get_default_tools() -> List[Tool]:
+    """Returns a list of default tools that can be used with OctoToolsSwarm."""
+    image_captioner = Tool(
+        name="Image_Captioner_Tool",
+        description="Generates a caption for an image.",
+        metadata={
+            "input_types": {"image": "str", "prompt": "str"},
+            "output_type": "str",
+            "limitations": "May struggle with complex scenes or ambiguous objects.",
+            "best_practices": "Use with clear, well-lit images. Provide specific prompts for better results.",
+        },
+        execute_func=image_captioner_execute,
+    )
 
-object_detector = Tool(
-    name="Object_Detector_Tool",
-    description="Detects objects in an image.",
-    metadata={
-        "input_types": {"image": "str", "labels": "list"},
-        "output_type": "list",
-        "limitations": "Accuracy depends on the quality of the image and the clarity of the objects.",
-        "best_practices": "Provide a list of specific object labels to detect. Use high-resolution images.",
-    },
-    execute_func=object_detector_execute,
-)
+    object_detector = Tool(
+        name="Object_Detector_Tool",
+        description="Detects objects in an image.",
+        metadata={
+            "input_types": {"image": "str", "labels": "list"},
+            "output_type": "list",
+            "limitations": "Accuracy depends on the quality of the image and the clarity of the objects.",
+            "best_practices": "Provide a list of specific object labels to detect. Use high-resolution images.",
+        },
+        execute_func=object_detector_execute,
+    )
 
-web_search = Tool(
-    name="Web_Search_Tool",
-    description="Performs a web search.",
-    metadata={
-        "input_types": {"query": "str"}, 
-        "output_type": "str",
-        "limitations": "May not find specific or niche information.",
-        "best_practices": "Use specific and descriptive keywords for better results.",
-    },
-    execute_func=web_search_execute,
-)
+    web_search = Tool(
+        name="Web_Search_Tool",
+        description="Performs a web search.",
+        metadata={
+            "input_types": {"query": "str"}, 
+            "output_type": "str",
+            "limitations": "May not find specific or niche information.",
+            "best_practices": "Use specific and descriptive keywords for better results.",
+        },
+        execute_func=web_search_execute,
+    )
 
-calculator = Tool(
-    name="Python_Calculator_Tool",
-    description="Evaluates a Python expression.",
-    metadata={
-        "input_types": {"expression": "str"}, 
-        "output_type": "str",
-        "limitations": "Cannot handle complex mathematical functions or libraries.",
-        "best_practices": "Use for basic arithmetic and simple calculations.",
-    },
-    execute_func=python_calculator_execute,
-)
+    calculator = Tool(
+        name="Python_Calculator_Tool",
+        description="Evaluates a Python expression.",
+        metadata={
+            "input_types": {"expression": "str"}, 
+            "output_type": "str",
+            "limitations": "Cannot handle complex mathematical functions or libraries.",
+            "best_practices": "Use for basic arithmetic and simple calculations.",
+        },
+        execute_func=python_calculator_execute,
+    )
+    
+    return [image_captioner, object_detector, web_search, calculator]
 
-# Create an OctoToolsSwarm agent
-agent = OctoToolsSwarm(tools=[image_captioner, object_detector, web_search, calculator])
 
-# Run the agent with a query
-# query = "Who is the president of US, final all the PM of humans?"
-# # Create a dummy image file for testing
-# with open("example.png", "w") as f:
-#     f.write("Dummy image content")
+# Only execute the example when this script is run directly
+# if __name__ == "__main__":
+#     print("Running OctoToolsSwarm example...")
+    
+#     # Create an OctoToolsSwarm agent with default tools
+#     tools = get_default_tools()
+#     agent = OctoToolsSwarm(tools=tools)
 
-# image_path = "example.png"
-# result = agent.run(query, image=image_path)
+#     # Example query
+#     query = "What is the square root of the number of objects in this image?"
+    
+#     # Create a dummy image file for testing if it doesn't exist
+#     image_path = "example.png"
+#     if not os.path.exists(image_path):
+#         with open(image_path, "w") as f:
+#             f.write("Dummy image content")
+#         print(f"Created dummy image file: {image_path}")
+    
+#     # Run the agent
+#     result = agent.run(query, image=image_path)
 
-# print(result["final_answer"])
-# print(result["trajectory"])  # Uncomment to see the full trajectory
-# print("\n".join(result["conversation"])) # Uncomment to see agent conversation
+#     # Display results
+#     print("\n=== FINAL ANSWER ===")
+#     print(result["final_answer"])
+    
+#     print("\n=== TRAJECTORY SUMMARY ===")
+#     for step in result["trajectory"]:
+#         print(f"Step {step.get('step', 'N/A')}: {step.get('component', 'Unknown')}")
+    
+#     print("\nOctoToolsSwarm example completed.")

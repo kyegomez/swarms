@@ -81,7 +81,7 @@ from swarms.structs.swarms_api import (
     AgentInput,
 )
 from swarms.structs.talk_hier import TalkHier, AgentRole, CommunicationEvent  
-from swarms.structs.octotools import OctoToolsSwarm, Tool, ToolType  
+from swarms.structs.octotools import OctoToolsSwarm, Tool, ToolType, get_default_tools  
 
 __all__ = [
     "Agent",
@@ -151,6 +151,7 @@ __all__ = [
     "OctoToolsSwarm",
     "Tool",
     "ToolType",
+    "get_default_tools",
     "TalkHier",  
     "AgentRole",  
     "CommunicationEvent", 
