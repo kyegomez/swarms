@@ -5,7 +5,6 @@ Implements the OctoTools framework using swarms.
 
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass
 from enum import Enum
@@ -16,6 +15,7 @@ import math  # Import the math module
 from dotenv import load_dotenv
 from swarms import Agent
 from swarms.structs.conversation import Conversation
+
 # from exa_search import exa_search as web_search_execute
 
 
@@ -59,7 +59,9 @@ class Tool:
         try:
             return self.execute_func(**kwargs)
         except Exception as e:
-            logger.error(f"Error executing tool {self.name}: {str(e)}")
+            logger.error(
+                f"Error executing tool {self.name}: {str(e)}"
+            )
             return {"error": str(e)}
 
 
@@ -92,9 +94,15 @@ class OctoToolsSwarm:
         """Initialize the OctoToolsSwarm system."""
         self.model_name = model_name
         self.max_iterations = max_iterations
-        self.base_path = Path(base_path) if base_path else Path("./octotools_states")
+        self.base_path = (
+            Path(base_path)
+            if base_path
+            else Path("./octotools_states")
+        )
         self.base_path.mkdir(exist_ok=True)
-        self.tools = {tool.name: tool for tool in tools}  # Store tools in a dictionary
+        self.tools = {
+            tool.name: tool for tool in tools
+        }  # Store tools in a dictionary
 
         # Initialize agents
         self._init_agents()
@@ -110,9 +118,9 @@ class OctoToolsSwarm:
             agent_name="OctoTools-Planner",
             system_prompt=self._get_planner_prompt(),
             model_name=self.model_name,
-            max_loops=3,  
+            max_loops=3,
             saved_state_path=str(self.base_path / "planner.json"),
-            verbose=True,  
+            verbose=True,
         )
 
         # Verifier agent
@@ -120,7 +128,7 @@ class OctoToolsSwarm:
             agent_name="OctoTools-Verifier",
             system_prompt=self._get_verifier_prompt(),
             model_name=self.model_name,
-            max_loops=1,  
+            max_loops=1,
             saved_state_path=str(self.base_path / "verifier.json"),
             verbose=True,
         )
@@ -130,7 +138,7 @@ class OctoToolsSwarm:
             agent_name="OctoTools-Summarizer",
             system_prompt=self._get_summarizer_prompt(),
             model_name=self.model_name,
-            max_loops=1, 
+            max_loops=1,
             saved_state_path=str(self.base_path / "summarizer.json"),
             verbose=True,
         )
@@ -337,22 +345,24 @@ class OctoToolsSwarm:
         try:
             return json.loads(json_str)
         except json.JSONDecodeError:
-            logger.warning(f"JSONDecodeError: Attempting to extract JSON from: {json_str}")
+            logger.warning(
+                f"JSONDecodeError: Attempting to extract JSON from: {json_str}"
+            )
             try:
                 # More robust JSON extraction with recursive descent
                 def extract_json(s):
                     stack = []
                     start = -1
                     for i, c in enumerate(s):
-                        if c == '{':
+                        if c == "{":
                             if not stack:
                                 start = i
                             stack.append(c)
-                        elif c == '}':
+                        elif c == "}":
                             if stack:
                                 stack.pop()
                                 if not stack and start != -1:
-                                    return s[start:i+1]
+                                    return s[start : i + 1]
                     return None
 
                 extracted_json = extract_json(json_str)
@@ -360,13 +370,23 @@ class OctoToolsSwarm:
                     logger.info(f"Extracted JSON: {extracted_json}")
                     return json.loads(extracted_json)
                 else:
-                    logger.error("Failed to extract JSON using recursive descent.")
-                    return {"error": "Failed to parse JSON", "content": json_str}
+                    logger.error(
+                        "Failed to extract JSON using recursive descent."
+                    )
+                    return {
+                        "error": "Failed to parse JSON",
+                        "content": json_str,
+                    }
             except Exception as e:
                 logger.exception(f"Error during JSON extraction: {e}")
-                return {"error": "Failed to parse JSON", "content": json_str}
+                return {
+                    "error": "Failed to parse JSON",
+                    "content": json_str,
+                }
 
-    def _execute_tool(self, tool_name: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_tool(
+        self, tool_name: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Executes a tool based on its name and provided context."""
         if tool_name not in self.tools:
             return {"error": f"Tool '{tool_name}' not found."}
@@ -376,20 +396,30 @@ class OctoToolsSwarm:
             # For Python Calculator tool, handle object counts from Object Detector
             if tool_name == "Python_Calculator_Tool":
                 # Check for object detector results
-                object_detector_result = context.get("Object_Detector_Tool_result")
-                if object_detector_result and isinstance(object_detector_result, list):
+                object_detector_result = context.get(
+                    "Object_Detector_Tool_result"
+                )
+                if object_detector_result and isinstance(
+                    object_detector_result, list
+                ):
                     # Calculate the number of objects
                     num_objects = len(object_detector_result)
                     # If sub_goal doesn't already contain an expression, create one
-                    if "sub_goal" in context and "Calculate the square root" in context["sub_goal"]:
+                    if (
+                        "sub_goal" in context
+                        and "Calculate the square root"
+                        in context["sub_goal"]
+                    ):
                         context["expression"] = f"{num_objects}**0.5"
                     elif "expression" not in context:
                         # Default to square root if no expression is specified
                         context["expression"] = f"{num_objects}**0.5"
-                
+
             # Filter context: only pass expected inputs to the tool
             valid_inputs = {
-                k: v for k, v in context.items() if k in tool.metadata.get("input_types", {})
+                k: v
+                for k, v in context.items()
+                if k in tool.metadata.get("input_types", {})
             }
             result = tool.execute(**valid_inputs)
             return {"result": result}
@@ -397,7 +427,9 @@ class OctoToolsSwarm:
             logger.exception(f"Error executing tool {tool_name}: {e}")
             return {"error": str(e)}
 
-    def _run_agent(self, agent: Agent, input_prompt: str) -> Dict[str, Any]:
+    def _run_agent(
+        self, agent: Agent, input_prompt: str
+    ) -> Dict[str, Any]:
         """Runs a swarms agent, handling output and JSON parsing."""
         try:
             # Construct the full input, including the system prompt
@@ -406,10 +438,12 @@ class OctoToolsSwarm:
             # Run the agent and capture the output
             agent_response = agent.run(full_input)
 
-            logger.info(f"DEBUG: Raw agent response: {agent_response}")
+            logger.info(
+                f"DEBUG: Raw agent response: {agent_response}"
+            )
 
             # Extract the LLM's response (remove conversation history, etc.)
-            response_text = agent_response # Assuming direct return
+            response_text = agent_response  # Assuming direct return
 
             # Try to parse the response as JSON
             parsed_response = self._safely_parse_json(response_text)
@@ -417,10 +451,16 @@ class OctoToolsSwarm:
             return parsed_response
 
         except Exception as e:
-            logger.exception(f"Error running agent {agent.agent_name}: {e}")
-            return {"error": f"Agent {agent.agent_name} failed: {str(e)}"}
+            logger.exception(
+                f"Error running agent {agent.agent_name}: {e}"
+            )
+            return {
+                "error": f"Agent {agent.agent_name} failed: {str(e)}"
+            }
 
-    def run(self, query: str, image: Optional[str] = None) -> Dict[str, Any]:
+    def run(
+        self, query: str, image: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Execute the task through the multi-agent workflow."""
         logger.info(f"Starting task: {query}")
 
@@ -430,7 +470,9 @@ class OctoToolsSwarm:
                 f"Analyze the following query and determine the necessary skills and"
                 f" relevant tools: {query}"
             )
-            query_analysis = self._run_agent(self.planner, planner_input)
+            query_analysis = self._run_agent(
+                self.planner, planner_input
+            )
 
             if "error" in query_analysis:
                 return {
@@ -440,20 +482,27 @@ class OctoToolsSwarm:
                 }
 
             self.memory.append(
-                {"step": 0, "component": "Query Analyzer", "result": query_analysis}
+                {
+                    "step": 0,
+                    "component": "Query Analyzer",
+                    "result": query_analysis,
+                }
             )
             self.conversation.add(
-                role=self.planner.agent_name, content=json.dumps(query_analysis)
+                role=self.planner.agent_name,
+                content=json.dumps(query_analysis),
             )
 
             # Initialize context with the query and image (if provided)
             context = {"query": query}
             if image:
                 context["image"] = image
-                
+
             # Add available tools to context
             if "relevant_tools" in query_analysis:
-                context["available_tools"] = query_analysis["relevant_tools"]
+                context["available_tools"] = query_analysis[
+                    "relevant_tools"
+                ]
             else:
                 # If no relevant tools specified, make all tools available
                 context["available_tools"] = list(self.tools.keys())
@@ -462,48 +511,75 @@ class OctoToolsSwarm:
 
             # Step 2: Iterative Action-Execution Loop
             while step_count <= self.max_iterations:
-                logger.info(f"Starting iteration {step_count} of {self.max_iterations}")
-                
+                logger.info(
+                    f"Starting iteration {step_count} of {self.max_iterations}"
+                )
+
                 # Step 2a: Action Prediction (Low-Level Planning)
                 action_planner_input = (
                     f"Current Context: {json.dumps(context)}\nAvailable Tools:"
                     f" {', '.join(context.get('available_tools', list(self.tools.keys())))}\nPlan the"
                     " next step."
                 )
-                action = self._run_agent(self.planner, action_planner_input)
+                action = self._run_agent(
+                    self.planner, action_planner_input
+                )
                 if "error" in action:
-                    logger.error(f"Error in action prediction: {action['error']}")
+                    logger.error(
+                        f"Error in action prediction: {action['error']}"
+                    )
                     return {
                         "error": f"Planner action prediction failed: {action['error']}",
                         "trajectory": self.memory,
-                        "conversation": self.conversation.return_history_as_string()
+                        "conversation": self.conversation.return_history_as_string(),
                     }
                 self.memory.append(
-                    {"step": step_count, "component": "Action Predictor", "result": action}
+                    {
+                        "step": step_count,
+                        "component": "Action Predictor",
+                        "result": action,
+                    }
                 )
-                self.conversation.add(role=self.planner.agent_name, content=json.dumps(action))
+                self.conversation.add(
+                    role=self.planner.agent_name,
+                    content=json.dumps(action),
+                )
 
                 # Input Validation for Action (Relaxed)
-                if not isinstance(action, dict) or "tool_name" not in action or "sub_goal" not in action:
+                if (
+                    not isinstance(action, dict)
+                    or "tool_name" not in action
+                    or "sub_goal" not in action
+                ):
                     error_msg = (
                         "Action prediction did not return required fields (tool_name,"
                         " sub_goal) or was not a dictionary."
                     )
                     logger.error(error_msg)
                     self.memory.append(
-                        {"step": step_count, "component": "Error", "result": error_msg}
+                        {
+                            "step": step_count,
+                            "component": "Error",
+                            "result": error_msg,
+                        }
                     )
                     break
 
                 # Step 2b: Execute Tool
                 tool_execution_context = {
                     **context,
-                    **action.get("context", {}),  # Add any additional context
-                    "sub_goal": action["sub_goal"],  # Pass sub_goal to tool
+                    **action.get(
+                        "context", {}
+                    ),  # Add any additional context
+                    "sub_goal": action[
+                        "sub_goal"
+                    ],  # Pass sub_goal to tool
                 }
-                
-                tool_result = self._execute_tool(action["tool_name"], tool_execution_context)
-                
+
+                tool_result = self._execute_tool(
+                    action["tool_name"], tool_execution_context
+                )
+
                 self.memory.append(
                     {
                         "step": step_count,
@@ -514,16 +590,22 @@ class OctoToolsSwarm:
 
                 # Step 2c: Context Update - Store result with a descriptive key
                 if "result" in tool_result:
-                    context[f"{action['tool_name']}_result"] = tool_result["result"]
+                    context[f"{action['tool_name']}_result"] = (
+                        tool_result["result"]
+                    )
                 if "error" in tool_result:
-                    context[f"{action['tool_name']}_error"] = tool_result["error"]
+                    context[f"{action['tool_name']}_error"] = (
+                        tool_result["error"]
+                    )
 
                 # Step 2d: Context Verification
                 verifier_input = (
                     f"Current Context: {json.dumps(context)}\nMemory:"
                     f" {json.dumps(self.memory)}\nQuery: {query}"
                 )
-                verification = self._run_agent(self.verifier, verifier_input)
+                verification = self._run_agent(
+                    self.verifier, verifier_input
+                )
                 if "error" in verification:
                     return {
                         "error": f"Verifier failed: {verification['error']}",
@@ -538,22 +620,31 @@ class OctoToolsSwarm:
                         "result": verification,
                     }
                 )
-                self.conversation.add(role=self.verifier.agent_name, content=json.dumps(verification))
+                self.conversation.add(
+                    role=self.verifier.agent_name,
+                    content=json.dumps(verification),
+                )
 
                 # Check for stop signal from Verifier
                 if verification.get("stop_signal") is True:
-                    logger.info("Received stop signal from verifier. Stopping iterations.")
+                    logger.info(
+                        "Received stop signal from verifier. Stopping iterations."
+                    )
                     break
 
                 # Safety mechanism - if we've executed the same tool multiple times
                 same_tool_count = sum(
-                    1 for m in self.memory 
-                    if m.get("component") == "Action Predictor" 
-                    and m.get("result", {}).get("tool_name") == action.get("tool_name")
+                    1
+                    for m in self.memory
+                    if m.get("component") == "Action Predictor"
+                    and m.get("result", {}).get("tool_name")
+                    == action.get("tool_name")
                 )
-                
+
                 if same_tool_count > 3:
-                    logger.warning(f"Tool {action.get('tool_name')} used more than 3 times. Forcing stop.")
+                    logger.warning(
+                        f"Tool {action.get('tool_name')} used more than 3 times. Forcing stop."
+                    )
                     break
 
                 step_count += 1
@@ -561,23 +652,32 @@ class OctoToolsSwarm:
             # Step 3: Solution Summarization
             summarizer_input = f"Complete Trajectory: {json.dumps(self.memory)}\nOriginal Query: {query}"
 
-            summarization = self._run_agent(self.summarizer, summarizer_input)
+            summarization = self._run_agent(
+                self.summarizer, summarizer_input
+            )
             if "error" in summarization:
                 return {
                     "error": f"Summarizer failed: {summarization['error']}",
                     "trajectory": self.memory,
-                    "conversation": self.conversation.return_history_as_string()
+                    "conversation": self.conversation.return_history_as_string(),
                 }
-            self.conversation.add(role=self.summarizer.agent_name, content=json.dumps(summarization))
+            self.conversation.add(
+                role=self.summarizer.agent_name,
+                content=json.dumps(summarization),
+            )
 
             return {
-                "final_answer": summarization.get("final_answer", "No answer found."),
+                "final_answer": summarization.get(
+                    "final_answer", "No answer found."
+                ),
                 "trajectory": self.memory,
                 "conversation": self.conversation.return_history_as_string(),
             }
 
         except Exception as e:
-            logger.exception(f"Unexpected error in run method: {e}")  # More detailed
+            logger.exception(
+                f"Unexpected error in run method: {e}"
+            )  # More detailed
             return {
                 "error": str(e),
                 "trajectory": self.memory,
@@ -590,7 +690,9 @@ class OctoToolsSwarm:
             try:
                 agent.save_state()
             except Exception as e:
-                logger.error(f"Error saving state for {agent.agent_name}: {str(e)}")
+                logger.error(
+                    f"Error saving state for {agent.agent_name}: {str(e)}"
+                )
 
     def load_state(self) -> None:
         """Load the saved state of all agents."""
@@ -598,24 +700,39 @@ class OctoToolsSwarm:
             try:
                 agent.load_state()
             except Exception as e:
-                logger.error(f"Error loading state for {agent.agent_name}: {str(e)}")
+                logger.error(
+                    f"Error loading state for {agent.agent_name}: {str(e)}"
+                )
 
 
 # --- Example Usage ---
 
 
 # Define dummy tool functions (replace with actual implementations)
-def image_captioner_execute(image: str, prompt: str = "Describe the image", **kwargs) -> str:
+def image_captioner_execute(
+    image: str, prompt: str = "Describe the image", **kwargs
+) -> str:
     """Dummy image captioner."""
-    print(f"image_captioner_execute called with image: {image}, prompt: {prompt}")
+    print(
+        f"image_captioner_execute called with image: {image}, prompt: {prompt}"
+    )
     return f"Caption for {image}: A descriptive caption (dummy)."  # Simplified
 
 
-def object_detector_execute(image: str, labels: List[str] = [], **kwargs) -> List[str]:
+def object_detector_execute(
+    image: str, labels: List[str] = [], **kwargs
+) -> List[str]:
     """Dummy object detector, handles missing labels gracefully."""
-    print(f"object_detector_execute called with image: {image}, labels: {labels}")
+    print(
+        f"object_detector_execute called with image: {image}, labels: {labels}"
+    )
     if not labels:
-        return ["object1", "object2", "object3", "object4"]  # Return default objects if no labels
+        return [
+            "object1",
+            "object2",
+            "object3",
+            "object4",
+        ]  # Return default objects if no labels
     return [f"Detected {label}" for label in labels]  # Simplified
 
 
@@ -631,7 +748,9 @@ def python_calculator_execute(expression: str, **kwargs) -> str:
     try:
         # Safely evaluate only simple expressions involving numbers and basic operations
         if re.match(r"^[0-9+\-*/().\s]+$", expression):
-            result = eval(expression, {"__builtins__": {}, "math": math})
+            result = eval(
+                expression, {"__builtins__": {}, "math": math}
+            )
             return f"Result of {expression} is {result}"
         else:
             return "Error: Invalid expression for calculator."
@@ -670,7 +789,7 @@ def get_default_tools() -> List[Tool]:
         name="Web_Search_Tool",
         description="Performs a web search.",
         metadata={
-            "input_types": {"query": "str"}, 
+            "input_types": {"query": "str"},
             "output_type": "str",
             "limitations": "May not find specific or niche information.",
             "best_practices": "Use specific and descriptive keywords for better results.",
@@ -682,44 +801,44 @@ def get_default_tools() -> List[Tool]:
         name="Python_Calculator_Tool",
         description="Evaluates a Python expression.",
         metadata={
-            "input_types": {"expression": "str"}, 
+            "input_types": {"expression": "str"},
             "output_type": "str",
             "limitations": "Cannot handle complex mathematical functions or libraries.",
             "best_practices": "Use for basic arithmetic and simple calculations.",
         },
         execute_func=python_calculator_execute,
     )
-    
+
     return [image_captioner, object_detector, web_search, calculator]
 
 
 # Only execute the example when this script is run directly
 # if __name__ == "__main__":
 #     print("Running OctoToolsSwarm example...")
-    
+
 #     # Create an OctoToolsSwarm agent with default tools
 #     tools = get_default_tools()
 #     agent = OctoToolsSwarm(tools=tools)
 
 #     # Example query
 #     query = "What is the square root of the number of objects in this image?"
-    
+
 #     # Create a dummy image file for testing if it doesn't exist
 #     image_path = "example.png"
 #     if not os.path.exists(image_path):
 #         with open(image_path, "w") as f:
 #             f.write("Dummy image content")
 #         print(f"Created dummy image file: {image_path}")
-    
+
 #     # Run the agent
 #     result = agent.run(query, image=image_path)
 
 #     # Display results
 #     print("\n=== FINAL ANSWER ===")
 #     print(result["final_answer"])
-    
+
 #     print("\n=== TRAJECTORY SUMMARY ===")
 #     for step in result["trajectory"]:
 #         print(f"Step {step.get('step', 'N/A')}: {step.get('component', 'Unknown')}")
-    
+
 #     print("\nOctoToolsSwarm example completed.")
