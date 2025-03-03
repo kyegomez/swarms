@@ -72,7 +72,6 @@ from swarms.structs.swarming_architectures import (
     staircase_swarm,
     star_swarm,
 )
-
 from swarms.structs.swarms_api import (
     SwarmsAPIClient,
     SwarmRequest,
@@ -81,6 +80,8 @@ from swarms.structs.swarms_api import (
     SwarmValidationError,
     AgentInput,
 )
+from swarms.structs.talk_hier import TalkHier, AgentRole, CommunicationEvent  
+from swarms.structs.octotools import OctoToolsSwarm, Tool, ToolType, get_default_tools  
 
 __all__ = [
     "Agent",
@@ -147,6 +148,13 @@ __all__ = [
     "MultiAgentRouter",
     "MemeAgentGenerator",
     "ModelRouter",
+    "OctoToolsSwarm",
+    "Tool",
+    "ToolType",
+    "get_default_tools",
+    "TalkHier",  
+    "AgentRole",  
+    "CommunicationEvent", 
     "SwarmsAPIClient",
     "SwarmRequest",
     "SwarmAuthenticationError",
