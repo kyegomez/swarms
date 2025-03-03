@@ -27,7 +27,7 @@ def run_single_swarm():
                 "agent_name": "Market Analyst",
                 "description": "Analyzes market trends",
                 "system_prompt": "You are a financial analyst expert.",
-                "model_name": "gpt-4o",
+                "model_name": "openai/gpt-4o",
                 "role": "worker",
                 "max_loops": 1,
                 "max_tokens": 8192,
@@ -46,7 +46,6 @@ def run_single_swarm():
         "swarm_type": "SequentialWorkflow",
         "task": "What are the best etfs and index funds for ai and tech?",
         "output_type": "dict",
-        # "return_history": True,
     }
 
     response = requests.post(
@@ -55,6 +54,8 @@ def run_single_swarm():
         json=payload,
     )
 
+    print(response)
+    print(response.status_code)
     # return response.json()
     output = response.json()
 

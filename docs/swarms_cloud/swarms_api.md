@@ -43,20 +43,27 @@ Run a single swarm with specified agents and tasks.
 
 #### Request Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| name | string | Optional | Name of the swarm (max 100 chars) |
-| description | string | Optional | Description of the swarm (max 500 chars) |
-| agents | array | Required | Array of agent configurations |
-| max_loops | integer | Optional | Maximum number of iterations |
-| swarm_type | string | Optional | Type of swarm workflow (e.g., "AgentRearrange", "MixtureOfAgents", "SpreadSheetSwarm", "SequentialWorkflow", "ConcurrentWorkflow", "GroupChat", "MultiAgentRouter", "AutoSwarmBuilder", "HiearchicalSwarm", "auto", "MajorityVoting") |
-| task | string | Required | The task to be performed |
-| img | string | Optional | Image URL if relevant |
-| output_type | string | Optional | "str" | Output format ("str", "json", "dict", "yaml", "list") |
-| rules | string | Optional | - | Rules for the agent |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| name | string | Optional | "swarms-01" | Name of the swarm (max 100 chars) |
+| description | string | Optional | - | Description of the swarm (max 500 chars) |
+| agents | array | Required | - | Array of agent configurations |
+| max_loops | integer | Optional | 1 | Maximum number of iterations |
+| swarm_type | string | Optional | - | Type of swarm workflow |
+| task | string | Required | - | The task to be performed |
+| img | string | Optional | - | Image URL if relevant |
 | return_history | boolean | Optional | true | Whether to return the full conversation history |
-| rearrange_flow | string | Optional | - | Flow for the agents |
+| rules | string | Optional | - | Rules for the swarm to follow |
+| rearrange_flow | string | Optional | - | Flow pattern for agent rearrangement |
+| output_type | string | Optional | "str" | Output format ("str", "json", "dict", "yaml", "list") |
+| schedule | object | Optional | - | Scheduling information for the swarm |
 
+#### Schedule Configuration Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| scheduled_time | datetime | Required | - | When to execute the swarm (UTC) |
+| timezone | string | Optional | "UTC" | Timezone for the scheduled time |
 
 #### Agent Configuration Parameters
 
@@ -65,114 +72,255 @@ Run a single swarm with specified agents and tasks.
 | agent_name | string | Required | - | Name of the agent (max 100 chars) |
 | description | string | Optional | - | Description of the agent (max 500 chars) |
 | system_prompt | string | Optional | - | System prompt for the agent (max 500 chars) |
-| model_name | string | Optional | "gpt-4o" | Model to be used by the agent (follows litellm conventions) |
+| model_name | string | Optional | "gpt-4o" | Model to be used by the agent |
 | auto_generate_prompt | boolean | Optional | false | Whether to auto-generate prompts |
 | max_tokens | integer | Optional | - | Maximum tokens for response |
 | temperature | float | Optional | 0.5 | Temperature for response generation |
 | role | string | Optional | "worker" | Role of the agent |
 | max_loops | integer | Optional | 1 | Maximum iterations for this agent |
 
-
 ## Available Swarm Types
 
----
-| Swarm Type           | Description                                                                 |
-|----------------------|-----------------------------------------------------------------------------|
-| AgentRearrange       | Rearranges agents dynamically to optimize task execution.                   |
-| MixtureOfAgents      | Combines different agents to leverage their unique capabilities.            |
-| SpreadSheetSwarm     | Utilizes spreadsheet-like operations for data manipulation and analysis.    |
-| SequentialWorkflow   | Executes tasks in a predefined sequential order.                            |
-| ConcurrentWorkflow   | Runs tasks concurrently to improve efficiency and reduce execution time.    |
-| GroupChat            | Facilitates communication and collaboration among agents in a chat format.  |
-| MultiAgentRouter     | Routes tasks to multiple agents based on their expertise and availability.  |
-| AutoSwarmBuilder     | Automatically constructs a swarm based on task requirements and agent skills.|
-| HiearchicalSwarm     | Organizes agents in a hierarchy to manage complex task dependencies.        |
-| auto                 | Automatically selects the most suitable swarm type for the task.            |
-| MajorityVoting       | Uses majority voting among agents to reach a consensus on task outcomes.    |
+| Swarm Type | Description |
+|------------|-------------|
+| AgentRearrange | Rearranges agents dynamically to optimize task execution |
+| MixtureOfAgents | Combines different agents to leverage their unique capabilities |
+| SpreadSheetSwarm | Utilizes spreadsheet-like operations for data manipulation |
+| SequentialWorkflow | Executes tasks in a predefined sequential order |
+| ConcurrentWorkflow | Runs tasks concurrently to improve efficiency |
+| GroupChat | Facilitates communication among agents in a chat format |
+| MultiAgentRouter | Routes tasks to agents based on their expertise |
+| AutoSwarmBuilder | Automatically constructs swarms based on task requirements |
+| HiearchicalSwarm | Organizes agents in a hierarchy for complex tasks |
+| auto | Automatically selects the most suitable swarm type |
+| MajorityVoting | Uses majority voting to reach consensus on outcomes |
 
+## Job Scheduling Endpoints
 
-#### Example Request
-```json
-{
-    "name": "Test Swarm",
-    "description": "A test swarm",
-    "agents": [
-        {
-            "agent_name": "Research Agent",
-            "description": "Conducts research",
-            "system_prompt": "You are a research assistant.",
-            "model_name": "gpt-4o",
-            "role": "worker",
-            "max_loops": 1
-        }
-    ],
-    "max_loops": 1,
-    "swarm_type": "ConcurrentWorkflow",
-    "task": "Write a short blog post about AI agents."
-}
-```
+### Schedule a Swarm
+Schedule a swarm to run at a specific time.
 
-#### Response Structure
-
-| Field | Type | Description |
-|-------|------|-------------|
-| status | string | Status of the swarm execution |
-| swarm_name | string | Name of the executed swarm |
-| description | string | Description of the swarm |
-| task | string | Original task description |
-| metadata | object | Execution metadata |
-| output | object/array | Results from the swarm execution |
-
-### Batch Swarm Completion
-Run multiple swarms in a single request.
-
-**Endpoint:** `POST /v1/swarm/batch/completions`  
+**Endpoint:** `POST /v1/swarm/schedule`  
 **Authentication Required:** Yes
 
 #### Request Format
-Array of swarm configurations, each following the same format as single swarm completion.
+Same as single swarm completion, with additional `schedule` object:
 
-#### Example Batch Request
+```json
+{
+    "name": "Scheduled Swarm",
+    "agents": [...],
+    "task": "Perform analysis",
+    "schedule": {
+        "scheduled_time": "2024-03-20T15:00:00Z",
+        "timezone": "America/New_York"
+    }
+}
+```
+
+### List Scheduled Jobs
+Get all scheduled swarm jobs.
+
+**Endpoint:** `GET /v1/swarm/schedule`  
+**Authentication Required:** Yes
+
+#### Response Format
+```json
+{
+    "status": "success",
+    "scheduled_jobs": [
+        {
+            "job_id": "swarm_analysis_1234567890",
+            "swarm_name": "Analysis Swarm",
+            "scheduled_time": "2024-03-20T15:00:00Z",
+            "timezone": "America/New_York"
+        }
+    ]
+}
+```
+
+### Cancel Scheduled Job
+Cancel a scheduled swarm job.
+
+**Endpoint:** `DELETE /v1/swarm/schedule/{job_id}`  
+**Authentication Required:** Yes
+
+#### Response Format
+```json
+{
+    "status": "success",
+    "message": "Scheduled job cancelled successfully",
+    "job_id": "swarm_analysis_1234567890"
+}
+```
+
+## Billing and Credits
+
+The API uses a credit-based billing system with the following components:
+
+### Cost Calculation
+
+| Component | Cost |
+|-----------|------|
+| Base cost per agent | $0.01 |
+| Input tokens (per 1M) | $2.00 |
+| Output tokens (per 1M) | $6.00 |
+
+Special pricing:
+- California night time hours (8 PM to 6 AM PT): 75% discount on token costs
+- Credits are deducted in the following order:
+  1. Free credits
+  2. Regular credits
+
+Costs are calculated based on:
+- Number of agents used
+- Total input tokens (including system prompts and agent memory)
+- Total output tokens generated
+- Execution time
+
+## Error Handling
+
+| HTTP Status Code | Description |
+|-----------------|-------------|
+| 402 | Insufficient credits |
+| 403 | Invalid API key |
+| 404 | Resource not found |
+| 500 | Internal server error |
+
+## Best Practices
+
+1. Start with small swarms and gradually increase complexity
+2. Monitor credit usage and token counts
+3. Use appropriate max_loops values to control execution
+4. Implement proper error handling for API responses
+5. Consider using batch completions for multiple related tasks
+
+## Response Structures
+
+### Single Swarm Response
+
+```json
+{
+    "status": "success",
+    "swarm_name": "Test Swarm",
+    "description": "A test swarm",
+    "swarm_type": "ConcurrentWorkflow",
+    "task": "Write a blog post",
+    "output": {
+        // Swarm output here
+    },
+    "metadata": {
+        "max_loops": 1,
+        "num_agents": 2,
+        "execution_time_seconds": 5.23,
+        "completion_time": 1647123456.789,
+        "billing_info": {
+            "cost_breakdown": {
+                "agent_cost": 0.02,
+                "input_token_cost": 0.015,
+                "output_token_cost": 0.045,
+                "token_counts": {
+                    "total_input_tokens": 1500,
+                    "total_output_tokens": 3000,
+                    "total_tokens": 4500,
+                    "per_agent": {
+                        "agent1": {
+                            "input_tokens": 750,
+                            "output_tokens": 1500,
+                            "total_tokens": 2250
+                        },
+                        "agent2": {
+                            "input_tokens": 750,
+                            "output_tokens": 1500,
+                            "total_tokens": 2250
+                        }
+                    }
+                },
+                "num_agents": 2,
+                "execution_time_seconds": 5.23
+            },
+            "total_cost": 0.08
+        }
+    }
+}
+```
+
+### Batch Swarm Response
+
 ```json
 [
     {
-        "name": "Batch Swarm 1",
-        "description": "First swarm in batch",
-        "agents": [...],
-        "task": "Task 1"
+        "status": "success",
+        "swarm_name": "Batch Swarm 1",
+        "output": {},
+        "metadata": {}
     },
     {
-        "name": "Batch Swarm 2",
-        "description": "Second swarm in batch",
-        "agents": [...],
-        "task": "Task 2"
+        "status": "success",
+        "swarm_name": "Batch Swarm 2",
+        "output": {},
+        "metadata": {}
     }
 ]
 ```
 
-### Get Logs
-Get the logs of a swarm.
+## Logs Endpoint
+
+### Get Swarm Logs
+Retrieve execution logs for your API key.
 
 **Endpoint:** `GET /v1/swarm/logs`  
 **Authentication Required:** Yes
 
-
-#### Example Request
-```bash
-curl -X GET "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/logs" \
-  -H "x-api-key: your_api_key_here"
+#### Response Format
+```json
+{
+    "status": "success",
+    "count": 2,
+    "logs": [
+        {
+            "api_key": "masked",
+            "data": {
+                "swarm_name": "Test Swarm",
+                "task": "Write a blog post",
+                "execution_time": "2024-03-19T15:30:00Z",
+                "status": "success"
+            }
+        }
+    ]
+}
 ```
 
-----
+## Error Handling
 
-# Examples
+The API uses standard HTTP status codes and provides detailed error messages:
+
+| HTTP Status Code | Description | Example Response |
+|-----------------|-------------|------------------|
+| 400 | Bad Request - Invalid parameters | `{"detail": "Invalid swarm configuration"}` |
+| 401 | Unauthorized - Missing API key | `{"detail": "API key is required"}` |
+| 402 | Payment Required - Insufficient credits | `{"detail": "Insufficient credits"}` |
+| 403 | Forbidden - Invalid API key | `{"detail": "Invalid API key"}` |
+| 429 | Too Many Requests - Rate limit exceeded | `{"detail": "Rate limit exceeded"}` |
+| 500 | Internal Server Error | `{"detail": "Internal server error"}` |
+
+## Rate Limiting
+
+The API implements rate limiting to ensure fair usage:
+
+- **Rate Limit:** 100 requests per minute per IP address
+- **Time Window:** 60 seconds
+- **Response on Limit Exceeded:** HTTP 429 with retry-after header
+
+# Code Examples
 
 ## Python
 ### Using requests
 
 ```python
 import requests
-import json
+from datetime import datetime, timedelta
+import pytz
 
 API_KEY = "your_api_key_here"
 BASE_URL = "https://swarms-api-285321057562.us-east1.run.app"
@@ -198,7 +346,9 @@ def run_single_swarm():
         ],
         "max_loops": 1,
         "swarm_type": "SequentialWorkflow",
-        "task": "Analyze current market trends in tech sector"
+        "task": "Analyze current market trends in tech sector",
+        "return_history": True,
+        "rules": "Focus on major market indicators"
     }
     
     response = requests.post(
@@ -209,56 +359,55 @@ def run_single_swarm():
     
     return response.json()
 
-def run_batch_swarms():
-    payload = [
-        {
-            "name": "Market Analysis",
-            "description": "First swarm",
-            "agents": [
-                {
-                    "agent_name": "Analyst",
-                    "system_prompt": "You are a market analyst.",
-                    "model_name": "gpt-4o",
-                    "role": "worker"
-                }
-            ],
-            "task": "Analyze tech trends"
-        },
-        {
-            "name": "Risk Assessment",
-            "description": "Second swarm",
-            "agents": [
-                {
-                    "agent_name": "Risk Analyst",
-                    "system_prompt": "You are a risk analyst.",
-                    "model_name": "gpt-4o",
-                    "role": "worker"
-                }
-            ],
-            "task": "Assess market risks"
+def schedule_swarm():
+    # Schedule for 1 hour from now
+    scheduled_time = datetime.now(pytz.UTC) + timedelta(hours=1)
+    
+    payload = {
+        "name": "Scheduled Analysis",
+        "agents": [
+            {
+                "agent_name": "Analyst",
+                "system_prompt": "You are a market analyst.",
+                "model_name": "gpt-4o",
+                "role": "worker"
+            }
+        ],
+        "task": "Analyze tech trends",
+        "schedule": {
+            "scheduled_time": scheduled_time.isoformat(),
+            "timezone": "America/New_York"
         }
-    ]
+    }
     
     response = requests.post(
-        f"{BASE_URL}/v1/swarm/batch/completions",
+        f"{BASE_URL}/v1/swarm/schedule",
         headers=headers,
         json=payload
     )
     
     return response.json()
 
-# Using async/await with aiohttp
-import aiohttp
-import asyncio
+def get_scheduled_jobs():
+    response = requests.get(
+        f"{BASE_URL}/v1/swarm/schedule",
+        headers=headers
+    )
+    return response.json()
 
-async def run_swarm_async():
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"{BASE_URL}/v1/swarm/completions",
-            headers=headers,
-            json=payload
-        ) as response:
-            return await response.json()
+def cancel_scheduled_job(job_id: str):
+    response = requests.delete(
+        f"{BASE_URL}/v1/swarm/schedule/{job_id}",
+        headers=headers
+    )
+    return response.json()
+
+def get_swarm_logs():
+    response = requests.get(
+        f"{BASE_URL}/v1/swarm/logs",
+        headers=headers
+    )
+    return response.json()
 ```
 
 ## Node.js
@@ -273,28 +422,28 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
-// Single swarm execution
-async function runSingleSwarm() {
+// Schedule a swarm
+async function scheduleSwarm() {
+  const scheduledTime = new Date();
+  scheduledTime.setHours(scheduledTime.getHours() + 1);
+
   const payload = {
-    name: 'Financial Analysis',
-    description: 'Market analysis swarm',
-    agents: [
-      {
-        agent_name: 'Market Analyst',
-        description: 'Analyzes market trends',
-        system_prompt: 'You are a financial analyst expert.',
-        model_name: 'gpt-4o',
-        role: 'worker',
-        max_loops: 1
-      }
-    ],
-    max_loops: 1,
-    swarm_type: 'SequentialWorkflow',
-    task: 'Analyze current market trends'
+    name: 'Scheduled Analysis',
+    agents: [{
+      agent_name: 'Analyst',
+      system_prompt: 'You are a market analyst.',
+      model_name: 'gpt-4o',
+      role: 'worker'
+    }],
+    task: 'Analyze tech trends',
+    schedule: {
+      scheduled_time: scheduledTime.toISOString(),
+      timezone: 'America/New_York'
+    }
   };
 
   try {
-    const response = await fetch(`${BASE_URL}/v1/swarm/completions`, {
+    const response = await fetch(`${BASE_URL}/v1/swarm/schedule`, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload)
@@ -307,415 +456,77 @@ async function runSingleSwarm() {
   }
 }
 
-// Batch swarm execution
-async function runBatchSwarms() {
-  const payload = [
-    {
-      name: 'Market Analysis',
-      agents: [{
-        agent_name: 'Analyst',
-        system_prompt: 'You are a market analyst.',
-        model_name: 'gpt-4o',
-        role: 'worker'
-      }],
-      task: 'Analyze tech trends'
-    },
-    {
-      name: 'Risk Assessment',
-      agents: [{
-        agent_name: 'Risk Analyst',
-        system_prompt: 'You are a risk analyst.',
-        model_name: 'gpt-4o',
-        role: 'worker'
-      }],
-      task: 'Assess market risks'
-    }
-  ];
-
+// Get scheduled jobs
+async function getScheduledJobs() {
   try {
-    const response = await fetch(`${BASE_URL}/v1/swarm/batch/completions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
+    const response = await fetch(`${BASE_URL}/v1/swarm/schedule`, {
+      headers
     });
-    
     return await response.json();
   } catch (error) {
     console.error('Error:', error);
     throw error;
   }
 }
-```
 
-### Using Axios
-
-```javascript
-const axios = require('axios');
-
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    'x-api-key': API_KEY,
-    'Content-Type': 'application/json'
-  }
-});
-
-async function runSwarm() {
+// Cancel scheduled job
+async function cancelScheduledJob(jobId) {
   try {
-    const response = await api.post('/v1/swarm/completions', payload);
-    return response.data;
+    const response = await fetch(`${BASE_URL}/v1/swarm/schedule/${jobId}`, {
+      method: 'DELETE',
+      headers
+    });
+    return await response.json();
   } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
+    console.error('Error:', error);
     throw error;
   }
-}
-```
-
-## Go
-
-```go
-package main
-
-import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "net/http"
-)
-
-const (
-    baseURL = "https://swarms-api-285321057562.us-east1.run.app"
-    apiKey  = "your_api_key_here"
-)
-
-type Agent struct {
-    AgentName    string `json:"agent_name"`
-    Description  string `json:"description"`
-    SystemPrompt string `json:"system_prompt"`
-    ModelName    string `json:"model_name"`
-    Role         string `json:"role"`
-    MaxLoops     int    `json:"max_loops"`
-}
-
-type SwarmRequest struct {
-    Name        string   `json:"name"`
-    Description string   `json:"description"`
-    Agents      []Agent  `json:"agents"`
-    MaxLoops    int      `json:"max_loops"`
-    SwarmType   string   `json:"swarm_type"`
-    Task        string   `json:"task"`
-}
-
-func runSingleSwarm() ([]byte, error) {
-    payload := SwarmRequest{
-        Name:        "Financial Analysis",
-        Description: "Market analysis swarm",
-        Agents: []Agent{
-            {
-                AgentName:    "Market Analyst",
-                Description:  "Analyzes market trends",
-                SystemPrompt: "You are a financial analyst expert.",
-                ModelName:    "gpt-4o",
-                Role:         "worker",
-                MaxLoops:     1,
-            },
-        },
-        MaxLoops:  1,
-        SwarmType: "SequentialWorkflow",
-        Task:      "Analyze current market trends",
-    }
-
-    jsonPayload, err := json.Marshal(payload)
-    if err != nil {
-        return nil, err
-    }
-
-    client := &http.Client{}
-    req, err := http.NewRequest("POST", baseURL+"/v1/swarm/completions", bytes.NewBuffer(jsonPayload))
-    if err != nil {
-        return nil, err
-    }
-
-    req.Header.Set("x-api-key", apiKey)
-    req.Header.Set("Content-Type", "application/json")
-
-    resp, err := client.Do(req)
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-
-    return ioutil.ReadAll(resp.Body)
-}
-
-func main() {
-    response, err := runSingleSwarm()
-    if err != nil {
-        fmt.Printf("Error: %v\n", err)
-        return
-    }
-    
-    fmt.Printf("Response: %s\n", response)
-}
-```
-
-## Rust
-
-```rust
-use reqwest::{Client, header};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-
-const BASE_URL: &str = "https://swarms-api-285321057562.us-east1.run.app";
-const API_KEY: &str = "your_api_key_here";
-
-#[derive(Serialize, Deserialize)]
-struct Agent {
-    agent_name: String,
-    description: String,
-    system_prompt: String,
-    model_name: String,
-    role: String,
-    max_loops: i32,
-}
-
-#[derive(Serialize, Deserialize)]
-struct SwarmRequest {
-    name: String,
-    description: String,
-    agents: Vec<Agent>,
-    max_loops: i32,
-    swarm_type: String,
-    task: String,
-}
-
-async fn run_single_swarm() -> Result<String, Box<dyn std::error::Error>> {
-    let client = Client::new();
-    
-    let payload = SwarmRequest {
-        name: "Financial Analysis".to_string(),
-        description: "Market analysis swarm".to_string(),
-        agents: vec![Agent {
-            agent_name: "Market Analyst".to_string(),
-            description: "Analyzes market trends".to_string(),
-            system_prompt: "You are a financial analyst expert.".to_string(),
-            model_name: "gpt-4o".to_string(),
-            role: "worker".to_string(),
-            max_loops: 1,
-        }],
-        max_loops: 1,
-        swarm_type: "SequentialWorkflow".to_string(),
-        task: "Analyze current market trends".to_string(),
-    };
-
-    let response = client
-        .post(format!("{}/v1/swarm/completions", BASE_URL))
-        .header("x-api-key", API_KEY)
-        .header("Content-Type", "application/json")
-        .json(&payload)
-        .send()
-        .await?;
-
-    let result = response.text().await?;
-    Ok(result)
-}
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let response = run_single_swarm().await?;
-    println!("Response: {}", response);
-    Ok(())
-}
-```
-
-## C#
-
-```csharp
-using System;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-public class SwarmClient
-{
-    private readonly HttpClient _client;
-    private const string BaseUrl = "https://swarms-api-285321057562.us-east1.run.app";
-    private readonly string _apiKey;
-
-    public SwarmClient(string apiKey)
-    {
-        _apiKey = apiKey;
-        _client = new HttpClient();
-        _client.DefaultRequestHeaders.Add("x-api-key", apiKey);
-    }
-
-    public class Agent
-    {
-        public string AgentName { get; set; }
-        public string Description { get; set; }
-        public string SystemPrompt { get; set; }
-        public string ModelName { get; set; }
-        public string Role { get; set; }
-        public int MaxLoops { get; set; }
-    }
-
-    public class SwarmRequest
-    {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public List<Agent> Agents { get; set; }
-        public int MaxLoops { get; set; }
-        public string SwarmType { get; set; }
-        public string Task { get; set; }
-    }
-
-    public async Task<string> RunSingleSwarm()
-    {
-        var payload = new SwarmRequest
-        {
-            Name = "Financial Analysis",
-            Description = "Market analysis swarm",
-            Agents = new List<Agent>
-            {
-                new Agent
-                {
-                    AgentName = "Market Analyst",
-                    Description = "Analyzes market trends",
-                    SystemPrompt = "You are a financial analyst expert.",
-                    ModelName = "gpt-4o",
-                    Role = "worker",
-                    MaxLoops = 1
-                }
-            },
-            MaxLoops = 1,
-            SwarmType = "SequentialWorkflow",
-            Task = "Analyze current market trends"
-        };
-
-        var content = new StringContent(
-            JsonSerializer.Serialize(payload),
-            Encoding.UTF8,
-            "application/json"
-        );
-
-        var response = await _client.PostAsync(
-            $"{BaseUrl}/v1/swarm/completions",
-            content
-        );
-
-        return await response.Content.ReadAsStringAsync();
-    }
-}
-
-// Usage
-class Program
-{
-    static async Task Main(string[] args)
-    {
-        var client = new SwarmClient("your_api_key_here");
-        var response = await client.RunSingleSwarm();
-        Console.WriteLine($"Response: {response}");
-    }
 }
 ```
 
 ## Shell (cURL)
 
-### Single Swarm Execution
+### Schedule a Swarm
 
 ```bash
-curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/completions" \
+curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/schedule" \
   -H "x-api-key: your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Financial Analysis",
-    "description": "Market analysis swarm",
+    "name": "Scheduled Analysis",
     "agents": [
       {
-        "agent_name": "Market Analyst",
-        "description": "Analyzes market trends",
-        "system_prompt": "You are a financial analyst expert.",
-        "model_name": "gpt-4o",
-        "role": "worker",
-        "max_loops": 1
-      }
-    ],
-    "max_loops": 1,
-    "swarm_type": "SequentialWorkflow",
-    "task": "Analyze current market trends"
-  }'
-
-```
-
-### Batch Swarm Execution
-
-```bash
-# Batch swarm execution
-curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/batch/completions" \
-  -H "x-api-key: your_api_key_here" \
-  -H "Content-Type: application/json" \
-  -d '[
-    {
-      "name": "Market Analysis",
-      "agents": [{
         "agent_name": "Analyst",
         "system_prompt": "You are a market analyst.",
         "model_name": "gpt-4o",
         "role": "worker"
-      }],
-      "task": "Analyze tech trends"
-    },
-    {
-      "name": "Risk Assessment",
-      "agents": [{
-        "agent_name": "Risk Analyst",
-        "system_prompt": "You are a risk analyst.",
-        "model_name": "gpt-4o",
-        "role": "worker"
-      }],
-      "task": "Assess market risks"
+      }
+    ],
+    "task": "Analyze tech trends",
+    "schedule": {
+      "scheduled_time": "2024-03-20T15:00:00Z",
+      "timezone": "America/New_York"
     }
-  ]'
+  }'
 ```
 
+### Get Scheduled Jobs
 
-## Billing and Credits
+```bash
+curl -X GET "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/schedule" \
+  -H "x-api-key: your_api_key_here"
+```
 
-The API uses a credit-based billing system with the following components:
+### Cancel Scheduled Job
 
-### Cost Calculation
+```bash
+curl -X DELETE "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/schedule/job_id_here" \
+  -H "x-api-key: your_api_key_here"
+```
 
-| Component | Cost |
-|-----------|------|
-| Base cost per agent | $0.01 |
-| Input tokens (per 1M) | $5.00 |
-| Output tokens (per 1M) | $15.50 |
+### Get Swarm Logs
 
-Credits are deducted based on:
-- Number of agents used
-- Total input tokens (including system prompts and agent memory)
-- Total output tokens generated
-- Execution time
-
-### Credit Types
-- Free credits: Used first
-- Regular credits: Used after free credits are exhausted
-
-## Error Handling
-
-| HTTP Status Code | Description |
-|-----------------|-------------|
-| 402 | Insufficient credits |
-| 403 | Invalid API key |
-| 404 | Resource not found |
-| 500 | Internal server error |
-
-## Best Practices
-
-1. Start with small swarms and gradually increase complexity
-2. Monitor credit usage and token counts
-3. Use appropriate max_loops values to control execution
-4. Implement proper error handling for API responses
-5. Consider using batch completions for multiple related tasks
+```bash
+curl -X GET "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/logs" \
+  -H "x-api-key: your_api_key_here"
+```
