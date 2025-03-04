@@ -11,14 +11,19 @@
 |----------------------|--------------------------------------------------------------------------------------------|
 | Installation    | [Installation](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
 | Quickstart | [Get Started](https://docs.swarms.world/en/latest/swarms/install/quickstart/)                                                 |
+| Environment Setup | [Environment Configuration](https://docs.swarms.world/en/latest/swarms/install/workspace_manager/)                                                 |
+| Environment Variables | [Environment Variables](https://docs.swarms.world/en/latest/swarms/install/env/)                                                 |
+| Swarms CLI | [CLI Documentation](https://docs.swarms.world/en/latest/swarms/cli/main/)                                                 |
 | Agent Internal Mechanisms | [Agent Architecture](https://docs.swarms.world/en/latest/swarms/framework/agents_explained/)                                                 |
 | Agent API | [Agent API](https://docs.swarms.world/en/latest/swarms/structs/agent/)                                                 |
-| Integrating External Agents Griptape, Autogen, etc | [Integrating External APIs](https://docs.swarms.world/en/latest/swarms/agents/external_party_agents/)                                                 |
-| Creating Agents from YAML | [Creating Agents from YAML](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/)                                                 |
-| Why You Need Swarms | [Why MultiAgent Collaboration is Necessary](https://docs.swarms.world/en/latest/swarms/concept/why/)                                                 |
+| Managing Prompts in Production | [Prompts Management](https://docs.swarms.world/en/latest/swarms/prompts/main/)                                                 |
+| Integrating External Agents | [External Agents Integration](https://docs.swarms.world/en/latest/swarms/agents/external_party_agents/)                                                 |
+| Creating Agents from YAML | [YAML Agent Creation](https://docs.swarms.world/en/latest/swarms/agents/create_agents_yaml/)                                                 |
+| Why You Need Swarms | [Why MultiAgent Collaboration](https://docs.swarms.world/en/latest/swarms/concept/why/)                                                 |
 | Swarm Architectures Analysis | [Swarm Architectures](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
-| Choosing the Right Swarm for Your Business Problem¶ | [CLICK HERE](https://docs.swarms.world/en/latest/swarms/concept/swarm_architectures/)                                                 |
-| AgentRearrange Docs| [CLICK HERE](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)                                                 |
+| Choosing the Right Swarm | [How to Choose Swarms](https://docs.swarms.world/en/latest/swarms/concept/how_to_choose_swarms/)                                                 |
+| Full API Reference | [API Reference](https://docs.swarms.world/en/latest/swarms/framework/reference/)                                                 |
+| AgentRearrange Docs | [AgentRearrange](https://docs.swarms.world/en/latest/swarms/structs/agent_rearrange/)                                                 |
 
 
 ## Ecosystem
@@ -28,12 +33,13 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | Section              | Links                                                                                      |
 |----------------------|--------------------------------------------------------------------------------------------|
 | Swarms Python Framework Docs     | [Framework Docs](https://docs.swarms.world/en/latest/swarms/install/install/)                                                            |
-| Swarms Marketplace API Docs   | [Swarms Marketplace](https://docs.swarms.world/en/latest/swarms_platform/)                                                 |
-| Swarms Cloud Docs       | [Swarms Cloud](https://docs.swarms.world/en/latest/swarms_cloud/main/)                                             |
-| Swarms Models      | [Swarms Models](https://docs.swarms.world/en/latest/swarms/models/)  |
-| Swarms Memory      | [Swarms Memory](https://docs.swarms.world/en/latest/swarms_memory/)  |
-| Swarms Corp Github Profile     | [Swarms Corp GitHub](https://github.com/The-Swarm-Corporation)                      |
-| Swarms Platform/Marketplace Frontend Github      | [Swarms Platform GitHub](https://github.com/kyegomez/swarms-platform)                      |
+| Swarms Cloud API     | [Cloud API](https://docs.swarms.world/en/latest/swarms_cloud/launch/)                                                            |
+| Swarms Marketplace API     | [Marketplace API](https://docs.swarms.world/en/latest/swarms_platform/)                                                            |
+| Swarms Memory Systems     | [Memory Systems](https://docs.swarms.world/en/latest/swarms_memory/)                                                            |
+| Available Models     | [Models Overview](https://docs.swarms.world/en/latest/swarms/models/)                                                            |
+| Swarms Tools     | [Tools Overview](https://docs.swarms.world/en/latest/swarms_tools/overview/)                                                            |
+| Example Applications     | [Examples](https://docs.swarms.world/en/latest/swarms/examples/unique_swarms/)                                                            |
+| Swarms Corp Github     | [Swarms Corp GitHub](https://github.com/The-Swarm-Corporation)                      |
 
 
 ## Community
@@ -43,9 +49,9 @@ Here you'll find references about the Swarms framework, marketplace, community, 
 | Blog                 | [Blog](https://medium.com/@kyeg)                                                           |
 | Event Calendar       | [LUMA](https://lu.ma/swarms_calendar)                                                       |
 | Twitter     | [Twitter](https://x.com/swarms_corp)                                                       |
-| Agent Marketplace     | [Website](https://swarms.xyz)                                                       |
+| Agent Marketplace     | [Website](https://swarms.world)                                                       |
 | Docs     | [Website](https://docs.swarms.world)                                                       |
-
+| Swarms Website   | [Website](https://swarms.ai)                                                       |
 
 ## Get Support
 
