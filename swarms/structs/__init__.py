@@ -81,6 +81,11 @@ from swarms.structs.swarms_api import (
     SwarmValidationError,
 )
 from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.aicoscientist import (
+    AIScientistFramework,
+    AgentRole,
+    Hypothesis,
+)
 
 __all__ = [
     "Agent",
@@ -154,4 +159,7 @@ __all__ = [
     "SwarmValidationError",
     "AgentInput",
     "AgentsBuilder",
+    "AIScientistFramework",
+    "AgentRole",
+    "Hypothesis",
 ]
