@@ -1,4 +1,3 @@
-import asyncio
 import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -10,7 +9,6 @@ from pydantic import BaseModel, Field
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.file_processing import create_file_in_folder
-import concurrent.futures
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id_generator import generate_swarm_id
@@ -255,7 +253,7 @@ class ConcurrentWorkflow(BaseSwarm):
         )
 
         self.conversation.add(
-            "user",
+            "User",
             task,
         )
 
@@ -392,105 +390,6 @@ class ConcurrentWorkflow(BaseSwarm):
             result = self.run(task)
             results.append(result)
         return results
-
-    def run_async(self, task: str) -> asyncio.Future:
-        """
-        Runs the workflow asynchronously for the given task, executes agents concurrently, and saves metadata in a production-grade manner.
-
-        Args:
-            task (str): The task or query to give to all agents.
-
-        Returns:
-            asyncio.Future: A future object representing the asynchronous operation.
-
-        Example:
-            >>> async def run_async_example():
-            >>>     future = workflow.run_async(task="Example task")
-            >>>     result = await future
-            >>>     print(result)
-        """
-        logger.info(
-            f"Running concurrent workflow asynchronously with {len(self.agents)} agents."
-        )
-        return asyncio.ensure_future(self.run(task))
-
-    def run_batched_async(
-        self, tasks: List[str]
-    ) -> List[asyncio.Future]:
-        """
-        Runs the workflow asynchronously for a batch of tasks, executes agents concurrently for each task, and saves metadata in a production-grade manner.
-
-        Args:
-            tasks (List[str]): A list of tasks or queries to give to all agents.
-
-        Returns:
-            List[asyncio.Future]: A list of future objects representing the asynchronous operations for each task.
-
-        Example:
-            >>> tasks = ["Task 1", "Task 2"]
-            >>> futures = workflow.run_batched_async(tasks)
-            >>> results = await asyncio.gather(*futures)
-            >>> print(results)
-        """
-        futures = []
-        for task in tasks:
-            future = self.run_async(task)
-            futures.append(future)
-        return futures
-
-    def run_parallel(
-        self, tasks: List[str]
-    ) -> List[Union[Dict[str, Any], str]]:
-        """
-        Runs the workflow in parallel for a batch of tasks, executes agents concurrently for each task, and saves metadata in a production-grade manner.
-
-        Args:
-            tasks (List[str]): A list of tasks or queries to give to all agents.
-
-        Returns:
-            List[Union[Dict[str, Any], str]]: A list of final metadata for each task, either as a dictionary or a string.
-
-        Example:
-            >>> tasks = ["Task 1", "Task 2"]
-            >>> results = workflow.run_parallel(tasks)
-            >>> print(results)
-        """
-        with ThreadPoolExecutor(
-            max_workers=os.cpu_count()
-        ) as executor:
-            futures = {
-                executor.submit(self.run, task): task
-                for task in tasks
-            }
-            results = []
-            for future in concurrent.futures.as_completed(futures):
-                result = future.result()
-                results.append(result)
-        return results
-
-    def run_parallel_async(
-        self, tasks: List[str]
-    ) -> List[asyncio.Future]:
-        """
-        Runs the workflow in parallel asynchronously for a batch of tasks, executes agents concurrently for each task, and saves metadata in a production-grade manner.
-
-        Args:
-            tasks (List[str]): A list of tasks or queries to give to all agents.
-
-        Returns:
-            List[asyncio.Future]: A list of future objects representing the asynchronous operations for each task.
-
-        Example:
-            >>> tasks = ["Task 1", "Task 2"]
-            >>> futures = workflow.run_parallel_async(tasks)
-            >>> results = await asyncio.gather(*futures)
-            >>> print(results)
-        """
-        futures = []
-        for task in tasks:
-            future = self.run_async(task)
-            futures.append(future)
-        return futures
 
 
 # if __name__ == "__main__":

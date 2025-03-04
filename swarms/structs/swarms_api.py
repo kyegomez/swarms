@@ -25,12 +25,11 @@ class AgentInput(BaseModel):
     )
     system_prompt: Optional[str] = Field(
         None,
-        description="The initial prompt or instructions given to the agent, up to 500 characters.",
+        description="The initial prompt or instructions given to the agent.",
     )
     model_name: Optional[str] = Field(
         "gpt-4o",
-        description="The name of the model used by the agent, limited to 500 characters.",
-        max_length=500,
+        description="The name of the model used by the agent. Model names can be configured like provider/model_name",
     )
     auto_generate_prompt: Optional[bool] = Field(
         False,

@@ -228,9 +228,8 @@ nav:
     - Multi-Agent Collaboration:
       - Swarms DAO: "swarms/examples/swarms_dao.md"
       
-  - Swarms UI:
-    - Overview: "swarms/ui/main.md"
-
+    - Swarms UI:
+      - Overview: "swarms/ui/main.md"
 
   - Contributors:
     - Bounty Program: "corporate/bounty_program.md"
@@ -304,11 +303,11 @@ nav:
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
     #   - Add Tools: "swarms_platform/fetch_tools.md"
-  - Corporate:
-    - Culture: "corporate/culture.md"
-    - Hiring: "corporate/hiring.md"
-    - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
-  - Web3:
-    # - Overview: "finance/index.md"
-    - Swarms Wallet: "finance/wallet.md"
-    - Swarms Subscription: "finance/subscription.md"
+  # - Corporate:
+  #   - Culture: "corporate/culture.md"
+  #   - Hiring: "corporate/hiring.md"
+  #   - Swarms Goals & Milestone Tracking; A Vision for 2024 and Beyond: "corporate/2024_2025_goals.md"
+  # - Web3:
+  #   # - Overview: "finance/index.md"
+  #   - Swarms Wallet: "finance/wallet.md"
+  #   - Swarms Subscription: "finance/subscription.md"

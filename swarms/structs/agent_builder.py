@@ -1,61 +1,131 @@
 import os
-from typing import List
+from typing import List, Optional, Tuple
 
+from loguru import logger
 from pydantic import BaseModel, Field
 
-from swarms.structs.agent import Agent
+from swarms import Agent
+from swarms.utils.any_to_str import any_to_str
 from swarms.utils.function_caller_model import OpenAIFunctionCaller
-from swarms.utils.loguru_logger import initialize_logger
-from swarms.structs.agents_available import showcase_available_agents
-from swarms.structs.swarms_api import AgentInput as AgentConfig
+from swarms.utils.litellm_tokenizer import count_tokens
 
-logger = initialize_logger(log_folder="auto_swarm_builder")
+BOSS_SYSTEM_PROMPT = """
+# Swarm Intelligence Orchestrator
+
+You are the Chief Orchestrator of a sophisticated agent swarm. Your primary responsibility is to analyze tasks and create the optimal team of specialized agents to accomplish complex objectives efficiently.
+
+## Agent Creation Protocol
+
+1. **Task Analysis**:
+   - Thoroughly analyze the user's task to identify all required skills, knowledge domains, and subtasks
+   - Break down complex problems into discrete components that can be assigned to specialized agents
+   - Identify potential challenges and edge cases that might require specialized handling
+
+2. **Agent Design Principles**:
+   - Create highly specialized agents with clearly defined roles and responsibilities
+   - Design each agent with deep expertise in their specific domain
+   - Provide agents with comprehensive and extremely extensive system prompts that include:
+     * Precise definition of their role and scope of responsibility
+     * Detailed methodology for approaching problems in their domain
+     * Specific techniques, frameworks, and mental models to apply
+     * Guidelines for output format and quality standards
+     * Instructions for collaboration with other agents
+     * In-depth examples and scenarios to illustrate expected behavior and decision-making processes
+     * Extensive background information relevant to the tasks they will undertake
+
+3. **Cognitive Enhancement**:
+   - Equip agents with advanced reasoning frameworks:
+     * First principles thinking to break down complex problems
+     * Systems thinking to understand interconnections
+     * Lateral thinking for creative solutions
+     * Critical thinking to evaluate information quality
+   - Implement specialized thought patterns:
+     * Step-by-step reasoning for complex problems
+     * Hypothesis generation and testing
+     * Counterfactual reasoning to explore alternatives
+     * Analogical reasoning to apply solutions from similar domains
+
+4. **Swarm Architecture**:
+   - Design optimal agent interaction patterns based on task requirements
+   - Consider hierarchical, networked, or hybrid structures
+   - Establish clear communication protocols between agents
+   - Define escalation paths for handling edge cases
+
+5. **Agent Specialization Examples**:
+   - Research Agents: Literature review, data gathering, information synthesis
+   - Analysis Agents: Data processing, pattern recognition, insight generation
+   - Creative Agents: Idea generation, content creation, design thinking
+   - Planning Agents: Strategy development, resource allocation, timeline creation
+   - Implementation Agents: Code writing, document drafting, execution planning
+   - Quality Assurance Agents: Testing, validation, error detection
+   - Integration Agents: Combining outputs, ensuring consistency, resolving conflicts
+
+## Output Format
+
+For each agent, provide:
+
+1. **Agent Name**: Clear, descriptive title reflecting specialization
+2. **Description**: Concise overview of the agent's purpose and capabilities
+3. **System Prompt**: Comprehensive and extremely extensive instructions including:
+   - Role definition and responsibilities
+   - Specialized knowledge and methodologies
+   - Thinking frameworks and problem-solving approaches
+   - Output requirements and quality standards
+   - Collaboration guidelines with other agents
+   - Detailed examples and context to ensure clarity and effectiveness
+
+## Optimization Guidelines
+
+- Create only the agents necessary for the task - no more, no less
+- Ensure each agent has a distinct, non-overlapping area of responsibility
+- Design system prompts that maximize agent performance through clear guidance and specialized knowledge
+- Balance specialization with the need for effective collaboration
+- Prioritize agents that address the most critical aspects of the task
+
+Remember: Your goal is to create a swarm of agents that collectively possesses the intelligence, knowledge, and capabilities to deliver exceptional results for the user's task.
+"""
 
 
-class Agents(BaseModel):
-    """Configuration for a list of agents"""
-
-    agents: List[AgentConfig] = Field(
-        description="The list of agents that make up the swarm",
+class AgentSpec(BaseModel):
+    agent_name: Optional[str] = Field(
+        None,
+        description="The unique name assigned to the agent, which identifies its role and functionality within the swarm.",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="A detailed explanation of the agent's purpose, capabilities, and any specific tasks it is designed to perform.",
+    )
+    system_prompt: Optional[str] = Field(
+        None,
+        description="The initial instruction or context provided to the agent, guiding its behavior and responses during execution.",
+    )
+    model_name: Optional[str] = Field(
+        description="The name of the AI model that the agent will utilize for processing tasks and generating outputs. For example: gpt-4o, gpt-4o-mini, openai/o3-mini"
+    )
+    auto_generate_prompt: Optional[bool] = Field(
+        description="A flag indicating whether the agent should automatically create prompts based on the task requirements."
+    )
+    max_tokens: Optional[int] = Field(
+        None,
+        description="The maximum number of tokens that the agent is allowed to generate in its responses, limiting output length.",
+    )
+    temperature: Optional[float] = Field(
+        description="A parameter that controls the randomness of the agent's output; lower values result in more deterministic responses."
+    )
+    role: Optional[str] = Field(
+        description="The designated role of the agent within the swarm, which influences its behavior and interaction with other agents."
+    )
+    max_loops: Optional[int] = Field(
+        description="The maximum number of times the agent is allowed to repeat its task, enabling iterative processing if necessary."
     )
 
 
-BOSS_SYSTEM_PROMPT = """
-Manage a swarm of worker agents to efficiently serve the user by deciding whether to create new agents or delegate tasks. Ensure operations are efficient and effective.
+class Agents(BaseModel):
+    """Configuration for a collection of agents that work together as a swarm to accomplish tasks."""
 
-### Instructions:
-
-1. **Task Assignment**:
-   - Analyze available worker agents when a task is presented.
-   - Delegate tasks to existing agents with clear, direct, and actionable instructions if an appropriate agent is available.
-   - If no suitable agent exists, create a new agent with a fitting system prompt to handle the task.
-
-2. **Agent Creation**:
-   - Name agents according to the task they are intended to perform (e.g., "Twitter Marketing Agent").
-   - Provide each new agent with a concise and clear system prompt that includes its role, objectives, and any tools it can utilize.
-
-3. **Efficiency**:
-   - Minimize redundancy and maximize task completion speed.
-   - Avoid unnecessary agent creation if an existing agent can fulfill the task.
-
-4. **Communication**:
-   - Be explicit in task delegation instructions to avoid ambiguity and ensure effective task execution.
-   - Require agents to report back on task completion or encountered issues.
-
-5. **Reasoning and Decisions**:
-   - Offer brief reasoning when selecting or creating agents to maintain transparency.
-   - Avoid using an agent if unnecessary, with a clear explanation if no agents are suitable for a task.
-
-# Output Format
-
-Present your plan in clear, bullet-point format or short concise paragraphs, outlining task assignment, agent creation, efficiency strategies, and communication protocols.
-
-# Notes
-
-- Preserve transparency by always providing reasoning for task-agent assignments and creation.
-- Ensure instructions to agents are unambiguous to minimize error.
-
-"""
+    agents: List[AgentSpec] = Field(
+        description="A list containing the specifications of each agent that will participate in the swarm, detailing their roles and functionalities."
+    )
 
 
 class AgentsBuilder:
@@ -74,8 +144,8 @@ class AgentsBuilder:
 
     def __init__(
         self,
-        name: str = None,
-        description: str = None,
+        name: str = "swarm-creator-01",
+        description: str = "This is a swarm that creates swarms",
         verbose: bool = True,
         max_loops: int = 1,
     ):
@@ -89,7 +159,9 @@ class AgentsBuilder:
             f"Initialized AutoSwarmBuilder: {name} {description}"
         )
 
-    def run(self, task: str, image_url: str = None, *args, **kwargs):
+    def run(
+        self, task: str, image_url: str = None, *args, **kwargs
+    ) -> Tuple[List[Agent], int]:
         """Run the swarm on a given task.
 
         Args:
@@ -102,9 +174,11 @@ class AgentsBuilder:
             The output from the swarm's execution
         """
         logger.info(f"Running swarm on task: {task}")
-        agents = self._create_agents(task, image_url, *args, **kwargs)
+        agents, tokens = self._create_agents(
+            task, image_url, *args, **kwargs
+        )
 
-        return agents
+        return agents, tokens
 
     def _create_agents(self, task: str, *args, **kwargs):
         """Create the necessary agents for a task.
@@ -123,29 +197,37 @@ class AgentsBuilder:
             api_key=os.getenv("OPENAI_API_KEY"),
             temperature=0.1,
             base_model=Agents,
+            model_name="gpt-4o",
         )
 
         agents_dictionary = model.run(task)
-        logger.info(f"Agents dictionary: {agents_dictionary}")
 
-        # Convert dictionary to SwarmConfig if needed
-        if isinstance(agents_dictionary, dict):
-            agents_dictionary = Agents(**agents_dictionary)
+        logger.info("Agents successfully created")
+        logger.info(f"Agents: {len(agents_dictionary.agents)}")
+
+        total_tokens = any_to_str(agents_dictionary)
+
+        tokens = count_tokens(total_tokens)
+        # logger.info(f"Tokens: {tokens}")
+
+        # # Convert dictionary to SwarmConfig if needed
+        # if isinstance(agents_dictionary, dict):
+        #     agents_dictionary = Agents(**agents_dictionary)
 
         # Create agents from config
         agents = []
         for agent_config in agents_dictionary.agents:
             # Convert dict to AgentConfig if needed
             if isinstance(agent_config, dict):
-                agent_config = AgentConfig(**agent_config)
+                agent_config = Agents(**agent_config)
 
             agent = self.build_agent(
-                agent_name=agent_config.name,
+                agent_name=agent_config.model_name,
                 agent_description=agent_config.description,
                 agent_system_prompt=agent_config.system_prompt,
                 model_name=agent_config.model_name,
                 max_loops=agent_config.max_loops,
-                dynamic_temperature_enabled=agent_config.dynamic_temperature_enabled,
+                dynamic_temperature_enabled=True,
                 auto_generate_prompt=agent_config.auto_generate_prompt,
                 role=agent_config.role,
                 max_tokens=agent_config.max_tokens,
@@ -153,17 +235,7 @@ class AgentsBuilder:
             )
             agents.append(agent)
 
-        # Showcasing available agents
-        agents_available = showcase_available_agents(
-            name=self.name,
-            description=self.description,
-            agents=agents,
-        )
-
-        for agent in agents:
-            agent.system_prompt += "\n" + agents_available
-
-        return agents
+        return agents, tokens
 
     def build_agent(
         self,

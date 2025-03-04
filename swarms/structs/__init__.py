@@ -80,6 +80,7 @@ from swarms.structs.swarms_api import (
     SwarmsAPIClient,
     SwarmValidationError,
 )
+from swarms.structs.agent_builder import AgentsBuilder
 
 __all__ = [
     "Agent",
@@ -152,4 +153,5 @@ __all__ = [
     "SwarmAPIError",
     "SwarmValidationError",
     "AgentInput",
+    "AgentsBuilder",
 ]
