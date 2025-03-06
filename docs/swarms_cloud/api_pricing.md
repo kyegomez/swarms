@@ -71,6 +71,7 @@ Output Token Cost = Output Token Cost × 0.25
 ### Example Scenarios
 
 #### Scenario 1: Basic Workflow (Day-time)
+
 - 3 agents
 
 - 10,000 input tokens total
@@ -78,6 +79,7 @@ Output Token Cost = Output Token Cost × 0.25
 - 25,000 output tokens total
 
 **Calculation:**
+
 - Agent cost: 3 × $0.01 = $0.03
 
 - Input token cost: (10,000 / 1,000,000) × $2.00 × 3 = $0.06
@@ -95,6 +97,7 @@ Output Token Cost = Output Token Cost × 0.25
 - 125,000 output tokens total
 
 **Calculation:**
+
 - Agent cost: 5 × $0.01 = $0.05
 
 - Input token cost: (50,000 / 1,000,000) × $2.00 × 5 × 0.25 = $0.125
@@ -128,6 +131,7 @@ We occasionally offer free credits to:
 - For educational and research purposes
 
 Notes about free credits:
+
 - Used before standard credits
 
 - May have expiration dates
@@ -139,6 +143,7 @@ Notes about free credits:
 Track your credit usage through our comprehensive logging and reporting features:
 
 1. **API Logs**
+
    - Access detailed logs via the `/v1/swarm/logs` endpoint
 
    - View cost breakdowns for each execution
