@@ -270,13 +270,15 @@ nav:
   - Swarms Cloud API:
     # - Overview: "swarms_cloud/main.md"
     # - Overview: "swarms_cloud/vision.md"
-    - Overview: "swarms_cloud/launch.md"
-    - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
+    # - Overview: "swarms_cloud/launch.md"
+    - Overview: "swarms_cloud/swarms_api.md"
+    - Swarms API Pricing: "swarms_cloud/api_pricing.md"
     # - Swarms Cloud CLI: "swarms_cloud/cli.md"
-    - Swarm APIs:
-      - Swarms API: "swarms_cloud/swarms_api.md"
+    - Swarm Ecosystem APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
       - CreateNow API: "swarms_cloud/create_api.md"
+    - Self Hosted Swarms:
+      - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
   - Swarms Memory:
     - Overview: "swarms_memory/index.md"
     - Memory Systems:

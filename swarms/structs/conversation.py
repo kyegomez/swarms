@@ -1,11 +1,12 @@
 import datetime
 import json
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import yaml
 from swarms.structs.base_structure import BaseStructure
 from typing import TYPE_CHECKING
 from swarms.utils.formatter import formatter
+
 
 if TYPE_CHECKING:
     from swarms.structs.agent import (
@@ -110,7 +111,13 @@ class Conversation(BaseStructure):
         if tokenizer is not None:
             self.truncate_memory_with_tokenizer()
 
-    def add(self, role: str, content: str, *args, **kwargs):
+    def add(
+        self,
+        role: str,
+        content: Union[str, dict, list],
+        *args,
+        **kwargs,
+    ):
         """Add a message to the conversation history
 
         Args:
@@ -118,18 +125,20 @@ class Conversation(BaseStructure):
             content (str): The content of the message
 
         """
-        if self.time_enabled:
-            now = datetime.datetime.now()
-            timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+
+        if isinstance(content, dict) or isinstance(content, list):
+
             message = {
                 "role": role,
                 "content": content,
-                "timestamp": timestamp,
             }
+
         else:
             message = {
                 "role": role,
-                "content": content,
+                "content": f"Time: {timestamp} \n{content}",
             }
 
         self.conversation_history.append(message)
@@ -425,13 +434,30 @@ class Conversation(BaseStructure):
             for message in self.conversation_history
         ]
 
+    def add_tool_output_to_agent(self, role: str, tool_output: dict):
+        """
+        Add a tool output to the conversation history
+        """
+        self.add(role, tool_output)
 
-# Example usage
+    def return_json(self):
+        return json.dumps(
+            self.return_messages_as_dictionary(), indent=4
+        )
+
+
+# # Example usage
+# # conversation = Conversation()
 # conversation = Conversation()
 # conversation.add("user", "Hello, how are you?")
-# print(conversation.get_last_message_as_string())
-# print(conversation.return_messages_as_list())
-# conversation.add("assistant", "I am doing well, thanks.")
-# # print(conversation.to_json())
-# print(type(conversation.to_dict()))
+# conversation.add(
+#     "assistant", {"name": "tool_1", "output": "Hello, how are you?"}
+# )
+# print(conversation.return_json())
+
+# # print(conversation.get_last_message_as_string())
+# # print(conversation.return_messages_as_list())
+# # conversation.add("assistant", "I am doing well, thanks.")
+# # # print(conversation.to_json())
+# # print(type(conversation.to_dict()))
 # # print(conversation.to_yaml())

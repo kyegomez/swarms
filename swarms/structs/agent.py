@@ -341,6 +341,7 @@ class Agent:
         load_state_path: str = None,
         role: agent_roles = "worker",
         no_print: bool = False,
+        tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -459,7 +460,7 @@ class Agent:
         self.load_state_path = load_state_path
         self.role = role
         self.no_print = no_print
-
+        self.tools_list_dictionary = tools_list_dictionary
         # Initialize the short term memory
         self.short_memory = Conversation(
             system_prompt=system_prompt,
@@ -595,6 +596,11 @@ class Agent:
             )
 
         return llm
+    
+    
+    def prepare_tools_list_dictionary(self):
+        import json
+        return json.loads(self.tools_list_dictionary)
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
