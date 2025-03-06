@@ -146,17 +146,44 @@ Run a swarm with the specified configuration to complete a task.
 
 **Example Request**:
 ```bash
-curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/completions" \
-     -H "x-api-key: your_api_key_here" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "name": "financial-analysis-swarm",
-       "description": "Analyzes financial data for risk assessment",
-       "swarm_type": "SequentialWorkflow",
-       "task": "Analyze the provided quarterly financials for Company XYZ and identify potential risk factors. Summarize key insights and provide recommendations for risk mitigation.",
-       "max_loops": 2,
-       "return_history": true
-     }'
+
+# Run single swarm
+curl -X POST "http://localhost:8080/v1/swarm/completions" \
+  -H "x-api-key: $SWARMS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Financial Analysis Swarm",
+    "description": "Market analysis swarm",
+    "agents": [
+      {
+        "agent_name": "Market Analyst",
+        "description": "Analyzes market trends",
+        "system_prompt": "You are a financial analyst expert.",
+        "model_name": "openai/gpt-4o",
+        "role": "worker",
+        "max_loops": 1,
+        "max_tokens": 8192,
+        "temperature": 0.5,
+        "auto_generate_prompt": false
+      },
+      {
+        "agent_name": "Economic Forecaster",
+        "description": "Predicts economic trends",
+        "system_prompt": "You are an expert in economic forecasting.",
+        "model_name": "gpt-4o",
+        "role": "worker",
+        "max_loops": 1,
+        "max_tokens": 8192,
+        "temperature": 0.5,
+        "auto_generate_prompt": false
+      }
+    ],
+    "max_loops": 1,
+    "swarm_type": "ConcurrentWorkflow",
+    "task": "What are the best etfs and index funds for ai and tech?",
+    "output_type": "dict"
+  }'
+
 ```
 
 **Example Response**:
@@ -215,21 +242,62 @@ Run multiple swarms as a batch operation.
 
 **Example Request**:
 ```bash
-curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/batch/completions" \
-     -H "x-api-key: your_api_key_here" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "swarms": [
-         {
-           "name": "risk-analysis",
-           "task": "Analyze risk factors for investment portfolio"
-         },
-         {
-           "name": "market-sentiment",
-           "task": "Assess current market sentiment for technology sector"
-         }
-       ]
-     }'
+# Batch swarm completions
+curl -X POST "http://localhost:8080/v1/swarm/batch/completions" \
+  -H "x-api-key: $SWARMS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "name": "Batch Swarm 1",
+      "description": "First swarm in the batch",
+      "agents": [
+        {
+          "agent_name": "Research Agent",
+          "description": "Conducts research",
+          "system_prompt": "You are a research assistant.",
+          "model_name": "gpt-4o",
+          "role": "worker",
+          "max_loops": 1
+        },
+        {
+          "agent_name": "Analysis Agent",
+          "description": "Analyzes data",
+          "system_prompt": "You are a data analyst.",
+          "model_name": "gpt-4o",
+          "role": "worker",
+          "max_loops": 1
+        }
+      ],
+      "max_loops": 1,
+      "swarm_type": "SequentialWorkflow",
+      "task": "Research AI advancements."
+    },
+    {
+      "name": "Batch Swarm 2",
+      "description": "Second swarm in the batch",
+      "agents": [
+        {
+          "agent_name": "Writing Agent",
+          "description": "Writes content",
+          "system_prompt": "You are a content writer.",
+          "model_name": "gpt-4o",
+          "role": "worker",
+          "max_loops": 1
+        },
+        {
+          "agent_name": "Editing Agent",
+          "description": "Edits content",
+          "system_prompt": "You are an editor.",
+          "model_name": "gpt-4o",
+          "role": "worker",
+          "max_loops": 1
+        }
+      ],
+      "max_loops": 1,
+      "swarm_type": "SequentialWorkflow",
+      "task": "Write a summary of AI research."
+    }
+  ]'
 ```
 
 **Example Response**:
