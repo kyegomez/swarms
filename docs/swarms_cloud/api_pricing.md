@@ -1,9 +1,9 @@
 # Swarm Agent API Pricing Documentation
 
 
-The Swarm Agent API provides a powerful platform for managing and executing Python agents in the cloud without requiring Docker or Kubernetes. This document outlines the pricing model, how costs are calculated, and how to purchase and manage your credits.
+The Swarm Agent API provides a powerful platform for managing multi-agent collaboration at scale and orchestrating swarms of LLM agents in the cloud. This document outlines the pricing model, how costs are calculated, and how to purchase and manage your credits.
 
-Our pricing is designed to be transparent and cost-effective, with costs based on:
+Our pricing is designed to be transparent and cost-effective, enabling you to harness the full potential of your agents with ease. Costs are based on:
 
 - Number of agents used
 
