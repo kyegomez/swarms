@@ -205,6 +205,9 @@ nav:
     - Full API Reference: "swarms/framework/reference.md"
   - Examples:
     - Unique Swarms: "swarms/examples/unique_swarms.md"
+
+    - Swarms API Examples:
+      - Medical Swarm: "swarms/examples/swarms_api_medical.md"
     - Various Model Providers:
       - OpenAI: "swarms/examples/openai_example.md"
       - Anthropic: "swarms/examples/claude.md"
@@ -273,6 +276,7 @@ nav:
     # - Overview: "swarms_cloud/launch.md"
     - Overview: "swarms_cloud/swarms_api.md"
     - Swarms API Pricing: "swarms_cloud/api_pricing.md"
+    - Swarms API Pricing in Chinese: "swarms_cloud/chinese_api_pricing.md"
     # - Swarms Cloud CLI: "swarms_cloud/cli.md"
     - Swarm Ecosystem APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
