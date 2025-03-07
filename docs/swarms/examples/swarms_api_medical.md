@@ -89,7 +89,7 @@ def create_medical_swarm(patient_case: str):
             }
         ],
         "max_loops": 3,
-        "swarm_type": "Sequential"  # Sequential workflow: Each agent builds on the output of the previous one
+        "swarm_type": "SequentialWorkflow" 
     }
 
     # Payload includes the patient case as the task to be processed by the swarm
