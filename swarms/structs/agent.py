@@ -596,10 +596,10 @@ class Agent:
             )
 
         return llm
-    
-    
+
     def prepare_tools_list_dictionary(self):
         import json
+
         return json.loads(self.tools_list_dictionary)
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):

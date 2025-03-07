@@ -81,6 +81,7 @@ from swarms.structs.swarms_api import (
     SwarmValidationError,
 )
 from swarms.structs.agent_builder import AgentsBuilder
+from swarms.structs.malt import MALT
 
 __all__ = [
     "Agent",
@@ -154,4 +155,5 @@ __all__ = [
     "SwarmValidationError",
     "AgentInput",
     "AgentsBuilder",
+    "MALT",
 ]

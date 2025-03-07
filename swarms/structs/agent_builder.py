@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from swarms import Agent
+from swarms.structs.agent import Agent
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.function_caller_model import OpenAIFunctionCaller
 from swarms.utils.litellm_tokenizer import count_tokens

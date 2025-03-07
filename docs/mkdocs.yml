@@ -195,6 +195,7 @@ nav:
         - MultiAgentRouter: "swarms/structs/multi_agent_router.md"
         - MatrixSwarm: "swarms/structs/matrix_swarm.md"
         - ModelRouter: "swarms/structs/model_router.md"
+        - MALT: "swarms/structs/malt.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"

@@ -20,6 +20,7 @@ from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.structs.output_type import OutputType
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.structs.malt import MALT
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -35,6 +36,7 @@ SwarmType = Literal[
     "HiearchicalSwarm",
     "auto",
     "MajorityVoting",
+    "MALT",
 ]
 
 
@@ -304,6 +306,15 @@ class SwarmRouter:
                 *args,
                 **kwargs,
             )
+            
+        elif self.swarm_type == "MALT":
+            return MALT(
+                name=self.name,
+                description=self.description,
+                max_loops=self.max_loops,
+                return_dict=True,
+                preset_agents=True,
+            )
 
         elif self.swarm_type == "HiearchicalSwarm":
             return HierarchicalSwarm(
@@ -442,18 +453,10 @@ class SwarmRouter:
         self.swarm = self._create_swarm(task, *args, **kwargs)
 
         try:
-            # self._log(
-            #     "info",
-            #     f"Running task on {self.swarm_type} swarm with task: {task}",
-            # )
+            logger.info(f"Running task on {self.swarm_type} swarm with task: {task}")
             result = self.swarm.run(task=task, *args, **kwargs)
-
-            # self._log(
-            #     "success",
-            #     f"Task completed successfully on {self.swarm_type} swarm",
-            #     task=task,
-            #     metadata={"result": str(result)},
-            # )
+            
+            logger.info("Swarm completed successfully")
             return result
         except Exception as e:
             self._log(
