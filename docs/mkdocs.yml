@@ -205,7 +205,7 @@ nav:
           - Conversation: "swarms/structs/conversation.md"
     - Full API Reference: "swarms/framework/reference.md"
   - Examples:
-    - Unique Swarms: "swarms/examples/unique_swarms.md"
+    - Overview: "swarms/examples/unique_swarms.md"
 
     - Swarms API Examples:
       - Medical Swarm: "swarms/examples/swarms_api_medical.md"

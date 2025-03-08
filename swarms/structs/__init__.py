@@ -1,4 +1,5 @@
 from swarms.structs.agent import Agent
+from swarms.structs.agent_builder import AgentsBuilder
 from swarms.structs.agents_available import showcase_available_agents
 from swarms.structs.async_workflow import AsyncWorkflow
 from swarms.structs.auto_swarm import AutoSwarm, AutoSwarmRouter
@@ -23,6 +24,7 @@ from swarms.structs.majority_voting import (
     most_frequent,
     parse_code_completion,
 )
+from swarms.structs.malt import MALT
 from swarms.structs.meme_agent_persona_generator import (
     MemeAgentGenerator,
 )
@@ -80,8 +82,6 @@ from swarms.structs.swarms_api import (
     SwarmsAPIClient,
     SwarmValidationError,
 )
-from swarms.structs.agent_builder import AgentsBuilder
-from swarms.structs.malt import MALT
 
 __all__ = [
     "Agent",
