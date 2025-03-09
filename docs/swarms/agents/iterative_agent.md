@@ -1,8 +1,31 @@
 # Iterative Reflective Expansion (IRE) Algorithm Documentation
 
-## Overview
-
 The Iterative Reflective Expansion (IRE) Algorithm is a sophisticated reasoning framework that employs iterative hypothesis generation, simulation, and refinement to solve complex problems. It leverages a multi-step approach where an AI agent generates initial solution paths, evaluates their effectiveness through simulation, reflects on errors, and dynamically revises reasoning strategies. Through continuous cycles of hypothesis testing and meta-cognitive reflection, the algorithm progressively converges on optimal solutions by learning from both successful and unsuccessful reasoning attempts.
+
+
+## Architecture
+
+```
+graph TD
+    Problem_Input["🧩 Problem Input"] --> Generate_Hypotheses
+    Generate_Hypotheses["Generate Initial Hypotheses"] --> Simulate
+    subgraph Iterative Reflective Expansion Loop
+        Simulate["Simulate Reasoning Paths"] --> Evaluate
+        Evaluate["Evaluate Outcomes"] --> Reflect{Is solution satisfactory?}
+        Reflect -->|No, issues found| Meta_Reflect
+        Reflect -->|Yes| Promising
+        Meta_Reflect["Meta-Cognitive Reflection"] --> Revise_Paths
+        Meta_Reflect --> Memory[(Reasoning Memory)]
+        Meta_Reflect --> Memory
+        Revise_Paths["Revise Paths Based on Feedback"] --> Expand_Paths
+        Meta_Reflect --> Revise_Path
+        Revise_Path["Revise Paths"] --> Expand_Paths
+        Expand_Paths["Iterative Expansion & Pruning"] --> Simulate
+    end
+    Promising["Promising Paths Selected"] --> Memory
+    Memory["Memory Integration"] --> Synthesize
+    Synthesize["Synthesize Final Solution"] --> Final["Final Solution ✅"]
+``` 
 
 ## Workflow
 
