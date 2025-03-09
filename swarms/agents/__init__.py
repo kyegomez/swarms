@@ -16,6 +16,9 @@ from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
 
+from swarms.agents.i_agent import IterativeReflectiveExpansion
+from swarms.agents.consistency_agent import SelfConsistencyAgent
+
 __all__ = [
     # "ToolAgent",
     "check_done",
@@ -29,4 +32,6 @@ __all__ = [
     "check_exit",
     "check_end",
     "create_agents_from_yaml",
+    "IterativeReflectiveExpansion",
+    "SelfConsistencyAgent",
 ]

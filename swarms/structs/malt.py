@@ -21,7 +21,6 @@ Whereas this implementation uses the models as is.
 
 """
 
-from ast import Mult
 import concurrent.futures
 from typing import List
 
@@ -169,6 +168,7 @@ majority_voting_agent = Agent(
     system_prompt=majority_voting_prompt,
 )
 
+
 class MALT:
     """
     MALT (Mult-Agent Learning Task) orchestrates the interaction between multiple agents
@@ -296,16 +296,14 @@ class MALT:
             task=main_agent_output,
             max_workers=3,
         )
-        
+
         self.conversation.add(
             role=self.verifier_agent.agent_name,
             content=verified_outputs,
         )
-        
-        
+
         ######################### MAJORITY VOTING #########################
 
-        
         # Majority Voting on the verified outputs
         majority_voting_verified = majority_voting_agent.run(
             task=any_to_str(verified_outputs),
@@ -315,10 +313,9 @@ class MALT:
             role=self.majority_voting_agent.agent_name,
             content=majority_voting_verified,
         )
-        
+
         #########################################################
-        
-        
+
         # Refining the majority voting output
         logger.info("Running task with refiner agents")
         for output in verified_outputs:

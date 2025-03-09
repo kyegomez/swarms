@@ -306,7 +306,7 @@ class SwarmRouter:
                 *args,
                 **kwargs,
             )
-            
+
         elif self.swarm_type == "MALT":
             return MALT(
                 name=self.name,
@@ -453,9 +453,11 @@ class SwarmRouter:
         self.swarm = self._create_swarm(task, *args, **kwargs)
 
         try:
-            logger.info(f"Running task on {self.swarm_type} swarm with task: {task}")
+            logger.info(
+                f"Running task on {self.swarm_type} swarm with task: {task}"
+            )
             result = self.swarm.run(task=task, *args, **kwargs)
-            
+
             logger.info("Swarm completed successfully")
             return result
         except Exception as e:

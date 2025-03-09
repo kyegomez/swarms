@@ -173,6 +173,9 @@ nav:
         - OpenAI Assistant: "swarms/agents/openai_assistant.md"
         - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
         - Creating Custom Agents: "swarms/agents/new_agent.md"
+      - Reasoning Agents:
+        - Self Consistency Agent: "swarms/agents/consistency_agent.md"
+        - Iterative Reflective Expansion (IRE) Agent: "swarms/agents/iterative_agent.md"
     - Swarm Architectures:
       - Why MultiAgent Collaboration is Necessary: "swarms/concept/why.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"

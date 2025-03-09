@@ -2416,8 +2416,8 @@ class Agent:
         if not task.strip():
             raise ValueError("Task cannot be empty")
 
-        if self.llm is None:
-            raise TypeError("LLM object cannot be None")
+        # if self.llm is None:
+        #     raise TypeError("LLM object cannot be None")
 
         try:
             out = self.llm.run(task, *args, **kwargs)
