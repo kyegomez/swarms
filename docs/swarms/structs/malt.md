@@ -5,8 +5,11 @@
 MALT (Multi-Agent Learning Task) is a sophisticated orchestration framework that coordinates multiple specialized AI agents to tackle complex tasks through structured conversations. Inspired by the principles outlined in the [MALT research paper](https://arxiv.org/pdf/2412.01928), this implementation provides a reliable, extensible system for multi-agent collaboration.
 
 The framework is designed around a three-agent architecture:
+
 1. **Creator Agent**: Generates initial content or solutions
+
 2. **Verifier Agent**: Critically evaluates the creator's output
+
 3. **Refiner Agent**: Improves the solution based on verifier feedback
 
 This collaborative approach enables high-quality outputs for complex tasks by combining the strengths of multiple specialized agents, each focused on a different aspect of the problem-solving process.
