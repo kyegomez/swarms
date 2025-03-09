@@ -180,15 +180,12 @@ A: Yes, please contact our sales team for enterprise pricing and volume discount
 
 ## References
 
-- [Swarm API Documentation](https://docs.swarms.world)
+- [Swarm API Documentation](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/)
 
 - [Account Management Portal](https://swarms.world/platform/account)
 
-- [Swarm Types Reference](https://docs.swarms.world/swarm-types)
+- [Swarm Types Reference](https://docs.swarms.world/swarms_cloud/swarm_types)
 
-- [Token Usage Guide](https://docs.swarms.world/token-usage)
-
-- [API Reference](https://docs.swarms.world/api-reference)
 
 ---
 
