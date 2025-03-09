@@ -207,6 +207,7 @@ nav:
 
     - Swarms API Examples:
       - Medical Swarm: "swarms/examples/swarms_api_medical.md"
+      - Finance Swarm: "swarms/examples/swarms_api_finance.md"
       - ML Model Code Generation Swarm: "swarms/examples/swarms_api_ml_model.md"
     - Various Model Providers:
       - OpenAI: "swarms/examples/openai_example.md"

@@ -15,7 +15,9 @@ You are a reasoning agent designed for complex problem-solving and decision-maki
 
 
 def aggregation_agent(
-    responses: List[str], prompt: str = majority_voting_prompt
+    responses: List[str],
+    prompt: str = majority_voting_prompt,
+    model_name: str = "gpt-4o-mini",
 ) -> str:
     """
     Aggregates a list of responses into a single final answer.
@@ -25,7 +27,7 @@ def aggregation_agent(
     agent = Agent(
         agent_name="Aggregation-Agent",
         description="An agent that aggregates a list of responses into a single final answer.",
-        model_name="gpt-4o-mini",
+        model_name=model_name,
         system_prompt=prompt,
         max_loops=1,
     )
@@ -38,6 +40,8 @@ def aggregation_agent(
 class SelfConsistencyAgent(Agent):
     def __init__(
         self,
+        name: str = "Self-Consistency-Agent",
+        description: str = "An agent that uses self consistency to generate a final answer.",
         num_samples: int = 5,
         return_list: bool = False,
         max_loops: int = 1,
@@ -54,7 +58,10 @@ class SelfConsistencyAgent(Agent):
             **kwargs: Other keyword arguments passed to the base Agent.
         """
         super().__init__(
-            **kwargs, system_prompt=CONSISTENCY_SYSTEM_PROMPT
+            name=name,
+            description=description,
+            system_prompt=CONSISTENCY_SYSTEM_PROMPT,
+            **kwargs,
         )
         self.num_samples = num_samples
         self.conversation = Conversation()

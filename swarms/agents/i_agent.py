@@ -43,11 +43,12 @@ class IterativeReflectiveExpansion:
 
     def __init__(
         self,
-        agent: Agent,
+        agent: Agent = None,
         max_iterations: int = 5,
         return_list: bool = False,
         return_dict: bool = False,
         prompt: str = GENERAL_REASONING_AGENT_SYS_PROMPT,
+        model_name: str = "gpt-4o-mini",
     ) -> None:
         """
         Initialize the Iterative Reflective Expansion engine.
@@ -57,30 +58,30 @@ class IterativeReflectiveExpansion:
         """
         self.agent = agent
         self.max_iterations = max_iterations
-        self.conversation = Conversation()
         self.return_list = return_list
         self.return_dict = return_dict
+
+        self.conversation = Conversation()
 
         self.agent = Agent(
             agent_name="General-Reasoning-Agent",
             system_prompt=prompt,
-            model_name="gpt-4o-mini",
+            model_name=model_name,
             max_loops=1,
+            dynamic_temperature_enabled=True,
         )
 
-    def generate_initial_hypotheses(
-        self, problem_input: str
-    ) -> List[str]:
+    def generate_initial_hypotheses(self, task: str) -> List[str]:
         """
         Generate an initial set of reasoning hypotheses based on the problem input.
 
-        :param problem_input: The problem statement.
+        :param task: The problem statement.
         :return: A list of candidate reasoning paths/hypotheses.
         """
         logger.info("Generating initial hypotheses for the problem.")
         prompt = (
             f"Given the following problem:\n\n"
-            f"'{problem_input}'\n\n"
+            f"'{task}'\n\n"
             "Generate a list of possible approaches and strategies to solve it. "
             "Present each approach on a new line."
         )
@@ -235,19 +236,17 @@ class IterativeReflectiveExpansion:
         logger.debug(f"Synthesized solution: {solution}")
         return solution
 
-    def run(self, problem_input: str) -> str:
+    def run(self, task: str) -> str:
         """
         Execute the Iterative Reflective Expansion process on the provided problem.
 
-        :param problem_input: The problem statement.
+        :param task: The problem statement.
         :return: The final solution generated after iterative reasoning.
         """
         logger.info(
-            f"Starting iterative reflective expansion for problem: {problem_input}"
+            f"Starting iterative reflective expansion for problem: {task}"
         )
-        candidate_paths = self.generate_initial_hypotheses(
-            problem_input
-        )
+        candidate_paths = self.generate_initial_hypotheses(task)
         memory_pool: List[str] = []
 
         for iteration in range(self.max_iterations):

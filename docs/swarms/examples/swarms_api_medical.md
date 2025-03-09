@@ -48,7 +48,7 @@ def create_medical_swarm(patient_case: str):
                 ),
                 "model_name": "openai/gpt-4o",
                 "role": "worker",
-                "max_loops": 2,
+                "max_loops": 1,
                 "max_tokens": 4000,
                 "temperature": 0.3,
                 "auto_generate_prompt": False
@@ -88,18 +88,15 @@ def create_medical_swarm(patient_case: str):
                 "auto_generate_prompt": False
             }
         ],
-        "max_loops": 3,
-        "swarm_type": "SequentialWorkflow" 
+        "max_loops": 1,
+        "swarm_type": "SequentialWorkflow",
+        "task": patient_case,
     }
 
-    # Payload includes the patient case as the task to be processed by the swarm
-    payload = {
-        "task": patient_case,
-        "swarm": payload
-    }
+    # Payload includes the patient case as the task to be processed by the swar
 
     response = requests.post(
-        f"{BASE_URL}/swarm/completion",
+        f"{BASE_URL}/v1/swarm/completions",
         headers=headers,
         json=payload,
     )
@@ -122,4 +119,10 @@ if __name__ == "__main__":
 
     diagnostic_output = create_medical_swarm(patient_case)
     print(diagnostic_output)
+```
+
+4. Run the script:
+
+```bash
+python medical_swarm.py
 ```
