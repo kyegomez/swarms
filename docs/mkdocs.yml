@@ -142,20 +142,15 @@ markdown_extensions:
 nav:
   - Home:
     - Overview: "index.md"
-    # - The Vision: "swarms/framework/vision.md"
-    # - Docker Setup: "swarms/install/docker_setup.md"
     - Swarms Vision: "swarms/concept/vision.md"
-    - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
-    - Swarms Products: "swarms/products.md"
     - Onboarding: 
       - Installation: "swarms/install/install.md"
-      - Environment Configuration: "swarms/install/workspace_manager.md"
-      - Environment Variables: "swarms/install/env.md"
+      - Environment Configuration: "swarms/install/env.md"
       - Quickstart: "swarms/install/quickstart.md"
       - Swarms CLI: "swarms/cli/main.md"
       - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
-    # - Prelimary:
-      # - 80/20 Rule For Agents: "swarms/prompting/8020.md"
+    - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
+    - Swarms Products: "swarms/products.md"
     - Agents:
       # - Overview: "swarms/structs/index.md"
       - Managing Prompts in Production: "swarms/prompts/main.md"
@@ -175,7 +170,7 @@ nav:
         - Creating Custom Agents: "swarms/agents/new_agent.md"
       - Reasoning Agents:
         - Self Consistency Agent: "swarms/agents/consistency_agent.md"
-        - Iterative Reflective Expansion (IRE) Agent: "swarms/agents/iterative_agent.md"
+        - IRE Agent: "swarms/agents/iterative_agent.md"
     - Swarm Architectures:
       - Why MultiAgent Collaboration is Necessary: "swarms/concept/why.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"
