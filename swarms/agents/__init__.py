@@ -18,6 +18,7 @@ from swarms.agents.create_agents_from_yaml import (
 
 from swarms.agents.i_agent import IterativeReflectiveExpansion
 from swarms.agents.consistency_agent import SelfConsistencyAgent
+from swarms.agents.reasoning_duo import ReasoningDuo
 
 __all__ = [
     # "ToolAgent",
@@ -34,4 +35,5 @@ __all__ = [
     "create_agents_from_yaml",
     "IterativeReflectiveExpansion",
     "SelfConsistencyAgent",
+    "ReasoningDuo",
 ]

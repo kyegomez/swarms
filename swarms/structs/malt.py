@@ -13,7 +13,7 @@ Potential Improvements:
 - Autonomously create the agents based on the task.
 - Feed verifier responses back into the creator to improve the proof.
 - Feed refiner responses back into the creator to improve the proof.
-- 
+- Feed majority voting responses back into the creator to improve the proof.
 
 
 This is a simplified implementation of the MALT orchestrator. The original implementation trains the models with dpo and sft.
@@ -21,7 +21,6 @@ Whereas this implementation uses the models as is.
 
 """
 
-import concurrent.futures
 from typing import List
 
 from loguru import logger
@@ -310,7 +309,7 @@ class MALT:
         )
 
         self.conversation.add(
-            role=self.majority_voting_agent.agent_name,
+            role=majority_voting_agent.agent_name,
             content=majority_voting_verified,
         )
 
@@ -348,6 +347,7 @@ class MALT:
             str or list or dict: The output from the conversation based on the specified return format.
         """
         task = task
+
         for i in range(self.max_loops):
             logger.info(f"Starting iteration {i+1}/{self.max_loops}")
             output = self.step(task, img, *args, **kwargs)
@@ -386,18 +386,3 @@ class MALT:
 
     def __repr__(self):
         return self.conversation.get_str()
-
-    def run_concurrently(self, tasks: List[str], *args, **kwargs):
-        """Executes a list of tasks using the main agent and processes the output through verifier and refiner agents.
-
-        Args:
-            tasks (list[str]): The list of tasks to be executed by the main agent.
-        """
-        logger.info("Running batch of tasks concurrently.")
-        logger.info(f"Number of tasks: {len(tasks)}")
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(self.run, task, *args, **kwargs)
-                for task in tasks
-            ]
-            return concurrent.futures.as_completed(futures)

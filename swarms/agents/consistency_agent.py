@@ -48,6 +48,7 @@ class SelfConsistencyAgent(Agent):
         return_dict: bool = False,
         return_json: bool = False,
         majority_voting_prompt: str = None,
+        eval: bool = False,
         **kwargs,
     ):
         """
@@ -70,6 +71,7 @@ class SelfConsistencyAgent(Agent):
         self.return_dict = return_dict
         self.return_json = return_json
         self.majority_voting_prompt = majority_voting_prompt
+        self.eval = eval
 
     def run(
         self, task: str, answer: str = None, *args, **kwargs
@@ -101,16 +103,17 @@ class SelfConsistencyAgent(Agent):
 
         self.conversation.add(role=self.agent_name, content=responses)
 
-        if answer is not None:
-            correct = self.check_responses_for_answer(
-                responses, answer
-            )
-
-            if not correct:
-                logger.info(
-                    "The answer is not correct. Please try again."
+        if self.eval:
+            if answer is not None:
+                correct = self.check_responses_for_answer(
+                    responses, answer
                 )
-                return None
+
+                if not correct:
+                    logger.info(
+                        "The answer is not correct. Please try again."
+                    )
+                    return None
 
         # Aggregation agent
         # final_answer = self.aggregation_agent(responses)
@@ -177,6 +180,18 @@ class SelfConsistencyAgent(Agent):
                     f"The answer '{answer}' is not found in the response: '{response}'"
                 )
         return False
+
+    def batched_run(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[str]:
+        """
+        Runs the agent in a batched manner.
+        """
+        responses = []
+        for task in tasks:
+            response = self.run(task, *args, **kwargs)
+            responses.append(response)
+        return responses
 
 
 # # Example usage:

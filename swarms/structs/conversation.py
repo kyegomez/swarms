@@ -5,8 +5,9 @@ from typing import Any, Optional, Union
 import yaml
 from swarms.structs.base_structure import BaseStructure
 from typing import TYPE_CHECKING
+from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
-
+from swarms.utils.litellm_tokenizer import count_tokens
 
 if TYPE_CHECKING:
     from swarms.structs.agent import (
@@ -79,6 +80,7 @@ class Conversation(BaseStructure):
         auto_save: bool = True,
         save_as_yaml: bool = True,
         save_as_json_bool: bool = False,
+        token_count: bool = True,
         *args,
         **kwargs,
     ):
@@ -96,6 +98,7 @@ class Conversation(BaseStructure):
         self.auto_save = auto_save
         self.save_as_yaml = save_as_yaml
         self.save_as_json_bool = save_as_json_bool
+        self.token_count = token_count
 
         # If system prompt is not None, add it to the conversation history
         if self.system_prompt is not None:
@@ -128,17 +131,21 @@ class Conversation(BaseStructure):
         now = datetime.datetime.now()
         timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
 
+        tokens = count_tokens(any_to_str(content))
+
         if isinstance(content, dict) or isinstance(content, list):
 
             message = {
                 "role": role,
                 "content": content,
+                "token_count": int(tokens),
             }
 
         else:
             message = {
                 "role": role,
-                "content": f"Time: {timestamp} \n{content}",
+                "content": f"Time: {timestamp} \n {content}",
+                "token_count": int(tokens),
             }
 
         self.conversation_history.append(message)
@@ -448,16 +455,17 @@ class Conversation(BaseStructure):
 
 # # Example usage
 # # conversation = Conversation()
-# conversation = Conversation()
+# conversation = Conversation(token_count=True)
 # conversation.add("user", "Hello, how are you?")
-# conversation.add(
-#     "assistant", {"name": "tool_1", "output": "Hello, how are you?"}
-# )
-# print(conversation.return_json())
+# conversation.add("assistant", "I am doing well, thanks.")
+# # conversation.add(
+# #     "assistant", {"name": "tool_1", "output": "Hello, how are you?"}
+# # )
+# # print(conversation.return_json())
 
-# # print(conversation.get_last_message_as_string())
-# # print(conversation.return_messages_as_list())
-# # conversation.add("assistant", "I am doing well, thanks.")
-# # # print(conversation.to_json())
+# # # print(conversation.get_last_message_as_string())
+# print(conversation.return_json())
+# # # conversation.add("assistant", "I am doing well, thanks.")
+# # # # print(conversation.to_json())
 # # print(type(conversation.to_dict()))
 # # print(conversation.to_yaml())

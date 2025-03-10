@@ -579,23 +579,31 @@ class Agent:
         # Telemetry Processor to log agent data
         log_agent_data(self.to_dict())
 
-        if self.llm is None and self.model_name is not None:
+        if self.llm is None:
             self.llm = self.llm_handling()
 
     def llm_handling(self):
         from swarms.utils.litellm_wrapper import LiteLLM
 
-        if self.llm_args is not None:
-            llm = LiteLLM(model_name=self.model_name, **self.llm_args)
+        if self.model_name is None:
+            raise ValueError("Model name cannot be None")
 
-        else:
-            llm = LiteLLM(
-                model_name=self.model_name,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-            )
-
-        return llm
+        try:
+            if self.llm_args is not None:
+                llm = LiteLLM(
+                    model_name=self.model_name, **self.llm_args
+                )
+            else:
+                llm = LiteLLM(
+                    model_name=self.model_name,
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    system_prompt=self.system_prompt,
+                )
+            return llm
+        except Exception as e:
+            logger.error(f"Error in llm_handling: {e}")
+            return None
 
     def prepare_tools_list_dictionary(self):
         import json
@@ -1064,13 +1072,13 @@ class Agent:
                 self.short_memory.get_str()
             )
 
-            # Handle artifacts
-            if self.artifacts_on is True:
-                self.handle_artifacts(
-                    concat_strings(all_responses),
-                    self.artifacts_output_path,
-                    self.artifacts_file_extension,
-                )
+            # # Handle artifacts
+            # if self.artifacts_on is True:
+            #     self.handle_artifacts(
+            #         concat_strings(all_responses),
+            #         self.artifacts_output_path,
+            #         self.artifacts_file_extension,
+            # )
 
             log_agent_data(self.to_dict())
             if self.autosave is True:
@@ -2413,8 +2421,8 @@ class Agent:
         if not isinstance(task, str):
             raise TypeError("Task must be a string")
 
-        if not task.strip():
-            raise ValueError("Task cannot be empty")
+        if task is None:
+            raise ValueError("Task cannot be None")
 
         # if self.llm is None:
         #     raise TypeError("LLM object cannot be None")

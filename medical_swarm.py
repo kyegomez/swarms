@@ -12,6 +12,7 @@ BASE_URL = "https://swarms-api-285321057562.us-east1.run.app"
 # Headers for secure API communication
 headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
 
+
 def create_financial_swarm(equity_data: str):
     """
     Constructs and triggers a full-stack financial swarm consisting of three agents:
@@ -37,7 +38,7 @@ def create_financial_swarm(equity_data: str):
                 "max_loops": 1,
                 "max_tokens": 4000,
                 "temperature": 0.3,
-                "auto_generate_prompt": False
+                "auto_generate_prompt": False,
             },
             {
                 "agent_name": "Risk Assessor",
@@ -53,7 +54,7 @@ def create_financial_swarm(equity_data: str):
                 "max_loops": 1,
                 "max_tokens": 3000,
                 "temperature": 0.2,
-                "auto_generate_prompt": False
+                "auto_generate_prompt": False,
             },
             {
                 "agent_name": "Market Advisor",
@@ -70,8 +71,8 @@ def create_financial_swarm(equity_data: str):
                 "max_loops": 1,
                 "max_tokens": 5000,
                 "temperature": 0.3,
-                "auto_generate_prompt": False
-            }
+                "auto_generate_prompt": False,
+            },
         ],
         "max_loops": 1,
         "swarm_type": "SequentialWorkflow",
