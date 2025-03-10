@@ -172,6 +172,7 @@ nav:
         - Self Consistency Agent: "swarms/agents/consistency_agent.md"
         - IRE Agent: "swarms/agents/iterative_agent.md"
         - Reasoning Duo: "swarms/agents/reasoning_duo.md"
+        - Reasoning Agent Router: "swarms/agents/reasoning_agent_router.md"
     - Swarm Architectures:
       - Why MultiAgent Collaboration is Necessary: "swarms/concept/why.md"
       - Swarm Architectures: "swarms/concept/swarm_architectures.md"

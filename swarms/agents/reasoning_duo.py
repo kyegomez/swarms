@@ -4,6 +4,11 @@ from loguru import logger
 
 from swarms.prompts.reasoning_prompt import REASONING_PROMPT
 from swarms.structs.agent import Agent
+from swarms.structs.output_types import OutputType
+from swarms.structs.conversation import Conversation
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
 
 
 class ReasoningDuo:
@@ -21,14 +26,19 @@ class ReasoningDuo:
 
     def __init__(
         self,
-        model_name: str = "reasoning-agent-01",
+        agent_name: str = "reasoning-agent-01",
+        agent_description: str = "A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
+        model_name: str = "gpt-4o-mini",
         description: str = "A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
         model_names: list[str] = ["gpt-4o-mini", "gpt-4o"],
         system_prompt: str = "You are a helpful assistant that can answer questions and help with tasks.",
+        output_type: OutputType = "dict",
     ):
+        self.agent_name = agent_name
+        self.agent_description = agent_description
         self.model_name = model_name
         self.description = description
-
+        self.output_type = output_type
         self.reasoning_agent = Agent(
             agent_name="Your",
             description="A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
@@ -39,13 +49,15 @@ class ReasoningDuo:
         )
 
         self.main_agent = Agent(
-            agent_name="Main Agent",
-            description="A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
+            agent_name=self.agent_name,
+            description=self.agent_description,
             system_prompt=system_prompt,
             max_loops=1,
             model_name=model_names[1],
             dynamic_temperature_enabled=True,
         )
+
+        self.conversation = Conversation()
 
     def run(self, task: str):
         """
@@ -58,14 +70,27 @@ class ReasoningDuo:
             str: The output from the main agent after processing the task.
         """
         logger.info(f"Running task: {task}")
+
+        self.conversation.add(role="user", content=task)
+
         output_reasoner = self.reasoning_agent.run(task)
 
-        output_main = self.main_agent.run(
-            f"Task: {task} \n\n Your thoughts: {output_reasoner}"
+        self.conversation.add(
+            role=self.reasoning_agent.agent_name,
+            content=output_reasoner,
         )
 
-        logger.info(f"Output from main agent: {output_main}")
-        return output_main
+        prompt = f"Task: {task} \n\n Your thoughts: {output_reasoner}"
+
+        output_main = self.main_agent.run(prompt)
+
+        self.conversation.add(
+            role=self.main_agent.agent_name, content=output_main
+        )
+
+        return history_output_formatter(
+            self.conversation, self.output_type
+        )
 
     def batched_run(self, tasks: List[str]):
         """

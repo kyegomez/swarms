@@ -22,6 +22,10 @@ from typing import List, Tuple
 from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.output_types import OutputType
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
 
 # Define a new system prompt for general problem solving
 GENERAL_REASONING_AGENT_SYS_PROMPT = """
@@ -43,12 +47,13 @@ class IterativeReflectiveExpansion:
 
     def __init__(
         self,
+        agent_name: str = "General-Reasoning-Agent",
+        description: str = "A reasoning agent that can answer questions and help with tasks.",
         agent: Agent = None,
         max_iterations: int = 5,
-        return_list: bool = False,
-        return_dict: bool = False,
-        prompt: str = GENERAL_REASONING_AGENT_SYS_PROMPT,
+        system_prompt: str = GENERAL_REASONING_AGENT_SYS_PROMPT,
         model_name: str = "gpt-4o-mini",
+        output_type: OutputType = "dict",
     ) -> None:
         """
         Initialize the Iterative Reflective Expansion engine.
@@ -56,16 +61,17 @@ class IterativeReflectiveExpansion:
         :param agent: The Swarms agent instance used to perform reasoning tasks.
         :param max_iterations: Maximum number of iterations for the reasoning process.
         """
+        self.agent_name = agent_name
+        self.description = description
         self.agent = agent
         self.max_iterations = max_iterations
-        self.return_list = return_list
-        self.return_dict = return_dict
-
+        self.output_type = output_type
+        self.system_prompt = system_prompt
         self.conversation = Conversation()
 
         self.agent = Agent(
-            agent_name="General-Reasoning-Agent",
-            system_prompt=prompt,
+            agent_name=self.agent_name,
+            system_prompt=self.system_prompt,
             model_name=model_name,
             max_loops=1,
             dynamic_temperature_enabled=True,
@@ -273,18 +279,12 @@ class IterativeReflectiveExpansion:
                 f"Candidate paths for next iteration: {candidate_paths}"
             )
 
-        final_solution = self.synthesize_solution(
-            candidate_paths, memory_pool
-        )
+        self.synthesize_solution(candidate_paths, memory_pool)
         logger.info("Final solution generated.")
 
-        if self.return_list:
-            return self.conversation.return_messages_as_list()
-        elif self.return_dict:
-            return self.conversation.return_messages_as_dict()
-
-        else:
-            return final_solution
+        return history_output_formatter(
+            self.conversation, self.output_type
+        )
 
 
 # def main() -> None:

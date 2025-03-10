@@ -7,7 +7,11 @@ from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.malt import majority_voting_prompt
+from swarms.structs.output_types import OutputType
 from swarms.utils.any_to_str import any_to_str
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
 
 CONSISTENCY_SYSTEM_PROMPT = """
 You are a reasoning agent designed for complex problem-solving and decision-making. Your objective is to provide clear and reliable responses through structured reasoning. Begin by thoroughly understanding the problem, rephrasing it for clarity, and identifying key components. Develop a logical plan that breaks the problem into manageable steps, detailing your approach and any assumptions made. Validate your information with reliable sources and assess the accuracy of your calculations. Explore multiple solutions, weighing their pros and cons, and maintain transparency by documenting your reasoning process, uncertainties, and biases. Summarize your findings in a concise final answer that reflects your thorough analysis, ensuring it is well-organized and accessible. Adapt your reasoning to the context of the problem, integrating new information as needed, and implement error-handling strategies to address any issues that arise. Finally, reflect on your reasoning process to identify areas for improvement and ensure consistency across all reasoning paths.
@@ -42,13 +46,12 @@ class SelfConsistencyAgent(Agent):
         self,
         name: str = "Self-Consistency-Agent",
         description: str = "An agent that uses self consistency to generate a final answer.",
+        system_prompt: str = CONSISTENCY_SYSTEM_PROMPT,
         num_samples: int = 5,
-        return_list: bool = False,
         max_loops: int = 1,
-        return_dict: bool = False,
-        return_json: bool = False,
         majority_voting_prompt: str = None,
         eval: bool = False,
+        output_type: OutputType = "dict",
         **kwargs,
     ):
         """
@@ -61,17 +64,15 @@ class SelfConsistencyAgent(Agent):
         super().__init__(
             name=name,
             description=description,
-            system_prompt=CONSISTENCY_SYSTEM_PROMPT,
             **kwargs,
         )
         self.num_samples = num_samples
         self.conversation = Conversation()
-        self.return_list = return_list
         self.max_loops = max_loops
-        self.return_dict = return_dict
-        self.return_json = return_json
         self.majority_voting_prompt = majority_voting_prompt
         self.eval = eval
+        self.output_type = output_type
+        self.system_prompt = system_prompt
 
     def run(
         self, task: str, answer: str = None, *args, **kwargs
@@ -124,12 +125,9 @@ class SelfConsistencyAgent(Agent):
             role="Majority Voting Agent", content=final_answer
         )
 
-        if self.return_list:
-            self.conversation.return_messages_as_list()
-        elif self.return_dict:
-            self.conversation.return_json()
-        else:
-            return final_answer
+        return history_output_formatter(
+            self.conversation, self.output_type
+        )
 
     def aggregate(self, responses: List[str]) -> str:
         """

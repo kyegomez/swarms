@@ -25,9 +25,10 @@ graph TD
     Promising["Promising Paths Selected"] --> Memory
     Memory["Memory Integration"] --> Synthesize
     Synthesize["Synthesize Final Solution"] --> Final["Final Solution ✅"]
+
 ```
 
-----
+---
 
 ## Workflow
 

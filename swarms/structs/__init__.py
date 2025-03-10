@@ -83,6 +83,8 @@ from swarms.structs.swarms_api import (
     SwarmValidationError,
 )
 
+from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
+
 __all__ = [
     "Agent",
     "AsyncWorkflow",
@@ -156,4 +158,5 @@ __all__ = [
     "AgentInput",
     "AgentsBuilder",
     "MALT",
+    "DeHallucinationSwarm",
 ]
