@@ -5,7 +5,7 @@ The Iterative Reflective Expansion (IRE) Algorithm is a sophisticated reasoning 
 
 ## Architecture
 
-```
+```mermaid
 graph TD
     Problem_Input["🧩 Problem Input"] --> Generate_Hypotheses
     Generate_Hypotheses["Generate Initial Hypotheses"] --> Simulate
@@ -25,7 +25,9 @@ graph TD
     Promising["Promising Paths Selected"] --> Memory
     Memory["Memory Integration"] --> Synthesize
     Synthesize["Synthesize Final Solution"] --> Final["Final Solution ✅"]
-``` 
+```
+
+----
 
 ## Workflow
 
