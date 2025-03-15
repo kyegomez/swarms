@@ -282,7 +282,7 @@ class ForestSwarm:
         self.shared_memory = shared_memory
         self.save_file_path = f"forest_swarm_{uuid.uuid4().hex}.json"
         self.conversation = Conversation(
-            time_enabled=True,
+            time_enabled=False,
             auto_save=True,
             save_filepath=self.save_file_path,
             rules=rules,

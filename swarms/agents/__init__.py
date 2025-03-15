@@ -1,3 +1,15 @@
+from swarms.agents.consistency_agent import SelfConsistencyAgent
+
+# from swarms.agents.tool_agent import ToolAgent
+from swarms.agents.create_agents_from_yaml import (
+    create_agents_from_yaml,
+)
+from swarms.agents.i_agent import IterativeReflectiveExpansion
+from swarms.agents.reasoning_agents import (
+    ReasoningAgentRouter,
+    agent_types,
+)
+from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.stopping_conditions import (
     check_cancelled,
     check_complete,
@@ -10,15 +22,6 @@ from swarms.structs.stopping_conditions import (
     check_stopped,
     check_success,
 )
-
-# from swarms.agents.tool_agent import ToolAgent
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
-)
-
-from swarms.agents.i_agent import IterativeReflectiveExpansion
-from swarms.agents.consistency_agent import SelfConsistencyAgent
-from swarms.agents.reasoning_duo import ReasoningDuo
 
 __all__ = [
     # "ToolAgent",
@@ -36,4 +39,6 @@ __all__ = [
     "IterativeReflectiveExpansion",
     "SelfConsistencyAgent",
     "ReasoningDuo",
+    "ReasoningAgentRouter",
+    "agent_types",
 ]

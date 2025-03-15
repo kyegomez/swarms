@@ -83,7 +83,15 @@ def exists(val):
 # Agent output types
 # agent_output_type = Union[BaseModel, dict, str]
 agent_output_type = Literal[
-    "string", "str", "list", "json", "dict", "yaml", "json_schema"
+    "string",
+    "str",
+    "list",
+    "json",
+    "dict",
+    "yaml",
+    "json_schema",
+    "memory-list",
+    "memory-dict",
 ]
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
@@ -461,10 +469,11 @@ class Agent:
         self.role = role
         self.no_print = no_print
         self.tools_list_dictionary = tools_list_dictionary
+
         # Initialize the short term memory
         self.short_memory = Conversation(
             system_prompt=system_prompt,
-            time_enabled=True,
+            time_enabled=False,
             user=user_name,
             rules=rules,
             *args,
@@ -586,12 +595,35 @@ class Agent:
         from swarms.utils.litellm_wrapper import LiteLLM
 
         if self.model_name is None:
-            raise ValueError("Model name cannot be None")
+            # raise ValueError("Model name cannot be None")
+            logger.warning(
+                "Model name is not provided, using gpt-4o-mini. You can configure any model from litellm if desired."
+            )
+            self.model_name = "gpt-4o-mini"
 
         try:
             if self.llm_args is not None:
                 llm = LiteLLM(
                     model_name=self.model_name, **self.llm_args
+                )
+            elif self.tools_list_dictionary is not None:
+
+                length_of_tools_list_dictionary = len(
+                    self.tools_list_dictionary
+                )
+
+                if length_of_tools_list_dictionary > 0:
+
+                    parallel_tool_calls = True
+
+                llm = LiteLLM(
+                    model_name=self.model_name,
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    system_prompt=self.system_prompt,
+                    tools_list_dictionary=self.tools_list_dictionary,
+                    tool_choice="auto",
+                    parallel_tool_calls=parallel_tool_calls,
                 )
             else:
                 llm = LiteLLM(
@@ -1106,6 +1138,14 @@ class Agent:
             elif self.output_type == "yaml":
                 return yaml.safe_dump(
                     self.agent_output.model_dump(), sort_keys=False
+                )
+
+            elif self.output_type == "memory-list":
+                return self.short_memory.return_messages_as_list()
+
+            elif self.output_type == "memory-dict":
+                return (
+                    self.short_memory.return_messages_as_dictionary()
                 )
             elif self.return_history is True:
                 history = self.short_memory.get_str()
@@ -1639,7 +1679,7 @@ class Agent:
             ):
                 self.short_memory = Conversation(
                     system_prompt=self.system_prompt,
-                    time_enabled=True,
+                    time_enabled=False,
                     user=self.user_name,
                     rules=self.rules,
                 )

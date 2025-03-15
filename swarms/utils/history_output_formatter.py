@@ -10,5 +10,9 @@ def history_output_formatter(
         return conversation.to_dict()
     elif type == "string" or type == "str":
         return conversation.get_str()
+    elif type == "final":
+        return conversation.get_final_message()
+    elif type == "json":
+        return conversation.to_json()
     else:
         raise ValueError(f"Invalid type: {type}")

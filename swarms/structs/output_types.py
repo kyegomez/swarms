@@ -11,4 +11,6 @@ OutputType = Literal[
     ".txt",
     ".yaml",
     ".toml",
+    "string",
+    "str",
 ]

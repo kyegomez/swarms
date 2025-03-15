@@ -137,7 +137,7 @@ class BaseSwarm(ABC):
 
         # Initialize conversation
         self.conversation = Conversation(
-            time_enabled=True, rules=self.rules, *args, **kwargs
+            time_enabled=False, rules=self.rules, *args, **kwargs
         )
 
         # Handle callbacks

@@ -21,6 +21,7 @@ from swarms.structs.swarm_matcher import swarm_matcher
 from swarms.structs.output_type import OutputType
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.malt import MALT
+from swarms.structs.deep_research_swarm import DeepResearchSwarm
 
 logger = initialize_logger(log_folder="swarm_router")
 
@@ -37,6 +38,7 @@ SwarmType = Literal[
     "auto",
     "MajorityVoting",
     "MALT",
+    "DeepResearchSwarm",
 ]
 
 
@@ -314,6 +316,15 @@ class SwarmRouter:
                 max_loops=self.max_loops,
                 return_dict=True,
                 preset_agents=True,
+            )
+
+        elif self.swarm_type == "DeepResearchSwarm":
+            return DeepResearchSwarm(
+                name=self.name,
+                description=self.description,
+                agents=self.agents,
+                max_loops=self.max_loops,
+                output_type=self.output_type,
             )
 
         elif self.swarm_type == "HiearchicalSwarm":

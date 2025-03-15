@@ -163,7 +163,7 @@ class MajorityVoting:
         self.output_type = output_type
 
         self.conversation = Conversation(
-            time_enabled=True, *args, **kwargs
+            time_enabled=False, *args, **kwargs
         )
 
         self.initialize_majority_voting()

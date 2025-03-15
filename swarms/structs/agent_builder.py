@@ -1,13 +1,11 @@
 import os
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.agent import Agent
-from swarms.utils.any_to_str import any_to_str
 from swarms.utils.function_caller_model import OpenAIFunctionCaller
-from swarms.utils.litellm_tokenizer import count_tokens
 
 BOSS_SYSTEM_PROMPT = """
 # Swarm Intelligence Orchestrator
@@ -148,13 +146,18 @@ class AgentsBuilder:
         description: str = "This is a swarm that creates swarms",
         verbose: bool = True,
         max_loops: int = 1,
+        model_name: str = "gpt-4o",
+        return_dictionary: bool = True,
+        system_prompt: str = BOSS_SYSTEM_PROMPT,
     ):
         self.name = name
         self.description = description
         self.verbose = verbose
         self.max_loops = max_loops
         self.agents_pool = []
-
+        self.model_name = model_name
+        self.return_dictionary = return_dictionary
+        self.system_prompt = system_prompt
         logger.info(
             f"Initialized AutoSwarmBuilder: {name} {description}"
         )
@@ -174,11 +177,9 @@ class AgentsBuilder:
             The output from the swarm's execution
         """
         logger.info(f"Running swarm on task: {task}")
-        agents, tokens = self._create_agents(
-            task, image_url, *args, **kwargs
-        )
+        agents = self._create_agents(task, image_url, *args, **kwargs)
 
-        return agents, tokens
+        return agents
 
     def _create_agents(self, task: str, *args, **kwargs):
         """Create the necessary agents for a task.
@@ -193,27 +194,32 @@ class AgentsBuilder:
         """
         logger.info("Creating agents for task")
         model = OpenAIFunctionCaller(
-            system_prompt=BOSS_SYSTEM_PROMPT,
+            system_prompt=self.system_prompt,
             api_key=os.getenv("OPENAI_API_KEY"),
             temperature=0.1,
             base_model=Agents,
-            model_name="gpt-4o",
+            model_name=self.model_name,
+            max_tokens=8192,
         )
 
         agents_dictionary = model.run(task)
+        print(agents_dictionary)
 
+        print(type(agents_dictionary))
         logger.info("Agents successfully created")
         logger.info(f"Agents: {len(agents_dictionary.agents)}")
 
-        total_tokens = any_to_str(agents_dictionary)
+        if self.return_dictionary:
+            logger.info("Returning dictionary")
 
-        tokens = count_tokens(total_tokens)
-        # logger.info(f"Tokens: {tokens}")
+            # Convert swarm config to dictionary
+            agents_dictionary = agents_dictionary.model_dump()
+            return agents_dictionary
+        else:
+            logger.info("Returning agents")
+            return self.create_agents(agents_dictionary)
 
-        # # Convert dictionary to SwarmConfig if needed
-        # if isinstance(agents_dictionary, dict):
-        #     agents_dictionary = Agents(**agents_dictionary)
-
+    def create_agents(self, agents_dictionary: Any):
         # Create agents from config
         agents = []
         for agent_config in agents_dictionary.agents:
@@ -235,7 +241,7 @@ class AgentsBuilder:
             )
             agents.append(agent)
 
-        return agents, tokens
+        return agents
 
     def build_agent(
         self,
@@ -278,3 +284,10 @@ class AgentsBuilder:
         )
 
         return agent
+
+
+# if __name__ == "__main__":
+#     builder = AgentsBuilder(model_name="gpt-4o")
+#     agents = builder.run("Create a swarm that can write a book about the history of the world")
+#     print(agents)
+#     print(type(agents))

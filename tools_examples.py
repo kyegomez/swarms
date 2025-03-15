@@ -1,15 +1,3 @@
-# Medical Swarm Example
-
-1. Get your API key from the Swarms API dashboard [HERE](https://swarms.world/platform/api-keys)
-2. Create a `.env` file in the root directory and add your API key:
-
-```bash
-SWARMS_API_KEY=<your-api-key>
-```
-
-3. Create a Python script to create and trigger the medical swarm:
-
-```python
 import os
 import requests
 from dotenv import load_dotenv
@@ -23,6 +11,7 @@ BASE_URL = "https://api.swarms.world"
 
 # Headers for secure API communication
 headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
+
 
 def create_medical_swarm(patient_case: str):
     """
@@ -48,10 +37,40 @@ def create_medical_swarm(patient_case: str):
                 ),
                 "model_name": "openai/gpt-4o",
                 "role": "worker",
-                "max_loops": 1,
+                "max_loops": 2,
                 "max_tokens": 4000,
                 "temperature": 0.3,
-                "auto_generate_prompt": False
+                "auto_generate_prompt": False,
+                "tools_dictionary": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "search_topic",
+                            "description": "Conduct an in-depth search on a specified topic or subtopic, generating a comprehensive array of highly detailed search queries tailored to the input parameters.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "depth": {
+                                        "type": "integer",
+                                        "description": "Indicates the level of thoroughness for the search. Values range from 1 to 3, where 1 represents a superficial search and 3 signifies an exploration of the topic.",
+                                    },
+                                    "detailed_queries": {
+                                        "type": "array",
+                                        "description": "An array of highly specific search queries that are generated based on the input query and the specified depth. Each query should be designed to elicit detailed and relevant information from various sources.",
+                                        "items": {
+                                            "type": "string",
+                                            "description": "Each item in this array should represent a unique search query that targets a specific aspect of the main topic, ensuring a comprehensive exploration of the subject matter.",
+                                        },
+                                    },
+                                },
+                                "required": [
+                                    "depth",
+                                    "detailed_queries",
+                                ],
+                            },
+                        },
+                    },
+                ],
             },
             {
                 "agent_name": "Medical Coder",
@@ -68,7 +87,8 @@ def create_medical_swarm(patient_case: str):
                 "max_loops": 1,
                 "max_tokens": 3000,
                 "temperature": 0.2,
-                "auto_generate_prompt": False
+                "auto_generate_prompt": False,
+                "tools_dictionary": [],
             },
             {
                 "agent_name": "Treatment Advisor",
@@ -85,15 +105,16 @@ def create_medical_swarm(patient_case: str):
                 "max_loops": 1,
                 "max_tokens": 5000,
                 "temperature": 0.3,
-                "auto_generate_prompt": False
-            }
+                "auto_generate_prompt": False,
+                "tools_dictionary": [],
+            },
         ],
-        "max_loops": 1,
+        "max_loops": 3,
         "swarm_type": "SequentialWorkflow",
         "task": patient_case,
     }
 
-    # Payload includes the patient case as the task to be processed by the swar
+    # Payload includes the patient case as the task to be processed by the swarm
 
     response = requests.post(
         f"{BASE_URL}/v1/swarm/completions",
@@ -119,10 +140,3 @@ if __name__ == "__main__":
 
     diagnostic_output = create_medical_swarm(patient_case)
     print(diagnostic_output)
-```
-
-4. Run the script:
-
-```bash
-python medical_swarm.py
-```

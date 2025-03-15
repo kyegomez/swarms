@@ -236,7 +236,7 @@ class GroupChat:
         self.agents = agents
         self.speaker_fn = speaker_fn
         self.max_loops = max_loops
-        self.conversation = Conversation(time_enabled=True)
+        self.conversation = Conversation(time_enabled=False)
         self.rules = rules
 
         self.reliability_check()

@@ -257,7 +257,7 @@ class HierarchicalSwarm(BaseSwarm):
         self.return_all_history = return_all_history
         self.output_type = output_type
         self.director_model_name = director_model_name
-        self.conversation = Conversation(time_enabled=True)
+        self.conversation = Conversation(time_enabled=False)
         self.current_loop = 0
         self.agent_outputs = {}  # Store agent outputs for each loop
 

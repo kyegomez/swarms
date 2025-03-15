@@ -2,7 +2,7 @@
 
 *Enterprise-grade Agent Swarm Management API*
 
-**Base URL**: `https://swarms-api-285321057562.us-east1.run.app`  
+**Base URL**: `https://api.swarms.world`  
 **API Key Management**: [https://swarms.world/platform/api-keys](https://swarms.world/platform/api-keys)  
 **Documentation Version**: 1.0.0  
 **Last Updated**: March 4, 2025
@@ -109,7 +109,7 @@ Check if the API service is available and functioning correctly.
 
 **Example Request**:
 ```bash
-curl -X GET "https://swarms-api-285321057562.us-east1.run.app/health" \
+curl -X GET "https://api.swarms.world/health" \
      -H "x-api-key: your_api_key_here"
 ```
 
@@ -342,7 +342,7 @@ Schedule a swarm to run at a specific time.
 
 **Example Request**:
 ```bash
-curl -X POST "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/schedule" \
+curl -X POST "https://api.swarms.world/v1/swarm/schedule" \
      -H "x-api-key: your_api_key_here" \
      -H "Content-Type: application/json" \
      -d '{
@@ -377,7 +377,7 @@ Retrieve all scheduled swarm jobs.
 
 **Example Request**:
 ```bash
-curl -X GET "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/schedule" \
+curl -X GET "https://api.swarms.world/v1/swarm/schedule" \
      -H "x-api-key: your_api_key_here"
 ```
 
@@ -418,7 +418,7 @@ Cancel a previously scheduled swarm job.
 
 **Example Request**:
 ```bash
-curl -X DELETE "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/schedule/swarm_daily-market-analysis_1709563245" \
+curl -X DELETE "https://api.swarms.world/v1/swarm/schedule/swarm_daily-market-analysis_1709563245" \
      -H "x-api-key: your_api_key_here"
 ```
 
@@ -441,7 +441,7 @@ Retrieve logs of API requests made with your API key.
 
 **Example Request**:
 ```bash
-curl -X GET "https://swarms-api-285321057562.us-east1.run.app/v1/swarm/logs" \
+curl -X GET "https://api.swarms.world/v1/swarm/logs" \
      -H "x-api-key: your_api_key_here"
 ```
 
@@ -527,7 +527,7 @@ import json
 from datetime import datetime, timedelta
 
 # API Configuration
-API_BASE_URL = "https://swarms-api-285321057562.us-east1.run.app"
+API_BASE_URL = "https://api.swarms.world"
 API_KEY = "your_api_key_here"
 HEADERS = {
     "x-api-key": API_KEY,
@@ -695,7 +695,7 @@ import os
 from datetime import datetime
 
 # API Configuration
-API_BASE_URL = "https://swarms-api-285321057562.us-east1.run.app"
+API_BASE_URL = "https://api.swarms.world"
 API_KEY = os.environ.get("SWARMS_API_KEY")
 HEADERS = {
     "x-api-key": API_KEY,
@@ -913,7 +913,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 // API Configuration
-const API_BASE_URL = "https://swarms-api-285321057562.us-east1.run.app";
+const API_BASE_URL = "https://api.swarms.world";
 const API_KEY = process.env.SWARMS_API_KEY;
 
 // Define interfaces for type safety
@@ -1212,7 +1212,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 // API Configuration
-const API_BASE_URL = "https://swarms-api-285321057562.us-east1.run.app";
+const API_BASE_URL = "https://api.swarms.world";
 const API_KEY = process.env.SWARMS_API_KEY;
 
 // Define interfaces

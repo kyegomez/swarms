@@ -142,7 +142,7 @@ class SwarmsAPIClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        base_url: str = "https://swarms-api-285321057562.us-east1.run.app",
+        base_url: str = "https://api.swarms.world",
         timeout: int = 30,
         max_retries: int = 3,
         format_type: Literal["pydantic", "json", "dict"] = "pydantic",

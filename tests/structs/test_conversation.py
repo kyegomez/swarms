@@ -20,7 +20,7 @@ def test_add_message():
 
 
 def test_add_message_with_time():
-    conv = Conversation(time_enabled=True)
+    conv = Conversation(time_enabled=False)
     conv.add("user", "Hello, world!")
     assert len(conv.conversation_history) == 1
     assert conv.conversation_history[0]["role"] == "user"

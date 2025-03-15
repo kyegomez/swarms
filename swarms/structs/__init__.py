@@ -84,6 +84,7 @@ from swarms.structs.swarms_api import (
 )
 
 from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
+from swarms.structs.deep_research_swarm import DeepResearchSwarm
 
 __all__ = [
     "Agent",
@@ -159,4 +160,5 @@ __all__ = [
     "AgentsBuilder",
     "MALT",
     "DeHallucinationSwarm",
+    "DeepResearchSwarm",
 ]

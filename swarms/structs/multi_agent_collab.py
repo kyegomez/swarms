@@ -153,7 +153,7 @@ class MultiAgentCollaboration(BaseSwarm):
 
         # Conversation
         self.conversation = Conversation(
-            time_enabled=True, *args, **kwargs
+            time_enabled=False, *args, **kwargs
         )
 
     def default_select_next_speaker(
