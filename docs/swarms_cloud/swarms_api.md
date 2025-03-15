@@ -148,7 +148,7 @@ Run a swarm with the specified configuration to complete a task.
 ```bash
 
 # Run single swarm
-curl -X POST "http://localhost:8080/v1/swarm/completions" \
+curl -X POST "https://api.swarms.world/v1/swarm/completions" \
   -H "x-api-key: $SWARMS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -243,7 +243,7 @@ Run multiple swarms as a batch operation.
 **Example Request**:
 ```bash
 # Batch swarm completions
-curl -X POST "http://localhost:8080/v1/swarm/batch/completions" \
+curl -X POST "https://api.swarms.world/v1/swarm/batch/completions" \
   -H "x-api-key: $SWARMS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '[
