@@ -4,40 +4,7 @@
 
 **Base URL**: `https://api.swarms.world`  
 **API Key Management**: [https://swarms.world/platform/api-keys](https://swarms.world/platform/api-keys)  
-**Documentation Version**: 1.0.0  
-**Last Updated**: March 4, 2025
 
-<!-- ## Table of Contents
-
-- [Overview](#overview)
-- [Authentication](#authentication)
-- [API Reference](#api-reference)
-  - [Endpoints Summary](#endpoints-summary)
-  - [SwarmType Reference](#swarmtype-reference)
-  - [Endpoint Details](#endpoint-details)
-    - [Health Check](#health-check)
-    - [Run Swarm](#run-swarm)
-    - [Run Batch Completions](#run-batch-completions)
-    - [Schedule Swarm](#schedule-swarm)
-    - [Get Scheduled Jobs](#get-scheduled-jobs)
-    - [Cancel Scheduled Job](#cancel-scheduled-job)
-    - [Get API Logs](#get-api-logs)
-- [Data Models](#data-models)
-  - [SwarmSpec](#swarmspec)
-  - [AgentSpec](#agentspec)
-  - [ScheduleSpec](#schedulespec)
-- [Production Examples](#production-examples)
-  - [Python Examples](#python-examples)
-    - [Financial Risk Assessment](#financial-risk-assessment-python)
-    - [Healthcare Patient Data Analysis](#healthcare-patient-data-analysis-python)
-  - [TypeScript/NodeJS Examples](#typescriptnodejs-examples)
-    - [Financial Fraud Detection](#financial-fraud-detection-typescript)
-    - [Healthcare Report Generation](#healthcare-report-generation-typescript)
-- [Error Handling](#error-handling)
-- [Rate Limiting](#rate-limiting)
-- [Billing & Cost Management](#billing--cost-management)
-- [Best Practices](#best-practices)
-- [Support](#support) -->
 
 ## Overview
 
