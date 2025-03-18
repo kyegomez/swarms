@@ -233,7 +233,6 @@ nav:
       - Meme Agent Builder: "swarms/examples/meme_agents.md"
     - Multi-Agent Collaboration:
       - Swarms DAO: "swarms/examples/swarms_dao.md"
-      
     - Swarms UI:
       - Overview: "swarms/ui/main.md"
 
@@ -280,7 +279,7 @@ nav:
     - Swarm Types: "swarms_cloud/swarm_types.md"
     - Swarm Ecosystem APIs:
       - MCS API: "swarms_cloud/mcs_api.md"
-      - CreateNow API: "swarms_cloud/create_api.md"
+      # - CreateNow API: "swarms_cloud/create_api.md"
     - Self Hosted Swarms:
       - Deploying Swarms on Google Cloud Run: "swarms_cloud/cloud_run.md"
   - Swarms Memory:
@@ -291,7 +290,7 @@ nav:
       - Faiss: "swarms_memory/faiss.md"
   - Swarms Marketplace:
     - Overview: "swarms_platform/index.md"
-    - Agent Marketplace: "swarms_platform/share_discover.md"
+    # - Agent Marketplace: "swarms_platform/share_discover.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
     # - Prompts API: 
