@@ -158,6 +158,7 @@ nav:
       - Complete Agent API: "swarms/structs/agent.md"
       - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
       - Tools:
+        - Structured Outputs: "swarms/agents/structured_outputs.md"
         - Overview: "swarms/tools/main.md"
         - What are tools?: "swarms/tools/build_tool.md"
         - ToolAgent: "swarms/agents/tool_agent.md"
