@@ -5,7 +5,6 @@
 **Base URL**: `https://api.swarms.world`  
 **API Key Management**: [https://swarms.world/platform/api-keys](https://swarms.world/platform/api-keys)  
 
-
 ## Overview
 
 The Swarms API provides a robust, scalable infrastructure for deploying and managing intelligent agent swarms in the cloud. This enterprise-grade API enables organizations to create, execute, and orchestrate sophisticated AI agent workflows without managing the underlying infrastructure.

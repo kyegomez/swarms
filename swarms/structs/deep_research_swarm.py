@@ -278,6 +278,7 @@ research_agent = Agent(
     system_prompt=RESEARCH_AGENT_PROMPT,
     max_loops=1,  # Allow multiple iterations for thorough research
     tools_list_dictionary=tools,
+    model_name="gpt-4o-mini",
 )
 
 
@@ -298,6 +299,7 @@ class DeepResearchSwarm:
         max_workers: int = os.cpu_count()
         * 2,  # Let the system decide optimal thread count
         token_count: bool = False,
+        research_model_name: str = "gpt-4o-mini",
     ):
         self.name = name
         self.description = description
@@ -306,6 +308,7 @@ class DeepResearchSwarm:
         self.nice_print = nice_print
         self.output_type = output_type
         self.max_workers = max_workers
+        self.research_model_name = research_model_name
 
         self.reliability_check()
         self.conversation = Conversation(token_count=token_count)
@@ -447,6 +450,9 @@ class DeepResearchSwarm:
         return history_output_formatter(
             self.conversation, type=self.output_type
         )
+
+    def run(self, task: str):
+        return self.step(task)
 
 
 # # Example usage

@@ -294,18 +294,18 @@ nav:
     - Agent Marketplace: "swarms_platform/share_discover.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
-    - Prompts API: 
-      - Add Prompts: "swarms_platform/prompts/add_prompt.md"
-      - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"
-      - Query Prompts: "swarms_platform/prompts/fetch_prompts.md"
-    - Agents API:
-      - Add Agents: "swarms_platform/agents/agents_api.md"
-      - Query Agents: "swarms_platform/agents/fetch_agents.md"
-      - Edit Agents: "swarms_platform/agents/edit_agent.md"
-    - Telemetry API:
-      - PUT: "swarms_platform/telemetry/index.md"
-    - Swarms Wallet API:
-      - Overview: "swarms/wallet/api.md"
+    # - Prompts API: 
+    #   - Add Prompts: "swarms_platform/prompts/add_prompt.md"
+    #   - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"
+    #   - Query Prompts: "swarms_platform/prompts/fetch_prompts.md"
+    # - Agents API:
+    #   - Add Agents: "swarms_platform/agents/agents_api.md"
+    #   - Query Agents: "swarms_platform/agents/fetch_agents.md"
+    #   - Edit Agents: "swarms_platform/agents/edit_agent.md"
+    # - Telemetry API:
+    #   - PUT: "swarms_platform/telemetry/index.md"
+    # - Swarms Wallet API:
+    #   - Overview: "swarms/wallet/api.md"
     # - Tools API:
     #   - Overview: "swarms_platform/tools_api.md"
     #   - Add Tools: "swarms_platform/fetch_tools.md"
