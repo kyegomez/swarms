@@ -44,6 +44,10 @@ API keys can be obtained and managed at [https://swarms.world/platform/api-keys]
 | `/v1/swarm/schedule` | GET | Get all scheduled swarm jobs |
 | `/v1/swarm/schedule/{job_id}` | DELETE | Cancel a scheduled swarm job |
 | `/v1/swarm/logs` | GET | Retrieve API request logs |
+| `/v1/swarms/available` | GET | Get all available swarms as a list of strings |
+| `/v1/models/available` | GET | Get all available models as a list of strings |
+
+
 
 ### SwarmType Reference
 
@@ -62,6 +66,57 @@ The `swarm_type` parameter defines the architecture and collaboration pattern of
 | `HiearchicalSwarm` | Organizes agents in a hierarchical structure with managers and workers |
 | `MajorityVoting` | Uses a consensus mechanism where multiple agents vote on the best solution |
 | `auto` | Automatically selects the most appropriate swarm type for the given task |
+
+
+
+## Data Models
+
+### SwarmSpec
+
+The `SwarmSpec` model defines the configuration of a swarm.
+
+| Field | Type | Description | Required |
+|-------|------|-------------|----------|
+| name | string | Identifier for the swarm | No |
+| description | string | Description of the swarm's purpose | No |
+| agents | Array<AgentSpec> | List of agent specifications | No |
+| max_loops | integer | Maximum number of execution loops | No |
+| swarm_type | SwarmType | Architecture of the swarm | No |
+| rearrange_flow | string | Instructions for rearranging task flow | No |
+| task | string | The main task for the swarm to accomplish | Yes |
+| img | string | Optional image URL for the swarm | No |
+| return_history | boolean | Whether to return execution history | No |
+| rules | string | Guidelines for swarm behavior | No |
+| schedule | ScheduleSpec | Scheduling information | No |
+
+### AgentSpec
+
+The `AgentSpec` model defines the configuration of an individual agent.
+
+| Field | Type | Description | Required |
+|-------|------|-------------|----------|
+| agent_name | string | Unique name for the agent | Yes* |
+| description | string | Description of the agent's purpose | No |
+| system_prompt | string | Instructions for the agent | No |
+| model_name | string | AI model to use (e.g., "gpt-4o") | Yes* |
+| auto_generate_prompt | boolean | Whether to auto-generate prompts | No |
+| max_tokens | integer | Maximum tokens in response | No |
+| temperature | float | Randomness of responses (0-1) | No |
+| role | string | Agent's role in the swarm | No |
+| max_loops | integer | Maximum iterations for this agent | No |
+
+*Required if agents are manually specified; not required if using auto-generated agents
+
+### ScheduleSpec
+
+The `ScheduleSpec` model defines when a swarm should be executed.
+
+| Field | Type | Description | Required |
+|-------|------|-------------|----------|
+| scheduled_time | datetime | Time when the swarm should run | Yes |
+| timezone | string | Timezone for the scheduled time | No (defaults to "UTC") |
+
+
 
 ### Endpoint Details
 
@@ -397,6 +452,50 @@ curl -X DELETE "https://api.swarms.world/v1/swarm/schedule/swarm_daily-market-an
 }
 ```
 
+
+### Get Models
+
+#### Get Available Models
+
+Get all available models as a list of strings.
+
+**Endpoint**: `/v1/models/available`  
+**Method**: GET  
+
+**Example Request**:
+```bash
+curl -X GET "https://api.swarms.world/v1/models/available" \
+     -H "x-api-key: your_api_key_here"
+```
+
+
+------
+
+
+### Get Swarms Available
+
+Get all available swarms as a list of strings.
+
+**Endpoint**: `/v1/swarms/available`  
+**Method**: GET
+
+**Example Request**:
+```bash
+curl -X GET "https://api.swarms.world/v1/swarms/available" \
+     -H "x-api-key: your_api_key_here"
+```
+
+**Example Response**:
+```json
+{
+  "status": "success",
+  "swarms": ["financial-analysis-swarm", "market-sentiment-swarm"]
+}
+```
+
+-------
+
+
 #### Get API Logs
 
 Retrieve logs of API requests made with your API key.
@@ -431,53 +530,6 @@ curl -X GET "https://api.swarms.world/v1/swarm/logs" \
   ]
 }
 ```
-
-## Data Models
-
-### SwarmSpec
-
-The `SwarmSpec` model defines the configuration of a swarm.
-
-| Field | Type | Description | Required |
-|-------|------|-------------|----------|
-| name | string | Identifier for the swarm | No |
-| description | string | Description of the swarm's purpose | No |
-| agents | Array<AgentSpec> | List of agent specifications | No |
-| max_loops | integer | Maximum number of execution loops | No |
-| swarm_type | SwarmType | Architecture of the swarm | No |
-| rearrange_flow | string | Instructions for rearranging task flow | No |
-| task | string | The main task for the swarm to accomplish | Yes |
-| img | string | Optional image URL for the swarm | No |
-| return_history | boolean | Whether to return execution history | No |
-| rules | string | Guidelines for swarm behavior | No |
-| schedule | ScheduleSpec | Scheduling information | No |
-
-### AgentSpec
-
-The `AgentSpec` model defines the configuration of an individual agent.
-
-| Field | Type | Description | Required |
-|-------|------|-------------|----------|
-| agent_name | string | Unique name for the agent | Yes* |
-| description | string | Description of the agent's purpose | No |
-| system_prompt | string | Instructions for the agent | No |
-| model_name | string | AI model to use (e.g., "gpt-4o") | Yes* |
-| auto_generate_prompt | boolean | Whether to auto-generate prompts | No |
-| max_tokens | integer | Maximum tokens in response | No |
-| temperature | float | Randomness of responses (0-1) | No |
-| role | string | Agent's role in the swarm | No |
-| max_loops | integer | Maximum iterations for this agent | No |
-
-*Required if agents are manually specified; not required if using auto-generated agents
-
-### ScheduleSpec
-
-The `ScheduleSpec` model defines when a swarm should be executed.
-
-| Field | Type | Description | Required |
-|-------|------|-------------|----------|
-| scheduled_time | datetime | Time when the swarm should run | Yes |
-| timezone | string | Timezone for the scheduled time | No (defaults to "UTC") |
 
 ## Production Examples
 
