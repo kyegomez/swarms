@@ -437,118 +437,118 @@ class MultiServerMCPClient:
         await self.exit_stack.aclose()
 
 
-#!/usr/bin/env python3
-import asyncio
-import os
-import json
-from typing import List, Any, Callable
+# #!/usr/bin/env python3
+# import asyncio
+# import os
+# import json
+# from typing import List, Any, Callable
 
-# # Import our MCP client module
-# from mcp_client import MultiServerMCPClient
-
-
-async def main():
-    """Test script for demonstrating MCP client usage."""
-    print("Starting MCP Client test...")
-
-    # Create a connection to multiple MCP servers
-    # You'll need to update these paths to match your setup
-    async with MultiServerMCPClient(
-        {
-            "math": {
-                "transport": "stdio",
-                "command": "python",
-                "args": ["/path/to/math_server.py"],
-                "env": {"DEBUG": "1"},
-            },
-            "search": {
-                "transport": "sse",
-                "url": "http://localhost:8000/sse",
-                "headers": {
-                    "Authorization": f"Bearer {os.environ.get('API_KEY', '')}"
-                },
-            },
-        }
-    ) as client:
-        # Get all available tools
-        tools = client.get_tools()
-        print(f"Found {len(tools)} tools across all servers")
-
-        # Print tool information
-        for i, tool in enumerate(tools):
-            print(f"\nTool {i+1}: {tool.__name__}")
-            print(f"  Description: {tool.__doc__}")
-            if hasattr(tool, "schema") and tool.schema:
-                print(
-                    f"  Schema: {json.dumps(tool.schema, indent=2)[:100]}..."
-                )
-
-        # Example: Use a specific tool if available
-        calculator_tool = next(
-            (t for t in tools if t.__name__ == "calculator"), None
-        )
-        if calculator_tool:
-            print("\n\nTesting calculator tool:")
-            try:
-                # Call the tool as an async function
-                result, artifacts = await calculator_tool(
-                    expression="2 + 2 * 3"
-                )
-                print(f"  Calculator result: {result}")
-                if artifacts:
-                    print(
-                        f"  With {len(artifacts)} additional artifacts"
-                    )
-            except Exception as e:
-                print(f"  Error using calculator: {e}")
-
-        # Example: Load a prompt from a server
-        try:
-            print("\n\nTesting prompt loading:")
-            prompt_messages = await client.get_prompt(
-                "math",
-                "calculation_introduction",
-                {"user_name": "Test User"},
-            )
-            print(
-                f"  Loaded prompt with {len(prompt_messages)} messages:"
-            )
-            for i, msg in enumerate(prompt_messages):
-                print(f"  Message {i+1}: {msg[:50]}...")
-        except Exception as e:
-            print(f"  Error loading prompt: {e}")
+# # # Import our MCP client module
+# # from mcp_client import MultiServerMCPClient
 
 
-async def create_custom_tool():
-    """Example of creating a custom tool function."""
+# async def main():
+#     """Test script for demonstrating MCP client usage."""
+#     print("Starting MCP Client test...")
 
-    # Define a tool function with metadata
-    async def add_numbers(a: float, b: float) -> tuple[str, None]:
-        """Add two numbers together."""
-        result = a + b
-        return f"The sum of {a} and {b} is {result}", None
+#     # Create a connection to multiple MCP servers
+#     # You'll need to update these paths to match your setup
+#     async with MultiServerMCPClient(
+#         {
+#             "math": {
+#                 "transport": "stdio",
+#                 "command": "python",
+#                 "args": ["/path/to/math_server.py"],
+#                 "env": {"DEBUG": "1"},
+#             },
+#             "search": {
+#                 "transport": "sse",
+#                 "url": "http://localhost:8000/sse",
+#                 "headers": {
+#                     "Authorization": f"Bearer {os.environ.get('API_KEY', '')}"
+#                 },
+#             },
+#         }
+#     ) as client:
+#         # Get all available tools
+#         tools = client.get_tools()
+#         print(f"Found {len(tools)} tools across all servers")
 
-    # Add metadata to the function
-    add_numbers.__name__ = "add_numbers"
-    add_numbers.__doc__ = (
-        "Add two numbers together and return the result."
-    )
-    add_numbers.schema = {
-        "type": "object",
-        "properties": {
-            "a": {"type": "number", "description": "First number"},
-            "b": {"type": "number", "description": "Second number"},
-        },
-        "required": ["a", "b"],
-    }
+#         # Print tool information
+#         for i, tool in enumerate(tools):
+#             print(f"\nTool {i+1}: {tool.__name__}")
+#             print(f"  Description: {tool.__doc__}")
+#             if hasattr(tool, "schema") and tool.schema:
+#                 print(
+#                     f"  Schema: {json.dumps(tool.schema, indent=2)[:100]}..."
+#                 )
 
-    # Use the tool
-    result, _ = await add_numbers(a=5, b=7)
-    print(f"\nCustom tool result: {result}")
+#         # Example: Use a specific tool if available
+#         calculator_tool = next(
+#             (t for t in tools if t.__name__ == "calculator"), None
+#         )
+#         if calculator_tool:
+#             print("\n\nTesting calculator tool:")
+#             try:
+#                 # Call the tool as an async function
+#                 result, artifacts = await calculator_tool(
+#                     expression="2 + 2 * 3"
+#                 )
+#                 print(f"  Calculator result: {result}")
+#                 if artifacts:
+#                     print(
+#                         f"  With {len(artifacts)} additional artifacts"
+#                     )
+#             except Exception as e:
+#                 print(f"  Error using calculator: {e}")
+
+#         # Example: Load a prompt from a server
+#         try:
+#             print("\n\nTesting prompt loading:")
+#             prompt_messages = await client.get_prompt(
+#                 "math",
+#                 "calculation_introduction",
+#                 {"user_name": "Test User"},
+#             )
+#             print(
+#                 f"  Loaded prompt with {len(prompt_messages)} messages:"
+#             )
+#             for i, msg in enumerate(prompt_messages):
+#                 print(f"  Message {i+1}: {msg[:50]}...")
+#         except Exception as e:
+#             print(f"  Error loading prompt: {e}")
 
 
-if __name__ == "__main__":
-    # Run both examples
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-    loop.run_until_complete(create_custom_tool())
+# async def create_custom_tool():
+#     """Example of creating a custom tool function."""
+
+#     # Define a tool function with metadata
+#     async def add_numbers(a: float, b: float) -> tuple[str, None]:
+#         """Add two numbers together."""
+#         result = a + b
+#         return f"The sum of {a} and {b} is {result}", None
+
+#     # Add metadata to the function
+#     add_numbers.__name__ = "add_numbers"
+#     add_numbers.__doc__ = (
+#         "Add two numbers together and return the result."
+#     )
+#     add_numbers.schema = {
+#         "type": "object",
+#         "properties": {
+#             "a": {"type": "number", "description": "First number"},
+#             "b": {"type": "number", "description": "Second number"},
+#         },
+#         "required": ["a", "b"],
+#     }
+
+#     # Use the tool
+#     result, _ = await add_numbers(a=5, b=7)
+#     print(f"\nCustom tool result: {result}")
+
+
+# if __name__ == "__main__":
+#     # Run both examples
+#     loop = asyncio.get_event_loop()
+#     loop.run_until_complete(main())
+#     loop.run_until_complete(create_custom_tool())
