@@ -23,6 +23,9 @@ from swarms.structs.stopping_conditions import (
     check_success,
 )
 
+from swarms.agents.flexion_agent import ReflexionAgent
+from swarms.agents.gkp_agent import GKPAgent
+
 __all__ = [
     # "ToolAgent",
     "check_done",
@@ -41,4 +44,6 @@ __all__ = [
     "ReasoningDuo",
     "ReasoningAgentRouter",
     "agent_types",
+    "ReflexionAgent",
+    "GKPAgent",
 ]

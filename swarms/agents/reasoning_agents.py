@@ -1,6 +1,8 @@
 from typing import List, Literal
 
 from swarms.agents.consistency_agent import SelfConsistencyAgent
+from swarms.agents.flexion_agent import ReflexionAgent
+from swarms.agents.gkp_agent import GKPAgent
 from swarms.agents.i_agent import (
     IterativeReflectiveExpansion as IREAgent,
 )
@@ -14,6 +16,8 @@ agent_types = Literal[
     "reasoning-agent",
     "consistency-agent",
     "ire-agent",
+    "ReflexionAgent",
+    "GKPAgent",
 ]
 
 
@@ -42,6 +46,8 @@ class ReasoningAgentRouter:
         swarm_type: agent_types = "reasoning_duo",
         num_samples: int = 1,
         output_type: OutputType = "dict",
+        num_knowledge_items: int = 6,
+        memory_capacity: int = 6,
     ):
         self.agent_name = agent_name
         self.description = description
@@ -51,6 +57,8 @@ class ReasoningAgentRouter:
         self.swarm_type = swarm_type
         self.num_samples = num_samples
         self.output_type = output_type
+        self.num_knowledge_items = num_knowledge_items
+        self.memory_capacity = memory_capacity
 
     def select_swarm(self):
         """
@@ -98,6 +106,20 @@ class ReasoningAgentRouter:
                 output_type=self.output_type,
             )
 
+        elif self.swarm_type == "ReflexionAgent":
+            return ReflexionAgent(
+                agent_name=self.agent_name,
+                system_prompt=self.system_prompt,
+                model_name=self.model_name,
+                max_loops=self.max_loops,
+            )
+
+        elif self.swarm_type == "GKPAgent":
+            return GKPAgent(
+                agent_name=self.agent_name,
+                model_name=self.model_name,
+                num_knowledge_items=self.num_knowledge_items,
+            )
         else:
             raise ValueError(f"Invalid swarm type: {self.swarm_type}")
 
