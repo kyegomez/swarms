@@ -309,6 +309,13 @@ nav:
     # - Agent Marketplace: "swarms_platform/share_discover.md"
     - Swarm Platform API Keys: "swarms_platform/apikeys.md"
     - Account Management: "swarms_platform/account_management.md"
+
+  - About Us:
+    - Swarms Vision: "swarms/concept/vision.md"
+    - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
+    - Swarms Products: "swarms/products.md"
+    - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
+    
     # - Prompts API: 
     #   - Add Prompts: "swarms_platform/prompts/add_prompt.md"
     #   - Edit Prompts: "swarms_platform/prompts/edit_prompt.md"
