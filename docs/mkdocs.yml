@@ -184,7 +184,8 @@ nav:
     
     - Swarm Architectures:
       - Introduction to Multi-Agent Collaboration: "swarms/concept/why.md"
-      - Conceptual Introduction to Swarms:
+      
+      - Concepts:
         - Introduction to Swarm Architectures: "swarms/concept/swarm_architectures.md"
         - How to Choose the Right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
         - How to Build Custom Swarms: "swarms/structs/custom_swarm.md"
