@@ -116,37 +116,55 @@ flowchart TD
 
 ## Use Case Recommendations
 
-1. **HHCS**: Best for:
-   - Enterprise-scale operations
-   - Multi-domain problems
-   - Complex task routing
-   - Parallel processing needs
+### **HHCS**: Best for:
+   
+- Enterprise-scale operations
 
-2. **Auto Agent Builder**: Best for:
-   - Dynamic workloads
-   - Evolving requirements
-   - Research and development
-   - Exploratory tasks
+- Multi-domain problems
 
-3. **SwarmRouter**: Best for:
-   - General purpose tasks
-   - Quick deployment
-   - Mixed workflow types
-   - Smaller scale operations
+- Complex task routing
+
+- Parallel processing needs
+
+###  **Auto Agent Builder**: Best for:
+
+- Dynamic workloads
+
+- Evolving requirements
+
+- Research and development
+
+- Exploratory tasks
+
+### **SwarmRouter**: Best for:
+
+- General purpose tasks
+
+- Quick deployment
+
+- Mixed workflow types
+
+- Smaller scale operations
 
 ## Documentation Links
 
-1. HHCS Documentation:
-   - [Hybrid Hierarchical-Cluster Swarm Documentation](https://docs.swarms.world/en/latest/swarms/structs/hhcs/)
-   - Covers detailed implementation, constructor arguments, and full examples
+### HHCS Documentation:
 
-2. Auto Agent Builder Documentation:
-   - [Agent Builder Documentation](https://docs.swarms.world/en/latest/swarms/structs/auto_agent_builder/)
-   - Includes enterprise use cases, best practices, and integration patterns
+- [Hybrid Hierarchical-Cluster Swarm Documentation](https://docs.swarms.world/en/latest/swarms/structs/hhcs/)
+
+- Covers detailed implementation, constructor arguments, and full examples
+
+### Auto Agent Builder Documentation:
+   
+- [Agent Builder Documentation](https://docs.swarms.world/en/latest/swarms/structs/auto_agent_builder/)
+
+- Includes enterprise use cases, best practices, and integration patterns
 
 3. SwarmRouter Documentation:
-   - [SwarmRouter Documentation](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)
-   - Provides comprehensive API reference, advanced usage, and use cases
+
+- [SwarmRouter Documentation](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)
+
+- Provides comprehensive API reference, advanced usage, and use cases
 
 ## Best Practices for Selection
 
