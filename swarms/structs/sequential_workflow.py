@@ -1,7 +1,7 @@
 from typing import List, Optional
 from swarms.structs.agent import Agent
 from swarms.structs.rearrange import AgentRearrange
-from swarms.structs.output_type import OutputType
+from swarms.structs.output_types import OutputType
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from swarms.utils.loguru_logger import initialize_logger
 

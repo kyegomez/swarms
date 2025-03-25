@@ -9,7 +9,7 @@ from typing import Any, Callable, List, Optional
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
-from swarms.structs.output_type import OutputType
+from swarms.structs.output_types import OutputType
 from swarms.utils.formatter import formatter
 from swarms.utils.loguru_logger import initialize_logger
 

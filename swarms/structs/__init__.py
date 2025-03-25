@@ -8,6 +8,8 @@ from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.base_workflow import BaseWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
+from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
+from swarms.structs.deep_research_swarm import DeepResearchSwarm
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
@@ -17,6 +19,9 @@ from swarms.structs.graph_workflow import (
 from swarms.structs.groupchat import (
     GroupChat,
     expertise_based,
+)
+from swarms.structs.hybrid_hiearchical_peer_swarm import (
+    HybridHierarchicalClusterSwarm,
 )
 from swarms.structs.majority_voting import (
     MajorityVoting,
@@ -82,9 +87,6 @@ from swarms.structs.swarms_api import (
     SwarmsAPIClient,
     SwarmValidationError,
 )
-
-from swarms.structs.de_hallucination_swarm import DeHallucinationSwarm
-from swarms.structs.deep_research_swarm import DeepResearchSwarm
 
 __all__ = [
     "Agent",
@@ -161,4 +163,5 @@ __all__ = [
     "MALT",
     "DeHallucinationSwarm",
     "DeepResearchSwarm",
+    "HybridHierarchicalClusterSwarm",
 ]

@@ -3,7 +3,7 @@ import time
 from loguru import logger
 from swarms import Agent
 
-from swarms.structs.airflow_swarm import (
+from experimental.airflow_swarm import (
     AirflowDAGSwarm,
     NodeType,
     Conversation,

@@ -11,7 +11,7 @@ from swarms.schemas.agent_step_schemas import ManySteps
 from swarms.prompts.ag_prompt import aggregator_system_prompt
 from swarms.utils.loguru_logger import initialize_logger
 import concurrent.futures
-from swarms.structs.output_type import OutputType
+from swarms.structs.output_types import OutputType
 from swarms.structs.conversation import Conversation
 
 logger = initialize_logger(log_folder="mixture_of_agents")

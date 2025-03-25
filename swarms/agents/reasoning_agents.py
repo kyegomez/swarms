@@ -8,6 +8,7 @@ from swarms.agents.i_agent import (
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.output_types import OutputType
+from swarms.agents.agent_judge import AgentJudge
 
 agent_types = Literal[
     "reasoning-duo",
@@ -18,6 +19,7 @@ agent_types = Literal[
     "ire-agent",
     "ReflexionAgent",
     "GKPAgent",
+    "AgentJudge",
 ]
 
 
@@ -104,6 +106,14 @@ class ReasoningAgentRouter:
                 max_loops=self.max_loops,
                 max_iterations=self.num_samples,
                 output_type=self.output_type,
+            )
+
+        elif self.swarm_type == "AgentJudge":
+            return AgentJudge(
+                agent_name=self.agent_name,
+                model_name=self.model_name,
+                system_prompt=self.system_prompt,
+                max_loops=self.max_loops,
             )
 
         elif self.swarm_type == "ReflexionAgent":

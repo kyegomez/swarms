@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from swarms.structs.agent import Agent
 from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.conversation import Conversation
-from swarms.structs.output_type import OutputType
+from swarms.structs.output_types import OutputType
 from swarms.utils.formatter import formatter
 
 from swarms.utils.function_caller_model import OpenAIFunctionCaller

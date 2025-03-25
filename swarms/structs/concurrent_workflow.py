@@ -12,7 +12,7 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_id_generator import generate_swarm_id
-from swarms.structs.output_type import OutputType
+from swarms.structs.output_types import OutputType
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 

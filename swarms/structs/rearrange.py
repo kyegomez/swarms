@@ -15,7 +15,7 @@ from swarms.structs.base_swarm import BaseSwarm
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.main import log_agent_data
 from swarms.structs.conversation import Conversation
-from swarms.structs.output_type import OutputType
+from swarms.structs.output_types import OutputType
 
 logger = initialize_logger(log_folder="rearrange")
 

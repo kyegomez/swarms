@@ -1,9 +1,10 @@
+from swarms.agents.agent_judge import AgentJudge
 from swarms.agents.consistency_agent import SelfConsistencyAgent
-
-# from swarms.agents.tool_agent import ToolAgent
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
+from swarms.agents.flexion_agent import ReflexionAgent
+from swarms.agents.gkp_agent import GKPAgent
 from swarms.agents.i_agent import IterativeReflectiveExpansion
 from swarms.agents.reasoning_agents import (
     ReasoningAgentRouter,
@@ -23,8 +24,8 @@ from swarms.structs.stopping_conditions import (
     check_success,
 )
 
-from swarms.agents.flexion_agent import ReflexionAgent
-from swarms.agents.gkp_agent import GKPAgent
+# Hybrid Hierarchical-Peer Model
+
 
 __all__ = [
     # "ToolAgent",
@@ -46,4 +47,5 @@ __all__ = [
     "agent_types",
     "ReflexionAgent",
     "GKPAgent",
+    "AgentJudge",
 ]

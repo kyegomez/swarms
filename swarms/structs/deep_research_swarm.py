@@ -454,6 +454,21 @@ class DeepResearchSwarm:
     def run(self, task: str):
         return self.step(task)
 
+    def batched_run(self, tasks: List[str]):
+        """
+        Execute a list of research tasks in parallel.
+
+        Args:
+            tasks (List[str]): A list of research tasks to execute
+
+        Returns:
+            List[str]: A list of formatted conversation histories
+        """
+        futures = []
+        for task in tasks:
+            future = self.executor.submit(self.step, task)
+            futures.append((task, future))
+
 
 # # Example usage
 # if __name__ == "__main__":

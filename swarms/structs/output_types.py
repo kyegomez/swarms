@@ -14,3 +14,6 @@ OutputType = Literal[
     "string",
     "str",
 ]
+
+# Use the OutputType for type annotations
+output_type: OutputType

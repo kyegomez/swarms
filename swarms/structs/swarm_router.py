@@ -18,7 +18,7 @@ from swarms.structs.rearrange import AgentRearrange
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_matcher import swarm_matcher
-from swarms.structs.output_type import OutputType
+from swarms.structs.output_types import OutputType
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.structs.malt import MALT
 from swarms.structs.deep_research_swarm import DeepResearchSwarm

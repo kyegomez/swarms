@@ -176,13 +176,18 @@ nav:
         - Reasoning Agent Router: "swarms/agents/reasoning_agent_router.md"
         - Reflexion Agent: "swarms/agents/reflexion_agent.md"
         - GKP Agent: "swarms/agents/gkp_agent.md"
+        - Agent Judge: "swarms/agents/agent_judge.md"
     - Swarm Architectures:
-      - Why MultiAgent Collaboration is Necessary: "swarms/concept/why.md"
-      - Swarm Architectures: "swarms/concept/swarm_architectures.md"
-      - Choosing the right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
-      - Building Custom Swarms: "swarms/structs/custom_swarm.md"
-      - Create New Swarm Architectures: "swarms/structs/create_new_swarm.md"
-      - Architectures Available:
+      - Introduction to Multi-Agent Collaboration: "swarms/concept/why.md"
+      
+      - Conceptual Introduction to Swarms:
+        - Introduction to Swarm Architectures: "swarms/concept/swarm_architectures.md"
+        - How to Choose the Right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
+        - How to Build Custom Swarms: "swarms/structs/custom_swarm.md"
+        - How to Create New Swarm Architectures: "swarms/structs/create_new_swarm.md"
+        - Introduction to Hiearchical Swarm Architectures: "swarms/structs/multi_swarm_orchestration.md"
+
+      - Swarm Architecture Documentation:
         - MajorityVoting: "swarms/structs/majorityvoting.md"
         - AgentRearrange: "swarms/structs/agent_rearrange.md"
         - RoundRobin: "swarms/structs/round_robin_swarm.md"
@@ -201,13 +206,15 @@ nav:
         - MALT: "swarms/structs/malt.md"
         - Auto Agent Builder: "swarms/structs/auto_agent_builder.md"
         - Various Execution Methods: "swarms/structs/various_execution_methods.md"
+        - Hybrid Hierarchical-Cluster Swarm: "swarms/structs/hhcs.md"
         - Workflows:
             - ConcurrentWorkflow: "swarms/structs/concurrentworkflow.md"
             - AsyncWorkflow: "swarms/structs/async_workflow.md"
             - SequentialWorkflow: "swarms/structs/sequential_workflow.md"
         - Structs:
           - Conversation: "swarms/structs/conversation.md"
-    - Full API Reference: "swarms/framework/reference.md"
+    # - Full API Reference: "swarms/framework/reference.md"
+    
   - Examples:
     - Overview: "swarms/examples/unique_swarms.md"
 
