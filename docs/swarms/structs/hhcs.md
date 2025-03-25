@@ -99,6 +99,7 @@ flowchart TD
 ## Full Example
 
 ```python
+
 from swarms import Agent, SwarmRouter
 from swarms.structs.hybrid_hiearchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
