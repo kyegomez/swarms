@@ -1,15 +1,18 @@
 ### Title: Building Custom Swarms with Multiple Agents: A Comprehensive Guide for Swarm Engineers
 
-#### Introduction
-
+#### Introductio
 As artificial intelligence and machine learning continue to grow in complexity and applicability, building systems that can harness multiple agents to solve complex tasks becomes more critical. Swarm engineering enables AI agents to collaborate and solve problems autonomously in diverse fields such as finance, marketing, operations, and even creative industries. In this guide, we'll focus on how to build a custom swarm system that integrates multiple agents into a cohesive system capable of solving tasks collaboratively.
 
 The swarm we'll design will leverage Python, use types for better code structure, and feature logging with the powerful **loguru** logging library. We'll break down how to define and initialize swarms, make them scalable, and create methods like `run(task: str)` to trigger their execution.
 
 By the end of this article, you will have a complete understanding of:
+
 - What swarms are and how they can be built.
+
 - How to intake multiple agents using a flexible class.
+
 - How to run tasks across agents and capture their outputs.
+
 - Best practices for error handling, logging, and optimization.
 
 ---
@@ -17,8 +20,11 @@ By the end of this article, you will have a complete understanding of:
 ### 1. Understanding the Concept of a Swarm
 
 A **swarm** refers to a collection of agents that collaborate to solve a problem. Each agent in the swarm performs part of the task, either independently or by communicating with other agents. Swarms are ideal for:
+
 - **Scalability**: You can add or remove agents dynamically based on the task's complexity.
+
 - **Flexibility**: Each agent can be designed to specialize in different parts of the problem, offering modularity.
+
 - **Autonomy**: Agents in a swarm can operate autonomously, reducing the need for constant supervision.
 
 We'll be using Python as the primary programming language and will structure the swarm class using clean, reusable code principles.
@@ -238,10 +244,14 @@ class CustomSwarm:
 
 Building custom swarms that intake multiple agents can drastically improve the scalability, efficiency, and flexibility of AI-driven systems. By designing a robust swarm class that manages agents, distributes tasks, and ensures error resilience, you can handle complex, multi-agent workloads efficiently.
 
-In this blog, we've covered:
+In this Guide, we've covered:
+
 - Designing a basic swarm class.
+
 - Running tasks across multiple agents.
+
 - Leveraging logging, error handling, retries, and concurrency.
+
 - Documenting your class for future-proofing.
 
 This approach sets the foundation for building more advanced and domain-specific swarms in areas like finance, marketing, operations, and beyond. Swarm engineers can now explore more complex, multi-agent systems and push the boundaries of AI collaboration.
