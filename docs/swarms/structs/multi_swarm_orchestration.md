@@ -1,10 +1,31 @@
 # Hierarchical Agent Orchestration Architectures
 
-Hierarchical agent orchestration involves organizing AI agents in structured layers to efficiently handle complex tasks. There are several key architectures available, each with distinct characteristics and use cases.
+Hierarchical agent orchestration involves organizing multiple agents in structured layers to efficiently handle complex tasks. There are several key architectures available, each with distinct characteristics and use cases.
+
+Here are the Hierarchical swarms we support:
+
+| Architecture | Strengths | Weaknesses |
+|--------------|-----------|------------|
+| HHCS | - Clear task routing<br>- Specialized swarm handling<br>- Parallel processing capability<br>- Good for complex multi-domain tasks | - More complex setup<br>- Overhead in routing<br>- Requires careful swarm design |
+| Auto Agent Builder | - Dynamic agent creation<br>- Flexible scaling<br>- Self-organizing<br>- Good for evolving tasks | - Higher resource usage<br>- Potential creation overhead<br>- May create redundant agents |
+| SwarmRouter | - Multiple workflow types<br>- Simple configuration<br>- Flexible deployment<br>- Good for varied task types | - Less specialized than HHCS<br>- Limited inter-swarm communication<br>- May require manual type selection |
+
+
 
 ## Core Architectures
 
 ### 1. Hybrid Hierarchical-Cluster Swarm (HHCS)
+
+Hybrid Hierarchical-Cluster Swarm (HHCS) is architecture that uses a Router Agent to analyze and distribute tasks to other swarms.
+
+- Tasks are routed to specialized swarms based on their requirements
+
+- Enables parallel processing through multiple specialized swarms
+
+- Ideal for complex, multi-domain tasks and enterprise-scale operations
+
+- Provides clear task routing but requires more complex setup
+
 
 ```mermaid
 flowchart TD
@@ -29,6 +50,16 @@ flowchart TD
 
 ### 2. Auto Agent Builder
 
+Auto Agent Builder is a dynamic agent architecture that creates specialized agents on-demand.
+
+- Analyzes tasks and automatically builds appropriate agents for the job
+
+- Maintains an agent pool that feeds into task orchestration
+
+- Best suited for evolving requirements and dynamic workloads
+
+- Self-organizing but may have higher resource usage
+
 ```mermaid
 flowchart TD
     Task[Task Input] --> Builder[Agent Builder]
@@ -50,6 +81,23 @@ flowchart TD
 
 ### 3. SwarmRouter
 
+
+SwarmRouter is a flexible system supporting multiple swarm architectures through a simple interface:
+
+- Sequential workflows
+
+- Concurrent workflows
+
+- Hierarchical swarms
+
+- Group chat interactions
+
+- Simpler to configure and deploy compared to other architectures
+
+- Best for general-purpose tasks and smaller scale operations
+
+- Recommended for 5-20 agents.
+
 ```mermaid
 flowchart TD
     Input[Task Input] --> Router[Swarm Router]
@@ -65,14 +113,6 @@ flowchart TD
     Hier --> Output
     Group --> Output
 ```
-
-## Comparison Table
-
-| Architecture | Strengths | Weaknesses |
-|--------------|-----------|------------|
-| HHCS | - Clear task routing<br>- Specialized swarm handling<br>- Parallel processing capability<br>- Good for complex multi-domain tasks | - More complex setup<br>- Overhead in routing<br>- Requires careful swarm design |
-| Auto Agent Builder | - Dynamic agent creation<br>- Flexible scaling<br>- Self-organizing<br>- Good for evolving tasks | - Higher resource usage<br>- Potential creation overhead<br>- May create redundant agents |
-| SwarmRouter | - Multiple workflow types<br>- Simple configuration<br>- Flexible deployment<br>- Good for varied task types | - Less specialized than HHCS<br>- Limited inter-swarm communication<br>- May require manual type selection |
 
 ## Use Case Recommendations
 
@@ -97,57 +137,50 @@ flowchart TD
 ## Documentation Links
 
 1. HHCS Documentation:
-   - [Hybrid Hierarchical-Cluster Swarm Documentation](docs/swarms/structs/hhcs.md)
+   - [Hybrid Hierarchical-Cluster Swarm Documentation](https://docs.swarms.world/en/latest/swarms/structs/hhcs/)
    - Covers detailed implementation, constructor arguments, and full examples
 
 2. Auto Agent Builder Documentation:
-   - [Agent Builder Documentation](docs/swarms/structs/auto_agent_builder.md)
+   - [Agent Builder Documentation](https://docs.swarms.world/en/latest/swarms/structs/auto_agent_builder/)
    - Includes enterprise use cases, best practices, and integration patterns
 
 3. SwarmRouter Documentation:
-   - [SwarmRouter Documentation](docs/swarms/structs/swarm_router.md)
+   - [SwarmRouter Documentation](https://docs.swarms.world/en/latest/swarms/structs/swarm_router/)
    - Provides comprehensive API reference, advanced usage, and use cases
 
 ## Best Practices for Selection
 
-1. **Evaluate Task Complexity**
-   - Simple tasks → SwarmRouter
-   - Complex, multi-domain tasks → HHCS
-   - Dynamic, evolving tasks → Auto Agent Builder
+### **Evaluate Task Complexity**
+   
+- Simple tasks → SwarmRouter
 
-2. **Consider Scale**
-   - Small scale → SwarmRouter
-   - Large scale → HHCS
-   - Variable scale → Auto Agent Builder
+- Complex, multi-domain tasks → HHCS
 
-3. **Resource Availability**
-   - Limited resources → SwarmRouter
-   - Abundant resources → HHCS or Auto Agent Builder
-   - Dynamic resources → Auto Agent Builder
+- Dynamic, evolving tasks → Auto Agent Builder
 
-4. **Development Time**
-   - Quick deployment → SwarmRouter
-   - Complex system → HHCS
-   - Experimental system → Auto Agent Builder
+### **Consider Scale**
+   
+- Small scale → SwarmRouter
 
-## Integration Considerations
+- Large scale → HHCS
 
-1. **System Requirements**
-   - All architectures require proper API access depending on the model your agents are using.
-   - HHCS needs robust routing infrastructure
-   - Auto Agent Builder needs scalable resource management
-   - SwarmRouter needs workflow type definitions
+- Variable scale → Auto Agent Builder
 
-2. **Monitoring**
-   - Implement comprehensive logging
-   - Track performance metrics
-   - Monitor resource usage
-   - Set up alerting systems
+### **Resource Availability**
+   
+- Limited resources → SwarmRouter
 
-3. **Scaling**
-   - Design for horizontal scaling
-   - Implement proper load balancing
-   - Consider distributed deployment
-   - Plan for future growth
+- Abundant resources → HHCS or Auto Agent Builder
+
+- Dynamic resources → Auto Agent Builder
+
+### **Development Time**
+
+- Quick deployment → SwarmRouter
+
+- Complex system → HHCS
+
+- Experimental system → Auto Agent Builder
+
 
 This documentation provides a high-level overview of the main hierarchical agent orchestration architectures available in the system. Each architecture has its own strengths and ideal use cases, and the choice between them should be based on specific project requirements, scale, and complexity.
