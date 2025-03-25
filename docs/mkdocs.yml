@@ -151,25 +151,29 @@ nav:
       - Swarms Framework Architecture: "swarms/concept/framework_architecture.md"
     - Swarm Ecosystem: "swarms/concept/swarm_ecosystem.md"
     - Swarms Products: "swarms/products.md"
+    
     - Agents:
       # - Overview: "swarms/structs/index.md"
-      - Managing Prompts in Production: "swarms/prompts/main.md"
-      - Agent Architecture: "swarms/framework/agents_explained.md"
-      - Complete Agent API: "swarms/structs/agent.md"
-      - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
-      - Tools:
-        - Structured Outputs: "swarms/agents/structured_outputs.md"
-        - Overview: "swarms/tools/main.md"
-        - What are tools?: "swarms/tools/build_tool.md"
-        - ToolAgent: "swarms/agents/tool_agent.md"
-        - Tool Storage: "swarms/tools/tool_storage.md"
-      - RAG || Long Term Memory:
-        - Integrating RAG with Agents: "swarms/memory/diy_memory.md"
-      - Third-Party Agent Integrations:
-        - OpenAI Assistant: "swarms/agents/openai_assistant.md"
-        - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
-        - Creating Custom Agents: "swarms/agents/new_agent.md"
-      - Reasoning Agents:
+      - Concepts:
+        - Managing Prompts in Production: "swarms/prompts/main.md"
+        - Introduction into The Agent Architecture: "swarms/framework/agents_explained.md"
+    
+      - Documentation:
+        - Agent Class Documentation: "swarms/structs/agent.md"
+        - Create and Run Agents from YAML: "swarms/agents/create_agents_yaml.md"
+        - Tools:
+          - Structured Outputs: "swarms/agents/structured_outputs.md"
+          - Overview: "swarms/tools/main.md"
+          - What are tools?: "swarms/tools/build_tool.md"
+          - ToolAgent: "swarms/agents/tool_agent.md"
+          - Tool Storage: "swarms/tools/tool_storage.md"
+        - RAG || Long Term Memory:
+          - Integrating RAG with Agents: "swarms/memory/diy_memory.md"
+        - Third-Party Agent Integrations:
+          - OpenAI Assistant: "swarms/agents/openai_assistant.md"
+          - Integrating External Agents from Griptape, Langchain, etc: "swarms/agents/external_party_agents.md"
+          - Creating Custom Agents: "swarms/agents/new_agent.md"
+      - PreBuilt Reasoning Agents:
         - Self Consistency Agent: "swarms/agents/consistency_agent.md"
         - IRE Agent: "swarms/agents/iterative_agent.md"
         - Reasoning Duo: "swarms/agents/reasoning_duo.md"
@@ -177,9 +181,9 @@ nav:
         - Reflexion Agent: "swarms/agents/reflexion_agent.md"
         - GKP Agent: "swarms/agents/gkp_agent.md"
         - Agent Judge: "swarms/agents/agent_judge.md"
+    
     - Swarm Architectures:
       - Introduction to Multi-Agent Collaboration: "swarms/concept/why.md"
-      
       - Conceptual Introduction to Swarms:
         - Introduction to Swarm Architectures: "swarms/concept/swarm_architectures.md"
         - How to Choose the Right Swarm Architecture: "swarms/concept/how_to_choose_swarms.md"
