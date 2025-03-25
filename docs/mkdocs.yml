@@ -244,6 +244,7 @@ nav:
       - Meme Agent Builder: "swarms/examples/meme_agents.md"
     - Multi-Agent Collaboration:
       - Swarms DAO: "swarms/examples/swarms_dao.md"
+      - Hybrid Hierarchical-Cluster Swarm Example: "swarms/examples/hhcs_examples.md"
     - Swarms UI:
       - Overview: "swarms/ui/main.md"
 
