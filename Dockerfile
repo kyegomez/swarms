@@ -1,42 +1,36 @@
-# Use Python 3.11 slim-bullseye for a smaller base image
+# Use a lightweight Python image
 FROM python:3.11-slim-bullseye
 
-# Set environment variables for Python and pip
+# Environment config for speed and safety
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    WORKSPACE_DIR="agent_workspace" \
     PATH="/app:${PATH}" \
     PYTHONPATH="/app:${PYTHONPATH}" \
     USER=swarms
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Install essential build dependencies
+# System dependencies (minimal)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    g++ \
-    gfortran \
+    build-essential gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install required Python packages
-RUN pip install --no-cache-dir swarm-models swarms && \
-    pip install --no-cache-dir transformers torch litellm tiktoken openai pandas numpy pypdf
+# Install the swarms package
+RUN pip install --upgrade pip && pip install -U swarms
 
-# Create a non-root user and set correct permissions for the application directory
+# Add non-root user
 RUN useradd -m -s /bin/bash -U $USER && \
-    mkdir -p /app && \
     chown -R $USER:$USER /app
 
-# Copy application files into the image with proper ownership
+# Copy application code
 COPY --chown=$USER:$USER . .
 
-# Switch to the non-root user
+# Switch to non-root
 USER $USER
 
-# Health check to ensure the container is running properly
+# Optional health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD python -c "import swarms; print('Health check passed')" || exit 1
